@@ -1,0 +1,707 @@
+openapi: 3.0.3
+info:
+  title: Sonos Web Player API
+  description: >
+    Internal API auto-discovered by intercepting https://play.sonos.com traffic.
+    All endpoints are served from https://play.sonos.com and require authenticated
+    session cookies from the Sonos web player.
+
+    **Note:** This is an undocumented, reverse-engineered API. Endpoints and schemas
+    may change without notice.
+  version: 0.0.0
+
+servers:
+  - url: https://play.sonos.com
+
+tags:
+  - name: Auth
+    description: Authentication and service discovery.
+  - name: Queue
+    description: Manage the playback queue for a group (add, list, remove, reorder items).
+  - name: Browse
+    description: Browse and navigate artist, album, and container catalogs from a music service.
+  - name: Favorites & History
+    description: Retrieve a user's favourited content and recently played history from a music service.
+  - name: Search
+    description: Search across music services within a household.
+  - name: Integrations
+    description: List music service integrations and account registrations for a household.
+  - name: Now Playing
+    description: Retrieve now-playing metadata for a track.
+  - name: Platform
+    description: Internal platform endpoints (micro-frontends, feature flags, metrics).
+  - name: Groups
+    description: List and inspect Sonos groups (zones) within a household.
+  - name: Playback
+    description: Control group playback — play, pause, skip. Paths are best-guess BFF routes; verify by intercepting traffic.
+
+paths:
+
+  # ─── Auth ───────────────────────────────────────────────────────────────────
+
+  /api/authz/discovery:
+    get:
+      tags: [Auth]
+      operationId: getAuthDiscovery
+      summary: Get auth discovery document
+      description: Returns OAuth/auth configuration and endpoint discovery metadata.
+      responses:
+        "200":
+          description: Auth discovery document.
+          content:
+            application/json:
+              schema:
+                type: object
+
+  # ─── Queue ──────────────────────────────────────────────────────────────────
+
+  /api/content/v1/groups/{groupId}/services/{serviceId}/accounts/{accountId}/queues/{queueId}/resources:
+    parameters:
+      - $ref: "#/components/parameters/groupId"
+      - $ref: "#/components/parameters/serviceId"
+      - $ref: "#/components/parameters/accountId"
+      - $ref: "#/components/parameters/queueId"
+
+    get:
+      tags: [Queue]
+      operationId: getQueueResources
+      summary: List queue items
+      description: Returns a paginated list of tracks currently in the group's playback queue.
+      parameters:
+        - name: count
+          in: query
+          schema: { type: string, example: "15" }
+        - name: offset
+          in: query
+          schema: { type: string, example: "0" }
+      responses:
+        "200":
+          description: Paginated queue item list.
+          content:
+            application/json:
+              schema:
+                type: object
+
+    post:
+      tags: [Queue]
+      operationId: addQueueResource
+      summary: Add item to queue
+      description: >
+        Adds an album, track, or container to the group's playback queue.
+        Use `position=-1` to append to the end.
+      parameters:
+        - name: position
+          in: query
+          description: Insert position. Use `-1` to append.
+          schema: { type: string, example: "-1" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueueResourceRequest"
+      responses:
+        "200":
+          description: Item added successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+
+    delete:
+      tags: [Queue]
+      operationId: deleteQueueResources
+      summary: Remove items from queue
+      description: Removes one or more items from the group's playback queue by item index.
+      parameters:
+        - name: items
+          in: query
+          description: Comma-separated item indices to remove.
+          schema: { type: string, example: "13" }
+      responses:
+        "200":
+          description: Items removed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+
+    patch:
+      tags: [Queue]
+      operationId: reorderQueueResources
+      summary: Reorder queue items
+      description: Moves one or more queue items to new positions.
+      parameters:
+        - name: items
+          in: query
+          description: Comma-separated item indices to move.
+          schema: { type: string, example: "13" }
+        - name: positions
+          in: query
+          description: Target positions for the moved items.
+          schema: { type: string, example: "14" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items: {}
+      responses:
+        "200":
+          description: Queue reordered successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+
+  # ─── Browse ─────────────────────────────────────────────────────────────────
+
+  /api/content/v2/households/{householdId}/services/{serviceId}/accounts/{accountId}/albums/{albumId}/browse:
+    get:
+      tags: [Browse]
+      operationId: browseAlbum
+      summary: Browse album
+      description: Returns tracks and metadata for a specific album.
+      parameters:
+        - $ref: "#/components/parameters/householdId"
+        - $ref: "#/components/parameters/serviceId"
+        - $ref: "#/components/parameters/accountId"
+        - name: albumId
+          in: path
+          required: true
+          schema: { type: string }
+        - $ref: "#/components/parameters/muse2"
+        - $ref: "#/components/parameters/defaults"
+        - name: count
+          in: query
+          schema: { type: string, example: "50" }
+      responses:
+        "200":
+          description: Album browse result.
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/content/v2/households/{householdId}/services/{serviceId}/accounts/{accountId}/artists/{artistId}/browse:
+    get:
+      tags: [Browse]
+      operationId: browseArtist
+      summary: Browse artist
+      description: Returns discography and related content for a specific artist.
+      parameters:
+        - $ref: "#/components/parameters/householdId"
+        - $ref: "#/components/parameters/serviceId"
+        - $ref: "#/components/parameters/accountId"
+        - name: artistId
+          in: path
+          required: true
+          schema: { type: string }
+        - $ref: "#/components/parameters/muse2"
+        - $ref: "#/components/parameters/defaults"
+      responses:
+        "200":
+          description: Artist browse result.
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/content/v2/households/{householdId}/services/{serviceId}/accounts/{accountId}/containers/{containerId}/browse:
+    get:
+      tags: [Browse]
+      operationId: browseContainer
+      summary: Browse container
+      description: >
+        Browses a generic container (e.g. playlist, radio station, genre).
+        The container type is service-specific.
+      parameters:
+        - $ref: "#/components/parameters/householdId"
+        - $ref: "#/components/parameters/serviceId"
+        - $ref: "#/components/parameters/accountId"
+        - $ref: "#/components/parameters/containerId"
+        - $ref: "#/components/parameters/muse2"
+        - $ref: "#/components/parameters/defaults"
+      responses:
+        "200":
+          description: Container browse result.
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/content/v1/households/{householdId}/services/{serviceId}/accounts/{accountId}/catalog/containers/{containerId}/resources:
+    get:
+      tags: [Browse]
+      operationId: getCatalogContainerResources
+      summary: Get catalog container resources
+      description: Returns resources (tracks/items) within a catalog container.
+      parameters:
+        - $ref: "#/components/parameters/householdId"
+        - $ref: "#/components/parameters/serviceId"
+        - $ref: "#/components/parameters/accountId"
+        - $ref: "#/components/parameters/containerId"
+        - name: count
+          in: query
+          schema: { type: string, example: "10" }
+      responses:
+        "200":
+          description: Catalog container resources.
+          content:
+            application/json:
+              schema:
+                type: object
+
+  # ─── Favorites & History ────────────────────────────────────────────────────
+
+  /api/content/v1/households/{householdId}/services/{serviceId}/accounts/{accountId}/favorites/resources:
+    get:
+      tags: [Favorites & History]
+      operationId: getFavoriteResources
+      summary: Get favourites
+      description: Returns the user's favourited content. Filter by resource type using the `resources` param.
+      parameters:
+        - $ref: "#/components/parameters/householdId"
+        - $ref: "#/components/parameters/serviceId"
+        - $ref: "#/components/parameters/accountId"
+        - name: count
+          in: query
+          schema: { type: string, example: "20" }
+        - name: resources
+          in: query
+          description: Resource type filter, e.g. `CONTAINERS`.
+          schema: { type: string, example: "CONTAINERS" }
+      responses:
+        "200":
+          description: Favourites list.
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/content/v1/households/{householdId}/services/{serviceId}/accounts/{accountId}/history:
+    get:
+      tags: [Favorites & History]
+      operationId: getHistory
+      summary: Get play history
+      description: Returns recently played items for the account.
+      parameters:
+        - $ref: "#/components/parameters/householdId"
+        - $ref: "#/components/parameters/serviceId"
+        - $ref: "#/components/parameters/accountId"
+        - name: count
+          in: query
+          schema: { type: string, example: "20" }
+      responses:
+        "200":
+          description: Play history.
+          content:
+            application/json:
+              schema:
+                type: object
+
+  # ─── Search ─────────────────────────────────────────────────────────────────
+
+  /api/content/v1/households/{householdId}/search:
+    get:
+      tags: [Search]
+      operationId: searchHousehold
+      summary: Search across services
+      description: >
+        Searches for content across one or more music services within a household.
+        Supply a comma-separated list of `serviceId` values to scope the search.
+      parameters:
+        - $ref: "#/components/parameters/householdId"
+        - name: query
+          in: query
+          schema: { type: string, example: "twenty" }
+        - name: services
+          in: query
+          description: Comma-separated service IDs to search within.
+          schema: { type: string, example: "72711,85255,77575,83207" }
+      responses:
+        "200":
+          description: Search results grouped by service.
+          content:
+            application/json:
+              schema:
+                type: object
+
+  # ─── Integrations ───────────────────────────────────────────────────────────
+
+  /api/content/v1/households/{householdId}/integrations:
+    get:
+      tags: [Integrations]
+      operationId: getIntegrations
+      summary: List integrations
+      description: Returns all music service integrations configured for the household.
+      parameters:
+        - $ref: "#/components/parameters/householdId"
+      responses:
+        "200":
+          description: Integration list.
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/content/v1/households/{householdId}/integrations/registrations:
+    get:
+      tags: [Integrations]
+      operationId: getIntegrationRegistrations
+      summary: List integration registrations
+      description: Returns account registration details for each integrated music service.
+      parameters:
+        - $ref: "#/components/parameters/householdId"
+      responses:
+        "200":
+          description: Registration list.
+          content:
+            application/json:
+              schema:
+                type: object
+
+  # ─── Now Playing ────────────────────────────────────────────────────────────
+
+  /api/content/v2/households/{householdId}/services/{serviceId}/accounts/{accountId}/tracks/{trackId}/nowplaying:
+    get:
+      tags: [Now Playing]
+      operationId: getTrackNowPlaying
+      summary: Get now playing metadata
+      description: Returns enriched now-playing metadata for a specific track (e.g. lyrics, related content).
+      parameters:
+        - $ref: "#/components/parameters/householdId"
+        - $ref: "#/components/parameters/serviceId"
+        - $ref: "#/components/parameters/accountId"
+        - name: trackId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Now playing metadata.
+          content:
+            application/json:
+              schema:
+                type: object
+
+  # ─── Platform ───────────────────────────────────────────────────────────────
+
+  /api/mfe:
+    get:
+      tags: [Platform]
+      operationId: getMfe
+      summary: Get micro-frontend manifest
+      description: Returns the micro-frontend module manifest used by the web player shell.
+      responses:
+        "200":
+          description: MFE manifest.
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/optimizely/{key}:
+    get:
+      tags: [Platform]
+      operationId: getOptimizelyConfig
+      summary: Get Optimizely feature flag config
+      description: Returns Optimizely feature flag or experiment configuration by key.
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Feature flag configuration.
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/metrics:
+    post:
+      tags: [Platform]
+      operationId: postMetrics
+      summary: Submit analytics events
+      description: >
+        Accepts a batch of analytics/telemetry events from the web player client.
+        Events include page views, interactions, and session metadata.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/MetricEvent"
+      responses:
+        "200":
+          description: Events accepted.
+          content:
+            text/plain:
+              schema:
+                type: object
+
+  # ─── Groups ─────────────────────────────────────────────────────────────────
+
+  /api/groups/v1/households/{householdId}/groups:
+    get:
+      tags: [Groups]
+      operationId: getGroups
+      summary: List groups
+      description: Returns all active groups (zones) for a household, including groupId and player membership.
+      parameters:
+        - $ref: "#/components/parameters/householdId"
+      responses:
+        "200":
+          description: List of groups.
+          content:
+            application/json:
+              schema:
+                type: object
+
+  # ─── Playback ────────────────────────────────────────────────────────────────
+  # NOTE: These paths are inferred from Sonos BFF patterns — verify by intercepting
+  # actual play.sonos.com traffic before relying on them.
+
+  /api/playback/v1/groups/{groupId}:
+    get:
+      tags: [Playback]
+      operationId: getPlaybackState
+      summary: Get playback state
+      description: Returns current playback state for a group (playing/paused, current track, position).
+      parameters:
+        - $ref: "#/components/parameters/groupId"
+      responses:
+        "200":
+          description: Playback state.
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/playback/v1/groups/{groupId}/play:
+    post:
+      tags: [Playback]
+      operationId: play
+      summary: Start playback
+      description: Starts or resumes playback for the group.
+      parameters:
+        - $ref: "#/components/parameters/groupId"
+      responses:
+        "200":
+          description: Playback started.
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/playback/v1/groups/{groupId}/pause:
+    post:
+      tags: [Playback]
+      operationId: pause
+      summary: Pause playback
+      description: Pauses playback for the group.
+      parameters:
+        - $ref: "#/components/parameters/groupId"
+      responses:
+        "200":
+          description: Playback paused.
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/playback/v1/groups/{groupId}/skipToNextTrack:
+    post:
+      tags: [Playback]
+      operationId: skipToNextTrack
+      summary: Skip to next track
+      description: Advances the queue to the next track.
+      parameters:
+        - $ref: "#/components/parameters/groupId"
+      responses:
+        "200":
+          description: Skipped to next track.
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/playback/v1/groups/{groupId}/skipToPreviousTrack:
+    post:
+      tags: [Playback]
+      operationId: skipToPreviousTrack
+      summary: Skip to previous track
+      description: Goes back to the previous track (or restart current).
+      parameters:
+        - $ref: "#/components/parameters/groupId"
+      responses:
+        "200":
+          description: Skipped to previous track.
+          content:
+            application/json:
+              schema:
+                type: object
+
+# ─── Components ─────────────────────────────────────────────────────────────
+
+components:
+
+  parameters:
+    householdId:
+      name: householdId
+      in: path
+      required: true
+      description: Sonos household identifier.
+      schema: { type: string }
+
+    groupId:
+      name: groupId
+      in: path
+      required: true
+      description: Sonos group (room/zone) identifier.
+      schema: { type: string }
+
+    serviceId:
+      name: serviceId
+      in: path
+      required: true
+      description: Music service identifier (e.g. `72711` for Spotify).
+      schema: { type: string }
+
+    accountId:
+      name: accountId
+      in: path
+      required: true
+      description: Music service account identifier.
+      schema: { type: string }
+
+    queueId:
+      name: queueId
+      in: path
+      required: true
+      description: Playback queue identifier.
+      schema: { type: string }
+
+    containerId:
+      name: containerId
+      in: path
+      required: true
+      description: Container (playlist, genre, etc.) identifier.
+      schema: { type: string }
+
+    muse2:
+      name: muse2
+      in: query
+      description: Enable Muse2 content protocol. Pass `true` to opt in.
+      schema: { type: string, example: "true" }
+
+    defaults:
+      name: defaults
+      in: query
+      description: Default browse options (service-specific).
+      schema: { type: string }
+
+  schemas:
+    QueueResourceRequest:
+      type: object
+      description: Identifies the content item to add to the queue.
+      properties:
+        id:
+          type: object
+          properties:
+            accountId:
+              type: string
+              example: "13"
+            objectId:
+              type: string
+              example: "ALkSOiG1SK1KE9z5Z6Q0ZlibdsfsjuvT27OxS7K0tresiioI"
+            serviceId:
+              type: string
+              example: "72711"
+        type:
+          type: string
+          description: Content type, e.g. `ALBUM`, `TRACK`, `PLAYLIST`.
+          example: ALBUM
+
+    MetricEvent:
+      type: object
+      description: A single analytics event emitted by the web player.
+      properties:
+        eventType:
+          type: string
+          example: WebView
+        category:
+          type: object
+          properties:
+            pathName:
+              type: string
+              example: /[lng]/web-app
+            webSessionId:
+              type: string
+              format: uuid
+              example: ed2d8aca-2d66-42f0-8f1a-7798d663c563
+            pageSessionId:
+              type: string
+              format: uuid
+              example: 36e359c3-96ab-4612-8159-70236a41a3d5
+        base:
+          type: object
+          properties:
+            browserType:
+              type: string
+              example: Electron
+            browserVersion:
+              type: string
+              example: 41.2.0
+            operatingSystem:
+              type: string
+              example: Windows
+            deviceType:
+              type: string
+              example: Unknown
+            deviceModel:
+              type: string
+              example: Unknown
+            deviceVendor:
+              type: string
+              example: Unknown
+            timeZone:
+              type: string
+              example: Europe/London
+            timestampLocal:
+              type: string
+              format: date-time
+              example: "2026-04-14T09:55:01.781Z"
+            timestampUtc:
+              type: string
+              format: date-time
+              example: "2026-04-14T08:55:01.781Z"
+            eventId:
+              type: string
+              example: "1776156901787"
+            eventName:
+              type: string
+              example: WebView
+            eventSchemaVersion:
+              type: string
+              example: 1.0.0
+            optimizelyFeatures:
+              type: array
+              items: {}
+            locale:
+              type: string
+              example: en-US
+            swBuildType:
+              type: string
+              example: release
+            releaseSha:
+              type: string
+              example: 0.1.0
+            sonosId:
+              type: string
+              example: "123209393"

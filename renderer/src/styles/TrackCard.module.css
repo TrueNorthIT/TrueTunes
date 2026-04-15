@@ -1,0 +1,58 @@
+.card {
+  flex-shrink: 0;
+  width: 160px;
+  cursor: pointer;
+}
+
+.artWrap {
+  width: 160px; height: 160px;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  position: relative;
+  background: var(--bg-1);
+  transition: transform 0.22s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+.card:hover .artWrap { transform: scale(1.04); }
+
+.art { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.artPh {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px; color: var(--text-3);
+}
+
+.overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.3);
+  opacity: 0;
+  transition: opacity 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.card:hover .overlay { opacity: 1; }
+
+.addBtn {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  border: none; cursor: pointer;
+  color: #000; font-size: 22px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  transition: transform 0.15s;
+}
+.addBtn:hover { transform: scale(1.1); }
+
+.info { padding: 9px 2px 0; }
+
+.name {
+  font-size: 13px; font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--text);
+}
+
+.sub {
+  font-size: 11px; color: var(--text-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-top: 3px;
+}

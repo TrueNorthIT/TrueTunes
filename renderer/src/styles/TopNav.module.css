@@ -1,0 +1,114 @@
+.nav {
+  height: var(--nav-h);
+  background: rgba(13, 13, 13, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+  z-index: 200;
+  position: relative;
+}
+
+.inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 10px;
+}
+
+/* All interactive children need drag disabled */
+.inner button,
+.inner select,
+.inner input { -webkit-app-region: no-drag; }
+
+.left { display: flex; align-items: center; flex-shrink: 0; }
+/* Room for macOS traffic lights in frameless mode */
+.trafficSpace { width: 72px; }
+
+.center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  -webkit-app-region: no-drag;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+
+/* ── Nav tab ── */
+.tab {
+  background: none; border: none;
+  color: var(--text-2); font-size: 13px; font-weight: 500;
+  padding: 6px 14px; border-radius: 20px;
+  cursor: pointer; font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.tab:hover { color: var(--text); background: var(--bg-2); }
+.tab.active { color: var(--text); background: rgba(255,255,255,0.09); }
+
+/* ── Search field ── */
+.searchWrap {
+  display: flex; align-items: center;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid transparent;
+  border-radius: 20px;
+  padding: 0 4px 0 14px;
+  transition: border-color 0.15s;
+  min-width: 0;
+}
+.searchWrap:focus-within { border-color: rgba(255,255,255,0.2); }
+
+.searchInput {
+  background: none; border: none;
+  color: var(--text); font-size: 13px;
+  padding: 6px 0; width: 200px; outline: none;
+  font-family: inherit; min-width: 0;
+}
+.searchInput::placeholder { color: var(--text-3); }
+.searchInput:disabled { opacity: 0.4; }
+
+.clearBtn {
+  background: none; border: none;
+  color: var(--text-3); cursor: pointer;
+  font-size: 12px; padding: 5px 8px;
+  border-radius: 50%;
+  display: flex; align-items: center;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.clearBtn:hover { color: var(--text-2); }
+
+/* ── Group selector ── */
+.groupSelect {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text-3); font-size: 12px;
+  padding: 5px 8px; max-width: 130px;
+  cursor: pointer; font-family: inherit;
+  transition: border-color 0.15s;
+}
+.groupSelect:not(:disabled) { color: var(--text-2); }
+.groupSelect:focus { outline: none; border-color: var(--border-2); }
+
+/* ── Queue toggle ── */
+.queueBtn {
+  background: none; border: none;
+  color: var(--text-3); cursor: pointer;
+  font-size: 18px; padding: 5px 8px;
+  border-radius: var(--r-sm);
+  display: flex; align-items: center;
+  transition: all 0.15s; line-height: 1;
+}
+.queueBtn:hover { color: var(--text-2); background: var(--bg-2); }
+.queueBtn.active { color: var(--text); background: rgba(255,255,255,0.1); }

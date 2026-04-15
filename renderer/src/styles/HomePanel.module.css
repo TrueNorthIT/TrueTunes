@@ -1,0 +1,57 @@
+.panel {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 32px 28px calc(var(--player-h) + 24px);
+}
+
+/* ── Sections ── */
+.section { margin-bottom: 40px; }
+
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 18px;
+}
+
+.sectionTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.4px;
+}
+
+.cardRow {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.cardRow::-webkit-scrollbar { height: 3px; }
+
+/* ── Skeleton placeholders ── */
+.placeholder {
+  width: 160px; height: 160px;
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  flex-shrink: 0;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.35; }
+  50%       { opacity: 0.6; }
+}
+
+/* ── Search results ── */
+.searchHeader {
+  font-size: 13px; color: var(--text-2);
+  margin-bottom: 18px; font-weight: 500;
+}
+
+.resultsList { display: flex; flex-direction: column; }
+
+/* ── Misc ── */
+.msg {
+  color: var(--text-3); font-size: 14px;
+  text-align: center; padding: 56px 0;
+}

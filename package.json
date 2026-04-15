@@ -1,0 +1,33 @@
+{
+  "name": "true-tunes-2",
+  "version": "1.0.0",
+  "description": "Sonos Web Player proxy app",
+  "main": "dist/main.js",
+  "scripts": {
+    "build:main": "tsc",
+    "build:renderer": "vite build --config renderer/vite.config.ts",
+    "build": "npm run build:main && npm run build:renderer",
+    "dev:renderer": "vite --config renderer/vite.config.ts",
+    "dev": "npm run build:main && concurrently \"npm run dev:renderer\" \"electron .\"",
+    "start": "npm run build && electron ."
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.99.0",
+    "liquid-glass-react": "^1.1.1",
+    "lucide-react": "^1.8.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "ws": "^8.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/ws": "^8.0.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "concurrently": "^9.2.1",
+    "electron": "^28.0.0",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.8"
+  }
+}
