@@ -13,13 +13,15 @@ interface FetchResponse {
 }
 
 interface SonosPreload {
-  onAuthReady:   (cb: () => void) => void;
-  onAuthExpired: (cb: () => void) => void;
-  fetch:         (request: FetchRequest) => Promise<FetchResponse>;
-  onWsMessage:   (cb: (header: unknown, payload: unknown) => void) => void;
-  onWsReady:     (cb: () => void) => void;
-  onWsGroups:    (cb: (groups: unknown[]) => void) => void;
-  setGroup:      (groupId: string) => Promise<{ ok?: boolean; error?: string }>;
+  onAuthReady: (cb: VoidCallback) => void;
+  onAuthExpired: (cb: VoidCallback) => void;
+  fetch: (request: FetchRequest) => Promise<FetchResponse>;
+  onWsMessage: (cb: (header: unknown, payload: unknown) => void) => void;
+  onWsReady: (cb: VoidCallback) => void;
+  onWsGroups: (cb: (groups: unknown[]) => void) => void;
+  setGroup: (groupId: string) => Promise<{ ok?: boolean; error?: string }>;
+  setGroupVolume: (volume: number) => Promise<unknown>;
+  skipToTrack: (trackNumber: number) => Promise<unknown>;
 }
 
 declare global {

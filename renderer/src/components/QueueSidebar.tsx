@@ -1,10 +1,7 @@
 import { forwardRef, useImperativeHandle, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { getName, getArt, getArtist, getAlbum, decodeDefaults } from '../lib/itemHelpers';
-// decodeDefaults used as fallback for tracks not yet in cache
-import { useTrackDetails } from '../hooks/useTrackDetails';
-import { albumQueryOptions } from '../hooks/useAlbumBrowse';
-import type { QueueItem, SonosAlbum, SonosItem, SonosItemId } from '../types/sonos';
+import { getName } from '../lib/itemHelpers';
+import { useQueueTrack } from '../hooks/useQueueTrack';
+import type { QueueItem, SonosItem } from '../types/sonos';
 import { ItemRow } from './ItemRow';
 import styles from '../styles/QueueSidebar.module.css';
 
@@ -24,57 +21,18 @@ export interface QueueSidebarHandle {
 }
 
 function QueueRow({ item, index, currentObjectId, onOpenAlbum }: { item: QueueItem; index: number; currentObjectId: string | null; onOpenAlbum: (item: SonosItem) => void }) {
-  const queryClient = useQueryClient();
-  const id        = item?.track?.id ?? (item?.id as SonosItemId | undefined);
-  const trackId   = id?.objectId;
-  const serviceId = id?.serviceId;
-  const accountId = id?.accountId;
-
-  const { data } = useTrackDetails(trackId, serviceId, accountId);
-
-  const oid     = item?.track?.id?.objectId ?? '';
-  const playing = !!currentObjectId && oid === currentObjectId;
-  const artUrl  = data?.artUrl ?? getArt(item);
-  const artist  = data?.artist ?? getArtist(item);
-
-  // Album: prefer enriched cache, fall back to track.album, then resource.defaults
-  const rawAlbum = item?.track?.album;
-  const albumObj = typeof rawAlbum === 'object' && rawAlbum !== null ? rawAlbum as SonosAlbum : null;
-  const defs     = decodeDefaults(item?.resource?.defaults);
-
-  const albumName  = data?.albumName
-    ?? albumObj?.name
-    ?? getAlbum(item)
-    ?? (defs?.['containerName'] as string | undefined)
-    ?? null;
-  const albumObjId = data?.albumId
-    ?? albumObj?.id?.objectId
-    ?? (defs?.['containerId'] as string | undefined)
-    ?? null;
-  const albumSvcId = data?.serviceId ?? albumObj?.id?.serviceId ?? serviceId;
-  const albumAccId = data?.accountId ?? albumObj?.id?.accountId ?? accountId;
-
-  const handleAlbumClick = albumObjId && albumName ? () => onOpenAlbum({
-    title: albumName,
-    type: 'ITEM_ALBUM',
-    resource: { type: 'ALBUM', id: { objectId: albumObjId, serviceId: albumSvcId, accountId: albumAccId } },
-  } as SonosItem) : undefined;
-
-  const handleAlbumHover = albumObjId && albumSvcId && albumAccId
-    ? () => queryClient.prefetchQuery(albumQueryOptions(albumObjId, albumSvcId, albumAccId, undefined))
-    : undefined;
-
-  const explicit = !!(item?.track?.explicit ?? (item?.track as Record<string, unknown> | undefined)?.['isExplicit']);
+  const { artUrl, artist, albumName, albumItem, prefetchAlbum, isPlaying, explicit } =
+    useQueueTrack(item, currentObjectId);
 
   return (
     <ItemRow
       name={getName(item)}
       sub={artist || undefined}
       subLink={albumName || undefined}
-      onSubLink={handleAlbumClick}
-      onSubLinkHover={handleAlbumHover}
+      onSubLink={albumItem ? () => onOpenAlbum(albumItem) : undefined}
+      onSubLinkHover={prefetchAlbum}
       artUrl={artUrl}
-      isPlaying={playing}
+      isPlaying={isPlaying}
       explicit={explicit}
       onDoubleClick={() => window.sonos.skipToTrack(index + 1)}
     />

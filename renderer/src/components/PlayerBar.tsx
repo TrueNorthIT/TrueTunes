@@ -1,7 +1,5 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { albumQueryOptions } from "../hooks/useAlbumBrowse";
-import { useDominantColor } from "../hooks/useDominantColor";
+import { useEffect, useRef, useState } from "react";
+import { useNowPlaying } from "../hooks/useNowPlaying";
 import { ExplicitBadge } from "./ExplicitBadge";
 import type React from "react";
 import {
@@ -20,8 +18,6 @@ import {
   Music,
 } from "lucide-react";
 import type { PlaybackState } from "../hooks/usePlayback";
-import { useImage } from "../hooks/useImage";
-import { useTrackDetails } from "../hooks/useTrackDetails";
 import { api } from "../lib/sonosApi";
 import type { SonosItem } from "../types/sonos";
 import styles from "../styles/PlayerBar.module.css";
@@ -152,43 +148,13 @@ export function PlayerBar({
   onToggleQueue,
 }: Props) {
   const {
-    artUrl,
-    trackName,
-    artistName,
-    timeLabel,
-    progressPct,
-    durationMs,
-    isPlaying,
-    isVisible,
-    shuffle,
-    repeat,
-    volume,
-    currentObjectId,
-    currentServiceId,
-    currentAccountId,
-    currentAlbumId,
-    currentAlbumName,
-    isExplicit,
-  } = playback;
+    displayTrack, displayArtist, cachedArt, dominantColor,
+    elapsedLabel, durationLabel, progressPct, durationMs,
+    isPlaying, isVisible, shuffle, repeat, volume, isExplicit,
+    albumItem, prefetchAlbum,
+  } = useNowPlaying(playback);
 
-  const { data: td } = useTrackDetails(
-    currentObjectId ?? undefined,
-    currentServiceId ?? undefined,
-    currentAccountId ?? undefined,
-  );
-
-  const cachedArt = useImage(td?.artUrl ?? artUrl);
-  const dominantColor = useDominantColor(cachedArt);
-  const displayTrack = td?.trackName ?? trackName;
-  const displayArtist = td?.artist ?? artistName;
-  const albumName = td?.albumName ?? currentAlbumName;
-  const albumId = td?.albumId ?? currentAlbumId;
-  const svcId = td?.serviceId ?? currentServiceId ?? undefined;
-  const accId = td?.accountId ?? currentAccountId ?? undefined;
-
-  const [elapsedLabel = "", durationLabel = ""] = timeLabel
-    ? timeLabel.split(" / ")
-    : [];
+  const { shuffle: rawShuffle, repeat: rawRepeat } = playback;
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!durationMs) return;
@@ -199,27 +165,18 @@ export function PlayerBar({
 
   const toggleShuffle = () =>
     api.playback.setPlayMode({
-      shuffle: !shuffle,
-      repeat: repeat === "all",
-      repeatOne: repeat === "one",
+      shuffle: !rawShuffle,
+      repeat: rawRepeat === "all",
+      repeatOne: rawRepeat === "one",
     });
 
   const toggleRepeat = () => {
-    const next = repeat === "none" ? "all" : repeat === "all" ? "one" : "none";
+    const next = rawRepeat === "none" ? "all" : rawRepeat === "all" ? "one" : "none";
     api.playback.setPlayMode({
-      shuffle,
+      shuffle: rawShuffle,
       repeat: next === "all",
       repeatOne: next === "one",
     });
-  };
-
-  const queryClient = useQueryClient();
-  const prefetchAlbum = () => {
-    if (albumId && svcId && accId) {
-      queryClient.prefetchQuery(
-        albumQueryOptions(albumId, svcId, accId, undefined),
-      );
-    }
   };
 
   if (!isVisible)
@@ -246,23 +203,9 @@ export function PlayerBar({
                 className={styles.art}
                 src={cachedArt}
                 alt=""
-                style={!albumId ? { cursor: "default" } : undefined}
+                style={!albumItem ? { cursor: "default" } : undefined}
                 onMouseEnter={prefetchAlbum}
-                onClick={() =>
-                  albumId &&
-                  onOpenAlbum({
-                    title: albumName ?? "",
-                    type: "ITEM_ALBUM",
-                    resource: {
-                      type: "ALBUM",
-                      id: {
-                        objectId: albumId,
-                        serviceId: svcId,
-                        accountId: accId,
-                      },
-                    },
-                  } as SonosItem)
-                }
+                onClick={() => albumItem && onOpenAlbum(albumItem)}
               />
             ) : (
               <div className={styles.artPh}>
