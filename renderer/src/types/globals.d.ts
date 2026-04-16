@@ -10,6 +10,7 @@ interface FetchRequest {
 interface FetchResponse {
   data?: unknown;
   error?: string;
+  etag?: string;
 }
 
 interface SonosPreload {

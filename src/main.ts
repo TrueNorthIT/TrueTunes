@@ -283,10 +283,12 @@ async function sonosFetch(request: FetchRequest): Promise<FetchResponse> {
     };
   }
 
-  if (!bodyText) return { data: null };
+  const etag = resHeaders['etag'] ?? resHeaders['ETag'];
+
+  if (!bodyText) return { data: null, ...(etag ? { etag } : {}) };
 
   try {
-    return { data: JSON.parse(bodyText) };
+    return { data: JSON.parse(bodyText), ...(etag ? { etag } : {}) };
   } catch {
     return { error: `Response is not JSON (${response.status} ${response.statusText})` };
   }

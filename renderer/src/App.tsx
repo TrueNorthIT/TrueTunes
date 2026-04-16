@@ -56,7 +56,7 @@ export function App() {
     setActiveArtist(null);
   }, []);
 
-  const handleAddToQueue = useCallback(async (item: SonosItem) => {
+  const handleAddToQueue = useCallback(async (item: SonosItem, position = -1) => {
     const rid = item.resource?.id;
     const iid = typeof item.id === 'object' ? item.id : undefined;
     const body = {
@@ -70,9 +70,10 @@ export function App() {
     const r = await api.queue.add(body, {
       queueId: queueIdRef.current ?? undefined,
       ifMatch: queueVersionRef.current ?? undefined,
-      position: -1,
+      position,
     });
     if (r.error) { alert('Add failed: ' + r.error); return; }
+    if (r.etag) queueVersionRef.current = r.etag;
     reloadQueue();
   }, [reloadQueue, queueIdRef, queueVersionRef]);
 
@@ -142,6 +143,7 @@ export function App() {
         onClose={() => setQueueOpen(false)}
         onRefresh={reloadQueue}
         onOpenAlbum={setActiveAlbum}
+        onAddToQueue={handleAddToQueue}
       />
       <PlayerBar
         isAuthed={isAuthed}

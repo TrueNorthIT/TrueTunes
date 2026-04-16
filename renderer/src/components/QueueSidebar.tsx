@@ -16,6 +16,7 @@ interface Props {
   onClose: () => void;
   onRefresh: () => void;
   onOpenAlbum: (item: SonosItem) => void;
+  onAddToQueue: (item: SonosItem, position: number) => void;
 }
 
 export interface QueueSidebarHandle {
@@ -94,7 +95,7 @@ function DraggableQueueRow({
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
 export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function QueueSidebar(
-  { open, items, isLoading, error, currentObjectId, onClose, onRefresh, onOpenAlbum },
+  { open, items, isLoading, error, currentObjectId, onClose, onRefresh, onOpenAlbum, onAddToQueue },
   ref
 ) {
   const contentRef = useRef<HTMLDivElement>(null);
@@ -188,7 +189,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   function handleDragOver(index: number, e: React.DragEvent) {
     e.preventDefault();
     e.stopPropagation();
-    e.dataTransfer.dropEffect = 'move';
+    e.dataTransfer.dropEffect = e.dataTransfer.types.includes('application/sonos-item-list') ? 'copy' : 'move';
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const insertBefore = e.clientY < rect.top + rect.height / 2 ? index : index + 1;
     setDragOverIndex(insertBefore);
@@ -198,8 +199,23 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     e.preventDefault();
     e.stopPropagation();
     if (dragOverIndex === null) return;
+
+    // External: multiple tracks dragged from album/search panel
+    const listJson = e.dataTransfer.getData('application/sonos-item-list');
+    if (listJson) {
+      setDragOverIndex(null);
+      const droppedItems = JSON.parse(listJson) as SonosItem[];
+      let pos = dragOverIndex >= items.length ? -1 : dragOverIndex;
+      for (let idx = 0; idx < droppedItems.length; idx++) {
+        await onAddToQueue(droppedItems[idx], pos === -1 ? -1 : pos + idx);
+      }
+      onRefresh();
+      return;
+    }
+
+    // Internal: queue reorder
     const raw = e.dataTransfer.getData('application/queue-indices');
-    if (!raw) return;
+    if (!raw) { setDragOverIndex(null); return; }
     const fromIndices: number[] = JSON.parse(raw);
     setDragOverIndex(null);
     setSelected(new Set());
@@ -243,7 +259,14 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
         className={styles.content}
         ref={contentRef}
         onClick={handleContentClick}
-        onDragOver={e => e.preventDefault()}
+        onDragOver={e => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = e.dataTransfer.types.includes('application/sonos-item-list') ? 'copy' : 'move';
+          setDragOverIndex(items.length);
+        }}
+        onDragLeave={e => {
+          if (!contentRef.current?.contains(e.relatedTarget as Node)) setDragOverIndex(null);
+        }}
         onDrop={handleDrop}
       >
         {isLoading && <div className={styles.msg}><Loader2 size={18} className={styles.spinner} /></div>}

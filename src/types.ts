@@ -9,4 +9,5 @@ export interface FetchRequest {
 export interface FetchResponse {
   data?: unknown;
   error?: string;
+  etag?: string;
 }
