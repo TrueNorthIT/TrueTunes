@@ -360,9 +360,18 @@ function handleWsMessage(raw: Buffer | string): void {
     }
   }
 
-  // Forward everything to the UI window and debug monitor
-  uiWin?.webContents.send("ws:message", [header, payload]);
+  // Always forward to the debug monitor
   debugWin?.webContents.send("ws:in", [header, payload]);
+
+  // For playbackExtended only forward the active group — during bootstrap all
+  // subscribed groups push a status immediately, and the renderer's
+  // activeGroupIdRef is still null so the last push wins (wrong group).
+  const msgGroupId = header["groupId"] as string | undefined;
+  if (ns === "playbackExtended" && msgGroupId && msgGroupId !== CONFIG.groupId) {
+    return;
+  }
+
+  uiWin?.webContents.send("ws:message", [header, payload]);
 }
 
 // ─── WebSocket bootstrap helpers ─────────────────────────────────────────────
