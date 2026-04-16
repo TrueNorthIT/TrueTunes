@@ -8,6 +8,36 @@ export function decodeDefaults(defaults: string | undefined): Record<string, unk
   try { return JSON.parse(atob(defaults)); } catch { return null; }
 }
 
+// ─── Optimistic queue normaliser ─────────────────────────────────────────────
+//
+// Raw browse/album track items have `id` as a string SRN and `images` as
+// `{ tile1x1 }` rather than an array.  useQueueTrack needs an object `id` to
+// extract the trackId for the nowPlaying query, and getArt needs `imageUrl` or
+// an images array.  This function converts browse-shaped items into the shape
+// that the queue row renderer expects.
+
+export function normalizeForQueue(item: SonosItem): SonosItem {
+  const rid = item.resource?.id as SonosItemId | undefined;
+  // If id is already an object the item is already normalised (e.g. search results)
+  if (typeof item.id === 'object' || !rid?.objectId) return item;
+
+  const imageUrl =
+    (item.images as Record<string, string> | undefined)?.['tile1x1'] ?? item.imageUrl;
+  const artistName = (item as Record<string, string>)['subtitle'] ?? '';
+
+  return {
+    ...item,
+    id: rid,
+    track: {
+      id: rid,
+      name: item.title ?? item.name,
+      artist: artistName ? { name: artistName } : undefined,
+      imageUrl,
+      images: imageUrl ? [{ url: imageUrl }] : undefined,
+    },
+  };
+}
+
 // ─── Album param resolver ─────────────────────────────────────────────────────
 
 export function resolveAlbumParams(item: SonosItem) {

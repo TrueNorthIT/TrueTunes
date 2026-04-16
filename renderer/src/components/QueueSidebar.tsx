@@ -10,6 +10,7 @@ import styles from '../styles/QueueSidebar.module.css';
 interface Props {
   open: boolean;
   items: QueueItem[];
+  setItems: (updater: QueueItem[] | ((prev: QueueItem[]) => QueueItem[])) => void;
   isLoading: boolean;
   error: string | null;
   currentObjectId: string | null;
@@ -17,6 +18,15 @@ interface Props {
   onRefresh: () => void;
   onOpenAlbum: (item: SonosItem) => void;
   onAddToQueue: (item: SonosItem, position: number) => void;
+}
+
+function applyReorderLocally(items: QueueItem[], fromIndices: number[], toIndex: number): QueueItem[] {
+  const selectedSet = new Set(fromIndices);
+  const remaining = items.filter((_, i) => !selectedSet.has(i));
+  const origNonSelected = items.flatMap((_, i) => selectedSet.has(i) ? [] : [i]);
+  const insertAt = origNonSelected.filter(i => i < toIndex).length;
+  const movers = [...fromIndices].sort((a, b) => a - b).map(i => items[i]);
+  return [...remaining.slice(0, insertAt), ...movers, ...remaining.slice(insertAt)];
 }
 
 export interface QueueSidebarHandle {
@@ -95,7 +105,7 @@ function DraggableQueueRow({
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
 export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function QueueSidebar(
-  { open, items, isLoading, error, currentObjectId, onClose, onRefresh, onOpenAlbum, onAddToQueue },
+  { open, items, setItems, isLoading, error, currentObjectId, onClose, onRefresh, onOpenAlbum, onAddToQueue },
   ref
 ) {
   const contentRef = useRef<HTMLDivElement>(null);
@@ -121,13 +131,15 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
       if (e.key !== 'Delete' && e.key !== 'Backspace') return;
       if (selected.size === 0) return;
       e.preventDefault();
-      await window.sonos.removeFromQueue([...selected]);
+      const indices = [...selected];
+      setItems(prev => prev.filter((_, i) => !selected.has(i)));
       setSelected(new Set());
-      onRefresh();
+      const result = await window.sonos.removeFromQueue(indices) as { error?: string } | null;
+      if (result?.error) onRefresh();
     }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [open, selected]);
+  }, [open, selected, setItems, onRefresh]);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
@@ -205,11 +217,10 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     if (listJson) {
       setDragOverIndex(null);
       const droppedItems = JSON.parse(listJson) as SonosItem[];
-      let pos = dragOverIndex >= items.length ? -1 : dragOverIndex;
+      const pos = dragOverIndex >= items.length ? -1 : dragOverIndex;
       for (let idx = 0; idx < droppedItems.length; idx++) {
         await onAddToQueue(droppedItems[idx], pos === -1 ? -1 : pos + idx);
       }
-      onRefresh();
       return;
     }
 
@@ -217,10 +228,13 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     const raw = e.dataTransfer.getData('application/queue-indices');
     if (!raw) { setDragOverIndex(null); return; }
     const fromIndices: number[] = JSON.parse(raw);
+    const currentLength = items.length;
+    const targetIndex = dragOverIndex;
     setDragOverIndex(null);
     setSelected(new Set());
-    await window.sonos.reorderQueue(fromIndices, dragOverIndex, items.length);
-    onRefresh();
+    setItems(applyReorderLocally(items, fromIndices, targetIndex));
+    const result = await window.sonos.reorderQueue(fromIndices, targetIndex, currentLength) as { error?: string } | null;
+    if (result?.error) onRefresh();
   }
 
   function handleDragEnd() {
@@ -247,8 +261,9 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
           <button className={styles.iconBtn} onClick={onRefresh} title="Refresh">↺</button>
           {items.length > 0 && (
             <button className={styles.iconBtn} title="Clear queue" onClick={async () => {
-              await window.sonos.clearQueue();
-              onRefresh();
+              setItems([]);
+              const result = await window.sonos.clearQueue() as { error?: string } | null;
+              if (result?.error) onRefresh();
             }}>⊘</button>
           )}
           <button className={styles.iconBtn} onClick={onClose} title="Close">✕</button>
@@ -298,9 +313,11 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
         <div className={styles.selBar}>
           <span>{selCount} track{selCount !== 1 ? 's' : ''} selected</span>
           <button className={styles.selDelBtn} onClick={async () => {
-            await window.sonos.removeFromQueue([...selected]);
+            const indices = [...selected];
+            setItems(prev => prev.filter((_, i) => !selected.has(i)));
             setSelected(new Set());
-            onRefresh();
+            const result = await window.sonos.removeFromQueue(indices) as { error?: string } | null;
+            if (result?.error) onRefresh();
           }}>
             Delete
           </button>

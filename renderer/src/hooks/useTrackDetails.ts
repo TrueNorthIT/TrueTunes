@@ -48,29 +48,35 @@ function parseResponse(data: unknown): TrackDetails {
   return { trackName, artUrl, artist, artistId, albumName, albumId, serviceId, accountId };
 }
 
-export function useTrackDetails(
-  trackId:      string | undefined,
-  serviceId:    string | undefined,
-  rawAccountId: string | undefined,
-) {
-  const accountId = (rawAccountId ?? '').replace(/^sn_/, '');
-  return useQuery({
-    queryKey: ['track', trackId],
-    queryFn: async () => {
-      const r = await api.nowPlaying.track(trackId!, { serviceId: serviceId!, accountId });
+export function trackQueryOptions(trackId: string, serviceId: string, rawAccountId: string) {
+  const accountId = rawAccountId.replace(/^sn_/, '');
+  return {
+    queryKey: ['track', trackId] as const,
+    queryFn: async (): Promise<TrackDetails | null> => {
+      const r = await api.nowPlaying.track(trackId, { serviceId, accountId });
       if (!r.error) return parseResponse(r.data);
 
       // Fallback to YT Music when the original service isn't configured
       if (serviceId !== '72711') {
-        const fallback = await api.nowPlaying.track(trackId!, { serviceId: '72711', accountId });
+        const fallback = await api.nowPlaying.track(trackId, { serviceId: '72711', accountId });
         if (!fallback.error) return parseResponse(fallback.data);
       }
 
       return null;
     },
-    enabled:   !!(trackId && serviceId && accountId),
     staleTime: Infinity,
     gcTime:    60 * 60 * 1000,
     retry:     false,
+  };
+}
+
+export function useTrackDetails(
+  trackId:      string | undefined,
+  serviceId:    string | undefined,
+  rawAccountId: string | undefined,
+) {
+  return useQuery({
+    ...trackQueryOptions(trackId ?? '', serviceId ?? '', rawAccountId ?? ''),
+    enabled: !!(trackId && serviceId && rawAccountId),
   });
 }

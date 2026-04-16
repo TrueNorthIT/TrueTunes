@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './hooks/useAuth';
 import { useGroups } from './hooks/useGroups';
 import { usePlayback } from './hooks/usePlayback';
 import { useQueue } from './hooks/useQueue';
+import { trackQueryOptions } from './hooks/useTrackDetails';
 import { api } from './lib/sonosApi';
-import type { SonosItem } from './types/sonos';
+import { normalizeForQueue } from './lib/itemHelpers';
+import type { SonosItem, SonosItemId } from './types/sonos';
 
 import { TopNav } from './components/TopNav';
 import { PlayerBar } from './components/PlayerBar';
@@ -16,11 +19,12 @@ import { QueueSidebar, type QueueSidebarHandle } from './components/QueueSidebar
 import styles from './styles/App.module.css';
 
 export function App() {
+  const queryClient                               = useQueryClient();
   const isAuthed                                  = useAuth();
   const groups                                    = useGroups();
   const [activeGroupId, setActiveGroupId]         = useState<string | null>(null);
   const { playback, applyGroupCache, queueIdRef, queueVersionRef } = usePlayback(activeGroupId);
-  const { items: queueItems, isLoading: queueLoading, error: queueError, reload: reloadQueue }
+  const { items: queueItems, setItems: setQueueItems, isLoading: queueLoading, error: queueError, reload: reloadQueue }
                                                   = useQueue(isAuthed, activeGroupId, playback.queueId);
 
   const [view, setView]               = useState<'home' | 'search'>('home');
@@ -57,25 +61,41 @@ export function App() {
   }, []);
 
   const handleAddToQueue = useCallback(async (item: SonosItem, position = -1) => {
-    const rid = item.resource?.id;
-    const iid = typeof item.id === 'object' ? item.id : undefined;
+    // Normalise raw browse items so useQueueTrack can extract IDs for nowPlaying
+    const normalized = normalizeForQueue(item);
+
+    // Optimistic insert — show the track immediately
+    setQueueItems(prev => {
+      if (position === -1 || position >= prev.length) return [...prev, normalized];
+      const next = [...prev];
+      next.splice(position, 0, normalized);
+      return next;
+    });
+
+    // Kick off the nowPlaying query so art/artist populate without waiting for re-render
+    const tid = normalized.track?.id as SonosItemId | undefined;
+    if (tid?.objectId && tid?.serviceId && tid?.accountId) {
+      queryClient.prefetchQuery(trackQueryOptions(tid.objectId, tid.serviceId, tid.accountId));
+    }
+
+    const rid = normalized.resource?.id;
+    const iid = typeof normalized.id === 'object' ? normalized.id : undefined;
     const body = {
       id: {
         objectId:  rid?.objectId  ?? iid?.objectId,
         serviceId: rid?.serviceId ?? iid?.serviceId,
         accountId: (rid?.accountId ?? iid?.accountId)?.replace(/^sn_/, ''),
       },
-      type: (item.type ?? item.resource?.type ?? 'TRACK').replace(/^ITEM_/, ''),
+      type: (normalized.type ?? normalized.resource?.type ?? 'TRACK').replace(/^ITEM_/, ''),
     };
     const r = await api.queue.add(body, {
       queueId: queueIdRef.current ?? undefined,
       ifMatch: queueVersionRef.current ?? undefined,
       position,
     });
-    if (r.error) { alert('Add failed: ' + r.error); return; }
+    if (r.error) { alert('Add failed: ' + r.error); reloadQueue(); return; }
     if (r.etag) queueVersionRef.current = r.etag;
-    reloadQueue();
-  }, [reloadQueue, queueIdRef, queueVersionRef]);
+  }, [queryClient, setQueueItems, reloadQueue, queueIdRef, queueVersionRef]);
 
   useEffect(() => {
     function onKey(e: globalThis.KeyboardEvent) {
@@ -137,6 +157,7 @@ export function App() {
         ref={queueRef}
         open={queueOpen}
         items={queueItems}
+        setItems={setQueueItems}
         isLoading={queueLoading}
         error={queueError}
         currentObjectId={playback.currentObjectId}

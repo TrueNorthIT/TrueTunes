@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../lib/sonosApi';
 import { extractItems } from '../lib/itemHelpers';
 import type { QueueItem } from '../types/sonos';
@@ -9,10 +9,12 @@ export function useQueue(isAuthed: boolean, activeGroupId: string | null, queueI
   const [items, setItems]       = useState<QueueItem[]>([]);
   const [isLoading, setLoading] = useState(false);
   const [error, setError]       = useState<string | null>(null);
+  const hasLoaded                = useRef(false);
 
   const load = useCallback(async () => {
     if (!activeGroupId) return;
-    setLoading(true);
+    // Only show the spinner on the very first load — background reloads are silent
+    if (!hasLoaded.current) setLoading(true);
     setError(null);
 
     const all: QueueItem[] = [];
@@ -27,6 +29,7 @@ export function useQueue(isAuthed: boolean, activeGroupId: string | null, queueI
     }
 
     setItems(all);
+    hasLoaded.current = true;
     setLoading(false);
   }, [activeGroupId, queueId]);
 
@@ -34,5 +37,5 @@ export function useQueue(isAuthed: boolean, activeGroupId: string | null, queueI
     if (isAuthed && activeGroupId) load();
   }, [isAuthed, activeGroupId, load]);
 
-  return { items, isLoading, error, reload: load };
+  return { items, setItems, isLoading, error, reload: load };
 }
