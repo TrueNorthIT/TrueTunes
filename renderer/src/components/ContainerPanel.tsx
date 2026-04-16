@@ -1,15 +1,25 @@
 import { useImage } from '../hooks/useImage';
 import { useContainerBrowse } from '../hooks/useContainerBrowse';
 import { TrackCard } from './TrackCard';
-import { getName, browseSub, getItemArt, isAlbum, isPlaylist, isArtist, isContainer, isProgram, resolveAlbumParams } from '../lib/itemHelpers';
+import {
+  getName,
+  browseSub,
+  getItemArt,
+  isAlbum,
+  isPlaylist,
+  isArtist,
+  isContainer,
+  isProgram,
+  resolveAlbumParams,
+} from '../lib/itemHelpers';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/ContainerPanel.module.css';
 
 interface Props {
   item: SonosItem;
-  onAddToQueue:    (item: SonosItem) => void;
-  onOpenAlbum:     (item: SonosItem) => void;
-  onOpenArtist:    (item: SonosItem) => void;
+  onAddToQueue: (item: SonosItem) => void;
+  onOpenAlbum: (item: SonosItem) => void;
+  onOpenArtist: (item: SonosItem) => void;
   onOpenContainer: (item: SonosItem) => void;
 }
 
@@ -20,13 +30,13 @@ export function ContainerPanel({ item, onAddToQueue, onOpenAlbum, onOpenArtist, 
   const artUrl = getItemArt(item);
   const cachedArt = useImage(artUrl);
   const title = (item.name ?? item.title ?? '') as string;
-  const sub   = (item as Record<string, unknown>)['subtitle'] as string | undefined;
+  const sub = (item as Record<string, unknown>)['subtitle'] as string | undefined;
 
   function openHandler(child: SonosItem) {
-    if (isArtist(child))                       return onOpenArtist(child);
-    if (isContainer(child))                    return onOpenContainer(child);
-    if (isAlbum(child) || isPlaylist(child))   return onOpenAlbum(child);
-    if (isProgram(child))                      return onAddToQueue(child); // plays via loadContent
+    if (isArtist(child)) return onOpenArtist(child);
+    if (isContainer(child)) return onOpenContainer(child);
+    if (isAlbum(child) || isPlaylist(child)) return onOpenAlbum(child);
+    if (isProgram(child)) return onAddToQueue(child); // plays via loadContent
     // Tracks — add to queue
     onAddToQueue(child);
   }
@@ -39,9 +49,7 @@ export function ContainerPanel({ item, onAddToQueue, onOpenAlbum, onOpenArtist, 
     <div className={styles.panel}>
       <div className={styles.header}>
         <div className={styles.artWrap}>
-          {cachedArt
-            ? <img src={cachedArt} alt="" />
-            : <div className={styles.artPh}>♪</div>}
+          {cachedArt ? <img src={cachedArt} alt="" /> : <div className={styles.artPh}>♪</div>}
         </div>
         <div>
           <div className={styles.title}>{title}</div>

@@ -180,6 +180,7 @@ export function App() {
             item={activeAlbum}
             onAddToQueue={handleAddToQueue}
             onOpenArtist={setActiveArtist}
+            onOpenAlbum={setActiveAlbum}
           />
         ) : activeContainer ? (
           <ContainerPanel
