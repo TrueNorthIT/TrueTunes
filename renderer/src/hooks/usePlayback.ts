@@ -57,6 +57,12 @@ export function usePlayback(activeGroupId: string | null) {
   const lastUpdateAtRef = useRef(0);
   const isPlayingRef = useRef(false);
 
+  // Always-current queue cursors — updated immediately on every WS push,
+  // before the !name guard and outside React batching, so callers never
+  // read a version that's one message behind.
+  const queueIdRef      = useRef<string | null>(null);
+  const queueVersionRef = useRef<string | null>(null);
+
   // Cache last WS payload per groupId so we can restore on group switch
   const groupCache = useRef<Map<string, PlaybackPayload>>(new Map());
 
@@ -118,6 +124,8 @@ export function usePlayback(activeGroupId: string | null) {
     durationMsRef.current = durMs;
     lastUpdateAtRef.current = Date.now();
     isPlayingRef.current = isPlaying;
+    if (queueId)      queueIdRef.current      = queueId;
+    if (queueVersion) queueVersionRef.current = queueVersion;
 
     if (!name) return;
 
@@ -224,5 +232,5 @@ export function usePlayback(activeGroupId: string | null) {
     [applyPayload],
   );
 
-  return { playback: state, applyGroupCache };
+  return { playback: state, applyGroupCache, queueIdRef, queueVersionRef };
 }

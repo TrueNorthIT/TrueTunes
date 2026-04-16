@@ -19,7 +19,7 @@ export function App() {
   const isAuthed                                  = useAuth();
   const groups                                    = useGroups();
   const [activeGroupId, setActiveGroupId]         = useState<string | null>(null);
-  const { playback, applyGroupCache }             = usePlayback(activeGroupId);
+  const { playback, applyGroupCache, queueIdRef, queueVersionRef } = usePlayback(activeGroupId);
   const { items: queueItems, isLoading: queueLoading, error: queueError, reload: reloadQueue }
                                                   = useQueue(isAuthed, activeGroupId, playback.queueId);
 
@@ -57,22 +57,24 @@ export function App() {
   }, []);
 
   const handleAddToQueue = useCallback(async (item: SonosItem) => {
+    const rid = item.resource?.id;
+    const iid = typeof item.id === 'object' ? item.id : undefined;
     const body = {
-      id: item.id ?? {
-        objectId:  item.objectId  ?? (item.resource?.id as { objectId?: string }  | undefined)?.objectId,
-        serviceId: item.serviceId ?? (item.resource?.id as { serviceId?: string } | undefined)?.serviceId,
-        accountId: item.accountId ?? (item.resource?.id as { accountId?: string } | undefined)?.accountId,
+      id: {
+        objectId:  rid?.objectId  ?? iid?.objectId,
+        serviceId: rid?.serviceId ?? iid?.serviceId,
+        accountId: (rid?.accountId ?? iid?.accountId)?.replace(/^sn_/, ''),
       },
-      type: item.type ?? item.resource?.type ?? 'TRACK',
+      type: (item.type ?? item.resource?.type ?? 'TRACK').replace(/^ITEM_/, ''),
     };
     const r = await api.queue.add(body, {
-      queueId: playback.queueId ?? undefined,
-      ifMatch: playback.queueVersion ?? undefined,
+      queueId: queueIdRef.current ?? undefined,
+      ifMatch: queueVersionRef.current ?? undefined,
       position: -1,
     });
     if (r.error) { alert('Add failed: ' + r.error); return; }
     reloadQueue();
-  }, [reloadQueue, playback.queueId, playback.queueVersion]);
+  }, [reloadQueue, queueIdRef, queueVersionRef]);
 
   useEffect(() => {
     function onKey(e: globalThis.KeyboardEvent) {

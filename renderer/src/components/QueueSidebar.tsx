@@ -194,15 +194,17 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     setDragOverIndex(insertBefore);
   }
 
-  function handleDrop(e: React.DragEvent) {
+  async function handleDrop(e: React.DragEvent) {
     e.preventDefault();
+    e.stopPropagation();
     if (dragOverIndex === null) return;
     const raw = e.dataTransfer.getData('application/queue-indices');
     if (!raw) return;
     const fromIndices: number[] = JSON.parse(raw);
-    window.sonos.reorderQueue(fromIndices, dragOverIndex);
     setDragOverIndex(null);
     setSelected(new Set());
+    await window.sonos.reorderQueue(fromIndices, dragOverIndex, items.length);
+    onRefresh();
   }
 
   function handleDragEnd() {

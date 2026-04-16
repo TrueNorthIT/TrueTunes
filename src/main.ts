@@ -901,11 +901,112 @@ ipcMain.handle(
   },
 );
 
-ipcMain.handle("queue:reorder", (_event: IpcMainInvokeEvent, fromIndices: number[], toIndex: number) => {
-  console.log(`[queue] reorder: move [${fromIndices.join(',')}] → before ${toIndex} (placeholder)`);
-  // TODO: call api.queue.reorder with the correct positions
-  return { ok: true };
-});
+// ─── Queue reorder algorithm ──────────────────────────────────────────────────
+//
+// The API only accepts contiguous runs per PATCH (?items=0,1&positions=4,5).
+// A non-contiguous selection (e.g. [3,4,7]) is split into runs ([3,4] and [7])
+// and each run is patched in sequence. After each patch the virtual queue
+// changes, so subsequent runs' positions are recalculated against the updated
+// state.
+//
+// Processing runs left-to-right works universally (moving earlier OR later):
+// for each run we find its "pivot" — the item that should immediately precede
+// the run in the desired final order — then look up that pivot's current
+// position in the working array to derive finalPos.
+
+interface ReorderBatch { items: number[]; positions: number[] }
+
+function computeReorderBatches(
+  fromIndices: number[],
+  insertBefore: number,
+  queueLength: number,
+): ReorderBatch[] {
+  const sorted = [...fromIndices].sort((a, b) => a - b);
+
+  // Group into contiguous runs (left-to-right)
+  const runs: number[][] = [];
+  let curr = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] === sorted[i - 1] + 1) curr.push(sorted[i]);
+    else { runs.push(curr); curr = [sorted[i]]; }
+  }
+  runs.push(curr);
+
+  // Build the desired target order
+  const selectedSet = new Set(sorted);
+  const nonSelected: number[] = [];
+  for (let i = 0; i < queueLength; i++) if (!selectedSet.has(i)) nonSelected.push(i);
+
+  // Anchor = first non-selected item at-or-after insertBefore
+  let anchorIdx = nonSelected.length; // default: append at end
+  for (let i = insertBefore; i < queueLength; i++) {
+    if (!selectedSet.has(i)) { anchorIdx = nonSelected.indexOf(i); break; }
+  }
+  const target = [
+    ...nonSelected.slice(0, anchorIdx),
+    ...sorted,
+    ...nonSelected.slice(anchorIdx),
+  ];
+
+  // Early-exit if already in the desired order
+  if (target.every((v, i) => v === i)) return [];
+
+  const working: number[] = Array.from({ length: queueLength }, (_, i) => i);
+  const batches: ReorderBatch[] = [];
+
+  for (const run of runs) {
+    const runLen = run.length;
+    const currentStart = working.indexOf(run[0]);
+
+    // Find final position via the pivot item (what should immediately precede this run)
+    const targetRunStart = target.indexOf(run[0]);
+    let finalPos: number;
+    if (targetRunStart === 0) {
+      finalPos = 0;
+    } else {
+      const pivot = target[targetRunStart - 1];
+      finalPos = working.indexOf(pivot) + 1;
+    }
+
+    if (currentStart === finalPos) continue; // run is already in place
+
+    batches.push({
+      items:     Array.from({ length: runLen }, (_, i) => currentStart + i),
+      positions: Array.from({ length: runLen }, (_, i) => finalPos    + i),
+    });
+
+    // Apply the move to the working array so subsequent runs see the updated state
+    const runContents = working.slice(currentStart, currentStart + runLen);
+    const rest = [...working.slice(0, currentStart), ...working.slice(currentStart + runLen)];
+    const insertAt = finalPos <= currentStart ? finalPos : finalPos - runLen;
+    working.splice(0, working.length, ...rest.slice(0, insertAt), ...runContents, ...rest.slice(insertAt));
+  }
+
+  return batches;
+}
+
+ipcMain.handle(
+  "queue:reorder",
+  async (_event: IpcMainInvokeEvent, fromIndices: number[], toIndex: number, queueLength: number) => {
+    console.log(`[queue] reorder: [${fromIndices.join(',')}] → before ${toIndex} (n=${queueLength})`);
+    if (!fromIndices.length) return { ok: true };
+
+    const batches = computeReorderBatches(fromIndices, toIndex, queueLength);
+    console.log(`[queue] reorder: ${batches.length} batch(es)`, JSON.stringify(batches));
+
+    for (const batch of batches) {
+      const result = await sonosFetch({
+        operationId: 'reorderQueueResources',
+        query: { items: batch.items.join(','), positions: batch.positions.join(',') },
+      });
+      if (result.error) {
+        console.error('[queue] reorder batch failed:', result.error);
+        return result;
+      }
+    }
+    return { ok: true };
+  },
+);
 
 ipcMain.handle("queue:remove", (_event: IpcMainInvokeEvent, indices: number[]) => {
   console.log(`[queue] remove: [${indices.join(',')}]`);
