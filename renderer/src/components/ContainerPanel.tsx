@@ -1,49 +1,50 @@
+import { useLocation } from 'react-router-dom';
 import { useImage } from '../hooks/useImage';
 import { useContainerBrowse } from '../hooks/useContainerBrowse';
+import { useOpenItem } from '../hooks/useOpenItem';
 import { TrackCard } from './TrackCard';
 import {
   getName,
   browseSub,
   getItemArt,
-  isAlbum,
-  isPlaylist,
-  isArtist,
-  isContainer,
   isProgram,
+  isTrack,
   resolveAlbumParams,
 } from '../lib/itemHelpers';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/ContainerPanel.module.css';
 
 interface Props {
-  item: SonosItem;
   onAddToQueue: (item: SonosItem) => void;
-  onOpenAlbum: (item: SonosItem) => void;
-  onOpenArtist: (item: SonosItem) => void;
-  onOpenContainer: (item: SonosItem) => void;
 }
 
-export function ContainerPanel({ item, onAddToQueue, onOpenAlbum, onOpenArtist, onOpenContainer }: Props) {
-  const { albumId: containerId, serviceId, accountId, defaults } = resolveAlbumParams(item);
+export function ContainerPanel({ onAddToQueue }: Props) {
+  const { state } = useLocation();
+  const item = (state as { item?: SonosItem } | null)?.item;
+  const openItem = useOpenItem();
+
+  const { albumId: containerId, serviceId, accountId, defaults } = item
+    ? resolveAlbumParams(item)
+    : { albumId: undefined, serviceId: undefined, accountId: undefined, defaults: undefined };
+
   const { data, isLoading, error } = useContainerBrowse(containerId, serviceId, accountId, defaults);
 
-  const artUrl = getItemArt(item);
+  const artUrl    = item ? getItemArt(item) : null;
   const cachedArt = useImage(artUrl);
-  const title = (item.name ?? item.title ?? '') as string;
-  const sub = (item as Record<string, unknown>)['subtitle'] as string | undefined;
+  const title     = (item?.name ?? item?.title ?? '') as string;
+  const sub       = (item as Record<string, unknown> | undefined)?.['subtitle'] as string | undefined;
 
   function openHandler(child: SonosItem) {
-    if (isArtist(child)) return onOpenArtist(child);
-    if (isContainer(child)) return onOpenContainer(child);
-    if (isAlbum(child) || isPlaylist(child)) return onOpenAlbum(child);
-    if (isProgram(child)) return onAddToQueue(child); // plays via loadContent
-    // Tracks — add to queue
-    onAddToQueue(child);
+    if (isProgram(child)) return onAddToQueue(child);
+    if (isTrack(child))   return onAddToQueue(child);
+    openItem(child);
   }
 
   function isOpenable(child: SonosItem): boolean {
-    return isAlbum(child) || isPlaylist(child) || isArtist(child) || isContainer(child) || isProgram(child);
+    return !isTrack(child) && !isProgram(child);
   }
+
+  if (!item) return null;
 
   return (
     <div className={styles.panel}>

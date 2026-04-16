@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { useImage } from '../hooks/useImage';
+import { useOpenItem } from '../hooks/useOpenItem';
 import { ExplicitBadge } from './ExplicitBadge';
 import { getName, browseSub, getItemArt, isAlbum, isArtist, isTrack } from '../lib/itemHelpers';
 import { ArtistHero } from './ArtistHero';
@@ -57,7 +58,7 @@ function SearchTrackRow({
   selected: boolean;
   onSelect: (i: number, e: React.MouseEvent) => void;
   onAdd: () => void;
-  onOpenArtist?: (artist: SonosItem) => void;
+  onOpenArtist: (artist: SonosItem) => void;
   onDragStart: (e: React.DragEvent, i: number) => void;
 }) {
   const art     = useImage(getItemArt(item));
@@ -83,7 +84,7 @@ function SearchTrackRow({
         {artists.length > 0 && (
           <div className={styles.searchTrackSub}>
             {artists.map((a, ai) => {
-              const canLink = !!(a.id?.objectId && onOpenArtist);
+              const canLink = !!(a.id?.objectId);
               const artistItem: SonosItem | null = canLink ? {
                 type: 'ARTIST',
                 name: a.name,
@@ -96,7 +97,7 @@ function SearchTrackRow({
                     <button
                       className={styles.searchArtistBtn}
                       onMouseDown={e => e.stopPropagation()}
-                      onClick={e => { e.stopPropagation(); onOpenArtist!(artistItem); }}
+                      onClick={e => { e.stopPropagation(); onOpenArtist(artistItem); }}
                     >
                       {a.name}
                     </button>
@@ -122,19 +123,16 @@ function SearchTrackRow({
 export function SearchResults({
   results,
   onAddToQueue,
-  onOpenAlbum,
-  onOpenArtist,
 }: {
   results: SonosItem[];
   onAddToQueue: (item: SonosItem) => void;
-  onOpenAlbum: (item: SonosItem) => void;
-  onOpenArtist: (item: SonosItem) => void;
 }) {
+  const openItem = useOpenItem();
   const [selected, setSelected]   = useState<Set<number>>(new Set());
   const lastSelected               = useRef<number | null>(null);
 
-  const topArtist      = results.length > 0 && isArtist(results[0]) ? results[0] : null;
-  const artists        = results.filter(isArtist);
+  const topArtist        = results.length > 0 && isArtist(results[0]) ? results[0] : null;
+  const artists          = results.filter(isArtist);
   const remainingArtists = topArtist ? artists.slice(1) : artists;
   const albums    = results.filter(isAlbum);
   const tracks    = results.filter(isTrack);
@@ -195,7 +193,7 @@ export function SearchResults({
   return (
     <>
       {topArtist && (
-        <ArtistHero artist={topArtist} onAddToQueue={onAddToQueue} onOpen={onOpenArtist} />
+        <ArtistHero artist={topArtist} onAddToQueue={onAddToQueue} onOpen={openItem} />
       )}
 
       {remainingArtists.length > 0 && (
@@ -203,7 +201,7 @@ export function SearchResults({
           <h2 className={styles.searchSectionTitle}>Artists</h2>
           <div className={styles.artistsRow}>
             {remainingArtists.map((a, i) => (
-              <ArtistCircle key={i} artist={a} onOpen={onOpenArtist} />
+              <ArtistCircle key={i} artist={a} onOpen={openItem} />
             ))}
           </div>
         </section>
@@ -214,7 +212,7 @@ export function SearchResults({
           <h2 className={styles.searchSectionTitle}>Albums</h2>
           <div className={styles.searchAlbumsRow}>
             {albums.map((a, i) => (
-              <SearchAlbumCard key={i} album={a} onOpen={onOpenAlbum} />
+              <SearchAlbumCard key={i} album={a} onOpen={openItem} />
             ))}
           </div>
         </section>
@@ -235,7 +233,7 @@ export function SearchResults({
                 selected={selected.has(i)}
                 onSelect={handleTrackClick}
                 onAdd={() => onAddToQueue(item)}
-                onOpenArtist={onOpenArtist}
+                onOpenArtist={openItem}
                 onDragStart={handleDragStart}
               />
             ))}
@@ -256,9 +254,9 @@ export function SearchResults({
                 showAddButton
                 onAdd={() => onAddToQueue(item)}
                 onOpen={
-                  isAlbum(item) ? () => onOpenAlbum(item)
-                  : isArtist(item) ? () => onOpenArtist(item)
-                  : undefined
+                  isAlbum(item) || isArtist(item)
+                    ? () => openItem(item)
+                    : undefined
                 }
               />
             ))}

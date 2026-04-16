@@ -1,4 +1,5 @@
-import { useState, KeyboardEvent } from 'react';
+import { useState, useEffect, KeyboardEvent } from 'react';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import type { GroupInfo } from '../types/sonos';
 import styles from '../styles/TopNav.module.css';
 
@@ -6,38 +7,48 @@ interface Props {
   isAuthed: boolean;
   groups: GroupInfo[];
   activeGroupId: string | null;
-  view: 'home' | 'search';
   onGroupChange: (groupId: string) => void;
-  onSearch: (query: string) => void;
-  onClearSearch: () => void;
   queueOpen: boolean;
   onToggleQueue: () => void;
-  onBack?: () => void;
   onResync: () => void;
 }
 
 export function TopNav({
-  isAuthed, groups, activeGroupId, view,
-  onGroupChange, onSearch, onClearSearch,
-  queueOpen, onToggleQueue, onBack, onResync,
+  isAuthed, groups, activeGroupId,
+  onGroupChange, queueOpen, onToggleQueue, onResync,
 }: Props) {
-  const [searchText, setSearchText] = useState('');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const [searchText, setSearchText] = useState(searchParams.get('q') ?? '');
+
+  // Keep search input in sync with the URL
+  useEffect(() => {
+    if (location.pathname === '/search') {
+      setSearchText(searchParams.get('q') ?? '');
+    } else {
+      setSearchText('');
+    }
+  }, [location.pathname, searchParams]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       const q = searchText.trim();
-      if (q) onSearch(q);
+      if (q) navigate(`/search?q=${encodeURIComponent(q)}`);
     }
     if (e.key === 'Escape') {
       setSearchText('');
-      onClearSearch();
+      navigate('/');
     }
   };
 
   const handleClear = () => {
     setSearchText('');
-    onClearSearch();
+    navigate('/');
   };
+
+  const isAtRoot   = location.pathname === '/';
+  const isInSearch = location.pathname === '/search';
 
   return (
     <nav className={styles.nav}>
@@ -45,8 +56,8 @@ export function TopNav({
         {/* Left: space for macOS traffic lights + optional back button */}
         <div className={styles.left}>
           <div className={styles.trafficSpace} />
-          {onBack && (
-            <button className={styles.backBtn} onClick={onBack}>
+          {!isAtRoot && (
+            <button className={styles.backBtn} onClick={() => navigate(-1)}>
               ‹ Back
             </button>
           )}
@@ -55,7 +66,7 @@ export function TopNav({
         {/* Center: Home tab + search input */}
         <div className={styles.center}>
           <button
-            className={`${styles.tab}${view === 'home' ? ' ' + styles.active : ''}`}
+            className={`${styles.tab}${isAtRoot ? ' ' + styles.active : ''}`}
             onClick={handleClear}
           >
             Home
@@ -70,7 +81,7 @@ export function TopNav({
               onKeyDown={handleKeyDown}
               disabled={!isAuthed}
             />
-            {(view === 'search' || searchText) && (
+            {(isInSearch || searchText) && (
               <button className={styles.clearBtn} onClick={handleClear}>✕</button>
             )}
           </div>

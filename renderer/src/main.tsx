@@ -1,6 +1,7 @@
 import { Component, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { HashRouter } from 'react-router-dom';
 import { App } from './App';
 import './styles/global.css';
 
@@ -39,7 +40,9 @@ if (!root) throw new Error('No #root element found');
 createRoot(root).render(
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <HashRouter>
+        <App />
+      </HashRouter>
     </QueryClientProvider>
   </ErrorBoundary>
 );

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useImage } from '../hooks/useImage';
 
@@ -16,24 +17,25 @@ import type { SonosItem, SonosItemId } from '../types/sonos';
 import styles from '../styles/AlbumPanel.module.css';
 
 interface Props {
-  item: SonosItem;
   onAddToQueue: (item: SonosItem) => void;
-  onOpenArtist?: (item: SonosItem) => void;
-  onOpenAlbum?: (item: SonosItem) => void;
 }
 
-export function AlbumPanel({ item, onAddToQueue, onOpenArtist, onOpenAlbum }: Props) {
+export function AlbumPanel({ onAddToQueue }: Props) {
+  const { state } = useLocation();
+  const item = (state as { item?: SonosItem } | null)?.item;
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const isPlaylistOrProgram = isPlaylist(item) || isProgram(item);
-  const { albumId, serviceId, accountId, defaults } = resolveAlbumParams(item);
+
+  const isPlaylistOrProgram = item ? (isPlaylist(item) || isProgram(item)) : false;
+  const { albumId, serviceId, accountId, defaults } = item ? resolveAlbumParams(item) : { albumId: undefined, serviceId: undefined, accountId: undefined, defaults: undefined };
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const lastSelected = useRef<number | null>(null);
 
-  const albumResult = useAlbumBrowse(isPlaylistOrProgram ? undefined : albumId, serviceId, accountId, defaults);
+  const albumResult    = useAlbumBrowse(isPlaylistOrProgram ? undefined : albumId, serviceId, accountId, defaults);
   const playlistResult = usePlaylistBrowse(isPlaylistOrProgram ? albumId : undefined, serviceId, accountId, defaults);
 
   const isLoading = isPlaylistOrProgram ? playlistResult.isLoading : albumResult.isLoading;
-  const error = isPlaylistOrProgram ? playlistResult.error : albumResult.error;
+  const error     = isPlaylistOrProgram ? playlistResult.error     : albumResult.error;
   const data = isPlaylistOrProgram
     ? playlistResult.data
       ? {
@@ -56,10 +58,10 @@ export function AlbumPanel({ item, onAddToQueue, onOpenArtist, onOpenAlbum }: Pr
   }, [queryClient, data?.artistItem]);
 
   // Show item fields instantly as fallback while loading
-  const title = data?.title ?? item.title ?? item.name ?? '';
-  const artist = data?.artist ?? ((item as Record<string, unknown>)['subtitle'] as string) ?? '';
-  const artUrl = data?.artUrl ?? getItemArt(item);
-  const cachedArt = useImage(artUrl);
+  const title  = data?.title  ?? item?.title  ?? item?.name  ?? '';
+  const artist = data?.artist ?? ((item as Record<string, unknown>)?.['subtitle'] as string) ?? '';
+  const artUrl = data?.artUrl ?? (item ? getItemArt(item) : null);
+  const cachedArt     = useImage(artUrl);
   const dominantColor = useDominantColor(cachedArt);
 
   // Clear selection when album changes
@@ -67,6 +69,8 @@ export function AlbumPanel({ item, onAddToQueue, onOpenArtist, onOpenAlbum }: Pr
     setSelected(new Set());
     lastSelected.current = null;
   }, [albumId]);
+
+  if (!item) return null;
 
   function handleTrackClick(index: number, e: React.MouseEvent) {
     e.stopPropagation();
@@ -107,6 +111,12 @@ export function AlbumPanel({ item, onAddToQueue, onOpenArtist, onOpenAlbum }: Pr
       }
     : undefined;
 
+  function openArtist() {
+    if (!data?.artistItem) return;
+    const rid = data.artistItem.resource?.id as SonosItemId | undefined;
+    navigate(`/artist/${encodeURIComponent(rid?.objectId ?? '_')}`, { state: { item: data.artistItem } });
+  }
+
   return (
     <div className={styles.panel}>
       <div className={styles.header} style={headerStyle}>
@@ -118,11 +128,8 @@ export function AlbumPanel({ item, onAddToQueue, onOpenArtist, onOpenAlbum }: Pr
             <div className={styles.albumTitle}>{title}</div>
             {artist && (
               <div
-                className={`${styles.artist}${onOpenArtist && data?.artistItem ? ' ' + styles.artistLink : ''}`}
-                onClick={() => {
-                  if (!onOpenArtist || !data?.artistItem) return;
-                  onOpenArtist(data.artistItem);
-                }}
+                className={`${styles.artist}${data?.artistItem ? ' ' + styles.artistLink : ''}`}
+                onClick={data?.artistItem ? openArtist : undefined}
               >
                 {artist}
               </div>
@@ -236,7 +243,7 @@ export function AlbumPanel({ item, onAddToQueue, onOpenArtist, onOpenAlbum }: Pr
               {track.explicit && <ExplicitBadge />}
             </div>
             <div className={styles.trackArtist}>
-              {isPlaylistOrProgram && onOpenArtist && track.artistObjects?.length
+              {isPlaylistOrProgram && track.artistObjects?.length
                 ? track.artistObjects.map((a, ai) => {
                     const artistItem: SonosItem = {
                       type: 'ARTIST',
@@ -258,7 +265,10 @@ export function AlbumPanel({ item, onAddToQueue, onOpenArtist, onOpenAlbum }: Pr
                           onMouseDown={(e) => e.stopPropagation()}
                           onClick={(e) => {
                             e.stopPropagation();
-                            onOpenArtist(artistItem);
+                            navigate(
+                              `/artist/${encodeURIComponent(a.objectId)}`,
+                              { state: { item: artistItem } },
+                            );
                           }}
                         >
                           {a.name}
@@ -270,25 +280,32 @@ export function AlbumPanel({ item, onAddToQueue, onOpenArtist, onOpenAlbum }: Pr
             </div>
             {isPlaylistOrProgram && (
               <div className={styles.trackAlbum}>
-                {onOpenAlbum && track.albumId && track.albumName
+                {track.albumId && track.albumName
                   ? (
                     <button
                       className={styles.artistBtn}
                       onMouseDown={e => e.stopPropagation()}
                       onClick={e => {
                         e.stopPropagation();
-                        onOpenAlbum({
-                          type: 'ALBUM',
-                          name: track.albumName!,
-                          resource: {
-                            type: 'ALBUM',
-                            id: {
-                              objectId:  track.albumId!,
-                              serviceId: (track.id as SonosItemId)?.serviceId ?? '',
-                              accountId: (track.id as SonosItemId)?.accountId ?? '',
+                        navigate(
+                          `/album/${encodeURIComponent(track.albumId!)}`,
+                          {
+                            state: {
+                              item: {
+                                type: 'ALBUM',
+                                name: track.albumName!,
+                                resource: {
+                                  type: 'ALBUM',
+                                  id: {
+                                    objectId:  track.albumId!,
+                                    serviceId: (track.id as SonosItemId)?.serviceId ?? '',
+                                    accountId: (track.id as SonosItemId)?.accountId ?? '',
+                                  },
+                                },
+                              } as SonosItem,
                             },
                           },
-                        });
+                        );
                       }}
                     >
                       {track.albumName}

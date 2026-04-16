@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/sonosApi';
 import {
   extractItems,
@@ -8,24 +9,19 @@ import {
   resolveArtistParams,
   isAlbum,
   isArtist,
-  isContainer,
 } from '../lib/itemHelpers';
+import { useOpenItem } from '../hooks/useOpenItem';
 import type { ServiceSearch } from '../types/ServiceSearch';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
 import { artistQueryOptions } from '../hooks/useArtistBrowse';
 import { CardRow } from './CardRow';
 import { SearchResults } from './SearchResults';
-import type { SonosItem, SonosItemId } from '../types/sonos';
+import type { SonosItem } from '../types/sonos';
 import styles from '../styles/HomePanel.module.css';
 
 interface Props {
   isAuthed: boolean;
-  view: 'home' | 'search';
-  activeSearch: string;
   onAddToQueue: (item: SonosItem) => void;
-  onOpenAlbum: (item: SonosItem) => void;
-  onOpenArtist: (item: SonosItem) => void;
-  onOpenContainer: (item: SonosItem) => void;
 }
 
 interface YtmSections {
@@ -45,14 +41,14 @@ async function fetchYtmSections(): Promise<YtmSections> {
   const rootItems = (stack?.['items'] ?? []) as SonosItem[];
 
   const find = (title: string) => rootItems.find((i) => (i.title ?? i.name) === title);
-  const homeItem = find('Home');
+  const homeItem        = find('Home');
   const newReleasesItem = find('New releases');
-  const chartsItem = find('Charts');
-  const supermixItem = find('My Supermix');
+  const chartsItem      = find('Charts');
+  const supermixItem    = find('My Supermix');
 
   const browseContainer = async (item: SonosItem | undefined): Promise<SonosItem[]> => {
     if (!item) return [];
-    const rid = item.resource?.id as SonosItemId | undefined;
+    const rid = item.resource?.id as import('../types/sonos').SonosItemId | undefined;
     const id = rid?.objectId;
     if (!id) return [];
     const r = await api.browse.container(id, {
@@ -77,16 +73,14 @@ async function fetchYtmSections(): Promise<YtmSections> {
   };
 }
 
-export function HomePanel({
-  isAuthed,
-  view,
-  activeSearch,
-  onAddToQueue,
-  onOpenAlbum,
-  onOpenArtist,
-  onOpenContainer,
-}: Props) {
+export function HomePanel({ isAuthed, onAddToQueue }: Props) {
   const queryClient = useQueryClient();
+  const location    = useLocation();
+  const [searchParams] = useSearchParams();
+  const openItem    = useOpenItem();
+
+  const view         = location.pathname === '/search' ? 'search' : 'home';
+  const activeSearch = searchParams.get('q') ?? '';
 
   const { data: ytm, isLoading: ytmLoading } = useQuery({
     queryKey: ['ytm-home'],
@@ -133,12 +127,6 @@ export function HomePanel({
     }
   }, [searchResults, view, queryClient]);
 
-  function handleOpen(item: SonosItem) {
-    if (isArtist(item)) return onOpenArtist(item);
-    if (isContainer(item)) return onOpenContainer(item);
-    onOpenAlbum(item);
-  }
-
   if (view === 'search') {
     return (
       <div className={styles.panel}>
@@ -148,8 +136,6 @@ export function HomePanel({
           <SearchResults
             results={searchResults}
             onAddToQueue={onAddToQueue}
-            onOpenAlbum={onOpenAlbum}
-            onOpenArtist={onOpenArtist}
           />
         )}
       </div>
@@ -166,28 +152,28 @@ export function HomePanel({
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>For You</h2>
             </div>
-            <CardRow items={ytm?.forYou ?? []} isLoading={ytmLoading} onAdd={onAddToQueue} onOpen={handleOpen} />
+            <CardRow items={ytm?.forYou ?? []} isLoading={ytmLoading} onAdd={onAddToQueue} onOpen={openItem} />
           </section>
 
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>New Releases</h2>
             </div>
-            <CardRow items={ytm?.newReleases ?? []} isLoading={ytmLoading} onAdd={onAddToQueue} onOpen={handleOpen} />
+            <CardRow items={ytm?.newReleases ?? []} isLoading={ytmLoading} onAdd={onAddToQueue} onOpen={openItem} />
           </section>
 
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>Charts</h2>
             </div>
-            <CardRow items={ytm?.charts ?? []} isLoading={ytmLoading} onAdd={onAddToQueue} onOpen={handleOpen} />
+            <CardRow items={ytm?.charts ?? []} isLoading={ytmLoading} onAdd={onAddToQueue} onOpen={openItem} />
           </section>
 
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>Recently Played</h2>
             </div>
-            <CardRow items={history} isLoading={histLoading} onAdd={onAddToQueue} onOpen={handleOpen} />
+            <CardRow items={history} isLoading={histLoading} onAdd={onAddToQueue} onOpen={openItem} />
           </section>
         </>
       )}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, Fragment } from 'react';
 import { Loader2 } from 'lucide-react';
 import { getName } from '../lib/itemHelpers';
 import { useImage } from '../hooks/useImage';
+import { useOpenItem } from '../hooks/useOpenItem';
 import { useQueueTrack } from '../hooks/useQueueTrack';
 import { ExplicitBadge } from './ExplicitBadge';
 import type { QueueItem, SonosItem } from '../types/sonos';
@@ -16,7 +17,6 @@ interface Props {
   currentObjectId: string | null;
   onClose: () => void;
   onRefresh: () => void;
-  onOpenAlbum: (item: SonosItem) => void;
   onAddToQueue: (item: SonosItem, position: number) => void;
 }
 
@@ -35,7 +35,6 @@ interface RowProps {
   item: QueueItem;
   index: number;
   currentObjectId: string | null;
-  onOpenAlbum: (item: SonosItem) => void;
   isSelected: boolean;
   onRowClick: (index: number, e: React.MouseEvent) => void;
   onDragStart: (index: number, e: React.DragEvent) => void;
@@ -45,12 +44,13 @@ interface RowProps {
 }
 
 function DraggableQueueRow({
-  item, index, currentObjectId, onOpenAlbum,
+  item, index, currentObjectId,
   isSelected, onRowClick, onDragStart, onDragOver, onDrop, onDragEnd,
 }: RowProps) {
   const { artUrl, artist, albumName, albumItem, prefetchAlbum, isPlaying, explicit } =
     useQueueTrack(item, currentObjectId);
   const cachedArt = useImage(artUrl);
+  const openItem  = useOpenItem();
   const name = getName(item);
 
   return (
@@ -85,7 +85,7 @@ function DraggableQueueRow({
             {albumName && (
               <button
                 className={styles.subLink}
-                onClick={e => { e.stopPropagation(); if (albumItem) onOpenAlbum(albumItem); }}
+                onClick={e => { e.stopPropagation(); if (albumItem) openItem(albumItem); }}
                 onMouseEnter={prefetchAlbum}
               >
                 {albumName}
@@ -101,7 +101,7 @@ function DraggableQueueRow({
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
 export function QueueSidebar(
-  { open, items, setItems, isLoading, error, currentObjectId, onClose, onRefresh, onOpenAlbum, onAddToQueue }: Props
+  { open, items, setItems, isLoading, error, currentObjectId, onClose, onRefresh, onAddToQueue }: Props
 ) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [selected, setSelected]         = useState<Set<number>>(new Set());
@@ -286,7 +286,6 @@ export function QueueSidebar(
               item={item}
               index={i}
               currentObjectId={currentObjectId}
-              onOpenAlbum={onOpenAlbum}
               isSelected={selected.has(i)}
               onRowClick={handleRowClick}
               onDragStart={handleDragStart}

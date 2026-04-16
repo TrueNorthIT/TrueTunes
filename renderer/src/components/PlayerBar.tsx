@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNowPlaying } from "../hooks/useNowPlaying";
+import { useOpenItem } from "../hooks/useOpenItem";
 import { ExplicitBadge } from "./ExplicitBadge";
 import type React from "react";
 import {
@@ -19,13 +20,11 @@ import {
 } from "lucide-react";
 import type { PlaybackState } from "../hooks/usePlayback";
 import { api } from "../lib/sonosApi";
-import type { SonosItem } from "../types/sonos";
 import styles from "../styles/PlayerBar.module.css";
 
 interface Props {
   isAuthed: boolean;
   playback: PlaybackState;
-  onOpenAlbum: (item: SonosItem) => void;
   onToggleQueue: () => void;
   onShuffle: () => void;
 }
@@ -143,10 +142,10 @@ function VolumeButton({ volume }: { volume: number }) {
 export function PlayerBar({
   isAuthed,
   playback,
-  onOpenAlbum,
   onToggleQueue,
   onShuffle,
 }: Props) {
+  const openItem = useOpenItem();
   const {
     displayTrack, displayArtist, cachedArt, dominantColor,
     elapsedLabel, durationLabel, progressPct, durationMs,
@@ -199,7 +198,7 @@ export function PlayerBar({
                 alt=""
                 style={!albumItem ? { cursor: "default" } : undefined}
                 onMouseEnter={prefetchAlbum}
-                onClick={() => albumItem && onOpenAlbum(albumItem)}
+                onClick={() => albumItem && openItem(albumItem)}
               />
             ) : (
               <div className={styles.artPh}>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './hooks/useAuth';
 import { useGroups } from './hooks/useGroups';
@@ -29,16 +30,10 @@ export function App() {
                                                   = useQueue(isAuthed, activeGroupId, playback.queueId,
                                                       (etag) => { queueVersionRef.current = etag; });
 
-  const [view, setView]               = useState<'home' | 'search'>('home');
-  const [activeSearch, setActiveSearch] = useState('');
-  const [activeAlbum, setActiveAlbum]         = useState<SonosItem | null>(null);
-  const [activeArtist, setActiveArtist]       = useState<SonosItem | null>(null);
-  const [activeContainer, setActiveContainer] = useState<SonosItem | null>(null);
   const [queueOpen, setQueueOpen]     = useState(false);
   const [toastMsg, setToastMsg]       = useState<string | null>(null);
   const toastTimer                    = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Set the first group once WS bootstrap sends groups
   useEffect(() => {
     if (groups.length > 0 && !activeGroupId) {
       setActiveGroupId(groups[0].id);
@@ -57,21 +52,7 @@ export function App() {
     applyGroupCache(groupId);
   }, [applyGroupCache]);
 
-  const handleSearch = useCallback((q: string) => {
-    setView('search');
-    setActiveSearch(q);
-  }, []);
-
-  const handleClearSearch = useCallback(() => {
-    setView('home');
-    setActiveSearch('');
-    setActiveAlbum(null);
-    setActiveArtist(null);
-    setActiveContainer(null);
-  }, []);
-
   const handleAddToQueue = useCallback(async (item: SonosItem, position = -1) => {
-    // Programs (radio stations, mixes) are loaded via WS loadContent, not HTTP queue add
     if (isProgram(item)) {
       const rid = item.resource?.id as SonosItemId | undefined;
       const iid = typeof item.id === 'object' ? item.id as SonosItemId : undefined;
@@ -79,7 +60,7 @@ export function App() {
         type: item.resource?.type ?? item.type ?? 'PROGRAM',
         id: {
           objectId:  rid?.objectId  ?? iid?.objectId,
-          accountId: rid?.accountId ?? iid?.accountId, // keep sn_ prefix for WS
+          accountId: rid?.accountId ?? iid?.accountId,
           serviceId: rid?.serviceId ?? iid?.serviceId,
         },
         playbackAction: 'PLAY',
@@ -92,12 +73,10 @@ export function App() {
       return;
     }
 
-    // Normalise raw browse items so useQueueTrack can extract IDs for nowPlaying
     const normalized = normalizeForQueue(item);
     const isSingleTrack = isTrack(item);
 
     if (isSingleTrack) {
-      // Optimistic insert — show the track immediately in the sidebar
       setQueueItems(prev => {
         if (position === -1 || position >= prev.length) return [...prev, normalized];
         const next = [...prev];
@@ -105,7 +84,6 @@ export function App() {
         return next;
       });
 
-      // Kick off the nowPlaying query so art/artist populate without waiting for re-render
       const tid = normalized.track?.id as SonosItemId | undefined;
       if (tid?.objectId && tid?.serviceId && tid?.accountId) {
         queryClient.prefetchQuery(trackQueryOptions(tid.objectId, tid.serviceId, tid.accountId));
@@ -131,13 +109,10 @@ export function App() {
     if (r.etag) queueVersionRef.current = r.etag;
 
     if (!isSingleTrack) {
-      // Albums/playlists are expanded into tracks server-side — reload to get the real tracks.
-      // Two reloads: one immediately (clears any stale state) and one after a short delay
-      // to catch cases where Sonos hasn't finished expanding yet.
       reloadQueue();
       setTimeout(reloadQueue, 1500);
     }
-  }, [queryClient, setQueueItems, reloadQueue, queueIdRef, queueVersionRef]);
+  }, [queryClient, setQueueItems, reloadQueue, queueIdRef, queueVersionRef, showToast]);
 
   useEffect(() => {
     function onKey(e: globalThis.KeyboardEvent) {
@@ -154,53 +129,19 @@ export function App() {
         isAuthed={isAuthed}
         groups={groups}
         activeGroupId={activeGroupId}
-        view={view}
         onGroupChange={handleGroupChange}
-        onSearch={handleSearch}
-        onClearSearch={handleClearSearch}
         queueOpen={queueOpen}
         onToggleQueue={() => setQueueOpen(o => !o)}
-        onBack={
-          activeArtist ? () => setActiveArtist(null)
-          : activeAlbum ? () => setActiveAlbum(null)
-          : activeContainer ? () => setActiveContainer(null)
-          : undefined
-        }
         onResync={() => window.sonos.resync()}
       />
       <div className={`${styles.body}${queueOpen ? ' ' + styles.bodyQueueOpen : ''}`}>
-        {activeArtist ? (
-          <ArtistPanel
-            item={activeArtist}
-            onOpenAlbum={(album) => { setActiveArtist(null); setActiveAlbum(album); }}
-            onAddToQueue={handleAddToQueue}
-          />
-        ) : activeAlbum ? (
-          <AlbumPanel
-            item={activeAlbum}
-            onAddToQueue={handleAddToQueue}
-            onOpenArtist={setActiveArtist}
-            onOpenAlbum={setActiveAlbum}
-          />
-        ) : activeContainer ? (
-          <ContainerPanel
-            item={activeContainer}
-            onAddToQueue={handleAddToQueue}
-            onOpenAlbum={setActiveAlbum}
-            onOpenArtist={setActiveArtist}
-            onOpenContainer={setActiveContainer}
-          />
-        ) : (
-          <HomePanel
-            isAuthed={isAuthed}
-            view={view}
-            activeSearch={activeSearch}
-            onAddToQueue={handleAddToQueue}
-            onOpenAlbum={setActiveAlbum}
-            onOpenArtist={setActiveArtist}
-            onOpenContainer={setActiveContainer}
-          />
-        )}
+        <Routes>
+          <Route path="/"          element={<HomePanel isAuthed={isAuthed} onAddToQueue={handleAddToQueue} />} />
+          <Route path="/search"    element={<HomePanel isAuthed={isAuthed} onAddToQueue={handleAddToQueue} />} />
+          <Route path="/album/:id" element={<AlbumPanel onAddToQueue={handleAddToQueue} />} />
+          <Route path="/artist/:id" element={<ArtistPanel onAddToQueue={handleAddToQueue} />} />
+          <Route path="/container/:id" element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
+        </Routes>
       </div>
       <QueueSidebar
         open={queueOpen}
@@ -211,13 +152,11 @@ export function App() {
         currentObjectId={playback.currentObjectId}
         onClose={() => setQueueOpen(false)}
         onRefresh={reloadQueue}
-        onOpenAlbum={setActiveAlbum}
         onAddToQueue={handleAddToQueue}
       />
       <PlayerBar
         isAuthed={isAuthed}
         playback={playback}
-        onOpenAlbum={setActiveAlbum}
         onToggleQueue={() => setQueueOpen(o => !o)}
         onShuffle={reloadQueue}
       />
