@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './hooks/useAuth';
 import { useGroups } from './hooks/useGroups';
@@ -17,10 +17,15 @@ import { AlbumPanel } from './components/AlbumPanel';
 import { ArtistPanel } from './components/ArtistPanel';
 import { ContainerPanel } from './components/ContainerPanel';
 import { QueueSidebar } from './components/QueueSidebar';
+import { MiniPlayerShell } from './components/MiniPlayer';
 
 import styles from './styles/App.module.css';
 
-export function App() {
+// ── Mini player window: self-contained shell ──────────────────────────────────
+
+// ── Main app ──────────────────────────────────────────────────────────────────
+
+function MainApp() {
   const queryClient                               = useQueryClient();
   const isAuthed                                  = useAuth();
   const groups                                    = useGroups();
@@ -136,9 +141,9 @@ export function App() {
       />
       <div className={`${styles.body}${queueOpen ? ' ' + styles.bodyQueueOpen : ''}`}>
         <Routes>
-          <Route path="/"          element={<HomePanel isAuthed={isAuthed} onAddToQueue={handleAddToQueue} />} />
-          <Route path="/search"    element={<HomePanel isAuthed={isAuthed} onAddToQueue={handleAddToQueue} />} />
-          <Route path="/album/:id" element={<AlbumPanel onAddToQueue={handleAddToQueue} />} />
+          <Route path="/"           element={<HomePanel isAuthed={isAuthed} onAddToQueue={handleAddToQueue} />} />
+          <Route path="/search"     element={<HomePanel isAuthed={isAuthed} onAddToQueue={handleAddToQueue} />} />
+          <Route path="/album/:id"  element={<AlbumPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/artist/:id" element={<ArtistPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/container/:id" element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
         </Routes>
@@ -163,4 +168,11 @@ export function App() {
       {toastMsg && <div className={styles.toast}>{toastMsg}</div>}
     </div>
   );
+}
+
+// ── Root ──────────────────────────────────────────────────────────────────────
+
+export function App() {
+  const location = useLocation();
+  return location.pathname === '/mini' ? <MiniPlayerShell /> : <MainApp />;
 }

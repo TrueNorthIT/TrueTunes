@@ -358,7 +358,7 @@ async function sonosFetch(request: FetchRequest): Promise<FetchResponse> {
     authConfirmed = false;
     sessionToken = null;
     void clearSessionToken();
-    uiWin?.webContents.send('auth:expired');
+    broadcastToRenderers('auth:expired');
     if (authWin) {
       authWin.show();
     } else {
@@ -458,7 +458,7 @@ function handleWsMessage(raw: Buffer | string): void {
     return;
   }
 
-  uiWin?.webContents.send('ws:message', [header, payload]);
+  broadcastToRenderers('ws:message', [header, payload]);
 }
 
 // ─── WebSocket bootstrap helpers ─────────────────────────────────────────────
@@ -684,15 +684,13 @@ async function runBootstrap(): Promise<void> {
   ]);
 
   // Notify renderer: WS is ready + send group list
-  uiWin?.webContents.send('ws:ready');
-  uiWin?.webContents.send('ws:groups', groups);
+  broadcastToRenderers('ws:ready');
+  broadcastToRenderers('ws:groups', groups);
 
   // Forward initial playback state for the active group only.
-  // Sending all groups causes the last payload to overwrite the first because
-  // the renderer's activeGroupIdRef is still null when these arrive.
   const activeResult = pbSubResults.find((r) => r?.groupId === config.groupId);
   if (activeResult?.resp) {
-    uiWin?.webContents.send('ws:message', [
+    broadcastToRenderers('ws:message', [
       { namespace: 'playbackExtended', groupId: activeResult.groupId },
       activeResult.resp,
     ]);
@@ -768,9 +766,16 @@ async function connectWebSocket(): Promise<void> {
 let sessionToken: string | null = null;
 let authWin: BrowserWindow | null = null;
 let uiWin: BrowserWindow | null = null;
+let miniWin: BrowserWindow | null = null;
 let debugWin: BrowserWindow | null = null;
 let httpDebugWin: BrowserWindow | null = null;
 let authConfirmed = false; // prevents onAuthReady firing on every /api/content/ 200
+
+/** Send a channel/args pair to all live renderer windows (main + mini player). */
+function broadcastToRenderers(channel: string, ...args: unknown[]): void {
+  uiWin?.webContents.send(channel, ...args);
+  if (miniWin && !miniWin.isDestroyed()) miniWin.webContents.send(channel, ...args);
+}
 
 function openDebugWindow(): void {
   if (app.isPackaged) return;
@@ -862,20 +867,33 @@ function createAuthWindow(): void {
   //  1. Local Sonos devices — plain HTTP, RFC 1918 addresses
   //  2. External image CDNs (gstatic, ytimg, music.youtube.com) that don't
   //     send Access-Control-Allow-Origin, blocking the renderer's fetch().
-  const IMAGE_CDN = /^https:\/\/(www\.gstatic\.com|music\.youtube\.com|i\.ytimg\.com|yt3\.googleusercontent\.com|lh3\.googleusercontent\.com)\//;
+  const IMAGE_CDN =
+    /^https:\/\/(www\.gstatic\.com|music\.youtube\.com|i\.ytimg\.com|yt3\.googleusercontent\.com|lh3\.googleusercontent\.com)\//;
   session.defaultSession.webRequest.onHeadersReceived(
-    { urls: ['http://*/*', 'https://www.gstatic.com/*', 'https://music.youtube.com/*', 'https://i.ytimg.com/*', 'https://yt3.googleusercontent.com/*', 'https://lh3.googleusercontent.com/*'] },
+    {
+      urls: [
+        'http://*/*',
+        'https://www.gstatic.com/*',
+        'https://music.youtube.com/*',
+        'https://i.ytimg.com/*',
+        'https://yt3.googleusercontent.com/*',
+        'https://lh3.googleusercontent.com/*',
+      ],
+    },
     (details, callback) => {
       const isLan = /^http:\/\/(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)/.test(details.url);
       const isCdn = IMAGE_CDN.test(details.url);
-      if (!isLan && !isCdn) { callback({}); return; }
+      if (!isLan && !isCdn) {
+        callback({});
+        return;
+      }
       callback({
         responseHeaders: {
           ...details.responseHeaders,
           'access-control-allow-origin': ['*'],
         },
       });
-    },
+    }
   );
 }
 
@@ -889,7 +907,7 @@ function onAuthReady(): void {
     createUIWindow();
   } else {
     uiWin.show();
-    uiWin.webContents.send('auth:ready');
+    broadcastToRenderers('auth:ready');
   }
 
   connectWebSocket().catch(console.error);
@@ -914,9 +932,65 @@ function createUIWindow(): void {
 
   uiWin.webContents.on('did-finish-load', () => {
     if (authConfirmed) {
-      uiWin?.webContents.send('auth:ready');
+      broadcastToRenderers('auth:ready');
       resyncRendererState();
     }
+  });
+}
+
+function createMiniPlayerWindow(): void {
+  if (miniWin && !miniWin.isDestroyed()) {
+    miniWin.focus();
+    return;
+  }
+
+  miniWin = new BrowserWindow({
+    width: 340,
+    height: 104,
+    minWidth: 340,
+    minHeight: 104,
+    maxWidth: 340,
+    maxHeight: 104,
+    frame: false,
+    transparent: true,
+    backgroundColor: '#00ffffff',
+    alwaysOnTop: true,
+    resizable: false,
+    skipTaskbar: true,
+    hasShadow: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'),
+    },
+  });
+
+
+  if (app.isPackaged) {
+    miniWin.loadFile(path.join(__dirname, '..', 'renderer', 'dist', 'index.html'), { hash: '/mini' });
+  } else {
+    miniWin.loadURL('http://localhost:5173/#/mini');
+  }
+
+  miniWin.webContents.on('did-finish-load', () => {
+    if (!miniWin || miniWin.isDestroyed()) return;
+    if (authConfirmed) {
+      miniWin.webContents.send('auth:ready');
+    }
+    // Push current WS state without triggering a full re-subscribe
+    if (discoveredGroups.length > 0) {
+      miniWin.webContents.send('ws:ready');
+      miniWin.webContents.send('ws:groups', discoveredGroups);
+      // Re-subscribe to get a fresh playback push just for the mini window
+      const groupId = config.groupId;
+      if (groupId && ws && ws.readyState === WebSocket.OPEN) {
+        wsSend({ namespace: 'playbackExtended', groupId, command: 'subscribe' }, {}).catch(() => {});
+      }
+    }
+  });
+
+  miniWin.on('closed', () => {
+    miniWin = null;
   });
 }
 
@@ -954,6 +1028,11 @@ ipcMain.handle('playback:pause', (_event: IpcMainInvokeEvent) => {
 
 ipcMain.handle('debug:openWsMonitor', () => openDebugWindow());
 ipcMain.handle('debug:openHttpMonitor', () => openHttpDebugWindow());
+ipcMain.handle('mini:open', () => createMiniPlayerWindow());
+ipcMain.handle('mini:close', () => {
+  miniWin?.close();
+  miniWin = null;
+});
 
 ipcMain.handle(
   'http:resend',
@@ -1000,8 +1079,8 @@ function resyncRendererState(): void {
     return;
   }
   if (discoveredGroups.length === 0) return; // bootstrap hasn't completed yet
-  uiWin?.webContents.send('ws:ready');
-  uiWin?.webContents.send('ws:groups', discoveredGroups);
+  broadcastToRenderers('ws:ready');
+  broadcastToRenderers('ws:groups', discoveredGroups);
   // Re-subscribing triggers Sonos to push a fresh playbackExtended status
   const groupId = config.groupId;
   if (groupId) {
@@ -1230,9 +1309,7 @@ ipcMain.handle('group:set', (_event: IpcMainInvokeEvent, groupId: string) => {
 function buildMenu(): void {
   const template: Electron.MenuItemConstructorOptions[] = [
     // On macOS the first menu is always the app menu
-    ...(process.platform === 'darwin'
-      ? [{ role: 'appMenu' as const }]
-      : []),
+    ...(process.platform === 'darwin' ? [{ role: 'appMenu' as const }] : []),
     { role: 'editMenu' as const },
     {
       label: 'Debug',

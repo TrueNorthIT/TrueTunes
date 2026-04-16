@@ -54,6 +54,20 @@ body {
   overflow: hidden;
 }
 
+/* ── Mini player window: strip all chrome, let the component paint itself ── */
+html[data-mini],
+html[data-mini] body {
+  background: transparent !important;
+  height: auto;
+  overflow: visible;
+}
+html[data-mini] #root {
+  height: auto;
+  overflow: visible;
+  background: transparent;
+  display: block;
+}
+
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;

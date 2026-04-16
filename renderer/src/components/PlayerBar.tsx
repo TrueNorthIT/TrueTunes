@@ -17,6 +17,7 @@ import {
   VolumeX,
   List,
   Music,
+  PictureInPicture2,
 } from "lucide-react";
 import type { PlaybackState } from "../hooks/usePlayback";
 import { api } from "../lib/sonosApi";
@@ -289,11 +290,18 @@ export function PlayerBar({
           </button>
         </div>
 
-        {/* Right — volume + queue */}
+        {/* Right — volume + queue + mini player */}
         <div className={styles.right}>
           <VolumeButton volume={volume} />
           <button className={styles.ctrl} onClick={onToggleQueue} title="Queue">
             <List size={14} />
+          </button>
+          <button
+            className={styles.ctrl}
+            onClick={() => window.sonos.openMiniPlayer()}
+            title="Mini player"
+          >
+            <PictureInPicture2 size={14} />
           </button>
         </div>
       </div>
