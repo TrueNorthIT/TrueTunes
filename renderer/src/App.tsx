@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './hooks/useAuth';
 import { useGroups } from './hooks/useGroups';
@@ -14,7 +14,7 @@ import { PlayerBar } from './components/PlayerBar';
 import { HomePanel } from './components/HomePanel';
 import { AlbumPanel } from './components/AlbumPanel';
 import { ArtistPanel } from './components/ArtistPanel';
-import { QueueSidebar, type QueueSidebarHandle } from './components/QueueSidebar';
+import { QueueSidebar } from './components/QueueSidebar';
 
 import styles from './styles/App.module.css';
 
@@ -32,8 +32,6 @@ export function App() {
   const [activeAlbum, setActiveAlbum]   = useState<SonosItem | null>(null);
   const [activeArtist, setActiveArtist] = useState<SonosItem | null>(null);
   const [queueOpen, setQueueOpen]     = useState(false);
-
-  const queueRef = useRef<QueueSidebarHandle>(null);
 
   // Set the first group once WS bootstrap sends groups
   useEffect(() => {
@@ -106,11 +104,6 @@ export function App() {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  const handleJumpToPlaying = useCallback(() => {
-    setQueueOpen(true);
-    setTimeout(() => queueRef.current?.scrollToPlaying(), 60);
-  }, []);
-
   return (
     <div className={styles.shell}>
       <TopNav
@@ -154,7 +147,6 @@ export function App() {
         )}
       </div>
       <QueueSidebar
-        ref={queueRef}
         open={queueOpen}
         items={queueItems}
         setItems={setQueueItems}
@@ -169,7 +161,6 @@ export function App() {
       <PlayerBar
         isAuthed={isAuthed}
         playback={playback}
-        onJumpToPlaying={handleJumpToPlaying}
         onOpenAlbum={setActiveAlbum}
         onToggleQueue={() => setQueueOpen(o => !o)}
         onShuffle={reloadQueue}

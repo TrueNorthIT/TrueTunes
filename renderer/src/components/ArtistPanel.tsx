@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Play, Shuffle, Radio } from "lucide-react";
+import { Radio } from "lucide-react";
 import { useImage } from "../hooks/useImage";
 import { useArtistBrowse } from "../hooks/useArtistBrowse";
 import { useDominantColor } from "../hooks/useDominantColor";
@@ -209,9 +209,6 @@ export function ArtistPanel({ item, onOpenAlbum, onAddToQueue }: Props) {
   const cachedArt = useImage(imageUrl);
   const dominantColor = useDominantColor(cachedArt);
 
-  const artistShuffle = data?.playlists.find((p) =>
-    (p.title as string)?.toLowerCase().includes("shuffle"),
-  );
   const artistRadio = data?.playlists.find((p) =>
     (p.title as string)?.toLowerCase().includes("radio"),
   );
@@ -310,7 +307,7 @@ export function ArtistPanel({ item, onOpenAlbum, onAddToQueue }: Props) {
           <div className={styles.albumsRow}>
             {data!.albums.map((album) => (
               <AlbumCard
-                key={album.id?.objectId ?? album.title}
+                key={(typeof album.id === 'string' ? album.id : album.id?.objectId) ?? album.title}
                 album={album}
                 onOpen={onOpenAlbum}
               />

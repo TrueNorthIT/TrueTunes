@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState, Fragment } from 'react';
+import { useEffect, useRef, useState, Fragment } from 'react';
 import { Loader2 } from 'lucide-react';
 import { getName } from '../lib/itemHelpers';
 import { useImage } from '../hooks/useImage';
@@ -27,10 +27,6 @@ function applyReorderLocally(items: QueueItem[], fromIndices: number[], toIndex:
   const insertAt = origNonSelected.filter(i => i < toIndex).length;
   const movers = [...fromIndices].sort((a, b) => a - b).map(i => items[i]);
   return [...remaining.slice(0, insertAt), ...movers, ...remaining.slice(insertAt)];
-}
-
-export interface QueueSidebarHandle {
-  scrollToPlaying: () => void;
 }
 
 // ── Individual draggable row ──────────────────────────────────────────────────
@@ -89,7 +85,7 @@ function DraggableQueueRow({
             {albumName && (
               <button
                 className={styles.subLink}
-                onClick={e => { e.stopPropagation(); albumItem && onOpenAlbum(albumItem); }}
+                onClick={e => { e.stopPropagation(); if (albumItem) onOpenAlbum(albumItem); }}
                 onMouseEnter={prefetchAlbum}
               >
                 {albumName}
@@ -104,22 +100,14 @@ function DraggableQueueRow({
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
-export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function QueueSidebar(
-  { open, items, setItems, isLoading, error, currentObjectId, onClose, onRefresh, onOpenAlbum, onAddToQueue },
-  ref
+export function QueueSidebar(
+  { open, items, setItems, isLoading, error, currentObjectId, onClose, onRefresh, onOpenAlbum, onAddToQueue }: Props
 ) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [selected, setSelected]         = useState<Set<number>>(new Set());
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const lastSelected = useRef<number | null>(null);
   const draggingSet  = useRef<Set<number>>(new Set());
-
-  useImperativeHandle(ref, () => ({
-    scrollToPlaying() {
-      const el = contentRef.current?.querySelector<HTMLElement>('[data-playing="true"]');
-      el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    },
-  }));
 
   // Clear selection when sidebar closes or items change
   useEffect(() => { setSelected(new Set()); }, [open, items]);
@@ -325,4 +313,4 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
       )}
     </div>
   );
-});
+}

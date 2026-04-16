@@ -118,6 +118,26 @@ export function getArt(item: SonosItem): string | null {
       ?? null;
 }
 
+/** Like getArt but also handles browse API items where images is { tile1x1 } not an array. */
+export function getItemArt(item: SonosItem): string | null {
+  return (item.images as Record<string, string> | undefined)?.['tile1x1'] ?? getArt(item) ?? null;
+}
+
+export function isAlbum(item: SonosItem): boolean {
+  const type = (item.resource?.type ?? item.type ?? '') as string;
+  return type.toUpperCase().includes('ALBUM');
+}
+
+export function isArtist(item: SonosItem): boolean {
+  const type = (item.resource?.type ?? item.type ?? '') as string;
+  return type.toUpperCase().includes('ARTIST');
+}
+
+export function isTrack(item: SonosItem): boolean {
+  const type = (item.resource?.type ?? item.type ?? '') as string;
+  return type.toUpperCase().includes('TRACK');
+}
+
 export function browseSub(item: SonosItem): string {
   if (item?.summary?.content) return item.summary.content;
   const type    = item?.type ? item.type.charAt(0) + item.type.slice(1).toLowerCase() : '';

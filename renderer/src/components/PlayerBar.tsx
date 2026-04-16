@@ -25,7 +25,6 @@ import styles from "../styles/PlayerBar.module.css";
 interface Props {
   isAuthed: boolean;
   playback: PlaybackState;
-  onJumpToPlaying: () => void;
   onOpenAlbum: (item: SonosItem) => void;
   onToggleQueue: () => void;
   onShuffle: () => void;
@@ -144,7 +143,6 @@ function VolumeButton({ volume }: { volume: number }) {
 export function PlayerBar({
   isAuthed,
   playback,
-  onJumpToPlaying,
   onOpenAlbum,
   onToggleQueue,
   onShuffle,
