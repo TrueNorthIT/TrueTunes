@@ -1,11 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useImage } from "../hooks/useImage";
+
+function TrackArt({ url }: { url: string | null }) {
+  const src = useImage(url);
+  return src
+    ? <img className={styles.trackArt} src={src} alt="" />
+    : <div className={styles.trackArtPh} />;
+}
 import { ExplicitBadge } from "./ExplicitBadge";
 import { useAlbumBrowse } from "../hooks/useAlbumBrowse";
+import { usePlaylistBrowse } from "../hooks/usePlaylistBrowse";
 import { useDominantColor } from "../hooks/useDominantColor";
 import { artistQueryOptions } from "../hooks/useArtistBrowse";
-import { fmtDuration, resolveAlbumParams } from "../lib/itemHelpers";
+import { fmtDuration, resolveAlbumParams, isPlaylist, isProgram, getItemArt } from "../lib/itemHelpers";
 import type { SonosItem, SonosItemId } from "../types/sonos";
 import styles from "../styles/AlbumPanel.module.css";
 
@@ -17,15 +25,19 @@ interface Props {
 
 export function AlbumPanel({ item, onAddToQueue, onOpenArtist }: Props) {
   const queryClient = useQueryClient();
+  const isPl = isPlaylist(item) || isProgram(item);
   const { albumId, serviceId, accountId, defaults } = resolveAlbumParams(item);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const lastSelected = useRef<number | null>(null);
-  const { data, isLoading, error } = useAlbumBrowse(
-    albumId,
-    serviceId,
-    accountId,
-    defaults,
-  );
+
+  const albumResult   = useAlbumBrowse(isPl ? undefined : albumId, serviceId, accountId, defaults);
+  const playlistResult = usePlaylistBrowse(isPl ? albumId : undefined, serviceId, accountId, defaults);
+
+  const isLoading = isPl ? playlistResult.isLoading : albumResult.isLoading;
+  const error     = isPl ? playlistResult.error     : albumResult.error;
+  const data      = isPl
+    ? (playlistResult.data ? { title: null, artist: null, artUrl: null, tracks: playlistResult.data, totalTracks: playlistResult.data.length, artistItem: null } : null)
+    : albumResult.data ?? null;
 
   // Prefetch artist as soon as we know who the artist is
   useEffect(() => {
@@ -43,11 +55,7 @@ export function AlbumPanel({ item, onAddToQueue, onOpenArtist }: Props) {
     data?.artist ??
     ((item as Record<string, unknown>)["subtitle"] as string) ??
     "";
-  const artUrl =
-    data?.artUrl ??
-    (item.images as Record<string, string> | undefined)?.["tile1x1"] ??
-    item.imageUrl ??
-    null;
+  const artUrl = data?.artUrl ?? getItemArt(item);
   const cachedArt = useImage(artUrl);
   const dominantColor = useDominantColor(cachedArt);
 
@@ -145,12 +153,44 @@ export function AlbumPanel({ item, onAddToQueue, onOpenArtist }: Props) {
 
       <div
         className={styles.tracks}
+        style={{ '--track-cols': isPl
+          ? '24px 42px 1fr 160px 160px 50px 28px'
+          : '24px 1fr 160px 50px 28px'
+        } as React.CSSProperties}
         onClick={() => {
           setSelected(new Set());
           lastSelected.current = null;
         }}
       >
-        {isLoading && <div className={styles.msg}>Loading\u2026</div>}
+        {/* Table header */}
+        {data && (
+          <div className={styles.tableHeader}>
+            <span />
+            {isPl && <span />}
+            <span>Title</span>
+            <span>Artist</span>
+            {isPl && <span>Album</span>}
+            <span>Time</span>
+            <span />
+          </div>
+        )}
+
+        {isLoading && (
+          <>
+            <div className={styles.spinnerWrap}><div className={styles.spinner} /></div>
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className={styles.skeletonRow}>
+                <div className={styles.skeletonOrdinal} />
+                {isPl && <div className={styles.skeletonArt} />}
+                <div className={styles.skeletonTitle} style={{ width: `${55 + (i % 4) * 10}%` }} />
+                <div className={styles.skeletonSub}   style={{ width: `${30 + (i % 3) * 10}%` }} />
+                {isPl && <div className={styles.skeletonSub} style={{ width: `${35 + (i % 2) * 15}%` }} />}
+                <div className={styles.skeletonDur} />
+                <div />
+              </div>
+            ))}
+          </>
+        )}
         {error && <div className={styles.msg}>Failed to load tracks.</div>}
         {data?.tracks.map((track, i) => (
           <div
@@ -197,17 +237,49 @@ export function AlbumPanel({ item, onAddToQueue, onOpenArtist }: Props) {
             }}
           >
             <span className={styles.ordinal}>{track.ordinal}</span>
-            <div className={styles.trackText}>
-              <div className={styles.trackName}>
-                {track.title}
-                {track.explicit && <ExplicitBadge />}
+            {isPl && (
+              <div className={styles.trackArtWrap}>
+                <TrackArt url={track.artUrl} />
               </div>
-              {track.artists.length > 0 && (
-                <div className={styles.trackArtist}>
-                  {track.artists.join(", ")}
-                </div>
-              )}
+            )}
+            <div className={styles.trackName}>
+              {track.title}
+              {track.explicit && <ExplicitBadge />}
             </div>
+            <div className={styles.trackArtist}>
+              {isPl && onOpenArtist && track.artistObjects?.length
+                ? track.artistObjects.map((a, ai) => {
+                    const artistItem: SonosItem = {
+                      type: 'ARTIST',
+                      name: a.name,
+                      resource: {
+                        type: 'ARTIST',
+                        id: {
+                          objectId:  a.objectId,
+                          serviceId: (data?.tracks[i]?.id as SonosItemId)?.serviceId ?? '',
+                          accountId: (data?.tracks[i]?.id as SonosItemId)?.accountId ?? '',
+                        },
+                      },
+                    };
+                    return (
+                      <span key={ai}>
+                        {ai > 0 && ', '}
+                        <button
+                          className={styles.artistBtn}
+                          onMouseDown={e => e.stopPropagation()}
+                          onClick={e => { e.stopPropagation(); onOpenArtist(artistItem); }}
+                        >
+                          {a.name}
+                        </button>
+                      </span>
+                    );
+                  })
+                : track.artists.join(', ')
+              }
+            </div>
+            {isPl && (
+              <div className={styles.trackAlbum}>{track.albumName ?? ''}</div>
+            )}
             <span className={styles.duration}>
               {fmtDuration(track.durationSeconds)}
             </span>

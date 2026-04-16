@@ -1,29 +1,29 @@
-import { useQuery } from "@tanstack/react-query";
-import { api } from "../lib/sonosApi";
-import type { AlbumTrack } from "./useAlbumBrowse";
-import { parsePlaylistTracks } from "./usePlaylistBrowse";
-import type { SonosItem, SonosItemId } from "../types/sonos";
-import { ArtistResponse } from "../types/ArtistResponse";
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../lib/sonosApi';
+import type { AlbumTrack } from './useAlbumBrowse';
+import { parsePlaylistTracks } from './usePlaylistBrowse';
+import type { SonosItem, SonosItemId } from '../types/sonos';
+import { ArtistResponse } from '../types/ArtistResponse';
 
 export interface ArtistData {
   name: string;
   imageUrl: string | null;
   albums: SonosItem[];
-  playlists: SonosItem[];   // Artist Shuffle, Artist Radio (no Top Songs)
+  playlists: SonosItem[]; // Artist Shuffle, Artist Radio (no Top Songs)
   topSongs: AlbumTrack[];
 }
 
-function parseArtist(data: ArtistResponse): { parsed: Omit<ArtistData, "topSongs">; topSongsItem: SonosItem | null } {
-  const name     = data.title ?? "";
+function parseArtist(data: ArtistResponse): { parsed: Omit<ArtistData, 'topSongs'>; topSongsItem: SonosItem | null } {
+  const name = data.title ?? '';
   const imageUrl = data.images?.tile1x1 ?? null;
-  const allItems = (data.sections?.items?.[0]?.items ?? []) as SonosItem[];
+  const allItems = (data.sections?.items?.[0]?.items ?? []) as unknown as SonosItem[];
 
-  const topSongsItem = allItems.find(
-    (i) => i.type === "ITEM_PLAYLIST" && (i.title as string)?.toLowerCase().includes("top songs")
-  ) ?? null;
+  const topSongsItem =
+    allItems.find((i) => i.type === 'ITEM_PLAYLIST' && (i.title as string)?.toLowerCase().includes('top songs')) ??
+    null;
 
-  const albums    = allItems.filter((i) => i.type === "ITEM_ALBUM");
-  const playlists = allItems.filter((i) => i.type === "ITEM_PLAYLIST" && i !== topSongsItem);
+  const albums = allItems.filter((i) => i.type === 'ITEM_ALBUM');
+  const playlists = allItems.filter((i) => i.type === 'ITEM_PLAYLIST' && i !== topSongsItem);
 
   return { parsed: { name, imageUrl, albums, playlists }, topSongsItem };
 }
@@ -32,10 +32,10 @@ export function artistQueryOptions(
   artistId: string | undefined,
   serviceId: string | undefined,
   accountId: string | undefined,
-  defaults: string | undefined,
+  defaults: string | undefined
 ) {
   return {
-    queryKey: ["artist", artistId] as const,
+    queryKey: ['artist', artistId] as const,
     queryFn: async (): Promise<ArtistData> => {
       const r = await api.browse.artist(artistId!, { serviceId, accountId, defaults, muse2: true });
       if (r.error) throw new Error(r.error);
@@ -49,9 +49,8 @@ export function artistQueryOptions(
           const pr = await api.browse.playlist(rid.objectId, {
             serviceId: rid.serviceId,
             accountId: rid.accountId,
-            defaults:  topSongsItem.resource?.defaults as string | undefined,
+            defaults: topSongsItem.resource?.defaults as string | undefined,
             muse2: true,
-            count: 20,
           });
           if (!pr.error) topSongs = parsePlaylistTracks(pr.data);
         }
@@ -68,7 +67,7 @@ export function useArtistBrowse(
   artistId: string | undefined,
   serviceId: string | undefined,
   accountId: string | undefined,
-  defaults?: string,
+  defaults?: string
 ) {
   return useQuery({
     ...artistQueryOptions(artistId, serviceId, accountId, defaults),

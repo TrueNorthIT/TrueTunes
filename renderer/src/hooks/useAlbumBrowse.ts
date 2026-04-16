@@ -11,6 +11,10 @@ export interface AlbumTrack {
   artUrl: string | null;
   id: SonosItemId;
   artists: string[];
+  /** Only populated for playlist tracks — carries objectId so artist is navigable. */
+  artistObjects?: Array<{ name: string; objectId: string }>;
+  /** Album/container name — decoded from track defaults, populated for playlist tracks. */
+  albumName: string | null;
   explicit: boolean;
   raw: SonosItem;
 }
@@ -57,6 +61,7 @@ function parseAlbum(data: AlbumResponse): AlbumData {
     artUrl:          track.images?.tile1x1 ?? null,
     id:              (track.resource?.id ?? {}) as SonosItemId,
     artists:         track.artists?.map((a) => a.name) ?? [],
+    albumName:       null,
     explicit:        track.isExplicit ?? false,
     raw:             track as unknown as SonosItem,
   }));

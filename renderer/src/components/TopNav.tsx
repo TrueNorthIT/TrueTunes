@@ -13,12 +13,13 @@ interface Props {
   queueOpen: boolean;
   onToggleQueue: () => void;
   onBack?: () => void;
+  onResync: () => void;
 }
 
 export function TopNav({
   isAuthed, groups, activeGroupId, view,
   onGroupChange, onSearch, onClearSearch,
-  queueOpen, onToggleQueue, onBack,
+  queueOpen, onToggleQueue, onBack, onResync,
 }: Props) {
   const [searchText, setSearchText] = useState('');
 
@@ -77,6 +78,15 @@ export function TopNav({
 
         {/* Right: group selector + queue toggle */}
         <div className={styles.right}>
+          {isAuthed && groups.length === 0 && (
+            <button
+              className={styles.resyncBtn}
+              onClick={onResync}
+              title="Reconnect"
+            >
+              ↺
+            </button>
+          )}
           <select
             className={styles.groupSelect}
             disabled={!isAuthed || groups.length <= 1}

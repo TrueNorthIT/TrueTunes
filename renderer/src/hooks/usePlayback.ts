@@ -72,8 +72,6 @@ export function usePlayback(activeGroupId: string | null) {
     activeGroupIdRef.current = activeGroupId;
   }, [activeGroupId]);
 
-  // Registered guard
-  const registered = useRef(false);
 
   const applyPayload = useCallback((payload: PlaybackPayload) => {
     const stateVal = payload?.playback?.playbackState ?? "";
@@ -124,7 +122,10 @@ export function usePlayback(activeGroupId: string | null) {
     durationMsRef.current = durMs;
     lastUpdateAtRef.current = Date.now();
     isPlayingRef.current = isPlaying;
-    if (queueId)      queueIdRef.current      = queueId;
+    if (queueId) {
+      queueIdRef.current = queueId;
+      window.sonos.setQueueId(queueId);
+    }
     if (queueVersion) queueVersionRef.current = queueVersion;
 
     if (!name) return;
@@ -176,14 +177,11 @@ export function usePlayback(activeGroupId: string | null) {
 
   // WS subscriptions
   useEffect(() => {
-    if (registered.current) return;
-    registered.current = true;
-
-    window.sonos.onWsReady(() => {
+    const unsubReady = window.sonos.onWsReady(() => {
       setState((prev) => ({ ...prev, isVisible: true }));
     });
 
-    window.sonos.onWsMessage((header, payload) => {
+    const unsubMsg = window.sonos.onWsMessage((header, payload) => {
       const h = header as Record<string, unknown>;
 
       if (h?.["namespace"] === "groupVolume") {
@@ -210,17 +208,31 @@ export function usePlayback(activeGroupId: string | null) {
 
       applyPayload(p);
     });
+
+    return () => { unsubReady(); unsubMsg(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Apply cached state when active group changes
   const applyGroupCache = useCallback(
     (groupId: string) => {
+      // Update the group ref immediately — don't wait for the useEffect.
+      // Without this, WS messages for the old group can still arrive and
+      // overwrite queueVersionRef with the old etag before the effect runs.
+      activeGroupIdRef.current = groupId;
+      // Clear queue cursors. queueVersionRef must NOT be restored from
+      // cache — the cached version can be stale if the queue changed since
+      // the last WS push.  It will be refreshed by the next live WS message
+      // or by the API response etag on the first add.
+      queueIdRef.current = null;
+      queueVersionRef.current = null;
       const cached = groupCache.current.get(groupId);
       if (cached) {
         // Reset currentObjectId to force downstream reload
         setState((prev) => ({ ...prev, currentObjectId: null }));
         applyPayload(cached);
+        // Re-null after applyPayload in case it repopulated from stale cache
+        queueVersionRef.current = null;
       } else {
         setState({
           ...IDLE_STATE,

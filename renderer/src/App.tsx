@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './hooks/useAuth';
 import { useGroups } from './hooks/useGroups';
@@ -6,7 +6,7 @@ import { usePlayback } from './hooks/usePlayback';
 import { useQueue } from './hooks/useQueue';
 import { trackQueryOptions } from './hooks/useTrackDetails';
 import { api } from './lib/sonosApi';
-import { normalizeForQueue } from './lib/itemHelpers';
+import { normalizeForQueue, isTrack, isProgram } from './lib/itemHelpers';
 import type { SonosItem, SonosItemId } from './types/sonos';
 
 import { TopNav } from './components/TopNav';
@@ -14,6 +14,7 @@ import { PlayerBar } from './components/PlayerBar';
 import { HomePanel } from './components/HomePanel';
 import { AlbumPanel } from './components/AlbumPanel';
 import { ArtistPanel } from './components/ArtistPanel';
+import { ContainerPanel } from './components/ContainerPanel';
 import { QueueSidebar } from './components/QueueSidebar';
 
 import styles from './styles/App.module.css';
@@ -25,13 +26,17 @@ export function App() {
   const [activeGroupId, setActiveGroupId]         = useState<string | null>(null);
   const { playback, applyGroupCache, queueIdRef, queueVersionRef } = usePlayback(activeGroupId);
   const { items: queueItems, setItems: setQueueItems, isLoading: queueLoading, error: queueError, reload: reloadQueue }
-                                                  = useQueue(isAuthed, activeGroupId, playback.queueId);
+                                                  = useQueue(isAuthed, activeGroupId, playback.queueId,
+                                                      (etag) => { queueVersionRef.current = etag; });
 
   const [view, setView]               = useState<'home' | 'search'>('home');
   const [activeSearch, setActiveSearch] = useState('');
-  const [activeAlbum, setActiveAlbum]   = useState<SonosItem | null>(null);
-  const [activeArtist, setActiveArtist] = useState<SonosItem | null>(null);
+  const [activeAlbum, setActiveAlbum]         = useState<SonosItem | null>(null);
+  const [activeArtist, setActiveArtist]       = useState<SonosItem | null>(null);
+  const [activeContainer, setActiveContainer] = useState<SonosItem | null>(null);
   const [queueOpen, setQueueOpen]     = useState(false);
+  const [toastMsg, setToastMsg]       = useState<string | null>(null);
+  const toastTimer                    = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Set the first group once WS bootstrap sends groups
   useEffect(() => {
@@ -39,6 +44,12 @@ export function App() {
       setActiveGroupId(groups[0].id);
     }
   }, [groups, activeGroupId]);
+
+  const showToast = useCallback((msg: string) => {
+    setToastMsg(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastMsg(null), 4000);
+  }, []);
 
   const handleGroupChange = useCallback((groupId: string) => {
     setActiveGroupId(groupId);
@@ -56,24 +67,49 @@ export function App() {
     setActiveSearch('');
     setActiveAlbum(null);
     setActiveArtist(null);
+    setActiveContainer(null);
   }, []);
 
   const handleAddToQueue = useCallback(async (item: SonosItem, position = -1) => {
+    // Programs (radio stations, mixes) are loaded via WS loadContent, not HTTP queue add
+    if (isProgram(item)) {
+      const rid = item.resource?.id as SonosItemId | undefined;
+      const iid = typeof item.id === 'object' ? item.id as SonosItemId : undefined;
+      const r = await window.sonos.loadContent({
+        type: item.resource?.type ?? item.type ?? 'PROGRAM',
+        id: {
+          objectId:  rid?.objectId  ?? iid?.objectId,
+          accountId: rid?.accountId ?? iid?.accountId, // keep sn_ prefix for WS
+          serviceId: rid?.serviceId ?? iid?.serviceId,
+        },
+        playbackAction: 'PLAY',
+        playModes: { shuffle: false },
+        defaults: item.resource?.defaults ?? undefined,
+        queueAction: 'REPLACE',
+      }) as { error?: string } | null;
+      if (r && 'error' in r && r.error) showToast('Play failed: ' + r.error);
+      else reloadQueue();
+      return;
+    }
+
     // Normalise raw browse items so useQueueTrack can extract IDs for nowPlaying
     const normalized = normalizeForQueue(item);
+    const isSingleTrack = isTrack(item);
 
-    // Optimistic insert — show the track immediately
-    setQueueItems(prev => {
-      if (position === -1 || position >= prev.length) return [...prev, normalized];
-      const next = [...prev];
-      next.splice(position, 0, normalized);
-      return next;
-    });
+    if (isSingleTrack) {
+      // Optimistic insert — show the track immediately in the sidebar
+      setQueueItems(prev => {
+        if (position === -1 || position >= prev.length) return [...prev, normalized];
+        const next = [...prev];
+        next.splice(position, 0, normalized);
+        return next;
+      });
 
-    // Kick off the nowPlaying query so art/artist populate without waiting for re-render
-    const tid = normalized.track?.id as SonosItemId | undefined;
-    if (tid?.objectId && tid?.serviceId && tid?.accountId) {
-      queryClient.prefetchQuery(trackQueryOptions(tid.objectId, tid.serviceId, tid.accountId));
+      // Kick off the nowPlaying query so art/artist populate without waiting for re-render
+      const tid = normalized.track?.id as SonosItemId | undefined;
+      if (tid?.objectId && tid?.serviceId && tid?.accountId) {
+        queryClient.prefetchQuery(trackQueryOptions(tid.objectId, tid.serviceId, tid.accountId));
+      }
     }
 
     const rid = normalized.resource?.id;
@@ -91,8 +127,16 @@ export function App() {
       ifMatch: queueVersionRef.current ?? undefined,
       position,
     });
-    if (r.error) { alert('Add failed: ' + r.error); reloadQueue(); return; }
+    if (r.error) { showToast('Add failed: ' + r.error); reloadQueue(); return; }
     if (r.etag) queueVersionRef.current = r.etag;
+
+    if (!isSingleTrack) {
+      // Albums/playlists are expanded into tracks server-side — reload to get the real tracks.
+      // Two reloads: one immediately (clears any stale state) and one after a short delay
+      // to catch cases where Sonos hasn't finished expanding yet.
+      reloadQueue();
+      setTimeout(reloadQueue, 1500);
+    }
   }, [queryClient, setQueueItems, reloadQueue, queueIdRef, queueVersionRef]);
 
   useEffect(() => {
@@ -119,8 +163,10 @@ export function App() {
         onBack={
           activeArtist ? () => setActiveArtist(null)
           : activeAlbum ? () => setActiveAlbum(null)
+          : activeContainer ? () => setActiveContainer(null)
           : undefined
         }
+        onResync={() => window.sonos.resync()}
       />
       <div className={`${styles.body}${queueOpen ? ' ' + styles.bodyQueueOpen : ''}`}>
         {activeArtist ? (
@@ -135,6 +181,14 @@ export function App() {
             onAddToQueue={handleAddToQueue}
             onOpenArtist={setActiveArtist}
           />
+        ) : activeContainer ? (
+          <ContainerPanel
+            item={activeContainer}
+            onAddToQueue={handleAddToQueue}
+            onOpenAlbum={setActiveAlbum}
+            onOpenArtist={setActiveArtist}
+            onOpenContainer={setActiveContainer}
+          />
         ) : (
           <HomePanel
             isAuthed={isAuthed}
@@ -143,6 +197,7 @@ export function App() {
             onAddToQueue={handleAddToQueue}
             onOpenAlbum={setActiveAlbum}
             onOpenArtist={setActiveArtist}
+            onOpenContainer={setActiveContainer}
           />
         )}
       </div>
@@ -165,6 +220,7 @@ export function App() {
         onToggleQueue={() => setQueueOpen(o => !o)}
         onShuffle={reloadQueue}
       />
+      {toastMsg && <div className={styles.toast}>{toastMsg}</div>}
     </div>
   );
 }

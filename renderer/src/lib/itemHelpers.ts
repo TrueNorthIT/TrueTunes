@@ -59,6 +59,9 @@ export function extractItems(data: unknown): SonosItem[] {
   if (Array.isArray(data))               return data as SonosItem[];
   if (Array.isArray(d['items']))         return d['items'] as SonosItem[];
   if (Array.isArray(d['resources']))     return d['resources'] as SonosItem[];
+  // Container browse: { section: { items: [...] } }
+  const sec = d['section'] as Record<string, unknown> | undefined;
+  if (sec && Array.isArray(sec['items'])) return sec['items'] as SonosItem[];
   if (Array.isArray(d['services'])) {
     const flat: SonosItem[] = [];
     for (const svc of d['services'] as Record<string, unknown>[]) {
@@ -91,8 +94,9 @@ function resolveArtistName(raw: unknown): string {
 }
 
 export function getSub(item: SonosItem): string {
-  const raw = item?.artist ?? item?.primaryArtist ?? item?.resource?.artist
-           ?? item?.track?.artist ?? item?.description ?? item?.type ?? '';
+  // subtitle is used by container browse responses (e.g. album items have subtitle = artist name)
+  const raw = item?.artist ?? item?.primaryArtist ?? (item as Record<string,unknown>)?.['subtitle']
+           ?? item?.resource?.artist ?? item?.track?.artist ?? item?.description ?? item?.type ?? '';
   const result = resolveArtistName(raw);
   return item?.summary?.content ?? result;
 }
@@ -128,6 +132,13 @@ export function isAlbum(item: SonosItem): boolean {
   return type.toUpperCase().includes('ALBUM');
 }
 
+export function isPlaylist(item: SonosItem): boolean {
+  const type = (item.resource?.type ?? item.type ?? '') as string;
+  const t = type.toUpperCase();
+  // ITEM_PLAYLIST is a container browse item, not a directly-browseable playlist
+  return t.includes('PLAYLIST') && !t.startsWith('ITEM_');
+}
+
 export function isArtist(item: SonosItem): boolean {
   const type = (item.resource?.type ?? item.type ?? '') as string;
   return type.toUpperCase().includes('ARTIST');
@@ -136,6 +147,19 @@ export function isArtist(item: SonosItem): boolean {
 export function isTrack(item: SonosItem): boolean {
   const type = (item.resource?.type ?? item.type ?? '') as string;
   return type.toUpperCase().includes('TRACK');
+}
+
+export function isContainer(item: SonosItem): boolean {
+  const type = (item.resource?.type ?? item.type ?? '') as string;
+  const t = type.toUpperCase();
+  return t === 'ITEM_AUDIO' || t === 'ITEM_STUDIO' || t === 'ITEM_PLAYLIST'
+      || t === 'CONTAINER' || t === 'SECTION';
+}
+
+/** Items played via WS loadContent (stations, radio mixes, programs). */
+export function isProgram(item: SonosItem): boolean {
+  const type = (item.resource?.type ?? item.type ?? '') as string;
+  return type.toUpperCase() === 'PROGRAM';
 }
 
 export function browseSub(item: SonosItem): string {

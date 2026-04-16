@@ -204,7 +204,8 @@ export function QueueSidebar(
     const listJson = e.dataTransfer.getData('application/sonos-item-list');
     if (listJson) {
       setDragOverIndex(null);
-      const droppedItems = JSON.parse(listJson) as SonosItem[];
+      let droppedItems: SonosItem[];
+      try { droppedItems = JSON.parse(listJson) as SonosItem[]; } catch { return; }
       const pos = dragOverIndex >= items.length ? -1 : dragOverIndex;
       for (let idx = 0; idx < droppedItems.length; idx++) {
         await onAddToQueue(droppedItems[idx], pos === -1 ? -1 : pos + idx);
@@ -215,7 +216,8 @@ export function QueueSidebar(
     // Internal: queue reorder
     const raw = e.dataTransfer.getData('application/queue-indices');
     if (!raw) { setDragOverIndex(null); return; }
-    const fromIndices: number[] = JSON.parse(raw);
+    let fromIndices: number[];
+    try { fromIndices = JSON.parse(raw) as number[]; } catch { setDragOverIndex(null); return; }
     const currentLength = items.length;
     const targetIndex = dragOverIndex;
     setDragOverIndex(null);

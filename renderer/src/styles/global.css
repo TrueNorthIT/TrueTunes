@@ -14,6 +14,7 @@
   --nav-h: 52px;
   --player-h: 112px; /* 64px bar + 24px bottom margin + 24px clearance */
   --queue-w: 300px;
+  --card-size: clamp(140px, 16vw, 320px);
 }
 
 *,

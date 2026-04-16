@@ -97,10 +97,10 @@ function buildApi() {
           query: defined({ defaults: params?.defaults, muse2: params?.muse2 ? 'true' : undefined }),
         }),
 
-      container: (containerId: string, params?: { serviceId?: string; accountId?: string; muse2?: boolean }) =>
+      container: (containerId: string, params?: { serviceId?: string; accountId?: string; defaults?: string; muse2?: boolean }) =>
         call('browseContainer', {
           pathParams: { containerId, ...defined({ serviceId: params?.serviceId, accountId: params?.accountId }) },
-          query: defined({ muse2: params?.muse2 ? 'true' : undefined }),
+          query: defined({ defaults: params?.defaults, muse2: params?.muse2 ? 'true' : undefined }),
         }),
 
       playlist: (playlistId: string, params?: { serviceId?: string; accountId?: string; defaults?: string; muse2?: boolean; count?: number }) =>

@@ -13,16 +13,22 @@ interface FetchResponse {
   etag?: string;
 }
 
+type Unsubscribe = () => void;
+
 interface SonosPreload {
-  onAuthReady: (cb: VoidCallback) => void;
-  onAuthExpired: (cb: VoidCallback) => void;
+  onAuthReady: (cb: VoidCallback) => Unsubscribe;
+  onAuthExpired: (cb: VoidCallback) => Unsubscribe;
   fetch: (request: FetchRequest) => Promise<FetchResponse>;
-  onWsMessage: (cb: (header: unknown, payload: unknown) => void) => void;
-  onWsReady: (cb: VoidCallback) => void;
-  onWsGroups: (cb: (groups: unknown[]) => void) => void;
+  onWsMessage: (cb: (header: unknown, payload: unknown) => void) => Unsubscribe;
+  onWsReady: (cb: VoidCallback) => Unsubscribe;
+  onWsGroups: (cb: (groups: unknown[]) => void) => Unsubscribe;
   setGroup: (groupId: string) => Promise<{ ok?: boolean; error?: string }>;
   setGroupVolume: (volume: number) => Promise<unknown>;
+  setQueueId:  (queueId: string)                  => Promise<void>;
+  loadContent: (payload: Record<string, unknown>) => Promise<unknown>;
+  fetchImage:  (url: string) => Promise<{ data: string; mimeType: string } | { error: string }>;
   refreshPlayback: () => Promise<void>;
+  resync: () => Promise<void>;
   setPlayModes: (modes: Record<string, unknown>) => Promise<unknown>;
   play: () => Promise<unknown>;
   pause: () => Promise<unknown>;

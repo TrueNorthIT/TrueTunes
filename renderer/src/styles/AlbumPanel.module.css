@@ -64,12 +64,26 @@
   border-color: rgba(255, 255, 255, 0.3);
 }
 
-/* ── Track list ── */
-.tracks { padding: 8px 28px; }
+/* ── Track list / table ── */
+.tracks { padding: 0 28px 8px; }
+
+.tableHeader {
+  display: grid;
+  grid-template-columns: var(--track-cols);
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+  color: var(--text-3); text-transform: uppercase;
+}
 
 .trackRow {
-  display: flex; align-items: center; gap: 12px;
-  padding: 8px; border-radius: var(--r-sm);
+  display: grid;
+  grid-template-columns: var(--track-cols);
+  align-items: center; gap: 12px;
+  padding: 6px 8px; border-radius: var(--r-sm);
   transition: background 0.12s; cursor: grab;
 }
 .trackRow:active { cursor: grabbing; }
@@ -78,21 +92,42 @@
 .trackRow.selected:hover { background: rgba(255,255,255,0.12); }
 
 .ordinal {
-  width: 24px; text-align: right; flex-shrink: 0;
+  text-align: right;
   font-size: 13px; color: var(--text-3);
 }
 
-.trackText { flex: 1; min-width: 0; }
+.trackArtWrap {
+  width: 38px; height: 38px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg-1);
+}
+.trackArt { width: 100%; height: 100%; object-fit: cover; display: block; }
+.trackArtPh { width: 100%; height: 100%; background: var(--bg-2); }
+
 .trackName {
   font-size: 13px; font-weight: 500; color: var(--text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: flex; align-items: center; gap: 4px; min-width: 0;
 }
 .trackArtist {
-  font-size: 11px; color: var(--text-2); margin-top: 2px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 12px; color: var(--text-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}
+.trackAlbum {
+  font-size: 12px; color: var(--text-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
 }
 
-.duration { font-size: 12px; color: var(--text-3); flex-shrink: 0; }
+.artistBtn {
+  background: none; border: none; padding: 0;
+  font-size: inherit; color: var(--text-2);
+  cursor: pointer; font-family: inherit;
+  transition: color 0.12s;
+}
+.artistBtn:hover { color: var(--text); text-decoration: underline; }
+
+.duration { font-size: 12px; color: var(--text-3); text-align: right; }
 
 .addBtn {
   width: 26px; height: 26px; background: none;
@@ -100,8 +135,7 @@
   color: var(--text-3); cursor: pointer;
   font-size: 16px; line-height: 1;
   display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; transition: all 0.15s;
-  opacity: 0;
+  transition: all 0.15s; opacity: 0;
 }
 .trackRow:hover .addBtn { opacity: 1; }
 .addBtn:hover { border-color: var(--border-2); color: var(--text-2); background: var(--bg-2); }
@@ -109,6 +143,56 @@
 .msg {
   color: var(--text-3); font-size: 14px;
   text-align: center; padding: 40px 0;
+}
+
+/* ── Spinner ── */
+.spinnerWrap {
+  display: flex; justify-content: center; padding: 16px 0 8px;
+}
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--text-2);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Skeleton tracks ── */
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 0.6; }
+}
+.skeletonRow {
+  display: grid;
+  grid-template-columns: var(--track-cols);
+  align-items: center; gap: 12px;
+  padding: 6px 8px; border-radius: var(--r-sm);
+}
+.skeletonOrdinal {
+  height: 12px;
+  background: var(--bg-2); border-radius: 3px;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+.skeletonArt {
+  width: 38px; height: 38px;
+  background: var(--bg-2); border-radius: 4px;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+.skeletonTitle {
+  height: 12px; background: var(--bg-2); border-radius: 3px;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+.skeletonSub {
+  height: 10px; background: var(--bg-2); border-radius: 3px;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+.skeletonDur {
+  height: 10px;
+  background: var(--bg-2); border-radius: 3px;
+  animation: pulse 1.8s ease-in-out infinite;
 }
 
 .selBar {

@@ -1,4 +1,4 @@
-import { getName, browseSub, getArt, isAlbum } from '../lib/itemHelpers';
+import { getName, browseSub, getItemArt, isAlbum, isPlaylist, isContainer, isProgram } from '../lib/itemHelpers';
 import { TrackCard } from './TrackCard';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/HomePanel.module.css';
@@ -31,9 +31,9 @@ export function CardRow({
           key={i}
           name={getName(item)}
           sub={browseSub(item)}
-          artUrl={getArt(item)}
-          onAdd={() => onAdd(item)}
-          onOpen={isAlbum(item) ? () => onOpen(item) : undefined}
+          artUrl={getItemArt(item)}
+          onAdd={isContainer(item) ? undefined : () => onAdd(item)}
+          onOpen={(isAlbum(item) || isPlaylist(item) || isContainer(item) || isProgram(item)) ? () => onOpen(item) : undefined}
         />
       ))}
     </div>

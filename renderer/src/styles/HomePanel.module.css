@@ -30,12 +30,12 @@
   padding-bottom: 4px;
 }
 .cardRow::-webkit-scrollbar {
-  height: 3px;
+  height: 6px;
 }
 
 .placeholder {
-  width: 160px;
-  height: 160px;
+  width: var(--card-size);
+  height: var(--card-size);
   border-radius: var(--r-md);
   background: var(--bg-1);
   flex-shrink: 0;
@@ -392,6 +392,55 @@
   display: flex;
   flex-direction: column;
 }
+
+/* ── Search track rows ── */
+.searchTrackRow {
+  display: flex; align-items: center; gap: 12px;
+  padding: 7px 8px; border-radius: var(--r-sm);
+  transition: background 0.12s; cursor: grab;
+}
+.searchTrackRow:active { cursor: grabbing; }
+.searchTrackRow:hover { background: var(--bg-2); }
+.searchTrackSelected { background: rgba(255,255,255,0.08); }
+.searchTrackSelected:hover { background: rgba(255,255,255,0.12); }
+
+.searchTrackArt {
+  width: 40px; height: 40px; flex-shrink: 0;
+  border-radius: 4px; overflow: hidden; background: var(--bg-1);
+}
+.searchTrackArt img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.searchTrackArtPh { width: 100%; height: 100%; background: var(--bg-2); }
+
+.searchTrackText { flex: 1; min-width: 0; }
+.searchTrackName {
+  font-size: 13px; font-weight: 500; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: flex; align-items: center; gap: 4px;
+}
+.searchTrackSub {
+  font-size: 11px; color: var(--text-2); margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.searchArtistBtn {
+  background: none; border: none; padding: 0;
+  font-size: inherit; color: var(--text-2);
+  cursor: pointer; font-family: inherit;
+  transition: color 0.12s;
+}
+.searchArtistBtn:hover { color: var(--text); text-decoration: underline; }
+
+.searchTrackAddBtn {
+  width: 26px; height: 26px; background: none;
+  border: 1px solid var(--border); border-radius: 50%;
+  color: var(--text-3); cursor: pointer;
+  font-size: 16px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all 0.15s;
+  opacity: 0;
+}
+.searchTrackRow:hover .searchTrackAddBtn { opacity: 1; }
+.searchTrackAddBtn:hover { border-color: var(--border-2); color: var(--text-2); background: var(--bg-2); }
 
 /* ── Misc ── */
 .msg {

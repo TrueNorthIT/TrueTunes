@@ -1,7 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/sonosApi';
+import { decodeDefaults } from '../lib/itemHelpers';
 import type { AlbumTrack } from './useAlbumBrowse';
 import type { PlaylistResponse } from '../types/PlaylistResponse';
+
+function cleanArtistId(id: string): string {
+  return id.replace(/^srn:content:audio:artist:/, '').replace(/#.*$/, '');
+}
 
 function parseDuration(d: string | number | undefined): number {
   if (!d) return 0;
@@ -23,6 +28,10 @@ export function parsePlaylistTracks(data: unknown): AlbumTrack[] {
     artUrl:          t.images?.tile1x1 ?? null,
     id:              t.resource?.id ?? {},
     artists:         t.artists?.map(a => a.name) ?? [],
+    artistObjects:   t.artists
+      ?.filter(a => a.id)
+      .map(a => ({ name: a.name, objectId: cleanArtistId(a.id) })),
+    albumName:       (decodeDefaults(t.resource?.defaults)?.['containerName'] as string) ?? null,
     explicit:        t.isExplicit ?? false,
     raw:             t as never,
   }));
@@ -37,7 +46,7 @@ export function usePlaylistBrowse(
   return useQuery({
     queryKey: ['playlist', playlistId] as const,
     queryFn: async () => {
-      const r = await api.browse.playlist(playlistId!, { serviceId, accountId, defaults, muse2: true, count: 20 });
+      const r = await api.browse.playlist(playlistId!, { serviceId, accountId, defaults, muse2: true });
       if (r.error) throw new Error(r.error);
       return parsePlaylistTracks(r.data);
     },

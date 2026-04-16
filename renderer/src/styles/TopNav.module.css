@@ -112,6 +112,17 @@
 .groupSelect:not(:disabled) { color: var(--text-2); }
 .groupSelect:focus { outline: none; border-color: var(--border-2); }
 
+/* ── Resync button ── */
+.resyncBtn {
+  background: none; border: none;
+  color: var(--text-3); cursor: pointer;
+  font-size: 16px; padding: 5px 7px;
+  border-radius: var(--r-sm);
+  display: flex; align-items: center;
+  transition: all 0.15s; line-height: 1;
+}
+.resyncBtn:hover { color: var(--text-2); background: var(--bg-2); }
+
 /* ── Queue toggle ── */
 .queueBtn {
   background: none; border: none;
