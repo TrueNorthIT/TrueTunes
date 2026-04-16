@@ -3,6 +3,7 @@ export interface FetchRequest {
   pathParams?: Record<string, string>;
   query?: Record<string, string | undefined>;
   body?: unknown;
+  headers?: Record<string, string>;
 }
 
 export interface FetchResponse {

@@ -3,45 +3,49 @@ import type { PlaybackPayload } from "../types/sonos";
 import { fmtTime } from "../lib/itemHelpers";
 
 export interface PlaybackState {
-  isVisible:        boolean;
-  trackName:        string;
-  artistName:       string;
-  artUrl:           string | null;
-  stateIcon:        string;
-  timeLabel:        string;
-  progressPct:      number;
-  durationMs:       number;
-  isPlaying:        boolean;
-  shuffle:          boolean;
-  repeat:           'none' | 'one' | 'all';
-  volume:           number;
-  currentObjectId:  string | null;
+  isVisible: boolean;
+  trackName: string;
+  artistName: string;
+  artUrl: string | null;
+  stateIcon: string;
+  timeLabel: string;
+  progressPct: number;
+  durationMs: number;
+  isPlaying: boolean;
+  shuffle: boolean;
+  repeat: "none" | "one" | "all";
+  volume: number;
+  currentObjectId: string | null;
   currentServiceId: string | null;
   currentAccountId: string | null;
-  currentAlbumId:   string | null;
+  currentAlbumId: string | null;
   currentAlbumName: string | null;
-  isExplicit:       boolean;
+  isExplicit: boolean;
+  queueId: string | null;
+  queueVersion: string | null;
 }
 
 const IDLE_STATE: PlaybackState = {
-  isVisible:        false,
-  trackName:        "",
-  artistName:       "",
-  artUrl:           null,
-  stateIcon:        "\u2013",
-  timeLabel:        "",
-  progressPct:      0,
-  durationMs:       0,
-  isPlaying:        false,
-  shuffle:          false,
-  repeat:           'none',
-  volume:           50,
-  currentObjectId:  null,
+  isVisible: false,
+  trackName: "",
+  artistName: "",
+  artUrl: null,
+  stateIcon: "\u2013",
+  timeLabel: "",
+  progressPct: 0,
+  durationMs: 0,
+  isPlaying: false,
+  shuffle: false,
+  repeat: "none",
+  volume: 50,
+  currentObjectId: null,
   currentServiceId: null,
   currentAccountId: null,
-  currentAlbumId:   null,
+  currentAlbumId: null,
   currentAlbumName: null,
-  isExplicit:       false,
+  isExplicit: false,
+  queueId: null,
+  queueVersion: null,
 };
 
 export function usePlayback(activeGroupId: string | null) {
@@ -79,24 +83,36 @@ export function usePlayback(activeGroupId: string | null) {
         : String(rawArtist)
       : "";
 
-    const posMs   = payload?.playback?.positionMillis ?? 0;
-    const durMs   = track?.durationMillis ?? 0;
-    const pct     = durMs > 0 ? Math.min((posMs / durMs) * 100, 100) : 0;
-    const shuffle = payload?.playModes?.shuffle ?? false;
-    const repeat: PlaybackState['repeat'] = payload?.playModes?.repeatOne
-      ? 'one' : payload?.playModes?.repeat ? 'all' : 'none';
-    const oid       = track?.id?.objectId  ?? null;
+    const posMs = payload?.playback?.positionMillis ?? 0;
+    const durMs = track?.durationMillis ?? 0;
+    const pct = durMs > 0 ? Math.min((posMs / durMs) * 100, 100) : 0;
+    const volume =
+      payload?.playback?.playbackState === "NO_GROUPS" ? 0 : state.volume;
+    const shuffle = payload?.playback?.playModes?.shuffle ?? false;
+    const repeat: PlaybackState["repeat"] = payload?.playback?.playModes?.repeatOne
+      ? "one"
+      : payload?.playback?.playModes?.repeat
+        ? "all"
+        : "none";
+    const queueId = payload?.playback?.queueId ?? null;
+    const queueVersion = payload?.playback?.queueVersion ?? null;
+    const oid = track?.id?.objectId ?? null;
     const serviceId = track?.id?.serviceId ?? null;
     const accountId = track?.id?.accountId ?? null;
-    const albumObj  = track?.album as { name?: string; id?: { objectId?: string } } | undefined;
-    const albumId   = albumObj?.id?.objectId ?? null;
+    const albumObj = track?.album as
+      | { name?: string; id?: { objectId?: string } }
+      | undefined;
+    const albumId = albumObj?.id?.objectId ?? null;
     const albumName = albumObj?.name ?? null;
-    const isExplicit = !!(track?.explicit ?? (track as Record<string, unknown> | undefined)?.['isExplicit']);
+    const isExplicit = !!(
+      track?.explicit ??
+      (track as Record<string, unknown> | undefined)?.["isExplicit"]
+    );
     const artUrls = [
-      ...(track?.images?.map(i => i.url) ?? []),
+      ...(track?.images?.map((i) => i.url) ?? []),
       track?.imageUrl,
     ].filter((u): u is string => !!u);
-    const artUrl = artUrls.find(u => u.startsWith('https://')) ?? null;
+    const artUrl = artUrls.find((u) => u.startsWith("https://")) ?? null;
 
     positionMsRef.current = posMs;
     durationMsRef.current = durMs;
@@ -106,23 +122,27 @@ export function usePlayback(activeGroupId: string | null) {
     if (!name) return;
 
     setState((prev) => ({
-      isVisible:   true,
-      trackName:   name,
-      artistName:  artist,
+      isVisible: true,
+      trackName: name,
+      artistName: artist,
       artUrl,
-      stateIcon:   isPlaying ? "\u25b6" : isPaused ? "\u23f8" : "\u2013",
-      timeLabel:   durMs > 0 ? `${fmtTime(posMs)} / ${fmtTime(durMs)}` : "",
+      stateIcon: isPlaying ? "\u25b6" : isPaused ? "\u23f8" : "\u2013",
+      timeLabel: durMs > 0 ? `${fmtTime(posMs)} / ${fmtTime(durMs)}` : "",
       progressPct: pct,
-      durationMs:  durMs,
+      durationMs: durMs,
       isPlaying,
       shuffle,
+      volume,
       repeat,
-      currentObjectId:  oid !== prev.currentObjectId ? oid : prev.currentObjectId,
+      currentObjectId:
+        oid !== prev.currentObjectId ? oid : prev.currentObjectId,
       currentServiceId: serviceId,
       currentAccountId: accountId,
-      currentAlbumId:   albumId,
+      currentAlbumId: albumId,
       currentAlbumName: albumName,
       isExplicit,
+      queueId,
+      queueVersion,
     }));
   }, []);
 
@@ -160,7 +180,7 @@ export function usePlayback(activeGroupId: string | null) {
 
       if (h?.["namespace"] === "groupVolume") {
         const vol = (payload as { volume?: number })?.volume;
-        if (vol !== undefined) setState(prev => ({ ...prev, volume: vol }));
+        if (vol !== undefined) setState((prev) => ({ ...prev, volume: vol }));
         return;
       }
 

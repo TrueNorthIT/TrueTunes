@@ -89,12 +89,12 @@ export interface PlaybackPayload {
     itemId?: string;
     queueId?: string;
     queueVersion?: string;
-  };
-  playModes?: {
-    shuffle?: boolean;
-    repeat?: boolean;
-    repeatOne?: boolean;
-    crossfade?: boolean;
+    playModes?: {
+      shuffle?: boolean;
+      repeat?: boolean;
+      repeatOne?: boolean;
+      crossfade?: boolean;
+    };
   };
   metadata?: {
     currentItem?: {

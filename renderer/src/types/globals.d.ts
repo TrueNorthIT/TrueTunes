@@ -21,7 +21,18 @@ interface SonosPreload {
   onWsGroups: (cb: (groups: unknown[]) => void) => void;
   setGroup: (groupId: string) => Promise<{ ok?: boolean; error?: string }>;
   setGroupVolume: (volume: number) => Promise<unknown>;
-  skipToTrack: (trackNumber: number) => Promise<unknown>;
+  refreshPlayback: () => Promise<void>;
+  setPlayModes: (modes: Record<string, unknown>) => Promise<unknown>;
+  play: () => Promise<unknown>;
+  pause: () => Promise<unknown>;
+  skipNext: () => Promise<unknown>;
+  skipPrev: () => Promise<unknown>;
+  skipToTrack:     (trackNumber: number)                    => Promise<unknown>;
+  reorderQueue:    (fromIndices: number[], toIndex: number) => Promise<unknown>;
+  removeFromQueue: (indices: number[])                      => Promise<unknown>;
+  clearQueue:      ()                                       => Promise<unknown>;
+  openWsMonitor:   ()                                       => Promise<void>;
+  openHttpMonitor: ()                                       => Promise<void>;
 }
 
 declare global {

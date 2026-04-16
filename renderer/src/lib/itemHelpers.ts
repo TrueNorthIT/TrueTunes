@@ -1,4 +1,5 @@
 import type { SonosItem, SonosItemId, QueueItem } from '../types/sonos';
+import type { ServiceSearch } from '../types/ServiceSearch';
 
 // ─── Defaults decoder ─────────────────────────────────────────────────────────
 
@@ -92,6 +93,131 @@ export function browseSub(item: SonosItem): string {
   const type    = item?.type ? item.type.charAt(0) + item.type.slice(1).toLowerCase() : '';
   const artists = item?.artists?.map((a) => a.name).join(', ') ?? getSub(item);
   return [type, artists].filter(Boolean).join(' \u2022 ');
+}
+
+// ─── Artist param resolver ────────────────────────────────────────────────────
+
+export function resolveArtistParams(item: SonosItem) {
+  const rid = item.resource?.id as SonosItemId | undefined;
+  const iid = typeof item.id === 'object' ? item.id as SonosItemId : undefined;
+  const serviceId = rid?.serviceId ?? iid?.serviceId;
+  const accountId = (rid?.accountId ?? iid?.accountId)?.replace(/^sn_/, '');
+
+  // Direct ARTIST-type item
+  if (item.resource?.type === 'ARTIST' || item.type === 'ARTIST') {
+    return {
+      artistId: rid?.objectId ?? iid?.objectId,
+      serviceId,
+      accountId,
+      defaults: item.resource?.defaults as string | undefined,
+      name: (item.title ?? item.name) as string | undefined,
+    };
+  }
+
+  // Album/track item: extract artistId from decoded defaults
+  const decoded = decodeDefaults(item.resource?.defaults as string | undefined);
+  if (decoded?.['artistId']) {
+    return {
+      artistId: decoded['artistId'] as string,
+      serviceId,
+      accountId,
+      defaults: undefined as string | undefined,
+      name: decoded['artist'] as string | undefined,
+    };
+  }
+
+  return { artistId: undefined, serviceId, accountId, defaults: undefined, name: undefined };
+}
+
+// ─── ServiceSearch normaliser ─────────────────────────────────────────────────
+
+export function parseServiceSearch(data: ServiceSearch): SonosItem[] {
+  const order = data.resourceOrder ?? ['ARTISTS', 'ALBUMS', 'TRACKS'];
+  const result: SonosItem[] = [];
+
+  for (const section of order) {
+    switch (section) {
+      case 'ARTISTS':
+        for (const r of data.ARTISTS?.resources ?? []) {
+          result.push({
+            type: 'ARTIST',
+            name: r.name,
+            images: r.images,
+            summary: { content: r.bio?.content ?? '' },
+            id: { objectId: r.id.objectId, serviceId: r.id.serviceId, accountId: r.id.accountId },
+            resource: {
+              type: 'ARTIST',
+              id: { objectId: r.id.objectId, serviceId: r.id.serviceId, accountId: r.id.accountId },
+            },
+          });
+        }
+        break;
+      case 'ALBUMS':
+        for (const r of data.ALBUMS?.resources ?? []) {
+          result.push({
+            type: 'ALBUM',
+            name: r.name,
+            images: r.images,
+            artists: r.artists?.map(a => ({ name: a.name, id: a.id })),
+            explicit: r.explicit,
+            summary: r.summary,
+            id: { objectId: r.id.objectId, serviceId: r.id.serviceId, accountId: r.id.accountId },
+            resource: {
+              type: 'ALBUM',
+              id: { objectId: r.id.objectId, serviceId: r.id.serviceId, accountId: r.id.accountId },
+            },
+          });
+        }
+        break;
+      case 'TRACKS':
+        for (const r of data.TRACKS?.resources ?? []) {
+          result.push({
+            type: 'TRACK',
+            name: r.name,
+            images: r.images,
+            artists: r.artists?.map(a => ({ name: a.name, id: a.id })),
+            explicit: r.explicit,
+            durationMs: r.durationMs,
+            id: { objectId: r.id.objectId, serviceId: r.id.serviceId, accountId: r.id.accountId },
+            resource: {
+              type: 'TRACK',
+              id: { objectId: r.id.objectId, serviceId: r.id.serviceId, accountId: r.id.accountId },
+            },
+          });
+        }
+        break;
+      case 'PLAYLISTS':
+        for (const r of data.PLAYLISTS?.resources ?? []) {
+          result.push({
+            type: 'PLAYLIST',
+            name: r.name,
+            images: r.images,
+            id: { objectId: r.id.objectId, serviceId: r.id.serviceId, accountId: r.id.accountId },
+            resource: {
+              type: 'PLAYLIST',
+              id: { objectId: r.id.objectId, serviceId: r.id.serviceId, accountId: r.id.accountId },
+            },
+          });
+        }
+        break;
+      case 'PODCASTS':
+        for (const r of data.PODCASTS?.resources ?? []) {
+          result.push({
+            type: 'PODCAST',
+            name: r.name,
+            images: r.images,
+            id: { objectId: r.id.objectId, serviceId: r.id.serviceId, accountId: r.id.accountId },
+            resource: {
+              type: 'PODCAST',
+              id: { objectId: r.id.objectId, serviceId: r.id.serviceId, accountId: r.id.accountId },
+            },
+          });
+        }
+        break;
+    }
+  }
+
+  return result;
 }
 
 // ─── Formatting ───────────────────────────────────────────────────────────────

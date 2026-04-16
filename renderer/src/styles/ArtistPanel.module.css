@@ -1,0 +1,456 @@
+.panel {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: calc(var(--player-h) + 24px);
+  background: var(--bg);
+}
+
+/* ── Header ── */
+.header {
+  position: relative;
+  padding: 48px 28px 0;
+  /* background gradient applied via inline style from dominant colour */
+}
+
+/* flex row: circle + name, vertically centred together */
+.headerRow {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+/* Circle: in flow, negative margin-bottom makes bottom half bleed into body */
+.headerArtWrap {
+  flex-shrink: 0;
+  width: 200px;
+  height: 200px;
+  margin-bottom: -100px;
+  position: relative;
+  z-index: 10;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--bg-2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  border: 3px solid rgba(255, 255, 255, 0.15);
+}
+
+.headerArt {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.headerArtPh {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-1);
+}
+
+.headerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+  margin-top: 7rem;
+}
+
+.headerSocial {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-self: flex-end;
+  flex-shrink: 0;
+  padding-bottom: 4px;
+}
+
+.socialLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  transition: color 0.15s;
+  text-decoration: none;
+}
+.socialLink:hover {
+  color: var(--text);
+}
+
+.artistLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.artistName {
+  font-size: 92px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  color: var(--text);
+  line-height: 1;
+}
+
+.artistBlurb {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-3);
+  max-width: 460px;
+}
+
+.headerActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.headerBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.headerBtn:hover {
+  background: var(--bg-1);
+  color: var(--text);
+}
+
+/* ── Two-column grid ── */
+.mainGrid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 0;
+  /* top padding clears the 100px circle overhang + gap */
+  padding: 120px 28px 8px;
+  align-items: start;
+}
+
+/* ── Top Songs (left) ── */
+.topSongsCol {
+  min-width: 0;
+  padding-right: 32px;
+}
+
+.sectionTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 12px;
+  letter-spacing: -0.1px;
+}
+
+.sectionTitleBtn {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 12px;
+  letter-spacing: -0.1px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s;
+}
+.sectionTitleBtn:hover {
+  color: var(--text-2);
+}
+
+.sectionChevron {
+  color: var(--text-3);
+  font-size: 14px;
+}
+
+.topSongRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 6px;
+  border-radius: var(--r-sm);
+  transition: background 0.12s;
+  cursor: default;
+}
+.topSongRow:hover {
+  background: var(--bg-2);
+}
+
+.topSongNum {
+  width: 18px;
+  text-align: right;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.topSongArt {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg-1);
+}
+.topSongArt img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.topSongArtPh {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-2);
+}
+
+.topSongInfo {
+  flex: 1;
+  min-width: 0;
+}
+.topSongName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.topSongSub {
+  font-size: 11px;
+  color: var(--text-3);
+  display: block;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topSongDur {
+  font-size: 12px;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+.addBtn {
+  width: 24px;
+  height: 24px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  opacity: 0;
+}
+.topSongRow:hover .addBtn {
+  opacity: 1;
+}
+.addBtn:hover {
+  border-color: var(--border-2);
+  color: var(--text-2);
+  background: var(--bg-2);
+}
+
+/* ── Side column (right) ── */
+.sideCol {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Latest Release */
+.latestRelease {
+}
+
+.latestCard {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-top: 2px;
+}
+.latestCard:hover {
+  background: var(--bg-2);
+}
+
+.latestArt {
+  width: 160px;
+  height: 160px;
+  flex-shrink: 0;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  background: var(--bg-1);
+}
+.latestArt img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.latestArtPh {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: var(--text-3);
+}
+.latestArtRadio {
+  position: relative;
+  background: var(--bg-2);
+  color: var(--text-3);
+}
+
+.latestArtRadioBg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: brightness(0.45) saturate(1.2);
+}
+
+.latestArtRadioOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.latestMeta {
+  min-width: 0;
+}
+.latestTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.latestSub {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 3px;
+}
+
+/* Artist Radio */
+.radioBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 16px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.15s;
+}
+.radioBtn:hover {
+  background: var(--bg-1);
+  color: var(--text);
+}
+
+/* ── Albums shelf ── */
+.albumsSection {
+  padding: 20px 28px 24px;
+}
+
+.albumsRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 8px;
+}
+
+.albumCard {
+  cursor: pointer;
+  border-radius: var(--r-md);
+  padding: 8px;
+  transition: background 0.15s;
+}
+.albumCard:hover {
+  background: var(--bg-2);
+}
+
+.albumArt {
+  width: 100%;
+  aspect-ratio: 1;
+  height: auto;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  background: var(--bg-1);
+  margin-bottom: 8px;
+}
+.albumArt img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.albumArtPh {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: var(--text-3);
+}
+
+.albumTitle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.albumTitleText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+.albumSub {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

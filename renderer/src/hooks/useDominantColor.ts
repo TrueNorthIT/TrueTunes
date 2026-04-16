@@ -15,19 +15,24 @@ export function useDominantColor(src: string | null): string | null {
       ctx.drawImage(img, 0, 0, size, size);
       const { data } = ctx.getImageData(0, 0, size, size);
 
-      let bestR = 128, bestG = 128, bestB = 128, bestScore = -1;
+      // Score every pixel
+      const candidates: { r: number; g: number; b: number; score: number; sat: number; lum: number }[] = [];
       for (let i = 0; i < data.length; i += 4) {
         const r = data[i] / 255, g = data[i + 1] / 255, b = data[i + 2] / 255;
         const max = Math.max(r, g, b), min = Math.min(r, g, b);
         const sat = max === 0 ? 0 : (max - min) / max;
         const lum = (max + min) / 2;
         const score = sat * (1 - Math.abs(lum - 0.45) * 1.8);
-        if (score > bestScore) {
-          bestScore = score;
-          bestR = data[i]; bestG = data[i + 1]; bestB = data[i + 2];
-        }
+        candidates.push({ r: data[i], g: data[i + 1], b: data[i + 2], score, sat, lum });
       }
-      setColor(`${bestR}, ${bestG}, ${bestB}`);
+
+      // Sort best-first, then pick the first truly vibrant pixel.
+      // Falls back to the raw top scorer if the whole image is dark/grey.
+      candidates.sort((a, b) => b.score - a.score);
+      const vibrant = candidates.find(c => c.sat > 0.2 && c.lum > 0.18 && c.lum < 0.85);
+      const pick = vibrant ?? candidates[0];
+
+      setColor(`${pick.r}, ${pick.g}, ${pick.b}`);
     };
     img.src = src;
   }, [src]);

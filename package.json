@@ -4,7 +4,7 @@
   "description": "Sonos Web Player proxy app",
   "main": "dist/main.js",
   "scripts": {
-    "build:main": "tsc",
+    "build:main": "tsc && node -e \"const fs=require('fs');fs.copyFileSync('src/debug-ws.html','dist/debug-ws.html');fs.copyFileSync('src/debug-http.html','dist/debug-http.html')\"",
     "build:renderer": "vite build --config renderer/vite.config.ts",
     "build": "npm run build:main && npm run build:renderer",
     "dev:renderer": "vite --config renderer/vite.config.ts",

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>WS Monitor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      font-size: 12px;
+      background: #0e0e0e;
+      color: #d4d4d4;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    #toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #1a1a1a;
+      border-bottom: 1px solid #2a2a2a;
+      flex-shrink: 0;
+    }
+    #toolbar button {
+      background: #2a2a2a;
+      border: 1px solid #3a3a3a;
+      color: #d4d4d4;
+      padding: 3px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    #toolbar button:hover { background: #333; }
+    #filter {
+      flex: 1;
+      background: #2a2a2a;
+      border: 1px solid #3a3a3a;
+      color: #d4d4d4;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 11px;
+      outline: none;
+    }
+    #filter:focus { border-color: #555; }
+    #count { color: #666; font-size: 11px; margin-left: auto; }
+    #autoscroll { accent-color: #4ec9b0; }
+    #feed {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 0;
+    }
+    .msg {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid #1a1a1a;
+      transition: background 0.1s;
+    }
+    .msg:hover { background: #161616; }
+    .msg.hidden { display: none; }
+    .dir {
+      width: 28px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 6px;
+      font-size: 14px;
+    }
+    .out .dir { color: #569cd6; }
+    .in  .dir { color: #4ec9b0; }
+    .body {
+      flex: 1;
+      padding: 5px 8px 5px 0;
+      min-width: 0;
+    }
+    .ts {
+      color: #555;
+      font-size: 10px;
+      margin-bottom: 2px;
+    }
+    .cmd {
+      color: #dcdcaa;
+      font-weight: bold;
+      margin-bottom: 3px;
+    }
+    .cmd .ns  { color: #9cdcfe; }
+    .cmd .sep { color: #555; }
+    .frames {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .frame {
+      background: #1e1e1e;
+      border: 1px solid #2a2a2a;
+      border-radius: 4px;
+      padding: 4px 6px;
+      max-width: 420px;
+      overflow-x: auto;
+      white-space: pre;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <button id="clearBtn">Clear</button>
+    <input id="filter" placeholder="Filter by namespace / command…" />
+    <label style="display:flex;align-items:center;gap:4px;color:#888;font-size:11px;">
+      <input type="checkbox" id="autoscroll" checked /> Auto-scroll
+    </label>
+    <span id="count">0</span>
+  </div>
+  <div id="feed"></div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    const feed      = document.getElementById('feed');
+    const filterEl  = document.getElementById('filter');
+    const countEl   = document.getElementById('count');
+    const autoEl    = document.getElementById('autoscroll');
+    let total = 0;
+
+    document.getElementById('clearBtn').onclick = () => {
+      feed.innerHTML = '';
+      total = 0;
+      countEl.textContent = '0';
+    };
+
+    filterEl.addEventListener('input', () => {
+      const q = filterEl.value.toLowerCase();
+      feed.querySelectorAll('.msg').forEach(el => {
+        el.classList.toggle('hidden', q && !el.dataset.text.includes(q));
+      });
+    });
+
+    function fmt(obj) {
+      try { return JSON.stringify(obj, null, 2); }
+      catch { return String(obj); }
+    }
+
+    function addMessage(direction, frames) {
+      const [header, payload] = frames;
+      const ns  = header?.namespace ?? header?.response ?? '?';
+      const cmd = header?.command   ?? header?.response ?? '';
+      const ts  = new Date().toISOString().slice(11, 23);
+
+      const searchText = JSON.stringify(frames).toLowerCase();
+
+      const row = document.createElement('div');
+      row.className = `msg ${direction}`;
+      row.dataset.text = searchText;
+
+      row.innerHTML = `
+        <div class="dir">${direction === 'out' ? '→' : '←'}</div>
+        <div class="body">
+          <div class="ts">${ts}</div>
+          <div class="cmd">
+            <span class="ns">${ns}</span>
+            ${cmd ? `<span class="sep"> · </span>${cmd}` : ''}
+          </div>
+          <div class="frames">
+            <div class="frame">${escHtml(fmt(header))}</div>
+            ${payload && Object.keys(payload).length ? `<div class="frame">${escHtml(fmt(payload))}</div>` : ''}
+          </div>
+        </div>`;
+
+      const q = filterEl.value.toLowerCase();
+      if (q && !searchText.includes(q)) row.classList.add('hidden');
+
+      feed.appendChild(row);
+      total++;
+      countEl.textContent = total;
+
+      if (autoEl.checked) row.scrollIntoView({ block: 'end' });
+    }
+
+    function escHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    ipcRenderer.on('ws:out', (_e, frames) => addMessage('out', frames));
+    ipcRenderer.on('ws:in',  (_e, frames) => addMessage('in',  frames));
+  </script>
+</body>
+</html>

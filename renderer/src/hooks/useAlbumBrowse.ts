@@ -1,6 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
-import { api } from '../lib/sonosApi';
-import type { SonosItem, SonosItemId } from '../types/sonos';
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../lib/sonosApi";
+import type { SonosItem, SonosItemId } from "../types/sonos";
+import { AlbumResponse } from "../types/AlbumResponse";
+import { decodeDefaults } from "../lib/itemHelpers";
 
 export interface AlbumTrack {
   title: string;
@@ -19,64 +21,78 @@ export interface AlbumData {
   artUrl: string | null;
   tracks: AlbumTrack[];
   totalTracks: number;
+  artistItem: SonosItem | null;
 }
 
-function parseAlbum(data: unknown): AlbumData {
-  const d = data as Record<string, unknown>;
-  const title  = (d['title'] ?? d['name'] ?? '') as string;
-  const artist = (d['subtitle'] ?? '') as string;
-  const images = d['images'] as Record<string, string> | undefined;
-  const artUrl = images?.['tile1x1'] ?? null;
+function parseAlbum(data: AlbumResponse): AlbumData {
+  const title  = data.title ?? "";
+  const artist = data.subtitle ?? "";
+  const artUrl = data.images?.tile1x1 ?? null;
 
-  const tracksSection = d['tracks'] as { items?: unknown[]; total?: number } | undefined;
-  const rawTracks     = tracksSection?.items ?? [];
-  const totalTracks   = tracksSection?.total ?? rawTracks.length;
+  // Decode album defaults to find the artist's objectId
+  const decoded   = decodeDefaults(data.resource?.defaults);
+  const artistId  = decoded?.["artistId"] as string | undefined;
+  const serviceId = data.resource?.id?.serviceId;
+  const accountId = data.resource?.id?.accountId;
+  const artistItem: SonosItem | null =
+    artistId && serviceId && accountId
+      ? ({
+          type: "ARTIST",
+          title: (decoded?.["artist"] as string | undefined) ?? artist,
+          resource: {
+            type: "ARTIST",
+            id: { objectId: artistId, serviceId, accountId },
+            defaults: undefined,
+          },
+        } as SonosItem)
+      : null;
 
-  const tracks: AlbumTrack[] = rawTracks.map((t: unknown) => {
-    const track    = t as Record<string, unknown>;
-    const resource = track['resource'] as Record<string, unknown> | undefined;
-    const id       = (resource?.['id'] as SonosItemId | undefined) ?? {};
-    const imgs     = track['images'] as Record<string, string> | undefined;
-    const artists  = (track['artists'] as Array<{ name: string }> | undefined)?.map(a => a.name) ?? [];
+  const rawTracks   = data.tracks?.items ?? [];
+  const totalTracks = data.tracks?.total ?? rawTracks.length;
 
-    return {
-      title:           (track['title'] ?? track['name'] ?? '') as string,
-      ordinal:         Number(track['ordinal'] ?? 0),
-      durationSeconds: Number(track['duration'] ?? 0),
-      artUrl:          imgs?.['tile1x1'] ?? null,
-      id,
-      artists,
-      explicit:        !!(track['explicit'] ?? track['isExplicit']),
-      raw: track as SonosItem,
-    };
-  });
+  const tracks: AlbumTrack[] = rawTracks.map((track) => ({
+    title:           track.title ?? "",
+    ordinal:         track.ordinal ?? 0,
+    durationSeconds: Number(track.duration ?? 0),
+    artUrl:          track.images?.tile1x1 ?? null,
+    id:              (track.resource?.id ?? {}) as SonosItemId,
+    artists:         track.artists?.map((a) => a.name) ?? [],
+    explicit:        track.isExplicit ?? false,
+    raw:             track as unknown as SonosItem,
+  }));
 
-  return { title, artist, artUrl, tracks, totalTracks };
+  return { title, artist, artUrl, tracks, totalTracks, artistItem };
 }
 
 export function albumQueryOptions(
-  albumId:   string | undefined,
+  albumId: string | undefined,
   serviceId: string | undefined,
   accountId: string | undefined,
-  defaults:  string | undefined,
+  defaults: string | undefined,
 ) {
   return {
-    queryKey: ['album', albumId] as const,
-    queryFn:  async () => {
-      const r = await api.browse.album(albumId!, { serviceId, accountId, defaults, muse2: true, count: 50 });
+    queryKey: ["album", albumId] as const,
+    queryFn: async () => {
+      const r = await api.browse.album(albumId!, {
+        serviceId,
+        accountId,
+        defaults,
+        muse2: true,
+        count: 50,
+      });
       if (r.error) throw new Error(r.error);
-      return parseAlbum(r.data);
+      return parseAlbum(r.data as AlbumResponse);
     },
     staleTime: Infinity,
-    gcTime:    60 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   };
 }
 
 export function useAlbumBrowse(
-  albumId:   string | undefined,
+  albumId: string | undefined,
   serviceId: string | undefined,
   accountId: string | undefined,
-  defaults:  string | undefined,
+  defaults: string | undefined,
 ) {
   return useQuery({
     ...albumQueryOptions(albumId, serviceId, accountId, defaults),

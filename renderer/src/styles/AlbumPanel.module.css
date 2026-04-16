@@ -12,13 +12,6 @@
   /* background applied via inline style from dominant colour */
 }
 
-.back {
-  background: none; border: none; cursor: pointer;
-  color: var(--text-2); font-size: 13px;
-  padding: 0; margin-bottom: 22px;
-  display: block; transition: color 0.15s;
-}
-.back:hover { color: var(--text); }
 
 .headerContent {
   display: flex;
@@ -48,7 +41,28 @@
   letter-spacing: -0.5px; color: var(--text); line-height: 1.1;
 }
 .artist { font-size: 15px; font-weight: 500; color: var(--text-2); }
+.artistLink { cursor: pointer; }
+.artistLink:hover { color: var(--text); text-decoration: underline; }
 .metaLine { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+.actions { display: flex; gap: 8px; margin-top: 10px; }
+
+.addAlbumBtn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-2);
+  color: var(--text);
+  font-size: 12px; font-weight: 600;
+  font-family: inherit;
+  padding: 7px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  letter-spacing: 0.1px;
+}
+.addAlbumBtn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.3);
+}
 
 /* ── Track list ── */
 .tracks { padding: 8px 28px; }

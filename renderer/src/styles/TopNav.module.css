@@ -23,9 +23,20 @@
 .inner select,
 .inner input { -webkit-app-region: no-drag; }
 
-.left { display: flex; align-items: center; flex-shrink: 0; }
+.left { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
 /* Room for macOS traffic lights in frameless mode */
 .trafficSpace { width: 72px; }
+
+.backBtn {
+  background: none; border: none;
+  color: var(--text-2); font-size: 13px; font-weight: 500;
+  padding: 6px 10px; border-radius: 20px;
+  cursor: pointer; font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  -webkit-app-region: no-drag;
+}
+.backBtn:hover { color: var(--text); background: var(--bg-2); }
 
 .center {
   flex: 1;

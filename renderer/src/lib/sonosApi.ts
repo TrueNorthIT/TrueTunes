@@ -9,6 +9,7 @@ interface FetchRequest {
   pathParams?: Record<string, string>;
   query?: Record<string, string | undefined>;
   body?: unknown;
+  headers?: Record<string, string>;
 }
 
 interface FetchResponse {
@@ -24,6 +25,7 @@ function call(
     pathParams?: Record<string, string>;
     query?: Record<string, string | undefined>;
     body?: unknown;
+    headers?: Record<string, string>;
   } = {}
 ): Promise<FetchResponse> {
   return window.sonos.fetch({ operationId, ...options });
@@ -67,10 +69,11 @@ function buildApi() {
           query: defined({ count: params?.count?.toString(), offset: params?.offset?.toString() }),
         }),
 
-      add: (body: unknown, params?: { groupId?: string; queueId?: string; serviceId?: string; accountId?: string; position?: number }) =>
+      add: (body: unknown, params?: { groupId?: string; queueId?: string; serviceId?: string; accountId?: string; position?: number; ifMatch?: string }) =>
         call('addQueueResource', {
           pathParams: defined({ groupId: params?.groupId, queueId: params?.queueId, serviceId: params?.serviceId, accountId: params?.accountId }),
           query: { position: String(params?.position ?? -1) },
+          headers: params?.ifMatch ? { 'If-Match': params.ifMatch } : undefined,
           body,
         }),
 
@@ -95,16 +98,22 @@ function buildApi() {
           query: defined({ defaults: params?.defaults, muse2: params?.muse2 ? 'true' : undefined, count: params?.count?.toString() }),
         }),
 
-      artist: (artistId: string, params?: { serviceId?: string; accountId?: string; muse2?: boolean }) =>
+      artist: (artistId: string, params?: { serviceId?: string; accountId?: string; defaults?: string; muse2?: boolean }) =>
         call('browseArtist', {
           pathParams: { artistId, ...defined({ serviceId: params?.serviceId, accountId: params?.accountId }) },
-          query: defined({ muse2: params?.muse2 ? 'true' : undefined }),
+          query: defined({ defaults: params?.defaults, muse2: params?.muse2 ? 'true' : undefined }),
         }),
 
       container: (containerId: string, params?: { serviceId?: string; accountId?: string; muse2?: boolean }) =>
         call('browseContainer', {
           pathParams: { containerId, ...defined({ serviceId: params?.serviceId, accountId: params?.accountId }) },
           query: defined({ muse2: params?.muse2 ? 'true' : undefined }),
+        }),
+
+      playlist: (playlistId: string, params?: { serviceId?: string; accountId?: string; defaults?: string; muse2?: boolean; count?: number }) =>
+        call('browsePlaylist', {
+          pathParams: { playlistId, ...defined({ serviceId: params?.serviceId, accountId: params?.accountId }) },
+          query: defined({ defaults: params?.defaults, muse2: params?.muse2 ? 'true' : undefined, count: params?.count?.toString() }),
         }),
 
       catalogContainer: (containerId: string, params?: { serviceId?: string; accountId?: string; count?: number }) =>
@@ -132,6 +141,12 @@ function buildApi() {
       query: (q: string, services?: string[]) =>
         call('searchHousehold', {
           query: defined({ query: q, services: services?.join(',') }),
+        }),
+
+      serviceQuery: (q: string, params?: { serviceId?: string; accountId?: string; count?: number }) =>
+        call('searchService', {
+          pathParams: defined({ serviceId: params?.serviceId, accountId: params?.accountId }),
+          query: defined({ query: q, count: params?.count?.toString() }),
         }),
     },
 

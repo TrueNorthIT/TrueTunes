@@ -12,12 +12,13 @@ interface Props {
   onClearSearch: () => void;
   queueOpen: boolean;
   onToggleQueue: () => void;
+  onBack?: () => void;
 }
 
 export function TopNav({
   isAuthed, groups, activeGroupId, view,
   onGroupChange, onSearch, onClearSearch,
-  queueOpen, onToggleQueue,
+  queueOpen, onToggleQueue, onBack,
 }: Props) {
   const [searchText, setSearchText] = useState('');
 
@@ -40,9 +41,14 @@ export function TopNav({
   return (
     <nav className={styles.nav}>
       <div className={styles.inner}>
-        {/* Left: space for macOS traffic lights */}
+        {/* Left: space for macOS traffic lights + optional back button */}
         <div className={styles.left}>
           <div className={styles.trafficSpace} />
+          {onBack && (
+            <button className={styles.backBtn} onClick={onBack}>
+              ‹ Back
+            </button>
+          )}
         </div>
 
         {/* Center: Home tab + search input */}

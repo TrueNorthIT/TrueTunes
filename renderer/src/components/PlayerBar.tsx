@@ -28,6 +28,7 @@ interface Props {
   onJumpToPlaying: () => void;
   onOpenAlbum: (item: SonosItem) => void;
   onToggleQueue: () => void;
+  onShuffle: () => void;
 }
 
 function ScrollingText({
@@ -146,6 +147,7 @@ export function PlayerBar({
   onJumpToPlaying,
   onOpenAlbum,
   onToggleQueue,
+  onShuffle,
 }: Props) {
   const {
     displayTrack, displayArtist, cachedArt, dominantColor,
@@ -160,23 +162,17 @@ export function PlayerBar({
     if (!durationMs) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    api.playback.seek(Math.floor(pct * durationMs));
+    api.playback.seek(Math.floor(pct * durationMs)).then(refresh);
   };
 
+  const refresh = () => window.sonos.refreshPlayback();
+
   const toggleShuffle = () =>
-    api.playback.setPlayMode({
-      shuffle: !rawShuffle,
-      repeat: rawRepeat === "all",
-      repeatOne: rawRepeat === "one",
-    });
+    window.sonos.setPlayModes({ shuffle: !rawShuffle }).then(refresh).then(onShuffle);
 
   const toggleRepeat = () => {
     const next = rawRepeat === "none" ? "all" : rawRepeat === "all" ? "one" : "none";
-    api.playback.setPlayMode({
-      shuffle: rawShuffle,
-      repeat: next === "all",
-      repeatOne: next === "one",
-    });
+    window.sonos.setPlayModes({ repeat: next === "all", repeatOne: next === "one" }).then(refresh);
   };
 
   if (!isVisible)
@@ -258,7 +254,7 @@ export function PlayerBar({
           <button
             className={styles.ctrl}
             disabled={!isAuthed}
-            onClick={() => api.playback.skipPrev()}
+            onClick={() => window.sonos.skipPrev().then(refresh)}
             title="Previous"
           >
             <SkipBack size={14} />
@@ -267,7 +263,7 @@ export function PlayerBar({
             className={`${styles.ctrl} ${styles.playBtn}`}
             disabled={!isAuthed}
             onClick={() =>
-              isPlaying ? api.playback.pause() : api.playback.play()
+              (isPlaying ? window.sonos.pause() : window.sonos.play()).then(refresh)
             }
           >
             {isPlaying ? <Pause size={14} /> : <Play size={14} />}
@@ -275,7 +271,7 @@ export function PlayerBar({
           <button
             className={styles.ctrl}
             disabled={!isAuthed}
-            onClick={() => api.playback.skipNext()}
+            onClick={() => window.sonos.skipNext().then(refresh)}
             title="Next"
           >
             <SkipForward size={14} />

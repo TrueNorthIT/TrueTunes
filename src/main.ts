@@ -16,6 +16,9 @@ interface Config {
   householdId: string;
   serviceId: string;
   accountId: string;
+  // Separate credentials for the service-scoped search endpoint.
+  searchServiceId: string;
+  searchAccountId: string;
   // Discover groupId/queueId by intercepting a queue or playback request from
   // play.sonos.com, or by calling getGroups once authenticated.
   groupId: string;
@@ -26,6 +29,8 @@ const CONFIG: Config = {
   householdId: "Sonos_8P44MuPRwkQoJnASZVqEGvqbub.xvOabzVo9ZvrXqwCvzuH",
   serviceId: "16751367",
   accountId: "123209393",
+  searchServiceId: "72711",   // YouTube Music — update if your primary service differs
+  searchAccountId: "13",
   groupId: "RINCON_F0F6C1CDD9E201400",
   queueId: "736f08fb-54e0-45d0-aaf5-e5b31ab5b881",
 };
@@ -83,6 +88,10 @@ const OPERATIONS: Record<string, Operation> = {
     method: "GET",
     path: "/api/content/v2/households/:householdId/services/:serviceId/accounts/:accountId/containers/:containerId/browse",
   },
+  browsePlaylist: {
+    method: "GET",
+    path: "/api/content/v2/households/:householdId/services/:serviceId/accounts/:accountId/playlists/:playlistId/browse",
+  },
   getCatalogContainerResources: {
     method: "GET",
     path: "/api/content/v1/households/:householdId/services/:serviceId/accounts/:accountId/catalog/containers/:containerId/resources",
@@ -100,6 +109,10 @@ const OPERATIONS: Record<string, Operation> = {
   searchHousehold: {
     method: "GET",
     path: "/api/content/v1/households/:householdId/search",
+  },
+  searchService: {
+    method: "GET",
+    path: "/api/content/v1/households/:householdId/services/:searchServiceId/accounts/:searchAccountId/search",
   },
   // Integrations
   getIntegrations: {
@@ -152,6 +165,8 @@ function buildUrl(
   if (CONFIG.householdId) configDefaults["householdId"] = CONFIG.householdId;
   if (CONFIG.serviceId) configDefaults["serviceId"] = CONFIG.serviceId;
   if (CONFIG.accountId) configDefaults["accountId"] = CONFIG.accountId;
+  if (CONFIG.searchServiceId) configDefaults["searchServiceId"] = CONFIG.searchServiceId;
+  if (CONFIG.searchAccountId) configDefaults["searchAccountId"] = CONFIG.searchAccountId;
   if (CONFIG.groupId) configDefaults["groupId"] = CONFIG.groupId;
   if (CONFIG.queueId) configDefaults["queueId"] = CONFIG.queueId;
 
@@ -189,32 +204,63 @@ async function sonosFetch(request: FetchRequest): Promise<FetchResponse> {
     return { error: err instanceof Error ? err.message : String(err) };
   }
 
+  // Build headers once so we can log them before sending
+  const reqHeaders: Record<string, string> = {
+    Cookie: `__Secure-next-auth.session-token=${sessionToken}`,
+    "X-Sonos-Timezone": "+01:00",
+    "X-Sonos-Debug": "use-section-text=true",
+    Accept: "*/*",
+    Referer: `${BASE_URL}/en-us/web-app`,
+    "User-Agent": SPOOF_UA,
+    ...(request.body !== undefined ? { "Content-Type": "application/json" } : {}),
+    ...request.headers,
+  };
+
+  const reqId = randomUUID();
+  const startTs = Date.now();
+
+  httpDebugWin?.webContents.send("http:req", {
+    id: reqId,
+    ts: startTs,
+    operationId: request.operationId,
+    method: operation.method,
+    url,
+    headers: reqHeaders,
+    body: request.body !== undefined ? JSON.stringify(request.body) : undefined,
+  });
+
   console.log(`[api] ${operation.method} ${url}`);
 
   let response: Response;
   try {
     response = await fetch(url, {
       method: operation.method,
-      headers: {
-        Cookie: `__Secure-next-auth.session-token=${sessionToken}`,
-        "X-Sonos-Timezone": "+01:00",
-        "X-Sonos-Debug": "use-section-text=true",
-        Accept: "*/*",
-        Referer: `${BASE_URL}/en-us/web-app`,
-        "User-Agent": SPOOF_UA,
-        ...(request.body !== undefined
-          ? { "Content-Type": "application/json" }
-          : {}),
-      },
-      ...(request.body !== undefined
-        ? { body: JSON.stringify(request.body) }
-        : {}),
+      headers: reqHeaders,
+      ...(request.body !== undefined ? { body: JSON.stringify(request.body) } : {}),
     });
   } catch (err) {
-    return {
-      error: `Fetch failed: ${err instanceof Error ? err.message : String(err)}`,
-    };
+    const errorMsg = `Fetch failed: ${err instanceof Error ? err.message : String(err)}`;
+    httpDebugWin?.webContents.send("http:res", {
+      id: reqId, status: 0, statusText: "Network Error",
+      headers: {}, body: errorMsg, durationMs: Date.now() - startTs,
+    });
+    return { error: errorMsg };
   }
+
+  // Read as text once — used for both debug window and response parsing
+  const resHeaders: Record<string, string> = {};
+  response.headers.forEach((val: string, key: string) => { resHeaders[key] = val; });
+  let bodyText = "";
+  try { bodyText = await response.text(); } catch { /* ignore */ }
+
+  httpDebugWin?.webContents.send("http:res", {
+    id: reqId,
+    status: response.status,
+    statusText: response.statusText,
+    headers: resHeaders,
+    body: bodyText,
+    durationMs: Date.now() - startTs,
+  });
 
   if (response.status === 401) {
     console.log("[api] 401 — auth expired, re-showing auth window");
@@ -229,29 +275,21 @@ async function sonosFetch(request: FetchRequest): Promise<FetchResponse> {
   }
 
   if (!response.ok) {
-    let body = "";
-    try {
-      body = await response.text();
-    } catch {
-      /* ignore */
-    }
     console.error(
-      `[api] ${response.status} ${response.statusText} — ${url}\n${body.slice(0, 500)}`,
+      `[api] ${response.status} ${response.statusText} — ${url}\n${bodyText.slice(0, 500)}`,
     );
     return {
-      error: `${response.status} ${response.statusText}${body ? `: ${body.slice(0, 200)}` : ""}`,
+      error: `${response.status} ${response.statusText}${bodyText ? `: ${bodyText.slice(0, 200)}` : ""}`,
     };
   }
 
-  let data: unknown;
+  if (!bodyText) return { data: null };
+
   try {
-    data = await response.json();
+    return { data: JSON.parse(bodyText) };
   } catch {
-    return {
-      error: `Response is not JSON (${response.status} ${response.statusText})`,
-    };
+    return { error: `Response is not JSON (${response.status} ${response.statusText})` };
   }
-  return { data };
 }
 
 // ─── WebSocket ────────────────────────────────────────────────────────────────
@@ -286,7 +324,9 @@ function wsSend(
       clearTimeout(timer);
       resolve(p);
     });
-    ws.send(JSON.stringify([{ ...header, corrId }, payload]));
+    const frame = [{ ...header, corrId }, payload];
+    debugWin?.webContents.send("ws:out", frame);
+    ws.send(JSON.stringify(frame));
   });
 }
 
@@ -318,8 +358,9 @@ function handleWsMessage(raw: Buffer | string): void {
     }
   }
 
-  // Forward everything to the UI window
+  // Forward everything to the UI window and debug monitor
   uiWin?.webContents.send("ws:message", [header, payload]);
+  debugWin?.webContents.send("ws:in", [header, payload]);
 }
 
 // ─── WebSocket bootstrap helpers ─────────────────────────────────────────────
@@ -476,7 +517,6 @@ async function runBootstrap(): Promise<void> {
   discoveredGroups = groups;
   if (groups.length > 0) {
     CONFIG.groupId = groups[0].id;
-    CONFIG.queueId = groups[0].coordinatorId; // coordinatorId as queueId
     console.log(`[ws] Active group: "${groups[0].name}" (${groups[0].id})`);
   }
 
@@ -513,7 +553,7 @@ async function runBootstrap(): Promise<void> {
   // Forward initial playback state for the active group only.
   // Sending all groups causes the last payload to overwrite the first because
   // the renderer's activeGroupIdRef is still null when these arrive.
-  const activeResult = pbSubResults.find(r => r?.groupId === CONFIG.groupId);
+  const activeResult = pbSubResults.find((r) => r?.groupId === CONFIG.groupId);
   if (activeResult?.resp) {
     uiWin?.webContents.send("ws:message", [
       { namespace: "playbackExtended", groupId: activeResult.groupId },
@@ -601,7 +641,39 @@ async function connectWebSocket(): Promise<void> {
 let sessionToken: string | null = null;
 let authWin: BrowserWindow | null = null;
 let uiWin: BrowserWindow | null = null;
+let debugWin: BrowserWindow | null = null;
+let httpDebugWin: BrowserWindow | null = null;
 let authConfirmed = false; // prevents onAuthReady firing on every /api/content/ 200
+
+function openDebugWindow(): void {
+  if (debugWin && !debugWin.isDestroyed()) {
+    debugWin.focus();
+    return;
+  }
+  debugWin = new BrowserWindow({
+    width: 960,
+    height: 700,
+    title: "WS Monitor",
+    webPreferences: { nodeIntegration: true, contextIsolation: false },
+  });
+  debugWin.loadFile(path.join(__dirname, "debug-ws.html"));
+  debugWin.on("closed", () => { debugWin = null; });
+}
+
+function openHttpDebugWindow(): void {
+  if (httpDebugWin && !httpDebugWin.isDestroyed()) {
+    httpDebugWin.focus();
+    return;
+  }
+  httpDebugWin = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    title: "HTTP Monitor",
+    webPreferences: { nodeIntegration: true, contextIsolation: false },
+  });
+  httpDebugWin.loadFile(path.join(__dirname, "debug-http.html"));
+  httpDebugWin.on("closed", () => { httpDebugWin = null; });
+}
 
 function createAuthWindow(): void {
   authWin = new BrowserWindow({
@@ -695,7 +767,9 @@ function createUIWindow(): void {
   });
 
   if (app.isPackaged) {
-    uiWin.loadFile(path.join(__dirname, "..", "renderer", "dist", "index.html"));
+    uiWin.loadFile(
+      path.join(__dirname, "..", "renderer", "dist", "index.html"),
+    );
   } else {
     uiWin.loadURL("http://localhost:5173");
   }
@@ -717,31 +791,151 @@ ipcMain.handle(
   },
 );
 
-ipcMain.handle("volume:group:set", (_event: IpcMainInvokeEvent, volume: number) => {
+ipcMain.handle(
+  "volume:group:set",
+  (_event: IpcMainInvokeEvent, volume: number) => {
+    const groupId = CONFIG.groupId;
+    if (!ws || ws.readyState !== WebSocket.OPEN)
+      return { error: "WS not connected" };
+    return wsSend(
+      { namespace: "groupVolume", groupId, command: "setVolume" },
+      { volume },
+    );
+  },
+);
+
+ipcMain.handle("playback:play", (_event: IpcMainInvokeEvent) => {
   const groupId = CONFIG.groupId;
-  if (!ws || ws.readyState !== WebSocket.OPEN) return { error: "WS not connected" };
-  return wsSend({ namespace: "groupVolume", groupId, command: "setVolume" }, { volume });
+  if (!ws || ws.readyState !== WebSocket.OPEN)
+    return { error: "WS not connected" };
+  return wsSend(
+    { namespace: "playback", groupId, command: "play" },
+    { allowTvPauseRestore: true, deviceFeedback: "NONE" },
+  );
 });
 
-ipcMain.handle("playback:skipToTrack", (_event: IpcMainInvokeEvent, trackNumber: number) => {
+ipcMain.handle("playback:pause", (_event: IpcMainInvokeEvent) => {
   const groupId = CONFIG.groupId;
-  if (!ws || ws.readyState !== WebSocket.OPEN) return { error: "WS not connected" };
-  return wsSend({ namespace: "playback", groupId, command: "skipToTrack" }, { trackNumber });
+  if (!ws || ws.readyState !== WebSocket.OPEN)
+    return { error: "WS not connected" };
+  return wsSend(
+    { namespace: "playback", groupId, command: "pause" },
+    { allowTvPauseRestore: true, deviceFeedback: "NONE" },
+  );
+});
+
+ipcMain.handle("debug:openWsMonitor",   () => openDebugWindow());
+ipcMain.handle("debug:openHttpMonitor", () => openHttpDebugWindow());
+
+ipcMain.handle("http:resend", async (
+  _event: IpcMainInvokeEvent,
+  req: { method: string; url: string; headers: Record<string, string>; body?: string },
+) => {
+  const startTs = Date.now();
+  try {
+    const response = await fetch(req.url, {
+      method: req.method,
+      headers: req.headers,
+      ...(req.body ? { body: req.body } : {}),
+    });
+    const resHeaders: Record<string, string> = {};
+    response.headers.forEach((val: string, key: string) => { resHeaders[key] = val; });
+    let body = "";
+    try { body = await response.text(); } catch { /* ignore */ }
+    return { status: response.status, statusText: response.statusText, headers: resHeaders, body, durationMs: Date.now() - startTs };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : String(err) };
+  }
+});
+
+ipcMain.handle("playback:refresh", (_event: IpcMainInvokeEvent) => {
+  const groupId = CONFIG.groupId;
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  // Re-subscribing triggers Sonos to push the current playbackExtended state immediately
+  wsSend(
+    { namespace: "playbackExtended", groupId, command: "subscribe" },
+    {},
+  ).catch(() => {});
+});
+
+ipcMain.handle(
+  "playback:setPlayModes",
+  (_event: IpcMainInvokeEvent, playModes: Record<string, unknown>) => {
+    const groupId = CONFIG.groupId;
+    if (!ws || ws.readyState !== WebSocket.OPEN)
+      return { error: "WS not connected" };
+    return wsSend(
+      { namespace: "playback", groupId, command: "setPlayModes" },
+      { playModes },
+    );
+  },
+);
+
+ipcMain.handle("playback:skipNext", (_event: IpcMainInvokeEvent) => {
+  const groupId = CONFIG.groupId;
+  if (!ws || ws.readyState !== WebSocket.OPEN)
+    return { error: "WS not connected" };
+  return wsSend(
+    { namespace: "playback", groupId, command: "skipToNextTrack" },
+    {},
+  );
+});
+
+ipcMain.handle("playback:skipPrev", (_event: IpcMainInvokeEvent) => {
+  const groupId = CONFIG.groupId;
+  if (!ws || ws.readyState !== WebSocket.OPEN)
+    return { error: "WS not connected" };
+  return wsSend({ namespace: "playback", groupId, command: "skipBack" }, {});
+});
+
+ipcMain.handle(
+  "playback:skipToTrack",
+  (_event: IpcMainInvokeEvent, trackNumber: number) => {
+    const groupId = CONFIG.groupId;
+    if (!ws || ws.readyState !== WebSocket.OPEN)
+      return { error: "WS not connected" };
+    return wsSend(
+      { namespace: "playback", groupId, command: "skipToTrack" },
+      { trackNumber },
+    );
+  },
+);
+
+ipcMain.handle("queue:reorder", (_event: IpcMainInvokeEvent, fromIndices: number[], toIndex: number) => {
+  console.log(`[queue] reorder: move [${fromIndices.join(',')}] → before ${toIndex} (placeholder)`);
+  // TODO: call api.queue.reorder with the correct positions
+  return { ok: true };
+});
+
+ipcMain.handle("queue:remove", (_event: IpcMainInvokeEvent, indices: number[]) => {
+  console.log(`[queue] remove: [${indices.join(',')}]`);
+  return sonosFetch({
+    operationId: 'deleteQueueResources',
+    query: { items: indices.join(',') },
+  });
+});
+
+ipcMain.handle("queue:clear", (_event: IpcMainInvokeEvent) => {
+  console.log('[queue] clear all');
+  return sonosFetch({ operationId: 'deleteQueueResources' });
 });
 
 ipcMain.handle("group:set", (_event: IpcMainInvokeEvent, groupId: string) => {
   const group = discoveredGroups.find((g) => g.id === groupId);
   if (!group) return { error: `Unknown group: ${groupId}` };
   CONFIG.groupId = group.id;
-  CONFIG.queueId = group.coordinatorId;
-  console.log(
-    `[group] Switched to "${group.name}" — groupId: ${group.id}, queueId: ${group.coordinatorId}`,
-  );
+  console.log(`[group] Switched to "${group.name}" — groupId: ${group.id}`);
   // Re-subscribe to playbackExtended for the new group — Sonos responds with an
   // extendedPlaybackStatus push so the renderer immediately gets fresh now-playing state.
   if (ws && ws.readyState === WebSocket.OPEN) {
-    wsSend({ namespace: "playbackExtended", groupId: group.id, command: "subscribe" }, {})
-      .catch(() => {});
+    wsSend(
+      {
+        namespace: "playbackExtended",
+        groupId: group.id,
+        command: "subscribe",
+      },
+      {},
+    ).catch(() => {});
   }
   return { ok: true };
 });

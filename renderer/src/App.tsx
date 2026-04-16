@@ -10,6 +10,7 @@ import { TopNav } from './components/TopNav';
 import { PlayerBar } from './components/PlayerBar';
 import { HomePanel } from './components/HomePanel';
 import { AlbumPanel } from './components/AlbumPanel';
+import { ArtistPanel } from './components/ArtistPanel';
 import { QueueSidebar, type QueueSidebarHandle } from './components/QueueSidebar';
 
 import styles from './styles/App.module.css';
@@ -20,11 +21,12 @@ export function App() {
   const [activeGroupId, setActiveGroupId]         = useState<string | null>(null);
   const { playback, applyGroupCache }             = usePlayback(activeGroupId);
   const { items: queueItems, isLoading: queueLoading, error: queueError, reload: reloadQueue }
-                                                  = useQueue(isAuthed, activeGroupId);
+                                                  = useQueue(isAuthed, activeGroupId, playback.queueId);
 
   const [view, setView]               = useState<'home' | 'search'>('home');
   const [activeSearch, setActiveSearch] = useState('');
-  const [activeAlbum, setActiveAlbum] = useState<SonosItem | null>(null);
+  const [activeAlbum, setActiveAlbum]   = useState<SonosItem | null>(null);
+  const [activeArtist, setActiveArtist] = useState<SonosItem | null>(null);
   const [queueOpen, setQueueOpen]     = useState(false);
 
   const queueRef = useRef<QueueSidebarHandle>(null);
@@ -50,6 +52,8 @@ export function App() {
   const handleClearSearch = useCallback(() => {
     setView('home');
     setActiveSearch('');
+    setActiveAlbum(null);
+    setActiveArtist(null);
   }, []);
 
   const handleAddToQueue = useCallback(async (item: SonosItem) => {
@@ -61,10 +65,23 @@ export function App() {
       },
       type: item.type ?? item.resource?.type ?? 'TRACK',
     };
-    const r = await api.queue.add(body);
+    const r = await api.queue.add(body, {
+      queueId: playback.queueId ?? undefined,
+      ifMatch: playback.queueVersion ?? undefined,
+      position: -1,
+    });
     if (r.error) { alert('Add failed: ' + r.error); return; }
     reloadQueue();
-  }, [reloadQueue]);
+  }, [reloadQueue, playback.queueId, playback.queueVersion]);
+
+  useEffect(() => {
+    function onKey(e: globalThis.KeyboardEvent) {
+      if (e.ctrlKey && e.shiftKey && e.key === 'H') window.sonos.openHttpMonitor();
+      if (e.ctrlKey && e.shiftKey && e.key === 'W') window.sonos.openWsMonitor();
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   const handleJumpToPlaying = useCallback(() => {
     setQueueOpen(true);
@@ -83,13 +100,24 @@ export function App() {
         onClearSearch={handleClearSearch}
         queueOpen={queueOpen}
         onToggleQueue={() => setQueueOpen(o => !o)}
+        onBack={
+          activeArtist ? () => setActiveArtist(null)
+          : activeAlbum ? () => setActiveAlbum(null)
+          : undefined
+        }
       />
       <div className={`${styles.body}${queueOpen ? ' ' + styles.bodyQueueOpen : ''}`}>
-        {activeAlbum ? (
+        {activeArtist ? (
+          <ArtistPanel
+            item={activeArtist}
+            onOpenAlbum={(album) => { setActiveArtist(null); setActiveAlbum(album); }}
+            onAddToQueue={handleAddToQueue}
+          />
+        ) : activeAlbum ? (
           <AlbumPanel
             item={activeAlbum}
-            onBack={() => setActiveAlbum(null)}
             onAddToQueue={handleAddToQueue}
+            onOpenArtist={setActiveArtist}
           />
         ) : (
           <HomePanel
@@ -98,6 +126,7 @@ export function App() {
             activeSearch={activeSearch}
             onAddToQueue={handleAddToQueue}
             onOpenAlbum={setActiveAlbum}
+            onOpenArtist={setActiveArtist}
           />
         )}
       </div>
@@ -118,6 +147,7 @@ export function App() {
         onJumpToPlaying={handleJumpToPlaying}
         onOpenAlbum={setActiveAlbum}
         onToggleQueue={() => setQueueOpen(o => !o)}
+        onShuffle={reloadQueue}
       />
     </div>
   );

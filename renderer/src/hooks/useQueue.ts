@@ -5,7 +5,7 @@ import type { QueueItem } from '../types/sonos';
 
 const PAGE = 50;
 
-export function useQueue(isAuthed: boolean, activeGroupId: string | null) {
+export function useQueue(isAuthed: boolean, activeGroupId: string | null, queueId: string | null) {
   const [items, setItems]       = useState<QueueItem[]>([]);
   const [isLoading, setLoading] = useState(false);
   const [error, setError]       = useState<string | null>(null);
@@ -18,7 +18,7 @@ export function useQueue(isAuthed: boolean, activeGroupId: string | null) {
     const all: QueueItem[] = [];
     let offset = 0;
     while (true) {
-      const r = await api.queue.list({ count: PAGE, offset });
+      const r = await api.queue.list({ queueId: queueId ?? undefined, count: PAGE, offset });
       if (r.error) { setError(r.error); setLoading(false); return; }
       const page = extractItems(r.data) as QueueItem[];
       all.push(...page);
@@ -28,7 +28,7 @@ export function useQueue(isAuthed: boolean, activeGroupId: string | null) {
 
     setItems(all);
     setLoading(false);
-  }, [activeGroupId]);
+  }, [activeGroupId, queueId]);
 
   useEffect(() => {
     if (isAuthed && activeGroupId) load();
