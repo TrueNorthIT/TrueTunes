@@ -1431,7 +1431,11 @@ if (app.isPackaged) {
 }
 
 app.whenReady().then(async () => {
-  buildMenu();
+  if (app.isPackaged) {
+    Menu.setApplicationMenu(null);
+  } else {
+    buildMenu();
+  }
   await loadConfig();
   session.defaultSession.setUserAgent(SPOOF_UA);
 
