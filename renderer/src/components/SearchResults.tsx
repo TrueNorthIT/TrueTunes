@@ -27,7 +27,7 @@ function ArtistCircle({ artist, onOpen }: { artist: SonosItem; onOpen: (item: So
 
 // ── Album card ────────────────────────────────────────────────────────────────
 
-function SearchAlbumCard({ album, onOpen }: { album: SonosItem; onOpen: (item: SonosItem) => void }) {
+function SearchAlbumCard({ album, onOpen, onAdd }: { album: SonosItem; onOpen: (item: SonosItem) => void; onAdd: () => void }) {
   const art  = useImage(getItemArt(album));
   const name = (album.title ?? album.name ?? '') as string;
   const sub  = browseSub(album);
@@ -35,6 +35,12 @@ function SearchAlbumCard({ album, onOpen }: { album: SonosItem; onOpen: (item: S
     <div className={styles.searchAlbumCard} onClick={() => onOpen(album)}>
       <div className={styles.searchAlbumArt}>
         {art ? <img src={art} alt="" /> : <div className={styles.searchAlbumArtPh}>♪</div>}
+        <button
+          className={styles.searchAlbumAddBtn}
+          onClick={e => { e.stopPropagation(); onAdd(); }}
+        >
+          +
+        </button>
       </div>
       <div className={styles.searchAlbumTitle}>{name}</div>
       {sub && <div className={styles.searchAlbumSub}>{sub}</div>}
@@ -212,7 +218,7 @@ export function SearchResults({
           <h2 className={styles.searchSectionTitle}>Albums</h2>
           <div className={styles.searchAlbumsRow}>
             {albums.map((a, i) => (
-              <SearchAlbumCard key={i} album={a} onOpen={openItem} />
+              <SearchAlbumCard key={i} album={a} onOpen={openItem} onAdd={() => onAddToQueue(a)} />
             ))}
           </div>
         </section>

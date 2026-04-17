@@ -384,6 +384,27 @@
   color: var(--text);
 }
 
+/* ── Loading skeletons ── */
+@keyframes pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.6; }
+}
+
+.skeletonRow {
+  height: 46px;
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  margin-bottom: 2px;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+.skeletonCard {
+  height: 182px;
+  border-radius: var(--r-md);
+  background: var(--bg-2);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
 /* ── Albums shelf ── */
 .albumsSection {
   padding: 20px 28px 24px;

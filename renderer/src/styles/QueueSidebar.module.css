@@ -48,6 +48,37 @@
 
 .headerActions { display: flex; align-items: center; gap: 2px; }
 
+.clearConfirm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.confirmYes {
+  padding: 3px 10px;
+  border-radius: var(--r-sm);
+  border: none;
+  background: #c0392b;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.confirmYes:hover { background: #e74c3c; }
+.confirmNo {
+  padding: 3px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.confirmNo:hover { background: var(--bg-2); }
+
 .iconBtn {
   background: none; border: none;
   color: var(--text-3); cursor: pointer;
@@ -144,12 +175,17 @@
   font-size: 11px; color: var(--text-2); margin-top: 1px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.subLink {
+
+.subAlbum {
+  display: block;
   background: none; border: none; padding: 0;
-  color: var(--text-2); font-size: inherit; font-family: inherit;
+  font-size: 11px; font-family: inherit;
+  color: var(--text-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  width: 100%; text-align: left;
   cursor: pointer; transition: color 0.12s;
 }
-.subLink:hover { color: var(--text); text-decoration: underline; }
+.subAlbum:hover { color: var(--text); text-decoration: underline; }
 
 .attribution {
   font-size: 10px;

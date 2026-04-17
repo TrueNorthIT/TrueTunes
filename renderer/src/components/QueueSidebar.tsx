@@ -19,6 +19,7 @@ interface Props {
   currentQueueItemId: string | null;
   onClose: () => void;
   onRefresh: () => void;
+  onError: (msg: string) => void;
   onAddToQueue: (item: SonosItem, position: number) => void;
 }
 
@@ -51,7 +52,7 @@ function DraggableQueueRow({
   item, index, currentObjectId, currentQueueItemId, attribution,
   isSelected, onRowClick, onDragStart, onDragOver, onDrop, onDragEnd,
 }: RowProps) {
-  const { artUrl, artist, albumName, albumItem, prefetchAlbum, isPlaying: isPlayingByObjectId, explicit } =
+  const { artUrl, artist, albumName, albumItem, prefetchAlbum, artistItem, prefetchArtist, isPlaying: isPlayingByObjectId, explicit } =
     useQueueTrack(item, currentObjectId);
   // Prefer 1-based queue position match (exact, handles duplicates) over objectId match
   const isPlaying = currentQueueItemId !== null
@@ -90,20 +91,23 @@ function DraggableQueueRow({
       </div>
       <div className={styles.text}>
         <div className={styles.name}>{name}{explicit && <ExplicitBadge />}</div>
-        {(artist || albumName) && (
-          <div className={styles.sub}>
-            {artist}
-            {artist && albumName ? ' \u2022 ' : ''}
-            {albumName && (
-              <button
-                className={styles.subLink}
-                onClick={e => { e.stopPropagation(); if (albumItem) openItem(albumItem); }}
-                onMouseEnter={prefetchAlbum}
-              >
-                {albumName}
-              </button>
-            )}
-          </div>
+        {artist && (
+          artistItem
+            ? <button
+                className={styles.subAlbum}
+                onClick={e => { e.stopPropagation(); openItem(artistItem); }}
+                onMouseEnter={prefetchArtist}
+              >{artist}</button>
+            : <div className={styles.sub}>{artist}</div>
+        )}
+        {albumName && (
+          <button
+            className={styles.subAlbum}
+            onClick={e => { e.stopPropagation(); if (albumItem) openItem(albumItem); }}
+            onMouseEnter={prefetchAlbum}
+          >
+            {albumName}
+          </button>
         )}
         {attribution && (
           <div className={styles.attribution}>by {attribution.user}</div>
@@ -116,12 +120,13 @@ function DraggableQueueRow({
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
 export function QueueSidebar(
-  { open, items, setItems, isLoading, error, currentObjectId, currentQueueItemId, onClose, onRefresh, onAddToQueue }: Props
+  { open, items, setItems, isLoading, error, currentObjectId, currentQueueItemId, onClose, onRefresh, onError, onAddToQueue }: Props
 ) {
   const contentRef = useRef<HTMLDivElement>(null);
   const attributionMap = useAttribution(onRefresh);
-  const [selected, setSelected]         = useState<Set<number>>(new Set());
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [selected, setSelected]           = useState<Set<number>>(new Set());
+  const [dragOverIndex, setDragOverIndex]  = useState<number | null>(null);
+  const [pendingClear, setPendingClear]    = useState(false);
   const lastSelected = useRef<number | null>(null);
   const draggingSet  = useRef<Set<number>>(new Set());
 
@@ -139,7 +144,7 @@ export function QueueSidebar(
       setItems(prev => prev.filter((_, i) => !selected.has(i)));
       setSelected(new Set());
       const result = await window.sonos.removeFromQueue(indices) as { error?: string } | null;
-      if (result?.error) onRefresh();
+      if (result?.error) { onRefresh(); onError('Failed to remove track'); }
     }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
@@ -240,7 +245,7 @@ export function QueueSidebar(
     setSelected(new Set());
     setItems(applyReorderLocally(items, fromIndices, targetIndex));
     const result = await window.sonos.reorderQueue(fromIndices, targetIndex, currentLength) as { error?: string } | null;
-    if (result?.error) onRefresh();
+    if (result?.error) { onRefresh(); onError('Failed to reorder queue'); }
   }
 
   function handleDragEnd() {
@@ -263,17 +268,26 @@ export function QueueSidebar(
           Queue{items.length > 0 ? ` \u00b7 ${items.length}` : ''}
           {selCount > 0 && <span className={styles.selBadge}>{selCount} selected</span>}
         </span>
-        <div className={styles.headerActions}>
-          <button className={styles.iconBtn} onClick={onRefresh} title="Refresh">↺</button>
-          {items.length > 0 && (
-            <button className={styles.iconBtn} title="Clear queue" onClick={async () => {
+        {pendingClear ? (
+          <div className={styles.clearConfirm}>
+            <span>Clear all {items.length} tracks?</span>
+            <button className={styles.confirmYes} onClick={async () => {
+              setPendingClear(false);
               setItems([]);
               const result = await window.sonos.clearQueue() as { error?: string } | null;
-              if (result?.error) onRefresh();
-            }}>⊘</button>
-          )}
-          <button className={styles.iconBtn} onClick={onClose} title="Close">✕</button>
-        </div>
+              if (result?.error) { onRefresh(); onError('Failed to clear queue'); }
+            }}>Clear</button>
+            <button className={styles.confirmNo} onClick={() => setPendingClear(false)}>Cancel</button>
+          </div>
+        ) : (
+          <div className={styles.headerActions}>
+            <button className={styles.iconBtn} onClick={onRefresh} title="Refresh">↺</button>
+            {items.length > 0 && (
+              <button className={styles.iconBtn} title="Clear queue" onClick={() => setPendingClear(true)}>⊘</button>
+            )}
+            <button className={styles.iconBtn} onClick={onClose} title="Close">✕</button>
+          </div>
+        )}
       </div>
 
       <div
@@ -328,7 +342,7 @@ export function QueueSidebar(
             setItems(prev => prev.filter((_, i) => !selected.has(i)));
             setSelected(new Set());
             const result = await window.sonos.removeFromQueue(indices) as { error?: string } | null;
-            if (result?.error) onRefresh();
+            if (result?.error) { onRefresh(); onError('Failed to remove tracks'); }
           }}>
             Delete
           </button>

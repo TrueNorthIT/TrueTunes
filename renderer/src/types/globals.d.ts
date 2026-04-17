@@ -34,6 +34,7 @@ interface FetchResponse {
 type Unsubscribe = () => void;
 
 interface SonosPreload {
+  getVersion: () => Promise<string>;
   onAuthReady: (cb: VoidCallback) => Unsubscribe;
   onAuthExpired: (cb: VoidCallback) => Unsubscribe;
   fetch: (request: FetchRequest) => Promise<FetchResponse>;

@@ -202,6 +202,7 @@ export function AlbumPanel({ onAddToQueue }: Props) {
           </>
         )}
         {error && <div className={styles.msg}>Failed to load tracks.</div>}
+        {!error && data && data.tracks.length === 0 && <div className={styles.msg}>No tracks found.</div>}
         {data?.tracks.map((track, i) => (
           <div
             key={track.id.objectId ?? track.ordinal}

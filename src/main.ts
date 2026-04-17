@@ -35,9 +35,9 @@ const SEARCH_ACCOUNT_ID = '13';
 const PLATFORM_SERVICE_ID = '16751367';
 const PLATFORM_ACCOUNT_ID = '123209393';
 
-const PUBSUB_FUNCTION_URL = process.env['PUBSUB_FUNCTION_URL'] ?? 'https://truetunes-fn.azurewebsites.net';
+const PUBSUB_FUNCTION_URL = 'https://truetunes-fn.azurewebsites.net';
 
-let config: AppConfig = {};
+const config: AppConfig = {};
 
 function configFilePath(): string {
   return path.join(app.getPath('userData'), 'config.json');
@@ -415,6 +415,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 let ws: WebSocket | null = null;
 let reconnectDelay = 1000;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let quitting = false;
 
 // Keyed by corrId — resolves when a matching response arrives
 const wsPending = new Map<string, (payload: unknown) => void>();
@@ -725,6 +726,7 @@ async function runBootstrap(): Promise<void> {
 // ─── WebSocket lifecycle ──────────────────────────────────────────────────────
 
 function scheduleReconnect(): void {
+  if (quitting) return;
   if (reconnectTimer) return; // already pending
   log(`[ws] Reconnecting in ${reconnectDelay / 1000}s`);
   reconnectTimer = setTimeout(async () => {
@@ -1004,7 +1006,6 @@ function createMiniPlayerWindow(): void {
     },
   });
 
-
   if (app.isPackaged) {
     miniWin.loadFile(path.join(__dirname, '..', 'renderer', 'dist', 'index.html'), { hash: '/mini' });
   } else {
@@ -1068,6 +1069,8 @@ ipcMain.handle('playback:pause', (_event: IpcMainInvokeEvent) => {
 ipcMain.handle('debug:openWsMonitor', () => openDebugWindow());
 ipcMain.handle('debug:openHttpMonitor', () => openHttpDebugWindow());
 
+ipcMain.handle('app:version', () => app.getVersion());
+
 ipcMain.handle('config:getDisplayName', () => config.displayName ?? null);
 
 ipcMain.handle('config:setDisplayName', async (_: IpcMainInvokeEvent, name: string) => {
@@ -1077,29 +1080,33 @@ ipcMain.handle('config:setDisplayName', async (_: IpcMainInvokeEvent, name: stri
   initPubSub().catch(console.error);
 });
 
-ipcMain.handle('pubsub:publishQueued', async (
-  _: IpcMainInvokeEvent,
-  item: { uri: string; trackName: string; artist: string },
-) => {
-  await officePubSub.publishQueued(item).catch(() => { /* silent */ });
-  // Broadcast the local user's own attribution back to renderers (noEcho means
-  // the WS won't echo it back, so we push it manually).
-  const event = {
-    type: 'queued' as const,
-    user: config.displayName ?? '',
-    uri: item.uri,
-    trackName: item.trackName,
-    artist: item.artist,
-    timestamp: Date.now(),
-  };
-  broadcastToRenderers('attribution:event', event);
-});
+ipcMain.handle(
+  'pubsub:publishQueued',
+  async (_: IpcMainInvokeEvent, item: { uri: string; trackName: string; artist: string }) => {
+    await officePubSub.publishQueued(item).catch(() => {
+      /* silent */
+    });
+    // Broadcast the local user's own attribution back to renderers (noEcho means
+    // the WS won't echo it back, so we push it manually).
+    const event = {
+      type: 'queued' as const,
+      user: config.displayName ?? '',
+      uri: item.uri,
+      trackName: item.trackName,
+      artist: item.artist,
+      timestamp: Date.now(),
+    };
+    broadcastToRenderers('attribution:event', event);
+  }
+);
 
 ipcMain.handle('attribution:refresh', async () => {
   try {
     const map = await officePubSub.refresh();
     broadcastToRenderers('attribution:map', map);
-  } catch { /* silent — pubsub not configured */ }
+  } catch {
+    /* silent — pubsub not configured */
+  }
 });
 
 ipcMain.handle('mini:open', () => createMiniPlayerWindow());
@@ -1442,7 +1449,10 @@ app.whenReady().then(async () => {
 });
 
 app.on('before-quit', () => {
-  ws?.close();
+  quitting = true;
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  ws?.terminate();
+  officePubSub.disconnect();
 });
 
 app.on('window-all-closed', () => {

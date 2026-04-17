@@ -197,8 +197,9 @@ export function ArtistPanel({ onAddToQueue }: Props) {
 
   return (
     <div className={styles.panel}>
-      {/* ── Header ── */}
+      {/* ── Header ── key on artistId so art/color reset instantly on navigation */}
       <div
+        key={artistId}
         className={styles.header}
         style={
           dominantColor
@@ -224,51 +225,67 @@ export function ArtistPanel({ onAddToQueue }: Props) {
       </div>
 
       {/* ── Two-column body ── */}
-      {!isLoading && (
-        <div className={styles.mainGrid}>
-          {/* Left – Top Songs */}
-          <div className={styles.topSongsCol}>
-            {(data?.topSongs.length ?? 0) > 0 && (
-              <>
-                <button
-                  className={styles.sectionTitleBtn}
-                  onClick={() => setShowAllSongs((s) => !s)}
-                >
-                  Top Songs{" "}
-                  <span className={styles.sectionChevron}>
-                    {showAllSongs ? "∨" : "›"}
-                  </span>
-                </button>
-                {(showAllSongs
-                  ? data!.topSongs
-                  : data!.topSongs.slice(0, 10)
-                ).map((track, i) => (
-                  <TopSongRow
-                    key={track.id.objectId ?? i}
-                    track={track}
-                    index={i}
-                    onAdd={onAddToQueue}
-                  />
-                ))}
-              </>
-            )}
-          </div>
+      <div className={styles.mainGrid}>
+        {isLoading ? (
+          <>
+            {/* Left skeleton */}
+            <div className={styles.topSongsCol}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className={styles.skeletonRow} />
+              ))}
+            </div>
+            {/* Right skeleton */}
+            <div className={styles.sideCol}>
+              <div className={styles.skeletonCard} />
+              <div className={styles.skeletonCard} />
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Left – Top Songs */}
+            <div className={styles.topSongsCol}>
+              {(data?.topSongs.length ?? 0) > 0 && (
+                <>
+                  <button
+                    className={styles.sectionTitleBtn}
+                    onClick={() => setShowAllSongs((s) => !s)}
+                  >
+                    Top Songs{" "}
+                    <span className={styles.sectionChevron}>
+                      {showAllSongs ? "∨" : "›"}
+                    </span>
+                  </button>
+                  {(showAllSongs
+                    ? data!.topSongs
+                    : data!.topSongs.slice(0, 10)
+                  ).map((track, i) => (
+                    <TopSongRow
+                      key={track.id.objectId ?? i}
+                      track={track}
+                      index={i}
+                      onAdd={onAddToQueue}
+                    />
+                  ))}
+                </>
+              )}
+            </div>
 
-          {/* Right – Latest Release + Artist Radio */}
-          <div className={styles.sideCol}>
-            {latestAlbum && (
-              <LatestReleaseCard album={latestAlbum} onOpen={openItem} />
-            )}
-            {artistRadio && (
-              <RadioCard
-                item={artistRadio}
-                artUrl={cachedArt}
-                onOpen={openItem}
-              />
-            )}
-          </div>
-        </div>
-      )}
+            {/* Right – Latest Release + Artist Radio */}
+            <div className={styles.sideCol}>
+              {latestAlbum && (
+                <LatestReleaseCard album={latestAlbum} onOpen={openItem} />
+              )}
+              {artistRadio && (
+                <RadioCard
+                  item={artistRadio}
+                  artUrl={cachedArt}
+                  onOpen={openItem}
+                />
+              )}
+            </div>
+          </>
+        )}
+      </div>
 
       {/* ── Albums shelf ── */}
       {(data?.albums.length ?? 0) > 1 && (

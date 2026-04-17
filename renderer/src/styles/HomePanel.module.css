@@ -67,31 +67,40 @@
 /* ── Artist hero ── */
 .artistHero {
   display: flex;
-  gap: 32px;
-  padding: 24px;
+  flex-direction: column;
   border-radius: var(--r-lg);
   background: var(--bg-2);
   margin-bottom: 36px;
-  align-items: center;
+  padding-bottom: 12px;
+  overflow: hidden;
 }
 
-.heroLeft {
+/* Clickable card header: art + name */
+.heroHeader {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-  width: 160px;
+  gap: 14px;
+  padding: 8px 20px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid var(--border);
+}
+.heroHeader:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.heroHeader:hover .heroName {
+  text-decoration: underline;
 }
 
 .heroAvatar {
-  width: 120px;
-  height: 120px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   overflow: hidden;
   background: var(--bg-1);
   flex-shrink: 0;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 .heroAvatarImg {
   width: 100%;
@@ -105,48 +114,14 @@
   background: var(--bg-1);
 }
 
-.heroMeta {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-}
-
-.heroLabel {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-3);
-}
-
 .heroName {
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
   color: var(--text);
-  text-align: center;
-  line-height: 1.1;
-}
-
-.heroOpenBtn {
-  margin-top: 4px;
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  color: var(--text-2);
-  font-size: 11px;
-  font-weight: 500;
-  padding: 5px 14px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.15s;
   white-space: nowrap;
-}
-.heroOpenBtn:hover {
-  background: var(--bg-1);
-  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── Hero tracks grid (2 cols) ── */
@@ -163,14 +138,16 @@
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
+  margin-left: 6px;
   border-radius: var(--r-sm);
   transition: background 0.12s;
-  cursor: default;
+  cursor: grab;
   min-width: 0;
 }
-.heroTrackRow:hover {
-  background: var(--bg-2);
-}
+.heroTrackRow:active { cursor: grabbing; }
+.heroTrackRow:hover { background: rgba(255,255,255,0.07); }
+.heroTrackSelected { background: rgba(255,255,255,0.1) !important; }
+.heroTrackSelected:hover { background: rgba(255,255,255,0.13) !important; }
 
 .heroTrackNum {
   width: 16px;
@@ -347,6 +324,7 @@
 }
 
 .searchAlbumArt {
+  position: relative;
   width: 124px;
   height: 124px;
   border-radius: var(--r-sm);
@@ -368,6 +346,34 @@
   justify-content: center;
   font-size: 28px;
   color: var(--text-3);
+}
+
+.searchAlbumAddBtn {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, transform 0.15s;
+  backdrop-filter: blur(4px);
+}
+.searchAlbumCard:hover .searchAlbumAddBtn {
+  opacity: 1;
+}
+.searchAlbumAddBtn:hover {
+  transform: scale(1.1);
+  background: rgba(0, 0, 0, 0.85);
 }
 
 .searchAlbumTitle {
@@ -395,52 +401,111 @@
 
 /* ── Search track rows ── */
 .searchTrackRow {
-  display: flex; align-items: center; gap: 12px;
-  padding: 7px 8px; border-radius: var(--r-sm);
-  transition: background 0.12s; cursor: grab;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 8px;
+  border-radius: var(--r-sm);
+  transition: background 0.12s;
+  cursor: grab;
 }
-.searchTrackRow:active { cursor: grabbing; }
-.searchTrackRow:hover { background: var(--bg-2); }
-.searchTrackSelected { background: rgba(255,255,255,0.08); }
-.searchTrackSelected:hover { background: rgba(255,255,255,0.12); }
+.searchTrackRow:active {
+  cursor: grabbing;
+}
+.searchTrackRow:hover {
+  background: var(--bg-2);
+}
+.searchTrackSelected {
+  background: rgba(255, 255, 255, 0.08);
+}
+.searchTrackSelected:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
 
 .searchTrackArt {
-  width: 40px; height: 40px; flex-shrink: 0;
-  border-radius: 4px; overflow: hidden; background: var(--bg-1);
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg-1);
 }
-.searchTrackArt img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.searchTrackArtPh { width: 100%; height: 100%; background: var(--bg-2); }
+.searchTrackArt img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.searchTrackArtPh {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-2);
+}
 
-.searchTrackText { flex: 1; min-width: 0; }
+.searchTrackText {
+  flex: 1;
+  min-width: 0;
+}
 .searchTrackName {
-  font-size: 13px; font-weight: 500; color: var(--text);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  display: flex; align-items: center; gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 .searchTrackSub {
-  font-size: 11px; color: var(--text-2); margin-top: 2px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--text-2);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .searchArtistBtn {
-  background: none; border: none; padding: 0;
-  font-size: inherit; color: var(--text-2);
-  cursor: pointer; font-family: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  color: var(--text-2);
+  cursor: pointer;
+  font-family: inherit;
   transition: color 0.12s;
 }
-.searchArtistBtn:hover { color: var(--text); text-decoration: underline; }
+.searchArtistBtn:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
 
 .searchTrackAddBtn {
-  width: 26px; height: 26px; background: none;
-  border: 1px solid var(--border); border-radius: 50%;
-  color: var(--text-3); cursor: pointer;
-  font-size: 16px; line-height: 1;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; transition: all 0.15s;
+  width: 26px;
+  height: 26px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
   opacity: 0;
 }
-.searchTrackRow:hover .searchTrackAddBtn { opacity: 1; }
-.searchTrackAddBtn:hover { border-color: var(--border-2); color: var(--text-2); background: var(--bg-2); }
+.searchTrackRow:hover .searchTrackAddBtn {
+  opacity: 1;
+}
+.searchTrackAddBtn:hover {
+  border-color: var(--border-2);
+  color: var(--text-2);
+  background: var(--bg-2);
+}
 
 /* ── Misc ── */
 .msg {

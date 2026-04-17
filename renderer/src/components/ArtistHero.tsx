@@ -1,31 +1,44 @@
+import { useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useImage } from '../hooks/useImage';
 import { useDominantColor } from '../hooks/useDominantColor';
 import { artistQueryOptions } from '../hooks/useArtistBrowse';
-import { resolveArtistParams, getItemArt, fmtDuration } from '../lib/itemHelpers';
+import { resolveArtistParams, getItemArt, fmtDuration, getName } from '../lib/itemHelpers';
 import { ExplicitBadge } from './ExplicitBadge';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/HomePanel.module.css';
 
+type HeroTrack = {
+  title: string;
+  durationSeconds: number;
+  artUrl: string | null;
+  explicit: boolean;
+  raw: SonosItem;
+};
+
 function HeroTrackRow({
   track,
   index,
+  isSelected,
+  onClick,
+  onDragStart,
   onAdd,
 }: {
-  track: {
-    title: string;
-    durationSeconds: number;
-    artUrl: string | null;
-    explicit: boolean;
-    raw: SonosItem;
-  };
+  track: HeroTrack;
   index: number;
+  isSelected: boolean;
+  onClick: (index: number, e: React.MouseEvent) => void;
+  onDragStart: (index: number, e: React.DragEvent) => void;
   onAdd: () => void;
 }) {
   const art = useImage(track.artUrl);
   return (
-    <div className={styles.heroTrackRow}>
-      <span className={styles.heroTrackNum}>{index + 1}</span>
+    <div
+      className={`${styles.heroTrackRow}${isSelected ? ' ' + styles.heroTrackSelected : ''}`}
+      draggable
+      onClick={e => onClick(index, e)}
+      onDragStart={e => onDragStart(index, e)}
+    >
       <div className={styles.heroTrackArt}>
         {art ? <img src={art} alt="" /> : <div className={styles.heroTrackArtPh} />}
       </div>
@@ -69,35 +82,102 @@ export function ArtistHero({
   const dominantColor = useDominantColor(cachedArt);
   const name          = (artist.title ?? artist.name ?? '') as string;
 
+  const [selected, setSelected]   = useState<Set<number>>(new Set());
+  const lastSelected               = useRef<number | null>(null);
+  const tracks                     = data?.topSongs?.slice(0, 6) ?? [];
+
+  function handleClick(index: number, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (e.shiftKey && lastSelected.current !== null) {
+      const lo = Math.min(lastSelected.current, index);
+      const hi = Math.max(lastSelected.current, index);
+      setSelected(prev => {
+        const next = new Set(prev);
+        for (let i = lo; i <= hi; i++) next.add(i);
+        return next;
+      });
+    } else if (e.ctrlKey || e.metaKey) {
+      setSelected(prev => {
+        const next = new Set(prev);
+        next.has(index) ? next.delete(index) : next.add(index);
+        return next;
+      });
+      lastSelected.current = index;
+    } else {
+      if (selected.size === 1 && selected.has(index)) {
+        setSelected(new Set());
+        lastSelected.current = null;
+      } else {
+        setSelected(new Set([index]));
+        lastSelected.current = index;
+      }
+    }
+  }
+
+  function handleDragStart(index: number, e: React.DragEvent) {
+    const toMove = selected.has(index)
+      ? [...selected].sort((a, b) => a - b)
+      : [index];
+    if (!selected.has(index)) {
+      setSelected(new Set([index]));
+      lastSelected.current = index;
+    }
+    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.setData(
+      'application/sonos-item-list',
+      JSON.stringify(toMove.map(i => tracks[i].raw)),
+    );
+    const ghost = document.createElement('div');
+    Object.assign(ghost.style, {
+      position: 'fixed', top: '-100px', left: '0',
+      background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
+      color: '#fff', padding: '5px 12px', borderRadius: '6px',
+      fontSize: '12px', fontWeight: '600', pointerEvents: 'none',
+      whiteSpace: 'nowrap',
+    });
+    ghost.textContent = toMove.length > 1
+      ? `${toMove.length} tracks`
+      : getName(tracks[index].raw);
+    document.body.appendChild(ghost);
+    e.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, 20);
+    setTimeout(() => ghost.remove(), 0);
+  }
+
   return (
     <div
       className={styles.artistHero}
-      style={dominantColor
-        ? { background: `linear-gradient(135deg, rgba(${dominantColor},0.18) 0%, transparent 70%)` }
-        : undefined}
+      style={
+        dominantColor
+          ? { background: `linear-gradient(135deg, rgba(${dominantColor},0.18) 0%, transparent 70%)` }
+          : undefined
+      }
+      onClick={() => { setSelected(new Set()); lastSelected.current = null; }}
     >
-      <div className={styles.heroLeft}>
+      <div
+        className={styles.heroHeader}
+        onClick={e => { e.stopPropagation(); onOpen(artist); }}
+        role="button"
+        tabIndex={0}
+        onKeyDown={e => e.key === 'Enter' && onOpen(artist)}
+      >
         <div className={styles.heroAvatar}>
           {cachedArt
             ? <img src={cachedArt} alt="" className={styles.heroAvatarImg} />
             : <div className={styles.heroAvatarPh} />}
         </div>
-        <div className={styles.heroMeta}>
-          <div className={styles.heroLabel}>Artist</div>
-          <div className={styles.heroName}>{name}</div>
-          <button className={styles.heroOpenBtn} onClick={() => onOpen(artist)}>
-            Open Artist
-          </button>
-        </div>
+        <div className={styles.heroName}>{name}</div>
       </div>
 
       <div className={styles.heroTracks}>
-        {data?.topSongs?.length
-          ? data.topSongs.slice(0, 6).map((track, i) => (
+        {tracks.length
+          ? tracks.map((track, i) => (
               <HeroTrackRow
                 key={track.id?.objectId ?? i}
                 track={track}
                 index={i}
+                isSelected={selected.has(i)}
+                onClick={handleClick}
+                onDragStart={handleDragStart}
                 onAdd={() => onAddToQueue(track.raw)}
               />
             ))

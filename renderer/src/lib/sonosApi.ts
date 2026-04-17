@@ -85,10 +85,10 @@ function buildApi() {
     },
 
     browse: {
-      album: (albumId: string, params?: { serviceId?: string; accountId?: string; defaults?: string; muse2?: boolean; count?: number }) =>
+      album: (albumId: string, params?: { serviceId?: string; accountId?: string; defaults?: string; muse2?: boolean; count?: number; offset?: number }) =>
         call('browseAlbum', {
           pathParams: { albumId, ...defined({ serviceId: params?.serviceId, accountId: params?.accountId }) },
-          query: defined({ defaults: params?.defaults, muse2: params?.muse2 ? 'true' : undefined, count: params?.count?.toString() }),
+          query: defined({ defaults: params?.defaults, muse2: params?.muse2 ? 'true' : undefined, count: params?.count?.toString(), offset: params?.offset?.toString() }),
         }),
 
       artist: (artistId: string, params?: { serviceId?: string; accountId?: string; defaults?: string; muse2?: boolean }) =>

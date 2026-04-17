@@ -5,6 +5,7 @@ export function useDominantColor(src: string | null): string | null {
 
   useEffect(() => {
     if (!src) { setColor(null); return; }
+    setColor(null); // clear stale color immediately while new image is analysed
     const img = new Image();
     img.onload = () => {
       const size = 20;

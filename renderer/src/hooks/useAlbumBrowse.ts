@@ -29,6 +29,23 @@ export interface AlbumData {
   artistItem: SonosItem | null;
 }
 
+type RawTrack = NonNullable<AlbumResponse["tracks"]>["items"][number];
+
+function parseTrack(track: RawTrack): AlbumTrack {
+  return {
+    title:           track.title ?? "",
+    ordinal:         track.ordinal ?? 0,
+    durationSeconds: Number(track.duration ?? 0),
+    artUrl:          track.images?.tile1x1 ?? null,
+    id:              (track.resource?.id ?? {}) as SonosItemId,
+    artists:         track.artists?.map((a) => a.name) ?? [],
+    albumName:       null,
+    albumId:         null,
+    explicit:        track.isExplicit ?? false,
+    raw:             track as unknown as SonosItem,
+  };
+}
+
 function parseAlbum(data: AlbumResponse): AlbumData {
   const title  = data.title ?? "";
   const artist = data.subtitle ?? "";
@@ -54,19 +71,7 @@ function parseAlbum(data: AlbumResponse): AlbumData {
 
   const rawTracks   = data.tracks?.items ?? [];
   const totalTracks = data.tracks?.total ?? rawTracks.length;
-
-  const tracks: AlbumTrack[] = rawTracks.map((track) => ({
-    title:           track.title ?? "",
-    ordinal:         track.ordinal ?? 0,
-    durationSeconds: Number(track.duration ?? 0),
-    artUrl:          track.images?.tile1x1 ?? null,
-    id:              (track.resource?.id ?? {}) as SonosItemId,
-    artists:         track.artists?.map((a) => a.name) ?? [],
-    albumName:       null,
-    albumId:         null,
-    explicit:        track.isExplicit ?? false,
-    raw:             track as unknown as SonosItem,
-  }));
+  const tracks      = rawTracks.map(parseTrack);
 
   return { title, artist, artUrl, tracks, totalTracks, artistItem };
 }
@@ -80,15 +85,23 @@ export function albumQueryOptions(
   return {
     queryKey: ["album", albumId] as const,
     queryFn: async () => {
-      const r = await api.browse.album(albumId!, {
-        serviceId,
-        accountId,
-        defaults,
-        muse2: true,
-        count: 50,
-      });
+      const r = await api.browse.album(albumId!, { serviceId, accountId, defaults, muse2: true, count: 50 });
       if (r.error) throw new Error(r.error);
-      return parseAlbum(r.data as AlbumResponse);
+      const parsed = parseAlbum(r.data as AlbumResponse);
+
+      // Fetch remaining pages if the album has more than 50 tracks
+      let allTracks = [...parsed.tracks];
+      let offset = allTracks.length;
+      while (offset < parsed.totalTracks) {
+        const page = await api.browse.album(albumId!, { serviceId, accountId, defaults, muse2: true, count: 50, offset });
+        if (page.error) break;
+        const newItems = (page.data as AlbumResponse).tracks?.items ?? [];
+        if (!newItems.length) break;
+        allTracks = [...allTracks, ...newItems.map(parseTrack)];
+        offset += newItems.length;
+      }
+
+      return { ...parsed, tracks: allTracks };
     },
     staleTime: Infinity,
     gcTime: 60 * 60 * 1000,

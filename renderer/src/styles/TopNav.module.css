@@ -196,6 +196,13 @@
 .nameSaveBtn:hover:not(:disabled) { background: rgba(255,255,255,0.18); }
 .nameSaveBtn:disabled { opacity: 0.35; cursor: default; }
 
+.appVersion {
+  font-size: 10px;
+  color: var(--text-3);
+  text-align: right;
+  margin-top: -2px;
+}
+
 /* ── Queue toggle ── */
 .queueBtn {
   background: none; border: none;

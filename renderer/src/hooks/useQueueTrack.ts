@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getArt, getArtist, getAlbum, decodeDefaults } from '../lib/itemHelpers';
 import { useTrackDetails } from './useTrackDetails';
 import { albumQueryOptions } from './useAlbumBrowse';
+import { artistQueryOptions } from './useArtistBrowse';
 import type { QueueItem, SonosAlbum, SonosItem, SonosItemId } from '../types/sonos';
 
 export function useQueueTrack(item: QueueItem, currentObjectId: string | null) {
@@ -50,5 +51,16 @@ export function useQueueTrack(item: QueueItem, currentObjectId: string | null) {
     ? () => queryClient.prefetchQuery(albumQueryOptions(albumId, albumSvcId!, albumAccId!, undefined))
     : undefined;
 
-  return { artUrl, artist, albumName, albumItem, prefetchAlbum, isPlaying, explicit };
+  const artistId  = data?.artistId ?? null;
+  const artistItem: SonosItem | null = artistId && artist ? {
+    name: artist,
+    type: 'ARTIST',
+    resource: { type: 'ARTIST', id: { objectId: artistId, serviceId: serviceId ?? '', accountId: accountId ?? '' } },
+  } as SonosItem : null;
+
+  const prefetchArtist = artistId && serviceId && accountId
+    ? () => queryClient.prefetchQuery(artistQueryOptions(artistId, serviceId, accountId, undefined))
+    : undefined;
+
+  return { artUrl, artist, albumName, albumItem, prefetchAlbum, artistItem, prefetchArtist, isPlaying, explicit };
 }

@@ -203,6 +203,7 @@ function MainApp() {
         currentQueueItemId={playback.queueItemId}
         onClose={() => setQueueOpen(false)}
         onRefresh={reloadQueue}
+        onError={showToast}
         onAddToQueue={handleAddToQueue}
       />
       <PlayerBar

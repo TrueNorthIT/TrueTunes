@@ -66,7 +66,7 @@ export function ContainerPanel({ onAddToQueue }: Props) {
         </div>
       )}
       {error && <div className={styles.msg}>Failed to load.</div>}
-      {data && data.length === 0 && <div className={styles.msg}>Nothing here.</div>}
+      {data && data.length === 0 && <div className={styles.msg}>This playlist is empty.</div>}
       {data && data.length > 0 && (
         <div className={styles.grid}>
           {data.map((child, i) => (

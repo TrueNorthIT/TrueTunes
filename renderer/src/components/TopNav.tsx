@@ -26,7 +26,12 @@ export function TopNav({
   const [searchText, setSearchText] = useState(searchParams.get('q') ?? '');
   const [nameOpen, setNameOpen] = useState(false);
   const [nameValue, setNameValue] = useState('');
+  const [appVersion, setAppVersion] = useState<string | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    window.sonos.getVersion().then(setAppVersion).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (nameOpen) setNameValue(displayName ?? '');
@@ -165,6 +170,9 @@ export function TopNav({
                   >
                     Save
                   </button>
+                  {appVersion && (
+                    <div className={styles.appVersion}>v{appVersion}</div>
+                  )}
                 </div>
               )}
             </div>
