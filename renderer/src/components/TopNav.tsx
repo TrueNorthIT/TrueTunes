@@ -1,4 +1,4 @@
-import { useState, useEffect, KeyboardEvent } from 'react';
+import { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import type { GroupInfo } from '../types/sonos';
 import styles from '../styles/TopNav.module.css';
@@ -11,16 +11,42 @@ interface Props {
   queueOpen: boolean;
   onToggleQueue: () => void;
   onResync: () => void;
+  displayName: string | null | undefined;
+  onSaveName: (name: string) => void;
 }
 
 export function TopNav({
   isAuthed, groups, activeGroupId,
   onGroupChange, queueOpen, onToggleQueue, onResync,
+  displayName, onSaveName,
 }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [searchText, setSearchText] = useState(searchParams.get('q') ?? '');
+  const [nameOpen, setNameOpen] = useState(false);
+  const [nameValue, setNameValue] = useState('');
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (nameOpen) setNameValue(displayName ?? '');
+  }, [nameOpen, displayName]);
+
+  useEffect(() => {
+    if (!nameOpen) return;
+    function onDown(e: MouseEvent) {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setNameOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [nameOpen]);
+
+  function submitName() {
+    const trimmed = nameValue.trim();
+    if (trimmed) { onSaveName(trimmed); setNameOpen(false); }
+  }
 
   // Keep search input in sync with the URL
   useEffect(() => {
@@ -109,6 +135,41 @@ export function TopNav({
               : groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)
             }
           </select>
+
+          {/* Name / settings */}
+          {displayName !== undefined && (
+            <div className={styles.nameWrap} ref={popoverRef}>
+              <button
+                className={`${styles.nameBtn}${nameOpen ? ' ' + styles.active : ''}`}
+                onClick={() => setNameOpen(o => !o)}
+                title="Your display name"
+              >
+                {displayName ?? '?'}
+              </button>
+              {nameOpen && (
+                <div className={styles.namePopover}>
+                  <div className={styles.namePopoverLabel}>Your display name</div>
+                  <input
+                    className={styles.nameInput}
+                    value={nameValue}
+                    onChange={e => setNameValue(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') submitName(); if (e.key === 'Escape') setNameOpen(false); }}
+                    maxLength={32}
+                    spellCheck={false}
+                    autoFocus
+                  />
+                  <button
+                    className={styles.nameSaveBtn}
+                    onClick={submitName}
+                    disabled={!nameValue.trim() || nameValue.trim() === displayName}
+                  >
+                    Save
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           <button
             className={`${styles.queueBtn}${queueOpen ? ' ' + styles.active : ''}`}
             onClick={onToggleQueue}

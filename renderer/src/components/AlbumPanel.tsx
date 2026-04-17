@@ -142,7 +142,13 @@ export function AlbumPanel({ onAddToQueue }: Props) {
               </div>
             )}
             <div className={styles.actions}>
-              <button className={styles.addAlbumBtn} onClick={() => onAddToQueue(item)}>
+              <button className={styles.addAlbumBtn} onClick={() => {
+                if (data?.tracks?.length) {
+                  data.tracks.forEach(t => onAddToQueue(t.raw));
+                } else {
+                  onAddToQueue(item);
+                }
+              }}>
                 + Add to Queue
               </button>
             </div>

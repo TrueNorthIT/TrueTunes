@@ -18,6 +18,9 @@ import { ArtistPanel } from './components/ArtistPanel';
 import { ContainerPanel } from './components/ContainerPanel';
 import { QueueSidebar } from './components/QueueSidebar';
 import { MiniPlayerShell } from './components/MiniPlayer';
+import { DisplayNameModal } from './components/DisplayNameModal';
+import { Splash } from './components/Splash';
+import { getName } from './lib/itemHelpers';
 
 import styles from './styles/App.module.css';
 
@@ -31,13 +34,38 @@ function MainApp() {
   const groups                                    = useGroups();
   const [activeGroupId, setActiveGroupId]         = useState<string | null>(null);
   const { playback, applyGroupCache, queueIdRef, queueVersionRef } = usePlayback(activeGroupId);
-  const { items: queueItems, setItems: setQueueItems, isLoading: queueLoading, error: queueError, reload: reloadQueue }
+  const { items: queueItems, setItems: setQueueItems, isLoading: queueLoading, error: queueError, reload: reloadQueueRaw }
                                                   = useQueue(isAuthed, activeGroupId, playback.queueId,
                                                       (etag) => { queueVersionRef.current = etag; });
+
+  const reloadQueue = useCallback(() => {
+    reloadQueueRaw();
+    window.sonos.refreshAttribution().catch(() => {});
+  }, [reloadQueueRaw]);
+
+  // Reload whenever Sonos reports a new queue version — catches external adds/removes/reorders
+  const seenQueueVersionRef = useRef<string | null>(null);
+  useEffect(() => {
+    const v = playback.queueVersion;
+    if (!v || v === seenQueueVersionRef.current) return;
+    seenQueueVersionRef.current = v;
+    reloadQueue();
+  }, [playback.queueVersion, reloadQueue]);
 
   const [queueOpen, setQueueOpen]     = useState(false);
   const [toastMsg, setToastMsg]       = useState<string | null>(null);
   const toastTimer                    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [displayName, setDisplayName] = useState<string | null | undefined>(undefined); // undefined = not yet loaded
+
+  useEffect(() => {
+    window.sonos.getDisplayName().then(setDisplayName);
+  }, []);
+
+  // Reload queue as soon as the WS session is up — catches the case where the
+  // first queue load fired before the session was fully established.
+  useEffect(() => {
+    return window.sonos.onWsReady(() => reloadQueue());
+  }, [reloadQueue]);
 
   useEffect(() => {
     if (groups.length > 0 && !activeGroupId) {
@@ -55,6 +83,7 @@ function MainApp() {
     setActiveGroupId(groupId);
     window.sonos.setGroup(groupId);
     applyGroupCache(groupId);
+    window.sonos.refreshAttribution().catch(() => {});
   }, [applyGroupCache]);
 
   const handleAddToQueue = useCallback(async (item: SonosItem, position = -1) => {
@@ -113,6 +142,14 @@ function MainApp() {
     if (r.error) { showToast('Add failed: ' + r.error); reloadQueue(); return; }
     if (r.etag) queueVersionRef.current = r.etag;
 
+    // Publish attribution — fire-and-forget, fails silently if pubsub not configured
+    const uri = body.id.objectId;
+    if (uri) {
+      const trackName = getName(normalized);
+      const artist = normalized.track?.primaryArtist?.name ?? normalized.track?.artist?.name ?? '';
+      window.sonos.publishQueued({ uri, trackName, artist }).catch(() => { /* silent */ });
+    }
+
     if (!isSingleTrack) {
       reloadQueue();
       setTimeout(reloadQueue, 1500);
@@ -128,8 +165,11 @@ function MainApp() {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
+  const splashReady = isAuthed && groups.length > 0;
+
   return (
     <div className={styles.shell}>
+      <Splash ready={splashReady} />
       <TopNav
         isAuthed={isAuthed}
         groups={groups}
@@ -138,6 +178,11 @@ function MainApp() {
         queueOpen={queueOpen}
         onToggleQueue={() => setQueueOpen(o => !o)}
         onResync={() => window.sonos.resync()}
+        displayName={displayName}
+        onSaveName={(name) => {
+          window.sonos.setDisplayName(name).catch(() => {});
+          setDisplayName(name);
+        }}
       />
       <div className={`${styles.body}${queueOpen ? ' ' + styles.bodyQueueOpen : ''}`}>
         <Routes>
@@ -166,6 +211,14 @@ function MainApp() {
         onShuffle={reloadQueue}
       />
       {toastMsg && <div className={styles.toast}>{toastMsg}</div>}
+      {displayName === null && (
+        <DisplayNameModal
+          onSave={(name) => {
+            window.sonos.setDisplayName(name).catch(() => { /* silent */ });
+            setDisplayName(name);
+          }}
+        />
+      )}
     </div>
   );
 }

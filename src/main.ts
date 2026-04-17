@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, safeStorage, session, Menu, IpcMainInvokeEvent } from 'electron';
+import { officePubSub } from './pubsub';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { randomUUID } from 'crypto';
@@ -20,6 +21,8 @@ interface AppConfig {
   groupId?: string;
   /** Active queue ID (coordinator player ID) — kept in sync by the renderer. */
   queueId?: string;
+  /** Display name shown on tracks this user adds to the queue. */
+  displayName?: string;
 }
 
 // YouTube Music service constants used for the nowPlaying fallback lookup.
@@ -32,15 +35,35 @@ const SEARCH_ACCOUNT_ID = '13';
 const PLATFORM_SERVICE_ID = '16751367';
 const PLATFORM_ACCOUNT_ID = '123209393';
 
+const PUBSUB_FUNCTION_URL = process.env['PUBSUB_FUNCTION_URL'] ?? 'https://truetunes-fn.azurewebsites.net';
+
 let config: AppConfig = {};
 
-async function loadConfig(): Promise<void> {
-  // serviceId/accountId are re-discovered on every boot via getIntegrationRegistrations.
-  // Nothing to persist for now.
+function configFilePath(): string {
+  return path.join(app.getPath('userData'), 'config.json');
 }
 
-function saveConfig(): void {
-  // No-op — service credentials are always re-discovered at startup.
+async function loadConfig(): Promise<void> {
+  try {
+    const raw = await fs.readFile(configFilePath(), 'utf8');
+    const parsed = JSON.parse(raw) as Partial<AppConfig>;
+    // Only load the fields we explicitly persist (not runtime-discovered ones)
+    if (typeof parsed.displayName === 'string') config.displayName = parsed.displayName;
+  } catch {
+    // No config file yet — use defaults
+  }
+}
+
+async function saveConfig(): Promise<void> {
+  try {
+    // Only persist non-sensitive, user-set fields
+    const toSave: Partial<AppConfig> = {
+      displayName: config.displayName,
+    };
+    await fs.writeFile(configFilePath(), JSON.stringify(toSave, null, 2), 'utf8');
+  } catch (err) {
+    console.warn('[config] Failed to save:', err);
+  }
 }
 
 // ─── Session token storage ────────────────────────────────────────────────────
@@ -897,6 +920,21 @@ function createAuthWindow(): void {
   );
 }
 
+/** Initialise Azure PubSub if a Function URL and display name are configured. */
+async function initPubSub(): Promise<void> {
+  if (!PUBSUB_FUNCTION_URL || !config.displayName) return;
+  try {
+    const initialMap = await officePubSub.connect(config.displayName, PUBSUB_FUNCTION_URL);
+    broadcastToRenderers('attribution:map', initialMap);
+    officePubSub.onEvent((event) => {
+      broadcastToRenderers('attribution:event', event);
+    });
+    log('[pubsub] Connected as', config.displayName);
+  } catch (err) {
+    console.warn('[pubsub] Failed to connect:', (err as Error).message);
+  }
+}
+
 function onAuthReady(): void {
   if (authConfirmed) return; // fire only once per login
   authConfirmed = true;
@@ -911,6 +949,7 @@ function onAuthReady(): void {
   }
 
   connectWebSocket().catch(console.error);
+  initPubSub().catch(console.error);
 }
 
 function createUIWindow(): void {
@@ -1028,6 +1067,41 @@ ipcMain.handle('playback:pause', (_event: IpcMainInvokeEvent) => {
 
 ipcMain.handle('debug:openWsMonitor', () => openDebugWindow());
 ipcMain.handle('debug:openHttpMonitor', () => openHttpDebugWindow());
+
+ipcMain.handle('config:getDisplayName', () => config.displayName ?? null);
+
+ipcMain.handle('config:setDisplayName', async (_: IpcMainInvokeEvent, name: string) => {
+  config.displayName = name;
+  await saveConfig();
+  // Start pubsub now that we have a name (first-time setup path)
+  initPubSub().catch(console.error);
+});
+
+ipcMain.handle('pubsub:publishQueued', async (
+  _: IpcMainInvokeEvent,
+  item: { uri: string; trackName: string; artist: string },
+) => {
+  await officePubSub.publishQueued(item).catch(() => { /* silent */ });
+  // Broadcast the local user's own attribution back to renderers (noEcho means
+  // the WS won't echo it back, so we push it manually).
+  const event = {
+    type: 'queued' as const,
+    user: config.displayName ?? '',
+    uri: item.uri,
+    trackName: item.trackName,
+    artist: item.artist,
+    timestamp: Date.now(),
+  };
+  broadcastToRenderers('attribution:event', event);
+});
+
+ipcMain.handle('attribution:refresh', async () => {
+  try {
+    const map = await officePubSub.refresh();
+    broadcastToRenderers('attribution:map', map);
+  } catch { /* silent — pubsub not configured */ }
+});
+
 ipcMain.handle('mini:open', () => createMiniPlayerWindow());
 ipcMain.handle('mini:close', () => {
   miniWin?.close();
@@ -1356,6 +1430,7 @@ app.whenReady().then(async () => {
     authConfirmed = true;
     createUIWindow();
     connectWebSocket().catch(console.error);
+    initPubSub().catch(console.error);
   } else {
     if (storedToken) await clearSessionToken(); // clear invalid token
     createAuthWindow();

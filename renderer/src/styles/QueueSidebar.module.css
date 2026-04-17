@@ -128,6 +128,15 @@
 }
 .subLink:hover { color: var(--text); text-decoration: underline; }
 
+.attribution {
+  font-size: 10px;
+  color: var(--text-3);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ── Drop indicator ── */
 .dropLine {
   height: 2px;

@@ -10,7 +10,7 @@ import styles from '../styles/MiniPlayer.module.css';
 
 export function MiniPlayerShell() {
   const isAuthed = useAuth();
-  const groups   = useGroups();
+  const groups = useGroups();
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -24,20 +24,18 @@ export function MiniPlayerShell() {
 
 // ── Visual component ──────────────────────────────────────────────────────────
 
-function MiniPlayer({ playback, isAuthed }: {
+function MiniPlayer({
+  playback,
+  isAuthed,
+}: {
   playback: ReturnType<typeof usePlayback>['playback'];
   isAuthed: boolean;
 }) {
-  const {
-    displayTrack, displayArtist, cachedArt,
-    progressPct, isPlaying, dominantColor,
-  } = useNowPlaying(playback);
+  const { displayTrack, displayArtist, cachedArt, progressPct, isPlaying, dominantColor } = useNowPlaying(playback);
 
   const refresh = () => window.sonos.refreshPlayback();
 
-  const shellStyle = dominantColor
-    ? { '--glow': `rgba(${dominantColor},0.25)` } as React.CSSProperties
-    : undefined;
+  const shellStyle = dominantColor ? ({ '--glow': `rgba(${dominantColor},0.25)` } as React.CSSProperties) : undefined;
 
   return (
     <>
@@ -47,7 +45,13 @@ function MiniPlayer({ playback, isAuthed }: {
           <filter id="liquid-glass" x="-8%" y="-8%" width="116%" height="116%">
             <feTurbulence type="fractalNoise" baseFrequency="0.018 0.012" numOctaves="2" seed="42" result="noise" />
             <feGaussianBlur in="noise" stdDeviation="0.5" result="softNoise" />
-            <feDisplacementMap in="SourceGraphic" in2="softNoise" scale="22" xChannelSelector="R" yChannelSelector="G" />
+            <feDisplacementMap
+              in="SourceGraphic"
+              in2="softNoise"
+              scale="22"
+              xChannelSelector="R"
+              yChannelSelector="G"
+            />
           </filter>
         </defs>
       </svg>
@@ -60,9 +64,7 @@ function MiniPlayer({ playback, isAuthed }: {
         <div className={styles.content}>
           {/* Album art */}
           <div className={styles.art}>
-            {cachedArt
-              ? <img src={cachedArt} alt="" />
-              : <div className={styles.artPh}>♪</div>}
+            {cachedArt ? <img src={cachedArt} alt="" /> : <div className={styles.artPh}>♪</div>}
           </div>
 
           {/* Track info + progress */}
@@ -76,24 +78,34 @@ function MiniPlayer({ playback, isAuthed }: {
 
           {/* Controls */}
           <div className={styles.controls}>
-            <button className={styles.btn} disabled={!isAuthed}
-              onClick={() => window.sonos.skipPrev().then(refresh)} title="Previous">
+            <button
+              className={styles.btn}
+              disabled={!isAuthed}
+              onClick={() => window.sonos.skipPrev().then(refresh)}
+              title="Previous"
+            >
               <SkipBack size={13} />
             </button>
-            <button className={`${styles.btn} ${styles.playBtn}`} disabled={!isAuthed}
+            <button
+              className={`${styles.btn} ${styles.playBtn}`}
+              disabled={!isAuthed}
               onClick={() => (isPlaying ? window.sonos.pause() : window.sonos.play()).then(refresh)}
-              title={isPlaying ? 'Pause' : 'Play'}>
+              title={isPlaying ? 'Pause' : 'Play'}
+            >
               {isPlaying ? <Pause size={14} /> : <Play size={14} />}
             </button>
-            <button className={styles.btn} disabled={!isAuthed}
-              onClick={() => window.sonos.skipNext().then(refresh)} title="Next">
+            <button
+              className={styles.btn}
+              disabled={!isAuthed}
+              onClick={() => window.sonos.skipNext().then(refresh)}
+              title="Next"
+            >
               <SkipForward size={13} />
             </button>
           </div>
 
           {/* Close */}
-          <button className={styles.closeBtn}
-            onClick={() => window.sonos.closeMiniPlayer()} title="Close">
+          <button className={styles.closeBtn} onClick={() => window.sonos.closeMiniPlayer()} title="Close">
             ✕
           </button>
         </div>

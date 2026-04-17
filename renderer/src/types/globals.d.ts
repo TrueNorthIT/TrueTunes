@@ -1,5 +1,23 @@
 // Ambient declarations for contextBridge APIs injected by preload.ts
 
+interface AttributionEntry {
+  user: string;
+  timestamp: number;
+  trackName: string;
+  artist: string;
+}
+
+type AttributionMap = Record<string, AttributionEntry>;
+
+interface AttributionEvent {
+  type: 'queued';
+  user: string;
+  uri: string;
+  trackName: string;
+  artist: string;
+  timestamp: number;
+}
+
 interface FetchRequest {
   operationId: string;
   pathParams?: Record<string, string>;
@@ -42,6 +60,13 @@ interface SonosPreload {
   openHttpMonitor: ()                                       => Promise<void>;
   openMiniPlayer:  ()                                       => Promise<void>;
   closeMiniPlayer: ()                                       => Promise<void>;
+  // Attribution / office presence
+  getDisplayName:     ()                                          => Promise<string | null>;
+  setDisplayName:     (name: string)                              => Promise<void>;
+  publishQueued:      (item: { uri: string; trackName: string; artist: string }) => Promise<void>;
+  refreshAttribution: ()                                           => Promise<void>;
+  onAttributionMap:   (cb: (map: AttributionMap) => void)         => Unsubscribe;
+  onAttributionEvent: (cb: (event: AttributionEvent) => void)     => Unsubscribe;
 }
 
 declare global {

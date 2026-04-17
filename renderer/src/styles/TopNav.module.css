@@ -123,6 +123,79 @@
 }
 .resyncBtn:hover { color: var(--text-2); background: var(--bg-2); }
 
+/* ── Name / settings ── */
+.nameWrap {
+  position: relative;
+}
+
+.nameBtn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 5px 10px;
+  cursor: pointer;
+  max-width: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.15s;
+}
+.nameBtn:hover { color: var(--text-2); border-color: var(--border-2); }
+.nameBtn.active { color: var(--text); border-color: var(--border-2); background: rgba(255,255,255,0.1); }
+
+.namePopover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 12px;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  z-index: 300;
+}
+
+.namePopoverLabel {
+  font-size: 11px;
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.nameInput {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.nameInput:focus { border-color: var(--border-2); }
+
+.nameSaveBtn {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 6px 0;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.nameSaveBtn:hover:not(:disabled) { background: rgba(255,255,255,0.18); }
+.nameSaveBtn:disabled { opacity: 0.35; cursor: default; }
+
 /* ── Queue toggle ── */
 .queueBtn {
   background: none; border: none;

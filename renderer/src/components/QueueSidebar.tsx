@@ -4,8 +4,9 @@ import { getName } from '../lib/itemHelpers';
 import { useImage } from '../hooks/useImage';
 import { useOpenItem } from '../hooks/useOpenItem';
 import { useQueueTrack } from '../hooks/useQueueTrack';
+import { useAttribution } from '../hooks/useAttribution';
 import { ExplicitBadge } from './ExplicitBadge';
-import type { QueueItem, SonosItem } from '../types/sonos';
+import type { QueueItem, SonosItem, SonosItemId } from '../types/sonos';
 import styles from '../styles/QueueSidebar.module.css';
 
 interface Props {
@@ -35,6 +36,7 @@ interface RowProps {
   item: QueueItem;
   index: number;
   currentObjectId: string | null;
+  attribution?: AttributionEntry;
   isSelected: boolean;
   onRowClick: (index: number, e: React.MouseEvent) => void;
   onDragStart: (index: number, e: React.DragEvent) => void;
@@ -44,7 +46,7 @@ interface RowProps {
 }
 
 function DraggableQueueRow({
-  item, index, currentObjectId,
+  item, index, currentObjectId, attribution,
   isSelected, onRowClick, onDragStart, onDragOver, onDrop, onDragEnd,
 }: RowProps) {
   const { artUrl, artist, albumName, albumItem, prefetchAlbum, isPlaying, explicit } =
@@ -93,6 +95,9 @@ function DraggableQueueRow({
             )}
           </div>
         )}
+        {attribution && (
+          <div className={styles.attribution}>by {attribution.user}</div>
+        )}
       </div>
     </div>
   );
@@ -104,6 +109,7 @@ export function QueueSidebar(
   { open, items, setItems, isLoading, error, currentObjectId, onClose, onRefresh, onAddToQueue }: Props
 ) {
   const contentRef = useRef<HTMLDivElement>(null);
+  const attributionMap = useAttribution(onRefresh);
   const [selected, setSelected]         = useState<Set<number>>(new Set());
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const lastSelected = useRef<number | null>(null);
@@ -286,6 +292,11 @@ export function QueueSidebar(
               item={item}
               index={i}
               currentObjectId={currentObjectId}
+              attribution={attributionMap[
+                (item.track?.id as SonosItemId | undefined)?.objectId ??
+                (item.id as SonosItemId | undefined)?.objectId ??
+                ''
+              ]}
               isSelected={selected.has(i)}
               onRowClick={handleRowClick}
               onDragStart={handleDragStart}

@@ -128,7 +128,18 @@ export function usePlayback(activeGroupId: string | null) {
     }
     if (queueVersion) queueVersionRef.current = queueVersion;
 
-    if (!name) return;
+    if (!name) {
+      // Still surface queue cursors into React state so useQueue can react to them
+      // even when nothing is playing (no track name).
+      if (queueId || queueVersion) {
+        setState(prev => ({
+          ...prev,
+          ...(queueId    ? { queueId }    : {}),
+          ...(queueVersion ? { queueVersion } : {}),
+        }));
+      }
+      return;
+    }
 
     setState((prev) => ({
       isVisible: true,
