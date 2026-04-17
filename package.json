@@ -79,6 +79,7 @@
       "verifyUpdateCodeSignature": false
     },
     "nsis": {
+      "guid": "com.truenorthit.truetunes",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "True Tunes"
