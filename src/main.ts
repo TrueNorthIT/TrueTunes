@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, safeStorage, session, Menu, IpcMainInvokeEvent } from 'electron';
+import { updateElectronApp } from 'update-electron-app';
 import { officePubSub } from './pubsub';
 import * as path from 'path';
 import * as fs from 'fs/promises';
@@ -1424,6 +1425,10 @@ function buildMenu(): void {
 }
 
 // ─── App lifecycle ────────────────────────────────────────────────────────────
+
+if (app.isPackaged) {
+  updateElectronApp();
+}
 
 app.whenReady().then(async () => {
   buildMenu();

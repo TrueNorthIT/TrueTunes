@@ -13,12 +13,15 @@
     "electron:build": "npm run build && electron-builder",
     "electron:build:win": "npm run build && electron-builder --win",
     "electron:build:mac": "npm run build && electron-builder --mac",
+    "electron:publish:win": "npm run build && electron-builder --win --publish always",
+    "electron:publish:mac": "npm run build && electron-builder --mac --publish always",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{ts,tsx,json,css}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,json,css}\""
   },
   "dependencies": {
+    "update-electron-app": "^3.1.2",
     "ws": "^8.0.0"
   },
   "devDependencies": {
@@ -49,6 +52,11 @@
   "build": {
     "appId": "uk.co.truenorthit.truetunes",
     "productName": "True Tunes",
+    "publish": {
+      "provider": "github",
+      "owner": "TrueNorthIT",
+      "repo": "TrueTunes"
+    },
     "directories": {
       "output": "release"
     },
