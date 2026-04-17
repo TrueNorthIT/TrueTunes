@@ -959,7 +959,7 @@ function createUIWindow(): void {
   uiWin = new BrowserWindow({
     width: 960,
     height: 640,
-    title: `True Tunes v${app.getVersion()}`,
+    title: `True-Tunes v${app.getVersion()}`,
     backgroundColor: '#1c1c1e',
     webPreferences: {
       nodeIntegration: false,
@@ -1465,7 +1465,10 @@ app.whenReady().then(async () => {
 
 app.on('before-quit', () => {
   quitting = true;
-  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
   ws?.terminate();
   officePubSub.disconnect();
 });
