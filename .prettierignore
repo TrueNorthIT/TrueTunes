@@ -1,0 +1,4 @@
+dist/
+renderer/dist/
+node_modules/
+src/*.html

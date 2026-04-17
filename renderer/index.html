@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en" style="background:#1c1c1e">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' http: https: data: blob:; connect-src 'self' https: http:; font-src 'self' https:">
+  <title>True Tunes</title>
+</head>
+<body>
+  <div id="root"></div>
+  <!-- Set data-mini BEFORE React/CSS loads so body stays transparent for the mini player window -->
+  <script>if(location.hash.startsWith('#/mini'))document.documentElement.dataset.mini='';</script>
+  <script type="module" src="./src/main.tsx"></script>
+</body>
+</html>

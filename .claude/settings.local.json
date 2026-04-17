@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(node:*)",
+      "Bash(npx eslint *)",
+      "Bash(grep -v \"^$\")",
+      "Bash(grep -E \"^D:\\\\\\\\\")",
+      "Bash(xargs cat *)",
+      "Bash(grep *)",
+      "Bash(npm audit *)",
+      "Bash(python3 -c ' *)"
+    ]
+  }
+}

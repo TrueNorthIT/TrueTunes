@@ -1,0 +1,215 @@
+.nav {
+  height: var(--nav-h);
+  background: rgba(13, 13, 13, 0.92);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+  z-index: 200;
+  position: relative;
+}
+
+.inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 10px;
+}
+
+/* All interactive children need drag disabled */
+.inner button,
+.inner select,
+.inner input { -webkit-app-region: no-drag; }
+
+.left { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+/* Room for macOS traffic lights in frameless mode */
+.trafficSpace { width: 72px; }
+
+.backBtn {
+  background: none; border: none;
+  color: var(--text-2); font-size: 13px; font-weight: 500;
+  padding: 6px 10px; border-radius: 20px;
+  cursor: pointer; font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  -webkit-app-region: no-drag;
+}
+.backBtn:hover { color: var(--text); background: var(--bg-2); }
+
+.center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  -webkit-app-region: no-drag;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+
+/* ── Nav tab ── */
+.tab {
+  background: none; border: none;
+  color: var(--text-2); font-size: 13px; font-weight: 500;
+  padding: 6px 14px; border-radius: 20px;
+  cursor: pointer; font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.tab:hover { color: var(--text); background: var(--bg-2); }
+.tab.active { color: var(--text); background: rgba(255,255,255,0.09); }
+
+/* ── Search field ── */
+.searchWrap {
+  display: flex; align-items: center;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid transparent;
+  border-radius: 20px;
+  padding: 0 4px 0 14px;
+  transition: border-color 0.15s;
+  min-width: 0;
+}
+.searchWrap:focus-within { border-color: rgba(255,255,255,0.2); }
+
+.searchInput {
+  background: none; border: none;
+  color: var(--text); font-size: 13px;
+  padding: 6px 0; width: 200px; outline: none;
+  font-family: inherit; min-width: 0;
+}
+.searchInput::placeholder { color: var(--text-3); }
+.searchInput:disabled { opacity: 0.4; }
+
+.clearBtn {
+  background: none; border: none;
+  color: var(--text-3); cursor: pointer;
+  font-size: 12px; padding: 5px 8px;
+  border-radius: 50%;
+  display: flex; align-items: center;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.clearBtn:hover { color: var(--text-2); }
+
+/* ── Group selector ── */
+.groupSelect {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text-3); font-size: 12px;
+  padding: 5px 8px; max-width: 130px;
+  cursor: pointer; font-family: inherit;
+  transition: border-color 0.15s;
+}
+.groupSelect:not(:disabled) { color: var(--text-2); }
+.groupSelect:focus { outline: none; border-color: var(--border-2); }
+
+/* ── Resync button ── */
+.resyncBtn {
+  background: none; border: none;
+  color: var(--text-3); cursor: pointer;
+  font-size: 16px; padding: 5px 7px;
+  border-radius: var(--r-sm);
+  display: flex; align-items: center;
+  transition: all 0.15s; line-height: 1;
+}
+.resyncBtn:hover { color: var(--text-2); background: var(--bg-2); }
+
+/* ── Name / settings ── */
+.nameWrap {
+  position: relative;
+}
+
+.nameBtn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 5px 10px;
+  cursor: pointer;
+  max-width: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.15s;
+}
+.nameBtn:hover { color: var(--text-2); border-color: var(--border-2); }
+.nameBtn.active { color: var(--text); border-color: var(--border-2); background: rgba(255,255,255,0.1); }
+
+.namePopover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 12px;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  z-index: 300;
+}
+
+.namePopoverLabel {
+  font-size: 11px;
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.nameInput {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.nameInput:focus { border-color: var(--border-2); }
+
+.nameSaveBtn {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 6px 0;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.nameSaveBtn:hover:not(:disabled) { background: rgba(255,255,255,0.18); }
+.nameSaveBtn:disabled { opacity: 0.35; cursor: default; }
+
+.appVersion {
+  font-size: 10px;
+  color: var(--text-3);
+  text-align: right;
+  margin-top: -2px;
+}
+
+/* ── Queue toggle ── */
+.queueBtn {
+  background: none; border: none;
+  color: var(--text-3); cursor: pointer;
+  font-size: 18px; padding: 5px 8px;
+  border-radius: var(--r-sm);
+  display: flex; align-items: center;
+  transition: all 0.15s; line-height: 1;
+}
+.queueBtn:hover { color: var(--text-2); background: var(--bg-2); }
+.queueBtn.active { color: var(--text); background: rgba(255,255,255,0.1); }

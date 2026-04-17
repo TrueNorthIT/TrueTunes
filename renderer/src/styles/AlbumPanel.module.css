@@ -1,0 +1,220 @@
+.panel {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: calc(var(--player-h) + 24px);
+  background: var(--bg);
+}
+
+/* ── Header ── */
+.header {
+  padding: 28px 28px 24px;
+  /* background applied via inline style from dominant colour */
+}
+
+
+.headerContent {
+  display: flex;
+  gap: 24px;
+  align-items: flex-end;
+}
+
+.artWrap {
+  width: 200px; height: 200px;
+  border-radius: var(--r-md);
+  overflow: hidden; flex-shrink: 0;
+  background: var(--bg-1);
+}
+.art { width: 100%; height: 100%; object-fit: cover; display: block; }
+.artPh {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 48px; color: var(--text-3);
+}
+
+.meta {
+  display: flex; flex-direction: column;
+  gap: 6px; padding-bottom: 4px; min-width: 0;
+}
+.albumTitle {
+  font-size: 28px; font-weight: 700;
+  letter-spacing: -0.5px; color: var(--text); line-height: 1.1;
+}
+.artist { font-size: 15px; font-weight: 500; color: var(--text-2); }
+.artistLink { cursor: pointer; }
+.artistLink:hover { color: var(--text); text-decoration: underline; }
+.metaLine { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+.actions { display: flex; gap: 8px; margin-top: 10px; }
+
+.addAlbumBtn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-2);
+  color: var(--text);
+  font-size: 12px; font-weight: 600;
+  font-family: inherit;
+  padding: 7px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  letter-spacing: 0.1px;
+}
+.addAlbumBtn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* ── Track list / table ── */
+.tracks { padding: 0 28px 8px; }
+
+.tableHeader {
+  display: grid;
+  grid-template-columns: var(--track-cols);
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+  color: var(--text-3); text-transform: uppercase;
+}
+
+.trackRow {
+  display: grid;
+  grid-template-columns: var(--track-cols);
+  align-items: center; gap: 12px;
+  padding: 6px 8px; border-radius: var(--r-sm);
+  transition: background 0.12s; cursor: grab;
+}
+.trackRow:active { cursor: grabbing; }
+.trackRow:hover { background: var(--bg-2); }
+.trackRow.selected { background: rgba(255,255,255,0.08); }
+.trackRow.selected:hover { background: rgba(255,255,255,0.12); }
+
+.ordinal {
+  text-align: right;
+  font-size: 13px; color: var(--text-3);
+}
+
+.trackArtWrap {
+  width: 38px; height: 38px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg-1);
+}
+.trackArt { width: 100%; height: 100%; object-fit: cover; display: block; }
+.trackArtPh { width: 100%; height: 100%; background: var(--bg-2); }
+
+.trackName {
+  font-size: 13px; font-weight: 500; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: flex; align-items: center; gap: 4px; min-width: 0;
+}
+.trackArtist {
+  font-size: 12px; color: var(--text-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}
+.trackAlbum {
+  font-size: 12px; color: var(--text-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}
+
+.artistBtn {
+  background: none; border: none; padding: 0;
+  font-size: inherit; color: var(--text-2);
+  cursor: pointer; font-family: inherit;
+  transition: color 0.12s;
+}
+.artistBtn:hover { color: var(--text); text-decoration: underline; }
+
+.duration { font-size: 12px; color: var(--text-3); text-align: right; }
+
+.addBtn {
+  width: 26px; height: 26px; background: none;
+  border: 1px solid var(--border); border-radius: 50%;
+  color: var(--text-3); cursor: pointer;
+  font-size: 16px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; opacity: 0;
+}
+.trackRow:hover .addBtn { opacity: 1; }
+.addBtn:hover { border-color: var(--border-2); color: var(--text-2); background: var(--bg-2); }
+
+.msg {
+  color: var(--text-3); font-size: 14px;
+  text-align: center; padding: 40px 0;
+}
+
+/* ── Spinner ── */
+.spinnerWrap {
+  display: flex; justify-content: center; padding: 16px 0 8px;
+}
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--text-2);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Skeleton tracks ── */
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 0.6; }
+}
+.skeletonRow {
+  display: grid;
+  grid-template-columns: var(--track-cols);
+  align-items: center; gap: 12px;
+  padding: 6px 8px; border-radius: var(--r-sm);
+}
+.skeletonOrdinal {
+  height: 12px;
+  background: var(--bg-2); border-radius: 3px;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+.skeletonArt {
+  width: 38px; height: 38px;
+  background: var(--bg-2); border-radius: 4px;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+.skeletonTitle {
+  height: 12px; background: var(--bg-2); border-radius: 3px;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+.skeletonSub {
+  height: 10px; background: var(--bg-2); border-radius: 3px;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+.skeletonDur {
+  height: 10px;
+  background: var(--bg-2); border-radius: 3px;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+.selBar {
+  position: sticky; bottom: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 28px;
+  background: var(--bg-1);
+  border-top: 1px solid var(--border);
+  font-size: 13px; color: var(--text-2);
+}
+.selAddBtn {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid var(--border-2);
+  color: var(--text);
+  font-size: 12px; font-weight: 600;
+  font-family: inherit;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.selAddBtn:hover {
+  background: rgba(255,255,255,0.18);
+  border-color: rgba(255,255,255,0.3);
+}
