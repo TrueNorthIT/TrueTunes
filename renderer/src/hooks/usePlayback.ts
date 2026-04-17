@@ -23,6 +23,7 @@ export interface PlaybackState {
   isExplicit: boolean;
   queueId: string | null;
   queueVersion: string | null;
+  queueItemId: string | null;
 }
 
 const IDLE_STATE: PlaybackState = {
@@ -46,6 +47,7 @@ const IDLE_STATE: PlaybackState = {
   isExplicit: false,
   queueId: null,
   queueVersion: null,
+  queueItemId: null,
 };
 
 export function usePlayback(activeGroupId: string | null) {
@@ -98,8 +100,9 @@ export function usePlayback(activeGroupId: string | null) {
       : payload?.playback?.playModes?.repeat
         ? "all"
         : "none";
-    const queueId = payload?.playback?.queueId ?? null;
+    const queueId      = payload?.playback?.queueId      ?? null;
     const queueVersion = payload?.playback?.queueVersion ?? null;
+    const queueItemId  = payload?.playback?.itemId       ?? null;
     const oid = track?.id?.objectId ?? null;
     const serviceId = track?.id?.serviceId ?? null;
     const accountId = track?.id?.accountId ?? null;
@@ -131,11 +134,12 @@ export function usePlayback(activeGroupId: string | null) {
     if (!name) {
       // Still surface queue cursors into React state so useQueue can react to them
       // even when nothing is playing (no track name).
-      if (queueId || queueVersion) {
+      if (queueId || queueVersion || queueItemId) {
         setState(prev => ({
           ...prev,
-          ...(queueId    ? { queueId }    : {}),
+          ...(queueId      ? { queueId }      : {}),
           ...(queueVersion ? { queueVersion } : {}),
+          ...(queueItemId  ? { queueItemId }  : {}),
         }));
       }
       return;
@@ -163,6 +167,7 @@ export function usePlayback(activeGroupId: string | null) {
       isExplicit,
       queueId,
       queueVersion,
+      queueItemId,
     }));
   }, []);
 

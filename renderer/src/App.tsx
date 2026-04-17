@@ -200,6 +200,7 @@ function MainApp() {
         isLoading={queueLoading}
         error={queueError}
         currentObjectId={playback.currentObjectId}
+        currentQueueItemId={playback.queueItemId}
         onClose={() => setQueueOpen(false)}
         onRefresh={reloadQueue}
         onAddToQueue={handleAddToQueue}

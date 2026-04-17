@@ -16,6 +16,7 @@ interface Props {
   isLoading: boolean;
   error: string | null;
   currentObjectId: string | null;
+  currentQueueItemId: string | null;
   onClose: () => void;
   onRefresh: () => void;
   onAddToQueue: (item: SonosItem, position: number) => void;
@@ -36,6 +37,7 @@ interface RowProps {
   item: QueueItem;
   index: number;
   currentObjectId: string | null;
+  currentQueueItemId: string | null;
   attribution?: AttributionEntry;
   isSelected: boolean;
   onRowClick: (index: number, e: React.MouseEvent) => void;
@@ -46,11 +48,15 @@ interface RowProps {
 }
 
 function DraggableQueueRow({
-  item, index, currentObjectId, attribution,
+  item, index, currentObjectId, currentQueueItemId, attribution,
   isSelected, onRowClick, onDragStart, onDragOver, onDrop, onDragEnd,
 }: RowProps) {
-  const { artUrl, artist, albumName, albumItem, prefetchAlbum, isPlaying, explicit } =
+  const { artUrl, artist, albumName, albumItem, prefetchAlbum, isPlaying: isPlayingByObjectId, explicit } =
     useQueueTrack(item, currentObjectId);
+  // Prefer 1-based queue position match (exact, handles duplicates) over objectId match
+  const isPlaying = currentQueueItemId !== null
+    ? Number(currentQueueItemId) === index + 1
+    : isPlayingByObjectId;
   const cachedArt = useImage(artUrl);
   const openItem  = useOpenItem();
   const name = getName(item);
@@ -76,7 +82,11 @@ function DraggableQueueRow({
         {cachedArt
           ? <img className={styles.art} src={cachedArt} alt="" />
           : <div className={styles.artPh}>♪</div>}
-        {isPlaying && <div className={styles.overlay}>▶</div>}
+        {isPlaying && (
+          <div className={styles.overlay}>
+            <div className={styles.eq}><span /><span /><span /></div>
+          </div>
+        )}
       </div>
       <div className={styles.text}>
         <div className={styles.name}>{name}{explicit && <ExplicitBadge />}</div>
@@ -106,7 +116,7 @@ function DraggableQueueRow({
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
 export function QueueSidebar(
-  { open, items, setItems, isLoading, error, currentObjectId, onClose, onRefresh, onAddToQueue }: Props
+  { open, items, setItems, isLoading, error, currentObjectId, currentQueueItemId, onClose, onRefresh, onAddToQueue }: Props
 ) {
   const contentRef = useRef<HTMLDivElement>(null);
   const attributionMap = useAttribution(onRefresh);
@@ -292,6 +302,7 @@ export function QueueSidebar(
               item={item}
               index={i}
               currentObjectId={currentObjectId}
+              currentQueueItemId={currentQueueItemId}
               attribution={attributionMap[
                 (item.track?.id as SonosItemId | undefined)?.objectId ??
                 (item.id as SonosItemId | undefined)?.objectId ??

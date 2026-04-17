@@ -106,9 +106,32 @@
 }
 .overlay {
   position: absolute; inset: 0; border-radius: 4px;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.55);
   display: flex; align-items: center; justify-content: center;
-  color: #fff; font-size: 9px; pointer-events: none;
+  pointer-events: none;
+}
+
+/* Animated equalizer bars */
+.eq {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+.eq span {
+  display: block;
+  width: 3px;
+  border-radius: 1px;
+  background: #fff;
+  animation: eqBar 0.9s ease-in-out infinite alternate;
+}
+.eq span:nth-child(1) { animation-duration: 0.7s; }
+.eq span:nth-child(2) { animation-duration: 1.0s; animation-delay: 0.15s; }
+.eq span:nth-child(3) { animation-duration: 0.8s; animation-delay: 0.05s; }
+
+@keyframes eqBar {
+  from { height: 3px;  opacity: 0.7; }
+  to   { height: 13px; opacity: 1;   }
 }
 
 /* Text */
