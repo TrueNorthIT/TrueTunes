@@ -1,6 +1,6 @@
 {
   "name": "true-tunes-2",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Sonos Web Player proxy app",
   "main": "dist/main.js",
   "scripts": {
