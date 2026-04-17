@@ -3,12 +3,12 @@
   position: fixed;
   bottom: 24px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateZ(0);
   z-index: 150;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(80px) saturate(320%) brightness(1.1);
-  -webkit-backdrop-filter: blur(80px) saturate(320%) brightness(1.1);
+  will-change: backdrop-filter;
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow:
     0 12px 48px rgba(0, 0, 0, 0.4),
@@ -242,7 +242,6 @@
   padding: 10px 8px;
   background: rgba(28, 28, 28, 0.92);
   backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);

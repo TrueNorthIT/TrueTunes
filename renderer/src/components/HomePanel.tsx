@@ -22,15 +22,19 @@ import styles from '../styles/HomePanel.module.css';
 interface Props {
   isAuthed: boolean;
   onAddToQueue: (item: SonosItem) => void;
+  ytm: YtmSections | undefined;
+  ytmLoading: boolean;
+  history: SonosItem[];
+  histLoading: boolean;
 }
 
-interface YtmSections {
+export interface YtmSections {
   forYou: SonosItem[];
   newReleases: SonosItem[];
   charts: SonosItem[];
 }
 
-async function fetchYtmSections(): Promise<YtmSections> {
+export async function fetchYtmSections(): Promise<YtmSections> {
   const rootR = await api.browse.container('root', { muse2: true });
   if (rootR.error) return { forYou: [], newReleases: [], charts: [] };
 
@@ -73,7 +77,7 @@ async function fetchYtmSections(): Promise<YtmSections> {
   };
 }
 
-export function HomePanel({ isAuthed, onAddToQueue }: Props) {
+export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, history, histLoading }: Props) {
   const queryClient = useQueryClient();
   const location    = useLocation();
   const [searchParams] = useSearchParams();
@@ -81,23 +85,6 @@ export function HomePanel({ isAuthed, onAddToQueue }: Props) {
 
   const view         = location.pathname === '/search' ? 'search' : 'home';
   const activeSearch = searchParams.get('q') ?? '';
-
-  const { data: ytm, isLoading: ytmLoading } = useQuery({
-    queryKey: ['ytm-home'],
-    queryFn: fetchYtmSections,
-    enabled: isAuthed,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: history = [], isLoading: histLoading } = useQuery({
-    queryKey: ['history'],
-    queryFn: async () => {
-      const r = await api.content.history({ count: 50 });
-      return r.error ? [] : extractItems(r.data);
-    },
-    enabled: isAuthed,
-    staleTime: 60 * 1000,
-  });
 
   const { data: searchResults = [], isFetching: searchLoading } = useQuery({
     queryKey: ['search', activeSearch],

@@ -9,6 +9,8 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, 'dist'),
     emptyOutDir: true,
+    target: 'esnext',
+    cssTarget: 'chrome120',
   },
   server: {
     port: 5173,

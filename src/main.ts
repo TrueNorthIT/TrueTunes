@@ -958,6 +958,7 @@ function createUIWindow(): void {
   uiWin = new BrowserWindow({
     width: 960,
     height: 640,
+    backgroundColor: '#1c1c1e',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

@@ -1,18 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './hooks/useAuth';
 import { useGroups } from './hooks/useGroups';
 import { usePlayback } from './hooks/usePlayback';
 import { useQueue } from './hooks/useQueue';
 import { trackQueryOptions } from './hooks/useTrackDetails';
 import { api } from './lib/sonosApi';
-import { normalizeForQueue, isTrack, isProgram } from './lib/itemHelpers';
+import { normalizeForQueue, isTrack, isProgram, extractItems } from './lib/itemHelpers';
 import type { SonosItem, SonosItemId } from './types/sonos';
 
 import { TopNav } from './components/TopNav';
 import { PlayerBar } from './components/PlayerBar';
-import { HomePanel } from './components/HomePanel';
+import { HomePanel, fetchYtmSections } from './components/HomePanel';
+import type { YtmSections } from './components/HomePanel';
 import { AlbumPanel } from './components/AlbumPanel';
 import { ArtistPanel } from './components/ArtistPanel';
 import { ContainerPanel } from './components/ContainerPanel';
@@ -165,7 +166,26 @@ function MainApp() {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  const splashReady = isAuthed && groups.length > 0;
+  const homeEnabled = isAuthed && groups.length > 0;
+
+  const { data: ytm, isLoading: ytmLoading } = useQuery<YtmSections>({
+    queryKey: ['ytm-home'],
+    queryFn: fetchYtmSections,
+    enabled: homeEnabled,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: history = [], isLoading: histLoading } = useQuery<SonosItem[]>({
+    queryKey: ['history'],
+    queryFn: async () => {
+      const r = await api.content.history({ count: 50 });
+      return r.error ? [] : extractItems(r.data);
+    },
+    enabled: homeEnabled,
+    staleTime: 60 * 1000,
+  });
+
+  const splashReady = isAuthed && groups.length > 0 && !ytmLoading && !histLoading;
 
   return (
     <div className={styles.shell}>
@@ -186,8 +206,8 @@ function MainApp() {
       />
       <div className={`${styles.body}${queueOpen ? ' ' + styles.bodyQueueOpen : ''}`}>
         <Routes>
-          <Route path="/"           element={<HomePanel isAuthed={isAuthed} onAddToQueue={handleAddToQueue} />} />
-          <Route path="/search"     element={<HomePanel isAuthed={isAuthed} onAddToQueue={handleAddToQueue} />} />
+          <Route path="/"       element={<HomePanel isAuthed={isAuthed} onAddToQueue={handleAddToQueue} ytm={ytm} ytmLoading={ytmLoading} history={history} histLoading={histLoading} />} />
+          <Route path="/search" element={<HomePanel isAuthed={isAuthed} onAddToQueue={handleAddToQueue} ytm={ytm} ytmLoading={ytmLoading} history={history} histLoading={histLoading} />} />
           <Route path="/album/:id"  element={<AlbumPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/artist/:id" element={<ArtistPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/container/:id" element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />

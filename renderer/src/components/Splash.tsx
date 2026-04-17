@@ -5,7 +5,7 @@ interface Props {
   ready: boolean;
 }
 
-const MIN_MS = 1800;
+const MIN_MS = 900;
 
 export function Splash({ ready }: Props) {
   const [fading,  setFading]  = useState(false);
