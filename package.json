@@ -2,6 +2,12 @@
   "name": "true-tunes-2",
   "version": "1.0.2",
   "description": "Sonos Web Player proxy app",
+  "repository": "https://github.com/TrueNorthIT/TrueTunes",
+  "author": {
+    "name": "True North IT",
+    "email": "jpitts@truenorthit.co.uk",
+    "url": "https://truenorthit.co.uk"
+  },
   "main": "dist/main.js",
   "scripts": {
     "build:main": "tsc && node -e \"const fs=require('fs');fs.copyFileSync('src/debug-ws.html','dist/debug-ws.html');fs.copyFileSync('src/debug-http.html','dist/debug-http.html')\"",
@@ -21,7 +27,7 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,json,css}\""
   },
   "dependencies": {
-    "update-electron-app": "^3.1.2",
+    "electron-updater": "^6.8.3",
     "ws": "^8.0.0"
   },
   "devDependencies": {
@@ -52,6 +58,7 @@
   "build": {
     "appId": "uk.co.truenorthit.truetunes",
     "productName": "True Tunes",
+    "copyright": "Copyright © 2026 True North IT",
     "publish": {
       "provider": "github",
       "owner": "TrueNorthIT",
@@ -67,11 +74,19 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "icon.ico"
+      "icon": "icon.ico",
+      "publisherName": "True North IT",
+      "verifyUpdateCodeSignature": false
+    },
+    "nsis": {
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "True Tunes"
     },
     "mac": {
       "target": "dmg",
-      "icon": "icon.png"
+      "icon": "icon.png",
+      "category": "public.app-category.music"
     }
   }
 }
