@@ -1429,6 +1429,10 @@ function buildMenu(): void {
 
 if (app.isPackaged) {
   autoUpdater.checkForUpdatesAndNotify();
+  // autoUpdater.on('update-downloaded', () => {
+  //   BrowserWindow.getAllWindows().forEach((w) => w.destroy());
+  //   autoUpdater.quitAndInstall(true, false);
+  // });
 }
 
 app.whenReady().then(async () => {
