@@ -959,6 +959,7 @@ function createUIWindow(): void {
   uiWin = new BrowserWindow({
     width: 960,
     height: 640,
+    title: `True Tunes v${app.getVersion()}`,
     backgroundColor: '#1c1c1e',
     webPreferences: {
       nodeIntegration: false,
