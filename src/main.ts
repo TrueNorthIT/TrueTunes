@@ -1085,7 +1085,7 @@ ipcMain.handle('config:setDisplayName', async (_: IpcMainInvokeEvent, name: stri
 
 ipcMain.handle(
   'pubsub:publishQueued',
-  async (_: IpcMainInvokeEvent, item: { uri: string; trackName: string; artist: string; album?: string; imageUrl?: string }) => {
+  async (_: IpcMainInvokeEvent, item: { uri: string; trackName: string; artist: string; album?: string; imageUrl?: string; serviceId?: string; accountId?: string }) => {
     await officePubSub.publishQueued(item).catch(() => {
       /* silent */
     });
@@ -1099,6 +1099,8 @@ ipcMain.handle(
       artist: item.artist,
       album: item.album,
       imageUrl: item.imageUrl,
+      serviceId: item.serviceId,
+      accountId: item.accountId,
       timestamp: Date.now(),
     };
     broadcastToRenderers('attribution:event', event);

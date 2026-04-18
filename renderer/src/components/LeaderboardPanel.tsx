@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useStats, StatsPeriod } from '../hooks/useStats';
 import styles from '../styles/LeaderboardPanel.module.css';
 
@@ -10,11 +11,22 @@ const PERIODS: { value: StatsPeriod; label: string }[] = [
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
+function makeDragItem(t: StatsTrack) {
+  return JSON.stringify([{
+    type: 'TRACK',
+    name: t.trackName,
+    artist: t.artist,
+    imageUrl: t.imageUrl,
+    id: { objectId: t.uri, serviceId: t.serviceId ?? '', accountId: t.accountId ?? '' },
+  }]);
+}
+
 export function LeaderboardPanel() {
   const [period, setPeriod] = useState<StatsPeriod>('week');
   const { data, isLoading, error, refetch } = useStats(period);
+  const navigate = useNavigate();
 
-  const maxUserCount = data?.topUsers[0]?.count ?? 1;
+  const maxUserCount = data?.topUsers?.[0]?.count ?? 1;
 
   return (
     <div className={styles.page}>
@@ -73,7 +85,15 @@ export function LeaderboardPanel() {
               {data.topTracks.length === 0
                 ? <div className={styles.empty}>No data yet</div>
                 : data.topTracks.map((t, i) => (
-                  <div key={i} className={styles.trackRow}>
+                  <div
+                    key={i}
+                    className={styles.trackRow}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.effectAllowed = 'copy';
+                      e.dataTransfer.setData('application/sonos-item-list', makeDragItem(t));
+                    }}
+                  >
                     {t.imageUrl
                       ? <img className={styles.art} src={t.imageUrl} alt="" loading="lazy" />
                       : <div className={styles.artPlaceholder} />
@@ -81,7 +101,21 @@ export function LeaderboardPanel() {
                     <div className={styles.trackInfo}>
                       <span className={styles.trackName}>{t.trackName}</span>
                       <span className={styles.trackSub}>
-                        {t.artist}{t.album ? ` · ${t.album}` : ''}
+                        {t.artist
+                          ? <button
+                              className={styles.artistLink}
+                              onClick={(e) => { e.stopPropagation(); navigate(`/search?q=${encodeURIComponent(t.artist)}`); }}
+                            >{t.artist}</button>
+                          : null
+                        }
+                        {t.artist && t.album ? ' · ' : null}
+                        {t.album
+                          ? <button
+                              className={styles.artistLink}
+                              onClick={(e) => { e.stopPropagation(); navigate(`/search?q=${encodeURIComponent(t.album!)}`); }}
+                            >{t.album}</button>
+                          : null
+                        }
                       </span>
                     </div>
                     <span className={styles.count}>{t.count}×</span>
@@ -98,7 +132,10 @@ export function LeaderboardPanel() {
                 : data.topArtists.map((a, i) => (
                   <div key={i} className={styles.artistRow}>
                     <span className={styles.rankNum}>{i + 1}</span>
-                    <span className={styles.artistName}>{a.artist}</span>
+                    <button
+                      className={styles.artistLink}
+                      onClick={(e) => { e.stopPropagation(); navigate(`/search?q=${encodeURIComponent(a.artist)}`); }}
+                    >{a.artist}</button>
                     <span className={styles.count}>{a.count}×</span>
                   </div>
                 ))

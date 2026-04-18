@@ -19,6 +19,9 @@ interface RawEvent {
   artist: string;
   album?: string;
   imageUrl?: string;
+  uri?: string;
+  serviceId?: string;
+  accountId?: string;
 }
 
 export async function statsHandler(
@@ -41,16 +44,16 @@ export async function statsHandler(
     const container = client.database(dbName).container(ctrName);
 
     const query = startMs > 0
-      ? { query: 'SELECT c.userId, c.trackName, c.artist, c.album, c.imageUrl FROM c WHERE c.timestamp >= @start', parameters: [{ name: '@start', value: startMs }] }
-      : { query: 'SELECT c.userId, c.trackName, c.artist, c.album, c.imageUrl FROM c' };
+      ? { query: 'SELECT c.userId, c.trackName, c.artist, c.album, c.imageUrl, c.serviceId, c.accountId, c.uri FROM c WHERE c.timestamp >= @start', parameters: [{ name: '@start', value: startMs }] }
+      : { query: 'SELECT c.userId, c.trackName, c.artist, c.album, c.imageUrl, c.serviceId, c.accountId, c.uri FROM c' };
 
     const { resources } = await container.items
-      .query<RawEvent>(query, { enableCrossPartitionQuery: true })
+      .query<RawEvent>(query)
       .fetchAll();
 
     // Aggregate in-process — fine at POC scale
     const userCounts: Record<string, number> = {};
-    const trackMap: Record<string, { trackName: string; artist: string; album?: string; imageUrl?: string; count: number }> = {};
+    const trackMap: Record<string, { trackName: string; artist: string; album?: string; imageUrl?: string; uri?: string; serviceId?: string; accountId?: string; count: number }> = {};
     const artistCounts: Record<string, number> = {};
 
     for (const e of resources) {
@@ -58,7 +61,7 @@ export async function statsHandler(
       if (e.artist) artistCounts[e.artist] = (artistCounts[e.artist] ?? 0) + 1;
       const key = `${e.trackName}||${e.artist}`;
       if (!trackMap[key]) {
-        trackMap[key] = { trackName: e.trackName, artist: e.artist, album: e.album, imageUrl: e.imageUrl, count: 0 };
+        trackMap[key] = { trackName: e.trackName, artist: e.artist, album: e.album, imageUrl: e.imageUrl, uri: e.uri, serviceId: e.serviceId, accountId: e.accountId, count: 0 };
       }
       trackMap[key].count++;
     }

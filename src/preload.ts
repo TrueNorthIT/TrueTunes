@@ -35,7 +35,7 @@ export interface SonosAPI {
   // Attribution / office presence
   getDisplayName: () => Promise<string | null>;
   setDisplayName: (name: string) => Promise<void>;
-  publishQueued: (item: { uri: string; trackName: string; artist: string; album?: string; imageUrl?: string }) => Promise<void>;
+  publishQueued: (item: { uri: string; trackName: string; artist: string; album?: string; imageUrl?: string; serviceId?: string; accountId?: string }) => Promise<void>;
   onAttributionMap: (cb: (map: AttributionMap) => void) => Unsubscribe;
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;
   refreshAttribution: () => Promise<void>;

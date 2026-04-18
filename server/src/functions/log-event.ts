@@ -9,6 +9,8 @@ interface QueueEvent {
   artist: string;
   album?: string;
   imageUrl?: string;
+  serviceId?: string;
+  accountId?: string;
   timestamp: number;
 }
 
@@ -50,6 +52,8 @@ export async function logEventHandler(
       artist: body.artist,
       album: body.album ?? null,
       imageUrl: body.imageUrl ?? null,
+      serviceId: body.serviceId ?? null,
+      accountId: body.accountId ?? null,
       timestamp: body.timestamp,
     });
 

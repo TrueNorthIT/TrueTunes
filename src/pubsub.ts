@@ -179,7 +179,7 @@ export class OfficePubSub {
   }
 
   /** Publish a "track queued" event and update blob storage. */
-  async publishQueued(item: { uri: string; trackName: string; artist: string; album?: string; imageUrl?: string }): Promise<void> {
+  async publishQueued(item: { uri: string; trackName: string; artist: string; album?: string; imageUrl?: string; serviceId?: string; accountId?: string }): Promise<void> {
     if (!item.uri) return;
 
     const event: AttributionEvent = {
@@ -190,6 +190,8 @@ export class OfficePubSub {
       artist: item.artist,
       album: item.album,
       imageUrl: item.imageUrl,
+      serviceId: item.serviceId,
+      accountId: item.accountId,
       timestamp: Date.now(),
     };
 

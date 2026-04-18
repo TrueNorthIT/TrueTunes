@@ -151,7 +151,9 @@ function MainApp() {
       const artist = normalized.track?.primaryArtist?.name ?? normalized.track?.artist?.name ?? '';
       const album = typeof normalized.track?.album === 'object' ? normalized.track.album?.name : undefined;
       const imageUrl = normalized.track?.imageUrl ?? undefined;
-      window.sonos.publishQueued({ uri, trackName, artist, album, imageUrl }).catch(() => { /* silent */ });
+      const serviceId = body.id.serviceId ?? '';
+      const accountId = body.id.accountId ?? '';
+      window.sonos.publishQueued({ uri, trackName, artist, album, imageUrl, serviceId, accountId }).catch(() => { /* silent */ });
     }
 
     if (!isSingleTrack) {
