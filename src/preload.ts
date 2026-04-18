@@ -35,10 +35,11 @@ export interface SonosAPI {
   // Attribution / office presence
   getDisplayName: () => Promise<string | null>;
   setDisplayName: (name: string) => Promise<void>;
-  publishQueued: (item: { uri: string; trackName: string; artist: string }) => Promise<void>;
+  publishQueued: (item: { uri: string; trackName: string; artist: string; album?: string; imageUrl?: string; serviceId?: string; accountId?: string }) => Promise<void>;
   onAttributionMap: (cb: (map: AttributionMap) => void) => Unsubscribe;
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;
   refreshAttribution: () => Promise<void>;
+  fetchStats: (period: string) => Promise<unknown>;
 }
 
 // Buffer early IPC events that may fire before React mounts and registers listeners.
@@ -126,6 +127,7 @@ contextBridge.exposeInMainWorld('sonos', {
     return () => ipcRenderer.removeListener('attribution:map', listener);
   },
   refreshAttribution: () => ipcRenderer.invoke('attribution:refresh'),
+  fetchStats: (period: string) => ipcRenderer.invoke('stats:fetch', period),
   onAttributionEvent: (cb: (event: AttributionEvent) => void): Unsubscribe => {
     const listener = (_e: unknown, event: AttributionEvent) => cb(event);
     ipcRenderer.on('attribution:event', listener);
