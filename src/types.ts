@@ -16,6 +16,8 @@ export interface AttributionEvent {
   uri: string;
   trackName: string;
   artist: string;
+  album?: string;
+  imageUrl?: string;
   timestamp: number;
 }
 

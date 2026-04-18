@@ -1,0 +1,243 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 28px 16px;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  margin-right: 4px;
+}
+
+.periodTabs {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 3px;
+}
+
+.periodBtn {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 5px 14px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.periodBtn:hover { color: var(--text-2); }
+.periodBtn.active { background: rgba(255, 255, 255, 0.12); color: var(--text); }
+
+.refreshBtn {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 5px 8px;
+  border-radius: var(--r-sm);
+  transition: color 0.15s, background 0.15s;
+  line-height: 1;
+  margin-left: auto;
+}
+.refreshBtn:hover { color: var(--text-2); background: var(--bg-2); }
+
+.state {
+  padding: 48px 28px;
+  color: var(--text-3);
+  font-size: 14px;
+  text-align: center;
+}
+
+.body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionTitle {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+
+.empty {
+  font-size: 13px;
+  color: var(--text-3);
+  padding: 8px 0;
+}
+
+/* ── User leaderboard row ── */
+.userRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.rank {
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.rankNum {
+  font-size: 13px;
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.userName {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  width: 120px;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barWrap {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+  min-width: 4px;
+}
+
+.count {
+  font-size: 12px;
+  color: var(--text-3);
+  font-weight: 500;
+  width: 36px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── Two-column layout for tracks + artists ── */
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+
+/* ── Track row ── */
+.trackRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+}
+
+.art {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--bg-2);
+}
+
+.artPlaceholder {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.trackInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.trackName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trackSub {
+  font-size: 11px;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Artist row ── */
+.artistRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.artistName {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Footer ── */
+.footer {
+  font-size: 11px;
+  color: var(--text-3);
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 600px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+}

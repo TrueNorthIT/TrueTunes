@@ -78,8 +78,9 @@ export function TopNav({
     navigate('/');
   };
 
-  const isAtRoot   = location.pathname === '/';
-  const isInSearch = location.pathname === '/search';
+  const isAtRoot        = location.pathname === '/';
+  const isInSearch      = location.pathname === '/search';
+  const isLeaderboard   = location.pathname === '/leaderboard';
 
   return (
     <nav className={styles.nav}>
@@ -101,6 +102,12 @@ export function TopNav({
             onClick={handleClear}
           >
             Home
+          </button>
+          <button
+            className={`${styles.tab}${isLeaderboard ? ' ' + styles.active : ''}`}
+            onClick={() => navigate('/leaderboard')}
+          >
+            Leaderboard
           </button>
           <div className={styles.searchWrap}>
             <input

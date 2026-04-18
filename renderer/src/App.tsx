@@ -17,6 +17,7 @@ import type { YtmSections } from './components/HomePanel';
 import { AlbumPanel } from './components/AlbumPanel';
 import { ArtistPanel } from './components/ArtistPanel';
 import { ContainerPanel } from './components/ContainerPanel';
+import { LeaderboardPanel } from './components/LeaderboardPanel';
 import { QueueSidebar } from './components/QueueSidebar';
 import { MiniPlayerShell } from './components/MiniPlayer';
 import { DisplayNameModal } from './components/DisplayNameModal';
@@ -148,7 +149,9 @@ function MainApp() {
     if (uri) {
       const trackName = getName(normalized);
       const artist = normalized.track?.primaryArtist?.name ?? normalized.track?.artist?.name ?? '';
-      window.sonos.publishQueued({ uri, trackName, artist }).catch(() => { /* silent */ });
+      const album = typeof normalized.track?.album === 'object' ? normalized.track.album?.name : undefined;
+      const imageUrl = normalized.track?.imageUrl ?? undefined;
+      window.sonos.publishQueued({ uri, trackName, artist, album, imageUrl }).catch(() => { /* silent */ });
     }
 
     if (!isSingleTrack) {
@@ -210,7 +213,8 @@ function MainApp() {
           <Route path="/search" element={<HomePanel isAuthed={isAuthed} onAddToQueue={handleAddToQueue} ytm={ytm} ytmLoading={ytmLoading} history={history} histLoading={histLoading} />} />
           <Route path="/album/:id"  element={<AlbumPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/artist/:id" element={<ArtistPanel onAddToQueue={handleAddToQueue} />} />
-          <Route path="/container/:id" element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
+          <Route path="/container/:id"  element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
+          <Route path="/leaderboard"    element={<LeaderboardPanel />} />
         </Routes>
       </div>
       <QueueSidebar
