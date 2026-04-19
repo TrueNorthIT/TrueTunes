@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Home, Trophy, Search, X, Volume2, User, List, RefreshCw } from 'lucide-react';
 import type { GroupInfo } from '../types/sonos';
 import styles from '../styles/TopNav.module.css';
 
@@ -29,6 +30,11 @@ export function TopNav({
   const [appVersion, setAppVersion] = useState<string | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
+  // React Router sets window.history.state = { idx, key } on every navigation
+  const histIdx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+  const canGoBack    = histIdx > 0;
+  const canGoForward = histIdx < window.history.length - 1;
+
   useEffect(() => {
     window.sonos.getVersion().then(setAppVersion).catch(() => {});
   }, []);
@@ -53,7 +59,6 @@ export function TopNav({
     if (trimmed) { onSaveName(trimmed); setNameOpen(false); }
   }
 
-  // Keep search input in sync with the URL
   useEffect(() => {
     if (location.pathname === '/search') {
       setSearchText(searchParams.get('q') ?? '');
@@ -67,133 +72,155 @@ export function TopNav({
       const q = searchText.trim();
       if (q) navigate(`/search?q=${encodeURIComponent(q)}`);
     }
-    if (e.key === 'Escape') {
-      setSearchText('');
-      navigate('/');
-    }
+    if (e.key === 'Escape') { setSearchText(''); navigate('/'); }
   };
 
-  const handleClear = () => {
-    setSearchText('');
-    navigate('/');
-  };
+  const handleClear = () => { setSearchText(''); navigate('/'); };
 
-  const isAtRoot        = location.pathname === '/';
-  const isInSearch      = location.pathname === '/search';
-  const isLeaderboard   = location.pathname === '/leaderboard';
+  const isAtRoot      = location.pathname === '/';
+  const isInSearch    = location.pathname === '/search';
+  const isLeaderboard = location.pathname === '/leaderboard';
 
   return (
-    <nav className={styles.nav}>
-      <div className={styles.inner}>
-        {/* Left: space for macOS traffic lights + optional back button */}
-        <div className={styles.left}>
-          <div className={styles.trafficSpace} />
-          {!isAtRoot && (
-            <button className={styles.backBtn} onClick={() => navigate(-1)}>
-              ‹ Back
-            </button>
-          )}
-        </div>
+    <>
+      <div className={styles.dragRegion} />
 
-        {/* Center: Home tab + search input */}
-        <div className={styles.center}>
+      {/* Outer wrapper — centered; history pill is absolutely anchored to its left */}
+      <div className={styles.navRoot}>
+
+        {/* Back / forward pill */}
+        <div className={styles.historyPill}>
           <button
-            className={`${styles.tab}${isAtRoot ? ' ' + styles.active : ''}`}
-            onClick={handleClear}
+            className={styles.historyBtn}
+            disabled={!canGoBack}
+            onClick={() => navigate(-1)}
+            title="Back"
           >
-            Home
+            <ChevronLeft size={16} />
           </button>
           <button
-            className={`${styles.tab}${isLeaderboard ? ' ' + styles.active : ''}`}
-            onClick={() => navigate('/leaderboard')}
+            className={styles.historyBtn}
+            disabled={!canGoForward}
+            onClick={() => navigate(1)}
+            title="Forward"
           >
-            Leaderboard
+            <ChevronRight size={16} />
           </button>
-          <div className={styles.searchWrap}>
-            <input
-              className={styles.searchInput}
-              type="text"
-              placeholder="Search…"
-              value={searchText}
-              onChange={e => setSearchText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={!isAuthed}
-            />
-            {(isInSearch || searchText) && (
-              <button className={styles.clearBtn} onClick={handleClear}>✕</button>
-            )}
-          </div>
         </div>
 
-        {/* Right: group selector + queue toggle */}
-        <div className={styles.right}>
-          {isAuthed && groups.length === 0 && (
+        {/* Main nav pill */}
+        <nav className={styles.nav}>
+          <div className={styles.inner}>
+
             <button
-              className={styles.resyncBtn}
-              onClick={onResync}
-              title="Reconnect"
+              className={`${styles.iconBtn}${isAtRoot ? ' ' + styles.active : ''}`}
+              onClick={handleClear}
+              title="Home"
             >
-              ↺
+              <Home size={15} />
             </button>
-          )}
-          <select
-            className={styles.groupSelect}
-            disabled={!isAuthed || groups.length <= 1}
-            value={activeGroupId ?? ''}
-            onChange={e => onGroupChange(e.target.value)}
-          >
-            {groups.length === 0
-              ? <option value="">—</option>
-              : groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)
-            }
-          </select>
+            <button
+              className={`${styles.iconBtn}${isLeaderboard ? ' ' + styles.active : ''}`}
+              onClick={() => navigate('/leaderboard')}
+              title="Leaderboard"
+            >
+              <Trophy size={15} />
+            </button>
 
-          {/* Name / settings */}
-          {displayName !== undefined && (
-            <div className={styles.nameWrap} ref={popoverRef}>
-              <button
-                className={`${styles.nameBtn}${nameOpen ? ' ' + styles.active : ''}`}
-                onClick={() => setNameOpen(o => !o)}
-                title="Your display name"
-              >
-                {displayName ?? '?'}
-              </button>
-              {nameOpen && (
-                <div className={styles.namePopover}>
-                  <div className={styles.namePopoverLabel}>Your display name</div>
-                  <input
-                    className={styles.nameInput}
-                    value={nameValue}
-                    onChange={e => setNameValue(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') submitName(); if (e.key === 'Escape') setNameOpen(false); }}
-                    maxLength={32}
-                    spellCheck={false}
-                    autoFocus
-                  />
-                  <button
-                    className={styles.nameSaveBtn}
-                    onClick={submitName}
-                    disabled={!nameValue.trim() || nameValue.trim() === displayName}
-                  >
-                    Save
-                  </button>
-                  {appVersion && (
-                    <div className={styles.appVersion}>v{appVersion}</div>
-                  )}
-                </div>
+            <div className={styles.sep} />
+
+            <div className={styles.searchWrap}>
+              <Search size={13} className={styles.searchIcon} />
+              <input
+                className={styles.searchInput}
+                type="text"
+                placeholder="Search…"
+                value={searchText}
+                onChange={e => setSearchText(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={!isAuthed}
+              />
+              {(isInSearch || searchText) && (
+                <button className={styles.clearBtn} onClick={handleClear} title="Clear">
+                  <X size={12} />
+                </button>
               )}
             </div>
-          )}
 
-          <button
-            className={`${styles.queueBtn}${queueOpen ? ' ' + styles.active : ''}`}
-            onClick={onToggleQueue}
-            title="Toggle queue"
-          >
-            ≡
-          </button>
-        </div>
+            <div className={styles.sep} />
+
+            {isAuthed && groups.length === 0 ? (
+              <button className={styles.iconBtn} onClick={onResync} title="Reconnect">
+                <RefreshCw size={14} />
+              </button>
+            ) : (
+              <div
+                className={styles.groupWrap}
+                title={groups.find(g => g.id === activeGroupId)?.name ?? 'Speaker'}
+              >
+                <Volume2 size={15} className={styles.groupIcon} />
+                <select
+                  className={styles.groupSelect}
+                  disabled={!isAuthed || groups.length <= 1}
+                  value={activeGroupId ?? ''}
+                  onChange={e => onGroupChange(e.target.value)}
+                >
+                  {groups.length === 0
+                    ? <option value="">—</option>
+                    : groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)
+                  }
+                </select>
+              </div>
+            )}
+
+            {displayName !== undefined && (
+              <div className={styles.nameWrap} ref={popoverRef}>
+                <button
+                  className={`${styles.iconBtn}${nameOpen ? ' ' + styles.active : ''}`}
+                  onClick={() => setNameOpen(o => !o)}
+                  title={displayName ?? 'Set your name'}
+                >
+                  <User size={15} />
+                </button>
+                {nameOpen && (
+                  <div className={styles.namePopover}>
+                    <div className={styles.namePopoverLabel}>Display name</div>
+                    <input
+                      className={styles.nameInput}
+                      value={nameValue}
+                      onChange={e => setNameValue(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') submitName();
+                        if (e.key === 'Escape') setNameOpen(false);
+                      }}
+                      maxLength={32}
+                      spellCheck={false}
+                      autoFocus
+                    />
+                    <button
+                      className={styles.nameSaveBtn}
+                      onClick={submitName}
+                      disabled={!nameValue.trim() || nameValue.trim() === displayName}
+                    >
+                      Save
+                    </button>
+                    {appVersion && <div className={styles.appVersion}>v{appVersion}</div>}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <button
+              className={`${styles.iconBtn}${queueOpen ? ' ' + styles.active : ''}`}
+              onClick={onToggleQueue}
+              title="Queue"
+            >
+              <List size={15} />
+            </button>
+
+          </div>
+        </nav>
       </div>
-    </nav>
+    </>
   );
 }

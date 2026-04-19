@@ -5,7 +5,7 @@
   left: 50%;
   transform: translateX(-50%) translateZ(0);
   z-index: 150;
-  border-radius: 12px;
+  border-radius: 22px;
   background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(80px) saturate(320%) brightness(1.1);
   will-change: backdrop-filter;

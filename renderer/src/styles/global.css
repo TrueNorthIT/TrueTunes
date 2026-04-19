@@ -11,7 +11,7 @@
   --r-sm: 6px;
   --r-md: 10px;
   --r-lg: 16px;
-  --nav-h: 52px;
+  --nav-h: 64px; /* 12px top gap + 44px pill + 8px clearance */
   --player-h: 112px; /* 64px bar + 24px bottom margin + 24px clearance */
   --queue-w: 300px;
   --card-size: clamp(140px, 16vw, 320px);

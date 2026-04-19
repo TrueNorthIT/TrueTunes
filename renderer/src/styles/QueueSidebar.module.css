@@ -1,6 +1,6 @@
 .sidebar {
   position: fixed;
-  top: var(--nav-h);
+  top: 0;
   right: 0;
   bottom: 0;
   width: var(--queue-w);

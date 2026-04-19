@@ -2,7 +2,7 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 32px 28px calc(var(--player-h) + 24px);
+  padding: var(--nav-h) 28px calc(var(--player-h) + 24px);
 }
 
 .section {

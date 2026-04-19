@@ -2,7 +2,7 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 32px 28px calc(var(--player-h) + 24px);
+  padding: var(--nav-h) 28px calc(var(--player-h) + 24px);
 }
 
 /* ── Header ── */
@@ -73,10 +73,34 @@
   gap: 14px;
 }
 .skeletonCard {
-  height: 190px;
+  width: var(--card-size);
+}
+.skeletonArt {
+  width: var(--card-size);
+  height: var(--card-size);
   border-radius: var(--r-md);
   background: var(--bg-1);
   animation: pulse 1.8s ease-in-out infinite;
+}
+.skeletonInfo {
+  padding: 9px 2px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.skeletonName {
+  height: 13px;
+  width: 70%;
+  border-radius: 4px;
+  background: var(--bg-1);
+  animation: pulse 1.8s ease-in-out infinite 0.1s;
+}
+.skeletonSub {
+  height: 11px;
+  width: 45%;
+  border-radius: 4px;
+  background: var(--bg-1);
+  animation: pulse 1.8s ease-in-out infinite 0.2s;
 }
 @keyframes pulse {
   0%,
