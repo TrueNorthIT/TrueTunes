@@ -233,11 +233,11 @@ function MainApp() {
           setDisplayName(name);
         }}
       />
-      <div className={`${styles.body}${queueOpen ? ' ' + styles.bodyQueueOpen : ''}`}>
+      <div className={styles.body}>
         <Routes>
           <Route path="/"       element={<HomePanel isAuthed={isAuthed} onAddToQueue={handleAddToQueue} ytm={ytm} ytmLoading={ytmLoading} history={history} histLoading={histLoading} />} />
           <Route path="/search" element={<HomePanel isAuthed={isAuthed} onAddToQueue={handleAddToQueue} ytm={ytm} ytmLoading={ytmLoading} history={history} histLoading={histLoading} />} />
-          <Route path="/album/:id"  element={<AlbumPanel onAddToQueue={handleAddToQueue} />} />
+          <Route path="/album/:id"  element={<AlbumPanel onAddToQueue={handleAddToQueue} queueOpen={queueOpen} />} />
           <Route path="/artist/:id" element={<ArtistPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/container/:id"  element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/leaderboard"    element={<LeaderboardPanel />} />

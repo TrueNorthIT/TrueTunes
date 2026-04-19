@@ -3,7 +3,6 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding-bottom: calc(var(--player-h) + 24px);
-  background: var(--bg);
 }
 
 /* ── Header ── */

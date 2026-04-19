@@ -3,6 +3,11 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(70, 45, 110, 0.45) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 15%, rgba(25, 55, 95, 0.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 55% 85%, rgba(20, 55, 85, 0.3) 0%, transparent 50%),
+    #0f0f14;
 }
 
 .body {
@@ -10,12 +15,6 @@
   min-height: 0;
   overflow: hidden;
   display: flex;
-  margin-right: 0;
-  transition: margin-right 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.bodyQueueOpen {
-  margin-right: var(--queue-w);
 }
 
 .toast {
