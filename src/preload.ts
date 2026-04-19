@@ -40,6 +40,7 @@ export interface SonosAPI {
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;
   refreshAttribution: () => Promise<void>;
   fetchStats: (period: string, userId?: string) => Promise<unknown>;
+  trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
 }
 
 // Buffer early IPC events that may fire before React mounts and registers listeners.
@@ -133,4 +134,6 @@ contextBridge.exposeInMainWorld('sonos', {
     ipcRenderer.on('attribution:event', listener);
     return () => ipcRenderer.removeListener('attribution:event', listener);
   },
+  trackEvent: (name: string, properties?: Record<string, string>) =>
+    ipcRenderer.invoke('telemetry:event', name, properties),
 } satisfies SonosAPI);

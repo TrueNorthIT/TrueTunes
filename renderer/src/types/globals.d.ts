@@ -115,6 +115,8 @@ interface SonosPreload {
   refreshAttribution: () => Promise<void>;
   onAttributionMap: (cb: (map: AttributionMap) => void) => Unsubscribe;
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;
+  /** Fire-and-forget telemetry event routed through the main process. No-op when App Insights is not configured. */
+  trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
 }
 
 interface Window {

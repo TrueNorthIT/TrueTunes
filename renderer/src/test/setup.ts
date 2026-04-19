@@ -28,5 +28,6 @@ Object.defineProperty(window, 'sonos', {
     skipNext:           vi.fn(pending),
     skipPrev:           vi.fn(pending),
     getVersion:         vi.fn(pending),
+    trackEvent:         vi.fn(() => Promise.resolve()),
   },
 });

@@ -6,6 +6,7 @@ import * as fs from 'fs/promises';
 import { randomUUID } from 'crypto';
 import WebSocket from 'ws';
 import type { FetchRequest, FetchResponse } from './types';
+import * as telemetry from './telemetry';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -379,6 +380,7 @@ async function sonosFetch(request: FetchRequest): Promise<FetchResponse> {
 
   if (response.status === 401) {
     log('[api] 401 — auth expired, re-showing auth window');
+    telemetry.event('auth_expired', { operationId: request.operationId });
     authConfirmed = false;
     sessionToken = null;
     void clearSessionToken();
@@ -393,6 +395,7 @@ async function sonosFetch(request: FetchRequest): Promise<FetchResponse> {
 
   if (!response.ok) {
     console.error(`[api] ${response.status} ${response.statusText} — ${url}\n${bodyText.slice(0, 500)}`);
+    telemetry.event('api_error', { operationId: request.operationId, statusCode: response.status });
     return {
       error: `${response.status} ${response.statusText}${bodyText ? `: ${bodyText.slice(0, 200)}` : ''}`,
     };
@@ -432,6 +435,10 @@ function wsSend(header: Record<string, unknown>, payload: Record<string, unknown
     const corrId = randomUUID();
     const timer = setTimeout(() => {
       wsPending.delete(corrId);
+      telemetry.event('ws_timeout', {
+        namespace: String(header['namespace'] ?? ''),
+        command:   String(header['command']   ?? ''),
+      });
       reject(new Error(`WS timeout: ${JSON.stringify(header)}`));
     }, 10_000);
     wsPending.set(corrId, (p) => {
@@ -747,12 +754,14 @@ async function connectWebSocket(): Promise<void> {
     ticket = findTicket(await fetchMfeData());
   } catch (err) {
     console.error('[ws] Ticket fetch failed:', err instanceof Error ? err.message : err);
+    telemetry.exception(err, { phase: 'ws_ticket_fetch' });
     scheduleReconnect();
     return;
   }
 
   if (!ticket) {
     console.error('[ws] No ticket found in MFE response');
+    telemetry.event('ws_ticket_missing');
     scheduleReconnect();
     return;
   }
@@ -770,18 +779,34 @@ async function connectWebSocket(): Promise<void> {
       clearTimeout(reconnectTimer);
       reconnectTimer = null;
     }
-    runBootstrap().catch((err) => {
-      console.error('[ws] Bootstrap error:', err instanceof Error ? err.message : err);
-      ws?.close();
-    });
+    const bootstrapStart = Date.now();
+    runBootstrap()
+      .then(() => {
+        telemetry.event('ws_connected', {
+          bootstrapMs: Date.now() - bootstrapStart,
+          groupCount:  discoveredGroups.length,
+        });
+        if (config.groupId) telemetry.setContext({ groupId: config.groupId });
+      })
+      .catch((err) => {
+        console.error('[ws] Bootstrap error:', err instanceof Error ? err.message : err);
+        telemetry.exception(err, { phase: 'ws_bootstrap' });
+        ws?.close();
+      });
   });
 
   ws.on('message', handleWsMessage);
 
-  ws.on('error', (err) => console.error('[ws] Error:', err.message));
+  ws.on('error', (err) => {
+    console.error('[ws] Error:', err.message);
+    telemetry.exception(err, { phase: 'ws_socket' });
+  });
 
   ws.on('close', (code) => {
     log(`[ws] Closed (${code})`);
+    if (code !== 1000 && code !== 1001) {
+      telemetry.event('ws_closed', { code });
+    }
     ws = null;
     scheduleReconnect();
   });
@@ -935,12 +960,14 @@ async function initPubSub(): Promise<void> {
     log('[pubsub] Connected as', config.displayName);
   } catch (err) {
     console.warn('[pubsub] Failed to connect:', (err as Error).message);
+    telemetry.exception(err, { phase: 'pubsub_connect' });
   }
 }
 
 function onAuthReady(): void {
   if (authConfirmed) return; // fire only once per login
   authConfirmed = true;
+  telemetry.event('auth_success');
 
   authWin?.hide();
 
@@ -964,6 +991,7 @@ function createUIWindow(): void {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: true,
       preload: path.join(__dirname, 'preload.js'),
     },
   });
@@ -1006,6 +1034,7 @@ function createMiniPlayerWindow(): void {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
+      sandbox: true,
     },
   });
 
@@ -1078,9 +1107,14 @@ ipcMain.handle('config:getDisplayName', () => config.displayName ?? null);
 
 ipcMain.handle('config:setDisplayName', async (_: IpcMainInvokeEvent, name: string) => {
   config.displayName = name;
+  telemetry.setContext({ userId: name });
   await saveConfig();
   // Start pubsub now that we have a name (first-time setup path)
   initPubSub().catch(console.error);
+});
+
+ipcMain.handle('telemetry:event', (_: IpcMainInvokeEvent, name: string, props?: Record<string, string>) => {
+  telemetry.event(name, props);
 });
 
 ipcMain.handle(
@@ -1440,8 +1474,6 @@ function buildMenu(): void {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
-// ─── App lifecycle ────────────────────────────────────────────────────────────
-
 if (app.isPackaged) {
   autoUpdater.checkForUpdatesAndNotify();
   // autoUpdater.on('update-downloaded', () => {
@@ -1450,6 +1482,21 @@ if (app.isPackaged) {
   // });
 }
 
+// ─── Process-level error handlers ────────────────────────────────────────────
+
+process.on('uncaughtException', (err) => {
+  console.error('[main] Uncaught exception:', err);
+  telemetry.exception(err, { phase: 'uncaught_exception' });
+  void telemetry.flush().finally(() => process.exit(1));
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[main] Unhandled rejection:', reason);
+  telemetry.exception(reason, { phase: 'unhandled_rejection' });
+});
+
+// ─── App lifecycle ────────────────────────────────────────────────────────────
+
 app.whenReady().then(async () => {
   if (app.isPackaged) {
     Menu.setApplicationMenu(null);
@@ -1457,6 +1504,10 @@ app.whenReady().then(async () => {
     buildMenu();
   }
   await loadConfig();
+
+  telemetry.init(process.env.APPINSIGHTS_CONNECTION_STRING ?? '', app.getVersion());
+  if (config.displayName) telemetry.setContext({ userId: config.displayName });
+
   session.defaultSession.setUserAgent(SPOOF_UA);
 
   // Try to restore a previously saved session — skip auth window if still valid
@@ -1465,11 +1516,13 @@ app.whenReady().then(async () => {
     sessionToken = storedToken;
     log('[auth] Restored session from storage');
     authConfirmed = true;
+    telemetry.event('app_started', { sessionRestored: true, appVersion: app.getVersion() });
     createUIWindow();
     connectWebSocket().catch(console.error);
     initPubSub().catch(console.error);
   } else {
     if (storedToken) await clearSessionToken(); // clear invalid token
+    telemetry.event('app_started', { sessionRestored: false, appVersion: app.getVersion() });
     createAuthWindow();
   }
 
@@ -1486,6 +1539,8 @@ app.on('before-quit', () => {
   }
   ws?.terminate();
   officePubSub.disconnect();
+  telemetry.event('app_quit');
+  void telemetry.flush();
 });
 
 app.on('window-all-closed', () => {
