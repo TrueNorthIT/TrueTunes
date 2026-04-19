@@ -23,6 +23,13 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  user-select: none;
+}
+
+input[type="text"],
+input:not([type]),
+textarea {
+  user-select: text;
 }
 
 @font-face {

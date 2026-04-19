@@ -146,11 +146,14 @@ export function TopNav({
                 onKeyDown={handleKeyDown}
                 disabled={!isAuthed}
               />
-              {(isInSearch || searchText) && (
-                <button className={styles.clearBtn} onClick={handleClear} title="Clear">
-                  <X size={12} />
-                </button>
-              )}
+              <button
+                className={styles.clearBtn}
+                onClick={handleClear}
+                title="Clear"
+                style={{ visibility: (isInSearch || searchText) ? 'visible' : 'hidden' }}
+              >
+                <X size={12} />
+              </button>
             </div>
 
             <div className={styles.sep} />

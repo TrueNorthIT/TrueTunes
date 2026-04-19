@@ -8,7 +8,7 @@
 
 /* ── Header ── */
 .header {
-  padding: 28px 28px 24px;
+  padding: var(--nav-h) 28px 24px;
   /* background applied via inline style from dominant colour */
 }
 
