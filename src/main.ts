@@ -1108,7 +1108,7 @@ ipcMain.handle('debug:openHttpMonitor', () => openHttpDebugWindow());
 ipcMain.handle('app:version', () => app.getVersion());
 
 ipcMain.handle('win:minimize',     () => { uiWin?.minimize(); });
-ipcMain.handle('win:maximize',     () => { uiWin?.isMaximized() ? uiWin.unmaximize() : uiWin?.maximize(); });
+ipcMain.handle('win:maximize',     () => { if (uiWin?.isMaximized()) uiWin.unmaximize(); else uiWin?.maximize(); });
 ipcMain.handle('win:close',        () => { uiWin?.close(); });
 ipcMain.handle('win:is-maximized', () => uiWin?.isMaximized() ?? false);
 
