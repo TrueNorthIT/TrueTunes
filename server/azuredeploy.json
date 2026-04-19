@@ -24,10 +24,36 @@
     "hostingPlanName": "[concat(parameters('appName'), '-plan')]",
     "functionAppName": "[concat(parameters('appName'), '-fn')]",
     "cosmosName": "[concat(parameters('appName'), '-cosmos')]",
+    "workspaceName": "[concat(parameters('appName'), '-law')]",
+    "appInsightsName": "[concat(parameters('appName'), '-ai')]",
     "hubName": "office",
     "containerName": "attribution"
   },
   "resources": [
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('workspaceName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "sku": { "name": "PerGB2018" },
+        "retentionInDays": 30
+      }
+    },
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[variables('appInsightsName')]",
+      "location": "[parameters('location')]",
+      "kind": "other",
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]"
+      ],
+      "properties": {
+        "Application_Type": "other",
+        "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]"
+      }
+    },
     {
       "type": "Microsoft.Storage/storageAccounts",
       "apiVersion": "2023-01-01",
@@ -138,7 +164,8 @@
         "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]",
         "[resourceId('Microsoft.SignalRService/webPubSub', variables('webPubSubName'))]",
-        "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosName'))]"
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosName'))]",
+        "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]"
       ],
       "properties": {
         "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
@@ -191,6 +218,10 @@
             {
               "name": "COSMOS_CONTAINER",
               "value": "events"
+            },
+            {
+              "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+              "value": "[reference(resourceId('Microsoft.Insights/components', variables('appInsightsName')), '2020-02-02').ConnectionString]"
             }
           ],
           "ftpsState": "Disabled",
@@ -220,6 +251,10 @@
     "webPubSubName": {
       "type": "string",
       "value": "[variables('webPubSubName')]"
+    },
+    "APPINSIGHTS_CONNECTION_STRING": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Insights/components', variables('appInsightsName')), '2020-02-02').ConnectionString]"
     }
   }
 }
