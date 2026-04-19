@@ -23,6 +23,12 @@
 
 .sidebar.open { transform: translateX(0); }
 
+@media (min-width: 1520px) {
+  .sidebar {
+    bottom: 12px;
+  }
+}
+
 /* ── Header ── */
 .header {
   display: flex;

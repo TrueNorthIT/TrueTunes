@@ -71,7 +71,9 @@ export async function fetchYtmSections(): Promise<YtmSections> {
   ]);
 
   return {
-    forYou: supermixItem ? [supermixItem, ...homeItems] : homeItems,
+    forYou: supermixItem
+      ? [{ ...supermixItem, images: { tile1x1: '/icon.png' } }, ...homeItems]
+      : homeItems,
     newReleases: newItems,
     charts: chartItems,
   };

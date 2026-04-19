@@ -24,6 +24,7 @@
 .nav,
 .historyPill,
 .windowPill {
+  height: 44px;
   border-radius: 22px;
   background: rgba(12, 12, 18, 0.48);
   backdrop-filter: blur(48px) saturate(240%) brightness(1.05);
@@ -41,10 +42,9 @@
   top: 12px;
   left: 16px;
   z-index: 200;
-  height: 44px;
   display: flex;
   align-items: center;
-  padding: 0 4px;
+  padding: 0 8px;
   gap: 0;
   -webkit-app-region: no-drag;
 }
@@ -76,10 +76,9 @@
   top: 12px;
   right: 16px;
   z-index: 200;
-  height: 44px;
   display: flex;
   align-items: center;
-  padding: 0 4px;
+  padding: 0 8px;
   -webkit-app-region: no-drag;
 }
 
@@ -105,9 +104,7 @@
 }
 
 /* ── Main nav pill ── */
-.nav {
-  height: 44px;
-}
+.nav {}
 
 .inner {
   height: 100%;
@@ -189,34 +186,48 @@
 }
 .clearBtn:hover { color: rgba(255, 255, 255, 0.8); }
 
-/* ── Group selector (invisible select over Volume icon) ── */
-.groupWrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  cursor: pointer;
-  color: rgba(255, 255, 255, 0.6);
-  transition: color 0.12s, background 0.12s;
-  flex-shrink: 0;
-}
-.groupWrap:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.08);
-}
-.groupIcon { pointer-events: none; }
-.groupSelect {
+/* ── Group selector ── */
+.groupWrap { position: relative; }
+
+.groupPopover {
   position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-  width: 100%;
-  height: 100%;
+  top: calc(100% + 20px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 8px;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  z-index: 300;
 }
-.groupSelect:disabled { cursor: default; }
+
+.groupPopoverLabel {
+  font-size: 11px;
+  color: var(--text-3);
+  font-weight: 500;
+  padding: 2px 8px 6px;
+}
+
+.groupOption {
+  background: none;
+  border: none;
+  color: var(--text-2);
+  font-size: 13px;
+  font-family: inherit;
+  text-align: left;
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+.groupOption:hover { background: var(--bg-2); color: var(--text); }
+.groupOptionActive { color: var(--text) !important; font-weight: 600; }
 
 /* ── Name popover ── */
 .nameWrap { position: relative; }

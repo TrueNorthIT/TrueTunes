@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Home, Trophy, Search, X, Volume2, User, List, RefreshCw, Minus, Maximize2, Minimize2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Trophy, Search, X, Users, User, List, RefreshCw, Minus, Maximize2, Minimize2 } from 'lucide-react';
 import type { GroupInfo } from '../types/sonos';
 import styles from '../styles/TopNav.module.css';
 
@@ -27,8 +27,10 @@ export function TopNav({
   const [searchText, setSearchText] = useState(searchParams.get('q') ?? '');
   const [nameOpen, setNameOpen] = useState(false);
   const [nameValue, setNameValue] = useState('');
+  const [groupOpen, setGroupOpen] = useState(false);
   const [appVersion, setAppVersion] = useState<string | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const groupRef = useRef<HTMLDivElement>(null);
 
   // React Router sets window.history.state = { idx, key } on every navigation
   const histIdx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
@@ -59,6 +61,17 @@ export function TopNav({
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
   }, [nameOpen]);
+
+  useEffect(() => {
+    if (!groupOpen) return;
+    function onDown(e: MouseEvent) {
+      if (groupRef.current && !groupRef.current.contains(e.target as Node)) {
+        setGroupOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [groupOpen]);
 
   function submitName() {
     const trimmed = nameValue.trim();
@@ -163,22 +176,29 @@ export function TopNav({
                 <RefreshCw size={14} />
               </button>
             ) : (
-              <div
-                className={styles.groupWrap}
-                title={groups.find(g => g.id === activeGroupId)?.name ?? 'Speaker'}
-              >
-                <Volume2 size={15} className={styles.groupIcon} />
-                <select
-                  className={styles.groupSelect}
-                  disabled={!isAuthed || groups.length <= 1}
-                  value={activeGroupId ?? ''}
-                  onChange={e => onGroupChange(e.target.value)}
+              <div className={styles.groupWrap} ref={groupRef}>
+                <button
+                  className={`${styles.iconBtn}${groupOpen ? ' ' + styles.active : ''}`}
+                  onClick={() => groups.length > 1 && setGroupOpen(o => !o)}
+                  title={groups.find(g => g.id === activeGroupId)?.name ?? 'Group'}
+                  disabled={!isAuthed}
                 >
-                  {groups.length === 0
-                    ? <option value="">—</option>
-                    : groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)
-                  }
-                </select>
+                  <Users size={15} />
+                </button>
+                {groupOpen && groups.length > 1 && (
+                  <div className={styles.groupPopover}>
+                    <div className={styles.groupPopoverLabel}>Group</div>
+                    {groups.map(g => (
+                      <button
+                        key={g.id}
+                        className={`${styles.groupOption}${g.id === activeGroupId ? ' ' + styles.groupOptionActive : ''}`}
+                        onClick={() => { onGroupChange(g.id); setGroupOpen(false); }}
+                      >
+                        {g.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
