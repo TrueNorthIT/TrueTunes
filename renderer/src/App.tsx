@@ -207,7 +207,7 @@ function MainApp() {
   const { data: history = [], isLoading: histLoading } = useQuery<SonosItem[]>({
     queryKey: ['history'],
     queryFn: async () => {
-      const r = await api.content.history({ count: 50 });
+      const r = await api.content.history({ count: 20 });
       return r.error ? [] : extractItems(r.data);
     },
     enabled: homeEnabled,

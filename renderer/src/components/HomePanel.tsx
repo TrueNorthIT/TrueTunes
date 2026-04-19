@@ -144,6 +144,13 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, history, hi
 
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Recently Played</h2>
+            </div>
+            <CardRow items={history} isLoading={histLoading} onAdd={onAddToQueue} onOpen={openItem} />
+          </section>
+
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>New Releases</h2>
             </div>
             <CardRow items={ytm?.newReleases ?? []} isLoading={ytmLoading} onAdd={onAddToQueue} onOpen={openItem} />
@@ -154,13 +161,6 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, history, hi
               <h2 className={styles.sectionTitle}>Charts</h2>
             </div>
             <CardRow items={ytm?.charts ?? []} isLoading={ytmLoading} onAdd={onAddToQueue} onOpen={openItem} />
-          </section>
-
-          <section className={styles.section}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Recently Played</h2>
-            </div>
-            <CardRow items={history} isLoading={histLoading} onAdd={onAddToQueue} onOpen={openItem} />
           </section>
         </>
       )}
