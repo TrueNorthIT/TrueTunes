@@ -23,6 +23,7 @@
     "webPubSubName": "[concat(parameters('appName'), '-wps')]",
     "hostingPlanName": "[concat(parameters('appName'), '-plan')]",
     "functionAppName": "[concat(parameters('appName'), '-fn')]",
+    "cosmosName": "[concat(parameters('appName'), '-cosmos')]",
     "hubName": "office",
     "containerName": "attribution"
   },
@@ -79,6 +80,42 @@
       }
     },
     {
+      "type": "Microsoft.DocumentDB/databaseAccounts",
+      "apiVersion": "2024-02-15-preview",
+      "name": "[variables('cosmosName')]",
+      "location": "[parameters('location')]",
+      "kind": "GlobalDocumentDB",
+      "properties": {
+        "databaseAccountOfferType": "Standard",
+        "capabilities": [{ "name": "EnableServerless" }],
+        "locations": [{ "locationName": "[parameters('location')]", "failoverPriority": 0 }]
+      }
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
+      "apiVersion": "2024-02-15-preview",
+      "name": "[concat(variables('cosmosName'), '/truetunes')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosName'))]"
+      ],
+      "properties": { "resource": { "id": "truetunes" } }
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+      "apiVersion": "2024-02-15-preview",
+      "name": "[concat(variables('cosmosName'), '/truetunes/events')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosName'), 'truetunes')]"
+      ],
+      "properties": {
+        "resource": {
+          "id": "events",
+          "partitionKey": { "paths": ["/userId"], "kind": "Hash" },
+          "defaultTtl": 7776000
+        }
+      }
+    },
+    {
       "type": "Microsoft.Web/serverfarms",
       "apiVersion": "2023-01-01",
       "name": "[variables('hostingPlanName')]",
@@ -100,7 +137,8 @@
       "dependsOn": [
         "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]",
-        "[resourceId('Microsoft.SignalRService/webPubSub', variables('webPubSubName'))]"
+        "[resourceId('Microsoft.SignalRService/webPubSub', variables('webPubSubName'))]",
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosName'))]"
       ],
       "properties": {
         "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
@@ -141,6 +179,18 @@
             {
               "name": "STORAGE_CONNECTION_STRING",
               "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageName'), ';EndpointSuffix=', environment().suffixes.storage, ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageName')), '2023-01-01').keys[0].value)]"
+            },
+            {
+              "name": "COSMOS_CONNECTION_STRING",
+              "value": "[listConnectionStrings(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosName')), '2024-02-15-preview').connectionStrings[0].connectionString]"
+            },
+            {
+              "name": "COSMOS_DATABASE",
+              "value": "truetunes"
+            },
+            {
+              "name": "COSMOS_CONTAINER",
+              "value": "events"
             }
           ],
           "ftpsState": "Disabled",

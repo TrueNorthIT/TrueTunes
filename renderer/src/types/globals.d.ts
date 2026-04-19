@@ -33,6 +33,20 @@ interface FetchResponse {
 
 type Unsubscribe = () => void;
 
+interface StatsUser  { userId: string; count: number; }
+interface StatsTrack { trackName: string; artist: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string; uri?: string; count: number; }
+interface StatsArtist { artist: string; artistId?: string; count: number; }
+interface StatsAlbum { album: string; albumId?: string; artist: string; artistId?: string; imageUrl?: string; count: number; }
+interface StatsResult {
+  topUsers: StatsUser[];
+  topTracks: StatsTrack[];
+  topArtists: StatsArtist[];
+  topAlbums: StatsAlbum[];
+  totalEvents: number;
+  periodStart: number;
+  error?: string;
+}
+
 interface SonosPreload {
   getVersion: () => Promise<string>;
   onAuthReady: (cb: VoidCallback) => Unsubscribe;
@@ -64,7 +78,8 @@ interface SonosPreload {
   // Attribution / office presence
   getDisplayName:     ()                                          => Promise<string | null>;
   setDisplayName:     (name: string)                              => Promise<void>;
-  publishQueued:      (item: { uri: string; trackName: string; artist: string }) => Promise<void>;
+  publishQueued:      (item: { uri: string; trackName: string; artist: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }) => Promise<void>;
+  fetchStats:         (period: string, userId?: string) => Promise<StatsResult>;
   refreshAttribution: ()                                           => Promise<void>;
   onAttributionMap:   (cb: (map: AttributionMap) => void)         => Unsubscribe;
   onAttributionEvent: (cb: (event: AttributionEvent) => void)     => Unsubscribe;

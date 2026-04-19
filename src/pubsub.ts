@@ -69,6 +69,27 @@ function httpPut(rawUrl: string, body: string, headers: Record<string, string>):
   });
 }
 
+function httpPostJson(rawUrl: string, payload: unknown): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const buf = Buffer.from(JSON.stringify(payload), 'utf8');
+    const url = new URL(rawUrl);
+    const mod = url.protocol === 'https:' ? https : http;
+    const req = mod.request(
+      rawUrl,
+      { method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': buf.length } },
+      (res) => {
+        res.resume();
+        (res.statusCode ?? 0) >= 400
+          ? reject(new Error(`POST ${rawUrl} → ${res.statusCode}`))
+          : resolve();
+      },
+    );
+    req.on('error', reject);
+    req.write(buf);
+    req.end();
+  });
+}
+
 function httpPost(rawUrl: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const url = new URL(rawUrl);
@@ -92,6 +113,7 @@ function httpPost(rawUrl: string): Promise<Buffer> {
 export class OfficePubSub {
   private ws: WebSocket | null = null;
   private blobSasUrl: string | null = null;
+  private functionUrl = '';
   private attributionMap: AttributionMap = {};
   private eventCbs: ((e: AttributionEvent) => void)[] = [];
   private username = '';
@@ -100,9 +122,10 @@ export class OfficePubSub {
   /** Connect to Azure Web PubSub and load blob history. Returns initial map. */
   async connect(username: string, functionUrl: string): Promise<AttributionMap> {
     this.username = username;
+    this.functionUrl = functionUrl.replace(/\/$/, '');
 
     // Get tokens from the Azure Function
-    const url = `${functionUrl.replace(/\/$/, '')}/api/connect?username=${encodeURIComponent(username)}`;
+    const url = `${this.functionUrl}/api/connect?username=${encodeURIComponent(username)}`;
     const raw = await httpPost(url);
     const { webPubSubUrl, blobSasUrl } = JSON.parse(raw.toString()) as {
       webPubSubUrl: string;
@@ -156,7 +179,7 @@ export class OfficePubSub {
   }
 
   /** Publish a "track queued" event and update blob storage. */
-  async publishQueued(item: { uri: string; trackName: string; artist: string }): Promise<void> {
+  async publishQueued(item: { uri: string; trackName: string; artist: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }): Promise<void> {
     if (!item.uri) return;
 
     const event: AttributionEvent = {
@@ -165,6 +188,10 @@ export class OfficePubSub {
       uri: item.uri,
       trackName: item.trackName,
       artist: item.artist,
+      artistId: item.artistId,
+      album: item.album,
+      albumId: item.albumId,
+      imageUrl: item.imageUrl,
       timestamp: Date.now(),
     };
 
@@ -191,6 +218,13 @@ export class OfficePubSub {
     this.saveAttribution().catch((err) => {
       console.warn('[pubsub] Blob write failed:', err.message);
     });
+
+    // Log to Cosmos via Azure Function (fire-and-forget)
+    if (this.functionUrl) {
+      httpPostJson(`${this.functionUrl}/api/log-event`, event).catch((err) => {
+        console.warn('[pubsub] Cosmos log failed:', err.message);
+      });
+    }
   }
 
   onEvent(cb: (e: AttributionEvent) => void): void {

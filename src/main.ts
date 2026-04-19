@@ -1085,7 +1085,7 @@ ipcMain.handle('config:setDisplayName', async (_: IpcMainInvokeEvent, name: stri
 
 ipcMain.handle(
   'pubsub:publishQueued',
-  async (_: IpcMainInvokeEvent, item: { uri: string; trackName: string; artist: string }) => {
+  async (_: IpcMainInvokeEvent, item: { uri: string; trackName: string; artist: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }) => {
     await officePubSub.publishQueued(item).catch(() => {
       /* silent */
     });
@@ -1097,11 +1097,26 @@ ipcMain.handle(
       uri: item.uri,
       trackName: item.trackName,
       artist: item.artist,
+      artistId: item.artistId,
+      album: item.album,
+      albumId: item.albumId,
+      imageUrl: item.imageUrl,
       timestamp: Date.now(),
     };
     broadcastToRenderers('attribution:event', event);
   }
 );
+
+ipcMain.handle('stats:fetch', async (_: IpcMainInvokeEvent, period: string, userId?: string) => {
+  try {
+    let url = `${PUBSUB_FUNCTION_URL}/api/stats?period=${encodeURIComponent(period)}`;
+    if (userId) url += `&userId=${encodeURIComponent(userId)}`;
+    const res = await fetch(url);
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
 
 ipcMain.handle('attribution:refresh', async () => {
   try {

@@ -17,6 +17,7 @@ import type { YtmSections } from './components/HomePanel';
 import { AlbumPanel } from './components/AlbumPanel';
 import { ArtistPanel } from './components/ArtistPanel';
 import { ContainerPanel } from './components/ContainerPanel';
+import { LeaderboardPanel } from './components/LeaderboardPanel';
 import { QueueSidebar } from './components/QueueSidebar';
 import { MiniPlayerShell } from './components/MiniPlayer';
 import { DisplayNameModal } from './components/DisplayNameModal';
@@ -143,12 +144,24 @@ function MainApp() {
     if (r.error) { showToast('Add failed: ' + r.error); reloadQueue(); return; }
     if (r.etag) queueVersionRef.current = r.etag;
 
-    // Publish attribution — fire-and-forget, fails silently if pubsub not configured
+    // Publish attribution — fetch full track details then fire-and-forget
     const uri = body.id.objectId;
     if (uri) {
-      const trackName = getName(normalized);
-      const artist = normalized.track?.primaryArtist?.name ?? normalized.track?.artist?.name ?? '';
-      window.sonos.publishQueued({ uri, trackName, artist }).catch(() => { /* silent */ });
+      const serviceId = body.id.serviceId ?? '';
+      const accountId = body.id.accountId ?? '';
+      queryClient.fetchQuery(trackQueryOptions(uri, serviceId, accountId))
+        .then((td) => {
+          window.sonos.publishQueued({
+            uri,
+            trackName: td?.trackName ?? getName(normalized),
+            artist: td?.artist ?? '',
+            artistId: td?.artistId,
+            album: td?.albumName,
+            albumId: td?.albumId,
+            imageUrl: td?.artUrl ?? item.imageUrl ?? (item.images as Array<{ url: string }> | undefined)?.[0]?.url,
+          });
+        })
+        .catch(() => { /* silent */ });
     }
 
     if (!isSingleTrack) {
@@ -210,7 +223,8 @@ function MainApp() {
           <Route path="/search" element={<HomePanel isAuthed={isAuthed} onAddToQueue={handleAddToQueue} ytm={ytm} ytmLoading={ytmLoading} history={history} histLoading={histLoading} />} />
           <Route path="/album/:id"  element={<AlbumPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/artist/:id" element={<ArtistPanel onAddToQueue={handleAddToQueue} />} />
-          <Route path="/container/:id" element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
+          <Route path="/container/:id"  element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
+          <Route path="/leaderboard"    element={<LeaderboardPanel />} />
         </Routes>
       </div>
       <QueueSidebar
