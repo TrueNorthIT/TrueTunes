@@ -17,13 +17,14 @@ function makeDragItem(t: StatsTrack) {
     name: t.trackName,
     artist: t.artist,
     imageUrl: t.imageUrl,
-    id: { objectId: t.uri, serviceId: t.serviceId ?? '', accountId: t.accountId ?? '' },
+    id: { objectId: t.uri, serviceId: '', accountId: '' },
   }]);
 }
 
 export function LeaderboardPanel() {
   const [period, setPeriod] = useState<StatsPeriod>('week');
-  const { data, isLoading, error, refetch } = useStats(period);
+  const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const { data, isLoading, error, refetch } = useStats(period, selectedUser ?? undefined);
   const navigate = useNavigate();
 
   const maxUserCount = data?.topUsers?.[0]?.count ?? 1;
@@ -31,7 +32,12 @@ export function LeaderboardPanel() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Leaderboard</h1>
+        <div className={styles.titleRow}>
+          {selectedUser && (
+            <button className={styles.backBtn} onClick={() => setSelectedUser(null)} title="Back">←</button>
+          )}
+          <h1 className={styles.title}>{selectedUser ? selectedUser : 'Leaderboard'}</h1>
+        </div>
         <div className={styles.periodTabs}>
           {PERIODS.map(p => (
             <button
@@ -55,13 +61,18 @@ export function LeaderboardPanel() {
 
       {data && !data.error && !isLoading && (
         <div className={styles.body}>
-          {/* ── Top queuers ── */}
+          {/* ── Top queuers (leaderboard view only) ── */}
+          {!selectedUser && (
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>Top queuers</h2>
             {data.topUsers.length === 0
               ? <div className={styles.empty}>No data yet for this period</div>
               : data.topUsers.map((u, i) => (
-                <div key={u.userId} className={styles.userRow}>
+                <div
+                  key={u.userId}
+                  className={`${styles.userRow} ${styles.userRowClickable}`}
+                  onClick={() => setSelectedUser(u.userId)}
+                >
                   <span className={styles.rank}>
                     {i < 3 ? MEDALS[i] : <span className={styles.rankNum}>{i + 1}</span>}
                   </span>
@@ -77,6 +88,7 @@ export function LeaderboardPanel() {
               ))
             }
           </section>
+          )}
 
           <div className={styles.columns}>
             {/* ── Top tracks ── */}
@@ -104,7 +116,11 @@ export function LeaderboardPanel() {
                         {t.artist
                           ? <button
                               className={styles.artistLink}
-                              onClick={(e) => { e.stopPropagation(); navigate(`/search?q=${encodeURIComponent(t.artist)}`); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (t.artistId) navigate(`/artist/${encodeURIComponent(t.artistId)}`, { state: { item: { type: 'ARTIST', resource: { type: 'ARTIST', id: { objectId: t.artistId } } } } });
+                                else navigate(`/search?q=${encodeURIComponent(t.artist)}`);
+                              }}
                             >{t.artist}</button>
                           : null
                         }
@@ -112,7 +128,11 @@ export function LeaderboardPanel() {
                         {t.album
                           ? <button
                               className={styles.artistLink}
-                              onClick={(e) => { e.stopPropagation(); navigate(`/search?q=${encodeURIComponent(t.album!)}`); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (t.albumId) navigate(`/album/${encodeURIComponent(t.albumId)}`, { state: { item: { type: 'ALBUM', id: { objectId: t.albumId } } } });
+                                else navigate(`/search?q=${encodeURIComponent(t.album!)}`);
+                              }}
                             >{t.album}</button>
                           : null
                         }
@@ -134,8 +154,52 @@ export function LeaderboardPanel() {
                     <span className={styles.rankNum}>{i + 1}</span>
                     <button
                       className={styles.artistLink}
-                      onClick={(e) => { e.stopPropagation(); navigate(`/search?q=${encodeURIComponent(a.artist)}`); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (a.artistId) navigate(`/artist/${encodeURIComponent(a.artistId)}`, { state: { item: { type: 'ARTIST', resource: { type: 'ARTIST', id: { objectId: a.artistId } } } } });
+                        else navigate(`/search?q=${encodeURIComponent(a.artist)}`);
+                      }}
                     >{a.artist}</button>
+                    <span className={styles.count}>{a.count}×</span>
+                  </div>
+                ))
+              }
+            </section>
+
+            {/* ── Top albums ── */}
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>Top albums</h2>
+              {data.topAlbums.length === 0
+                ? <div className={styles.empty}>No data yet</div>
+                : data.topAlbums.map((a, i) => (
+                  <div
+                    key={i}
+                    className={styles.trackRow}
+                    style={{ cursor: a.albumId ? 'pointer' : 'default' }}
+                    onClick={() => {
+                      if (a.albumId) navigate(`/album/${encodeURIComponent(a.albumId)}`, { state: { item: { type: 'ALBUM', id: { objectId: a.albumId } } } });
+                    }}
+                  >
+                    {a.imageUrl
+                      ? <img className={styles.art} src={a.imageUrl} alt="" loading="lazy" />
+                      : <div className={styles.artPlaceholder} />
+                    }
+                    <div className={styles.trackInfo}>
+                      <span className={styles.trackName}>{a.album}</span>
+                      <span className={styles.trackSub}>
+                        {a.artist
+                          ? <button
+                              className={styles.artistLink}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (a.artistId) navigate(`/artist/${encodeURIComponent(a.artistId)}`, { state: { item: { type: 'ARTIST', resource: { type: 'ARTIST', id: { objectId: a.artistId } } } } });
+                                else navigate(`/search?q=${encodeURIComponent(a.artist)}`);
+                              }}
+                            >{a.artist}</button>
+                          : null
+                        }
+                      </span>
+                    </div>
                     <span className={styles.count}>{a.count}×</span>
                   </div>
                 ))
@@ -144,7 +208,7 @@ export function LeaderboardPanel() {
           </div>
 
           <div className={styles.footer}>
-            {data.totalEvents} queue events{data.periodStart > 0 ? ` since ${new Date(data.periodStart).toLocaleDateString()}` : ' total'}
+            {data.totalEvents} queue event{data.totalEvents !== 1 ? 's' : ''}{selectedUser ? ` by ${selectedUser}` : ''}{data.periodStart > 0 ? ` since ${new Date(data.periodStart).toLocaleDateString()}` : ' total'}
           </div>
         </div>
       )}

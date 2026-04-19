@@ -7,10 +7,10 @@ interface QueueEvent {
   uri: string;
   trackName: string;
   artist: string;
+  artistId?: string;
   album?: string;
+  albumId?: string;
   imageUrl?: string;
-  serviceId?: string;
-  accountId?: string;
   timestamp: number;
 }
 
@@ -50,10 +50,10 @@ export async function logEventHandler(
       uri: body.uri,
       trackName: body.trackName,
       artist: body.artist,
+      artistId: body.artistId ?? null,
       album: body.album ?? null,
+      albumId: body.albumId ?? null,
       imageUrl: body.imageUrl ?? null,
-      serviceId: body.serviceId ?? null,
-      accountId: body.accountId ?? null,
       timestamp: body.timestamp,
     });
 

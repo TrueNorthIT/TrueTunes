@@ -144,16 +144,24 @@ function MainApp() {
     if (r.error) { showToast('Add failed: ' + r.error); reloadQueue(); return; }
     if (r.etag) queueVersionRef.current = r.etag;
 
-    // Publish attribution — fire-and-forget, fails silently if pubsub not configured
+    // Publish attribution — fetch full track details then fire-and-forget
     const uri = body.id.objectId;
     if (uri) {
-      const trackName = getName(normalized);
-      const artist = normalized.track?.primaryArtist?.name ?? normalized.track?.artist?.name ?? '';
-      const album = typeof normalized.track?.album === 'object' ? normalized.track.album?.name : undefined;
-      const imageUrl = normalized.track?.imageUrl ?? undefined;
       const serviceId = body.id.serviceId ?? '';
       const accountId = body.id.accountId ?? '';
-      window.sonos.publishQueued({ uri, trackName, artist, album, imageUrl, serviceId, accountId }).catch(() => { /* silent */ });
+      queryClient.fetchQuery(trackQueryOptions(uri, serviceId, accountId))
+        .then((td) => {
+          window.sonos.publishQueued({
+            uri,
+            trackName: td?.trackName ?? getName(normalized),
+            artist: td?.artist ?? '',
+            artistId: td?.artistId,
+            album: td?.albumName,
+            albumId: td?.albumId,
+            imageUrl: td?.artUrl ?? item.imageUrl ?? (item.images as Array<{ url: string }> | undefined)?.[0]?.url,
+          });
+        })
+        .catch(() => { /* silent */ });
     }
 
     if (!isSingleTrack) {
