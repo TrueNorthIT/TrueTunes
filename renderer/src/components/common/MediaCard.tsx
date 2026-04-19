@@ -1,15 +1,17 @@
-import { useImage } from '../hooks/useImage';
-import styles from '../styles/TrackCard.module.css';
+import { useImage } from '../../hooks/useImage';
+import { ExplicitBadge } from './ExplicitBadge';
+import styles from './MediaCard.module.css';
 
 interface Props {
   name: string;
   sub?: string | null;
   artUrl?: string | null;
+  explicit?: boolean;
   onAdd?: () => void;
   onOpen?: () => void;
 }
 
-export function TrackCard({ name, sub, artUrl, onAdd, onOpen }: Props) {
+export function MediaCard({ name, sub, artUrl, explicit, onAdd, onOpen }: Props) {
   const cachedArt = useImage(artUrl);
   return (
     <div className={styles.card} onClick={onOpen}>
@@ -20,17 +22,12 @@ export function TrackCard({ name, sub, artUrl, onAdd, onOpen }: Props) {
         }
         {onAdd && (
           <div className={styles.overlay}>
-            <button
-              className={styles.addBtn}
-              onClick={e => { e.stopPropagation(); onAdd(); }}
-            >
-              +
-            </button>
+            <button className={styles.addBtn} onClick={e => { e.stopPropagation(); onAdd(); }}>+</button>
           </div>
         )}
       </div>
       <div className={styles.info}>
-        <div className={styles.name}>{name}</div>
+        <div className={styles.name}>{name}{explicit && <ExplicitBadge />}</div>
         {sub && <div className={styles.sub}>{sub}</div>}
       </div>
     </div>

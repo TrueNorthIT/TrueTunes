@@ -1,67 +1,12 @@
 import { useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useImage } from '../hooks/useImage';
-import { useDominantColor } from '../hooks/useDominantColor';
-import { artistQueryOptions } from '../hooks/useArtistBrowse';
-import { resolveArtistParams, getItemArt, fmtDuration, getName } from '../lib/itemHelpers';
-import { ExplicitBadge } from './ExplicitBadge';
-import type { SonosItem } from '../types/sonos';
-import styles from '../styles/HomePanel.module.css';
-
-type HeroTrack = {
-  title: string;
-  durationSeconds: number;
-  artUrl: string | null;
-  explicit: boolean;
-  raw: SonosItem;
-};
-
-function HeroTrackRow({
-  track,
-  index,
-  isSelected,
-  onClick,
-  onDragStart,
-  onAdd,
-}: {
-  track: HeroTrack;
-  index: number;
-  isSelected: boolean;
-  onClick: (index: number, e: React.MouseEvent) => void;
-  onDragStart: (index: number, e: React.DragEvent) => void;
-  onAdd: () => void;
-}) {
-  const art = useImage(track.artUrl);
-  return (
-    <div
-      className={`${styles.heroTrackRow}${isSelected ? ' ' + styles.heroTrackSelected : ''}`}
-      draggable
-      onClick={e => onClick(index, e)}
-      onDragStart={e => onDragStart(index, e)}
-    >
-      <div className={styles.heroTrackArt}>
-        {art ? <img src={art} alt="" /> : <div className={styles.heroTrackArtPh} />}
-      </div>
-      <div className={styles.heroTrackInfo}>
-        <span className={styles.heroTrackName}>
-          {track.title}
-          {track.explicit && (
-            <span className={styles.heroTrackExplicit}>
-              <ExplicitBadge />
-            </span>
-          )}
-        </span>
-      </div>
-      <span className={styles.heroTrackDur}>{fmtDuration(track.durationSeconds)}</span>
-      <button
-        className={styles.heroTrackAdd}
-        onClick={(e) => { e.stopPropagation(); onAdd(); }}
-      >
-        +
-      </button>
-    </div>
-  );
-}
+import { useImage } from '../../hooks/useImage';
+import { useDominantColor } from '../../hooks/useDominantColor';
+import { artistQueryOptions } from '../../hooks/useArtistBrowse';
+import { resolveArtistParams, getItemArt, getName } from '../../lib/itemHelpers';
+import { HeroTrackRow } from './HeroTrackRow';
+import type { SonosItem } from '../../types/sonos';
+import styles from './ArtistHero.module.css';
 
 export function ArtistHero({
   artist,
@@ -99,7 +44,7 @@ export function ArtistHero({
     } else if (e.ctrlKey || e.metaKey) {
       setSelected(prev => {
         const next = new Set(prev);
-        next.has(index) ? next.delete(index) : next.add(index);
+        if (next.has(index)) { next.delete(index); } else { next.add(index); }
         return next;
       });
       lastSelected.current = index;
@@ -115,29 +60,18 @@ export function ArtistHero({
   }
 
   function handleDragStart(index: number, e: React.DragEvent) {
-    const toMove = selected.has(index)
-      ? [...selected].sort((a, b) => a - b)
-      : [index];
-    if (!selected.has(index)) {
-      setSelected(new Set([index]));
-      lastSelected.current = index;
-    }
+    const toMove = selected.has(index) ? [...selected].sort((a, b) => a - b) : [index];
+    if (!selected.has(index)) { setSelected(new Set([index])); lastSelected.current = index; }
     e.dataTransfer.effectAllowed = 'copy';
-    e.dataTransfer.setData(
-      'application/sonos-item-list',
-      JSON.stringify(toMove.map(i => tracks[i].raw)),
-    );
+    e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(toMove.map(i => tracks[i].raw)));
     const ghost = document.createElement('div');
     Object.assign(ghost.style, {
       position: 'fixed', top: '-100px', left: '0',
       background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
       color: '#fff', padding: '5px 12px', borderRadius: '6px',
-      fontSize: '12px', fontWeight: '600', pointerEvents: 'none',
-      whiteSpace: 'nowrap',
+      fontSize: '12px', fontWeight: '600', pointerEvents: 'none', whiteSpace: 'nowrap',
     });
-    ghost.textContent = toMove.length > 1
-      ? `${toMove.length} tracks`
-      : getName(tracks[index].raw);
+    ghost.textContent = toMove.length > 1 ? `${toMove.length} tracks` : getName(tracks[index].raw);
     document.body.appendChild(ghost);
     e.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, 20);
     setTimeout(() => ghost.remove(), 0);
@@ -146,11 +80,7 @@ export function ArtistHero({
   return (
     <div
       className={styles.artistHero}
-      style={
-        dominantColor
-          ? { background: `linear-gradient(135deg, rgba(${dominantColor},0.18) 0%, transparent 70%)` }
-          : undefined
-      }
+      style={dominantColor ? { background: `linear-gradient(135deg, rgba(${dominantColor},0.18) 0%, transparent 70%)` } : undefined}
       onClick={() => { setSelected(new Set()); lastSelected.current = null; }}
     >
       <div

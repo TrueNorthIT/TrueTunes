@@ -1,7 +1,7 @@
 import { getName, browseSub, getItemArt, isAlbum, isPlaylist, isContainer, isProgram } from '../lib/itemHelpers';
-import { TrackCard } from './TrackCard';
+import { MediaCard } from './common/MediaCard';
 import type { SonosItem } from '../types/sonos';
-import styles from '../styles/HomePanel.module.css';
+import styles from '../styles/CardRow.module.css';
 
 export function CardRow({
   items,
@@ -27,7 +27,7 @@ export function CardRow({
   return (
     <div className={styles.cardRow}>
       {items.map((item, i) => (
-        <TrackCard
+        <MediaCard
           key={i}
           name={getName(item)}
           sub={browseSub(item)}

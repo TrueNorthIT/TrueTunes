@@ -11,7 +11,7 @@ export function useAttribution(onRemoteQueue?: () => void): AttributionMap {
   const [map, setMap] = useState<AttributionMap>({});
   const registered = useRef(false);
   const onRemoteQueueRef = useRef(onRemoteQueue);
-  onRemoteQueueRef.current = onRemoteQueue;
+  useEffect(() => { onRemoteQueueRef.current = onRemoteQueue; });
 
   useEffect(() => {
     if (registered.current) return;

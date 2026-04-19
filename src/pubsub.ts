@@ -18,7 +18,7 @@ import WebSocket from 'ws';
 import * as https from 'https';
 import * as http from 'http';
 import { URL } from 'url';
-import type { AttributionMap, AttributionEntry, AttributionEvent } from './types';
+import type { AttributionMap, AttributionEvent } from './types';
 
 const HUB          = 'office';
 const SUBPROTOCOL  = 'json.webpubsub.azure.v1';
@@ -79,9 +79,11 @@ function httpPostJson(rawUrl: string, payload: unknown): Promise<void> {
       { method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': buf.length } },
       (res) => {
         res.resume();
-        (res.statusCode ?? 0) >= 400
-          ? reject(new Error(`POST ${rawUrl} → ${res.statusCode}`))
-          : resolve();
+        if ((res.statusCode ?? 0) >= 400) {
+          reject(new Error(`POST ${rawUrl} → ${res.statusCode}`));
+        } else {
+          resolve();
+        }
       },
     );
     req.on('error', reject);
