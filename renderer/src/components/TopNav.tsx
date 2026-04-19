@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Home, Trophy, Search, X, Volume2, User, List, RefreshCw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Trophy, Search, X, Volume2, User, List, RefreshCw, Minus, Maximize2, Minimize2 } from 'lucide-react';
 import type { GroupInfo } from '../types/sonos';
 import styles from '../styles/TopNav.module.css';
 
@@ -34,6 +34,12 @@ export function TopNav({
   const histIdx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
   const canGoBack    = histIdx > 0;
   const canGoForward = histIdx < window.history.length - 1;
+
+  const [isMaximized, setIsMaximized] = useState(false);
+  useEffect(() => {
+    window.sonos.isWindowMaximized().then(setIsMaximized).catch(() => {});
+    return window.sonos.onWindowMaximized(setIsMaximized);
+  }, []);
 
   useEffect(() => {
     window.sonos.getVersion().then(setAppVersion).catch(() => {});
@@ -85,11 +91,8 @@ export function TopNav({
     <>
       <div className={styles.dragRegion} />
 
-      {/* Outer wrapper — centered; history pill is absolutely anchored to its left */}
-      <div className={styles.navRoot}>
-
-        {/* Back / forward pill */}
-        <div className={styles.historyPill}>
+      {/* Back / forward pill — fixed top-left */}
+      <div className={styles.historyPill}>
           <button
             className={styles.historyBtn}
             disabled={!canGoBack}
@@ -106,7 +109,10 @@ export function TopNav({
           >
             <ChevronRight size={16} />
           </button>
-        </div>
+      </div>
+
+      {/* Outer wrapper — centered */}
+      <div className={styles.navRoot}>
 
         {/* Main nav pill */}
         <nav className={styles.nav}>
@@ -220,6 +226,20 @@ export function TopNav({
 
           </div>
         </nav>
+
+      </div>
+
+      {/* Window controls — fixed top-right, independent of the centered navRoot */}
+      <div className={styles.windowPill}>
+        <button className={styles.winBtn} onClick={() => window.sonos.minimizeWindow()} title="Minimise">
+          <Minus size={13} />
+        </button>
+        <button className={styles.winBtn} onClick={() => window.sonos.maximizeWindow()} title={isMaximized ? 'Restore' : 'Maximise'}>
+          {isMaximized ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+        </button>
+        <button className={`${styles.winBtn} ${styles.closeBtn}`} onClick={() => window.sonos.closeWindow()} title="Close">
+          <X size={13} />
+        </button>
       </div>
     </>
   );

@@ -22,7 +22,8 @@
 
 /* ── Shared glass style ── */
 .nav,
-.historyPill {
+.historyPill,
+.windowPill {
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(80px) saturate(320%) brightness(1.1);
@@ -34,16 +35,18 @@
     0 -1px 0 rgba(0, 0, 0, 0.2) inset;
 }
 
-/* ── History pill — anchored absolutely to the left of navRoot ── */
+/* ── History pill — fixed top-left, independent of navRoot ── */
 .historyPill {
-  position: absolute;
-  right: calc(100% + 8px);
-  top: 0;
+  position: fixed;
+  top: 12px;
+  left: 16px;
+  z-index: 200;
   height: 44px;
   display: flex;
   align-items: center;
   padding: 0 4px;
   gap: 0;
+  -webkit-app-region: no-drag;
 }
 
 .historyBtn {
@@ -65,6 +68,40 @@
 .historyBtn:disabled {
   color: rgba(255, 255, 255, 0.18);
   cursor: default;
+}
+
+/* ── Window controls pill — fixed top-right, independent of navRoot ── */
+.windowPill {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  z-index: 200;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  -webkit-app-region: no-drag;
+}
+
+.winBtn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.12s, background 0.12s;
+}
+.winBtn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+.closeBtn:hover {
+  color: #fff;
+  background: rgba(220, 60, 60, 0.5);
 }
 
 /* ── Main nav pill ── */

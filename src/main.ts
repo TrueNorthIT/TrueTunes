@@ -988,6 +988,7 @@ function createUIWindow(): void {
     height: 640,
     title: `True-Tunes v${app.getVersion()}`,
     backgroundColor: '#1c1c1e',
+    frame: false,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -995,6 +996,9 @@ function createUIWindow(): void {
       preload: path.join(__dirname, 'preload.js'),
     },
   });
+
+  uiWin.on('maximize',   () => uiWin?.webContents.send('win:maximized', true));
+  uiWin.on('unmaximize', () => uiWin?.webContents.send('win:maximized', false));
 
   if (app.isPackaged) {
     uiWin.loadFile(path.join(__dirname, '..', 'renderer', 'dist', 'index.html'));
@@ -1102,6 +1106,11 @@ ipcMain.handle('debug:openWsMonitor', () => openDebugWindow());
 ipcMain.handle('debug:openHttpMonitor', () => openHttpDebugWindow());
 
 ipcMain.handle('app:version', () => app.getVersion());
+
+ipcMain.handle('win:minimize',     () => { uiWin?.minimize(); });
+ipcMain.handle('win:maximize',     () => { uiWin?.isMaximized() ? uiWin.unmaximize() : uiWin?.maximize(); });
+ipcMain.handle('win:close',        () => { uiWin?.close(); });
+ipcMain.handle('win:is-maximized', () => uiWin?.isMaximized() ?? false);
 
 ipcMain.handle('config:getDisplayName', () => config.displayName ?? null);
 

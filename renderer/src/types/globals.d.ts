@@ -117,6 +117,11 @@ interface SonosPreload {
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;
   /** Fire-and-forget telemetry event routed through the main process. No-op when App Insights is not configured. */
   trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
+  minimizeWindow:    () => Promise<void>;
+  maximizeWindow:    () => Promise<void>;
+  closeWindow:       () => Promise<void>;
+  isWindowMaximized: () => Promise<boolean>;
+  onWindowMaximized: (cb: (maximized: boolean) => void) => Unsubscribe;
 }
 
 interface Window {
