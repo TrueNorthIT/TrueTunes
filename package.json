@@ -27,7 +27,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{ts,tsx,json,css}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,json,css}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,css}\"",
+    "typecheck": "tsc --noEmit && tsc --noEmit --project renderer/tsconfig.json"
   },
   "dependencies": {
     "electron-updater": "^6.8.3",

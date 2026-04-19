@@ -93,7 +93,7 @@ describe('getName', () => {
 
 describe('getItemArt', () => {
   it('returns tile1x1 from images object (browse shape)', () => {
-    expect(getItemArt({ images: { tile1x1: 'https://example.com/tile.jpg' } } as SonosItem)).toBe('https://example.com/tile.jpg');
+    expect(getItemArt({ images: { tile1x1: 'https://example.com/tile.jpg' } } as unknown as SonosItem)).toBe('https://example.com/tile.jpg');
   });
 
   it('returns imageUrl fallback', () => {

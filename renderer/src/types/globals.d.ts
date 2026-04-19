@@ -23,6 +23,7 @@ interface FetchRequest {
   pathParams?: Record<string, string>;
   query?: Record<string, string | undefined>;
   body?: unknown;
+  headers?: Record<string, string>;
 }
 
 interface FetchResponse {
@@ -37,7 +38,7 @@ interface StatsUser {
   userId: string;
   count: number;
 }
-export interface StatsTrack {
+interface StatsTrack {
   trackName: string;
   artist: string;
   artistId?: string;
@@ -116,10 +117,6 @@ interface SonosPreload {
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;
 }
 
-declare global {
-  interface Window {
-    sonos: SonosPreload;
-  }
+interface Window {
+  sonos: SonosPreload;
 }
-
-export {};

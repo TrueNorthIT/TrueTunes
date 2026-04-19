@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, Fragment } from 'react';
 import { Loader2 } from 'lucide-react';
 import { getName } from '../../lib/itemHelpers';
+import { applyReorderLocally } from '../../lib/queueHelpers';
 import { useAttribution } from '../../hooks/useAttribution';
 import { DraggableQueueRow } from './DraggableQueueRow';
 import type { QueueItem, SonosItem, SonosItemId } from '../../types/sonos';
@@ -18,15 +19,6 @@ interface Props {
   onRefresh: () => void;
   onError: (msg: string) => void;
   onAddToQueue: (item: SonosItem, position: number) => void;
-}
-
-function applyReorderLocally(items: QueueItem[], fromIndices: number[], toIndex: number): QueueItem[] {
-  const selectedSet = new Set(fromIndices);
-  const remaining = items.filter((_, i) => !selectedSet.has(i));
-  const origNonSelected = items.flatMap((_, i) => selectedSet.has(i) ? [] : [i]);
-  const insertAt = origNonSelected.filter(i => i < toIndex).length;
-  const movers = [...fromIndices].sort((a, b) => a - b).map(i => items[i]);
-  return [...remaining.slice(0, insertAt), ...movers, ...remaining.slice(insertAt)];
 }
 
 export function QueueSidebar(

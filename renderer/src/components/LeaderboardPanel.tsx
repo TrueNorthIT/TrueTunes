@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStats, StatsPeriod } from '../hooks/useStats';
 import styles from '../styles/LeaderboardPanel.module.css';
-import { StatsTrack } from '../types/globals';
 
 const PERIODS: { value: StatsPeriod; label: string }[] = [
   { value: 'today', label: 'Today' },
