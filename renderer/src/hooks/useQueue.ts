@@ -16,7 +16,7 @@ export function useQueue(
   const [error, setError]       = useState<string | null>(null);
   const hasLoaded                = useRef(false);
   const onEtagRef                = useRef(onEtag);
-  onEtagRef.current              = onEtag;
+  useEffect(() => { onEtagRef.current = onEtag; });
 
   const load = useCallback(async () => {
     if (!activeGroupId) return;

@@ -23,6 +23,7 @@ interface FetchRequest {
   pathParams?: Record<string, string>;
   query?: Record<string, string | undefined>;
   body?: unknown;
+  headers?: Record<string, string>;
 }
 
 interface FetchResponse {
@@ -33,10 +34,33 @@ interface FetchResponse {
 
 type Unsubscribe = () => void;
 
-interface StatsUser  { userId: string; count: number; }
-interface StatsTrack { trackName: string; artist: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string; uri?: string; count: number; }
-interface StatsArtist { artist: string; artistId?: string; count: number; }
-interface StatsAlbum { album: string; albumId?: string; artist: string; artistId?: string; imageUrl?: string; count: number; }
+interface StatsUser {
+  userId: string;
+  count: number;
+}
+interface StatsTrack {
+  trackName: string;
+  artist: string;
+  artistId?: string;
+  album?: string;
+  albumId?: string;
+  imageUrl?: string;
+  uri?: string;
+  count: number;
+}
+interface StatsArtist {
+  artist: string;
+  artistId?: string;
+  count: number;
+}
+interface StatsAlbum {
+  album: string;
+  albumId?: string;
+  artist: string;
+  artistId?: string;
+  imageUrl?: string;
+  count: number;
+}
 interface StatsResult {
   topUsers: StatsUser[];
   topTracks: StatsTrack[];
@@ -57,9 +81,9 @@ interface SonosPreload {
   onWsGroups: (cb: (groups: unknown[]) => void) => Unsubscribe;
   setGroup: (groupId: string) => Promise<{ ok?: boolean; error?: string }>;
   setGroupVolume: (volume: number) => Promise<unknown>;
-  setQueueId:  (queueId: string)                  => Promise<void>;
+  setQueueId: (queueId: string) => Promise<void>;
   loadContent: (payload: Record<string, unknown>) => Promise<unknown>;
-  fetchImage:  (url: string) => Promise<{ data: string; mimeType: string } | { error: string }>;
+  fetchImage: (url: string) => Promise<{ data: string; mimeType: string } | { error: string }>;
   refreshPlayback: () => Promise<void>;
   resync: () => Promise<void>;
   setPlayModes: (modes: Record<string, unknown>) => Promise<unknown>;
@@ -67,28 +91,34 @@ interface SonosPreload {
   pause: () => Promise<unknown>;
   skipNext: () => Promise<unknown>;
   skipPrev: () => Promise<unknown>;
-  skipToTrack:     (trackNumber: number)                    => Promise<unknown>;
-  reorderQueue:    (fromIndices: number[], toIndex: number, queueLength: number) => Promise<unknown>;
-  removeFromQueue: (indices: number[])                      => Promise<unknown>;
-  clearQueue:      ()                                       => Promise<unknown>;
-  openWsMonitor:   ()                                       => Promise<void>;
-  openHttpMonitor: ()                                       => Promise<void>;
-  openMiniPlayer:  ()                                       => Promise<void>;
-  closeMiniPlayer: ()                                       => Promise<void>;
+  skipToTrack: (trackNumber: number) => Promise<unknown>;
+  reorderQueue: (fromIndices: number[], toIndex: number, queueLength: number) => Promise<unknown>;
+  removeFromQueue: (indices: number[]) => Promise<unknown>;
+  clearQueue: () => Promise<unknown>;
+  openWsMonitor: () => Promise<void>;
+  openHttpMonitor: () => Promise<void>;
+  openMiniPlayer: () => Promise<void>;
+  closeMiniPlayer: () => Promise<void>;
   // Attribution / office presence
-  getDisplayName:     ()                                          => Promise<string | null>;
-  setDisplayName:     (name: string)                              => Promise<void>;
-  publishQueued:      (item: { uri: string; trackName: string; artist: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }) => Promise<void>;
-  fetchStats:         (period: string, userId?: string) => Promise<StatsResult>;
-  refreshAttribution: ()                                           => Promise<void>;
-  onAttributionMap:   (cb: (map: AttributionMap) => void)         => Unsubscribe;
-  onAttributionEvent: (cb: (event: AttributionEvent) => void)     => Unsubscribe;
+  getDisplayName: () => Promise<string | null>;
+  setDisplayName: (name: string) => Promise<void>;
+  publishQueued: (item: {
+    uri: string;
+    trackName: string;
+    artist: string;
+    artistId?: string;
+    album?: string;
+    albumId?: string;
+    imageUrl?: string;
+  }) => Promise<void>;
+  fetchStats: (period: string, userId?: string) => Promise<StatsResult>;
+  refreshAttribution: () => Promise<void>;
+  onAttributionMap: (cb: (map: AttributionMap) => void) => Unsubscribe;
+  onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;
+  /** Fire-and-forget telemetry event routed through the main process. No-op when App Insights is not configured. */
+  trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
 }
 
-declare global {
-  interface Window {
-    sonos: SonosPreload;
-  }
+interface Window {
+  sonos: SonosPreload;
 }
-
-export {};

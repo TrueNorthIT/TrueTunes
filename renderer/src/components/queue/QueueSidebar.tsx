@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState, Fragment } from 'react';
 import { Loader2 } from 'lucide-react';
-import { getName } from '../lib/itemHelpers';
-import { useImage } from '../hooks/useImage';
-import { useOpenItem } from '../hooks/useOpenItem';
-import { useQueueTrack } from '../hooks/useQueueTrack';
-import { useAttribution } from '../hooks/useAttribution';
-import { ExplicitBadge } from './ExplicitBadge';
-import type { QueueItem, SonosItem, SonosItemId } from '../types/sonos';
-import styles from '../styles/QueueSidebar.module.css';
+import { getName } from '../../lib/itemHelpers';
+import { applyReorderLocally } from '../../lib/queueHelpers';
+import { useAttribution } from '../../hooks/useAttribution';
+import { DraggableQueueRow } from './DraggableQueueRow';
+import type { QueueItem, SonosItem, SonosItemId } from '../../types/sonos';
+import styles from '../../styles/QueueSidebar.module.css';
 
 interface Props {
   open: boolean;
@@ -23,102 +21,6 @@ interface Props {
   onAddToQueue: (item: SonosItem, position: number) => void;
 }
 
-function applyReorderLocally(items: QueueItem[], fromIndices: number[], toIndex: number): QueueItem[] {
-  const selectedSet = new Set(fromIndices);
-  const remaining = items.filter((_, i) => !selectedSet.has(i));
-  const origNonSelected = items.flatMap((_, i) => selectedSet.has(i) ? [] : [i]);
-  const insertAt = origNonSelected.filter(i => i < toIndex).length;
-  const movers = [...fromIndices].sort((a, b) => a - b).map(i => items[i]);
-  return [...remaining.slice(0, insertAt), ...movers, ...remaining.slice(insertAt)];
-}
-
-// ── Individual draggable row ──────────────────────────────────────────────────
-
-interface RowProps {
-  item: QueueItem;
-  index: number;
-  currentObjectId: string | null;
-  currentQueueItemId: string | null;
-  attribution?: AttributionEntry;
-  isSelected: boolean;
-  onRowClick: (index: number, e: React.MouseEvent) => void;
-  onDragStart: (index: number, e: React.DragEvent) => void;
-  onDragOver: (index: number, e: React.DragEvent) => void;
-  onDrop: (e: React.DragEvent) => void;
-  onDragEnd: () => void;
-}
-
-function DraggableQueueRow({
-  item, index, currentObjectId, currentQueueItemId, attribution,
-  isSelected, onRowClick, onDragStart, onDragOver, onDrop, onDragEnd,
-}: RowProps) {
-  const { artUrl, artist, albumName, albumItem, prefetchAlbum, artistItem, prefetchArtist, isPlaying: isPlayingByObjectId, explicit } =
-    useQueueTrack(item, currentObjectId);
-  // Prefer 1-based queue position match (exact, handles duplicates) over objectId match
-  const isPlaying = currentQueueItemId !== null
-    ? Number(currentQueueItemId) === index + 1
-    : isPlayingByObjectId;
-  const cachedArt = useImage(artUrl);
-  const openItem  = useOpenItem();
-  const name = getName(item);
-
-  return (
-    <div
-      className={[
-        styles.row,
-        isPlaying  ? styles.playing  : '',
-        isSelected ? styles.selected : '',
-      ].filter(Boolean).join(' ')}
-      data-playing={isPlaying ? 'true' : undefined}
-      draggable
-      onClick={e => onRowClick(index, e)}
-      onDoubleClick={() => window.sonos.skipToTrack(index + 1)}
-      onDragStart={e => onDragStart(index, e)}
-      onDragOver={e => onDragOver(index, e)}
-      onDrop={onDrop}
-      onDragEnd={onDragEnd}
-    >
-      <div className={styles.dragHandle}>⠿</div>
-      <div className={styles.artWrap}>
-        {cachedArt
-          ? <img className={styles.art} src={cachedArt} alt="" />
-          : <div className={styles.artPh}>♪</div>}
-        {isPlaying && (
-          <div className={styles.overlay}>
-            <div className={styles.eq}><span /><span /><span /></div>
-          </div>
-        )}
-      </div>
-      <div className={styles.text}>
-        <div className={styles.name}>{name}{explicit && <ExplicitBadge />}</div>
-        {artist && (
-          artistItem
-            ? <button
-                className={styles.subAlbum}
-                onClick={e => { e.stopPropagation(); openItem(artistItem); }}
-                onMouseEnter={prefetchArtist}
-              >{artist}</button>
-            : <div className={styles.sub}>{artist}</div>
-        )}
-        {albumName && (
-          <button
-            className={styles.subAlbum}
-            onClick={e => { e.stopPropagation(); if (albumItem) openItem(albumItem); }}
-            onMouseEnter={prefetchAlbum}
-          >
-            {albumName}
-          </button>
-        )}
-        {attribution && (
-          <div className={styles.attribution}>by {attribution.user}</div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Sidebar ───────────────────────────────────────────────────────────────────
-
 export function QueueSidebar(
   { open, items, setItems, isLoading, error, currentObjectId, currentQueueItemId, onClose, onRefresh, onError, onAddToQueue }: Props
 ) {
@@ -130,10 +32,8 @@ export function QueueSidebar(
   const lastSelected = useRef<number | null>(null);
   const draggingSet  = useRef<Set<number>>(new Set());
 
-  // Clear selection when sidebar closes or items change
   useEffect(() => { setSelected(new Set()); }, [open, items]);
 
-  // Delete key removes selected tracks
   useEffect(() => {
     if (!open) return;
     async function onKeyDown(e: KeyboardEvent) {
@@ -148,9 +48,7 @@ export function QueueSidebar(
     }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [open, selected, setItems, onRefresh]);
-
-  // ── Handlers ────────────────────────────────────────────────────────────────
+  }, [open, selected, setItems, onRefresh, onError]);
 
   function handleRowClick(index: number, e: React.MouseEvent) {
     e.stopPropagation();
@@ -170,7 +68,6 @@ export function QueueSidebar(
       });
       lastSelected.current = index;
     } else {
-      // Click on the sole selected item → deselect; otherwise narrow to this one
       if (selected.size === 1 && selected.has(index)) {
         setSelected(new Set());
         lastSelected.current = null;
@@ -185,11 +82,8 @@ export function QueueSidebar(
     const toMove = selected.has(index) ? new Set(selected) : new Set([index]);
     if (!selected.has(index)) { setSelected(toMove); lastSelected.current = index; }
     draggingSet.current = toMove;
-
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('application/queue-indices', JSON.stringify([...toMove]));
-
-    // Floating ghost label
     const ghost = document.createElement('div');
     Object.assign(ghost.style, {
       position: 'fixed', top: '-100px', left: '0',
@@ -198,9 +92,7 @@ export function QueueSidebar(
       fontSize: '12px', fontWeight: '600', pointerEvents: 'none',
       whiteSpace: 'nowrap', zIndex: '9999',
     });
-    const label = toMove.size > 1
-      ? `${toMove.size} tracks`
-      : (getName(items[index]));
+    const label = toMove.size > 1 ? `${toMove.size} tracks` : getName(items[index]);
     ghost.textContent = label;
     document.body.appendChild(ghost);
     e.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, 20);
@@ -220,8 +112,6 @@ export function QueueSidebar(
     e.preventDefault();
     e.stopPropagation();
     if (dragOverIndex === null) return;
-
-    // External: multiple tracks dragged from album/search panel
     const listJson = e.dataTransfer.getData('application/sonos-item-list');
     if (listJson) {
       setDragOverIndex(null);
@@ -233,8 +123,6 @@ export function QueueSidebar(
       }
       return;
     }
-
-    // Internal: queue reorder
     const raw = e.dataTransfer.getData('application/queue-indices');
     if (!raw) { setDragOverIndex(null); return; }
     let fromIndices: number[];
@@ -253,7 +141,6 @@ export function QueueSidebar(
     draggingSet.current = new Set();
   }
 
-  // Click on content background deselects
   function handleContentClick() {
     setSelected(new Set());
     lastSelected.current = null;

@@ -15,7 +15,7 @@ import type { ServiceSearch } from '../types/ServiceSearch';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
 import { artistQueryOptions } from '../hooks/useArtistBrowse';
 import { CardRow } from './CardRow';
-import { SearchResults } from './SearchResults';
+import { SearchResults } from './search/SearchResults';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/HomePanel.module.css';
 

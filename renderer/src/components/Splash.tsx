@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import styles from '../styles/Splash.module.css';
 
 interface Props {
@@ -10,7 +10,8 @@ const MIN_MS = 900;
 export function Splash({ ready }: Props) {
   const [fading,  setFading]  = useState(false);
   const [gone,    setGone]    = useState(false);
-  const mountRef = useRef(Date.now());
+  const mountRef = useRef(0);
+  useLayoutEffect(() => { mountRef.current = Date.now(); }, []);
 
   useEffect(() => {
     if (!ready) return;

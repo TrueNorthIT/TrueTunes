@@ -1,0 +1,22 @@
+.cardRow {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.cardRow::-webkit-scrollbar {
+  height: 6px;
+}
+
+.placeholder {
+  width: var(--card-size);
+  height: var(--card-size);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  flex-shrink: 0;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.6; }
+}

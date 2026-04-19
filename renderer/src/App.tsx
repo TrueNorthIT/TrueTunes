@@ -14,13 +14,14 @@ import { TopNav } from './components/TopNav';
 import { PlayerBar } from './components/PlayerBar';
 import { HomePanel, fetchYtmSections } from './components/HomePanel';
 import type { YtmSections } from './components/HomePanel';
-import { AlbumPanel } from './components/AlbumPanel';
-import { ArtistPanel } from './components/ArtistPanel';
+import { AlbumPanel } from './components/album/AlbumPanel';
+import { ArtistPanel } from './components/artist/ArtistPanel';
 import { ContainerPanel } from './components/ContainerPanel';
 import { LeaderboardPanel } from './components/LeaderboardPanel';
-import { QueueSidebar } from './components/QueueSidebar';
+import { QueueSidebar } from './components/queue/QueueSidebar';
 import { MiniPlayerShell } from './components/MiniPlayer';
 import { DisplayNameModal } from './components/DisplayNameModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Splash } from './components/Splash';
 import { getName } from './lib/itemHelpers';
 
@@ -86,6 +87,7 @@ function MainApp() {
     window.sonos.setGroup(groupId);
     applyGroupCache(groupId);
     window.sonos.refreshAttribution().catch(() => {});
+    window.sonos.trackEvent('group_changed').catch(() => {});
   }, [applyGroupCache]);
 
   const handleAddToQueue = useCallback(async (item: SonosItem, position = -1) => {
@@ -141,8 +143,14 @@ function MainApp() {
       ifMatch: queueVersionRef.current ?? undefined,
       position,
     });
-    if (r.error) { showToast('Add failed: ' + r.error); reloadQueue(); return; }
+    if (r.error) {
+      showToast('Add failed: ' + r.error);
+      void window.sonos.trackEvent('queue_add', { success: 'false', itemType: body.type });
+      reloadQueue();
+      return;
+    }
     if (r.etag) queueVersionRef.current = r.etag;
+    void window.sonos.trackEvent('queue_add', { success: 'true', itemType: body.type });
 
     // Publish attribution — fetch full track details then fire-and-forget
     const uri = body.id.objectId;
@@ -177,6 +185,14 @@ function MainApp() {
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
+  useEffect(() => {
+    function onUnhandledRejection(e: PromiseRejectionEvent) {
+      window.sonos.trackEvent('renderer_error', { reason: String(e.reason) }).catch(() => {});
+    }
+    window.addEventListener('unhandledrejection', onUnhandledRejection);
+    return () => window.removeEventListener('unhandledrejection', onUnhandledRejection);
   }, []);
 
   const homeEnabled = isAuthed && groups.length > 0;
@@ -263,5 +279,11 @@ function MainApp() {
 
 export function App() {
   const location = useLocation();
-  return location.pathname === '/mini' ? <MiniPlayerShell /> : <MainApp />;
+  return location.pathname === '/mini' ? (
+    <MiniPlayerShell />
+  ) : (
+    <ErrorBoundary>
+      <MainApp />
+    </ErrorBoundary>
+  );
 }

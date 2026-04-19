@@ -79,6 +79,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .sub {

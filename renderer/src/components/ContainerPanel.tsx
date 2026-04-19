@@ -2,7 +2,7 @@ import { useLocation } from 'react-router-dom';
 import { useImage } from '../hooks/useImage';
 import { useContainerBrowse } from '../hooks/useContainerBrowse';
 import { useOpenItem } from '../hooks/useOpenItem';
-import { TrackCard } from './TrackCard';
+import { MediaCard } from './common/MediaCard';
 import {
   getName,
   browseSub,
@@ -70,7 +70,7 @@ export function ContainerPanel({ onAddToQueue }: Props) {
       {data && data.length > 0 && (
         <div className={styles.grid}>
           {data.map((child, i) => (
-            <TrackCard
+            <MediaCard
               key={(child.id as Record<string, string> | undefined)?.objectId ?? String(i)}
               name={getName(child)}
               sub={browseSub(child)}

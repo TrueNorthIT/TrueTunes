@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNowPlaying } from "../hooks/useNowPlaying";
 import { useOpenItem } from "../hooks/useOpenItem";
-import { ExplicitBadge } from "./ExplicitBadge";
+import { ExplicitBadge } from "./common/ExplicitBadge";
 import type React from "react";
 import {
   Shuffle,
