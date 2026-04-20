@@ -1,153 +1,240 @@
-.nav {
+/* ── Full-width drag strip behind the pills ── */
+.dragRegion {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   height: var(--nav-h);
-  background: rgba(13, 13, 13, 0.92);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
   -webkit-app-region: drag;
-  z-index: 200;
-  position: relative;
+  z-index: 199;
 }
+
+/* ── Centering wrapper — main pill sits in normal flow; history pill is absolute ── */
+.navRoot {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  -webkit-app-region: no-drag;
+}
+
+/* ── Shared glass style ── */
+.nav,
+.historyPill,
+.windowPill {
+  height: 44px;
+  border-radius: 22px;
+  background: rgba(12, 12, 18, 0.48);
+  backdrop-filter: blur(48px) saturate(240%) brightness(1.05);
+  will-change: backdrop-filter;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.3) inset;
+}
+
+/* ── History pill — fixed top-left, independent of navRoot ── */
+.historyPill {
+  position: fixed;
+  top: 12px;
+  left: 16px;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  gap: 0;
+  -webkit-app-region: no-drag;
+}
+
+.historyBtn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.12s, background 0.12s;
+}
+.historyBtn:hover:not(:disabled) {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+.historyBtn:disabled {
+  color: rgba(255, 255, 255, 0.18);
+  cursor: default;
+}
+
+/* ── Window controls pill — fixed top-right, independent of navRoot ── */
+.windowPill {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+}
+
+.winBtn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.12s, background 0.12s;
+}
+.winBtn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+.closeBtn:hover {
+  color: #fff;
+  background: rgba(220, 60, 60, 0.5);
+}
+
+/* ── Main nav pill ── */
+.nav {}
 
 .inner {
   height: 100%;
   display: flex;
   align-items: center;
-  padding: 0 16px;
-  gap: 10px;
+  padding: 0 8px;
+  gap: 2px;
 }
 
-/* All interactive children need drag disabled */
-.inner button,
-.inner select,
-.inner input { -webkit-app-region: no-drag; }
-
-.left { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
-/* Room for macOS traffic lights in frameless mode */
-.trafficSpace { width: 72px; }
-
-.backBtn {
-  background: none; border: none;
-  color: var(--text-2); font-size: 13px; font-weight: 500;
-  padding: 6px 10px; border-radius: 20px;
-  cursor: pointer; font-family: inherit;
-  transition: background 0.15s, color 0.15s;
-  white-space: nowrap;
-  -webkit-app-region: no-drag;
-}
-.backBtn:hover { color: var(--text); background: var(--bg-2); }
-
-.center {
-  flex: 1;
+/* ── Icon buttons ── */
+.iconBtn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  -webkit-app-region: no-drag;
+  transition: color 0.12s, background 0.12s;
+  flex-shrink: 0;
+}
+.iconBtn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+.iconBtn.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.right {
+/* ── Visual separator ── */
+.sep {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* ── Search ── */
+.searchWrap {
   display: flex;
   align-items: center;
   gap: 6px;
+  padding: 0 8px;
+}
+
+.searchIcon {
+  color: rgba(255, 255, 255, 0.4);
   flex-shrink: 0;
-  -webkit-app-region: no-drag;
 }
-
-/* ── Nav tab ── */
-.tab {
-  background: none; border: none;
-  color: var(--text-2); font-size: 13px; font-weight: 500;
-  padding: 6px 14px; border-radius: 20px;
-  cursor: pointer; font-family: inherit;
-  transition: background 0.15s, color 0.15s;
-  white-space: nowrap;
-}
-.tab:hover { color: var(--text); background: var(--bg-2); }
-.tab.active { color: var(--text); background: rgba(255,255,255,0.09); }
-
-/* ── Search field ── */
-.searchWrap {
-  display: flex; align-items: center;
-  background: rgba(255,255,255,0.07);
-  border: 1px solid transparent;
-  border-radius: 20px;
-  padding: 0 4px 0 14px;
-  transition: border-color 0.15s;
-  min-width: 0;
-}
-.searchWrap:focus-within { border-color: rgba(255,255,255,0.2); }
 
 .searchInput {
-  background: none; border: none;
-  color: var(--text); font-size: 13px;
-  padding: 6px 0; width: 200px; outline: none;
-  font-family: inherit; min-width: 0;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 13px;
+  font-family: inherit;
+  width: 180px;
+  outline: none;
+  padding: 4px 0;
 }
-.searchInput::placeholder { color: var(--text-3); }
-.searchInput:disabled { opacity: 0.4; }
+.searchInput::placeholder { color: rgba(255, 255, 255, 0.35); }
+.searchInput:disabled { opacity: 0.35; }
 
 .clearBtn {
-  background: none; border: none;
-  color: var(--text-3); cursor: pointer;
-  font-size: 12px; padding: 5px 8px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 4px;
   border-radius: 50%;
-  display: flex; align-items: center;
-  transition: color 0.15s;
+  display: flex;
+  align-items: center;
+  transition: color 0.12s;
   flex-shrink: 0;
 }
-.clearBtn:hover { color: var(--text-2); }
+.clearBtn:hover { color: rgba(255, 255, 255, 0.8); }
 
 /* ── Group selector ── */
-.groupSelect {
-  background: rgba(255,255,255,0.06);
+.groupWrap { position: relative; }
+
+.groupPopover {
+  position: absolute;
+  top: calc(100% + 20px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-1);
   border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  color: var(--text-3); font-size: 12px;
-  padding: 5px 8px; max-width: 130px;
-  cursor: pointer; font-family: inherit;
-  transition: border-color 0.15s;
-}
-.groupSelect:not(:disabled) { color: var(--text-2); }
-.groupSelect:focus { outline: none; border-color: var(--border-2); }
-
-/* ── Resync button ── */
-.resyncBtn {
-  background: none; border: none;
-  color: var(--text-3); cursor: pointer;
-  font-size: 16px; padding: 5px 7px;
-  border-radius: var(--r-sm);
-  display: flex; align-items: center;
-  transition: all 0.15s; line-height: 1;
-}
-.resyncBtn:hover { color: var(--text-2); background: var(--bg-2); }
-
-/* ── Name / settings ── */
-.nameWrap {
-  position: relative;
+  border-radius: var(--r-md);
+  padding: 8px;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  z-index: 300;
 }
 
-.nameBtn {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
+.groupPopoverLabel {
+  font-size: 11px;
   color: var(--text-3);
-  font-size: 12px;
-  font-family: inherit;
-  padding: 5px 10px;
-  cursor: pointer;
-  max-width: 100px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: all 0.15s;
+  font-weight: 500;
+  padding: 2px 8px 6px;
 }
-.nameBtn:hover { color: var(--text-2); border-color: var(--border-2); }
-.nameBtn.active { color: var(--text); border-color: var(--border-2); background: rgba(255,255,255,0.1); }
+
+.groupOption {
+  background: none;
+  border: none;
+  color: var(--text-2);
+  font-size: 13px;
+  font-family: inherit;
+  text-align: left;
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+.groupOption:hover { background: var(--bg-2); color: var(--text); }
+.groupOptionActive { color: var(--text) !important; font-weight: 600; }
+
+/* ── Name popover ── */
+.nameWrap { position: relative; }
 
 .namePopover {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 20px);
   right: 0;
   background: var(--bg-1);
   border: 1px solid var(--border);
@@ -157,7 +244,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   z-index: 300;
 }
 
@@ -181,7 +268,7 @@
 .nameInput:focus { border-color: var(--border-2); }
 
 .nameSaveBtn {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
   border: 1px solid var(--border-2);
   border-radius: var(--r-sm);
   color: var(--text);
@@ -192,7 +279,7 @@
   cursor: pointer;
   transition: background 0.12s;
 }
-.nameSaveBtn:hover:not(:disabled) { background: rgba(255,255,255,0.18); }
+.nameSaveBtn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.18); }
 .nameSaveBtn:disabled { opacity: 0.35; cursor: default; }
 
 .appVersion {
@@ -201,15 +288,3 @@
   text-align: right;
   margin-top: -2px;
 }
-
-/* ── Queue toggle ── */
-.queueBtn {
-  background: none; border: none;
-  color: var(--text-3); cursor: pointer;
-  font-size: 18px; padding: 5px 8px;
-  border-radius: var(--r-sm);
-  display: flex; align-items: center;
-  transition: all 0.15s; line-height: 1;
-}
-.queueBtn:hover { color: var(--text-2); background: var(--bg-2); }
-.queueBtn.active { color: var(--text); background: rgba(255,255,255,0.1); }

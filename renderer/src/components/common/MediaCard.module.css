@@ -15,6 +15,7 @@
 }
 .card:hover .artWrap {
   transform: scale(1.04);
+  border-radius: 0;
 }
 
 .art {

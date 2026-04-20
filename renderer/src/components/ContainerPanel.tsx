@@ -61,7 +61,13 @@ export function ContainerPanel({ onAddToQueue }: Props) {
       {isLoading && (
         <div className={styles.skeleton}>
           {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className={styles.skeletonCard} />
+            <div key={i} className={styles.skeletonCard}>
+              <div className={styles.skeletonArt} />
+              <div className={styles.skeletonInfo}>
+                <div className={styles.skeletonName} />
+                <div className={styles.skeletonSub} />
+              </div>
+            </div>
           ))}
         </div>
       )}

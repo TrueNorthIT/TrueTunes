@@ -41,6 +41,11 @@ export interface SonosAPI {
   refreshAttribution: () => Promise<void>;
   fetchStats: (period: string, userId?: string) => Promise<unknown>;
   trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
+  minimizeWindow:    () => Promise<void>;
+  maximizeWindow:    () => Promise<void>;
+  closeWindow:       () => Promise<void>;
+  isWindowMaximized: () => Promise<boolean>;
+  onWindowMaximized: (cb: (maximized: boolean) => void) => Unsubscribe;
 }
 
 // Buffer early IPC events that may fire before React mounts and registers listeners.
@@ -136,4 +141,13 @@ contextBridge.exposeInMainWorld('sonos', {
   },
   trackEvent: (name: string, properties?: Record<string, string>) =>
     ipcRenderer.invoke('telemetry:event', name, properties),
+  minimizeWindow:    () => ipcRenderer.invoke('win:minimize'),
+  maximizeWindow:    () => ipcRenderer.invoke('win:maximize'),
+  closeWindow:       () => ipcRenderer.invoke('win:close'),
+  isWindowMaximized: () => ipcRenderer.invoke('win:is-maximized'),
+  onWindowMaximized: (cb: (maximized: boolean) => void): Unsubscribe => {
+    const listener = (_e: unknown, maximized: boolean) => cb(maximized);
+    ipcRenderer.on('win:maximized', listener);
+    return () => ipcRenderer.removeListener('win:maximized', listener);
+  },
 } satisfies SonosAPI);

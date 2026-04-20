@@ -96,7 +96,7 @@ function resolveArtistName(raw: unknown): string {
 export function getSub(item: SonosItem): string {
   // subtitle is used by container browse responses (e.g. album items have subtitle = artist name)
   const raw = item?.artist ?? item?.primaryArtist ?? (item as Record<string,unknown>)?.['subtitle']
-           ?? item?.resource?.artist ?? item?.track?.artist ?? item?.description ?? item?.type ?? '';
+           ?? item?.resource?.artist ?? item?.track?.artist ?? item?.description ?? '';
   const result = resolveArtistName(raw);
   return item?.summary?.content ?? result;
 }
@@ -162,9 +162,28 @@ export function isProgram(item: SonosItem): boolean {
   return type.toUpperCase() === 'PROGRAM';
 }
 
+const TYPE_LABELS: Record<string, string> = {
+  TRACK:        'Track',
+  ALBUM:        'Album',
+  ARTIST:       'Artist',
+  PLAYLIST:     'Playlist',
+  PODCAST:      'Podcast',
+  PROGRAM:      'Station',
+  AUDIO:        'Collection',
+  STUDIO:       'Studio Mix',
+  CONTAINER:    '',
+  SECTION:      '',
+};
+
+function formatItemType(raw: string | undefined): string {
+  if (!raw) return '';
+  const key = raw.toUpperCase().replace(/^ITEM_/, '');
+  return TYPE_LABELS[key] ?? '';
+}
+
 export function browseSub(item: SonosItem): string {
   if (item?.summary?.content) return item.summary.content;
-  const type    = item?.type ? item.type.charAt(0) + item.type.slice(1).toLowerCase() : '';
+  const type    = formatItemType(item?.type);
   const artists = item?.artists?.map((a) => a.name).join(', ') ?? getSub(item);
   return [type, artists].filter(Boolean).join(' \u2022 ');
 }

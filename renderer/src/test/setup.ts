@@ -29,5 +29,10 @@ Object.defineProperty(window, 'sonos', {
     skipPrev:           vi.fn(pending),
     getVersion:         vi.fn(pending),
     trackEvent:         vi.fn(() => Promise.resolve()),
+    minimizeWindow:     vi.fn(() => Promise.resolve()),
+    maximizeWindow:     vi.fn(() => Promise.resolve()),
+    closeWindow:        vi.fn(() => Promise.resolve()),
+    isWindowMaximized:  vi.fn(() => Promise.resolve(false)),
+    onWindowMaximized:  vi.fn(() => () => {}),
   },
 });

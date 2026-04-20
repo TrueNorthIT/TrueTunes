@@ -3,13 +3,12 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding-bottom: calc(var(--player-h) + 24px);
-  background: var(--bg);
 }
 
 /* ── Header ── */
 .header {
   position: relative;
-  padding: 48px 28px 0;
+  padding: var(--nav-h) 28px 0;
   /* background gradient applied via inline style from dominant colour */
 }
 
