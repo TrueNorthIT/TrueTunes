@@ -72,7 +72,7 @@ export async function fetchYtmSections(): Promise<YtmSections> {
 
   return {
     forYou: supermixItem
-      ? [{ ...supermixItem, imageUrl: '/icon.png' }, ...homeItems]
+      ? [{ ...supermixItem, images: [] as { url: string }[], imageUrl: '/icon.png' }, ...homeItems]
       : homeItems,
     newReleases: newItems,
     charts: chartItems,
