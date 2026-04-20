@@ -21,6 +21,7 @@ import { LeaderboardPanel } from './components/LeaderboardPanel';
 import { QueueSidebar } from './components/queue/QueueSidebar';
 import { MiniPlayerShell } from './components/MiniPlayer';
 import { DisplayNameModal } from './components/DisplayNameModal';
+import { FeedbackDialog } from './components/FeedbackDialog';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Splash } from './components/Splash';
 import { getName } from './lib/itemHelpers';
@@ -55,8 +56,9 @@ function MainApp() {
     reloadQueue();
   }, [playback.queueVersion, reloadQueue]);
 
-  const [queueOpen, setQueueOpen]     = useState(false);
-  const [toastMsg, setToastMsg]       = useState<string | null>(null);
+  const [queueOpen, setQueueOpen]       = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [toastMsg, setToastMsg]         = useState<string | null>(null);
   const toastTimer                    = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [displayName, setDisplayName] = useState<string | null | undefined>(undefined); // undefined = not yet loaded
 
@@ -182,6 +184,7 @@ function MainApp() {
     function onKey(e: globalThis.KeyboardEvent) {
       if (e.ctrlKey && e.shiftKey && e.key === 'H') window.sonos.openHttpMonitor();
       if (e.ctrlKey && e.shiftKey && e.key === 'W') window.sonos.openWsMonitor();
+      if (e.key === 'F2') setFeedbackOpen(true);
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
@@ -271,6 +274,7 @@ function MainApp() {
           }}
         />
       )}
+      {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
     </div>
   );
 }
