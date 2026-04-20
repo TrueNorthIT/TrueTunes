@@ -89,3 +89,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPINSIGHTS_CONNECTION_STRING: ${{ secrets.APPINSIGHTS_CONNECTION_STRING }}
+          VITE_GITHUB_PAT: ${{ secrets.VITE_GITHUB_PAT }}
