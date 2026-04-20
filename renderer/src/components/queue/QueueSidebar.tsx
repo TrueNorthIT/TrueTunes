@@ -32,7 +32,18 @@ export function QueueSidebar(
   const lastSelected = useRef<number | null>(null);
   const draggingSet  = useRef<Set<number>>(new Set());
 
+  function scrollToNowPlaying() {
+    contentRef.current?.querySelector<HTMLElement>('[data-playing="true"]')
+      ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+
   useEffect(() => { setSelected(new Set()); }, [open, items]);
+
+  useEffect(() => {
+    if (!open) return;
+    const id = setTimeout(scrollToNowPlaying, 50);
+    return () => clearTimeout(id);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -169,6 +180,7 @@ export function QueueSidebar(
         ) : (
           <div className={styles.headerActions}>
             <button className={styles.iconBtn} onClick={onRefresh} title="Refresh">↺</button>
+            <button className={styles.iconBtn} onClick={scrollToNowPlaying} title="Jump to now playing">⊙</button>
             {items.length > 0 && (
               <button className={styles.iconBtn} title="Clear queue" onClick={() => setPendingClear(true)}>⊘</button>
             )}
