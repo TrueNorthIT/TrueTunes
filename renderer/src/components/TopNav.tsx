@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Home, Trophy, Search, X, Users, User, List, RefreshCw, Minus, Maximize2, Minimize2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Trophy, Search, X, Users, User, List, RefreshCw, Minus, Maximize2, Minimize2, Gamepad2 } from 'lucide-react';
 import type { GroupInfo } from '../types/sonos';
 import styles from '../styles/TopNav.module.css';
 
@@ -99,6 +99,7 @@ export function TopNav({
   const isAtRoot      = location.pathname === '/';
   const isInSearch    = location.pathname === '/search';
   const isLeaderboard = location.pathname === '/leaderboard';
+  const isQueuedle    = location.pathname === '/queuedle';
 
   return (
     <>
@@ -144,6 +145,13 @@ export function TopNav({
               title="Leaderboard"
             >
               <Trophy size={15} />
+            </button>
+            <button
+              className={`${styles.iconBtn}${isQueuedle ? ' ' + styles.active : ''}`}
+              onClick={() => navigate('/queuedle')}
+              title="Queuedle — daily game"
+            >
+              <Gamepad2 size={15} />
             </button>
 
             <div className={styles.sep} />
