@@ -40,6 +40,13 @@ export interface SonosAPI {
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;
   refreshAttribution: () => Promise<void>;
   fetchStats: (period: string, userId?: string) => Promise<unknown>;
+  fetchDailyGame: (date?: string) => Promise<unknown>;
+  submitGameScore: (input: {
+    gameId: string;
+    userName: string;
+    guesses: { main: Array<'left' | 'right'>; bonus: string[] };
+  }) => Promise<unknown>;
+  fetchGameLeaderboard: (date?: string) => Promise<unknown>;
   trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
   minimizeWindow:    () => Promise<void>;
   maximizeWindow:    () => Promise<void>;
@@ -134,6 +141,9 @@ contextBridge.exposeInMainWorld('sonos', {
   },
   refreshAttribution: () => ipcRenderer.invoke('attribution:refresh'),
   fetchStats: (period: string, userId?: string) => ipcRenderer.invoke('stats:fetch', period, userId),
+  fetchDailyGame: (date?: string) => ipcRenderer.invoke('game:fetch', date),
+  submitGameScore: (input) => ipcRenderer.invoke('game:submit', input),
+  fetchGameLeaderboard: (date?: string) => ipcRenderer.invoke('game:leaderboard', date),
   onAttributionEvent: (cb: (event: AttributionEvent) => void): Unsubscribe => {
     const listener = (_e: unknown, event: AttributionEvent) => cb(event);
     ipcRenderer.on('attribution:event', listener);

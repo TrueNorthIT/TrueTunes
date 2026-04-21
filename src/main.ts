@@ -1161,6 +1161,57 @@ ipcMain.handle('stats:fetch', async (_: IpcMainInvokeEvent, period: string, user
   }
 });
 
+ipcMain.handle('game:fetch', async (_: IpcMainInvokeEvent, date?: string) => {
+  try {
+    const d = date && date.length ? date : 'today';
+    const url = `${PUBSUB_FUNCTION_URL}/api/game?date=${encodeURIComponent(d)}`;
+    const res = await fetch(url);
+    if (res.status === 404 || res.status === 202) {
+      return { status: 'pending' };
+    }
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle(
+  'game:submit',
+  async (
+    _: IpcMainInvokeEvent,
+    input: {
+      gameId: string;
+      userName: string;
+      guesses: { main: Array<'left' | 'right'>; bonus: string[] };
+    },
+  ) => {
+    try {
+      const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/score`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      });
+      const body = await res.json();
+      if (res.status === 409) return { duplicate: true, existing: (body as { existing?: unknown }).existing };
+      if (!res.ok) return { error: (body as { error?: string }).error ?? `HTTP ${res.status}` };
+      return { ok: true, score: body };
+    } catch (err) {
+      return { error: String(err) };
+    }
+  },
+);
+
+ipcMain.handle('game:leaderboard', async (_: IpcMainInvokeEvent, date?: string) => {
+  try {
+    const d = date && date.length ? date : 'today';
+    const url = `${PUBSUB_FUNCTION_URL}/api/game-leaderboard?date=${encodeURIComponent(d)}`;
+    const res = await fetch(url);
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
 ipcMain.handle('attribution:refresh', async () => {
   try {
     const map = await officePubSub.refresh();

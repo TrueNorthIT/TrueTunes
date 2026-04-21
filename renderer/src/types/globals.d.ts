@@ -71,6 +71,68 @@ interface StatsResult {
   error?: string;
 }
 
+type GameItemCategory = 'track' | 'artist' | 'album';
+
+interface GameItem {
+  category: GameItemCategory;
+  id: string;
+  name: string;
+  subtitle: string;
+  imageUrl?: string;
+  uri?: string;
+  count: number;
+  topQueuer: string;
+  queuerCandidates: string[];
+  artistKey?: string;
+  albumKey?: string;
+}
+
+interface GameQuestion {
+  index: number;
+  left: GameItem;
+  right: GameItem;
+  winner: 'left' | 'right';
+}
+
+interface GameDoc {
+  id: string;
+  status: 'generating' | 'ready';
+  generatedAt: number;
+  lowData: boolean;
+  questions: GameQuestion[];
+}
+
+interface GamePending {
+  status: 'pending';
+  gameId?: string;
+}
+
+type GameFetchResult = GameDoc | GamePending | { error: string };
+
+interface GameScoreDoc {
+  id: string;
+  gameId: string;
+  userName: string;
+  mainScore: number;
+  bonusScore: number;
+  total: number;
+  completedAt: number;
+}
+
+interface GameLeaderboardResult {
+  gameId: string;
+  scores: GameScoreDoc[];
+  error?: string;
+}
+
+interface GameSubmitResult {
+  ok?: boolean;
+  duplicate?: boolean;
+  existing?: GameScoreDoc;
+  score?: GameScoreDoc;
+  error?: string;
+}
+
 interface SonosPreload {
   getVersion: () => Promise<string>;
   onAuthReady: (cb: VoidCallback) => Unsubscribe;
@@ -112,6 +174,13 @@ interface SonosPreload {
     imageUrl?: string;
   }) => Promise<void>;
   fetchStats: (period: string, userId?: string) => Promise<StatsResult>;
+  fetchDailyGame: (date?: string) => Promise<GameFetchResult>;
+  submitGameScore: (input: {
+    gameId: string;
+    userName: string;
+    guesses: { main: Array<'left' | 'right'>; bonus: string[] };
+  }) => Promise<GameSubmitResult>;
+  fetchGameLeaderboard: (date?: string) => Promise<GameLeaderboardResult>;
   refreshAttribution: () => Promise<void>;
   onAttributionMap: (cb: (map: AttributionMap) => void) => Unsubscribe;
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;
