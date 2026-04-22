@@ -73,8 +73,7 @@
     "publish": {
       "provider": "github",
       "owner": "TrueNorthIT",
-      "repo": "TrueTunes",
-      "releaseType": "release"
+      "repo": "TrueTunes"
     },
     "directories": {
       "output": "release"
