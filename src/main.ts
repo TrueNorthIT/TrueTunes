@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, safeStorage, session, shell, Menu, IpcMainInvokeEvent } from 'electron';
+import { app, BrowserWindow, ipcMain, safeStorage, session, shell, Menu, IpcMainInvokeEvent } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { officePubSub } from './pubsub';
 import * as path from 'path';
