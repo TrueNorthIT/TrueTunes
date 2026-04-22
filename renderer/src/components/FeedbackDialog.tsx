@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import styles from '../styles/FeedbackDialog.module.css';
 
 interface Props {
@@ -30,12 +30,17 @@ async function createGitHubIssue(title: string, body: string, type: IssueType) {
 }
 
 export function FeedbackDialog({ onClose }: Props) {
-  const [type, setType]         = useState<IssueType>('bug');
-  const [title, setTitle]       = useState('');
-  const [description, setDesc]  = useState('');
-  const [status, setStatus]     = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [issueUrl, setIssueUrl] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
+  const [type, setType]           = useState<IssueType>('bug');
+  const [title, setTitle]         = useState('');
+  const [description, setDesc]    = useState('');
+  const [status, setStatus]       = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [issueUrl, setIssueUrl]   = useState('');
+  const [errorMsg, setErrorMsg]   = useState('');
+  const [displayName, setDisplayName] = useState<string | null>(null);
+
+  useEffect(() => {
+    window.sonos.getDisplayName().then(setDisplayName).catch(() => null);
+  }, []);
 
   const canSubmit = title.trim().length > 0;
 
@@ -44,7 +49,9 @@ export function FeedbackDialog({ onClose }: Props) {
     if (!canSubmit || status !== 'idle') return;
     setStatus('loading');
     try {
-      const issue = await createGitHubIssue(title.trim(), description.trim(), type);
+      const bodyParts = [description.trim()];
+      if (displayName) bodyParts.push(`---\n**Raised by:** ${displayName}`);
+      const issue = await createGitHubIssue(title.trim(), bodyParts.filter(Boolean).join('\n\n'), type);
       setIssueUrl(issue.html_url);
       setStatus('success');
     } catch (err) {
