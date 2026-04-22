@@ -92,8 +92,7 @@ export function usePlayback(activeGroupId: string | null) {
     const posMs = payload?.playback?.positionMillis ?? 0;
     const durMs = track?.durationMillis ?? 0;
     const pct = durMs > 0 ? Math.min((posMs / durMs) * 100, 100) : 0;
-    const volume =
-      payload?.playback?.playbackState === "NO_GROUPS" ? 0 : state.volume;
+    const isNoGroups = payload?.playback?.playbackState === "NO_GROUPS";
     const shuffle = payload?.playback?.playModes?.shuffle ?? false;
     const repeat: PlaybackState["repeat"] = payload?.playback?.playModes?.repeatOne
       ? "one"
@@ -156,7 +155,9 @@ export function usePlayback(activeGroupId: string | null) {
       durationMs: durMs,
       isPlaying,
       shuffle,
-      volume,
+      // playbackExtended doesn't carry volume — keep whatever groupVolume last
+      // delivered. Only zero out when the payload signals no groups at all.
+      volume: isNoGroups ? 0 : prev.volume,
       repeat,
       currentObjectId:
         oid !== prev.currentObjectId ? oid : prev.currentObjectId,

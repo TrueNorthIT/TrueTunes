@@ -487,11 +487,17 @@ function handleWsMessage(raw: Buffer | string): void {
   // Always forward to the debug monitor
   debugWin?.webContents.send('ws:in', [header, payload]);
 
-  // For playbackExtended only forward the active group — during bootstrap all
-  // subscribed groups push a status immediately, and the renderer's
-  // activeGroupIdRef is still null so the last push wins (wrong group).
+  // For playbackExtended and groupVolume only forward the active group —
+  // during bootstrap all subscribed groups push a status immediately, and
+  // the renderer updates state unconditionally on these events, so forwarding
+  // other groups' pushes would corrupt the active group's display.
   const msgGroupId = header['groupId'] as string | undefined;
-  if (ns === 'playbackExtended' && msgGroupId && config.groupId && msgGroupId !== config.groupId) {
+  if (
+    (ns === 'playbackExtended' || ns === 'groupVolume') &&
+    msgGroupId &&
+    config.groupId &&
+    msgGroupId !== config.groupId
+  ) {
     return;
   }
 
@@ -711,9 +717,16 @@ async function runBootstrap(): Promise<void> {
     )
   );
 
-  // 4 ─ Subscribe to volume / hardware (fire-and-forget)
-  await Promise.all([
-    ...coordinatorGroupIds.map((groupId) => wsSend({ namespace: 'groupVolume', groupId, command: 'subscribe' }, {})),
+  // 4 ─ Subscribe to groupVolume (capture responses so we can seed the renderer
+  //     with the active group's initial volume) and player-level hardware.
+  const [volSubResults] = await Promise.all([
+    Promise.all(
+      coordinatorGroupIds.map((groupId) =>
+        wsSend({ namespace: 'groupVolume', groupId, command: 'subscribe' }, {})
+          .then((resp) => ({ groupId, resp }))
+          .catch(() => null)
+      )
+    ),
     ...playerIds.flatMap((playerId) => [
       wsSend({ namespace: 'playerVolume', playerId, command: 'subscribe' }, {}),
       wsSend({ namespace: 'hardwareStatus', playerId, command: 'subscribe' }, {}),
@@ -730,6 +743,17 @@ async function runBootstrap(): Promise<void> {
     broadcastToRenderers('ws:message', [
       { namespace: 'playbackExtended', groupId: activeResult.groupId },
       activeResult.resp,
+    ]);
+  }
+
+  // Forward the active group's initial volume — the raw subscribe response
+  // arrives before the renderer has registered its ws:message listener, so
+  // re-broadcast it here (same pattern as playbackExtended above).
+  const activeVol = volSubResults.find((r) => r?.groupId === config.groupId);
+  if (activeVol?.resp) {
+    broadcastToRenderers('ws:message', [
+      { namespace: 'groupVolume', groupId: activeVol.groupId },
+      activeVol.resp,
     ]);
   }
 
@@ -1449,6 +1473,10 @@ ipcMain.handle('group:set', (_event: IpcMainInvokeEvent, groupId: string) => {
       },
       {}
     ).catch(() => {});
+    // Re-subscribe to groupVolume too — handleWsMessage forwards the response
+    // to the renderer, so the UI reflects the new group's volume immediately
+    // rather than the previous group's last-known value.
+    wsSend({ namespace: 'groupVolume', groupId: group.id, command: 'subscribe' }, {}).catch(() => {});
   }
   return { ok: true };
 });
