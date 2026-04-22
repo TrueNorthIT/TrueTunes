@@ -13,11 +13,21 @@ function CategoryLabel({ category }: { category: GameItemCategory }) {
   return <span className={styles.categoryBadge}>{label}</span>;
 }
 
+function CountDisplay({ count }: { count: number }) {
+  return (
+    <div>
+      <div className={styles.revealCount}>{count}</div>
+      <div className={styles.revealLabel}>queues</div>
+    </div>
+  );
+}
+
 function Side({
   item,
   side,
   revealed,
   isWinner,
+  isCarryover,
   pickedSide,
   onPick,
 }: {
@@ -25,16 +35,22 @@ function Side({
   side: 'left' | 'right';
   revealed: boolean;
   isWinner: boolean;
+  isCarryover: boolean;
   pickedSide: 'left' | 'right' | null;
   onPick: (side: 'left' | 'right') => void;
 }) {
+  const pickLabel =
+    item.category === 'track' ? 'Pick song' : item.category === 'artist' ? 'Pick artist' : 'Pick album';
+
   const cls = [
     styles.side,
+    isCarryover && !revealed && styles.sideKnown,
     revealed && isWinner && styles.sideWinner,
     revealed && !isWinner && styles.sideLoser,
   ]
     .filter(Boolean)
     .join(' ');
+
   return (
     <div className={cls}>
       <CategoryLabel category={item.category} />
@@ -46,26 +62,27 @@ function Side({
       <div className={styles.itemName}>{item.name}</div>
       {item.subtitle ? <div className={styles.itemSub}>{item.subtitle}</div> : null}
       {revealed ? (
-        <div>
-          <div className={styles.revealCount}>{item.count}</div>
-          <div className={styles.revealLabel}>queues</div>
-        </div>
+        <CountDisplay count={item.count} />
       ) : (
-        <div className={styles.pickRow}>
-          <button
-            className={styles.pickBtn}
-            onClick={() => onPick(side)}
-            disabled={pickedSide !== null}
-          >
-            Pick
-          </button>
-        </div>
+        <>
+          {isCarryover && <CountDisplay count={item.count} />}
+          <div className={styles.pickRow}>
+            <button
+              className={styles.pickBtn}
+              onClick={() => onPick(side)}
+              disabled={pickedSide !== null}
+            >
+              {pickLabel}
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
 }
 
 export function QueuedleQuestionCard({ question, revealed, pickedSide, onPick, onNext }: Props) {
+  const carryover = question.carryover;
   return (
     <>
       <div className={styles.question}>
@@ -74,6 +91,7 @@ export function QueuedleQuestionCard({ question, revealed, pickedSide, onPick, o
           side="left"
           revealed={revealed}
           isWinner={question.winner === 'left'}
+          isCarryover={carryover === 'left'}
           pickedSide={pickedSide}
           onPick={onPick}
         />
@@ -83,6 +101,7 @@ export function QueuedleQuestionCard({ question, revealed, pickedSide, onPick, o
           side="right"
           revealed={revealed}
           isWinner={question.winner === 'right'}
+          isCarryover={carryover === 'right'}
           pickedSide={pickedSide}
           onPick={onPick}
         />

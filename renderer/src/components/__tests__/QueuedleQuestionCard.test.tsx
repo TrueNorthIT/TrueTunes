@@ -26,7 +26,7 @@ const question: GameQuestion = {
 };
 
 describe('QueuedleQuestionCard', () => {
-  it('renders one Pick button per side when not revealed', () => {
+  it('renders contextual Pick buttons on each side when not revealed', () => {
     render(
       <QueuedleQuestionCard
         question={question}
@@ -36,7 +36,8 @@ describe('QueuedleQuestionCard', () => {
         onNext={() => {}}
       />,
     );
-    expect(screen.getAllByRole('button', { name: 'Pick' })).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'Pick song' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pick artist' })).toBeInTheDocument();
   });
 
   it('calls onPick with the clicked side', () => {
@@ -50,7 +51,7 @@ describe('QueuedleQuestionCard', () => {
         onNext={() => {}}
       />,
     );
-    fireEvent.click(screen.getAllByRole('button', { name: 'Pick' })[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Pick song' }));
     expect(onPick).toHaveBeenCalledWith('left');
   });
 
@@ -82,6 +83,23 @@ describe('QueuedleQuestionCard', () => {
         onNext={() => {}}
       />,
     );
-    expect(screen.queryAllByRole('button', { name: 'Pick' })).toHaveLength(0);
+    expect(screen.queryAllByRole('button', { name: 'Pick song' })).toHaveLength(0);
+  });
+
+  it('shows carry-over count alongside its Pick button', () => {
+    const qWithCarryover: GameQuestion = { ...question, carryover: 'left' };
+    render(
+      <QueuedleQuestionCard
+        question={qWithCarryover}
+        revealed={false}
+        pickedSide={null}
+        onPick={() => {}}
+        onNext={() => {}}
+      />,
+    );
+    // Carry-over side reveals its count up front but is still pickable
+    expect(screen.getByText('20')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pick song' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pick artist' })).toBeInTheDocument();
   });
 });
