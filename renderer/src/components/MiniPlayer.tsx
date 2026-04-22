@@ -31,11 +31,16 @@ function MiniPlayer({
   playback: ReturnType<typeof usePlayback>['playback'];
   isAuthed: boolean;
 }) {
-  const { displayTrack, displayArtist, cachedArt, progressPct, isPlaying, dominantColor } = useNowPlaying(playback);
+  const { displayTrack, displayArtist, cachedArt, progressPct, isPlaying, dominantColor, elapsedLabel, durationLabel } = useNowPlaying(playback);
 
   const refresh = () => window.sonos.refreshPlayback();
 
-  const shellStyle = dominantColor ? ({ '--glow': `rgba(${dominantColor},0.25)` } as React.CSSProperties) : undefined;
+  const shellStyle = dominantColor
+    ? ({
+        '--glow': `rgba(${dominantColor},0.25)`,
+        '--accent': `rgba(${dominantColor},0.85)`,
+      } as React.CSSProperties)
+    : undefined;
 
   return (
     <>
@@ -73,6 +78,10 @@ function MiniPlayer({
             <div className={styles.artist}>{displayArtist || ''}</div>
             <div className={styles.progress}>
               <div className={styles.progressFill} style={{ width: `${progressPct}%` }} />
+            </div>
+            <div className={styles.timeRow}>
+              <span>{elapsedLabel}</span>
+              <span>{durationLabel}</span>
             </div>
           </div>
 
