@@ -33,6 +33,7 @@
   "dependencies": {
     "applicationinsights": "^3.14.0",
     "electron-updater": "^6.8.3",
+    "marked": "^18.0.2",
     "ws": "^8.0.0"
   },
   "devDependencies": {

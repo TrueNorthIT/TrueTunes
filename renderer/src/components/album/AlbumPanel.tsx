@@ -12,7 +12,7 @@ import type { SonosItem, SonosItemId } from '../../types/sonos';
 import styles from '../../styles/AlbumPanel.module.css';
 
 interface Props {
-  onAddToQueue: (item: SonosItem) => void;
+  onAddToQueue: (item: SonosItem) => Promise<void> | void;
   queueOpen?: boolean;
 }
 
@@ -28,6 +28,7 @@ export function AlbumPanel({ onAddToQueue, queueOpen }: Props) {
     : { albumId: undefined, serviceId: undefined, accountId: undefined, defaults: undefined };
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const lastSelected = useRef<number | null>(null);
+  const [adding, setAdding] = useState(false);
 
   const albumResult    = useAlbumBrowse(isPlaylistOrProgram ? undefined : albumId, serviceId, accountId, defaults);
   const playlistResult = usePlaylistBrowse(isPlaylistOrProgram ? albumId : undefined, serviceId, accountId, defaults);
@@ -137,11 +138,22 @@ export function AlbumPanel({ onAddToQueue, queueOpen }: Props) {
               </div>
             )}
             <div className={styles.actions}>
-              <button className={styles.addAlbumBtn} onClick={() => {
-                if (data?.tracks?.length) data.tracks.forEach(t => onAddToQueue(t.raw));
-                else onAddToQueue(item);
-              }}>
-                + Add to Queue
+              <button
+                className={styles.addAlbumBtn}
+                disabled={adding || !data?.tracks?.length}
+                onClick={async () => {
+                  if (!data?.tracks?.length) return;
+                  setAdding(true);
+                  try {
+                    for (const t of data.tracks) {
+                      await onAddToQueue(t.raw);
+                    }
+                  } finally {
+                    setAdding(false);
+                  }
+                }}
+              >
+                {adding ? 'Adding…' : '+ Add to Queue'}
               </button>
             </div>
           </div>

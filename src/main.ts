@@ -55,6 +55,7 @@ async function loadConfig(): Promise<void> {
     // Only load the fields we explicitly persist (not runtime-discovered ones)
     if (typeof parsed.displayName === 'string') config.displayName = parsed.displayName;
     if (typeof parsed.lastSeenVersion === 'string') config.lastSeenVersion = parsed.lastSeenVersion;
+    if (typeof parsed.groupId === 'string') config.groupId = parsed.groupId;
   } catch {
     // No config file yet — use defaults
   }
@@ -66,6 +67,7 @@ async function saveConfig(): Promise<void> {
     const toSave: Partial<AppConfig> = {
       displayName: config.displayName,
       lastSeenVersion: config.lastSeenVersion,
+      groupId: config.groupId,
     };
     await fs.writeFile(configFilePath(), JSON.stringify(toSave, null, 2), 'utf8');
   } catch (err) {
@@ -701,11 +703,14 @@ async function runBootstrap(): Promise<void> {
   log(`[ws] ${coordinatorGroupIds.length} coordinator group(s), ${playerIds.length} player(s)`);
   groups.forEach((g) => log(`[ws]   group "${g.name}" — ${g.id}`));
 
-  // Update live group list and set the first group as active
+  // Update live group list. Restore saved group preference if it exists in the
+  // current household; otherwise fall back to the first group returned.
   discoveredGroups = groups;
   if (groups.length > 0) {
-    config.groupId = groups[0].id;
-    log(`[ws] Active group: "${groups[0].name}" (${groups[0].id})`);
+    const savedGroup = config.groupId ? groups.find((g) => g.id === config.groupId) : null;
+    const activeGroup = savedGroup ?? groups[0];
+    config.groupId = activeGroup.id;
+    log(`[ws] Active group: "${activeGroup.name}" (${activeGroup.id})`);
   }
 
   // 3 ─ Subscribe to playbackExtended first so we can capture initial state
@@ -1508,11 +1513,14 @@ ipcMain.handle('queue:setId', (_event: IpcMainInvokeEvent, queueId: string) => {
   }
 });
 
+ipcMain.handle('group:getActive', () => config.groupId ?? null);
+
 ipcMain.handle('group:set', (_event: IpcMainInvokeEvent, groupId: string) => {
   const group = discoveredGroups.find((g) => g.id === groupId);
   if (!group) return { error: `Unknown group: ${groupId}` };
   config.groupId = group.id;
   log(`[group] Switched to "${group.name}" — groupId: ${group.id}`);
+  saveConfig().catch(() => {});
   // Re-subscribe to playbackExtended for the new group — Sonos responds with an
   // extendedPlaybackStatus push so the renderer immediately gets fresh now-playing state.
   if (ws && ws.readyState === WebSocket.OPEN) {

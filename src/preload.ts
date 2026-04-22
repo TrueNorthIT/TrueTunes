@@ -17,6 +17,7 @@ export interface SonosAPI {
   onWsMessage: (cb: (header: unknown, payload: unknown) => void) => Unsubscribe;
   onWsReady: (cb: VoidCallback) => Unsubscribe;
   onWsGroups: (cb: (groups: unknown[]) => void) => Unsubscribe;
+  getActiveGroup: () => Promise<string | null>;
   setGroup: (groupId: string) => Promise<{ ok?: boolean; error?: string }>;
   setGroupVolume: (volume: number) => Promise<unknown>;
   openWsMonitor: () => Promise<void>;
@@ -117,6 +118,7 @@ contextBridge.exposeInMainWorld('sonos', {
   setQueueId: (queueId: string) => ipcRenderer.invoke('queue:setId', queueId),
   loadContent: (payload: Record<string, unknown>) => ipcRenderer.invoke('playback:loadContent', payload),
   fetchImage: (url: string) => ipcRenderer.invoke('image:fetch', url),
+  getActiveGroup: () => ipcRenderer.invoke('group:getActive'),
   setGroup: (groupId: string) => ipcRenderer.invoke('group:set', groupId),
   setGroupVolume: (volume: number) => ipcRenderer.invoke('volume:group:set', volume),
   openWsMonitor: () => ipcRenderer.invoke('debug:openWsMonitor'),

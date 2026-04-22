@@ -7,7 +7,6 @@ import {
   Shuffle,
   SkipBack,
   Play,
-  Pause,
   SkipForward,
   Repeat,
   Repeat1,
@@ -264,7 +263,12 @@ export function PlayerBar({
               (isPlaying ? window.sonos.pause() : window.sonos.play()).then(refresh)
             }
           >
-            {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+            {isPlaying ? (
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+                <rect x="2" y="1" width="4" height="12" rx="1" />
+                <rect x="8" y="1" width="4" height="12" rx="1" />
+              </svg>
+            ) : <Play size={14} />}
           </button>
           <button
             className={styles.ctrl}

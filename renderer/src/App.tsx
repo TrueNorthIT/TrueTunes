@@ -84,10 +84,18 @@ function MainApp() {
   }, [reloadQueue]);
 
   useEffect(() => {
-    if (groups.length > 0 && !activeGroupId) {
-      setActiveGroupId(groups[0].id);
-    }
+    if (groups.length === 0 || activeGroupId) return;
+    window.sonos.getActiveGroup().then((savedId) => {
+      const match = savedId ? groups.find((g) => g.id === savedId) : null;
+      setActiveGroupId(match ? match.id : groups[0].id);
+    }).catch(() => setActiveGroupId(groups[0].id));
   }, [groups, activeGroupId]);
+
+  useEffect(() => {
+    const onFocus = () => { window.sonos.refreshPlayback().catch(() => {}); };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, []);
 
   const showToast = useCallback((msg: string) => {
     setToastMsg(msg);

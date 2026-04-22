@@ -20,6 +20,7 @@ Object.defineProperty(window, 'sonos', {
     onWsGroups:         vi.fn(noop),
     onAttributionMap:   vi.fn(noop),
     onAttributionEvent: vi.fn(noop),
+    getActiveGroup:     vi.fn(() => Promise.resolve(null)),
     getDisplayName:     vi.fn(pending),
     setDisplayName:     vi.fn(pending),
     publishQueued:      vi.fn(pending),
