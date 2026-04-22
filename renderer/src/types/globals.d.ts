@@ -73,6 +73,7 @@ interface StatsResult {
 
 interface SonosPreload {
   getVersion: () => Promise<string>;
+  openExternal: (url: string) => Promise<void>;
   onAuthReady: (cb: VoidCallback) => Unsubscribe;
   onAuthExpired: (cb: VoidCallback) => Unsubscribe;
   fetch: (request: FetchRequest) => Promise<FetchResponse>;

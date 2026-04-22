@@ -118,15 +118,13 @@ export function ChangelogDialog({ onClose }: Props) {
                       </div>
                       <div className={styles.contentDate}>{formatDate(selected.published_at)}</div>
                     </div>
-                    <a
+                    <button
                       className={styles.ghLink}
-                      href={selected.html_url}
-                      target="_blank"
-                      rel="noreferrer"
+                      onClick={() => window.sonos.openExternal(selected.html_url)}
                       title="View on GitHub"
                     >
                       <ExternalLink size={13} />
-                    </a>
+                    </button>
                   </div>
                   <div className={styles.notes}>
                     {selected.body?.trim()

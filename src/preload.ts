@@ -6,6 +6,7 @@ type Unsubscribe = () => void;
 
 export interface SonosAPI {
   getVersion: () => Promise<string>;
+  openExternal: (url: string) => Promise<void>;
   setQueueId: (queueId: string) => Promise<void>;
   loadContent: (payload: Record<string, unknown>) => Promise<unknown>;
   fetchImage: (url: string) => Promise<{ data: string; mimeType: string } | { error: string }>;
@@ -72,6 +73,7 @@ ipcRenderer.on('attribution:map', (_e, map: AttributionMap) => {
 
 contextBridge.exposeInMainWorld('sonos', {
   getVersion: () => ipcRenderer.invoke('app:version'),
+  openExternal: (url: string) => ipcRenderer.invoke('app:openExternal', url),
   onAuthReady: (cb: VoidCallback): Unsubscribe => {
     if (_authReady) cb();
     const listener = () => cb();

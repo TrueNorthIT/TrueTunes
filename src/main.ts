@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, safeStorage, session, Menu, IpcMainInvokeEvent } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, safeStorage, session, shell, Menu, IpcMainInvokeEvent } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { officePubSub } from './pubsub';
 import * as path from 'path';
@@ -1106,6 +1106,7 @@ ipcMain.handle('debug:openWsMonitor', () => openDebugWindow());
 ipcMain.handle('debug:openHttpMonitor', () => openHttpDebugWindow());
 
 ipcMain.handle('app:version', () => app.getVersion());
+ipcMain.handle('app:openExternal', (_: IpcMainInvokeEvent, url: string) => shell.openExternal(url));
 
 ipcMain.handle('win:minimize',     () => { uiWin?.minimize(); });
 ipcMain.handle('win:maximize',     () => { if (uiWin?.isMaximized()) uiWin.unmaximize(); else uiWin?.maximize(); });
