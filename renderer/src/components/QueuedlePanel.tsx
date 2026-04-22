@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useDailyGame, useSubmitGameScore, useGameLeaderboard } from '../hooks/useDailyGame';
 import { QueuedleQuestionCard } from './QueuedleQuestionCard';
 import { QueuedleBonusScreen } from './QueuedleBonusScreen';
+import { QueuedleBonusResults } from './QueuedleBonusResults';
 import { QueuedleSummary } from './QueuedleSummary';
 import styles from '../styles/Queuedle.module.css';
 
-type Phase = 'main' | 'bonus' | 'summary';
+type Phase = 'main' | 'bonus' | 'bonus-results' | 'summary';
 
 export function QueuedlePanel() {
   const navigate = useNavigate();
@@ -119,6 +120,12 @@ export function QueuedlePanel() {
   const question = game.questions[currentIdx];
   const total = game.questions.length;
 
+  // bonus targets: the 'bonusItem' side of each question (falls back to 'winner' for old games)
+  const winningItems = game.questions.map((q) => {
+    const side = q.bonusItem ?? q.winner;
+    return side === 'left' ? q.left : q.right;
+  });
+
   function handlePick(side: 'left' | 'right') {
     if (!question || pickedSide !== null) return;
     setPickedSide(side);
@@ -167,15 +174,14 @@ export function QueuedlePanel() {
       );
       const correctBonus = bonusGuesses.reduce((acc, g, i) => {
         const q = game.questions[i];
-        const winnerItem = q.winner === 'left' ? q.left : q.right;
-        return acc + (g === winnerItem.topQueuer ? 1 : 0);
+        const bonusSide = q.bonusItem ?? q.winner;
+        const bonusTargetItem = bonusSide === 'left' ? q.left : q.right;
+        return acc + (g === bonusTargetItem.topQueuer ? 1 : 0);
       }, 0);
       setLocalScore({ main: correctMain, bonus: correctBonus });
     }
-    setPhase('summary');
+    setPhase('bonus-results');
   }
-
-  const winningItems = game.questions.map((q) => (q.winner === 'left' ? q.left : q.right));
 
   const pips = game.questions.map((q, i) => {
     if (i < currentIdx) {
@@ -188,6 +194,8 @@ export function QueuedlePanel() {
     return '';
   });
 
+  const bonusGuesses = bonusSelections.map((s) => s ?? '');
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -199,7 +207,7 @@ export function QueuedlePanel() {
         </button>
       </div>
       <div className={styles.body}>
-        {phase !== 'summary' && (
+        {phase !== 'summary' && phase !== 'bonus-results' && (
           <div className={styles.progress}>
             {pips.map((cls, i) => (
               <div key={i} className={`${styles.pip}${cls ? ' ' + cls : ''}`} />
@@ -224,6 +232,14 @@ export function QueuedlePanel() {
             onSelect={handleBonusSelect}
             onSubmit={handleSubmit}
             submitting={submit.isPending}
+          />
+        )}
+
+        {phase === 'bonus-results' && (
+          <QueuedleBonusResults
+            winningItems={winningItems}
+            bonusGuesses={bonusGuesses}
+            onContinue={() => setPhase('summary')}
           />
         )}
 
