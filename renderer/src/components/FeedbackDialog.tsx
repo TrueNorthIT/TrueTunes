@@ -76,9 +76,9 @@ export function FeedbackDialog({ onClose }: Props) {
             <p className={styles.sub}>
               Your {type === 'bug' ? 'bug report' : 'feature request'} has been created.
             </p>
-            <a className={styles.link} href={issueUrl} target="_blank" rel="noreferrer">
+            <button className={styles.link} onClick={() => window.sonos.openExternal(issueUrl)}>
               View on GitHub ↗
-            </a>
+            </button>
             <button className={styles.btn} onClick={onClose}>Done</button>
           </div>
         ) : (
