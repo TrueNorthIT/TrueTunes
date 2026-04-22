@@ -282,9 +282,32 @@
 .nameSaveBtn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.18); }
 .nameSaveBtn:disabled { opacity: 0.35; cursor: default; }
 
+.versionRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: -2px;
+}
+
 .appVersion {
   font-size: 10px;
   color: var(--text-3);
-  text-align: right;
-  margin-top: -2px;
 }
+
+.updateBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 1px solid rgba(74, 222, 128, 0.45);
+  border-radius: 4px;
+  color: #4ade80;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  transition: background 0.12s;
+}
+.updateBtn:hover { background: rgba(74, 222, 128, 0.12); }

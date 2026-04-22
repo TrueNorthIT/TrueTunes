@@ -18,6 +18,7 @@ import { AlbumPanel } from './components/album/AlbumPanel';
 import { ArtistPanel } from './components/artist/ArtistPanel';
 import { ContainerPanel } from './components/ContainerPanel';
 import { LeaderboardPanel } from './components/LeaderboardPanel';
+import { QueuedlePanel } from './components/QueuedlePanel';
 import { QueueSidebar } from './components/queue/QueueSidebar';
 import { MiniPlayerShell } from './components/MiniPlayer';
 import { DisplayNameModal } from './components/DisplayNameModal';
@@ -255,6 +256,7 @@ function MainApp() {
           <Route path="/artist/:id" element={<ArtistPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/container/:id"  element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/leaderboard"    element={<LeaderboardPanel />} />
+          <Route path="/queuedle"       element={<QueuedlePanel />} />
         </Routes>
       </div>
       <QueueSidebar

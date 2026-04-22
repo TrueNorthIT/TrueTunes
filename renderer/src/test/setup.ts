@@ -8,6 +8,9 @@ Object.defineProperty(window, 'sonos', {
   writable: true,
   value: {
     fetchStats:         vi.fn(pending),
+    fetchDailyGame:     vi.fn(pending),
+    submitGameScore:    vi.fn(pending),
+    fetchGameLeaderboard: vi.fn(pending),
     fetch:              vi.fn(pending),
     fetchImage:         vi.fn(pending),
     onAuthReady:        vi.fn(noop),
@@ -36,5 +39,7 @@ Object.defineProperty(window, 'sonos', {
     closeWindow:        vi.fn(() => Promise.resolve()),
     isWindowMaximized:  vi.fn(() => Promise.resolve(false)),
     onWindowMaximized:  vi.fn(() => () => {}),
+    onUpdateDownloaded: vi.fn(noop),
+    installUpdate:      vi.fn(pending),
   },
 });

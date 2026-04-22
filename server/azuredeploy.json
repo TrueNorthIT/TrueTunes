@@ -142,6 +142,34 @@
       }
     },
     {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+      "apiVersion": "2024-02-15-preview",
+      "name": "[concat(variables('cosmosName'), '/truetunes/games')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosName'), 'truetunes')]"
+      ],
+      "properties": {
+        "resource": {
+          "id": "games",
+          "partitionKey": { "paths": ["/id"], "kind": "Hash" }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+      "apiVersion": "2024-02-15-preview",
+      "name": "[concat(variables('cosmosName'), '/truetunes/scores')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosName'), 'truetunes')]"
+      ],
+      "properties": {
+        "resource": {
+          "id": "scores",
+          "partitionKey": { "paths": ["/gameId"], "kind": "Hash" }
+        }
+      }
+    },
+    {
       "type": "Microsoft.Web/serverfarms",
       "apiVersion": "2023-01-01",
       "name": "[variables('hostingPlanName')]",
@@ -218,6 +246,14 @@
             {
               "name": "COSMOS_CONTAINER",
               "value": "events"
+            },
+            {
+              "name": "COSMOS_GAMES_CONTAINER",
+              "value": "games"
+            },
+            {
+              "name": "COSMOS_SCORES_CONTAINER",
+              "value": "scores"
             },
             {
               "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
