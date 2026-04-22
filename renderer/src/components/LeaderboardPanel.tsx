@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStats, StatsPeriod } from '../hooks/useStats';
+import { useGameLeaderboard } from '../hooks/useDailyGame';
 import styles from '../styles/LeaderboardPanel.module.css';
+import queuedleStyles from '../styles/Queuedle.module.css';
 
 const PERIODS: { value: StatsPeriod; label: string }[] = [
   { value: 'today', label: 'Today' },
@@ -28,6 +30,17 @@ export function LeaderboardPanel() {
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const { data, isLoading, error, refetch } = useStats(period, selectedUser ?? undefined);
   const navigate = useNavigate();
+  const queuedleLeaderboard = useGameLeaderboard();
+  const [myName, setMyName] = useState<string | null>(null);
+  useEffect(() => {
+    window.sonos.getDisplayName().then(setMyName).catch(() => {});
+  }, []);
+  const queuedleScores =
+    queuedleLeaderboard.data && 'scores' in queuedleLeaderboard.data
+      ? queuedleLeaderboard.data.scores
+      : [];
+  const hasPlayedToday = !!(myName && queuedleScores.some((s) => s.userName === myName));
+  const [queuedleOpen, setQueuedleOpen] = useState(true);
 
   const maxUserCount = data?.topUsers?.[0]?.count ?? 1;
 
@@ -63,6 +76,44 @@ export function LeaderboardPanel() {
 
       {data && !data.error && !isLoading && (
         <div className={styles.body}>
+          {!selectedUser && !hasPlayedToday && (
+            <div className={queuedleStyles.banner}>
+              <span className={queuedleStyles.bannerText}>
+                Today&apos;s Queuedle is ready — test how well you know the office&apos;s taste.
+              </span>
+              <button className={queuedleStyles.bannerCta} onClick={() => navigate('/queuedle')}>
+                Play
+              </button>
+            </div>
+          )}
+
+          {!selectedUser && queuedleScores.length > 0 && (
+            <section className={styles.section}>
+              <div className={styles.sectionHeader}>
+                <h2 className={styles.sectionTitle}>Today&apos;s Queuedle</h2>
+                <button
+                  className={styles.collapseBtn}
+                  onClick={() => setQueuedleOpen((o) => !o)}
+                  title={queuedleOpen ? 'Collapse' : 'Expand'}
+                >
+                  {queuedleOpen ? '▾' : '▸'}
+                </button>
+              </div>
+              {queuedleOpen && queuedleScores.slice(0, 10).map((s, i) => (
+                <div key={s.userName} className={queuedleStyles.scoreRow}>
+                  <span className={queuedleStyles.scoreRank}>
+                    {i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}
+                  </span>
+                  <span className={queuedleStyles.scoreName}>{s.userName}</span>
+                  <span className={queuedleStyles.scoreBreakdown}>
+                    {s.mainScore}/10 · {s.bonusScore}/10
+                  </span>
+                  <span className={queuedleStyles.scoreTotal}>{s.total}</span>
+                </div>
+              ))}
+            </section>
+          )}
+
           {/* ── Top queuers (leaderboard view only) ── */}
           {!selectedUser && (
             <section className={styles.section}>

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, safeStorage, session, shell, Menu, IpcMainInvokeEvent } from 'electron';
+import { app, BrowserWindow, ipcMain, safeStorage, session, shell, Menu, IpcMainInvokeEvent } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { officePubSub } from './pubsub';
 import * as path from 'path';
@@ -1168,6 +1168,57 @@ ipcMain.handle('stats:fetch', async (_: IpcMainInvokeEvent, period: string, user
   }
 });
 
+ipcMain.handle('game:fetch', async (_: IpcMainInvokeEvent, date?: string) => {
+  try {
+    const d = date && date.length ? date : 'today';
+    const url = `${PUBSUB_FUNCTION_URL}/api/game?date=${encodeURIComponent(d)}`;
+    const res = await fetch(url);
+    if (res.status === 404 || res.status === 202) {
+      return { status: 'pending' };
+    }
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle(
+  'game:submit',
+  async (
+    _: IpcMainInvokeEvent,
+    input: {
+      gameId: string;
+      userName: string;
+      guesses: { main: Array<'left' | 'right'>; bonus: string[] };
+    },
+  ) => {
+    try {
+      const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/score`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      });
+      const body = await res.json();
+      if (res.status === 409) return { duplicate: true, existing: (body as { existing?: unknown }).existing };
+      if (!res.ok) return { error: (body as { error?: string }).error ?? `HTTP ${res.status}` };
+      return { ok: true, score: body };
+    } catch (err) {
+      return { error: String(err) };
+    }
+  },
+);
+
+ipcMain.handle('game:leaderboard', async (_: IpcMainInvokeEvent, date?: string) => {
+  try {
+    const d = date && date.length ? date : 'today';
+    const url = `${PUBSUB_FUNCTION_URL}/api/game-leaderboard?date=${encodeURIComponent(d)}`;
+    const res = await fetch(url);
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
 ipcMain.handle('attribution:refresh', async () => {
   try {
     const map = await officePubSub.refresh();
@@ -1493,22 +1544,23 @@ function buildMenu(): void {
 if (app.isPackaged) {
   autoUpdater.autoDownload = true;
 
+  let pendingUpdateVersion: string | null = null;
+
   const pollInterval = setInterval(() => autoUpdater.checkForUpdates(), 15 * 60 * 1000);
   autoUpdater.checkForUpdates();
 
   autoUpdater.once('update-available', () => clearInterval(pollInterval));
 
   autoUpdater.once('update-downloaded', ({ version }) => {
-    dialog.showMessageBox({
-      type: 'info',
-      title: 'Update ready — True Tunes',
-      message: `Version ${version} has been downloaded and is ready to install.`,
-      detail: 'Restart now to apply the update, or continue and it will install on next launch.',
-      buttons: ['Restart now', 'Later'],
-      defaultId: 0,
-      cancelId: 1,
-    }).then(({ response }: { response: number }) => {
-      if (response === 0) autoUpdater.quitAndInstall(true, true);
+    pendingUpdateVersion = version;
+    uiWin?.webContents.send('update:downloaded', version);
+  });
+
+  ipcMain.handle('update:install', () => autoUpdater.quitAndInstall(true, true));
+
+  app.on('browser-window-created', (_e, win) => {
+    win.webContents.on('did-finish-load', () => {
+      if (pendingUpdateVersion) win.webContents.send('update:downloaded', pendingUpdateVersion);
     });
   });
 }

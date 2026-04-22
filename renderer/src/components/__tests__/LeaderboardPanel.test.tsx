@@ -12,6 +12,13 @@ vi.mock('../../hooks/useStats');
 import { useStats } from '../../hooks/useStats';
 const mockUseStats = vi.mocked(useStats);
 
+vi.mock('../../hooks/useDailyGame', () => ({
+  useGameLeaderboard: () => ({ data: { gameId: 'today', scores: [] }, isLoading: false }),
+  useDailyGame: () => ({ data: undefined, isLoading: false }),
+  useSubmitGameScore: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  dailyGameQueryOptions: () => ({ queryKey: [], queryFn: vi.fn() }),
+}));
+
 const mockRefetch = vi.fn();
 
 const mockData: StatsResult = {

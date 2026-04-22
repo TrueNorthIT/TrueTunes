@@ -42,12 +42,21 @@ export interface SonosAPI {
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;
   refreshAttribution: () => Promise<void>;
   fetchStats: (period: string, userId?: string) => Promise<unknown>;
+  fetchDailyGame: (date?: string) => Promise<unknown>;
+  submitGameScore: (input: {
+    gameId: string;
+    userName: string;
+    guesses: { main: Array<'left' | 'right'>; bonus: string[] };
+  }) => Promise<unknown>;
+  fetchGameLeaderboard: (date?: string) => Promise<unknown>;
   trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
   minimizeWindow:    () => Promise<void>;
   maximizeWindow:    () => Promise<void>;
   closeWindow:       () => Promise<void>;
   isWindowMaximized: () => Promise<boolean>;
   onWindowMaximized: (cb: (maximized: boolean) => void) => Unsubscribe;
+  onUpdateDownloaded: (cb: (version: string) => void) => Unsubscribe;
+  installUpdate: () => Promise<void>;
 }
 
 // Buffer early IPC events that may fire before React mounts and registers listeners.
@@ -138,6 +147,9 @@ contextBridge.exposeInMainWorld('sonos', {
   },
   refreshAttribution: () => ipcRenderer.invoke('attribution:refresh'),
   fetchStats: (period: string, userId?: string) => ipcRenderer.invoke('stats:fetch', period, userId),
+  fetchDailyGame: (date?: string) => ipcRenderer.invoke('game:fetch', date),
+  submitGameScore: (input) => ipcRenderer.invoke('game:submit', input),
+  fetchGameLeaderboard: (date?: string) => ipcRenderer.invoke('game:leaderboard', date),
   onAttributionEvent: (cb: (event: AttributionEvent) => void): Unsubscribe => {
     const listener = (_e: unknown, event: AttributionEvent) => cb(event);
     ipcRenderer.on('attribution:event', listener);
@@ -154,4 +166,10 @@ contextBridge.exposeInMainWorld('sonos', {
     ipcRenderer.on('win:maximized', listener);
     return () => ipcRenderer.removeListener('win:maximized', listener);
   },
+  onUpdateDownloaded: (cb: (version: string) => void): Unsubscribe => {
+    const listener = (_e: unknown, version: string) => cb(version);
+    ipcRenderer.on('update:downloaded', listener);
+    return () => ipcRenderer.removeListener('update:downloaded', listener);
+  },
+  installUpdate: () => ipcRenderer.invoke('update:install'),
 } satisfies SonosAPI);
