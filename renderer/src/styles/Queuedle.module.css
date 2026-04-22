@@ -407,6 +407,21 @@
   cursor: pointer;
 }
 
+/* ── Inline leaderboard (already-played view) ── */
+.leaderboardSection {
+  margin-top: 32px;
+  width: 100%;
+  max-width: 480px;
+}
+.leaderboardTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 12px;
+}
+
 /* ── Leaderboard rows ── */
 .scoreRow {
   display: grid;

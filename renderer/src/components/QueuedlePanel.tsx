@@ -94,15 +94,12 @@ export function QueuedlePanel() {
   }
 
   if (alreadyPlayed) {
+    const scores = leaderboard.data && 'scores' in leaderboard.data ? leaderboard.data.scores : [];
     return (
       <div className={styles.page}>
         <div className={styles.header}>
           <h1 className={styles.title}>Queuedle</h1>
           <span className={styles.sub}>{game.id}</span>
-          <div className={styles.spacer} />
-          <button className={styles.leaderLink} onClick={() => navigate('/leaderboard')}>
-            Leaderboard →
-          </button>
         </div>
         <div className={styles.body}>
           <QueuedleSummary
@@ -112,6 +109,23 @@ export function QueuedlePanel() {
             maxBonus={game.questions.length}
             alreadySubmitted
           />
+          {scores.length > 0 && (
+            <div className={styles.leaderboardSection}>
+              <h2 className={styles.leaderboardTitle}>Today&apos;s Leaderboard</h2>
+              {scores.slice(0, 10).map((s, i) => (
+                <div key={s.userName} className={styles.scoreRow}>
+                  <span className={styles.scoreRank}>
+                    {i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}
+                  </span>
+                  <span className={styles.scoreName}>{s.userName}</span>
+                  <span className={styles.scoreBreakdown}>
+                    {s.mainScore}/{game.questions.length} · {s.bonusScore}/{game.questions.length}
+                  </span>
+                  <span className={styles.scoreTotal}>{s.total}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     );

@@ -145,6 +145,7 @@ interface SonosPreload {
   onWsMessage: (cb: (header: unknown, payload: unknown) => void) => Unsubscribe;
   onWsReady: (cb: VoidCallback) => Unsubscribe;
   onWsGroups: (cb: (groups: unknown[]) => void) => Unsubscribe;
+  getActiveGroup: () => Promise<string | null>;
   setGroup: (groupId: string) => Promise<{ ok?: boolean; error?: string }>;
   setGroupVolume: (volume: number) => Promise<unknown>;
   setQueueId: (queueId: string) => Promise<void>;
