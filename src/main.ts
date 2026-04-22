@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, safeStorage, session, Menu, IpcMainInvokeEvent } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, safeStorage, session, shell, Menu, IpcMainInvokeEvent } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { officePubSub } from './pubsub';
 import * as path from 'path';
@@ -25,6 +25,8 @@ interface AppConfig {
   queueId?: string;
   /** Display name shown on tracks this user adds to the queue. */
   displayName?: string;
+  /** Last app version the user opened — used to detect first launch on a new version. */
+  lastSeenVersion?: string;
 }
 
 // YouTube Music service constants used for the nowPlaying fallback lookup.
@@ -40,6 +42,7 @@ const PLATFORM_ACCOUNT_ID = '123209393';
 const PUBSUB_FUNCTION_URL = 'https://truetunes-fn.azurewebsites.net';
 
 const config: AppConfig = {};
+let isNewVersion = false;
 
 function configFilePath(): string {
   return path.join(app.getPath('userData'), 'config.json');
@@ -51,6 +54,7 @@ async function loadConfig(): Promise<void> {
     const parsed = JSON.parse(raw) as Partial<AppConfig>;
     // Only load the fields we explicitly persist (not runtime-discovered ones)
     if (typeof parsed.displayName === 'string') config.displayName = parsed.displayName;
+    if (typeof parsed.lastSeenVersion === 'string') config.lastSeenVersion = parsed.lastSeenVersion;
   } catch {
     // No config file yet — use defaults
   }
@@ -61,6 +65,7 @@ async function saveConfig(): Promise<void> {
     // Only persist non-sensitive, user-set fields
     const toSave: Partial<AppConfig> = {
       displayName: config.displayName,
+      lastSeenVersion: config.lastSeenVersion,
     };
     await fs.writeFile(configFilePath(), JSON.stringify(toSave, null, 2), 'utf8');
   } catch (err) {
@@ -1106,6 +1111,8 @@ ipcMain.handle('debug:openWsMonitor', () => openDebugWindow());
 ipcMain.handle('debug:openHttpMonitor', () => openHttpDebugWindow());
 
 ipcMain.handle('app:version', () => app.getVersion());
+ipcMain.handle('app:isNewVersion', () => isNewVersion);
+ipcMain.handle('app:openExternal', (_: IpcMainInvokeEvent, url: string) => shell.openExternal(url));
 
 ipcMain.handle('win:minimize',     () => { uiWin?.minimize(); });
 ipcMain.handle('win:maximize',     () => { if (uiWin?.isMaximized()) uiWin.unmaximize(); else uiWin?.maximize(); });
@@ -1580,6 +1587,13 @@ app.whenReady().then(async () => {
     buildMenu();
   }
   await loadConfig();
+
+  const currentVersion = app.getVersion();
+  if (config.lastSeenVersion !== currentVersion) {
+    isNewVersion = true;
+    config.lastSeenVersion = currentVersion;
+    await saveConfig();
+  }
 
   telemetry.init(process.env.APPINSIGHTS_CONNECTION_STRING ?? '', app.getVersion());
   if (config.displayName) telemetry.setContext({ userId: config.displayName });

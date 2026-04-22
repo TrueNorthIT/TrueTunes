@@ -23,6 +23,7 @@ import { QueueSidebar } from './components/queue/QueueSidebar';
 import { MiniPlayerShell } from './components/MiniPlayer';
 import { DisplayNameModal } from './components/DisplayNameModal';
 import { FeedbackDialog } from './components/FeedbackDialog';
+import { ChangelogDialog } from './components/ChangelogDialog';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Splash } from './components/Splash';
 import { getName } from './lib/itemHelpers';
@@ -58,7 +59,8 @@ function MainApp() {
   }, [playback.queueVersion, reloadQueue]);
 
   const [queueOpen, setQueueOpen]       = useState(false);
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen]     = useState(false);
+  const [changelogOpen, setChangelogOpen]   = useState(false);
   const [toastMsg, setToastMsg]         = useState<string | null>(null);
   const toastTimer                    = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [displayName, setDisplayName] = useState<string | null | undefined>(undefined); // undefined = not yet loaded
@@ -66,6 +68,14 @@ function MainApp() {
   useEffect(() => {
     window.sonos.getDisplayName().then(setDisplayName);
   }, []);
+
+  const splashReadyRef = useRef(false);
+  useEffect(() => {
+    const splashReady = isAuthed && groups.length > 0;
+    if (!splashReady || splashReadyRef.current) return;
+    splashReadyRef.current = true;
+    window.sonos.isNewVersion().then(isNew => { if (isNew) setChangelogOpen(true); }).catch(() => {});
+  }, [isAuthed, groups.length]);
 
   // Reload queue as soon as the WS session is up — catches the case where the
   // first queue load fired before the session was fully established.
@@ -236,6 +246,7 @@ function MainApp() {
           window.sonos.setDisplayName(name).catch(() => {});
           setDisplayName(name);
         }}
+        onChangelogOpen={() => setChangelogOpen(true)}
       />
       <div className={styles.body}>
         <Routes>
@@ -277,6 +288,7 @@ function MainApp() {
         />
       )}
       {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
+      {changelogOpen && <ChangelogDialog onClose={() => setChangelogOpen(false)} />}
     </div>
   );
 }

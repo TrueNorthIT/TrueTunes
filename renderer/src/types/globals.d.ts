@@ -137,6 +137,8 @@ interface GameSubmitResult {
 
 interface SonosPreload {
   getVersion: () => Promise<string>;
+  isNewVersion: () => Promise<boolean>;
+  openExternal: (url: string) => Promise<void>;
   onAuthReady: (cb: VoidCallback) => Unsubscribe;
   onAuthExpired: (cb: VoidCallback) => Unsubscribe;
   fetch: (request: FetchRequest) => Promise<FetchResponse>;

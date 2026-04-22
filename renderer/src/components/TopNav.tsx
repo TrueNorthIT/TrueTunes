@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Home, Trophy, Search, X, Users, User, List, RefreshCw, Minus, Maximize2, Minimize2, Gamepad2, DownloadCloud } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Trophy, Search, X, Users, User, List, RefreshCw, Minus, Maximize2, Minimize2, Gamepad2, DownloadCloud, Lightbulb } from 'lucide-react';
 import type { GroupInfo } from '../types/sonos';
 import styles from '../styles/TopNav.module.css';
 
@@ -14,12 +14,13 @@ interface Props {
   onResync: () => void;
   displayName: string | null | undefined;
   onSaveName: (name: string) => void;
+  onChangelogOpen: () => void;
 }
 
 export function TopNav({
   isAuthed, groups, activeGroupId,
   onGroupChange, queueOpen, onToggleQueue, onResync,
-  displayName, onSaveName,
+  displayName, onSaveName, onChangelogOpen,
 }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -261,6 +262,14 @@ export function TopNav({
                 )}
               </div>
             )}
+
+            <button
+              className={styles.iconBtn}
+              onClick={onChangelogOpen}
+              title="What's new"
+            >
+              <Lightbulb size={15} />
+            </button>
 
             <button
               className={`${styles.iconBtn}${queueOpen ? ' ' + styles.active : ''}`}
