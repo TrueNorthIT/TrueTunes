@@ -40,6 +40,7 @@ export function LeaderboardPanel() {
       ? queuedleLeaderboard.data.scores
       : [];
   const hasPlayedToday = !!(myName && queuedleScores.some((s) => s.userName === myName));
+  const [queuedleOpen, setQueuedleOpen] = useState(true);
 
   const maxUserCount = data?.topUsers?.[0]?.count ?? 1;
 
@@ -88,8 +89,17 @@ export function LeaderboardPanel() {
 
           {!selectedUser && queuedleScores.length > 0 && (
             <section className={styles.section}>
-              <h2 className={styles.sectionTitle}>Today&apos;s Queuedle</h2>
-              {queuedleScores.slice(0, 10).map((s, i) => (
+              <div className={styles.sectionHeader}>
+                <h2 className={styles.sectionTitle}>Today&apos;s Queuedle</h2>
+                <button
+                  className={styles.collapseBtn}
+                  onClick={() => setQueuedleOpen((o) => !o)}
+                  title={queuedleOpen ? 'Collapse' : 'Expand'}
+                >
+                  {queuedleOpen ? '▾' : '▸'}
+                </button>
+              </div>
+              {queuedleOpen && queuedleScores.slice(0, 10).map((s, i) => (
                 <div key={s.userName} className={queuedleStyles.scoreRow}>
                   <span className={queuedleStyles.scoreRank}>
                     {i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}
