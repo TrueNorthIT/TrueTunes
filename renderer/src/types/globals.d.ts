@@ -193,6 +193,8 @@ interface SonosPreload {
   closeWindow:       () => Promise<void>;
   isWindowMaximized: () => Promise<boolean>;
   onWindowMaximized: (cb: (maximized: boolean) => void) => Unsubscribe;
+  onUpdateDownloaded: (cb: (version: string) => void) => Unsubscribe;
+  installUpdate: () => Promise<void>;
 }
 
 interface Window {

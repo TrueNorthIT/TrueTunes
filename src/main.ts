@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, safeStorage, session, Menu, IpcMainInvokeEvent } from 'electron';
+import { app, BrowserWindow, ipcMain, safeStorage, session, Menu, IpcMainInvokeEvent } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { officePubSub } from './pubsub';
 import * as path from 'path';
@@ -1537,22 +1537,23 @@ function buildMenu(): void {
 if (app.isPackaged) {
   autoUpdater.autoDownload = true;
 
+  let pendingUpdateVersion: string | null = null;
+
   const pollInterval = setInterval(() => autoUpdater.checkForUpdates(), 15 * 60 * 1000);
   autoUpdater.checkForUpdates();
 
   autoUpdater.once('update-available', () => clearInterval(pollInterval));
 
   autoUpdater.once('update-downloaded', ({ version }) => {
-    dialog.showMessageBox({
-      type: 'info',
-      title: 'Update ready — True Tunes',
-      message: `Version ${version} has been downloaded and is ready to install.`,
-      detail: 'Restart now to apply the update, or continue and it will install on next launch.',
-      buttons: ['Restart now', 'Later'],
-      defaultId: 0,
-      cancelId: 1,
-    }).then(({ response }: { response: number }) => {
-      if (response === 0) autoUpdater.quitAndInstall(true, true);
+    pendingUpdateVersion = version;
+    uiWin?.webContents.send('update:downloaded', version);
+  });
+
+  ipcMain.handle('update:install', () => autoUpdater.quitAndInstall(true, true));
+
+  app.on('browser-window-created', (_e, win) => {
+    win.webContents.on('did-finish-load', () => {
+      if (pendingUpdateVersion) win.webContents.send('update:downloaded', pendingUpdateVersion);
     });
   });
 }

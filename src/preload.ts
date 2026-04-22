@@ -53,6 +53,8 @@ export interface SonosAPI {
   closeWindow:       () => Promise<void>;
   isWindowMaximized: () => Promise<boolean>;
   onWindowMaximized: (cb: (maximized: boolean) => void) => Unsubscribe;
+  onUpdateDownloaded: (cb: (version: string) => void) => Unsubscribe;
+  installUpdate: () => Promise<void>;
 }
 
 // Buffer early IPC events that may fire before React mounts and registers listeners.
@@ -160,4 +162,10 @@ contextBridge.exposeInMainWorld('sonos', {
     ipcRenderer.on('win:maximized', listener);
     return () => ipcRenderer.removeListener('win:maximized', listener);
   },
+  onUpdateDownloaded: (cb: (version: string) => void): Unsubscribe => {
+    const listener = (_e: unknown, version: string) => cb(version);
+    ipcRenderer.on('update:downloaded', listener);
+    return () => ipcRenderer.removeListener('update:downloaded', listener);
+  },
+  installUpdate: () => ipcRenderer.invoke('update:install'),
 } satisfies SonosAPI);

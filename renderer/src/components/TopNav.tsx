@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Home, Trophy, Search, X, Users, User, List, RefreshCw, Minus, Maximize2, Minimize2, Gamepad2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Trophy, Search, X, Users, User, List, RefreshCw, Minus, Maximize2, Minimize2, Gamepad2, DownloadCloud } from 'lucide-react';
 import type { GroupInfo } from '../types/sonos';
 import styles from '../styles/TopNav.module.css';
 
@@ -29,6 +29,7 @@ export function TopNav({
   const [nameValue, setNameValue] = useState('');
   const [groupOpen, setGroupOpen] = useState(false);
   const [appVersion, setAppVersion] = useState<string | null>(null);
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const groupRef = useRef<HTMLDivElement>(null);
 
@@ -46,6 +47,8 @@ export function TopNav({
   useEffect(() => {
     window.sonos.getVersion().then(setAppVersion).catch(() => {});
   }, []);
+
+  useEffect(() => window.sonos.onUpdateDownloaded(setUpdateVersion), []);
 
   useEffect(() => {
     if (nameOpen) setNameValue(displayName ?? '');
@@ -241,7 +244,19 @@ export function TopNav({
                     >
                       Save
                     </button>
-                    {appVersion && <div className={styles.appVersion}>v{appVersion}</div>}
+                    <div className={styles.versionRow}>
+                      {appVersion && <div className={styles.appVersion}>v{appVersion}</div>}
+                      {updateVersion && (
+                        <button
+                          className={styles.updateBtn}
+                          onClick={() => window.sonos.installUpdate()}
+                          title={`v${updateVersion} ready — click to restart and install`}
+                        >
+                          <DownloadCloud size={12} />
+                          <span>Update</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
