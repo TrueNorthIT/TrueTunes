@@ -85,8 +85,8 @@ function MainApp() {
 
   useEffect(() => {
     if (groups.length === 0 || activeGroupId) return;
-    window.sonos.getActiveGroup().then((savedId) => {
-      const match = savedId ? groups.find((g) => g.id === savedId) : null;
+    window.sonos.getActiveGroup().then((savedCoordinatorId) => {
+      const match = savedCoordinatorId ? groups.find((g) => g.coordinatorId === savedCoordinatorId) : null;
       setActiveGroupId(match ? match.id : groups[0].id);
     }).catch(() => setActiveGroupId(groups[0].id));
   }, [groups, activeGroupId]);

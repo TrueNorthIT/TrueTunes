@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 import { ExternalLink } from 'lucide-react';
 import styles from '../styles/ChangelogDialog.module.css';
 
@@ -133,7 +134,7 @@ export function ChangelogDialog({ onClose }: Props) {
                     {selected.body?.trim()
                       ? <div
                           className={styles.notesText}
-                          dangerouslySetInnerHTML={{ __html: marked.parse(selected.body.trim()) as string }}
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(selected.body.trim()) as string) }}
                         />
                       : <span className={styles.noNotes}>No release notes.</span>
                     }
