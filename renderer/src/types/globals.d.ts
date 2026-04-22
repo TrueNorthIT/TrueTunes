@@ -92,6 +92,8 @@ interface GameQuestion {
   left: GameItem;
   right: GameItem;
   winner: 'left' | 'right';
+  carryover?: 'left' | 'right';
+  bonusItem?: 'left' | 'right';
 }
 
 interface GameDoc {

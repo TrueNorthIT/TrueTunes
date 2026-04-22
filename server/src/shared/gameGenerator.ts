@@ -26,6 +26,8 @@ export interface GameQuestion {
   left: GameItem;
   right: GameItem;
   winner: 'left' | 'right';
+  carryover?: 'left' | 'right';
+  bonusItem: 'left' | 'right';
 }
 
 export interface GeneratedGame {
@@ -193,11 +195,51 @@ function itemsOverlap(a: GameItem, b: GameItem): boolean {
   return false;
 }
 
-function pairQuality(a: GameItem, b: GameItem): number {
-  const max = Math.max(a.count, b.count);
-  const min = Math.min(a.count, b.count);
-  const ratio = max / min;
-  return -Math.abs(ratio - 1.6);
+function validRatio(a: GameItem, b: GameItem, opts: Required<GeneratorOptions>): boolean {
+  if (a.count === b.count) return false;
+  const ratio = Math.max(a.count, b.count) / Math.min(a.count, b.count);
+  return ratio >= opts.minRatio && ratio <= opts.maxRatio;
+}
+
+function buildChain(
+  shuffledPool: GameItem[],
+  opts: Required<GeneratorOptions>,
+): GameItem[] {
+  const itemId = (item: GameItem) => `${item.category}:${item.id}`;
+
+  let bestChain: GameItem[] = [];
+
+  for (let si = 0; si < shuffledPool.length; si++) {
+    const start = shuffledPool[si];
+    const chain: GameItem[] = [start];
+    const usedIds = new Set<string>([itemId(start)]);
+    const usedAlbumKeys = new Set<string>(start.albumKey ? [start.albumKey] : []);
+
+    while (chain.length <= opts.targetCount) {
+      const tail = chain[chain.length - 1];
+      let found = false;
+      for (let ci = 0; ci < shuffledPool.length; ci++) {
+        const candidate = shuffledPool[ci];
+        if (usedIds.has(itemId(candidate))) continue;
+        if (candidate.albumKey && usedAlbumKeys.has(candidate.albumKey)) continue;
+        if (itemsOverlap(tail, candidate)) continue;
+        if (!validRatio(tail, candidate, opts)) continue;
+        chain.push(candidate);
+        usedIds.add(itemId(candidate));
+        if (candidate.albumKey) usedAlbumKeys.add(candidate.albumKey);
+        found = true;
+        break;
+      }
+      if (!found) break;
+    }
+
+    if (chain.length > bestChain.length) {
+      bestChain = chain;
+      if (bestChain.length >= opts.targetCount + 1) break;
+    }
+  }
+
+  return bestChain;
 }
 
 export function generateGame(
@@ -226,53 +268,37 @@ export function generateGame(
   }
 
   const shuffledPool = shuffle(pool, rng);
-
-  const candidatePairs: Array<{ a: GameItem; b: GameItem; quality: number }> = [];
-  for (let i = 0; i < shuffledPool.length; i++) {
-    for (let j = i + 1; j < shuffledPool.length; j++) {
-      const a = shuffledPool[i];
-      const b = shuffledPool[j];
-      if (itemsOverlap(a, b)) continue;
-      if (a.count === b.count) continue;
-      const max = Math.max(a.count, b.count);
-      const min = Math.min(a.count, b.count);
-      const ratio = max / min;
-      if (ratio < opts.minRatio || ratio > opts.maxRatio) continue;
-      candidatePairs.push({ a, b, quality: pairQuality(a, b) });
-    }
-  }
-
-  candidatePairs.sort((x, y) => y.quality - x.quality);
+  const chain = buildChain(shuffledPool, opts);
 
   const questions: GameQuestion[] = [];
-  const usedItems = new Set<string>();
-  const usedAlbumKeys = new Set<string>();
-  for (const { a, b } of candidatePairs) {
-    if (questions.length >= opts.targetCount) break;
-    const aKey = `${a.category}:${a.id}`;
-    const bKey = `${b.category}:${b.id}`;
-    if (usedItems.has(aKey) || usedItems.has(bKey)) continue;
-    if (a.albumKey && usedAlbumKeys.has(a.albumKey)) continue;
-    if (b.albumKey && usedAlbumKeys.has(b.albumKey)) continue;
-    usedItems.add(aKey);
-    usedItems.add(bKey);
-    if (a.albumKey) usedAlbumKeys.add(a.albumKey);
-    if (b.albumKey) usedAlbumKeys.add(b.albumKey);
+
+  for (let i = 0; i < chain.length - 1; i++) {
+    const isFirst = i === 0;
+    // bridge = chain[i], carried from previous question (known for Q2+)
+    // mystery = chain[i+1], the new unknown item
+    const bridge = chain[i];
+    const mystery = chain[i + 1];
 
     const swap = rng() < 0.5;
-    const left = swap ? b : a;
-    const right = swap ? a : b;
-    const winner: 'left' | 'right' = left.count > right.count ? 'left' : 'right';
+    const left = swap ? mystery : bridge;
+    const right = swap ? bridge : mystery;
 
-    questions.push({ index: questions.length, left, right, winner });
+    // carryover = which side the bridge (known item) landed on; absent for Q1
+    const carryover: 'left' | 'right' | undefined = isFirst ? undefined : swap ? 'right' : 'left';
+    // bonusItem = the mystery (new) side; for Q1 use the winner since both are new
+    const bonusItem: 'left' | 'right' = isFirst
+      ? left.count > right.count ? 'left' : 'right'
+      : swap ? 'left' : 'right';
+
+    questions.push({
+      index: i,
+      left,
+      right,
+      winner: left.count > right.count ? 'left' : 'right',
+      carryover,
+      bonusItem,
+    });
   }
-
-  questions.sort((x, y) => {
-    const xr = Math.max(x.left.count, x.right.count) / Math.min(x.left.count, x.right.count);
-    const yr = Math.max(y.left.count, y.right.count) / Math.min(y.left.count, y.right.count);
-    return yr - xr;
-  });
-  questions.forEach((q, i) => (q.index = i));
 
   return {
     questions,

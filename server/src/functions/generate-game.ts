@@ -90,7 +90,7 @@ export async function generateGameHttp(
 }
 
 app.timer('generate-game-timer', {
-  schedule: '0 0 4 * * *',
+  schedule: '0 0 4 * * 1-5',
   handler: generateGameTimer,
 });
 

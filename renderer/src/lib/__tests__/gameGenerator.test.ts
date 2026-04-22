@@ -117,17 +117,65 @@ describe('generateGame', () => {
     }
   });
 
-  it('does not reuse the same item across questions', () => {
+  it('does not reuse the same mystery item across questions', () => {
     const agg = buildAgg();
     const { questions } = generateGame(agg, 'seed-3');
-    const seen = new Set<string>();
+    // The bridge (carryover) item is intentionally shared with the previous question.
+    // Only the mystery (non-carryover) side must be unique.
+    const seenMysteries = new Set<string>();
     for (const q of questions) {
-      const lKey = `${q.left.category}:${q.left.id}`;
-      const rKey = `${q.right.category}:${q.right.id}`;
-      expect(seen.has(lKey)).toBe(false);
-      expect(seen.has(rKey)).toBe(false);
-      seen.add(lKey);
-      seen.add(rKey);
+      if (q.carryover === undefined) {
+        // Q1: both are new
+        const lKey = `${q.left.category}:${q.left.id}`;
+        const rKey = `${q.right.category}:${q.right.id}`;
+        expect(seenMysteries.has(lKey)).toBe(false);
+        expect(seenMysteries.has(rKey)).toBe(false);
+        seenMysteries.add(lKey);
+        seenMysteries.add(rKey);
+      } else {
+        const mystery = q.carryover === 'left' ? q.right : q.left;
+        const key = `${mystery.category}:${mystery.id}`;
+        expect(seenMysteries.has(key)).toBe(false);
+        seenMysteries.add(key);
+      }
+    }
+  });
+
+  it('uses chain structure: Q1 has no carryover, Q2+ have carryover', () => {
+    const agg = buildAgg();
+    const { questions } = generateGame(agg, 'seed-3');
+    if (questions.length > 0) expect(questions[0].carryover).toBeUndefined();
+    for (let i = 1; i < questions.length; i++) {
+      expect(questions[i].carryover).toMatch(/^(left|right)$/);
+    }
+  });
+
+  it('each bonusItem points to a unique item across questions', () => {
+    const agg = buildAgg();
+    const { questions } = generateGame(agg, 'seed-3');
+    const seenBonus = new Set<string>();
+    for (const q of questions) {
+      const bonusSide = q.bonusItem;
+      const item = bonusSide === 'left' ? q.left : q.right;
+      const key = `${item.category}:${item.id}`;
+      expect(seenBonus.has(key)).toBe(false);
+      seenBonus.add(key);
+    }
+  });
+
+  it('consecutive questions share the bridge item', () => {
+    const agg = buildAgg();
+    const { questions } = generateGame(agg, 'seed-3');
+    for (let i = 1; i < questions.length; i++) {
+      const prev = questions[i - 1];
+      const curr = questions[i];
+      // The bridge in curr is the carryover side — should match a side from prev
+      const bridgeSide = curr.carryover!;
+      const bridge = bridgeSide === 'left' ? curr.left : curr.right;
+      const prevLeft = `${prev.left.category}:${prev.left.id}`;
+      const prevRight = `${prev.right.category}:${prev.right.id}`;
+      const bridgeKey = `${bridge.category}:${bridge.id}`;
+      expect([prevLeft, prevRight]).toContain(bridgeKey);
     }
   });
 

@@ -18,6 +18,7 @@ interface GameDoc {
     left: { topQueuer: string };
     right: { topQueuer: string };
     winner: 'left' | 'right';
+    bonusItem?: 'left' | 'right';
   }>;
 }
 
@@ -83,8 +84,9 @@ export async function submitScoreHandler(
     let bonusScore = 0;
     for (let i = 0; i < game.questions.length; i++) {
       const q = game.questions[i];
-      const winningSide = q.winner === 'left' ? q.left : q.right;
-      if (body.guesses.bonus[i] === winningSide.topQueuer) bonusScore++;
+      const bonusSide = q.bonusItem ?? q.winner;
+      const bonusTarget = bonusSide === 'left' ? q.left : q.right;
+      if (body.guesses.bonus[i] === bonusTarget.topQueuer) bonusScore++;
     }
 
     const total = mainScore + bonusScore;
