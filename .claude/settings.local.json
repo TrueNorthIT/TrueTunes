@@ -11,7 +11,16 @@
       "Bash(xargs cat *)",
       "Bash(grep *)",
       "Bash(npm audit *)",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(gh pr *)",
+      "PowerShell(gh pr view --json number,title,url,state)",
+      "Bash(git show *)",
+      "Read(//tmp/**)",
+      "Bash(git checkout *)",
+      "Bash(npm ci *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git reset *)",
+      "Bash(git restore *)"
     ]
   }
 }
