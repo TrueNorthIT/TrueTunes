@@ -28,6 +28,7 @@ Object.defineProperty(window, 'sonos', {
     skipNext:           vi.fn(pending),
     skipPrev:           vi.fn(pending),
     getVersion:         vi.fn(pending),
+    isNewVersion:       vi.fn(() => Promise.resolve(false)),
     openExternal:       vi.fn(() => Promise.resolve()),
     trackEvent:         vi.fn(() => Promise.resolve()),
     minimizeWindow:     vi.fn(() => Promise.resolve()),

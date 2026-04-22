@@ -68,6 +68,14 @@ function MainApp() {
     window.sonos.getDisplayName().then(setDisplayName);
   }, []);
 
+  const splashReadyRef = useRef(false);
+  useEffect(() => {
+    const splashReady = isAuthed && groups.length > 0;
+    if (!splashReady || splashReadyRef.current) return;
+    splashReadyRef.current = true;
+    window.sonos.isNewVersion().then(isNew => { if (isNew) setChangelogOpen(true); }).catch(() => {});
+  }, [isAuthed, groups.length]);
+
   // Reload queue as soon as the WS session is up — catches the case where the
   // first queue load fired before the session was fully established.
   useEffect(() => {
