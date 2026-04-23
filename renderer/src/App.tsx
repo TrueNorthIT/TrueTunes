@@ -235,31 +235,25 @@ function MainApp() {
         imageUrl: getItemArt(item) ?? undefined,
       });
     } else if (isAlbumItem && uri) {
-      // 1× album rollup event so albumMap.count tracks album-adds, not track-adds.
-      // Resolve art/artist from the album browse cache when present (richer than the card item)
-      // and fall back to fields on the source item (subtitle = artist for browse-shaped items).
+      // Fetch the album browse first so the rollup event has the canonical
+      // artist + cover from Sonos (the card item often lacks usable art);
+      // then fan out one event per track. Cache hit if the user just opened
+      // the album page.
       const { albumId, serviceId: aSvc, accountId: aAcc, defaults } = resolveAlbumParams(item);
-      const cachedAlbum = albumId && aSvc && aAcc
-        ? queryClient.getQueryData<{ artist?: string; artUrl?: string | null }>(['album', albumId])
-        : undefined;
-      const artist = cachedAlbum?.artist
-        ?? ((item as Record<string, unknown>)['subtitle'] as string)
-        ?? (item.artists?.[0]?.name as string | undefined)
-        ?? '';
-      const imageUrl = cachedAlbum?.artUrl ?? getItemArt(item) ?? undefined;
-      window.sonos.publishQueued({
-        eventType: 'album',
-        uri,
-        trackName: getName(item),
-        artist,
-        album:   getName(item),
-        albumId: uri,
-        imageUrl,
-      });
-      // N× per-track events so individual tracks land on the leaderboard.
       if (albumId && aSvc && aAcc) {
         queryClient.fetchQuery(albumQueryOptions(albumId, aSvc, aAcc, defaults))
-          .then((album) => fanOutTrackAttribution(album.tracks, album.artUrl))
+          .then((album) => {
+            window.sonos.publishQueued({
+              eventType: 'album',
+              uri,
+              trackName: album.title || getName(item),
+              artist:    album.artist || ((item as Record<string, unknown>)['subtitle'] as string) || (item.artists?.[0]?.name ?? ''),
+              album:     album.title || getName(item),
+              albumId:   uri,
+              imageUrl:  album.artUrl ?? getItemArt(item) ?? undefined,
+            });
+            fanOutTrackAttribution(album.tracks, album.artUrl);
+          })
           .catch(() => { /* silent */ });
       }
     } else if (isPlaylistItem) {
