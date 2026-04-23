@@ -228,6 +228,108 @@ describe('api.search', () => {
   });
 });
 
+// ─── playback — remaining methods ────────────────────────────────────────────
+
+describe('api.playback — remaining', () => {
+  it('getState sends getPlaybackState operationId', async () => {
+    await api.playback.getState('g:1');
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.objectContaining({ operationId: 'getPlaybackState', pathParams: { groupId: 'g:1' } })
+    );
+  });
+
+  it('skipPrev sends skipToPreviousTrack operationId', async () => {
+    await api.playback.skipPrev('g:1');
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.objectContaining({ operationId: 'skipToPreviousTrack' })
+    );
+  });
+});
+
+// ─── browse — remaining methods ───────────────────────────────────────────────
+
+describe('api.browse — remaining', () => {
+  it('artist sends artistId as pathParam', async () => {
+    await api.browse.artist('art-1', { serviceId: 'gm', accountId: 'acc1' });
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operationId: 'browseArtist',
+        pathParams: expect.objectContaining({ artistId: 'art-1', serviceId: 'gm' }),
+      })
+    );
+  });
+
+  it('container sends containerId as pathParam', async () => {
+    await api.browse.container('c-1', { serviceId: 'gm' });
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operationId: 'browseContainer',
+        pathParams: expect.objectContaining({ containerId: 'c-1' }),
+      })
+    );
+  });
+
+  it('playlist sends playlistId as pathParam', async () => {
+    await api.browse.playlist('pl-1', { serviceId: 'gm', count: 50 });
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operationId: 'browsePlaylist',
+        pathParams: expect.objectContaining({ playlistId: 'pl-1' }),
+        query: expect.objectContaining({ count: '50' }),
+      })
+    );
+  });
+
+  it('catalogContainer sends containerId as pathParam', async () => {
+    await api.browse.catalogContainer('cat-1', { serviceId: 'gm', count: 10 });
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operationId: 'getCatalogContainerResources',
+        pathParams: expect.objectContaining({ containerId: 'cat-1' }),
+        query: expect.objectContaining({ count: '10' }),
+      })
+    );
+  });
+});
+
+// ─── content ─────────────────────────────────────────────────────────────────
+
+describe('api.content', () => {
+  it('favorites sends getFavoriteResources operationId with count', async () => {
+    await api.content.favorites({ count: 20 });
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operationId: 'getFavoriteResources',
+        query: expect.objectContaining({ count: '20' }),
+      })
+    );
+  });
+
+  it('history sends getHistory operationId with count', async () => {
+    await api.content.history({ count: 20 });
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operationId: 'getHistory',
+        query: expect.objectContaining({ count: '20' }),
+      })
+    );
+  });
+});
+
+// ─── integrations ────────────────────────────────────────────────────────────
+
+describe('api.integrations', () => {
+  it('list sends getIntegrations operationId', async () => {
+    await api.integrations.list();
+    expect(mockFetch).toHaveBeenCalledWith({ operationId: 'getIntegrations' });
+  });
+
+  it('registrations sends getIntegrationRegistrations operationId', async () => {
+    await api.integrations.registrations();
+    expect(mockFetch).toHaveBeenCalledWith({ operationId: 'getIntegrationRegistrations' });
+  });
+});
+
 // ─── nowPlaying ──────────────────────────────────────────────────────────────
 
 describe('api.nowPlaying', () => {
@@ -238,6 +340,29 @@ describe('api.nowPlaying', () => {
         operationId: 'getTrackNowPlaying',
         pathParams: expect.objectContaining({ trackId: 'trk-1' }),
       })
+    );
+  });
+});
+
+// ─── platform ────────────────────────────────────────────────────────────────
+
+describe('api.platform', () => {
+  it('mfe sends getMfe operationId', async () => {
+    await api.platform.mfe();
+    expect(mockFetch).toHaveBeenCalledWith({ operationId: 'getMfe' });
+  });
+
+  it('featureFlag sends key as pathParam', async () => {
+    await api.platform.featureFlag('my-flag');
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.objectContaining({ operationId: 'getOptimizelyConfig', pathParams: { key: 'my-flag' } })
+    );
+  });
+
+  it('metrics sends events array as body', async () => {
+    await api.platform.metrics([{ type: 'click' }]);
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.objectContaining({ operationId: 'postMetrics', body: [{ type: 'click' }] })
     );
   });
 });

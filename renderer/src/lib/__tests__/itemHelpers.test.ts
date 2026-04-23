@@ -278,6 +278,90 @@ describe('parseServiceSearch', () => {
 
     expect(parseServiceSearch(data)).toEqual([]);
   });
+
+  it('parses ALBUMS section with artists', () => {
+    const data = {
+      resourceOrder: ['ALBUMS'],
+      ALBUMS: {
+        resources: [{
+          name: 'A Night at the Opera',
+          id: { objectId: 'alb1', serviceId: 'gm', accountId: 'acc1' },
+          artists: [{ name: 'Queen', id: { objectId: 'art1', serviceId: 'gm', accountId: 'acc1' } }],
+          explicit: false,
+          summary: { content: 'Classic rock' },
+        }],
+      },
+    } as unknown as ServiceSearch;
+
+    const result = parseServiceSearch(data);
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('ALBUM');
+    expect(result[0].name).toBe('A Night at the Opera');
+    expect(result[0].artists?.[0].name).toBe('Queen');
+  });
+
+  it('parses TRACKS section with artists (covers artists.map callback)', () => {
+    const data = {
+      resourceOrder: ['TRACKS'],
+      TRACKS: {
+        resources: [{
+          name: 'Bohemian Rhapsody',
+          id: { objectId: 'trk1', serviceId: 'gm', accountId: 'acc1' },
+          artists: [{ name: 'Queen', id: { objectId: 'art1', serviceId: 'gm', accountId: 'acc1' } }],
+          explicit: false,
+          durationMs: 354000,
+        }],
+      },
+    } as unknown as ServiceSearch;
+
+    const result = parseServiceSearch(data);
+    expect(result[0].artists?.[0].name).toBe('Queen');
+  });
+
+  it('parses PLAYLISTS section', () => {
+    const data = {
+      resourceOrder: ['PLAYLISTS'],
+      PLAYLISTS: {
+        resources: [{
+          name: 'My Playlist',
+          id: { objectId: 'pl1', serviceId: 'gm', accountId: 'acc1' },
+        }],
+      },
+    } as unknown as ServiceSearch;
+
+    const result = parseServiceSearch(data);
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('PLAYLIST');
+    expect(result[0].name).toBe('My Playlist');
+  });
+
+  it('parses PODCASTS section', () => {
+    const data = {
+      resourceOrder: ['PODCASTS'],
+      PODCASTS: {
+        resources: [{
+          name: 'Tech Talk',
+          id: { objectId: 'pod1', serviceId: 'gm', accountId: 'acc1' },
+        }],
+      },
+    } as unknown as ServiceSearch;
+
+    const result = parseServiceSearch(data);
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('PODCAST');
+    expect(result[0].name).toBe('Tech Talk');
+  });
+
+  it('uses default resourceOrder when not specified', () => {
+    const data = {
+      ARTISTS: { resources: [{ name: 'A', id: { objectId: 'a', serviceId: 's', accountId: 'c' } }] },
+      ALBUMS:  { resources: [{ name: 'B', id: { objectId: 'b', serviceId: 's', accountId: 'c' } }] },
+      TRACKS:  { resources: [{ name: 'C', id: { objectId: 'c', serviceId: 's', accountId: 'c' } }] },
+    } as unknown as ServiceSearch;
+
+    const result = parseServiceSearch(data);
+    expect(result.map(r => r.type)).toEqual(['ARTIST', 'ALBUM', 'TRACK']);
+  });
 });
 
 // ─── resolveAlbumParams ───────────────────────────────────────────────────────
