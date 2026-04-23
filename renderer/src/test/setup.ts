@@ -1,6 +1,12 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 const noop = () => () => {};
 const pending = () => new Promise<never>(() => {});
 
