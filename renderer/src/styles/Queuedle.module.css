@@ -98,6 +98,40 @@
 .sideLoser  { border-color: rgba(248, 113, 113, 0.45); background: rgba(248, 113, 113, 0.05); }
 .sideKnown  { border-color: rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.02); }
 
+@keyframes slideFromRight {
+  from { transform: translateX(60%); opacity: 0.4; }
+  to   { transform: translateX(0);   opacity: 1; }
+}
+@keyframes slideFromLeft {
+  from { transform: translateX(-60%); opacity: 0.4; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+.sideCarrySlideFromRight { animation: slideFromRight 0.5s ease-out; }
+.sideCarrySlideFromLeft  { animation: slideFromLeft  0.5s ease-out; }
+
+@keyframes shakeRed {
+  0%, 100% { transform: translateX(0); background: rgba(248, 113, 113, 0.05); }
+  20%, 60% { transform: translateX(-6px); background: rgba(248, 113, 113, 0.18); }
+  40%, 80% { transform: translateX(6px);  background: rgba(248, 113, 113, 0.18); }
+}
+.sideWrongPick { animation: shakeRed 0.45s ease-out; }
+
+.sideCorrectPick { position: relative; overflow: hidden; }
+.sideCorrectPick::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(74, 222, 128, 0.35), rgba(74, 222, 128, 0));
+  transform: translateX(-100%);
+  animation: greenWipe 0.7s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes greenWipe {
+  0%   { transform: translateX(-100%); opacity: 1; }
+  60%  { transform: translateX(0);     opacity: 1; }
+  100% { transform: translateX(100%);  opacity: 0; }
+}
+
 .categoryBadge {
   align-self: flex-start;
   font-size: 10px;
@@ -213,6 +247,38 @@
   cursor: pointer;
 }
 .nextBtn:hover { opacity: 0.88; }
+
+/* ── Intro screen ── */
+.intro {
+  max-width: 520px;
+  margin: 32px auto 0;
+  text-align: center;
+}
+.introRules {
+  text-align: left;
+  margin: 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.introRule {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 14px 16px;
+}
+.introRuleTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 4px;
+}
+.introRuleBody {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.45;
+  margin: 0;
+}
 
 /* ── Bonus screen (list of winning entries with pickers) ── */
 .bonusIntro {
