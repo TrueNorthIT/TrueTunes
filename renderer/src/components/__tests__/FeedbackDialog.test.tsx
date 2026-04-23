@@ -4,7 +4,8 @@ import userEvent from '@testing-library/user-event';
 import { FeedbackDialog } from '../FeedbackDialog';
 
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).fetch = mockFetch;
 
 beforeEach(() => {
   vi.clearAllMocks();

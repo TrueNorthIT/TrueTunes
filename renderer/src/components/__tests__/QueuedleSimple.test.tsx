@@ -12,8 +12,8 @@ beforeEach(() => {
 });
 
 const items: GameItem[] = [
-  { id: '1', name: 'Come Together', category: 'track', subtitle: 'Abbey Road', imageUrl: null, topQueuer: 'alice', stat: 5, isExplicit: false },
-  { id: '2', name: 'The Beatles', category: 'artist', subtitle: null, imageUrl: 'http://img.com/art.jpg', topQueuer: 'bob', stat: 3, isExplicit: false },
+  { id: '1', name: 'Come Together', category: 'track', subtitle: 'Abbey Road', imageUrl: undefined, topQueuer: 'alice', count: 5, queuerCandidates: [] },
+  { id: '2', name: 'The Beatles', category: 'artist', subtitle: '', imageUrl: 'http://img.com/art.jpg', topQueuer: 'bob', count: 3, queuerCandidates: [] },
 ];
 
 describe('QueuedleBonusResults', () => {

@@ -32,14 +32,18 @@ vi.mock('../QueuedleSummary', () => ({
 }));
 
 const baseQuestion: GameQuestion = {
-  left:  { id: 'l1', name: 'Song A', category: 'track', subtitle: null, imageUrl: null, stat: 10, topQueuer: 'alice', isExplicit: false },
-  right: { id: 'r1', name: 'Song B', category: 'track', subtitle: null, imageUrl: null, stat: 8,  topQueuer: 'bob',   isExplicit: false },
+  index: 0,
+  left:  { id: 'l1', name: 'Song A', category: 'track', subtitle: '', imageUrl: undefined, count: 10, topQueuer: 'alice', queuerCandidates: [] },
+  right: { id: 'r1', name: 'Song B', category: 'track', subtitle: '', imageUrl: undefined, count: 8,  topQueuer: 'bob',   queuerCandidates: [] },
   winner: 'left',
   bonusItem: 'left',
 };
 
 const baseGame: GameDoc = {
   id: '2024-01-01',
+  status: 'ready',
+  generatedAt: 0,
+  lowData: false,
   questions: [baseQuestion],
 };
 

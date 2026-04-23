@@ -29,8 +29,8 @@ describe('useGroups', () => {
   });
 
   it('updates when WS fires group data', () => {
-    let captured: ((groups: unknown) => void) | undefined;
-    mockOnWsGroups.mockImplementation((cb) => { captured = cb; return () => {}; });
+    let captured: ((groups: unknown[]) => void) | undefined;
+    mockOnWsGroups.mockImplementation((cb: (groups: unknown[]) => void) => { captured = cb; return () => {}; });
 
     const { result } = renderHook(() => useGroups());
     expect(result.current).toEqual([]);

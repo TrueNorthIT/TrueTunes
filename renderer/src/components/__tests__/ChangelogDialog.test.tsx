@@ -4,7 +4,8 @@ import userEvent from '@testing-library/user-event';
 import { ChangelogDialog } from '../ChangelogDialog';
 
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).fetch = mockFetch;
 
 const releases = [
   { tag_name: 'v1.2.0', name: 'Version 1.2.0', body: '## Changes\n- Feature A', published_at: '2024-03-01T00:00:00Z', html_url: 'https://github.com/releases/1' },

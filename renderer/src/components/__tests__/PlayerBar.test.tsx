@@ -41,6 +41,7 @@ function makePlayback(overrides: Partial<PlaybackState> = {}): PlaybackState {
     isExplicit: false,
     queueId: null,
     queueVersion: null,
+    queueItemId: null,
     ...overrides,
   };
 }

@@ -27,7 +27,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   imageOnLoad = null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (global as any).Image = MockImage;
+  (globalThis as any).Image = MockImage;
   const mockCanvas = { width: 0, height: 0, getContext: mockGetContext };
   vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
     if (tag === 'canvas') return mockCanvas as unknown as HTMLElement;
@@ -67,12 +67,12 @@ describe('useDominantColor', () => {
     act(() => { imageOnLoad?.(); });
     expect(result.current).not.toBeNull();
 
-    rerender({ src: null });
+    rerender({ src: null as unknown as string });
     expect(result.current).toBeNull();
   });
 
   it('returns null when canvas context is unavailable', () => {
-    mockGetContext.mockReturnValueOnce(null);
+    mockGetContext.mockReturnValueOnce(null as unknown as { drawImage: typeof mockDrawImage; getImageData: typeof mockGetImageData });
     const { result } = renderHook(() => useDominantColor('http://example.com/art.jpg'));
     act(() => { imageOnLoad?.(); });
     expect(result.current).toBeNull();

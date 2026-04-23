@@ -44,7 +44,7 @@ describe('useAttribution', () => {
       mapCb?.({ 'uri:1': { user: 'alice', timestamp: 1234, trackName: 'Song', artist: 'Artist' } });
     });
     act(() => {
-      eventCb?.({ uri: 'uri:2', user: 'bob', timestamp: 5678, trackName: 'Other', artist: 'Band' });
+      eventCb?.({ type: 'queued', uri: 'uri:2', user: 'bob', timestamp: 5678, trackName: 'Other', artist: 'Band' });
     });
 
     expect(result.current['uri:1'].user).toBe('alice');
@@ -58,7 +58,7 @@ describe('useAttribution', () => {
 
     renderHook(() => useAttribution(onRemoteQueue));
     act(() => {
-      eventCb?.({ uri: 'uri:1', user: 'charlie', timestamp: 0, trackName: 'T', artist: 'A' });
+      eventCb?.({ type: 'queued', uri: 'uri:1', user: 'charlie', timestamp: 0, trackName: 'T', artist: 'A' });
     });
     expect(onRemoteQueue).toHaveBeenCalled();
   });
