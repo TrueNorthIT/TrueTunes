@@ -18,6 +18,7 @@ Object.defineProperty(window, 'sonos', {
     fetchDailyGame:     vi.fn(pending),
     submitGameScore:    vi.fn(pending),
     fetchGameLeaderboard: vi.fn(pending),
+    fetchGameDates:     vi.fn(pending),
     fetch:              vi.fn(pending),
     fetchImage:         vi.fn(pending),
     onAuthReady:        vi.fn(noop),

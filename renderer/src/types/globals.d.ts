@@ -127,6 +127,17 @@ interface GameLeaderboardResult {
   error?: string;
 }
 
+interface GameDateEntry {
+  gameId: string;
+  status: 'generating' | 'ready';
+  userPlayed: boolean;
+}
+
+interface GameDatesResult {
+  dates?: GameDateEntry[];
+  error?: string;
+}
+
 interface GameSubmitResult {
   ok?: boolean;
   duplicate?: boolean;
@@ -186,6 +197,7 @@ interface SonosPreload {
     guesses: { main: Array<'left' | 'right'>; bonus: string[] };
   }) => Promise<GameSubmitResult>;
   fetchGameLeaderboard: (date?: string) => Promise<GameLeaderboardResult>;
+  fetchGameDates: (userName: string) => Promise<GameDatesResult>;
   refreshAttribution: () => Promise<void>;
   onAttributionMap: (cb: (map: AttributionMap) => void) => Unsubscribe;
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;
