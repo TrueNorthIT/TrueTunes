@@ -70,6 +70,33 @@ export function QueuedlePanel() {
   const [mainGuesses, setMainGuesses] = useState<Array<'left' | 'right'>>([]);
   const [bonusSelections, setBonusSelections] = useState<(string | null)[]>([]);
   const [localScore, setLocalScore] = useState<{ main: number; bonus: number } | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+
+  // Backfill localStorage from the cloud when the leaderboard shows the user has
+  // played but the local key is missing (fresh install, cleared cache, new machine).
+  useEffect(() => {
+    if (!gameId || !alreadyPlayed || localPlayed) return;
+    try {
+      localStorage.setItem(
+        `queuedle-played:${gameId}`,
+        JSON.stringify({
+          mainScore: alreadyPlayed.mainScore,
+          bonusScore: alreadyPlayed.bonusScore,
+        }),
+      );
+    } catch {
+      // ignore quota / disabled storage
+    }
+  }, [gameId, alreadyPlayed, localPlayed]);
+
+  useEffect(() => {
+    if (!calendarOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setCalendarOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [calendarOpen]);
 
   useEffect(() => {
     if (game && bonusSelections.length !== game.questions.length) {
@@ -88,6 +115,7 @@ export function QueuedlePanel() {
   }
 
   function handleSelectDate(pickedGameId: string) {
+    setCalendarOpen(false);
     const next = pickedGameId === todayId ? null : pickedGameId;
     if (next === selectedDate) return;
     setSelectedDate(next);
@@ -181,7 +209,19 @@ export function QueuedlePanel() {
           <h1 className={styles.title}>Queuedle</h1>
           <span className={styles.sub}>{game.id}</span>
           <div className={styles.spacer} />
-          {headerActions}
+          {selectedDate !== null && (
+            <button className={styles.backToToday} onClick={handleBackToToday}>
+              ← Today
+            </button>
+          )}
+          {calendarDates.length > 0 && (
+            <button className={styles.calendarBtn} onClick={() => setCalendarOpen(true)}>
+              📅 Calendar
+            </button>
+          )}
+          <button className={styles.leaderLink} onClick={() => navigate('/leaderboard')}>
+            Leaderboard →
+          </button>
         </div>
         <div className={styles.body}>
           {cachedScore && (
@@ -212,15 +252,26 @@ export function QueuedlePanel() {
               ))}
             </div>
           )}
-          {calendarDates.length > 0 && (
-            <QueuedleCalendar
-              dates={calendarDates}
-              selectedDate={gameId}
-              todayId={todayId}
-              onSelectDate={handleSelectDate}
-            />
-          )}
         </div>
+        {calendarOpen && calendarDates.length > 0 && (
+          <div className={styles.calendarOverlay} onClick={() => setCalendarOpen(false)}>
+            <div className={styles.calendarModal} onClick={(e) => e.stopPropagation()}>
+              <button
+                className={styles.calendarClose}
+                onClick={() => setCalendarOpen(false)}
+                aria-label="Close calendar"
+              >
+                ✕
+              </button>
+              <QueuedleCalendar
+                dates={calendarDates}
+                selectedDate={gameId}
+                todayId={todayId}
+                onSelectDate={handleSelectDate}
+              />
+            </div>
+          </div>
+        )}
       </div>
     );
   }
