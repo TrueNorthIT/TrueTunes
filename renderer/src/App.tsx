@@ -9,7 +9,7 @@ import { trackQueryOptions } from './hooks/useTrackDetails';
 import { albumQueryOptions, type AlbumTrack } from './hooks/useAlbumBrowse';
 import { playlistQueryOptions } from './hooks/usePlaylistBrowse';
 import { api } from './lib/sonosApi';
-import { normalizeForQueue, isTrack, isProgram, isAlbum, isPlaylist, extractItems, resolveAlbumParams } from './lib/itemHelpers';
+import { normalizeForQueue, isTrack, isProgram, isAlbum, isPlaylist, extractItems, resolveAlbumParams, getItemArt } from './lib/itemHelpers';
 import type { SonosItem, SonosItemId } from './types/sonos';
 
 import { TopNav } from './components/TopNav';
@@ -232,24 +232,28 @@ function MainApp() {
     if (isSingleTrack && uri) {
       publishTrackAttribution(uri, serviceId, accountId, {
         trackName: getName(normalized),
-        imageUrl: item.imageUrl ?? (item.images as Array<{ url: string }> | undefined)?.[0]?.url,
+        imageUrl: getItemArt(item) ?? undefined,
       });
     } else if (isAlbumItem && uri) {
-      // 1× album rollup event so albumMap.count tracks album-adds, not track-adds.
-      window.sonos.publishQueued({
-        eventType: 'album',
-        uri,
-        trackName: getName(item),
-        artist: ((item as Record<string, unknown>)['subtitle'] as string) ?? '',
-        album:   getName(item),
-        albumId: uri,
-        imageUrl: item.imageUrl ?? (item.images as Array<{ url: string }> | undefined)?.[0]?.url,
-      });
-      // N× per-track events so individual tracks land on the leaderboard.
+      // Fetch the album browse first so the rollup event has the canonical
+      // artist + cover from Sonos (the card item often lacks usable art);
+      // then fan out one event per track. Cache hit if the user just opened
+      // the album page.
       const { albumId, serviceId: aSvc, accountId: aAcc, defaults } = resolveAlbumParams(item);
       if (albumId && aSvc && aAcc) {
         queryClient.fetchQuery(albumQueryOptions(albumId, aSvc, aAcc, defaults))
-          .then((album) => fanOutTrackAttribution(album.tracks, album.artUrl))
+          .then((album) => {
+            window.sonos.publishQueued({
+              eventType: 'album',
+              uri,
+              trackName: album.title || getName(item),
+              artist:    album.artist || ((item as Record<string, unknown>)['subtitle'] as string) || (item.artists?.[0]?.name ?? ''),
+              album:     album.title || getName(item),
+              albumId:   uri,
+              imageUrl:  album.artUrl ?? getItemArt(item) ?? undefined,
+            });
+            fanOutTrackAttribution(album.tracks, album.artUrl);
+          })
           .catch(() => { /* silent */ });
       }
     } else if (isPlaylistItem) {

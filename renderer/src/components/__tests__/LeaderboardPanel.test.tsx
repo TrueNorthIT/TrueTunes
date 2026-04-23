@@ -12,6 +12,12 @@ vi.mock('../../hooks/useStats');
 import { useStats } from '../../hooks/useStats';
 const mockUseStats = vi.mocked(useStats);
 
+// useImage proxies through window.sonos.fetchImage in the real app; for tests
+// the URL pass-through keeps the existing img-src assertions working.
+vi.mock('../../hooks/useImage', () => ({
+  useImage: (url: string | null | undefined) => url ?? null,
+}));
+
 vi.mock('../../hooks/useDailyGame', () => ({
   useGameLeaderboard: () => ({ data: { gameId: 'today', scores: [] }, isLoading: false }),
   useDailyGame: () => ({ data: undefined, isLoading: false }),

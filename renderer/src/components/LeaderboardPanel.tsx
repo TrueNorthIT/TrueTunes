@@ -2,8 +2,15 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStats, StatsPeriod } from '../hooks/useStats';
 import { useGameLeaderboard } from '../hooks/useDailyGame';
+import { useImage } from '../hooks/useImage';
 import styles from '../styles/LeaderboardPanel.module.css';
 import queuedleStyles from '../styles/Queuedle.module.css';
+
+function CachedArt({ url, className }: { url: string | undefined; className: string }) {
+  const cached = useImage(url ?? null);
+  if (!cached) return <div className={className} data-placeholder />;
+  return <img className={className} src={cached} alt="" loading="lazy" />;
+}
 
 const PERIODS: { value: StatsPeriod; label: string }[] = [
   { value: 'today', label: 'Today' },
@@ -159,7 +166,7 @@ export function LeaderboardPanel() {
                     }}
                   >
                     {t.imageUrl ? (
-                      <img className={styles.art} src={t.imageUrl} alt="" loading="lazy" />
+                      <CachedArt url={t.imageUrl} className={styles.art} />
                     ) : (
                       <div className={styles.artPlaceholder} />
                     )}
@@ -259,7 +266,7 @@ export function LeaderboardPanel() {
                     }}
                   >
                     {a.imageUrl ? (
-                      <img className={styles.art} src={a.imageUrl} alt="" loading="lazy" />
+                      <CachedArt url={a.imageUrl} className={styles.art} />
                     ) : (
                       <div className={styles.artPlaceholder} />
                     )}
