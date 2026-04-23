@@ -332,4 +332,37 @@ describe('handleAddToQueue — non-track item', () => {
     // reloadQueue fires (and a delayed second reload after 1500 ms — not waited here)
     expect(listCount).toBeGreaterThan(listBefore);
   });
+
+  it('publishes 1 album event + N per-track events when an album is added', async () => {
+    const albumTracks = [
+      { title: 'Track A', ordinal: 1, duration: 180, images: { tile1x1: 'art' }, resource: { id: { objectId: 'trk-a', serviceId: 'gm', accountId: 'acc1' } } },
+      { title: 'Track B', ordinal: 2, duration: 200, images: { tile1x1: 'art' }, resource: { id: { objectId: 'trk-b', serviceId: 'gm', accountId: 'acc1' } } },
+      { title: 'Track C', ordinal: 3, duration: 220, images: { tile1x1: 'art' }, resource: { id: { objectId: 'trk-c', serviceId: 'gm', accountId: 'acc1' } } },
+    ];
+    mockFetch.mockImplementation(async (req: { operationId: string }) => {
+      if (req.operationId === 'getQueueResources') return { data: { items: [] }, etag: 'etag-v1' };
+      if (req.operationId === 'addQueueResource')  return { data: {}, etag: 'etag-after' };
+      if (req.operationId === 'browseAlbum')       return { data: { title: 'Test Album', tracks: { items: albumTracks, total: albumTracks.length } } };
+      if (req.operationId === 'getTrackNowPlaying') return { data: {} }; // empty body — parseResponse tolerates it; publish uses fallback trackName
+      return { data: null };
+    });
+    const publishMock = vi.mocked(window.sonos.publishQueued).mockResolvedValue(undefined);
+
+    await mountAndSettle();
+    await act(async () => { await capturedAddToQueue!(makeAlbumItem()); });
+
+    // Wait for the fan-out: 1 album event + 3 track events.
+    await waitFor(() => expect(publishMock).toHaveBeenCalledTimes(4));
+
+    const calls = publishMock.mock.calls.map(([arg]) => arg);
+    const albumEvents = calls.filter(c => c.eventType === 'album');
+    const trackEvents = calls.filter(c => c.eventType === 'track');
+    expect(albumEvents).toHaveLength(1);
+    expect(trackEvents).toHaveLength(3);
+
+    // Album event uses the album URI; track events use track URIs (never the album URI).
+    expect(albumEvents[0].uri).toBe('alb1');
+    const trackUris = trackEvents.map(e => e.uri).sort();
+    expect(trackUris).toEqual(['trk-a', 'trk-b', 'trk-c']);
+  });
 });
