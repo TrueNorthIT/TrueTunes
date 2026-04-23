@@ -52,6 +52,7 @@ interface StatsTrack {
 interface StatsArtist {
   artist: string;
   artistId?: string;
+  imageUrl?: string;
   count: number;
 }
 interface StatsAlbum {
