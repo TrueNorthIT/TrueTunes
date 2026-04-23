@@ -1,5 +1,9 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { CosmosClient } from '@azure/cosmos';
+import { londonDate } from './generate-game';
+import { sendScoreAnnouncement, sendLeaderboard } from '../shared/vestaboard';
+
+const LEADERBOARD_DELAY_MS = 15_000;
 
 interface SubmitBody {
   gameId: string;
@@ -103,6 +107,36 @@ export async function submitScoreHandler(
 
     await scores.items.create(scoreDoc);
     context.log(`[submit-score] ${userName} gameId=${body.gameId} total=${total}`);
+
+    if (body.gameId === londonDate()) {
+      const maxPerRound = game.questions.length;
+      const log = (msg: string, ...args: unknown[]) => context.log(msg, ...args);
+      try {
+        await sendScoreAnnouncement(userName, mainScore, bonusScore, maxPerRound, log);
+      } catch (err) {
+        context.error('[submit-score] vestaboard announcement failed:', err);
+      }
+      // Schedule the leaderboard flip after a short delay so the announcement
+      // has time to read on the board. Fire-and-forget — the Functions Node
+      // worker keeps the event loop alive for in-flight timers.
+      setTimeout(() => {
+        void (async () => {
+          try {
+            const { resources: latest } = await scores.items
+              .query<{ userName: string; total: number }>({
+                query:
+                  'SELECT c.userName, c.total FROM c WHERE c.gameId = @gameId',
+                parameters: [{ name: '@gameId', value: body.gameId }],
+              })
+              .fetchAll();
+            latest.sort((a, b) => b.total - a.total);
+            await sendLeaderboard(latest, log);
+          } catch (err) {
+            context.error('[submit-score] vestaboard leaderboard failed:', err);
+          }
+        })();
+      }, LEADERBOARD_DELAY_MS);
+    }
 
     return {
       status: 201,
