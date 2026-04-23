@@ -4,6 +4,9 @@ import {
   fmtTime,
   getName,
   getItemArt,
+  getSub,
+  getArtist,
+  getAlbum,
   isAlbum,
   isTrack,
   isArtist,
@@ -15,7 +18,7 @@ import {
   resolveArtistParams,
   decodeDefaults,
 } from '../itemHelpers';
-import type { SonosItem } from '../../types/sonos';
+import type { SonosItem, QueueItem } from '../../types/sonos';
 import type { ServiceSearch } from '../../types/ServiceSearch';
 
 // ─── fmtDuration ─────────────────────────────────────────────────────────────
@@ -278,6 +281,90 @@ describe('parseServiceSearch', () => {
 
     expect(parseServiceSearch(data)).toEqual([]);
   });
+
+  it('parses ALBUMS section with artists', () => {
+    const data = {
+      resourceOrder: ['ALBUMS'],
+      ALBUMS: {
+        resources: [{
+          name: 'A Night at the Opera',
+          id: { objectId: 'alb1', serviceId: 'gm', accountId: 'acc1' },
+          artists: [{ name: 'Queen', id: { objectId: 'art1', serviceId: 'gm', accountId: 'acc1' } }],
+          explicit: false,
+          summary: { content: 'Classic rock' },
+        }],
+      },
+    } as unknown as ServiceSearch;
+
+    const result = parseServiceSearch(data);
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('ALBUM');
+    expect(result[0].name).toBe('A Night at the Opera');
+    expect(result[0].artists?.[0].name).toBe('Queen');
+  });
+
+  it('parses TRACKS section with artists (covers artists.map callback)', () => {
+    const data = {
+      resourceOrder: ['TRACKS'],
+      TRACKS: {
+        resources: [{
+          name: 'Bohemian Rhapsody',
+          id: { objectId: 'trk1', serviceId: 'gm', accountId: 'acc1' },
+          artists: [{ name: 'Queen', id: { objectId: 'art1', serviceId: 'gm', accountId: 'acc1' } }],
+          explicit: false,
+          durationMs: 354000,
+        }],
+      },
+    } as unknown as ServiceSearch;
+
+    const result = parseServiceSearch(data);
+    expect(result[0].artists?.[0].name).toBe('Queen');
+  });
+
+  it('parses PLAYLISTS section', () => {
+    const data = {
+      resourceOrder: ['PLAYLISTS'],
+      PLAYLISTS: {
+        resources: [{
+          name: 'My Playlist',
+          id: { objectId: 'pl1', serviceId: 'gm', accountId: 'acc1' },
+        }],
+      },
+    } as unknown as ServiceSearch;
+
+    const result = parseServiceSearch(data);
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('PLAYLIST');
+    expect(result[0].name).toBe('My Playlist');
+  });
+
+  it('parses PODCASTS section', () => {
+    const data = {
+      resourceOrder: ['PODCASTS'],
+      PODCASTS: {
+        resources: [{
+          name: 'Tech Talk',
+          id: { objectId: 'pod1', serviceId: 'gm', accountId: 'acc1' },
+        }],
+      },
+    } as unknown as ServiceSearch;
+
+    const result = parseServiceSearch(data);
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('PODCAST');
+    expect(result[0].name).toBe('Tech Talk');
+  });
+
+  it('uses default resourceOrder when not specified', () => {
+    const data = {
+      ARTISTS: { resources: [{ name: 'A', id: { objectId: 'a', serviceId: 's', accountId: 'c' } }] },
+      ALBUMS:  { resources: [{ name: 'B', id: { objectId: 'b', serviceId: 's', accountId: 'c' } }] },
+      TRACKS:  { resources: [{ name: 'C', id: { objectId: 'c', serviceId: 's', accountId: 'c' } }] },
+    } as unknown as ServiceSearch;
+
+    const result = parseServiceSearch(data);
+    expect(result.map(r => r.type)).toEqual(['ARTIST', 'ALBUM', 'TRACK']);
+  });
 });
 
 // ─── resolveAlbumParams ───────────────────────────────────────────────────────
@@ -352,6 +439,58 @@ describe('resolveArtistParams', () => {
   it('returns undefined artistId when nothing can be resolved', () => {
     const result = resolveArtistParams({ type: 'ALBUM' } as SonosItem);
     expect(result.artistId).toBeUndefined();
+  });
+});
+
+// ─── getSub / getArtist / getAlbum ───────────────────────────────────────────
+
+describe('getSub', () => {
+  it('returns artist name from subtitle field', () => {
+    const item = { type: 'TRACK', subtitle: 'The Beatles' } as unknown as SonosItem;
+    expect(getSub(item)).toBe('The Beatles');
+  });
+
+  it('returns empty string when no artist info present', () => {
+    expect(getSub({} as SonosItem)).toBe('');
+  });
+
+  it('returns summary.content when present', () => {
+    const item = { type: 'TRACK', subtitle: 'Artist', summary: { content: 'A great track' } } as unknown as SonosItem;
+    expect(getSub(item)).toBe('A great track');
+  });
+});
+
+describe('getArtist', () => {
+  it('returns artist from track.artist string', () => {
+    const item = { track: { artist: 'The Beatles', name: 'Come Together' } } as unknown as QueueItem;
+    expect(getArtist(item)).toBe('The Beatles');
+  });
+
+  it('returns empty string for null/falsy artist', () => {
+    const item = { track: { artist: null, name: 'Song' } } as unknown as QueueItem;
+    expect(getArtist(item)).toBe('');
+  });
+
+  it('extracts name from artist object', () => {
+    const item = { track: { artist: { name: 'Queen' } } } as unknown as QueueItem;
+    expect(getArtist(item)).toBe('Queen');
+  });
+});
+
+describe('getAlbum', () => {
+  it('returns album name string directly', () => {
+    const item = { track: { album: 'Abbey Road' } } as unknown as QueueItem;
+    expect(getAlbum(item)).toBe('Abbey Road');
+  });
+
+  it('extracts name from album object', () => {
+    const item = { track: { album: { name: 'Abbey Road' } } } as unknown as QueueItem;
+    expect(getAlbum(item)).toBe('Abbey Road');
+  });
+
+  it('returns empty string when no album', () => {
+    const item = {} as QueueItem;
+    expect(getAlbum(item)).toBe('');
   });
 });
 
