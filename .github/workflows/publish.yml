@@ -42,7 +42,7 @@ jobs:
         if: always()
         with:
           name: Vitest Tests
-          path: junit.xml
+          path: renderer/junit.xml
           reporter: java-junit
           fail-on-error: true
 
