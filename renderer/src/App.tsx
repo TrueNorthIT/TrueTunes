@@ -9,7 +9,7 @@ import { trackQueryOptions } from './hooks/useTrackDetails';
 import { albumQueryOptions, type AlbumTrack } from './hooks/useAlbumBrowse';
 import { playlistQueryOptions } from './hooks/usePlaylistBrowse';
 import { api } from './lib/sonosApi';
-import { normalizeForQueue, isTrack, isProgram, isAlbum, isPlaylist, extractItems, resolveAlbumParams } from './lib/itemHelpers';
+import { normalizeForQueue, isTrack, isProgram, isAlbum, isPlaylist, extractItems, resolveAlbumParams, getItemArt } from './lib/itemHelpers';
 import type { SonosItem, SonosItemId } from './types/sonos';
 
 import { TopNav } from './components/TopNav';
@@ -232,21 +232,31 @@ function MainApp() {
     if (isSingleTrack && uri) {
       publishTrackAttribution(uri, serviceId, accountId, {
         trackName: getName(normalized),
-        imageUrl: item.imageUrl ?? (item.images as Array<{ url: string }> | undefined)?.[0]?.url,
+        imageUrl: getItemArt(item) ?? undefined,
       });
     } else if (isAlbumItem && uri) {
       // 1× album rollup event so albumMap.count tracks album-adds, not track-adds.
+      // Resolve art/artist from the album browse cache when present (richer than the card item)
+      // and fall back to fields on the source item (subtitle = artist for browse-shaped items).
+      const { albumId, serviceId: aSvc, accountId: aAcc, defaults } = resolveAlbumParams(item);
+      const cachedAlbum = albumId && aSvc && aAcc
+        ? queryClient.getQueryData<{ artist?: string; artUrl?: string | null }>(['album', albumId])
+        : undefined;
+      const artist = cachedAlbum?.artist
+        ?? ((item as Record<string, unknown>)['subtitle'] as string)
+        ?? (item.artists?.[0]?.name as string | undefined)
+        ?? '';
+      const imageUrl = cachedAlbum?.artUrl ?? getItemArt(item) ?? undefined;
       window.sonos.publishQueued({
         eventType: 'album',
         uri,
         trackName: getName(item),
-        artist: ((item as Record<string, unknown>)['subtitle'] as string) ?? '',
+        artist,
         album:   getName(item),
         albumId: uri,
-        imageUrl: item.imageUrl ?? (item.images as Array<{ url: string }> | undefined)?.[0]?.url,
+        imageUrl,
       });
       // N× per-track events so individual tracks land on the leaderboard.
-      const { albumId, serviceId: aSvc, accountId: aAcc, defaults } = resolveAlbumParams(item);
       if (albumId && aSvc && aAcc) {
         queryClient.fetchQuery(albumQueryOptions(albumId, aSvc, aAcc, defaults))
           .then((album) => fanOutTrackAttribution(album.tracks, album.artUrl))
