@@ -191,4 +191,93 @@ describe('LeaderboardPanel', () => {
       expect(mockUseStats).toHaveBeenCalledWith('week', undefined);
     });
   });
+
+  describe('track artist/album navigation', () => {
+    it('clicking an artist link with artistId navigates to artist page', () => {
+      render(<LeaderboardPanel />);
+      // Queen has artistId 'art1'
+      fireEvent.click(screen.getAllByText('Queen')[0]);
+      expect(mockNavigate).toHaveBeenCalledWith(
+        expect.stringMatching(/^\/artist\//),
+        expect.anything()
+      );
+    });
+
+    it('clicking an artist link without artistId navigates to search', () => {
+      render(<LeaderboardPanel />);
+      // Eagles has no artistId
+      fireEvent.click(screen.getAllByText('Eagles')[0]);
+      expect(mockNavigate).toHaveBeenCalledWith(
+        expect.stringMatching(/^\/search\?q=/)
+      );
+    });
+
+    it('shows "No data yet" for empty topTracks', () => {
+      mockLoaded({ ...mockData, topTracks: [] });
+      render(<LeaderboardPanel />);
+      expect(screen.getAllByText('No data yet').length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('shows "No data yet" for empty topArtists', () => {
+      mockLoaded({ ...mockData, topArtists: [] });
+      render(<LeaderboardPanel />);
+      expect(screen.getAllByText('No data yet').length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('shows "No data yet for this period" when topUsers is empty', () => {
+      mockLoaded({ ...mockData, topUsers: [] });
+      render(<LeaderboardPanel />);
+      expect(screen.getByText('No data yet for this period')).toBeInTheDocument();
+    });
+  });
+
+  describe('album navigation', () => {
+    it('clicking album link with albumId navigates to album page', () => {
+      mockLoaded({
+        ...mockData,
+        topAlbums: [],
+        topTracks: [
+          { trackName: 'My Song', artist: 'Artist', count: 5, artistId: 'art1', album: 'Great Album', albumId: 'alb9' },
+        ],
+      });
+      render(<LeaderboardPanel />);
+      fireEvent.click(screen.getByText('Great Album'));
+      expect(mockNavigate).toHaveBeenCalledWith(
+        expect.stringMatching(/^\/album\//),
+        expect.anything()
+      );
+    });
+
+    it('clicking album link without albumId navigates to search', () => {
+      mockLoaded({
+        ...mockData,
+        topAlbums: [],
+        topTracks: [
+          { trackName: 'Track', artist: 'Artist', count: 1, album: 'Rare Album' },
+        ],
+      });
+      render(<LeaderboardPanel />);
+      fireEvent.click(screen.getByText('Rare Album'));
+      expect(mockNavigate).toHaveBeenCalledWith(
+        expect.stringMatching(/^\/search\?q=/)
+      );
+    });
+  });
+
+  describe('4th+ place rank numbers', () => {
+    it('shows numeric rank for users beyond top 3', () => {
+      mockLoaded({
+        ...mockData,
+        topUsers: [
+          { userId: 'u1', count: 10 },
+          { userId: 'u2', count: 8 },
+          { userId: 'u3', count: 6 },
+          { userId: 'u4-unique', count: 4 },
+        ],
+      });
+      render(<LeaderboardPanel />);
+      // The 4th user gets a numeric rank "4"
+      expect(screen.getByText('u4-unique')).toBeInTheDocument();
+    });
+  });
 });
