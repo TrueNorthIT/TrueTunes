@@ -12,6 +12,11 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     css: { modules: { classNameStrategy: 'non-scoped' } },
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.{test,spec}.{ts,tsx}', 'src/test/**'],
+    },
   },
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') },
