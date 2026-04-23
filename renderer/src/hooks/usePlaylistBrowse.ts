@@ -36,13 +36,13 @@ export function parsePlaylistTracks(data: unknown): AlbumTrack[] {
   }));
 }
 
-export function usePlaylistBrowse(
+export function playlistQueryOptions(
   playlistId: string | undefined,
   serviceId: string | undefined,
   accountId: string | undefined,
-  defaults?: string
+  defaults?: string,
 ) {
-  return useQuery({
+  return {
     queryKey: ['playlist', playlistId] as const,
     queryFn: async () => {
       const r = await api.browse.playlist(playlistId!, { serviceId, accountId, defaults, muse2: true });
@@ -51,6 +51,17 @@ export function usePlaylistBrowse(
     },
     staleTime: Infinity,
     gcTime: 60 * 60 * 1000,
+  };
+}
+
+export function usePlaylistBrowse(
+  playlistId: string | undefined,
+  serviceId: string | undefined,
+  accountId: string | undefined,
+  defaults?: string
+) {
+  return useQuery({
+    ...playlistQueryOptions(playlistId, serviceId, accountId, defaults),
     enabled: !!(playlistId && serviceId && accountId),
   });
 }

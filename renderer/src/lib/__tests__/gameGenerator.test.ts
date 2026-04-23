@@ -64,6 +64,58 @@ describe('aggregateEvents', () => {
   });
 });
 
+describe('aggregateEvents — eventType branching', () => {
+  it("eventType 'track' bumps trackMap + artistMap + userCounts but not albumMap", () => {
+    const events: RawEvent[] = [
+      { eventType: 'track', userId: 'alice', trackName: 'Dreams',    artist: 'Fleetwood Mac', album: 'Rumours', albumId: 'alb-rumours' },
+      { eventType: 'track', userId: 'alice', trackName: 'The Chain', artist: 'Fleetwood Mac', album: 'Rumours', albumId: 'alb-rumours' },
+    ];
+    const agg = aggregateEvents(events);
+    expect(agg.trackMap['Dreams||Fleetwood Mac'].count).toBe(1);
+    expect(agg.trackMap['The Chain||Fleetwood Mac'].count).toBe(1);
+    expect(agg.artistMap['Fleetwood Mac'].count).toBe(2);
+    expect(agg.userCounts.alice).toBe(2);
+    expect(agg.albumMap['alb-rumours']).toBeUndefined();
+  });
+
+  it("eventType 'album' bumps albumMap only — no trackMap, artistMap, or userCounts", () => {
+    const events: RawEvent[] = [
+      { eventType: 'album', userId: 'alice', trackName: 'Rumours', artist: 'Fleetwood Mac', album: 'Rumours', albumId: 'alb-rumours' },
+    ];
+    const agg = aggregateEvents(events);
+    expect(agg.albumMap['alb-rumours'].count).toBe(1);
+    expect(Object.keys(agg.trackMap)).toHaveLength(0);
+    expect(Object.keys(agg.artistMap)).toHaveLength(0);
+    expect(Object.keys(agg.userCounts)).toHaveLength(0);
+  });
+
+  it('legacy events (no eventType) keep flowing into all three maps + userCounts', () => {
+    const events: RawEvent[] = [
+      { userId: 'alice', trackName: 'Dreams', artist: 'Fleetwood Mac', album: 'Rumours', albumId: 'alb-rumours' },
+    ];
+    const agg = aggregateEvents(events);
+    expect(agg.trackMap['Dreams||Fleetwood Mac'].count).toBe(1);
+    expect(agg.artistMap['Fleetwood Mac'].count).toBe(1);
+    expect(agg.albumMap['alb-rumours'].count).toBe(1);
+    expect(agg.userCounts.alice).toBe(1);
+  });
+
+  it('an album add (1 album event + N track events) gives albumMap +1, artistMap +N, userCounts +N — never +N+1', () => {
+    // Simulates queueing one 3-track album under the new scheme.
+    const events: RawEvent[] = [
+      { eventType: 'album', userId: 'alice', trackName: 'Rumours',  artist: 'Fleetwood Mac', album: 'Rumours', albumId: 'alb-rumours' },
+      { eventType: 'track', userId: 'alice', trackName: 'Dreams',   artist: 'Fleetwood Mac', album: 'Rumours', albumId: 'alb-rumours' },
+      { eventType: 'track', userId: 'alice', trackName: 'The Chain',artist: 'Fleetwood Mac', album: 'Rumours', albumId: 'alb-rumours' },
+      { eventType: 'track', userId: 'alice', trackName: 'Go Your Own Way', artist: 'Fleetwood Mac', album: 'Rumours', albumId: 'alb-rumours' },
+    ];
+    const agg = aggregateEvents(events);
+    expect(agg.albumMap['alb-rumours'].count).toBe(1);   // not 4
+    expect(agg.artistMap['Fleetwood Mac'].count).toBe(3); // not 4 — album event must not contribute
+    expect(Object.keys(agg.trackMap)).toHaveLength(3);
+    expect(agg.userCounts.alice).toBe(3); // not 4 — album event must not bump userCounts
+  });
+});
+
 describe('generateGame', () => {
   function buildAgg(): ReturnType<typeof aggregateEvents> {
     const users = ['alice', 'bob', 'cara', 'dan'];

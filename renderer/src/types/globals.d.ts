@@ -11,6 +11,7 @@ type AttributionMap = Record<string, AttributionEntry>;
 
 interface AttributionEvent {
   type: 'queued';
+  eventType?: 'track' | 'album';
   user: string;
   uri: string;
   trackName: string;
@@ -51,6 +52,7 @@ interface StatsTrack {
 interface StatsArtist {
   artist: string;
   artistId?: string;
+  imageUrl?: string;
   count: number;
 }
 interface StatsAlbum {
@@ -181,6 +183,7 @@ interface SonosPreload {
   getDisplayName: () => Promise<string | null>;
   setDisplayName: (name: string) => Promise<void>;
   publishQueued: (item: {
+    eventType: 'track' | 'album';
     uri: string;
     trackName: string;
     artist: string;

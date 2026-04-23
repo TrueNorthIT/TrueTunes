@@ -374,7 +374,7 @@ describe('QueuedlePanel', () => {
 
   // ── calendar / past-day picker ───────────────────────────────────────────
 
-  it('renders the calendar on the already-played view when game-dates returns entries', async () => {
+  it('exposes the calendar behind a header button on the already-played view', async () => {
     localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
     mockUseGameDates.mockReturnValue({
       data: { dates: [
@@ -383,12 +383,25 @@ describe('QueuedlePanel', () => {
       ]},
       isLoading: false,
     });
+    const user = userEvent.setup();
     render(<QueuedlePanel />);
-    await waitFor(() => expect(screen.getByText('cal-2023-12-31')).toBeInTheDocument());
+    // Calendar is not rendered inline — it's hidden until the button is clicked.
+    await waitFor(() => expect(screen.getByText('📅 Calendar')).toBeInTheDocument());
+    expect(screen.queryByText('cal-2023-12-31')).not.toBeInTheDocument();
+    await user.click(screen.getByText('📅 Calendar'));
+    expect(screen.getByText('cal-2023-12-31')).toBeInTheDocument();
     expect(screen.getByText('cal-2024-01-01-played')).toBeInTheDocument();
   });
 
-  it('selecting a past date in the calendar resets to the intro screen for that day', async () => {
+  it('hides the calendar button when there are no game-dates entries', async () => {
+    localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
+    mockUseGameDates.mockReturnValue({ data: { dates: [] }, isLoading: false });
+    render(<QueuedlePanel />);
+    await waitFor(() => expect(screen.getByText('Score: 3')).toBeInTheDocument());
+    expect(screen.queryByText('📅 Calendar')).not.toBeInTheDocument();
+  });
+
+  it('selecting a past date in the calendar closes the popup and resets to the intro screen', async () => {
     localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
     mockUseGameDates.mockReturnValue({
       data: { dates: [{ gameId: '2023-12-31', status: 'ready', userPlayed: false }] },
@@ -403,10 +416,12 @@ describe('QueuedlePanel', () => {
     }));
     const user = userEvent.setup();
     render(<QueuedlePanel />);
-    await waitFor(() => expect(screen.getByText('cal-2023-12-31')).toBeInTheDocument());
+    await user.click(await screen.findByText('📅 Calendar'));
     await user.click(screen.getByText('cal-2023-12-31'));
     expect(await screen.findByText('Intro screen')).toBeInTheDocument();
     expect(screen.getByText('← Today')).toBeInTheDocument();
+    // Popup no longer mounted after selection.
+    expect(screen.queryByText('cal-2023-12-31')).not.toBeInTheDocument();
   });
 
   it('back-to-today returns to the today view', async () => {
@@ -422,10 +437,28 @@ describe('QueuedlePanel', () => {
     }));
     const user = userEvent.setup();
     render(<QueuedlePanel />);
+    await user.click(await screen.findByText('📅 Calendar'));
     await user.click(await screen.findByText('cal-2023-12-31'));
     expect(await screen.findByText('Intro screen')).toBeInTheDocument();
     await user.click(screen.getByText('← Today'));
     // After back-to-today, the localStorage short-circuit re-fires for today's id.
     await waitFor(() => expect(screen.getByText('Score: 3')).toBeInTheDocument());
+  });
+
+  it('backfills localStorage when the leaderboard shows the user played but the local key is missing', async () => {
+    // No localStorage entry — the cloud is the only signal.
+    mockUseGameLeaderboard.mockReturnValue({
+      data: {
+        scores: [{ userName: 'TestUser', mainScore: 3, bonusScore: 2, total: 5 }],
+      },
+      isLoading: false,
+    });
+    render(<QueuedlePanel />);
+    await waitFor(() => expect(screen.getByText('Score: 5')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(localStorage.getItem('queuedle-played:2024-01-01')).toBe(
+        JSON.stringify({ mainScore: 3, bonusScore: 2 }),
+      ),
+    );
   });
 });
