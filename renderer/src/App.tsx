@@ -135,18 +135,31 @@ function MainApp() {
       .catch(() => { /* silent */ });
   }, [queryClient]);
 
-  const fanOutTrackAttribution = useCallback((tracks: AlbumTrack[], albumArtUrl?: string | null) => {
+  /**
+   * Publishes one 'track' event per track using only the AlbumTrack data
+   * already returned by browseAlbum / browsePlaylist — no per-track
+   * getTrackNowPlaying calls. For an N-track album this is the difference
+   * between O(N) and O(1) Sonos lookups.
+   */
+  const fanOutTrackAttribution = useCallback((
+    tracks: AlbumTrack[],
+    context: { album?: string | null; albumId?: string | null; artist?: string; artistId?: string; artUrl?: string | null },
+  ) => {
     for (const t of tracks) {
       const tid = t.id;
-      if (!tid?.objectId || !tid?.serviceId || !tid?.accountId) continue;
-      publishTrackAttribution(
-        tid.objectId,
-        tid.serviceId,
-        tid.accountId.replace(/^sn_/, ''),
-        { trackName: t.title, imageUrl: t.artUrl ?? albumArtUrl ?? undefined },
-      );
+      if (!tid?.objectId) continue;
+      window.sonos.publishQueued({
+        eventType: 'track',
+        uri: tid.objectId,
+        trackName: t.title,
+        artist:    t.artists[0] ?? context.artist ?? '',
+        artistId:  t.artistObjects?.[0]?.objectId ?? context.artistId,
+        album:     t.albumName ?? context.album ?? undefined,
+        albumId:   t.albumId   ?? context.albumId ?? undefined,
+        imageUrl:  t.artUrl ?? context.artUrl ?? undefined,
+      });
     }
-  }, [publishTrackAttribution]);
+  }, []);
 
   const handleAddToQueue = useCallback(async (item: SonosItem, position = -1) => {
     if (isProgram(item)) {
