@@ -209,7 +209,19 @@ export function QueuedlePanel() {
           <h1 className={styles.title}>Queuedle</h1>
           <span className={styles.sub}>{game.id}</span>
           <div className={styles.spacer} />
-          {headerActions}
+          {selectedDate !== null && (
+            <button className={styles.backToToday} onClick={handleBackToToday}>
+              ← Today
+            </button>
+          )}
+          {calendarDates.length > 0 && (
+            <button className={styles.calendarBtn} onClick={() => setCalendarOpen(true)}>
+              📅 Calendar
+            </button>
+          )}
+          <button className={styles.leaderLink} onClick={() => navigate('/leaderboard')}>
+            Leaderboard →
+          </button>
         </div>
         <div className={styles.body}>
           {cachedScore && (
