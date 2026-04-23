@@ -6,8 +6,10 @@ import { useGroups } from './hooks/useGroups';
 import { usePlayback } from './hooks/usePlayback';
 import { useQueue } from './hooks/useQueue';
 import { trackQueryOptions } from './hooks/useTrackDetails';
+import { albumQueryOptions, type AlbumTrack } from './hooks/useAlbumBrowse';
+import { playlistQueryOptions } from './hooks/usePlaylistBrowse';
 import { api } from './lib/sonosApi';
-import { normalizeForQueue, isTrack, isProgram, extractItems } from './lib/itemHelpers';
+import { normalizeForQueue, isTrack, isProgram, isAlbum, isPlaylist, extractItems, resolveAlbumParams } from './lib/itemHelpers';
 import type { SonosItem, SonosItemId } from './types/sonos';
 
 import { TopNav } from './components/TopNav';

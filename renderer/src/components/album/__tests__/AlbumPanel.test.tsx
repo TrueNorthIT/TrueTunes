@@ -192,12 +192,13 @@ describe('AlbumPanel', () => {
 
   // ── add to queue ──────────────────────────────────────────────────────────
 
-  it('add to queue button calls onAddToQueue for each track', async () => {
+  it('add to queue button calls onAddToQueue once with the album item (handler fans out per-track)', async () => {
     const onAdd = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
     render(<AlbumPanel onAddToQueue={onAdd} />, { wrapper });
     await user.click(screen.getByText('+ Add to Queue'));
-    await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(1));
+    expect(onAdd).toHaveBeenCalledWith(albumItem);
   });
 
   it('clicking Add on a track row calls onAddToQueue with that track raw', () => {

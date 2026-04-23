@@ -142,15 +142,10 @@ export function AlbumPanel({ onAddToQueue, queueOpen }: Props) {
                 className={styles.addAlbumBtn}
                 disabled={adding || !data?.tracks?.length}
                 onClick={async () => {
-                  if (!data?.tracks?.length) return;
+                  if (!item || !data?.tracks?.length) return;
                   setAdding(true);
-                  try {
-                    for (const t of data.tracks) {
-                      await onAddToQueue(t.raw);
-                    }
-                  } finally {
-                    setAdding(false);
-                  }
+                  try { await onAddToQueue(item); }
+                  finally { setAdding(false); }
                 }}
               >
                 {adding ? 'Adding…' : '+ Add to Queue'}
