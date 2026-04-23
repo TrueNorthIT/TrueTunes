@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { ContainerPanel } from '../ContainerPanel';
 import type { SonosItem } from '../../types/sonos';
 
@@ -12,8 +13,14 @@ const mockUseContainerBrowse = vi.fn();
 vi.mock('../../hooks/useContainerBrowse', () => ({
   useContainerBrowse: (...args: unknown[]) => mockUseContainerBrowse(...args),
 }));
-vi.mock('./common/MediaCard', () => ({
-  MediaCard: ({ name }: { name: string }) => <div>{name}</div>,
+vi.mock('../common/MediaCard', () => ({
+  MediaCard: ({ name, onOpen, onAdd }: { name: string; onOpen?: () => void; onAdd?: () => void }) => (
+    <div>
+      <span>{name}</span>
+      {onOpen && <button onClick={onOpen}>Open</button>}
+      <button onClick={onAdd}>Add</button>
+    </div>
+  ),
 }));
 
 const containerItem: SonosItem = {
@@ -70,5 +77,15 @@ describe('ContainerPanel', () => {
     render(<ContainerPanel onAddToQueue={vi.fn()} />);
     expect(screen.getByText('Song A')).toBeInTheDocument();
     expect(screen.getByText('Song B')).toBeInTheDocument();
+  });
+
+  it('calls onAddToQueue when Add button is clicked on a track item', async () => {
+    const onAddToQueue = vi.fn();
+    const user = userEvent.setup();
+    const items: SonosItem[] = [{ name: 'Track Item', type: 'TRACK' } as SonosItem];
+    mockUseContainerBrowse.mockReturnValue({ data: items, isLoading: false, error: null });
+    render(<ContainerPanel onAddToQueue={onAddToQueue} />);
+    await user.click(screen.getByText('Add'));
+    expect(onAddToQueue).toHaveBeenCalled();
   });
 });
