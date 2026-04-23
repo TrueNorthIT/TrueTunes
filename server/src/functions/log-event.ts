@@ -3,6 +3,7 @@ import { CosmosClient } from '@azure/cosmos';
 
 interface QueueEvent {
   type: 'queued';
+  eventType?: 'track' | 'album';
   user: string;
   uri: string;
   trackName: string;
@@ -47,6 +48,7 @@ export async function logEventHandler(
     await container.items.create({
       id,
       userId: body.user,
+      eventType: body.eventType ?? null,
       uri: body.uri,
       trackName: body.trackName,
       artist: body.artist,

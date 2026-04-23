@@ -1173,7 +1173,7 @@ ipcMain.handle('telemetry:event', (_: IpcMainInvokeEvent, name: string, props?: 
 
 ipcMain.handle(
   'pubsub:publishQueued',
-  async (_: IpcMainInvokeEvent, item: { uri: string; trackName: string; artist: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }) => {
+  async (_: IpcMainInvokeEvent, item: { eventType: 'track' | 'album'; uri: string; trackName: string; artist: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }) => {
     await officePubSub.publishQueued(item).catch(() => {
       /* silent */
     });
@@ -1181,6 +1181,7 @@ ipcMain.handle(
     // the WS won't echo it back, so we push it manually).
     const event = {
       type: 'queued' as const,
+      eventType: item.eventType,
       user: config.displayName ?? '',
       uri: item.uri,
       trackName: item.trackName,

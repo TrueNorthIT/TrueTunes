@@ -1,5 +1,7 @@
 export interface RawEvent {
   userId: string;
+  /** New events tag themselves as 'track' or 'album'. Legacy events (no tag) feed every map, preserving pre-split behavior. */
+  eventType?: 'track' | 'album' | null;
   trackName: string;
   artist: string;
   artistId?: string | null;

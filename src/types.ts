@@ -10,8 +10,12 @@ export interface AttributionEntry {
 /** Keyed by track objectId / URI */
 export type AttributionMap = Record<string, AttributionEntry>;
 
+export type EventType = 'track' | 'album';
+
 export interface AttributionEvent {
   type: 'queued';
+  /** Distinguishes per-track events from album-rollup events. Absent on legacy events. */
+  eventType?: EventType;
   user: string;
   uri: string;
   trackName: string;
