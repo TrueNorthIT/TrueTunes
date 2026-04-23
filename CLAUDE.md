@@ -142,4 +142,4 @@ Resource group: `truetunes-rg` (uksouth)
 | App Insights | `truetunes-ai` |
 | Log Analytics | `truetunes-law` |
 
-Deploy: `az deployment group create --resource-group truetunes-rg --template-file server/azuredeploy.json --mode Incremental`
+Deploy: `cd server && npm run deploy` — wraps `az deployment group create` and reads `VESTABOARD_API_KEY` from the root `.env`, passing it as the `vestaboardApiKey` ARM parameter so the secret is never committed.

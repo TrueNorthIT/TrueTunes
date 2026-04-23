@@ -7,7 +7,8 @@
     "build": "tsc",
     "watch": "tsc -w",
     "start": "npm run build && func start",
-    "prestart": "npm run build"
+    "prestart": "npm run build",
+    "deploy": "node scripts/deploy.mjs"
   },
   "dependencies": {
     "@azure/cosmos": "^4.1.0",
