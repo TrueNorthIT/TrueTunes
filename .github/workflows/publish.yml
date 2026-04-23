@@ -8,6 +8,8 @@ on:
 
 permissions:
   contents: write
+  checks: write
+  pull-requests: write
 
 jobs:
   validate:
@@ -27,7 +29,29 @@ jobs:
 
       - run: npm run typecheck
 
-      - run: npm run test:run
+      - name: Test with coverage
+        run: >
+          npm run test:run --
+          --reporter=default
+          --reporter=junit
+          --outputFile.junit=./junit.xml
+          --coverage
+
+      - name: Publish test results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Vitest Tests
+          path: junit.xml
+          reporter: java-junit
+          fail-on-error: true
+
+      - name: Publish coverage report
+        uses: davelosert/vitest-coverage-report-action@v2
+        if: always()
+        with:
+          json-summary-path: renderer/coverage/coverage-summary.json
+          json-summary-compare-path: renderer/coverage/coverage-summary.json
 
   version:
     needs: validate

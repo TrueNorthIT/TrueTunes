@@ -19,8 +19,8 @@ vi.mock('../../hooks/useOpenItem', () => ({ useOpenItem: () => vi.fn() }));
 
 const mockAlbumQueryOptions = vi.fn(() => ({ queryKey: ['album-test'], queryFn: async () => null }));
 const mockArtistQueryOptions = vi.fn(() => ({ queryKey: ['artist-test'], queryFn: async () => null }));
-vi.mock('../../hooks/useAlbumBrowse', () => ({ albumQueryOptions: (...a: unknown[]) => mockAlbumQueryOptions(...a) }));
-vi.mock('../../hooks/useArtistBrowse', () => ({ artistQueryOptions: (...a: unknown[]) => mockArtistQueryOptions(...a) }));
+vi.mock('../../hooks/useAlbumBrowse', () => ({ albumQueryOptions: () => mockAlbumQueryOptions() }));
+vi.mock('../../hooks/useArtistBrowse', () => ({ artistQueryOptions: () => mockArtistQueryOptions() }));
 
 vi.mock('../../lib/sonosApi', () => ({
   api: {
