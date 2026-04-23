@@ -11,6 +11,9 @@ permissions:
   checks: write
   pull-requests: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -51,7 +54,8 @@ jobs:
         if: always()
         with:
           json-summary-path: renderer/coverage/coverage-summary.json
-          json-summary-compare-path: renderer/coverage/coverage-summary.json
+          json-final-path: renderer/coverage/coverage-final.json
+          vite-config-path: renderer/vitest.config.ts
 
   version:
     needs: validate
