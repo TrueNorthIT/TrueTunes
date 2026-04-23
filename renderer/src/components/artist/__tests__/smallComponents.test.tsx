@@ -3,6 +3,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { RadioCard } from '../RadioCard';
 import { TopSongRow } from '../TopSongRow';
 import { HeroTrackRow } from '../HeroTrackRow';
+import { ArtistAlbumCard } from '../ArtistAlbumCard';
+import { LatestReleaseCard } from '../LatestReleaseCard';
 import type { SonosItem } from '../../../types/sonos';
 import type { AlbumTrack } from '../../../hooks/useAlbumBrowse';
 
@@ -91,6 +93,65 @@ describe('TopSongRow', () => {
 });
 
 // ─── HeroTrackRow ─────────────────────────────────────────────────────────────
+
+// ─── ArtistAlbumCard ──────────────────────────────────────────────────────────
+
+describe('ArtistAlbumCard', () => {
+  const album: SonosItem = { title: 'Abbey Road', type: 'ITEM_ALBUM' };
+
+  it('renders album title', () => {
+    render(<ArtistAlbumCard album={album} onOpen={vi.fn()} />);
+    expect(screen.getByText('Abbey Road')).toBeInTheDocument();
+  });
+
+  it('calls onOpen when clicked', () => {
+    const onOpen = vi.fn();
+    render(<ArtistAlbumCard album={album} onOpen={onOpen} />);
+    fireEvent.click(screen.getByText('Abbey Road'));
+    expect(onOpen).toHaveBeenCalledWith(album);
+  });
+
+  it('renders subtitle when present', () => {
+    const withSub = { ...album, subtitle: '1969' };
+    render(<ArtistAlbumCard album={withSub} onOpen={vi.fn()} />);
+    expect(screen.getByText('1969')).toBeInTheDocument();
+  });
+
+  it('shows ExplicitBadge when isExplicit is true', () => {
+    const explicit = { ...album, isExplicit: true };
+    render(<ArtistAlbumCard album={explicit} onOpen={vi.fn()} />);
+    expect(screen.getByTitle('Explicit')).toBeInTheDocument();
+  });
+});
+
+// ─── LatestReleaseCard ────────────────────────────────────────────────────────
+
+describe('LatestReleaseCard', () => {
+  const album: SonosItem = { title: 'Now and Then', type: 'ITEM_ALBUM' };
+
+  it('renders Latest Release label', () => {
+    render(<LatestReleaseCard album={album} onOpen={vi.fn()} />);
+    expect(screen.getByText('Latest Release')).toBeInTheDocument();
+  });
+
+  it('renders album title', () => {
+    render(<LatestReleaseCard album={album} onOpen={vi.fn()} />);
+    expect(screen.getByText('Now and Then')).toBeInTheDocument();
+  });
+
+  it('calls onOpen when clicked', () => {
+    const onOpen = vi.fn();
+    render(<LatestReleaseCard album={album} onOpen={onOpen} />);
+    fireEvent.click(screen.getByText('Now and Then'));
+    expect(onOpen).toHaveBeenCalledWith(album);
+  });
+
+  it('renders subtitle when present', () => {
+    const withSub = { ...album, subtitle: 'Single' };
+    render(<LatestReleaseCard album={withSub} onOpen={vi.fn()} />);
+    expect(screen.getByText('Single')).toBeInTheDocument();
+  });
+});
 
 import type { HeroTrack } from '../HeroTrackRow';
 
