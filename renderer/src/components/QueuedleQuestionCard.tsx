@@ -6,6 +6,7 @@ interface Props {
   pickedSide: 'left' | 'right' | null;
   onPick: (side: 'left' | 'right') => void;
   onNext: () => void;
+  carryFrom?: 'left' | 'right' | null;
 }
 
 function CategoryLabel({ category }: { category: GameItemCategory }) {
@@ -28,6 +29,7 @@ function Side({
   revealed,
   isWinner,
   isCarryover,
+  carryFrom,
   pickedSide,
   onPick,
 }: {
@@ -36,17 +38,26 @@ function Side({
   revealed: boolean;
   isWinner: boolean;
   isCarryover: boolean;
+  carryFrom: 'left' | 'right' | null;
   pickedSide: 'left' | 'right' | null;
   onPick: (side: 'left' | 'right') => void;
 }) {
   const pickLabel =
     item.category === 'track' ? 'Pick song' : item.category === 'artist' ? 'Pick artist' : 'Pick album';
 
+  const isWrongPick = revealed && pickedSide === side && !isWinner;
+  const isCorrectPick = revealed && pickedSide === side && isWinner;
+  const slideFromOpposite = isCarryover && carryFrom !== null && carryFrom !== side;
+
   const cls = [
     styles.side,
     isCarryover && !revealed && styles.sideKnown,
     revealed && isWinner && styles.sideWinner,
     revealed && !isWinner && styles.sideLoser,
+    isWrongPick && styles.sideWrongPick,
+    isCorrectPick && styles.sideCorrectPick,
+    slideFromOpposite && carryFrom === 'right' && styles.sideCarrySlideFromRight,
+    slideFromOpposite && carryFrom === 'left' && styles.sideCarrySlideFromLeft,
   ]
     .filter(Boolean)
     .join(' ');
@@ -81,8 +92,9 @@ function Side({
   );
 }
 
-export function QueuedleQuestionCard({ question, revealed, pickedSide, onPick, onNext }: Props) {
+export function QueuedleQuestionCard({ question, revealed, pickedSide, onPick, onNext, carryFrom }: Props) {
   const carryover = question.carryover;
+  const carryFromSide = carryFrom ?? null;
   return (
     <>
       <div className={styles.question}>
@@ -92,6 +104,7 @@ export function QueuedleQuestionCard({ question, revealed, pickedSide, onPick, o
           revealed={revealed}
           isWinner={question.winner === 'left'}
           isCarryover={carryover === 'left'}
+          carryFrom={carryFromSide}
           pickedSide={pickedSide}
           onPick={onPick}
         />
@@ -102,6 +115,7 @@ export function QueuedleQuestionCard({ question, revealed, pickedSide, onPick, o
           revealed={revealed}
           isWinner={question.winner === 'right'}
           isCarryover={carryover === 'right'}
+          carryFrom={carryFromSide}
           pickedSide={pickedSide}
           onPick={onPick}
         />

@@ -16,6 +16,13 @@
       "metadata": {
         "description": "Azure region for all resources."
       }
+    },
+    "vestaboardApiKey": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Vestaboard Read/Write API key. Pulled from .env by `npm run deploy`. Leave blank to disable Vestaboard messages."
+      }
     }
   },
   "variables": {
@@ -258,6 +265,10 @@
             {
               "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
               "value": "[reference(resourceId('Microsoft.Insights/components', variables('appInsightsName')), '2020-02-02').ConnectionString]"
+            },
+            {
+              "name": "VESTABOARD_API_KEY",
+              "value": "[parameters('vestaboardApiKey')]"
             }
           ],
           "ftpsState": "Disabled",

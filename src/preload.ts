@@ -50,6 +50,7 @@ export interface SonosAPI {
     guesses: { main: Array<'left' | 'right'>; bonus: string[] };
   }) => Promise<unknown>;
   fetchGameLeaderboard: (date?: string) => Promise<unknown>;
+  fetchGameDates: (userName: string) => Promise<unknown>;
   trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
   minimizeWindow:    () => Promise<void>;
   maximizeWindow:    () => Promise<void>;
@@ -152,6 +153,7 @@ contextBridge.exposeInMainWorld('sonos', {
   fetchDailyGame: (date?: string) => ipcRenderer.invoke('game:fetch', date),
   submitGameScore: (input) => ipcRenderer.invoke('game:submit', input),
   fetchGameLeaderboard: (date?: string) => ipcRenderer.invoke('game:leaderboard', date),
+  fetchGameDates: (userName: string) => ipcRenderer.invoke('game:dates', userName),
   onAttributionEvent: (cb: (event: AttributionEvent) => void): Unsubscribe => {
     const listener = (_e: unknown, event: AttributionEvent) => cb(event);
     ipcRenderer.on('attribution:event', listener);

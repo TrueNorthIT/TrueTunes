@@ -98,6 +98,40 @@
 .sideLoser  { border-color: rgba(248, 113, 113, 0.45); background: rgba(248, 113, 113, 0.05); }
 .sideKnown  { border-color: rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.02); }
 
+@keyframes slideFromRight {
+  from { transform: translateX(60%); opacity: 0.4; }
+  to   { transform: translateX(0);   opacity: 1; }
+}
+@keyframes slideFromLeft {
+  from { transform: translateX(-60%); opacity: 0.4; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+.sideCarrySlideFromRight { animation: slideFromRight 0.5s ease-out; }
+.sideCarrySlideFromLeft  { animation: slideFromLeft  0.5s ease-out; }
+
+@keyframes shakeRed {
+  0%, 100% { transform: translateX(0); background: rgba(248, 113, 113, 0.05); }
+  20%, 60% { transform: translateX(-6px); background: rgba(248, 113, 113, 0.18); }
+  40%, 80% { transform: translateX(6px);  background: rgba(248, 113, 113, 0.18); }
+}
+.sideWrongPick { animation: shakeRed 0.45s ease-out; }
+
+.sideCorrectPick { position: relative; overflow: hidden; }
+.sideCorrectPick::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(74, 222, 128, 0.35), rgba(74, 222, 128, 0));
+  transform: translateX(-100%);
+  animation: greenWipe 0.7s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes greenWipe {
+  0%   { transform: translateX(-100%); opacity: 1; }
+  60%  { transform: translateX(0);     opacity: 1; }
+  100% { transform: translateX(100%);  opacity: 0; }
+}
+
 .categoryBadge {
   align-self: flex-start;
   font-size: 10px;
@@ -213,6 +247,38 @@
   cursor: pointer;
 }
 .nextBtn:hover { opacity: 0.88; }
+
+/* ── Intro screen ── */
+.intro {
+  max-width: 520px;
+  margin: 32px auto 0;
+  text-align: center;
+}
+.introRules {
+  text-align: left;
+  margin: 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.introRule {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 14px 16px;
+}
+.introRuleTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 4px;
+}
+.introRuleBody {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.45;
+  margin: 0;
+}
 
 /* ── Bonus screen (list of winning entries with pickers) ── */
 .bonusIntro {
@@ -442,3 +508,143 @@
   .summaryRows { grid-template-columns: 1fr; }
   .bonusList { grid-template-columns: 1fr; }
 }
+
+/* ── Calendar / past-day picker ── */
+.calendar {
+  margin-top: 32px;
+  width: 100%;
+  max-width: 360px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.calendarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.calendarTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.calendarNav {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.calendarNav:hover:not(:disabled) { background: var(--bg-2); color: var(--text); }
+.calendarNav:disabled { opacity: 0.3; cursor: default; }
+
+.calendarDayRow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.calendarDayLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text-3);
+  text-align: center;
+  letter-spacing: 0.06em;
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendarCellEmpty {
+  aspect-ratio: 1;
+}
+
+.calendarCell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: transform 0.1s, background 0.12s;
+  padding: 0;
+}
+
+.calendarCellPlayable {
+  background: rgba(74, 222, 128, 0.18);
+  color: var(--text);
+}
+.calendarCellPlayable:hover {
+  background: rgba(74, 222, 128, 0.32);
+  transform: translateY(-1px);
+}
+
+.calendarCellPlayed {
+  background: rgba(168, 85, 247, 0.22);
+  color: var(--text);
+  cursor: default;
+}
+
+.calendarCellUnavailable {
+  opacity: 0.3;
+  cursor: default;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.calendarCellToday { border-color: var(--text-2); }
+.calendarCellSelected { box-shadow: 0 0 0 2px var(--text); }
+
+.calendarLegend {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.calendarLegendSwatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+.calendarLegendLabel {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-right: 8px;
+}
+
+.backToToday {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  margin-right: 8px;
+}
+.backToToday:hover { background: var(--bg-2); color: var(--text); }

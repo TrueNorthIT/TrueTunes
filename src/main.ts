@@ -1257,6 +1257,16 @@ ipcMain.handle('game:leaderboard', async (_: IpcMainInvokeEvent, date?: string) 
   }
 });
 
+ipcMain.handle('game:dates', async (_: IpcMainInvokeEvent, userName: string) => {
+  try {
+    const url = `${PUBSUB_FUNCTION_URL}/api/game-dates?userName=${encodeURIComponent(userName ?? '')}`;
+    const res = await fetch(url);
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
 ipcMain.handle('attribution:refresh', async () => {
   try {
     const map = await officePubSub.refresh();
