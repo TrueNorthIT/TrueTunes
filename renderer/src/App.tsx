@@ -159,18 +159,30 @@ function MainApp() {
       },
       type: (normalized.type ?? normalized.resource?.type ?? 'TRACK').replace(/^ITEM_/, ''),
     };
-    const r = await api.queue.add(body, {
+    let result = await api.queue.add(body, {
       queueId: queueIdRef.current ?? undefined,
       ifMatch: queueVersionRef.current ?? undefined,
       position,
     });
-    if (r.error) {
-      showToast('Add failed: ' + r.error);
+
+    let retried = false;
+    if (result.error) {
+      // Stale etag — refresh queue (which updates queueVersionRef via onEtag) then retry once
+      retried = true;
+      await reloadQueueRaw();
+      result = await api.queue.add(body, {
+        queueId: queueIdRef.current ?? undefined,
+        ifMatch: queueVersionRef.current ?? undefined,
+        position,
+      });
+    }
+
+    if (result.error) {
+      showToast('Add failed: ' + result.error);
       void window.sonos.trackEvent('queue_add', { success: 'false', itemType: body.type });
-      reloadQueue();
       return;
     }
-    if (r.etag) queueVersionRef.current = r.etag;
+    if (result.etag) queueVersionRef.current = result.etag;
     void window.sonos.trackEvent('queue_add', { success: 'true', itemType: body.type });
 
     // Publish attribution — fetch full track details then fire-and-forget
@@ -193,11 +205,11 @@ function MainApp() {
         .catch(() => { /* silent */ });
     }
 
-    if (!isSingleTrack) {
+    if (!isSingleTrack || retried) {
       reloadQueue();
       setTimeout(reloadQueue, 1500);
     }
-  }, [queryClient, setQueueItems, reloadQueue, queueIdRef, queueVersionRef, showToast]);
+  }, [queryClient, setQueueItems, reloadQueue, reloadQueueRaw, queueIdRef, queueVersionRef, showToast]);
 
   useEffect(() => {
     function onKey(e: globalThis.KeyboardEvent) {

@@ -177,6 +177,80 @@ describe('track selection', () => {
   });
 });
 
+// ─── Artist subtitle buttons ──────────────────────────────────────────────────
+
+describe('SearchResults — artist subtitles', () => {
+  it('renders artist name as a button when artist has an id', () => {
+    const trackWithArtistId: SonosItem = {
+      type: 'TRACK',
+      name: 'My Song',
+      artists: [{ name: 'My Artist', id: { objectId: 'art-1', serviceId: 'svc', accountId: 'acc' } }],
+      id: { objectId: 'trk-1', serviceId: 'svc', accountId: 'acc' },
+      resource: { type: 'TRACK', id: { objectId: 'trk-1', serviceId: 'svc', accountId: 'acc' } },
+    };
+    render(<SearchResults results={[trackWithArtistId]} onAddToQueue={onAddToQueue} />);
+    const btn = screen.getByRole('button', { name: 'My Artist' });
+    expect(btn).toBeInTheDocument();
+    fireEvent.click(btn);
+    expect(mockOpenItem).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'ARTIST' })
+    );
+  });
+
+  it('renders artist name as plain text when artist has no id', () => {
+    const trackNoArtistId: SonosItem = {
+      type: 'TRACK',
+      name: 'My Song',
+      artists: [{ name: 'Plain Artist' }],
+      id: { objectId: 'trk-1', serviceId: 'svc', accountId: 'acc' },
+      resource: { type: 'TRACK', id: { objectId: 'trk-1', serviceId: 'svc', accountId: 'acc' } },
+    };
+    const { container } = render(<SearchResults results={[trackNoArtistId]} onAddToQueue={onAddToQueue} />);
+    expect(screen.getByText('Plain Artist')).toBeInTheDocument();
+    // Should NOT be a button
+    expect(container.querySelector('button[class*="artistBtn"]')).toBeNull();
+  });
+});
+
+// ─── Other section ────────────────────────────────────────────────────────────
+
+describe('SearchResults — Other section', () => {
+  it('shows "Other" section for non-artist/album/track items when no topArtist', () => {
+    const playlist: SonosItem = {
+      type: 'PLAYLIST',
+      name: 'My Playlist',
+      id: { objectId: 'pl-1', serviceId: 'svc' },
+      resource: { type: 'PLAYLIST', id: { objectId: 'pl-1', serviceId: 'svc' } },
+    };
+    render(<SearchResults results={[playlist]} onAddToQueue={onAddToQueue} />);
+    expect(screen.getByText('Other')).toBeInTheDocument();
+    expect(screen.getByText('My Playlist')).toBeInTheDocument();
+  });
+
+  it('does NOT show Other section when topArtist is set', () => {
+    const artist = makeArtist('Top Artist');
+    const playlist: SonosItem = {
+      type: 'PLAYLIST',
+      name: 'My Playlist',
+      id: { objectId: 'pl-1', serviceId: 'svc' },
+    };
+    render(<SearchResults results={[artist, playlist]} onAddToQueue={onAddToQueue} />);
+    expect(screen.queryByText('Other')).not.toBeInTheDocument();
+  });
+
+  it('clicking an Other item with add calls onAddToQueue', () => {
+    const playlist: SonosItem = {
+      type: 'PLAYLIST',
+      name: 'Queue Me',
+      id: { objectId: 'pl-1', serviceId: 'svc' },
+    };
+    render(<SearchResults results={[playlist]} onAddToQueue={onAddToQueue} />);
+    const addBtn = screen.getByText('+');
+    fireEvent.click(addBtn);
+    expect(onAddToQueue).toHaveBeenCalledWith(playlist);
+  });
+});
+
 // ─── Drag behaviour ──────────────────────────────────────────────────────────
 
 describe('drag behaviour', () => {

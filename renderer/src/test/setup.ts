@@ -1,6 +1,13 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 const noop = () => () => {};
 const pending = () => new Promise<never>(() => {});
 
@@ -21,6 +28,19 @@ Object.defineProperty(window, 'sonos', {
     onAttributionMap:   vi.fn(noop),
     onAttributionEvent: vi.fn(noop),
     getActiveGroup:     vi.fn(() => Promise.resolve(null)),
+    setGroup:           vi.fn(pending),
+    setGroupVolume:     vi.fn(pending),
+    setQueueId:         vi.fn(() => Promise.resolve()),
+    loadContent:        vi.fn(pending),
+    setPlayModes:       vi.fn(pending),
+    skipToTrack:        vi.fn(pending),
+    reorderQueue:       vi.fn(pending),
+    removeFromQueue:    vi.fn(pending),
+    clearQueue:         vi.fn(pending),
+    openWsMonitor:      vi.fn(() => Promise.resolve()),
+    openHttpMonitor:    vi.fn(() => Promise.resolve()),
+    openMiniPlayer:     vi.fn(() => Promise.resolve()),
+    closeMiniPlayer:    vi.fn(() => Promise.resolve()),
     getDisplayName:     vi.fn(pending),
     setDisplayName:     vi.fn(pending),
     publishQueued:      vi.fn(pending),
