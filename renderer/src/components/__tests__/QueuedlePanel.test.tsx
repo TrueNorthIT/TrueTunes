@@ -9,12 +9,22 @@ vi.mock('react-router-dom', () => ({ useNavigate: () => mockNavigate }));
 const mockUseDailyGame = vi.fn();
 const mockUseSubmitGameScore = vi.fn();
 const mockUseGameLeaderboard = vi.fn();
+const mockUseGameDates = vi.fn();
 vi.mock('../../hooks/useDailyGame', () => ({
-  useDailyGame: () => mockUseDailyGame(),
+  useDailyGame: (date?: string) => mockUseDailyGame(date),
   useSubmitGameScore: () => mockUseSubmitGameScore(),
-  useGameLeaderboard: () => mockUseGameLeaderboard(),
+  useGameLeaderboard: (date?: string) => mockUseGameLeaderboard(date),
+  useGameDates: (userName?: string | null) => mockUseGameDates(userName),
 }));
 
+vi.mock('../QueuedleIntro', () => ({
+  QueuedleIntro: ({ onStart }: { onStart: () => void }) => (
+    <div>
+      Intro screen
+      <button onClick={onStart}>Start</button>
+    </div>
+  ),
+}));
 vi.mock('../QueuedleQuestionCard', () => ({
   QueuedleQuestionCard: ({
     question,
@@ -64,6 +74,26 @@ vi.mock('../QueuedleSummary', () => ({
     <div>Score: {mainScore + bonusScore}</div>
   ),
 }));
+vi.mock('../QueuedleCalendar', () => ({
+  QueuedleCalendar: ({ dates, selectedDate, onSelectDate }: {
+    dates: GameDateEntry[];
+    selectedDate: string | null;
+    onSelectDate: (id: string) => void;
+  }) => (
+    <div>
+      <div>Calendar (selected: {selectedDate ?? 'none'})</div>
+      {dates.map((d) => (
+        <button
+          key={d.gameId}
+          onClick={() => onSelectDate(d.gameId)}
+          disabled={d.userPlayed}
+        >
+          cal-{d.gameId}{d.userPlayed ? '-played' : ''}
+        </button>
+      ))}
+    </div>
+  ),
+}));
 
 const baseQuestion: GameQuestion = {
   index: 0,
@@ -85,12 +115,19 @@ function flushPromises() {
   return act(async () => { await Promise.resolve(); });
 }
 
+async function startGame(user: ReturnType<typeof userEvent.setup>) {
+  await flushPromises(); // wait for displayName
+  await user.click(await screen.findByText('Start'));
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
   vi.mocked(window.sonos.getDisplayName).mockResolvedValue('TestUser');
   mockUseDailyGame.mockReturnValue({ data: baseGame, isLoading: false, error: null });
   mockUseSubmitGameScore.mockReturnValue({ mutateAsync: vi.fn(), isPending: false });
-  mockUseGameLeaderboard.mockReturnValue({ data: null });
+  mockUseGameLeaderboard.mockReturnValue({ data: { scores: [] }, isLoading: false });
+  mockUseGameDates.mockReturnValue({ data: { dates: [] }, isLoading: false });
 });
 
 describe('QueuedlePanel', () => {
@@ -105,7 +142,7 @@ describe('QueuedlePanel', () => {
   it('shows error state when data is null', () => {
     mockUseDailyGame.mockReturnValue({ data: null, isLoading: false, error: new Error('fail') });
     render(<QueuedlePanel />);
-    expect(screen.getByText("Failed to load today's Queuedle.")).toBeInTheDocument();
+    expect(screen.getByText('Failed to load Queuedle.')).toBeInTheDocument();
   });
 
   it('shows error message from data.error field', () => {
@@ -126,15 +163,30 @@ describe('QueuedlePanel', () => {
     expect(screen.getByText(/Not enough play history/)).toBeInTheDocument();
   });
 
-  // ── main game phase ───────────────────────────────────────────────────────
-
-  it('shows the QuestionCard in main phase', () => {
+  it('shows the resolving state while leaderboard is loading', () => {
+    mockUseGameLeaderboard.mockReturnValue({ data: undefined, isLoading: true });
     render(<QueuedlePanel />);
+    expect(screen.getByText('Checking your score…')).toBeInTheDocument();
+  });
+
+  // ── intro / main game phase ───────────────────────────────────────────────
+
+  it('shows the intro screen before the user starts', async () => {
+    render(<QueuedlePanel />);
+    await flushPromises();
+    expect(await screen.findByText('Intro screen')).toBeInTheDocument();
+  });
+
+  it('shows the QuestionCard after starting from the intro', async () => {
+    const user = userEvent.setup();
+    render(<QueuedlePanel />);
+    await startGame(user);
     expect(screen.getByText('Question: Song A vs Song B')).toBeInTheDocument();
   });
 
-  it('shows title and game ID', () => {
+  it('shows title and game ID', async () => {
     render(<QueuedlePanel />);
+    await flushPromises();
     expect(screen.getByText('Queuedle')).toBeInTheDocument();
     expect(screen.getByText('2024-01-01')).toBeInTheDocument();
   });
@@ -142,6 +194,7 @@ describe('QueuedlePanel', () => {
   it('navigates to /leaderboard when the header button is clicked', async () => {
     const user = userEvent.setup();
     render(<QueuedlePanel />);
+    await flushPromises();
     await user.click(screen.getByText('Leaderboard →'));
     expect(mockNavigate).toHaveBeenCalledWith('/leaderboard');
   });
@@ -149,6 +202,7 @@ describe('QueuedlePanel', () => {
   it('picking an answer reveals the result', async () => {
     const user = userEvent.setup();
     render(<QueuedlePanel />);
+    await startGame(user);
     await user.click(screen.getByText('Pick Left'));
     expect(screen.getByText('revealed-left')).toBeInTheDocument();
   });
@@ -156,6 +210,7 @@ describe('QueuedlePanel', () => {
   it('clicking Next on the only question transitions to bonus phase', async () => {
     const user = userEvent.setup();
     render(<QueuedlePanel />);
+    await startGame(user);
     await user.click(screen.getByText('Pick Left'));
     await user.click(screen.getByText('Next'));
     expect(screen.getByText(/Bonus screen/)).toBeInTheDocument();
@@ -171,6 +226,7 @@ describe('QueuedlePanel', () => {
     mockUseDailyGame.mockReturnValue({ data: { ...baseGame, questions: [baseQuestion, q2] }, isLoading: false, error: null });
     const user = userEvent.setup();
     render(<QueuedlePanel />);
+    await startGame(user);
     await user.click(screen.getByText('Pick Left'));
     await user.click(screen.getByText('Next'));
     expect(screen.getByText('Question: Song C vs Song D')).toBeInTheDocument();
@@ -183,7 +239,7 @@ describe('QueuedlePanel', () => {
     mockUseSubmitGameScore.mockReturnValue({ mutateAsync, isPending: false });
     const user = userEvent.setup();
     render(<QueuedlePanel />);
-    await flushPromises(); // wait for displayName to be set
+    await startGame(user);
     await user.click(screen.getByText('Pick Left'));
     await user.click(screen.getByText('Next'));
     await user.click(screen.getByText('Submit Bonus'));
@@ -196,7 +252,7 @@ describe('QueuedlePanel', () => {
     mockUseSubmitGameScore.mockReturnValue({ mutateAsync, isPending: false });
     const user = userEvent.setup();
     render(<QueuedlePanel />);
-    await flushPromises();
+    await startGame(user);
     await user.click(screen.getByText('Pick Left'));
     await user.click(screen.getByText('Next'));
     await user.click(screen.getByText('Submit Bonus'));
@@ -210,7 +266,7 @@ describe('QueuedlePanel', () => {
     mockUseSubmitGameScore.mockReturnValue({ mutateAsync, isPending: false });
     const user = userEvent.setup();
     render(<QueuedlePanel />);
-    await flushPromises();
+    await startGame(user);
     await user.click(screen.getByText('Pick Left'));
     await user.click(screen.getByText('Next'));
     await user.click(screen.getByText('Submit Bonus'));
@@ -224,7 +280,7 @@ describe('QueuedlePanel', () => {
     mockUseSubmitGameScore.mockReturnValue({ mutateAsync, isPending: false });
     const user = userEvent.setup();
     render(<QueuedlePanel />);
-    await flushPromises();
+    await startGame(user);
     // Pick correct answer (winner is 'left') → mainScore = 1
     await user.click(screen.getByText('Pick Left'));
     await user.click(screen.getByText('Next'));
@@ -233,6 +289,45 @@ describe('QueuedlePanel', () => {
     await user.click(screen.getByText('See Score'));
     // main=1 (picked left, winner is left), bonus=0 (bonusSelections all null, topQueuer is 'alice')
     expect(screen.getByText('Score: 1')).toBeInTheDocument();
+  });
+
+  it('keeps bonus-results visible even after the leaderboard refetches with the user', async () => {
+    // Regression: previously the alreadyPlayed early-return would clobber the
+    // bonus-results / summary phases as soon as the post-submit leaderboard
+    // refetch landed with the user's new entry.
+    const mutateAsync = vi.fn().mockResolvedValue({ score: { mainScore: 1, bonusScore: 0 } });
+    mockUseSubmitGameScore.mockReturnValue({ mutateAsync, isPending: false });
+    const user = userEvent.setup();
+    render(<QueuedlePanel />);
+    await startGame(user);
+    await user.click(screen.getByText('Pick Left'));
+    await user.click(screen.getByText('Next'));
+    await user.click(screen.getByText('Submit Bonus'));
+    await waitFor(() => screen.getByText('Bonus results'));
+    // Simulate the leaderboard refetch landing with the user's new score.
+    mockUseGameLeaderboard.mockReturnValue({
+      data: { scores: [{ userName: 'TestUser', mainScore: 1, bonusScore: 0, total: 1 }] },
+      isLoading: false,
+    });
+    await flushPromises();
+    expect(screen.getByText('Bonus results')).toBeInTheDocument();
+    await user.click(screen.getByText('See Score'));
+    expect(screen.getByText('Score: 1')).toBeInTheDocument();
+  });
+
+  it('persists the score to localStorage on submit', async () => {
+    const mutateAsync = vi.fn().mockResolvedValue({ score: { mainScore: 1, bonusScore: 0 } });
+    mockUseSubmitGameScore.mockReturnValue({ mutateAsync, isPending: false });
+    const user = userEvent.setup();
+    render(<QueuedlePanel />);
+    await startGame(user);
+    await user.click(screen.getByText('Pick Left'));
+    await user.click(screen.getByText('Next'));
+    await user.click(screen.getByText('Submit Bonus'));
+    await waitFor(() => screen.getByText('Bonus results'));
+    expect(localStorage.getItem('queuedle-played:2024-01-01')).toBe(
+      JSON.stringify({ mainScore: 1, bonusScore: 0 }),
+    );
   });
 
   // ── already-played ────────────────────────────────────────────────────────
@@ -247,6 +342,7 @@ describe('QueuedlePanel', () => {
           total: 5,
         }],
       },
+      isLoading: false,
     });
     render(<QueuedlePanel />);
     await waitFor(() => expect(screen.getByText('Score: 5')).toBeInTheDocument());
@@ -260,9 +356,76 @@ describe('QueuedlePanel', () => {
           { userName: 'alice', mainScore: 2, bonusScore: 1, total: 3 },
         ],
       },
+      isLoading: false,
     });
     render(<QueuedlePanel />);
     await waitFor(() => expect(screen.getByText("Today's Leaderboard")).toBeInTheDocument());
     expect(screen.getByText('alice')).toBeInTheDocument();
+  });
+
+  it('skips the intro and shows already-played when localStorage has the score', async () => {
+    localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
+    // Leaderboard hasn't loaded yet — localStorage should short-circuit.
+    mockUseGameLeaderboard.mockReturnValue({ data: undefined, isLoading: true });
+    render(<QueuedlePanel />);
+    await waitFor(() => expect(screen.getByText('Score: 3')).toBeInTheDocument());
+    expect(screen.queryByText('Intro screen')).not.toBeInTheDocument();
+  });
+
+  // ── calendar / past-day picker ───────────────────────────────────────────
+
+  it('renders the calendar on the already-played view when game-dates returns entries', async () => {
+    localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
+    mockUseGameDates.mockReturnValue({
+      data: { dates: [
+        { gameId: '2024-01-01', status: 'ready', userPlayed: true },
+        { gameId: '2023-12-31', status: 'ready', userPlayed: false },
+      ]},
+      isLoading: false,
+    });
+    render(<QueuedlePanel />);
+    await waitFor(() => expect(screen.getByText('cal-2023-12-31')).toBeInTheDocument());
+    expect(screen.getByText('cal-2024-01-01-played')).toBeInTheDocument();
+  });
+
+  it('selecting a past date in the calendar resets to the intro screen for that day', async () => {
+    localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
+    mockUseGameDates.mockReturnValue({
+      data: { dates: [{ gameId: '2023-12-31', status: 'ready', userPlayed: false }] },
+      isLoading: false,
+    });
+    // useDailyGame returns whichever date the panel asks for, so initial load
+    // hits today's already-played view and the post-click load hits the past day.
+    mockUseDailyGame.mockImplementation((date?: string) => ({
+      data: date ? { ...baseGame, id: date } : baseGame,
+      isLoading: false,
+      error: null,
+    }));
+    const user = userEvent.setup();
+    render(<QueuedlePanel />);
+    await waitFor(() => expect(screen.getByText('cal-2023-12-31')).toBeInTheDocument());
+    await user.click(screen.getByText('cal-2023-12-31'));
+    expect(await screen.findByText('Intro screen')).toBeInTheDocument();
+    expect(screen.getByText('← Today')).toBeInTheDocument();
+  });
+
+  it('back-to-today returns to the today view', async () => {
+    localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
+    mockUseGameDates.mockReturnValue({
+      data: { dates: [{ gameId: '2023-12-31', status: 'ready', userPlayed: false }] },
+      isLoading: false,
+    });
+    mockUseDailyGame.mockImplementation((date?: string) => ({
+      data: date ? { ...baseGame, id: date } : baseGame,
+      isLoading: false,
+      error: null,
+    }));
+    const user = userEvent.setup();
+    render(<QueuedlePanel />);
+    await user.click(await screen.findByText('cal-2023-12-31'));
+    expect(await screen.findByText('Intro screen')).toBeInTheDocument();
+    await user.click(screen.getByText('← Today'));
+    // After back-to-today, the localStorage short-circuit re-fires for today's id.
+    await waitFor(() => expect(screen.getByText('Score: 3')).toBeInTheDocument());
   });
 });

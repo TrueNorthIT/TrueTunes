@@ -1,17 +1,34 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDailyGame, useSubmitGameScore, useGameLeaderboard } from '../hooks/useDailyGame';
+import { useDailyGame, useSubmitGameScore, useGameLeaderboard, useGameDates } from '../hooks/useDailyGame';
+import { QueuedleIntro } from './QueuedleIntro';
 import { QueuedleQuestionCard } from './QueuedleQuestionCard';
 import { QueuedleBonusScreen } from './QueuedleBonusScreen';
 import { QueuedleBonusResults } from './QueuedleBonusResults';
 import { QueuedleSummary } from './QueuedleSummary';
+import { QueuedleCalendar } from './QueuedleCalendar';
 import styles from '../styles/Queuedle.module.css';
 
-type Phase = 'main' | 'bonus' | 'bonus-results' | 'summary';
+type Phase = 'intro' | 'main' | 'bonus' | 'bonus-results' | 'summary';
+
+function londonDateToday(): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const y = parts.find((p) => p.type === 'year')?.value ?? '0000';
+  const m = parts.find((p) => p.type === 'month')?.value ?? '01';
+  const d = parts.find((p) => p.type === 'day')?.value ?? '01';
+  return `${y}-${m}-${d}`;
+}
 
 export function QueuedlePanel() {
   const navigate = useNavigate();
-  const { data, isLoading, error } = useDailyGame();
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const todayId = useMemo(() => londonDateToday(), []);
+  const { data, isLoading, error } = useDailyGame(selectedDate ?? undefined);
   const submit = useSubmitGameScore();
   const [displayName, setDisplayName] = useState<string | null | undefined>(undefined);
 
@@ -21,15 +38,32 @@ export function QueuedlePanel() {
 
   const game = data && 'questions' in data ? (data as GameDoc) : null;
   const gameId = game?.id ?? null;
+  const isPastDay = selectedDate !== null && selectedDate !== todayId;
 
   const leaderboard = useGameLeaderboard(gameId ?? undefined);
+  const gameDates = useGameDates(displayName ?? undefined);
   const alreadyPlayed = useMemo(() => {
     if (!displayName || !leaderboard.data || !('scores' in leaderboard.data)) return null;
     const existing = leaderboard.data.scores.find((s) => s.userName === displayName);
     return existing ?? null;
   }, [displayName, leaderboard.data]);
 
-  const [phase, setPhase] = useState<Phase>('main');
+  const localPlayed = useMemo<{ mainScore: number; bonusScore: number } | null>(() => {
+    if (!gameId) return null;
+    try {
+      const raw = localStorage.getItem(`queuedle-played:${gameId}`);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (typeof parsed?.mainScore === 'number' && typeof parsed?.bonusScore === 'number') {
+        return { mainScore: parsed.mainScore, bonusScore: parsed.bonusScore };
+      }
+    } catch {
+      // ignore corrupt entry
+    }
+    return null;
+  }, [gameId]);
+
+  const [phase, setPhase] = useState<Phase>('intro');
   const [currentIdx, setCurrentIdx] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [pickedSide, setPickedSide] = useState<'left' | 'right' | null>(null);
@@ -43,10 +77,33 @@ export function QueuedlePanel() {
     }
   }, [game, bonusSelections.length]);
 
+  function resetGameState() {
+    setPhase('intro');
+    setCurrentIdx(0);
+    setRevealed(false);
+    setPickedSide(null);
+    setMainGuesses([]);
+    setBonusSelections([]);
+    setLocalScore(null);
+  }
+
+  function handleSelectDate(pickedGameId: string) {
+    const next = pickedGameId === todayId ? null : pickedGameId;
+    if (next === selectedDate) return;
+    setSelectedDate(next);
+    resetGameState();
+  }
+
+  function handleBackToToday() {
+    if (selectedDate === null) return;
+    setSelectedDate(null);
+    resetGameState();
+  }
+
   if (isLoading) {
     return (
       <div className={styles.page}>
-        <div className={styles.state}>Loading today&apos;s Queuedle…</div>
+        <div className={styles.state}>Loading {isPastDay ? 'that' : "today's"} Queuedle…</div>
       </div>
     );
   }
@@ -54,7 +111,7 @@ export function QueuedlePanel() {
   if (!data || (error && !('questions' in (data ?? {})))) {
     return (
       <div className={styles.page}>
-        <div className={styles.state}>Failed to load today&apos;s Queuedle.</div>
+        <div className={styles.state}>Failed to load Queuedle.</div>
       </div>
     );
   }
@@ -93,25 +150,54 @@ export function QueuedlePanel() {
     );
   }
 
-  if (alreadyPlayed) {
+  const justPlayed = localScore !== null;
+  const showAlreadyPlayed = !justPlayed && (localPlayed !== null || alreadyPlayed !== null);
+  const stillResolving = !justPlayed && !showAlreadyPlayed && (
+    displayName === undefined || leaderboard.isLoading === true
+  );
+
+  const headerActions = (
+    <>
+      {selectedDate !== null && (
+        <button className={styles.backToToday} onClick={handleBackToToday}>
+          ← Today
+        </button>
+      )}
+      <button className={styles.leaderLink} onClick={() => navigate('/leaderboard')}>
+        Leaderboard →
+      </button>
+    </>
+  );
+
+  if (showAlreadyPlayed) {
+    const cachedScore = localPlayed ?? (alreadyPlayed
+      ? { mainScore: alreadyPlayed.mainScore, bonusScore: alreadyPlayed.bonusScore }
+      : null);
     const scores = leaderboard.data && 'scores' in leaderboard.data ? leaderboard.data.scores : [];
+    const calendarDates = gameDates.data?.dates ?? [];
     return (
       <div className={styles.page}>
         <div className={styles.header}>
           <h1 className={styles.title}>Queuedle</h1>
           <span className={styles.sub}>{game.id}</span>
+          <div className={styles.spacer} />
+          {headerActions}
         </div>
         <div className={styles.body}>
-          <QueuedleSummary
-            mainScore={alreadyPlayed.mainScore}
-            bonusScore={alreadyPlayed.bonusScore}
-            maxMain={game.questions.length}
-            maxBonus={game.questions.length}
-            alreadySubmitted
-          />
+          {cachedScore && (
+            <QueuedleSummary
+              mainScore={cachedScore.mainScore}
+              bonusScore={cachedScore.bonusScore}
+              maxMain={game.questions.length}
+              maxBonus={game.questions.length}
+              alreadySubmitted
+            />
+          )}
           {scores.length > 0 && (
             <div className={styles.leaderboardSection}>
-              <h2 className={styles.leaderboardTitle}>Today&apos;s Leaderboard</h2>
+              <h2 className={styles.leaderboardTitle}>
+                {selectedDate && selectedDate !== todayId ? `${selectedDate} Leaderboard` : "Today's Leaderboard"}
+              </h2>
               {scores.slice(0, 10).map((s, i) => (
                 <div key={s.userName} className={styles.scoreRow}>
                   <span className={styles.scoreRank}>
@@ -126,13 +212,40 @@ export function QueuedlePanel() {
               ))}
             </div>
           )}
+          {calendarDates.length > 0 && (
+            <QueuedleCalendar
+              dates={calendarDates}
+              selectedDate={gameId}
+              todayId={todayId}
+              onSelectDate={handleSelectDate}
+            />
+          )}
         </div>
+      </div>
+    );
+  }
+
+  if (stillResolving) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.state}>Checking your score…</div>
       </div>
     );
   }
 
   const question = game.questions[currentIdx];
   const total = game.questions.length;
+
+  // Carry-over slide direction: if the carry-over item appeared on the opposite
+  // side in the previous question, animate it sliding from there.
+  const carryFrom: 'left' | 'right' | null = (() => {
+    if (currentIdx === 0 || !question?.carryover) return null;
+    const carryItem = question.carryover === 'left' ? question.left : question.right;
+    const prev = game.questions[currentIdx - 1];
+    if (prev.left.id === carryItem.id && prev.left.category === carryItem.category) return 'left';
+    if (prev.right.id === carryItem.id && prev.right.category === carryItem.category) return 'right';
+    return null;
+  })();
 
   // bonus targets: the 'bonusItem' side of each question (falls back to 'winner' for old games)
   const winningItems = game.questions.map((q) => {
@@ -177,10 +290,11 @@ export function QueuedlePanel() {
       userName: displayName,
       guesses: { main: mainGuesses, bonus: bonusGuesses },
     });
+    let scored: { main: number; bonus: number };
     if (result.score) {
-      setLocalScore({ main: result.score.mainScore, bonus: result.score.bonusScore });
+      scored = { main: result.score.mainScore, bonus: result.score.bonusScore };
     } else if (result.existing) {
-      setLocalScore({ main: result.existing.mainScore, bonus: result.existing.bonusScore });
+      scored = { main: result.existing.mainScore, bonus: result.existing.bonusScore };
     } else {
       const correctMain = mainGuesses.reduce(
         (acc, g, i) => acc + (g === game.questions[i].winner ? 1 : 0),
@@ -192,7 +306,16 @@ export function QueuedlePanel() {
         const bonusTargetItem = bonusSide === 'left' ? q.left : q.right;
         return acc + (g === bonusTargetItem.topQueuer ? 1 : 0);
       }, 0);
-      setLocalScore({ main: correctMain, bonus: correctBonus });
+      scored = { main: correctMain, bonus: correctBonus };
+    }
+    setLocalScore(scored);
+    try {
+      localStorage.setItem(
+        `queuedle-played:${game.id}`,
+        JSON.stringify({ mainScore: scored.main, bonusScore: scored.bonus }),
+      );
+    } catch {
+      // ignore quota / disabled storage
     }
     setPhase('bonus-results');
   }
@@ -216,18 +339,18 @@ export function QueuedlePanel() {
         <h1 className={styles.title}>Queuedle</h1>
         <span className={styles.sub}>{game.id}</span>
         <div className={styles.spacer} />
-        <button className={styles.leaderLink} onClick={() => navigate('/leaderboard')}>
-          Leaderboard →
-        </button>
+        {headerActions}
       </div>
       <div className={styles.body}>
-        {phase !== 'summary' && phase !== 'bonus-results' && (
+        {phase !== 'intro' && phase !== 'summary' && phase !== 'bonus-results' && (
           <div className={styles.progress}>
             {pips.map((cls, i) => (
               <div key={i} className={`${styles.pip}${cls ? ' ' + cls : ''}`} />
             ))}
           </div>
         )}
+
+        {phase === 'intro' && <QueuedleIntro onStart={() => setPhase('main')} />}
 
         {phase === 'main' && question && (
           <QueuedleQuestionCard
@@ -236,6 +359,7 @@ export function QueuedlePanel() {
             pickedSide={pickedSide}
             onPick={handlePick}
             onNext={handleNext}
+            carryFrom={carryFrom}
           />
         )}
 
