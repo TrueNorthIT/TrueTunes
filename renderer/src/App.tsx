@@ -135,18 +135,31 @@ function MainApp() {
       .catch(() => { /* silent */ });
   }, [queryClient]);
 
-  const fanOutTrackAttribution = useCallback((tracks: AlbumTrack[], albumArtUrl?: string | null) => {
+  /**
+   * Publishes one 'track' event per track using only the AlbumTrack data
+   * already returned by browseAlbum / browsePlaylist — no per-track
+   * getTrackNowPlaying calls. For an N-track album this is the difference
+   * between O(N) and O(1) Sonos lookups.
+   */
+  const fanOutTrackAttribution = useCallback((
+    tracks: AlbumTrack[],
+    context: { album?: string | null; albumId?: string | null; artist?: string; artistId?: string; artUrl?: string | null },
+  ) => {
     for (const t of tracks) {
       const tid = t.id;
-      if (!tid?.objectId || !tid?.serviceId || !tid?.accountId) continue;
-      publishTrackAttribution(
-        tid.objectId,
-        tid.serviceId,
-        tid.accountId.replace(/^sn_/, ''),
-        { trackName: t.title, imageUrl: t.artUrl ?? albumArtUrl ?? undefined },
-      );
+      if (!tid?.objectId) continue;
+      window.sonos.publishQueued({
+        eventType: 'track',
+        uri: tid.objectId,
+        trackName: t.title,
+        artist:    t.artists[0] ?? context.artist ?? '',
+        artistId:  t.artistObjects?.[0]?.objectId ?? context.artistId,
+        album:     t.albumName ?? context.album ?? undefined,
+        albumId:   t.albumId   ?? context.albumId ?? undefined,
+        imageUrl:  t.artUrl ?? context.artUrl ?? undefined,
+      });
     }
-  }, [publishTrackAttribution]);
+  }, []);
 
   const handleAddToQueue = useCallback(async (item: SonosItem, position = -1) => {
     if (isProgram(item)) {
@@ -243,25 +256,35 @@ function MainApp() {
       if (albumId && aSvc && aAcc) {
         queryClient.fetchQuery(albumQueryOptions(albumId, aSvc, aAcc, defaults))
           .then((album) => {
+            const artistId = (album.artistItem?.resource?.id as SonosItemId | undefined)?.objectId;
             window.sonos.publishQueued({
               eventType: 'album',
               uri,
               trackName: album.title || getName(item),
               artist:    album.artist || ((item as Record<string, unknown>)['subtitle'] as string) || (item.artists?.[0]?.name ?? ''),
+              artistId,
               album:     album.title || getName(item),
               albumId:   uri,
               imageUrl:  album.artUrl ?? getItemArt(item) ?? undefined,
             });
-            fanOutTrackAttribution(album.tracks, album.artUrl);
+            fanOutTrackAttribution(album.tracks, {
+              album:    album.title,
+              albumId:  uri,
+              artist:   album.artist,
+              artistId,
+              artUrl:   album.artUrl,
+            });
           })
           .catch(() => { /* silent */ });
       }
     } else if (isPlaylistItem) {
-      // Playlists have no albumMap rollup — fan out per-track only.
+      // Playlists have no albumMap rollup — fan out per-track only. Each
+      // playlist track already carries its own albumName/albumId/artist via
+      // decoded defaults, so no per-album context is needed.
       const { albumId: pid, serviceId: pSvc, accountId: pAcc, defaults } = resolveAlbumParams(item);
       if (pid && pSvc && pAcc) {
         queryClient.fetchQuery(playlistQueryOptions(pid, pSvc, pAcc, defaults))
-          .then((tracks) => fanOutTrackAttribution(tracks))
+          .then((tracks) => fanOutTrackAttribution(tracks, {}))
           .catch(() => { /* silent */ });
       }
     }

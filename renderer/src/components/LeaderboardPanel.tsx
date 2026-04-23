@@ -226,6 +226,9 @@ export function LeaderboardPanel() {
                 data.topArtists.map((a, i) => (
                   <div key={i} className={styles.artistRow}>
                     <span className={styles.rankNum}>{i + 1}</span>
+                    {a.imageUrl
+                      ? <CachedArt url={a.imageUrl} className={styles.artistArt} />
+                      : <div className={styles.artistArtPh} />}
                     <button
                       className={styles.artistLink}
                       onClick={(e) => {

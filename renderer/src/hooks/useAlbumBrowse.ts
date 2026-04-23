@@ -4,6 +4,10 @@ import type { SonosItem, SonosItemId } from "../types/sonos";
 import { AlbumResponse } from "../types/AlbumResponse";
 import { decodeDefaults } from "../lib/itemHelpers";
 
+function cleanArtistId(id: string): string {
+  return id.replace(/^srn:content:audio:artist:/, '').replace(/#.*$/, '');
+}
+
 export interface AlbumTrack {
   title: string;
   ordinal: number;
@@ -39,6 +43,7 @@ function parseTrack(track: RawTrack): AlbumTrack {
     artUrl:          track.images?.tile1x1 ?? null,
     id:              (track.resource?.id ?? {}) as SonosItemId,
     artists:         track.artists?.map((a) => a.name) ?? [],
+    artistObjects:   track.artists?.filter((a) => a.id).map((a) => ({ name: a.name, objectId: cleanArtistId(a.id as string) })),
     albumName:       null,
     albumId:         null,
     explicit:        track.isExplicit ?? false,
