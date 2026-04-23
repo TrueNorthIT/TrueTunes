@@ -85,68 +85,82 @@ export function aggregateEvents(events: RawEvent[]): AggregateResult {
   const queuersByItem: Record<string, Record<string, number>> = {};
 
   for (const e of events) {
-    if (e.userId) userCounts[e.userId] = (userCounts[e.userId] ?? 0) + 1;
+    // eventType branching:
+    //   'track'        → trackMap + artistMap + userCounts
+    //   'album'        → albumMap only (no userCounts: per-track events for the same add already credited the user)
+    //   undefined/null → all three maps + userCounts (legacy events; preserves pre-split behavior)
+    const isTrack = e.eventType === 'track' || e.eventType == null;
+    const isAlbumOnly = e.eventType === 'album' || e.eventType == null;
+    const countsUser = e.eventType !== 'album';
 
-    const aKey = artistKeyFor(e);
-    if (aKey) {
-      if (!artistMap[aKey]) {
-        artistMap[aKey] = {
-          artist: e.artist,
-          artistId: e.artistId ?? undefined,
-          imageUrl: e.imageUrl ?? undefined,
-          count: 0,
-        };
-      } else {
-        if (!artistMap[aKey].artistId && e.artistId) artistMap[aKey].artistId = e.artistId;
-        if (!artistMap[aKey].imageUrl && e.imageUrl) artistMap[aKey].imageUrl = e.imageUrl;
+    if (countsUser && e.userId) userCounts[e.userId] = (userCounts[e.userId] ?? 0) + 1;
+
+    if (isTrack) {
+      const aKey = artistKeyFor(e);
+      if (aKey) {
+        if (!artistMap[aKey]) {
+          artistMap[aKey] = {
+            artist: e.artist,
+            artistId: e.artistId ?? undefined,
+            imageUrl: e.imageUrl ?? undefined,
+            count: 0,
+          };
+        } else {
+          if (!artistMap[aKey].artistId && e.artistId) artistMap[aKey].artistId = e.artistId;
+          if (!artistMap[aKey].imageUrl && e.imageUrl) artistMap[aKey].imageUrl = e.imageUrl;
+        }
+        artistMap[aKey].count++;
+        if (e.userId) bumpQueuer(queuersByItem, itemKey('artist', aKey), e.userId);
       }
-      artistMap[aKey].count++;
-      if (e.userId) bumpQueuer(queuersByItem, itemKey('artist', aKey), e.userId);
     }
 
-    const albumKey = albumKeyFor(e);
-    if (e.album && albumKey) {
-      if (!albumMap[albumKey]) {
-        albumMap[albumKey] = {
-          key: albumKey,
-          album: e.album,
+    if (isAlbumOnly) {
+      const albumKey = albumKeyFor(e);
+      if (e.album && albumKey) {
+        if (!albumMap[albumKey]) {
+          albumMap[albumKey] = {
+            key: albumKey,
+            album: e.album,
+            artist: e.artist,
+            artistId: e.artistId ?? undefined,
+            albumId: e.albumId ?? undefined,
+            imageUrl: e.imageUrl ?? undefined,
+            count: 0,
+          };
+        } else {
+          if (!albumMap[albumKey].albumId && e.albumId) albumMap[albumKey].albumId = e.albumId;
+          if (!albumMap[albumKey].artistId && e.artistId) albumMap[albumKey].artistId = e.artistId;
+          if (!albumMap[albumKey].imageUrl && e.imageUrl) albumMap[albumKey].imageUrl = e.imageUrl;
+        }
+        albumMap[albumKey].count++;
+        if (e.userId) bumpQueuer(queuersByItem, itemKey('album', albumKey), e.userId);
+      }
+    }
+
+    if (isTrack) {
+      const tKey = trackKeyFor(e);
+      if (!trackMap[tKey]) {
+        trackMap[tKey] = {
+          key: tKey,
+          trackName: e.trackName,
           artist: e.artist,
           artistId: e.artistId ?? undefined,
+          album: e.album ?? undefined,
           albumId: e.albumId ?? undefined,
           imageUrl: e.imageUrl ?? undefined,
+          uri: e.uri ?? undefined,
           count: 0,
         };
       } else {
-        if (!albumMap[albumKey].albumId && e.albumId) albumMap[albumKey].albumId = e.albumId;
-        if (!albumMap[albumKey].artistId && e.artistId) albumMap[albumKey].artistId = e.artistId;
-        if (!albumMap[albumKey].imageUrl && e.imageUrl) albumMap[albumKey].imageUrl = e.imageUrl;
+        if (!trackMap[tKey].artistId && e.artistId) trackMap[tKey].artistId = e.artistId;
+        if (!trackMap[tKey].album && e.album) trackMap[tKey].album = e.album;
+        if (!trackMap[tKey].albumId && e.albumId) trackMap[tKey].albumId = e.albumId;
+        if (!trackMap[tKey].imageUrl && e.imageUrl) trackMap[tKey].imageUrl = e.imageUrl;
+        if (!trackMap[tKey].uri && e.uri) trackMap[tKey].uri = e.uri;
       }
-      albumMap[albumKey].count++;
-      if (e.userId) bumpQueuer(queuersByItem, itemKey('album', albumKey), e.userId);
+      trackMap[tKey].count++;
+      if (e.userId) bumpQueuer(queuersByItem, itemKey('track', tKey), e.userId);
     }
-
-    const tKey = trackKeyFor(e);
-    if (!trackMap[tKey]) {
-      trackMap[tKey] = {
-        key: tKey,
-        trackName: e.trackName,
-        artist: e.artist,
-        artistId: e.artistId ?? undefined,
-        album: e.album ?? undefined,
-        albumId: e.albumId ?? undefined,
-        imageUrl: e.imageUrl ?? undefined,
-        uri: e.uri ?? undefined,
-        count: 0,
-      };
-    } else {
-      if (!trackMap[tKey].artistId && e.artistId) trackMap[tKey].artistId = e.artistId;
-      if (!trackMap[tKey].album && e.album) trackMap[tKey].album = e.album;
-      if (!trackMap[tKey].albumId && e.albumId) trackMap[tKey].albumId = e.albumId;
-      if (!trackMap[tKey].imageUrl && e.imageUrl) trackMap[tKey].imageUrl = e.imageUrl;
-      if (!trackMap[tKey].uri && e.uri) trackMap[tKey].uri = e.uri;
-    }
-    trackMap[tKey].count++;
-    if (e.userId) bumpQueuer(queuersByItem, itemKey('track', tKey), e.userId);
   }
 
   return { trackMap, artistMap, albumMap, userCounts, queuersByItem };
