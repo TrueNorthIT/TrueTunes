@@ -6,8 +6,10 @@ import { useGroups } from './hooks/useGroups';
 import { usePlayback } from './hooks/usePlayback';
 import { useQueue } from './hooks/useQueue';
 import { trackQueryOptions } from './hooks/useTrackDetails';
+import { albumQueryOptions, type AlbumTrack } from './hooks/useAlbumBrowse';
+import { playlistQueryOptions } from './hooks/usePlaylistBrowse';
 import { api } from './lib/sonosApi';
-import { normalizeForQueue, isTrack, isProgram, extractItems } from './lib/itemHelpers';
+import { normalizeForQueue, isTrack, isProgram, isAlbum, isPlaylist, extractItems, resolveAlbumParams } from './lib/itemHelpers';
 import type { SonosItem, SonosItemId } from './types/sonos';
 
 import { TopNav } from './components/TopNav';
@@ -111,6 +113,41 @@ function MainApp() {
     window.sonos.trackEvent('group_changed').catch(() => {});
   }, [applyGroupCache]);
 
+  const publishTrackAttribution = useCallback((
+    trackId: string,
+    serviceId: string,
+    accountId: string,
+    fallback: { trackName: string; imageUrl?: string },
+  ) => {
+    queryClient.fetchQuery(trackQueryOptions(trackId, serviceId, accountId))
+      .then((td) => {
+        window.sonos.publishQueued({
+          eventType: 'track',
+          uri: trackId,
+          trackName: td?.trackName ?? fallback.trackName,
+          artist:    td?.artist ?? '',
+          artistId:  td?.artistId,
+          album:     td?.albumName,
+          albumId:   td?.albumId,
+          imageUrl:  td?.artUrl ?? fallback.imageUrl,
+        });
+      })
+      .catch(() => { /* silent */ });
+  }, [queryClient]);
+
+  const fanOutTrackAttribution = useCallback((tracks: AlbumTrack[], albumArtUrl?: string | null) => {
+    for (const t of tracks) {
+      const tid = t.id;
+      if (!tid?.objectId || !tid?.serviceId || !tid?.accountId) continue;
+      publishTrackAttribution(
+        tid.objectId,
+        tid.serviceId,
+        tid.accountId.replace(/^sn_/, ''),
+        { trackName: t.title, imageUrl: t.artUrl ?? albumArtUrl ?? undefined },
+      );
+    }
+  }, [publishTrackAttribution]);
+
   const handleAddToQueue = useCallback(async (item: SonosItem, position = -1) => {
     if (isProgram(item)) {
       const rid = item.resource?.id as SonosItemId | undefined;
@@ -134,6 +171,8 @@ function MainApp() {
 
     const normalized = normalizeForQueue(item);
     const isSingleTrack = isTrack(item);
+    const isAlbumItem    = !isSingleTrack && isAlbum(item);
+    const isPlaylistItem = !isSingleTrack && isPlaylist(item);
 
     if (isSingleTrack) {
       setQueueItems(prev => {
@@ -185,31 +224,49 @@ function MainApp() {
     if (result.etag) queueVersionRef.current = result.etag;
     void window.sonos.trackEvent('queue_add', { success: 'true', itemType: body.type });
 
-    // Publish attribution — fetch full track details then fire-and-forget
+    // Publish attribution — shape depends on item kind.
     const uri = body.id.objectId;
-    if (uri) {
-      const serviceId = body.id.serviceId ?? '';
-      const accountId = body.id.accountId ?? '';
-      queryClient.fetchQuery(trackQueryOptions(uri, serviceId, accountId))
-        .then((td) => {
-          window.sonos.publishQueued({
-            uri,
-            trackName: td?.trackName ?? getName(normalized),
-            artist: td?.artist ?? '',
-            artistId: td?.artistId,
-            album: td?.albumName,
-            albumId: td?.albumId,
-            imageUrl: td?.artUrl ?? item.imageUrl ?? (item.images as Array<{ url: string }> | undefined)?.[0]?.url,
-          });
-        })
-        .catch(() => { /* silent */ });
+    const serviceId = body.id.serviceId ?? '';
+    const accountId = body.id.accountId ?? '';
+
+    if (isSingleTrack && uri) {
+      publishTrackAttribution(uri, serviceId, accountId, {
+        trackName: getName(normalized),
+        imageUrl: item.imageUrl ?? (item.images as Array<{ url: string }> | undefined)?.[0]?.url,
+      });
+    } else if (isAlbumItem && uri) {
+      // 1× album rollup event so albumMap.count tracks album-adds, not track-adds.
+      window.sonos.publishQueued({
+        eventType: 'album',
+        uri,
+        trackName: getName(item),
+        artist: ((item as Record<string, unknown>)['subtitle'] as string) ?? '',
+        album:   getName(item),
+        albumId: uri,
+        imageUrl: item.imageUrl ?? (item.images as Array<{ url: string }> | undefined)?.[0]?.url,
+      });
+      // N× per-track events so individual tracks land on the leaderboard.
+      const { albumId, serviceId: aSvc, accountId: aAcc, defaults } = resolveAlbumParams(item);
+      if (albumId && aSvc && aAcc) {
+        queryClient.fetchQuery(albumQueryOptions(albumId, aSvc, aAcc, defaults))
+          .then((album) => fanOutTrackAttribution(album.tracks, album.artUrl))
+          .catch(() => { /* silent */ });
+      }
+    } else if (isPlaylistItem) {
+      // Playlists have no albumMap rollup — fan out per-track only.
+      const { albumId: pid, serviceId: pSvc, accountId: pAcc, defaults } = resolveAlbumParams(item);
+      if (pid && pSvc && pAcc) {
+        queryClient.fetchQuery(playlistQueryOptions(pid, pSvc, pAcc, defaults))
+          .then((tracks) => fanOutTrackAttribution(tracks))
+          .catch(() => { /* silent */ });
+      }
     }
 
     if (!isSingleTrack || retried) {
       reloadQueue();
       setTimeout(reloadQueue, 1500);
     }
-  }, [queryClient, setQueueItems, reloadQueue, reloadQueueRaw, queueIdRef, queueVersionRef, showToast]);
+  }, [queryClient, setQueueItems, reloadQueue, reloadQueueRaw, queueIdRef, queueVersionRef, showToast, publishTrackAttribution, fanOutTrackAttribution]);
 
   useEffect(() => {
     function onKey(e: globalThis.KeyboardEvent) {
