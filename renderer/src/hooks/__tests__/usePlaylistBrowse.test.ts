@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { parsePlaylistTracks } from '../usePlaylistBrowse';
+import { createElement } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react';
+import { parsePlaylistTracks, usePlaylistBrowse } from '../usePlaylistBrowse';
 
+vi.mock('../../lib/sonosApi', () => ({
+  api: { browse: { playlist: (...args: unknown[]) => mockApiPlaylist(...args) } },
+}));
+
+const mockApiPlaylist = vi.fn();
 const mockFetch = vi.mocked(window.sonos.fetch);
 
 beforeEach(() => {
@@ -92,5 +100,46 @@ describe('parsePlaylistTracks', () => {
       tracks: { items: [makeTrack('Exp', { isExplicit: true })] },
     });
     expect(result[0].explicit).toBe(true);
+  });
+});
+
+// ─── usePlaylistBrowse hook ───────────────────────────────────────────────────
+
+function wrapper({ children }: { children: React.ReactNode }) {
+  return createElement(QueryClientProvider, { client: new QueryClient({ defaultOptions: { queries: { retry: false } } }) }, children);
+}
+
+describe('usePlaylistBrowse', () => {
+  beforeEach(() => { mockApiPlaylist.mockReset(); });
+
+  it('is disabled when playlistId is undefined', () => {
+    const { result } = renderHook(
+      () => usePlaylistBrowse(undefined, 'svc', 'acc'),
+      { wrapper }
+    );
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.data).toBeUndefined();
+  });
+
+  it('fetches and parses tracks when enabled', async () => {
+    mockApiPlaylist.mockResolvedValue({
+      error: null,
+      data: { tracks: { items: [makeTrack('Fetched Song')] } },
+    });
+    const { result } = renderHook(
+      () => usePlaylistBrowse('pl-1', 'svc', 'acc'),
+      { wrapper }
+    );
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.data?.[0]?.title).toBe('Fetched Song');
+  });
+
+  it('throws when api returns error', async () => {
+    mockApiPlaylist.mockResolvedValue({ error: 'Not found', data: null });
+    const { result } = renderHook(
+      () => usePlaylistBrowse('pl-1', 'svc', 'acc'),
+      { wrapper }
+    );
+    await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });
