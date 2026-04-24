@@ -51,8 +51,6 @@ function buildApi() {
       skipPrev:    (groupId?: string) => call('skipToPreviousTrack', { pathParams: defined({ groupId }) }),
       setPlayMode: (body: { shuffle?: boolean; repeat?: boolean; repeatOne?: boolean; crossfade?: boolean }, groupId?: string) =>
         call('setPlayMode', { pathParams: defined({ groupId }), body }),
-      seek: (positionMillis: number, groupId?: string) =>
-        call('seek', { pathParams: defined({ groupId }), body: { positionMillis } }),
     },
 
     queue: {

@@ -105,6 +105,7 @@ beforeEach(() => {
   vi.mocked(window.sonos.setPlayModes).mockResolvedValue(undefined);
   vi.mocked(window.sonos.setGroupVolume).mockResolvedValue(undefined);
   vi.mocked(window.sonos.openMiniPlayer).mockResolvedValue(undefined);
+  vi.mocked(window.sonos.seek).mockResolvedValue(undefined);
 });
 
 // ─── visibility ───────────────────────────────────────────────────────────────
@@ -267,9 +268,7 @@ describe('PlayerBar — seek bar', () => {
       bar.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 100 }));
     });
     await waitFor(() =>
-      expect(window.sonos.fetch).toHaveBeenCalledWith(
-        expect.objectContaining({ operationId: 'seek', body: { positionMillis: 100000 } })
-      )
+      expect(window.sonos.seek).toHaveBeenCalledWith(100000)
     );
     expect(window.sonos.refreshPlayback).toHaveBeenCalled();
   });
@@ -284,9 +283,7 @@ describe('PlayerBar — seek bar', () => {
       bar.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 50 }));
     });
     await waitFor(() =>
-      expect(window.sonos.fetch).toHaveBeenCalledWith(
-        expect.objectContaining({ body: { positionMillis: 0 } })
-      )
+      expect(window.sonos.seek).toHaveBeenCalledWith(0)
     );
   });
 
