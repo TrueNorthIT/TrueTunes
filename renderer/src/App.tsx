@@ -126,6 +126,8 @@ function MainApp() {
           uri: trackId,
           trackName: td?.trackName ?? fallback.trackName,
           artist:    td?.artist ?? '',
+          serviceId,
+          accountId,
           artistId:  td?.artistId,
           album:     td?.albumName,
           albumId:   td?.albumId,
@@ -143,7 +145,7 @@ function MainApp() {
    */
   const fanOutTrackAttribution = useCallback((
     tracks: AlbumTrack[],
-    context: { album?: string | null; albumId?: string | null; artist?: string; artistId?: string; artUrl?: string | null },
+    context: { album?: string | null; albumId?: string | null; artist?: string; artistId?: string; artUrl?: string | null; serviceId?: string; accountId?: string },
   ) => {
     for (const t of tracks) {
       const tid = t.id;
@@ -153,6 +155,8 @@ function MainApp() {
         uri: tid.objectId,
         trackName: t.title,
         artist:    t.artists[0] ?? context.artist ?? '',
+        serviceId: tid.serviceId ?? context.serviceId,
+        accountId: tid.accountId?.replace(/^sn_/, '') ?? context.accountId,
         artistId:  t.artistObjects?.[0]?.objectId ?? context.artistId,
         album:     t.albumName ?? context.album ?? undefined,
         albumId:   t.albumId   ?? context.albumId ?? undefined,
@@ -262,6 +266,8 @@ function MainApp() {
               uri,
               trackName: album.title || getName(item),
               artist:    album.artist || ((item as Record<string, unknown>)['subtitle'] as string) || (item.artists?.[0]?.name ?? ''),
+              serviceId: aSvc,
+              accountId: aAcc,
               artistId,
               album:     album.title || getName(item),
               albumId:   uri,
@@ -273,6 +279,8 @@ function MainApp() {
               artist:   album.artist,
               artistId,
               artUrl:   album.artUrl,
+              serviceId: aSvc,
+              accountId: aAcc,
             });
           })
           .catch(() => { /* silent */ });
@@ -284,7 +292,7 @@ function MainApp() {
       const { albumId: pid, serviceId: pSvc, accountId: pAcc, defaults } = resolveAlbumParams(item);
       if (pid && pSvc && pAcc) {
         queryClient.fetchQuery(playlistQueryOptions(pid, pSvc, pAcc, defaults))
-          .then((tracks) => fanOutTrackAttribution(tracks, {}))
+          .then((tracks) => fanOutTrackAttribution(tracks, { serviceId: pSvc, accountId: pAcc }))
           .catch(() => { /* silent */ });
       }
     }

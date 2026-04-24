@@ -40,7 +40,7 @@ export async function statsHandler(
     if (userId)       { conditions.push('c.userId = @userId');    parameters.push({ name: '@userId', value: userId }); }
     const where = conditions.length ? ' WHERE ' + conditions.join(' AND ') : '';
     const query = {
-      query: `SELECT c.userId, c.eventType, c.trackName, c.artist, c.artistId, c.album, c.albumId, c.imageUrl, c.uri FROM c${where}`,
+      query: `SELECT c.userId, c.eventType, c.trackName, c.artist, c.serviceId, c.accountId, c.artistId, c.album, c.albumId, c.imageUrl, c.uri FROM c${where}`,
       parameters,
     };
 

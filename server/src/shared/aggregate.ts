@@ -4,6 +4,8 @@ export interface RawEvent {
   eventType?: 'track' | 'album' | null;
   trackName: string;
   artist: string;
+  serviceId?: string | null;
+  accountId?: string | null;
   artistId?: string | null;
   album?: string | null;
   albumId?: string | null;
@@ -17,6 +19,8 @@ export interface TrackEntry {
   key: string;
   trackName: string;
   artist: string;
+  serviceId?: string;
+  accountId?: string;
   artistId?: string;
   album?: string;
   albumId?: string;
@@ -27,6 +31,8 @@ export interface TrackEntry {
 
 export interface ArtistEntry {
   artist: string;
+  serviceId?: string;
+  accountId?: string;
   artistId?: string;
   imageUrl?: string;
   count: number;
@@ -36,6 +42,8 @@ export interface AlbumEntry {
   key: string;
   album: string;
   artist: string;
+  serviceId?: string;
+  accountId?: string;
   artistId?: string;
   albumId?: string;
   imageUrl?: string;
@@ -101,11 +109,15 @@ export function aggregateEvents(events: RawEvent[]): AggregateResult {
         if (!artistMap[aKey]) {
           artistMap[aKey] = {
             artist: e.artist,
+            serviceId: e.serviceId ?? undefined,
+            accountId: e.accountId ?? undefined,
             artistId: e.artistId ?? undefined,
             imageUrl: e.imageUrl ?? undefined,
             count: 0,
           };
         } else {
+          if (!artistMap[aKey].serviceId && e.serviceId) artistMap[aKey].serviceId = e.serviceId;
+          if (!artistMap[aKey].accountId && e.accountId) artistMap[aKey].accountId = e.accountId;
           if (!artistMap[aKey].artistId && e.artistId) artistMap[aKey].artistId = e.artistId;
           if (!artistMap[aKey].imageUrl && e.imageUrl) artistMap[aKey].imageUrl = e.imageUrl;
         }
@@ -122,12 +134,16 @@ export function aggregateEvents(events: RawEvent[]): AggregateResult {
             key: albumKey,
             album: e.album,
             artist: e.artist,
+            serviceId: e.serviceId ?? undefined,
+            accountId: e.accountId ?? undefined,
             artistId: e.artistId ?? undefined,
             albumId: e.albumId ?? undefined,
             imageUrl: e.imageUrl ?? undefined,
             count: 0,
           };
         } else {
+          if (!albumMap[albumKey].serviceId && e.serviceId) albumMap[albumKey].serviceId = e.serviceId;
+          if (!albumMap[albumKey].accountId && e.accountId) albumMap[albumKey].accountId = e.accountId;
           if (!albumMap[albumKey].albumId && e.albumId) albumMap[albumKey].albumId = e.albumId;
           if (!albumMap[albumKey].artistId && e.artistId) albumMap[albumKey].artistId = e.artistId;
           if (!albumMap[albumKey].imageUrl && e.imageUrl) albumMap[albumKey].imageUrl = e.imageUrl;
@@ -144,6 +160,8 @@ export function aggregateEvents(events: RawEvent[]): AggregateResult {
           key: tKey,
           trackName: e.trackName,
           artist: e.artist,
+          serviceId: e.serviceId ?? undefined,
+          accountId: e.accountId ?? undefined,
           artistId: e.artistId ?? undefined,
           album: e.album ?? undefined,
           albumId: e.albumId ?? undefined,
@@ -152,6 +170,8 @@ export function aggregateEvents(events: RawEvent[]): AggregateResult {
           count: 0,
         };
       } else {
+        if (!trackMap[tKey].serviceId && e.serviceId) trackMap[tKey].serviceId = e.serviceId;
+        if (!trackMap[tKey].accountId && e.accountId) trackMap[tKey].accountId = e.accountId;
         if (!trackMap[tKey].artistId && e.artistId) trackMap[tKey].artistId = e.artistId;
         if (!trackMap[tKey].album && e.album) trackMap[tKey].album = e.album;
         if (!trackMap[tKey].albumId && e.albumId) trackMap[tKey].albumId = e.albumId;

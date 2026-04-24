@@ -33,15 +33,15 @@ const mockData: StatsResult = {
     { userId: 'bob',   count: 7  },
   ],
   topTracks: [
-    { trackName: 'Bohemian Rhapsody', artist: 'Queen', count: 5, artistId: 'art1' },
+    { trackName: 'Bohemian Rhapsody', artist: 'Queen', count: 5, artistId: 'art1', serviceId: 'svc1', accountId: 'acc1' },
     { trackName: 'Hotel California',  artist: 'Eagles', count: 3 },
   ],
   topArtists: [
-    { artist: 'Queen',  artistId: 'art1', count: 5 },
+    { artist: 'Queen',  artistId: 'art1', serviceId: 'svc1', accountId: 'acc1', count: 5 },
     { artist: 'Eagles', count: 3 },
   ],
   topAlbums: [
-    { album: 'A Night at the Opera', artist: 'Queen', albumId: 'alb1', count: 4 },
+    { album: 'A Night at the Opera', artist: 'Queen', albumId: 'alb1', serviceId: 'svc1', accountId: 'acc1', count: 4 },
   ],
   totalEvents: 25,
   periodStart: 0,
@@ -243,7 +243,7 @@ describe('LeaderboardPanel', () => {
         ...mockData,
         topAlbums: [],
         topTracks: [
-          { trackName: 'My Song', artist: 'Artist', count: 5, artistId: 'art1', album: 'Great Album', albumId: 'alb9' },
+          { trackName: 'My Song', artist: 'Artist', count: 5, artistId: 'art1', serviceId: 'svc1', accountId: 'acc1', album: 'Great Album', albumId: 'alb9' },
         ],
       });
       render(<LeaderboardPanel />);
@@ -322,7 +322,7 @@ describe('LeaderboardPanel', () => {
     it('shows art image when album has imageUrl', () => {
       mockLoaded({
         ...mockData,
-        topAlbums: [{ album: 'Pictured Album', artist: 'Band', albumId: 'alb2', count: 1, imageUrl: 'http://img.com/art.jpg' }],
+        topAlbums: [{ album: 'Pictured Album', artist: 'Band', albumId: 'alb2', serviceId: 'svc1', accountId: 'acc1', count: 1, imageUrl: 'http://img.com/art.jpg' }],
       });
       const { container } = render(<LeaderboardPanel />);
       expect(container.querySelector('img[src="http://img.com/art.jpg"]')).toBeTruthy();

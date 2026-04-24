@@ -178,12 +178,12 @@ export function LeaderboardPanel() {
                             className={styles.artistLink}
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (t.artistId)
+                              if (t.artistId && t.serviceId && t.accountId)
                                 navigate(`/artist/${encodeURIComponent(t.artistId)}`, {
                                   state: {
                                     item: {
                                       type: 'ARTIST',
-                                      resource: { type: 'ARTIST', id: { objectId: t.artistId } },
+                                      resource: { type: 'ARTIST', id: { objectId: t.artistId, serviceId: t.serviceId, accountId: t.accountId } },
                                     },
                                   },
                                 });
@@ -199,9 +199,9 @@ export function LeaderboardPanel() {
                             className={styles.artistLink}
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (t.albumId)
+                              if (t.albumId && t.serviceId && t.accountId)
                                 navigate(`/album/${encodeURIComponent(t.albumId)}`, {
-                                  state: { item: { type: 'ALBUM', id: { objectId: t.albumId } } },
+                                  state: { item: { type: 'ALBUM', id: { objectId: t.albumId, serviceId: t.serviceId, accountId: t.accountId } } },
                                 });
                               else navigate(`/search?q=${encodeURIComponent(t.album!)}`);
                             }}
@@ -233,10 +233,10 @@ export function LeaderboardPanel() {
                       className={styles.artistLink}
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (a.artistId)
+                        if (a.artistId && a.serviceId && a.accountId)
                           navigate(`/artist/${encodeURIComponent(a.artistId)}`, {
                             state: {
-                              item: { type: 'ARTIST', resource: { type: 'ARTIST', id: { objectId: a.artistId } } },
+                              item: { type: 'ARTIST', resource: { type: 'ARTIST', id: { objectId: a.artistId, serviceId: a.serviceId, accountId: a.accountId } } },
                             },
                           });
                         else navigate(`/search?q=${encodeURIComponent(a.artist)}`);
@@ -260,11 +260,11 @@ export function LeaderboardPanel() {
                   <div
                     key={i}
                     className={styles.trackRow}
-                    style={{ cursor: a.albumId ? 'pointer' : 'default' }}
+                    style={{ cursor: (a.albumId && a.serviceId && a.accountId) ? 'pointer' : 'default' }}
                     onClick={() => {
-                      if (a.albumId)
+                      if (a.albumId && a.serviceId && a.accountId)
                         navigate(`/album/${encodeURIComponent(a.albumId)}`, {
-                          state: { item: { type: 'ALBUM', id: { objectId: a.albumId } } },
+                          state: { item: { type: 'ALBUM', id: { objectId: a.albumId, serviceId: a.serviceId, accountId: a.accountId } } },
                         });
                     }}
                   >
@@ -281,12 +281,12 @@ export function LeaderboardPanel() {
                             className={styles.artistLink}
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (a.artistId)
+                              if (a.artistId && a.serviceId && a.accountId)
                                 navigate(`/artist/${encodeURIComponent(a.artistId)}`, {
                                   state: {
                                     item: {
                                       type: 'ARTIST',
-                                      resource: { type: 'ARTIST', id: { objectId: a.artistId } },
+                                      resource: { type: 'ARTIST', id: { objectId: a.artistId, serviceId: a.serviceId, accountId: a.accountId } },
                                     },
                                   },
                                 });
