@@ -172,6 +172,7 @@ interface SonosPreload {
   skipNext: () => Promise<unknown>;
   skipPrev: () => Promise<unknown>;
   skipToTrack: (trackNumber: number) => Promise<unknown>;
+  seek: (positionMillis: number) => Promise<unknown>;
   reorderQueue: (fromIndices: number[], toIndex: number, queueLength: number) => Promise<unknown>;
   removeFromQueue: (indices: number[]) => Promise<unknown>;
   clearQueue: () => Promise<unknown>;

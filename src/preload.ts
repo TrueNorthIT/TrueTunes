@@ -32,6 +32,7 @@ export interface SonosAPI {
   skipNext: () => Promise<unknown>;
   skipPrev: () => Promise<unknown>;
   skipToTrack: (trackNumber: number) => Promise<unknown>;
+  seek: (positionMillis: number) => Promise<unknown>;
   reorderQueue: (fromIndices: number[], toIndex: number, queueLength: number) => Promise<unknown>;
   removeFromQueue: (indices: number[]) => Promise<unknown>;
   clearQueue: () => Promise<unknown>;
@@ -134,6 +135,7 @@ contextBridge.exposeInMainWorld('sonos', {
   skipNext: () => ipcRenderer.invoke('playback:skipNext'),
   skipPrev: () => ipcRenderer.invoke('playback:skipPrev'),
   skipToTrack: (trackNumber: number) => ipcRenderer.invoke('playback:skipToTrack', trackNumber),
+  seek: (positionMillis: number) => ipcRenderer.invoke('playback:seek', positionMillis),
   reorderQueue: (fromIndices: number[], toIndex: number, queueLength: number) =>
     ipcRenderer.invoke('queue:reorder', fromIndices, toIndex, queueLength),
   removeFromQueue: (indices: number[]) => ipcRenderer.invoke('queue:remove', indices),

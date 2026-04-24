@@ -5,7 +5,6 @@ import { useAuth } from '../hooks/useAuth';
 import { useGroups } from '../hooks/useGroups';
 import { usePlayback } from '../hooks/usePlayback';
 import { useNowPlaying } from '../hooks/useNowPlaying';
-import { api } from '../lib/sonosApi';
 import styles from '../styles/MiniPlayer.module.css';
 
 // ── Shell ─────────────────────────────────────────────────────────────────────
@@ -15,13 +14,19 @@ export function MiniPlayerShell() {
   const groups = useGroups();
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
 
+  // Mirror App.tsx's active-group resolution so the mini window controls the
+  // same group the user has selected in the main window, not just groups[0].
   useEffect(() => {
-    if (groups.length > 0 && !activeGroupId) setActiveGroupId(groups[0].id);
+    if (groups.length === 0 || activeGroupId) return;
+    window.sonos.getActiveGroup().then((savedCoordinatorId) => {
+      const match = savedCoordinatorId ? groups.find((g) => g.coordinatorId === savedCoordinatorId) : null;
+      setActiveGroupId(match ? match.id : groups[0].id);
+    }).catch(() => setActiveGroupId(groups[0].id));
   }, [groups, activeGroupId]);
 
   const { playback } = usePlayback(activeGroupId);
 
-  return <MiniPlayer playback={playback} isAuthed={isAuthed} activeGroupId={activeGroupId} />;
+  return <MiniPlayer playback={playback} isAuthed={isAuthed} />;
 }
 
 // ── Visual component ──────────────────────────────────────────────────────────
@@ -29,11 +34,9 @@ export function MiniPlayerShell() {
 function MiniPlayer({
   playback,
   isAuthed,
-  activeGroupId,
 }: {
   playback: ReturnType<typeof usePlayback>['playback'];
   isAuthed: boolean;
-  activeGroupId: string | null;
 }) {
   const { displayTrack, displayArtist, cachedArt, progressPct, durationMs, isPlaying, dominantColor, elapsedLabel, durationLabel } = useNowPlaying(playback);
 
@@ -43,16 +46,12 @@ function MiniPlayer({
     if (!durationMs) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const positionMillis = Math.floor(pct * durationMs);
-    api.playback.seek(positionMillis, activeGroupId ?? undefined)
-      .then(refresh)
-      .catch((err) => console.error('[miniplayer] seek failed', err));
+    window.sonos.seek(Math.floor(pct * durationMs)).then(refresh);
   };
 
   const shellStyle: React.CSSProperties | undefined = dominantColor
     ? {
         background: `linear-gradient(105deg, rgba(${dominantColor}, 0.18) 0%, rgba(255,255,255,0.03) 60%), rgba(14, 14, 20, 0.96)`,
-        boxShadow: `0 8px 32px rgba(0,0,0,0.5), 0 0 50px rgba(${dominantColor}, 0.12), 0 1px 0 rgba(255,255,255,0.06) inset, 0 -1px 0 rgba(0,0,0,0.2) inset`,
         ['--accent' as string]: `rgba(${dominantColor},0.85)`,
       }
     : undefined;

@@ -19,7 +19,6 @@ import {
   PictureInPicture2,
 } from "lucide-react";
 import type { PlaybackState } from "../hooks/usePlayback";
-import { api } from "../lib/sonosApi";
 import styles from "../styles/PlayerBar.module.css";
 
 interface Props {
@@ -159,7 +158,7 @@ export function PlayerBar({
     if (!durationMs) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    api.playback.seek(Math.floor(pct * durationMs)).then(refresh);
+    window.sonos.seek(Math.floor(pct * durationMs)).then(refresh);
   };
 
   const refresh = () => window.sonos.refreshPlayback();

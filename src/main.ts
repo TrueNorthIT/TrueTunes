@@ -245,10 +245,6 @@ const OPERATIONS: Record<string, Operation> = {
     method: 'POST',
     path: '/api/playback/v1/groups/:groupId/playMode',
   },
-  seek: {
-    method: 'POST',
-    path: '/api/playback/v1/groups/:groupId/seek',
-  },
   // Platform
   getMfe: { method: 'GET', path: '/api/mfe' },
   getOptimizelyConfig: { method: 'GET', path: '/api/optimizely/:key' },
@@ -1072,11 +1068,11 @@ function createMiniPlayerWindow(): void {
     maxHeight: 116,
     frame: false,
     transparent: true,
-    backgroundColor: '#00ffffff',
+    backgroundColor: '#00000000',
     alwaysOnTop: true,
     resizable: false,
     skipTaskbar: true,
-    hasShadow: false,
+    hasShadow: true,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -1397,6 +1393,12 @@ ipcMain.handle('playback:skipToTrack', (_event: IpcMainInvokeEvent, trackNumber:
   const groupId = config.groupId;
   if (!ws || ws.readyState !== WebSocket.OPEN) return { error: 'WS not connected' };
   return wsSend({ namespace: 'playback', groupId, command: 'skipToTrack' }, { trackNumber });
+});
+
+ipcMain.handle('playback:seek', (_event: IpcMainInvokeEvent, positionMillis: number) => {
+  const groupId = config.groupId;
+  if (!ws || ws.readyState !== WebSocket.OPEN) return { error: 'WS not connected' };
+  return wsSend({ namespace: 'playback', groupId, command: 'seek' }, { positionMillis });
 });
 
 // ─── Queue reorder algorithm ──────────────────────────────────────────────────
