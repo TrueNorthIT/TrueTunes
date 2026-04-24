@@ -35,6 +35,7 @@ Object.defineProperty(window, 'sonos', {
     loadContent:        vi.fn(pending),
     setPlayModes:       vi.fn(pending),
     skipToTrack:        vi.fn(pending),
+    seek:               vi.fn(pending),
     reorderQueue:       vi.fn(pending),
     removeFromQueue:    vi.fn(pending),
     clearQueue:         vi.fn(pending),

@@ -1,61 +1,37 @@
-/* ── Outer shell ── */
-/*
- * backdrop-filter lives HERE — on the shell itself, isolated from any
- * SVG filter, so Chromium actually composites against the OS desktop
- * pixels behind the transparent window.
+/* ── Outer shell ──
+ * Matches PlayerBar's proven translucency recipe: a mostly-opaque background
+ * with heavy backdrop-filter blur. No SVG displacement, no mask, no stacked
+ * glass layers — one element does it all. Chromium composites this cleanly
+ * against the transparent Electron window.
  */
 .shell {
   width: 340px;
-  height: 104px;
+  height: 116px;
   position: relative;
   border-radius: 18px;
   overflow: hidden;
 
-  background: rgba(18, 18, 20, 0.38);
-  backdrop-filter: blur(22px) saturate(1.8) brightness(1.05);
+  /* Near-opaque base so the shell renders even when the transparent Electron
+     window leaves backdrop-filter with nothing to sample. */
+  background: rgba(14, 14, 20, 0.96);
+  backdrop-filter: blur(24px) saturate(130%);
 
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  /* Only inset shadows — outer shadows get clipped at the window's square
+     boundary, which paints a visible rectangular halo around the rounded
+     shell. The OS will draw the window shadow instead. */
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.55),
-    0 0 48px var(--glow, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.2) inset;
 
   -webkit-app-region: drag;
   user-select: none;
-  transition: box-shadow 0.8s ease;
+  transition: box-shadow 0.4s ease, background 0.4s ease;
 }
 
-/* ── Liquid glass distortion layer ── */
-/*
- * Sits above the blurred backdrop, below the content.
- * The SVG turbulence displacement is applied to a caustic gradient,
- * simulating light refraction through glass. Kept on a SEPARATE element
- * from backdrop-filter to avoid the Chromium compositing conflict.
- */
-.glass {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-
-  background:
-    radial-gradient(ellipse at 18% 38%, rgba(255, 255, 255, 0.16) 0%, transparent 48%),
-    radial-gradient(ellipse at 78% 62%, rgba(255, 255, 255, 0.07) 0%, transparent 40%),
-    linear-gradient(148deg, rgba(255, 255, 255, 0.08) 0%, transparent 55%);
-
-  filter: url(#liquid-glass);
-
-  /* Glass edge sheen */
-  box-shadow:
-    inset 2px 2px 0px -2px rgba(255, 255, 255, 0.7),
-    inset 0 0 4px 1px rgba(255, 255, 255, 0.10);
-}
-
-/* ── Content layer (above glass) ── */
+/* ── Content ── */
 .content {
   position: relative;
-  z-index: 1;
   width: 100%;
   height: 100%;
   padding: 0 12px;
@@ -66,13 +42,14 @@
 
 /* ── Album art ── */
 .art {
-  width: 72px;
-  height: 72px;
+  width: 76px;
+  height: 76px;
   flex-shrink: 0;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.40);
 }
 .art img {
   width: 100%;
@@ -97,14 +74,19 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  /* Exclude the entire info column from the drag region — Chromium can
+     otherwise interpret clicks on deeply nested no-drag children (like the
+     progress bar) as drag starts and swallow the click event. */
+  -webkit-app-region: no-drag;
 }
 .title {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.95);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: 0.01em;
 }
 .artist {
   font-size: 11px;
@@ -113,18 +95,55 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Larger click target (11px tall) so users don't have to pixel-hunt the 3px bar;
+   visible track sits in the vertical center via ::before. */
 .progress {
-  margin-top: 7px;
-  height: 2px;
-  border-radius: 1px;
+  margin-top: 2px;
+  height: 11px;
+  position: relative;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  background: transparent;
+}
+.progress::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 3px;
+  border-radius: 2px;
   background: rgba(255, 255, 255, 0.10);
-  overflow: hidden;
+  transition: height 0.15s;
+  pointer-events: none;
+}
+.progress:hover::before {
+  height: 5px;
 }
 .progressFill {
-  height: 100%;
-  border-radius: 1px;
-  background: rgba(255, 255, 255, 0.55);
-  transition: width 0.5s linear;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent, rgba(255, 255, 255, 0.65));
+  transition: width 0.5s linear, height 0.15s, background 0.15s;
+  pointer-events: none;
+}
+.progress:hover .progressFill {
+  height: 5px;
+  background: #fff;
+}
+.timeRow {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3px;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
 }
 
 /* ── Controls ── */

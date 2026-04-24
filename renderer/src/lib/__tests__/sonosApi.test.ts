@@ -67,16 +67,6 @@ describe('api.playback', () => {
     );
   });
 
-  it('seek sends positionMillis in body', async () => {
-    await api.playback.seek(42000, 'g:1');
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        operationId: 'seek',
-        body: { positionMillis: 42000 },
-      })
-    );
-  });
-
   it('setPlayMode sends body with mode flags', async () => {
     await api.playback.setPlayMode({ shuffle: true, repeat: false }, 'g:1');
     expect(mockFetch).toHaveBeenCalledWith(
