@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import type React from 'react';
 import { SkipBack, Play, Pause, SkipForward } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useGroups } from '../hooks/useGroups';
 import { usePlayback } from '../hooks/usePlayback';
 import { useNowPlaying } from '../hooks/useNowPlaying';
+import { api } from '../lib/sonosApi';
 import styles from '../styles/MiniPlayer.module.css';
 
 // ── Shell ─────────────────────────────────────────────────────────────────────
@@ -19,7 +21,7 @@ export function MiniPlayerShell() {
 
   const { playback } = usePlayback(activeGroupId);
 
-  return <MiniPlayer playback={playback} isAuthed={isAuthed} />;
+  return <MiniPlayer playback={playback} isAuthed={isAuthed} activeGroupId={activeGroupId} />;
 }
 
 // ── Visual component ──────────────────────────────────────────────────────────
@@ -27,98 +29,94 @@ export function MiniPlayerShell() {
 function MiniPlayer({
   playback,
   isAuthed,
+  activeGroupId,
 }: {
   playback: ReturnType<typeof usePlayback>['playback'];
   isAuthed: boolean;
+  activeGroupId: string | null;
 }) {
-  const { displayTrack, displayArtist, cachedArt, progressPct, isPlaying, dominantColor, elapsedLabel, durationLabel } = useNowPlaying(playback);
+  const { displayTrack, displayArtist, cachedArt, progressPct, durationMs, isPlaying, dominantColor, elapsedLabel, durationLabel } = useNowPlaying(playback);
 
   const refresh = () => window.sonos.refreshPlayback();
 
-  const shellStyle = dominantColor
-    ? ({
-        '--glow': `rgba(${dominantColor},0.25)`,
-        '--accent': `rgba(${dominantColor},0.85)`,
-      } as React.CSSProperties)
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!durationMs) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const positionMillis = Math.floor(pct * durationMs);
+    api.playback.seek(positionMillis, activeGroupId ?? undefined)
+      .then(refresh)
+      .catch((err) => console.error('[miniplayer] seek failed', err));
+  };
+
+  const shellStyle: React.CSSProperties | undefined = dominantColor
+    ? {
+        background: `linear-gradient(105deg, rgba(${dominantColor}, 0.18) 0%, rgba(255,255,255,0.03) 60%), rgba(14, 14, 20, 0.96)`,
+        boxShadow: `0 8px 32px rgba(0,0,0,0.5), 0 0 50px rgba(${dominantColor}, 0.12), 0 1px 0 rgba(255,255,255,0.06) inset, 0 -1px 0 rgba(0,0,0,0.2) inset`,
+        ['--accent' as string]: `rgba(${dominantColor},0.85)`,
+      }
     : undefined;
 
   return (
-    <>
-      {/* SVG liquid-glass filter — hidden, referenced by CSS */}
-      <svg style={{ display: 'none' }} aria-hidden="true">
-        <defs>
-          <filter id="liquid-glass" x="-8%" y="-8%" width="116%" height="116%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.018 0.012" numOctaves="2" seed="42" result="noise" />
-            <feGaussianBlur in="noise" stdDeviation="0.5" result="softNoise" />
-            <feDisplacementMap
-              in="SourceGraphic"
-              in2="softNoise"
-              scale="22"
-              xChannelSelector="R"
-              yChannelSelector="G"
-            />
-          </filter>
-        </defs>
-      </svg>
+    <div className={styles.shell} style={shellStyle}>
+      <div className={styles.content}>
+        {/* Album art */}
+        <div className={styles.art}>
+          {cachedArt ? <img src={cachedArt} alt="" /> : <div className={styles.artPh}>♪</div>}
+        </div>
 
-      <div className={styles.shell} style={shellStyle}>
-        {/* Glass backdrop layer */}
-        <div className={styles.glass} />
-
-        {/* Content (above glass) */}
-        <div className={styles.content}>
-          {/* Album art */}
-          <div className={styles.art}>
-            {cachedArt ? <img src={cachedArt} alt="" /> : <div className={styles.artPh}>♪</div>}
+        {/* Track info + progress */}
+        <div className={styles.info}>
+          <div className={styles.title}>{displayTrack || '—'}</div>
+          <div className={styles.artist}>{displayArtist || ''}</div>
+          <div
+            className={styles.progress}
+            onClick={handleSeek}
+            role="progressbar"
+            aria-valuenow={progressPct}
+          >
+            <div className={styles.progressFill} style={{ width: `${progressPct}%` }} />
           </div>
-
-          {/* Track info + progress */}
-          <div className={styles.info}>
-            <div className={styles.title}>{displayTrack || '—'}</div>
-            <div className={styles.artist}>{displayArtist || ''}</div>
-            <div className={styles.progress}>
-              <div className={styles.progressFill} style={{ width: `${progressPct}%` }} />
-            </div>
-            <div className={styles.timeRow}>
-              <span>{elapsedLabel}</span>
-              <span>{durationLabel}</span>
-            </div>
+          <div className={styles.timeRow}>
+            <span>{elapsedLabel}</span>
+            <span>{durationLabel}</span>
           </div>
+        </div>
 
-          {/* Controls */}
-          <div className={styles.controls}>
-            <button
-              className={styles.btn}
-              disabled={!isAuthed}
-              onClick={() => window.sonos.skipPrev().then(refresh)}
-              title="Previous"
-            >
-              <SkipBack size={13} />
-            </button>
-            <button
-              className={`${styles.btn} ${styles.playBtn}`}
-              disabled={!isAuthed}
-              onClick={() => (isPlaying ? window.sonos.pause() : window.sonos.play()).then(refresh)}
-              title={isPlaying ? 'Pause' : 'Play'}
-            >
-              {isPlaying ? <Pause size={14} /> : <Play size={14} />}
-            </button>
-            <button
-              className={styles.btn}
-              disabled={!isAuthed}
-              onClick={() => window.sonos.skipNext().then(refresh)}
-              title="Next"
-            >
-              <SkipForward size={13} />
-            </button>
-          </div>
-
-          {/* Close */}
-          <button className={styles.closeBtn} onClick={() => window.sonos.closeMiniPlayer()} title="Close">
-            ✕
+        {/* Controls */}
+        <div className={styles.controls}>
+          <button
+            className={styles.btn}
+            disabled={!isAuthed}
+            onClick={() => window.sonos.skipPrev().then(refresh)}
+            title="Previous"
+          >
+            <SkipBack size={13} />
+          </button>
+          <button
+            className={`${styles.btn} ${styles.playBtn}`}
+            disabled={!isAuthed}
+            onClick={() => (isPlaying ? window.sonos.pause() : window.sonos.play()).then(refresh)}
+            title={isPlaying ? 'Pause' : 'Play'}
+          >
+            {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+          </button>
+          <button
+            className={styles.btn}
+            disabled={!isAuthed}
+            onClick={() => window.sonos.skipNext().then(refresh)}
+            title="Next"
+          >
+            <SkipForward size={13} />
           </button>
         </div>
+
+        {/* Close */}
+        <button className={styles.closeBtn} onClick={() => window.sonos.closeMiniPlayer()} title="Close">
+          ✕
+        </button>
       </div>
-    </>
+    </div>
   );
 }
+

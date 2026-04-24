@@ -1051,11 +1051,11 @@ function createMiniPlayerWindow(): void {
 
   miniWin = new BrowserWindow({
     width: 340,
-    height: 104,
+    height: 116,
     minWidth: 340,
-    minHeight: 104,
+    minHeight: 116,
     maxWidth: 340,
-    maxHeight: 104,
+    maxHeight: 116,
     frame: false,
     transparent: true,
     backgroundColor: '#00ffffff',
