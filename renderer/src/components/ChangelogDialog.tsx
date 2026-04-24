@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 import { ExternalLink } from 'lucide-react';
 import styles from '../styles/ChangelogDialog.module.css';
+
+marked.use({ async: false });
 
 interface Release {
   tag_name: string;
@@ -67,8 +71,8 @@ export function ChangelogDialog({ onClose }: Props) {
     (selected.tag_name === `v${appVersion}` || selected.tag_name === appVersion);
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={e => e.stopPropagation()}>
+    <div className={styles.overlay}>
+      <div className={styles.modal}>
         <div className={styles.header}>
           <span className={styles.heading}>What&apos;s New</span>
           {appVersion && <span className={styles.currentBadge}>v{appVersion}</span>}
@@ -128,7 +132,10 @@ export function ChangelogDialog({ onClose }: Props) {
                   </div>
                   <div className={styles.notes}>
                     {selected.body?.trim()
-                      ? <pre className={styles.notesText}>{selected.body.trim()}</pre>
+                      ? <div
+                          className={styles.notesText}
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(selected.body.trim()) as string) }}
+                        />
                       : <span className={styles.noNotes}>No release notes.</span>
                     }
                   </div>

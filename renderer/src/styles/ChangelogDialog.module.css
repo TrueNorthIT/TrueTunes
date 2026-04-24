@@ -20,8 +20,9 @@
     0 8px 32px rgba(0, 0, 0, 0.5),
     0 1px 0 rgba(255, 255, 255, 0.06) inset,
     0 -1px 0 rgba(0, 0, 0, 0.3) inset;
-  width: 580px;
-  max-height: 500px;
+  width: 80%;
+  max-width: 1100px;
+  height: 80vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -188,14 +189,74 @@
 }
 
 .notesText {
-  font-family: inherit;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-2);
-  line-height: 1.65;
-  white-space: pre-wrap;
-  margin: 0;
+  line-height: 1.7;
   word-break: break-word;
 }
+
+.notesText :global(h1),
+.notesText :global(h2),
+.notesText :global(h3),
+.notesText :global(h4) {
+  color: var(--text);
+  font-weight: 600;
+  margin: 1.2em 0 0.4em;
+  line-height: 1.3;
+}
+.notesText :global(h1) { font-size: 16px; }
+.notesText :global(h2) { font-size: 14px; }
+.notesText :global(h3), .notesText :global(h4) { font-size: 13px; }
+
+.notesText :global(p) {
+  margin: 0 0 0.75em;
+}
+
+.notesText :global(ul),
+.notesText :global(ol) {
+  margin: 0 0 0.75em;
+  padding-left: 1.4em;
+}
+
+.notesText :global(li) {
+  margin-bottom: 0.25em;
+}
+
+.notesText :global(code) {
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.notesText :global(pre) {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 0 0 0.75em;
+}
+
+.notesText :global(pre) :global(code) {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11px;
+}
+
+.notesText :global(strong) {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.notesText :global(a) {
+  color: #7dd3fc;
+  text-decoration: none;
+}
+.notesText :global(a:hover) { text-decoration: underline; }
 
 .noNotes {
   font-size: 12px;

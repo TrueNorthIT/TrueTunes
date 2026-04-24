@@ -8,6 +8,11 @@ on:
 
 permissions:
   contents: write
+  checks: write
+  pull-requests: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   validate:
@@ -27,7 +32,30 @@ jobs:
 
       - run: npm run typecheck
 
-      - run: npm run test:run
+      - name: Test with coverage
+        run: >
+          npm run test:run --
+          --reporter=default
+          --reporter=junit
+          --outputFile.junit=./junit.xml
+          --coverage
+
+      - name: Publish test results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Vitest Tests
+          path: renderer/junit.xml
+          reporter: java-junit
+          fail-on-error: true
+
+      - name: Publish coverage report
+        uses: davelosert/vitest-coverage-report-action@v2
+        if: always()
+        with:
+          json-summary-path: renderer/coverage/coverage-summary.json
+          json-final-path: renderer/coverage/coverage-final.json
+          vite-config-path: renderer/vitest.config.ts
 
   version:
     needs: validate

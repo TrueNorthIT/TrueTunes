@@ -40,7 +40,7 @@ async function runGenerate(
   const startMs = Date.now() - WINDOW_DAYS * 24 * 60 * 60 * 1000;
   const query = {
     query:
-      'SELECT c.userId, c.trackName, c.artist, c.artistId, c.album, c.albumId, c.imageUrl, c.uri FROM c WHERE c.timestamp >= @start',
+      'SELECT c.userId, c.eventType, c.trackName, c.artist, c.artistId, c.album, c.albumId, c.imageUrl, c.uri FROM c WHERE c.timestamp >= @start',
     parameters: [{ name: '@start', value: startMs }],
   };
 

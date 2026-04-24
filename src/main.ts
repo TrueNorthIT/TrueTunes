@@ -19,8 +19,10 @@ interface AppConfig {
   accountId?: string;
   /** Household ID — re-discovered on each WS bootstrap. */
   householdId?: string;
-  /** Active group ID — re-discovered on each WS bootstrap, updated on group switch. */
+  /** Active group ID — session-scoped (RINCON_xxx:sessionId), re-discovered on each WS bootstrap. */
   groupId?: string;
+  /** Stable coordinator RINCON ID for the preferred group — persisted across sessions. */
+  preferredCoordinatorId?: string;
   /** Active queue ID (coordinator player ID) — kept in sync by the renderer. */
   queueId?: string;
   /** Display name shown on tracks this user adds to the queue. */
@@ -55,6 +57,7 @@ async function loadConfig(): Promise<void> {
     // Only load the fields we explicitly persist (not runtime-discovered ones)
     if (typeof parsed.displayName === 'string') config.displayName = parsed.displayName;
     if (typeof parsed.lastSeenVersion === 'string') config.lastSeenVersion = parsed.lastSeenVersion;
+    if (typeof parsed.preferredCoordinatorId === 'string') config.preferredCoordinatorId = parsed.preferredCoordinatorId;
   } catch {
     // No config file yet — use defaults
   }
@@ -66,6 +69,7 @@ async function saveConfig(): Promise<void> {
     const toSave: Partial<AppConfig> = {
       displayName: config.displayName,
       lastSeenVersion: config.lastSeenVersion,
+      preferredCoordinatorId: config.preferredCoordinatorId,
     };
     await fs.writeFile(configFilePath(), JSON.stringify(toSave, null, 2), 'utf8');
   } catch (err) {
@@ -701,11 +705,21 @@ async function runBootstrap(): Promise<void> {
   log(`[ws] ${coordinatorGroupIds.length} coordinator group(s), ${playerIds.length} player(s)`);
   groups.forEach((g) => log(`[ws]   group "${g.name}" — ${g.id}`));
 
-  // Update live group list and set the first group as active
+  // Update live group list. Restore saved group preference (matched by stable
+  // coordinatorId) if it exists in the current household; otherwise fall back
+  // to the first group and persist that as the new preference.
   discoveredGroups = groups;
   if (groups.length > 0) {
-    config.groupId = groups[0].id;
-    log(`[ws] Active group: "${groups[0].name}" (${groups[0].id})`);
+    const savedGroup = config.preferredCoordinatorId
+      ? groups.find((g) => g.coordinatorId === config.preferredCoordinatorId)
+      : null;
+    const activeGroup = savedGroup ?? groups[0];
+    config.groupId = activeGroup.id;
+    if (!savedGroup) {
+      config.preferredCoordinatorId = activeGroup.coordinatorId;
+      void saveConfig();
+    }
+    log(`[ws] Active group: "${activeGroup.name}" (${activeGroup.id})`);
   }
 
   // 3 ─ Subscribe to playbackExtended first so we can capture initial state
@@ -1159,7 +1173,7 @@ ipcMain.handle('telemetry:event', (_: IpcMainInvokeEvent, name: string, props?: 
 
 ipcMain.handle(
   'pubsub:publishQueued',
-  async (_: IpcMainInvokeEvent, item: { uri: string; trackName: string; artist: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }) => {
+  async (_: IpcMainInvokeEvent, item: { eventType: 'track' | 'album'; uri: string; trackName: string; artist: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }) => {
     await officePubSub.publishQueued(item).catch(() => {
       /* silent */
     });
@@ -1167,6 +1181,7 @@ ipcMain.handle(
     // the WS won't echo it back, so we push it manually).
     const event = {
       type: 'queued' as const,
+      eventType: item.eventType,
       user: config.displayName ?? '',
       uri: item.uri,
       trackName: item.trackName,
@@ -1236,6 +1251,16 @@ ipcMain.handle('game:leaderboard', async (_: IpcMainInvokeEvent, date?: string) 
   try {
     const d = date && date.length ? date : 'today';
     const url = `${PUBSUB_FUNCTION_URL}/api/game-leaderboard?date=${encodeURIComponent(d)}`;
+    const res = await fetch(url);
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle('game:dates', async (_: IpcMainInvokeEvent, userName: string) => {
+  try {
+    const url = `${PUBSUB_FUNCTION_URL}/api/game-dates?userName=${encodeURIComponent(userName ?? '')}`;
     const res = await fetch(url);
     return await res.json();
   } catch (err) {
@@ -1508,11 +1533,15 @@ ipcMain.handle('queue:setId', (_event: IpcMainInvokeEvent, queueId: string) => {
   }
 });
 
+ipcMain.handle('group:getActive', () => config.preferredCoordinatorId ?? null);
+
 ipcMain.handle('group:set', (_event: IpcMainInvokeEvent, groupId: string) => {
   const group = discoveredGroups.find((g) => g.id === groupId);
   if (!group) return { error: `Unknown group: ${groupId}` };
   config.groupId = group.id;
+  config.preferredCoordinatorId = group.coordinatorId;
   log(`[group] Switched to "${group.name}" — groupId: ${group.id}`);
+  void saveConfig();
   // Re-subscribe to playbackExtended for the new group — Sonos responds with an
   // extendedPlaybackStatus push so the renderer immediately gets fresh now-playing state.
   if (ws && ws.readyState === WebSocket.OPEN) {

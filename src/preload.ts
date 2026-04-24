@@ -17,6 +17,7 @@ export interface SonosAPI {
   onWsMessage: (cb: (header: unknown, payload: unknown) => void) => Unsubscribe;
   onWsReady: (cb: VoidCallback) => Unsubscribe;
   onWsGroups: (cb: (groups: unknown[]) => void) => Unsubscribe;
+  getActiveGroup: () => Promise<string | null>;
   setGroup: (groupId: string) => Promise<{ ok?: boolean; error?: string }>;
   setGroupVolume: (volume: number) => Promise<unknown>;
   openWsMonitor: () => Promise<void>;
@@ -37,7 +38,7 @@ export interface SonosAPI {
   // Attribution / office presence
   getDisplayName: () => Promise<string | null>;
   setDisplayName: (name: string) => Promise<void>;
-  publishQueued: (item: { uri: string; trackName: string; artist: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }) => Promise<void>;
+  publishQueued: (item: { eventType: 'track' | 'album'; uri: string; trackName: string; artist: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }) => Promise<void>;
   onAttributionMap: (cb: (map: AttributionMap) => void) => Unsubscribe;
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;
   refreshAttribution: () => Promise<void>;
@@ -49,6 +50,7 @@ export interface SonosAPI {
     guesses: { main: Array<'left' | 'right'>; bonus: string[] };
   }) => Promise<unknown>;
   fetchGameLeaderboard: (date?: string) => Promise<unknown>;
+  fetchGameDates: (userName: string) => Promise<unknown>;
   trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
   minimizeWindow:    () => Promise<void>;
   maximizeWindow:    () => Promise<void>;
@@ -117,6 +119,7 @@ contextBridge.exposeInMainWorld('sonos', {
   setQueueId: (queueId: string) => ipcRenderer.invoke('queue:setId', queueId),
   loadContent: (payload: Record<string, unknown>) => ipcRenderer.invoke('playback:loadContent', payload),
   fetchImage: (url: string) => ipcRenderer.invoke('image:fetch', url),
+  getActiveGroup: () => ipcRenderer.invoke('group:getActive'),
   setGroup: (groupId: string) => ipcRenderer.invoke('group:set', groupId),
   setGroupVolume: (volume: number) => ipcRenderer.invoke('volume:group:set', volume),
   openWsMonitor: () => ipcRenderer.invoke('debug:openWsMonitor'),
@@ -150,6 +153,7 @@ contextBridge.exposeInMainWorld('sonos', {
   fetchDailyGame: (date?: string) => ipcRenderer.invoke('game:fetch', date),
   submitGameScore: (input) => ipcRenderer.invoke('game:submit', input),
   fetchGameLeaderboard: (date?: string) => ipcRenderer.invoke('game:leaderboard', date),
+  fetchGameDates: (userName: string) => ipcRenderer.invoke('game:dates', userName),
   onAttributionEvent: (cb: (event: AttributionEvent) => void): Unsubscribe => {
     const listener = (_e: unknown, event: AttributionEvent) => cb(event);
     ipcRenderer.on('attribution:event', listener);

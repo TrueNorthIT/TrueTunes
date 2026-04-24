@@ -11,6 +11,7 @@ type AttributionMap = Record<string, AttributionEntry>;
 
 interface AttributionEvent {
   type: 'queued';
+  eventType?: 'track' | 'album';
   user: string;
   uri: string;
   trackName: string;
@@ -51,6 +52,7 @@ interface StatsTrack {
 interface StatsArtist {
   artist: string;
   artistId?: string;
+  imageUrl?: string;
   count: number;
 }
 interface StatsAlbum {
@@ -127,6 +129,17 @@ interface GameLeaderboardResult {
   error?: string;
 }
 
+interface GameDateEntry {
+  gameId: string;
+  status: 'generating' | 'ready';
+  userPlayed: boolean;
+}
+
+interface GameDatesResult {
+  dates?: GameDateEntry[];
+  error?: string;
+}
+
 interface GameSubmitResult {
   ok?: boolean;
   duplicate?: boolean;
@@ -145,6 +158,7 @@ interface SonosPreload {
   onWsMessage: (cb: (header: unknown, payload: unknown) => void) => Unsubscribe;
   onWsReady: (cb: VoidCallback) => Unsubscribe;
   onWsGroups: (cb: (groups: unknown[]) => void) => Unsubscribe;
+  getActiveGroup: () => Promise<string | null>;
   setGroup: (groupId: string) => Promise<{ ok?: boolean; error?: string }>;
   setGroupVolume: (volume: number) => Promise<unknown>;
   setQueueId: (queueId: string) => Promise<void>;
@@ -169,6 +183,7 @@ interface SonosPreload {
   getDisplayName: () => Promise<string | null>;
   setDisplayName: (name: string) => Promise<void>;
   publishQueued: (item: {
+    eventType: 'track' | 'album';
     uri: string;
     trackName: string;
     artist: string;
@@ -185,6 +200,7 @@ interface SonosPreload {
     guesses: { main: Array<'left' | 'right'>; bonus: string[] };
   }) => Promise<GameSubmitResult>;
   fetchGameLeaderboard: (date?: string) => Promise<GameLeaderboardResult>;
+  fetchGameDates: (userName: string) => Promise<GameDatesResult>;
   refreshAttribution: () => Promise<void>;
   onAttributionMap: (cb: (map: AttributionMap) => void) => Unsubscribe;
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;

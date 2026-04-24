@@ -30,6 +30,16 @@ export function useGameLeaderboard(date?: string) {
   });
 }
 
+export function useGameDates(userName: string | null | undefined) {
+  return useQuery<GameDatesResult>({
+    queryKey: ['queuedle-dates', userName ?? ''],
+    queryFn: () => window.sonos.fetchGameDates(userName ?? ''),
+    enabled: userName !== undefined,
+    staleTime: 60_000,
+    refetchInterval: 5 * 60_000,
+  });
+}
+
 export function useSubmitGameScore() {
   const qc = useQueryClient();
   return useMutation<
@@ -46,6 +56,7 @@ export function useSubmitGameScore() {
       qc.invalidateQueries({ queryKey: ['queuedle-leaderboard'] });
       qc.invalidateQueries({ queryKey: ['queuedle', variables.gameId] });
       qc.invalidateQueries({ queryKey: ['queuedle', 'today'] });
+      qc.invalidateQueries({ queryKey: ['queuedle-dates'] });
     },
   });
 }

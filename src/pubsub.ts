@@ -157,12 +157,17 @@ export class OfficePubSub {
         if (msg.type === 'message' && msg.from === 'group' && msg.group === HUB && msg.data) {
           const event = msg.data;
           if (event.type === 'queued' && event.uri) {
-            this.attributionMap[event.uri] = {
-              user: event.user,
-              timestamp: event.timestamp,
-              trackName: event.trackName,
-              artist: event.artist,
-            };
+            // Only track events back queue-row badges; album events would
+            // place a phantom badge under the album URI. Legacy events with
+            // no eventType are treated as track-equivalent (existing behavior).
+            if (event.eventType !== 'album') {
+              this.attributionMap[event.uri] = {
+                user: event.user,
+                timestamp: event.timestamp,
+                trackName: event.trackName,
+                artist: event.artist,
+              };
+            }
             this.eventCbs.forEach((cb) => cb(event));
           }
         }
@@ -181,11 +186,12 @@ export class OfficePubSub {
   }
 
   /** Publish a "track queued" event and update blob storage. */
-  async publishQueued(item: { uri: string; trackName: string; artist: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }): Promise<void> {
+  async publishQueued(item: { eventType: 'track' | 'album'; uri: string; trackName: string; artist: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }): Promise<void> {
     if (!item.uri) return;
 
     const event: AttributionEvent = {
       type: 'queued',
+      eventType: item.eventType,
       user: this.username,
       uri: item.uri,
       trackName: item.trackName,
@@ -197,13 +203,17 @@ export class OfficePubSub {
       timestamp: Date.now(),
     };
 
-    // Update local map immediately
-    this.attributionMap[item.uri] = {
-      user: event.user,
-      timestamp: event.timestamp,
-      trackName: event.trackName,
-      artist: event.artist,
-    };
+    // Update local map immediately. Only track events back queue-row badges;
+    // album events publish under the album URI (no queue row to match) so we
+    // skip the map update to avoid a phantom badge for unrelated lookups.
+    if (item.eventType === 'track') {
+      this.attributionMap[item.uri] = {
+        user: event.user,
+        timestamp: event.timestamp,
+        trackName: event.trackName,
+        artist: event.artist,
+      };
+    }
 
     // Broadcast via Web PubSub (noEcho: true — we already updated locally)
     if (this.connected) {
