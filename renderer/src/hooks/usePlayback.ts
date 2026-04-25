@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { PlaybackPayload } from "../types/sonos";
+import { getActiveProvider } from "../providers";
+import type { NormalizedPlaybackState } from "../types/provider";
 import { fmtTime } from "../lib/itemHelpers";
 
 export interface PlaybackState {
@@ -31,7 +32,7 @@ const IDLE_STATE: PlaybackState = {
   trackName: "",
   artistName: "",
   artUrl: null,
-  stateIcon: "\u2013",
+  stateIcon: "–",
   timeLabel: "",
   progressPct: 0,
   durationMs: 0,
@@ -59,78 +60,39 @@ export function usePlayback(activeGroupId: string | null) {
   const lastUpdateAtRef = useRef(0);
   const isPlayingRef = useRef(false);
 
-  // Always-current queue cursors — updated immediately on every WS push,
+  // Always-current queue cursors — updated immediately on every provider push,
   // before the !name guard and outside React batching, so callers never
   // read a version that's one message behind.
   const queueIdRef      = useRef<string | null>(null);
   const queueVersionRef = useRef<string | null>(null);
 
-  // Cache last WS payload per groupId so we can restore on group switch
-  const groupCache = useRef<Map<string, PlaybackPayload>>(new Map());
+  // Cache normalized state per groupId so we can restore on group switch
+  const groupCache = useRef<Map<string, NormalizedPlaybackState>>(new Map());
 
-  // Track activeGroupId in a ref so the WS handler (registered once) always sees the current value
+  // Track activeGroupId in a ref so the subscription handler (registered once) always sees the current value
   const activeGroupIdRef = useRef(activeGroupId);
   useEffect(() => {
     activeGroupIdRef.current = activeGroupId;
   }, [activeGroupId]);
 
+  const applyState = useCallback((normalized: NormalizedPlaybackState) => {
+    const { status, isPlaying, positionMs, durationMs, currentTrack,
+            shuffle, repeatMode, queueId, queueVersion, queueItemId } = normalized;
 
-  const applyPayload = useCallback((payload: PlaybackPayload) => {
-    const stateVal = payload?.playback?.playbackState ?? "";
-    const isPlaying = stateVal.includes("PLAYING");
-    const isPaused = stateVal.includes("PAUSED");
+    const pct = durationMs > 0 ? Math.min((positionMs / durationMs) * 100, 100) : 0;
 
-    const track = payload?.metadata?.currentItem?.track;
-    const name = track?.name ?? track?.title ?? "";
-    const rawArtist = track?.artist;
-    const artist = rawArtist
-      ? typeof rawArtist === "object"
-        ? (rawArtist.name ?? "")
-        : String(rawArtist)
-      : "";
-
-    const posMs = payload?.playback?.positionMillis ?? 0;
-    const durMs = track?.durationMillis ?? 0;
-    const pct = durMs > 0 ? Math.min((posMs / durMs) * 100, 100) : 0;
-    const isNoGroups = payload?.playback?.playbackState === "NO_GROUPS";
-    const shuffle = payload?.playback?.playModes?.shuffle ?? false;
-    const repeat: PlaybackState["repeat"] = payload?.playback?.playModes?.repeatOne
-      ? "one"
-      : payload?.playback?.playModes?.repeat
-        ? "all"
-        : "none";
-    const queueId      = payload?.playback?.queueId      ?? null;
-    const queueVersion = payload?.playback?.queueVersion ?? null;
-    const queueItemId  = payload?.playback?.itemId       ?? null;
-    const oid = track?.id?.objectId ?? null;
-    const serviceId = track?.id?.serviceId ?? null;
-    const accountId = track?.id?.accountId ?? null;
-    const albumObj = track?.album as
-      | { name?: string; id?: { objectId?: string } }
-      | undefined;
-    const albumId = albumObj?.id?.objectId ?? null;
-    const albumName = albumObj?.name ?? null;
-    const isExplicit = !!(
-      track?.explicit ??
-      (track as Record<string, unknown> | undefined)?.["isExplicit"]
-    );
-    const artUrls = [
-      ...(track?.images?.map((i) => i.url) ?? []),
-      track?.imageUrl,
-    ].filter((u): u is string => !!u);
-    const artUrl = artUrls.find((u) => u.startsWith("https://")) ?? null;
-
-    positionMsRef.current = posMs;
-    durationMsRef.current = durMs;
+    positionMsRef.current = positionMs;
+    durationMsRef.current = durationMs;
     lastUpdateAtRef.current = Date.now();
     isPlayingRef.current = isPlaying;
+
     if (queueId) {
       queueIdRef.current = queueId;
       window.sonos.setQueueId(queueId);
     }
     if (queueVersion) queueVersionRef.current = queueVersion;
 
-    if (!name) {
+    if (!currentTrack?.title) {
       // Still surface queue cursors into React state so useQueue can react to them
       // even when nothing is playing (no track name).
       if (queueId || queueVersion || queueItemId) {
@@ -146,26 +108,25 @@ export function usePlayback(activeGroupId: string | null) {
 
     setState((prev) => ({
       isVisible: true,
-      trackName: name,
-      artistName: artist,
-      artUrl,
-      stateIcon: isPlaying ? "\u25b6" : isPaused ? "\u23f8" : "\u2013",
-      timeLabel: durMs > 0 ? `${fmtTime(posMs)} / ${fmtTime(durMs)}` : "",
+      trackName: currentTrack.title,
+      artistName: currentTrack.artist,
+      artUrl: currentTrack.imageUrl,
+      stateIcon: status === 'playing' ? "▶" : status === 'paused' ? "⏸" : "–",
+      timeLabel: durationMs > 0 ? `${fmtTime(positionMs)} / ${fmtTime(durationMs)}` : "",
       progressPct: pct,
-      durationMs: durMs,
+      durationMs,
       isPlaying,
       shuffle,
-      // playbackExtended doesn't carry volume — keep whatever groupVolume last
-      // delivered. Only zero out when the payload signals no groups at all.
-      volume: isNoGroups ? 0 : prev.volume,
-      repeat,
+      // Playback state doesn't carry volume — keep whatever the provider last delivered.
+      volume: prev.volume,
+      repeat: repeatMode,
       currentObjectId:
-        oid !== prev.currentObjectId ? oid : prev.currentObjectId,
-      currentServiceId: serviceId,
-      currentAccountId: accountId,
-      currentAlbumId: albumId,
-      currentAlbumName: albumName,
-      isExplicit,
+        currentTrack.id !== prev.currentObjectId ? currentTrack.id : prev.currentObjectId,
+      currentServiceId: currentTrack.serviceId,
+      currentAccountId: currentTrack.accountId,
+      currentAlbumId: currentTrack.albumId,
+      currentAlbumName: currentTrack.albumName,
+      isExplicit: currentTrack.isExplicit,
       queueId,
       queueVersion,
       queueItemId,
@@ -192,41 +153,31 @@ export function usePlayback(activeGroupId: string | null) {
     return () => clearInterval(timer);
   }, [state.isPlaying]);
 
-  // WS subscriptions
+  // Provider subscription
   useEffect(() => {
     const unsubReady = window.sonos.onWsReady(() => {
       setState((prev) => ({ ...prev, isVisible: true }));
     });
 
-    const unsubMsg = window.sonos.onWsMessage((header, payload) => {
-      const h = header as Record<string, unknown>;
+    const provider = getActiveProvider();
+    const unsubPlayback = provider.subscribePlayback(
+      (msgGroupId, normalized) => {
+        // Cache for every group
+        if (msgGroupId) groupCache.current.set(msgGroupId, normalized);
 
-      if (h?.["namespace"] === "groupVolume") {
-        const vol = (payload as { volume?: number })?.volume;
-        if (vol !== undefined) setState((prev) => ({ ...prev, volume: vol }));
-        return;
-      }
+        // Only apply to UI if it's for the active group (or group isn't known yet)
+        if (
+          msgGroupId &&
+          activeGroupIdRef.current &&
+          msgGroupId !== activeGroupIdRef.current
+        ) return;
 
-      if (h?.["namespace"] !== "playbackExtended") return;
+        applyState(normalized);
+      },
+      (vol) => setState((prev) => ({ ...prev, volume: vol })),
+    );
 
-      const msgGroupId = h?.["groupId"] as string | undefined;
-      const p = payload as PlaybackPayload;
-
-      // Cache for every group
-      if (msgGroupId) groupCache.current.set(msgGroupId, p);
-
-      // Only apply to UI if it's for the active group (or group isn't known yet)
-      if (
-        msgGroupId &&
-        activeGroupIdRef.current &&
-        msgGroupId !== activeGroupIdRef.current
-      )
-        return;
-
-      applyPayload(p);
-    });
-
-    return () => { unsubReady(); unsubMsg(); };
+    return () => { unsubReady(); unsubPlayback(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -234,12 +185,12 @@ export function usePlayback(activeGroupId: string | null) {
   const applyGroupCache = useCallback(
     (groupId: string) => {
       // Update the group ref immediately — don't wait for the useEffect.
-      // Without this, WS messages for the old group can still arrive and
+      // Without this, provider messages for the old group can still arrive and
       // overwrite queueVersionRef with the old etag before the effect runs.
       activeGroupIdRef.current = groupId;
       // Clear queue cursors. queueVersionRef must NOT be restored from
       // cache — the cached version can be stale if the queue changed since
-      // the last WS push.  It will be refreshed by the next live WS message
+      // the last push.  It will be refreshed by the next live message
       // or by the API response etag on the first add.
       queueIdRef.current = null;
       queueVersionRef.current = null;
@@ -247,8 +198,8 @@ export function usePlayback(activeGroupId: string | null) {
       if (cached) {
         // Reset currentObjectId to force downstream reload
         setState((prev) => ({ ...prev, currentObjectId: null }));
-        applyPayload(cached);
-        // Re-null after applyPayload in case it repopulated from stale cache
+        applyState(cached);
+        // Re-null after applyState in case it repopulated from stale cache
         queueVersionRef.current = null;
       } else {
         setState({
@@ -258,7 +209,7 @@ export function usePlayback(activeGroupId: string | null) {
         });
       }
     },
-    [applyPayload],
+    [applyState],
   );
 
   return { playback: state, applyGroupCache, queueIdRef, queueVersionRef };

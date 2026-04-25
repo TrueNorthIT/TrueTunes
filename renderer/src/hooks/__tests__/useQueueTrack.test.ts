@@ -3,7 +3,7 @@ import { createElement } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react';
 import { useQueueTrack } from '../useQueueTrack';
-import type { QueueItem } from '../../types/sonos';
+import type { NormalizedQueueItem } from '../../types/provider';
 
 const mockTrackDetails = vi.fn();
 vi.mock('../useTrackDetails', () => ({
@@ -16,14 +16,20 @@ function wrapper({ children }: { children: React.ReactNode }) {
   return createElement(QueryClientProvider, { client: new QueryClient() }, children);
 }
 
-const baseItem: QueueItem = {
-  name: 'Come Together',
-  type: 'TRACK',
+const baseItem: NormalizedQueueItem = {
+  index: 0,
   track: {
-    name: 'Come Together',
-    id: { objectId: 'obj-1', serviceId: 'svc-1', accountId: 'acc-1' },
-    explicit: false,
-  } as QueueItem['track'],
+    id: 'obj-1',
+    title: 'Come Together',
+    artist: '',
+    albumName: null,
+    albumId: null,
+    imageUrl: null,
+    durationMs: 0,
+    isExplicit: false,
+    serviceId: 'svc-1',
+    accountId: 'acc-1',
+  },
 };
 
 beforeEach(() => {
@@ -128,10 +134,10 @@ describe('useQueueTrack', () => {
     expect(result.current.artistItem).toBeNull();
   });
 
-  it('explicit is true when track.explicit is set', () => {
-    const explicitItem: QueueItem = {
+  it('explicit is true when track.isExplicit is set', () => {
+    const explicitItem: NormalizedQueueItem = {
       ...baseItem,
-      track: { ...baseItem.track, explicit: true } as QueueItem['track'],
+      track: { ...baseItem.track, isExplicit: true },
     };
     const { result } = renderHook(
       () => useQueueTrack(explicitItem, null),

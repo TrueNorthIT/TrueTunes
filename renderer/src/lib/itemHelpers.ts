@@ -1,5 +1,6 @@
-import type { SonosItem, SonosItemId, QueueItem } from '../types/sonos';
+import type { SonosItem, SonosItemId, QueueItem, SonosTrack } from '../types/sonos';
 import type { ServiceSearch } from '../types/ServiceSearch';
+import type { NormalizedQueueItem } from '../types/provider';
 
 // ─── Defaults decoder ─────────────────────────────────────────────────────────
 
@@ -311,6 +312,40 @@ export function parseServiceSearch(data: ServiceSearch): SonosItem[] {
   }
 
   return result;
+}
+
+// ─── Sonos→Normalized queue item converter (for optimistic inserts) ──────────
+
+export function sonosItemToNormalizedQueueItem(item: SonosItem, index: number): NormalizedQueueItem {
+  const track = item.track as SonosTrack | undefined;
+  const id = (track?.id ?? (typeof item.id === 'object' ? item.id : undefined)) as SonosItemId | undefined;
+  const albumObj = track?.album as { name?: string; id?: { objectId?: string } } | undefined;
+  const rawArtist = track?.artist ?? track?.primaryArtist ?? item.artist ?? item.primaryArtist;
+  const artistName = rawArtist
+    ? typeof rawArtist === 'object' ? (rawArtist as { name?: string }).name ?? '' : String(rawArtist)
+    : '';
+  const artUrls = [
+    ...(track?.images?.map((i: { url: string }) => i.url) ?? []),
+    track?.imageUrl,
+    item.imageUrl,
+  ].filter((u): u is string => !!u);
+  const imageUrl = artUrls.find((u) => u.startsWith('https://')) ?? null;
+
+  return {
+    index,
+    track: {
+      id: id?.objectId ?? '',
+      title: track?.name ?? track?.title ?? item.name ?? item.title ?? '',
+      artist: artistName,
+      albumName: albumObj?.name ?? null,
+      albumId: albumObj?.id?.objectId ?? null,
+      imageUrl,
+      durationMs: track?.durationMillis ?? 0,
+      isExplicit: !!(track?.explicit ?? (track as Record<string, unknown> | undefined)?.['isExplicit']),
+      serviceId: id?.serviceId ?? null,
+      accountId: id?.accountId ?? null,
+    },
+  };
 }
 
 // ─── Formatting ───────────────────────────────────────────────────────────────

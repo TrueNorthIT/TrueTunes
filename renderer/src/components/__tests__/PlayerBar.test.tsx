@@ -206,7 +206,7 @@ describe('PlayerBar — shuffle', () => {
     const { user } = setup({ shuffle: false });
     await user.click(screen.getByTitle('Shuffle'));
     await waitFor(() =>
-      expect(window.sonos.setPlayModes).toHaveBeenCalledWith({ shuffle: true })
+      expect(window.sonos.setPlayModes).toHaveBeenCalledWith({ shuffle: true, repeat: false, repeatOne: false })
     );
   });
 
@@ -214,7 +214,7 @@ describe('PlayerBar — shuffle', () => {
     const { user } = setup({ shuffle: true });
     await user.click(screen.getByTitle('Shuffle'));
     await waitFor(() =>
-      expect(window.sonos.setPlayModes).toHaveBeenCalledWith({ shuffle: false })
+      expect(window.sonos.setPlayModes).toHaveBeenCalledWith({ shuffle: false, repeat: false, repeatOne: false })
     );
   });
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { getActiveProvider } from "../providers";
 import { useNowPlaying } from "../hooks/useNowPlaying";
 import { useOpenItem } from "../hooks/useOpenItem";
 import { ExplicitBadge } from "./common/ExplicitBadge";
@@ -93,7 +94,7 @@ function VolumeButton({ volume }: { volume: number }) {
     setLocalVol(val);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      window.sonos.setGroupVolume(val);
+      getActiveProvider().setVolume(val);
       dragging.current = false;
     }, 150);
   };
@@ -158,17 +159,17 @@ export function PlayerBar({
     if (!durationMs) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    window.sonos.seek(Math.floor(pct * durationMs)).then(refresh);
+    getActiveProvider().seek(Math.floor(pct * durationMs)).then(refresh);
   };
 
   const refresh = () => window.sonos.refreshPlayback();
 
   const toggleShuffle = () =>
-    window.sonos.setPlayModes({ shuffle: !rawShuffle }).then(refresh).then(onShuffle);
+    getActiveProvider().setPlayModes({ shuffle: !rawShuffle }).then(refresh).then(onShuffle);
 
   const toggleRepeat = () => {
     const next = rawRepeat === "none" ? "all" : rawRepeat === "all" ? "one" : "none";
-    window.sonos.setPlayModes({ repeat: next === "all", repeatOne: next === "one" }).then(refresh);
+    getActiveProvider().setPlayModes({ repeat: next as 'none' | 'one' | 'all' }).then(refresh);
   };
 
   if (!isVisible)
@@ -250,7 +251,7 @@ export function PlayerBar({
           <button
             className={styles.ctrl}
             disabled={!isAuthed}
-            onClick={() => window.sonos.skipPrev().then(refresh)}
+            onClick={() => getActiveProvider().skipPrev().then(refresh)}
             title="Previous"
           >
             <SkipBack size={14} />
@@ -259,7 +260,7 @@ export function PlayerBar({
             className={`${styles.ctrl} ${styles.playBtn}`}
             disabled={!isAuthed}
             onClick={() =>
-              (isPlaying ? window.sonos.pause() : window.sonos.play()).then(refresh)
+              (isPlaying ? getActiveProvider().pause() : getActiveProvider().play()).then(refresh)
             }
           >
             {isPlaying ? (
@@ -272,7 +273,7 @@ export function PlayerBar({
           <button
             className={styles.ctrl}
             disabled={!isAuthed}
-            onClick={() => window.sonos.skipNext().then(refresh)}
+            onClick={() => getActiveProvider().skipNext().then(refresh)}
             title="Next"
           >
             <SkipForward size={14} />
