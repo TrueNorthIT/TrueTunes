@@ -197,7 +197,7 @@ function MainApp() {
         }
         const next = [...prev];
         next.splice(insertIndex, 0, { ...normalizedQueueItem, index: insertIndex });
-        return next;
+        return next.map((item, i) => ({ ...item, index: i }));
       });
 
       const tid = normalized.track?.id as SonosItemId | undefined;

@@ -89,6 +89,12 @@ function normalizeSonosItemToQueueItem(item: SonosItem, index: number): Normaliz
   };
 }
 
+function throwOnIpcError(r: unknown): void {
+  if (r && typeof r === 'object' && 'error' in r && (r as { error: unknown }).error) {
+    throw new Error(String((r as { error: unknown }).error));
+  }
+}
+
 export class SonosProvider implements AudioProvider {
   readonly id = 'sonos' as const;
 
@@ -102,11 +108,13 @@ export class SonosProvider implements AudioProvider {
   refreshPlayback()          { return window.sonos.refreshPlayback() as Promise<void>; }
 
   setPlayModes(modes: { shuffle?: boolean; repeat?: 'none' | 'one' | 'all' }) {
-    return window.sonos.setPlayModes({
-      shuffle: modes.shuffle,
-      repeat: modes.repeat === 'all',
-      repeatOne: modes.repeat === 'one',
-    }) as Promise<void>;
+    const payload: { shuffle?: boolean; repeat?: boolean; repeatOne?: boolean } = {};
+    if (modes.shuffle !== undefined) payload.shuffle = modes.shuffle;
+    if (modes.repeat !== undefined) {
+      payload.repeat    = modes.repeat === 'all';
+      payload.repeatOne = modes.repeat === 'one';
+    }
+    return window.sonos.setPlayModes(payload) as Promise<void>;
   }
 
   async getQueue(params?: { count?: number; offset?: number }): Promise<{ items: NormalizedQueueItem[]; etag?: string; error?: string }> {
@@ -120,10 +128,14 @@ export class SonosProvider implements AudioProvider {
     };
   }
 
-  removeFromQueue(indices: number[]) { return window.sonos.removeFromQueue(indices) as Promise<void>; }
-  clearQueue()                       { return window.sonos.clearQueue() as Promise<void>; }
+  removeFromQueue(indices: number[]) {
+    return window.sonos.removeFromQueue(indices).then(throwOnIpcError);
+  }
+  clearQueue() {
+    return window.sonos.clearQueue().then(throwOnIpcError);
+  }
   reorderQueue(from: number[], to: number, len: number) {
-    return window.sonos.reorderQueue(from, to, len) as Promise<void>;
+    return window.sonos.reorderQueue(from, to, len).then(throwOnIpcError);
   }
 
   getActiveGroup() { return window.sonos.getActiveGroup(); }
