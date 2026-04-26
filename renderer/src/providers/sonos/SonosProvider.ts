@@ -98,7 +98,8 @@ export class SonosProvider implements AudioProvider {
   skipPrev()            { return window.sonos.skipPrev() as Promise<void>; }
   seek(ms: number)      { return window.sonos.seek(ms) as Promise<void>; }
   loadContent(p: Record<string, unknown>) { return window.sonos.loadContent(p); }
-  skipToTrack(n: number) { return window.sonos.skipToTrack(n) as Promise<void>; }
+  skipToTrack(n: number)    { return window.sonos.skipToTrack(n) as Promise<void>; }
+  refreshPlayback()          { return window.sonos.refreshPlayback() as Promise<void>; }
 
   setPlayModes(modes: { shuffle?: boolean; repeat?: 'none' | 'one' | 'all' }) {
     return window.sonos.setPlayModes({

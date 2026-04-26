@@ -14,6 +14,7 @@ export interface AudioProvider {
   setPlayModes(modes: { shuffle?: boolean; repeat?: 'none' | 'one' | 'all' }): Promise<void>;
   loadContent(payload: Record<string, unknown>): Promise<unknown>;
   skipToTrack(trackNumber: number): Promise<void>;
+  refreshPlayback(): Promise<void>;
 
   // Queue
   getQueue(params?: { count?: number; offset?: number }): Promise<{ items: NormalizedQueueItem[]; etag?: string; error?: string }>;
