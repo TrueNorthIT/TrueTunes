@@ -162,7 +162,7 @@ export function PlayerBar({
     getActiveProvider().seek(Math.floor(pct * durationMs)).then(refresh);
   };
 
-  const refresh = () => window.sonos.refreshPlayback();
+  const refresh = () => getActiveProvider().refreshPlayback();
 
   const toggleShuffle = () =>
     getActiveProvider().setPlayModes({ shuffle: !rawShuffle }).then(refresh).then(onShuffle);

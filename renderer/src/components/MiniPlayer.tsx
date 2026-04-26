@@ -41,7 +41,7 @@ function MiniPlayer({
 }) {
   const { displayTrack, displayArtist, cachedArt, progressPct, durationMs, isPlaying, dominantColor, elapsedLabel, durationLabel } = useNowPlaying(playback);
 
-  const refresh = () => window.sonos.refreshPlayback();
+  const refresh = () => getActiveProvider().refreshPlayback();
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!durationMs) return;
@@ -119,4 +119,3 @@ function MiniPlayer({
     </div>
   );
 }
-
