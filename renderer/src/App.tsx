@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getActiveProvider } from './providers';
 import { useAuth } from './hooks/useAuth';
 import { useGroups } from './hooks/useGroups';
 import { usePlayback } from './hooks/usePlayback';
@@ -9,7 +10,7 @@ import { trackQueryOptions } from './hooks/useTrackDetails';
 import { albumQueryOptions, type AlbumTrack } from './hooks/useAlbumBrowse';
 import { playlistQueryOptions } from './hooks/usePlaylistBrowse';
 import { api } from './lib/sonosApi';
-import { normalizeForQueue, isTrack, isProgram, isAlbum, isPlaylist, extractItems, resolveAlbumParams, getItemArt } from './lib/itemHelpers';
+import { normalizeForQueue, isTrack, isProgram, isAlbum, isPlaylist, extractItems, resolveAlbumParams, getItemArt, sonosItemToNormalizedQueueItem } from './lib/itemHelpers';
 import type { SonosItem, SonosItemId } from './types/sonos';
 
 import { TopNav } from './components/TopNav';
@@ -87,7 +88,7 @@ function MainApp() {
 
   useEffect(() => {
     if (groups.length === 0 || activeGroupId) return;
-    window.sonos.getActiveGroup().then((savedCoordinatorId) => {
+    getActiveProvider().getActiveGroup().then((savedCoordinatorId) => {
       const match = savedCoordinatorId ? groups.find((g) => g.coordinatorId === savedCoordinatorId) : null;
       setActiveGroupId(match ? match.id : groups[0].id);
     }).catch(() => setActiveGroupId(groups[0].id));
@@ -107,7 +108,7 @@ function MainApp() {
 
   const handleGroupChange = useCallback((groupId: string) => {
     setActiveGroupId(groupId);
-    window.sonos.setGroup(groupId);
+    getActiveProvider().setGroup(groupId);
     applyGroupCache(groupId);
     window.sonos.refreshAttribution().catch(() => {});
     window.sonos.trackEvent('group_changed').catch(() => {});
@@ -188,11 +189,15 @@ function MainApp() {
     const isPlaylistItem = !isSingleTrack && isPlaylist(item);
 
     if (isSingleTrack) {
+      const insertIndex = position === -1 ? Infinity : position;
+      const normalizedQueueItem = sonosItemToNormalizedQueueItem(normalized, insertIndex === Infinity ? 0 : insertIndex);
       setQueueItems(prev => {
-        if (position === -1 || position >= prev.length) return [...prev, normalized];
+        if (insertIndex === Infinity || insertIndex >= prev.length) {
+          return [...prev, { ...normalizedQueueItem, index: prev.length }];
+        }
         const next = [...prev];
-        next.splice(position, 0, normalized);
-        return next;
+        next.splice(insertIndex, 0, { ...normalizedQueueItem, index: insertIndex });
+        return next.map((item, i) => ({ ...item, index: i }));
       });
 
       const tid = normalized.track?.id as SonosItemId | undefined;

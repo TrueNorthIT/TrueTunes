@@ -2,7 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueueSidebar } from '../QueueSidebar';
-import type { QueueItem } from '../../../types/sonos';
+import type { NormalizedQueueItem } from '../../../types/provider';
+
+const { mockRemoveFromQueue, mockClearQueue, mockReorderQueue } = vi.hoisted(() => ({
+  mockRemoveFromQueue: vi.fn().mockResolvedValue(undefined),
+  mockClearQueue: vi.fn().mockResolvedValue(undefined),
+  mockReorderQueue: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock('../DraggableQueueRow', () => ({
   DraggableQueueRow: ({
@@ -10,7 +16,7 @@ vi.mock('../DraggableQueueRow', () => ({
     isSelected,
     onRowClick,
   }: {
-    item: QueueItem;
+    item: NormalizedQueueItem;
     index: number;
     isSelected: boolean;
     onRowClick: (index: number, e: React.MouseEvent) => void;
@@ -25,12 +31,34 @@ vi.mock('../DraggableQueueRow', () => ({
   ),
 }));
 
+vi.mock('../../../providers', () => ({
+  getActiveProvider: () => ({
+    removeFromQueue: mockRemoveFromQueue,
+    clearQueue: mockClearQueue,
+    reorderQueue: mockReorderQueue,
+  }),
+}));
+
 vi.mock('../../../hooks/useAttribution', () => ({
   useAttribution: () => ({}),
 }));
 
-function makeItem(i: number): QueueItem {
-  return { name: `Track ${i}`, type: 'track' };
+function makeItem(i: number): NormalizedQueueItem {
+  return {
+    index: i,
+    track: {
+      id: `obj${i}`,
+      title: `Track ${i}`,
+      artist: '',
+      albumName: null,
+      albumId: null,
+      imageUrl: null,
+      durationMs: 0,
+      isExplicit: false,
+      serviceId: null,
+      accountId: null,
+    },
+  };
 }
 
 const defaultProps = {
@@ -56,9 +84,9 @@ function setup(props = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(window.sonos.removeFromQueue).mockResolvedValue(null);
-  vi.mocked(window.sonos.clearQueue).mockResolvedValue(null);
-  vi.mocked(window.sonos.reorderQueue).mockResolvedValue(null);
+  mockRemoveFromQueue.mockResolvedValue(undefined);
+  mockClearQueue.mockResolvedValue(undefined);
+  mockReorderQueue.mockResolvedValue(undefined);
 });
 
 // ─── rendering ───────────────────────────────────────────────────────────────
@@ -193,7 +221,7 @@ describe('QueueSidebar — Delete key', () => {
     await user.click(screen.getByTestId('row-1'));
     await user.keyboard('{Delete}');
     await waitFor(() =>
-      expect(window.sonos.removeFromQueue).toHaveBeenCalledWith([1])
+      expect(mockRemoveFromQueue).toHaveBeenCalledWith([1])
     );
   });
 
@@ -208,11 +236,11 @@ describe('QueueSidebar — Delete key', () => {
   it('Delete key does nothing when nothing is selected', async () => {
     const { user } = setup();
     await user.keyboard('{Delete}');
-    expect(window.sonos.removeFromQueue).not.toHaveBeenCalled();
+    expect(mockRemoveFromQueue).not.toHaveBeenCalled();
   });
 
   it('on removeFromQueue error calls onRefresh and onError', async () => {
-    vi.mocked(window.sonos.removeFromQueue).mockResolvedValue({ error: 'boom' });
+    mockRemoveFromQueue.mockRejectedValue(new Error('boom'));
     const onRefresh = vi.fn();
     const onError = vi.fn();
     const { user } = setup({ onRefresh, onError });
@@ -227,14 +255,14 @@ describe('QueueSidebar — Delete key', () => {
     await user.click(screen.getByTestId('row-0'));
     await user.keyboard('{Backspace}');
     await waitFor(() =>
-      expect(window.sonos.removeFromQueue).toHaveBeenCalledWith([0])
+      expect(mockRemoveFromQueue).toHaveBeenCalledWith([0])
     );
   });
 
   it('does not fire when sidebar is closed', async () => {
     const { user } = setup({ open: false });
     await user.keyboard('{Delete}');
-    expect(window.sonos.removeFromQueue).not.toHaveBeenCalled();
+    expect(mockRemoveFromQueue).not.toHaveBeenCalled();
   });
 });
 
@@ -252,12 +280,12 @@ describe('QueueSidebar — selection bar Delete button', () => {
     await user.click(screen.getByTestId('row-0'));
     await user.click(screen.getByRole('button', { name: 'Delete' }));
     await waitFor(() =>
-      expect(window.sonos.removeFromQueue).toHaveBeenCalledWith([0])
+      expect(mockRemoveFromQueue).toHaveBeenCalledWith([0])
     );
   });
 
   it('Delete button calls onRefresh+onError on failure', async () => {
-    vi.mocked(window.sonos.removeFromQueue).mockResolvedValue({ error: 'oops' });
+    mockRemoveFromQueue.mockRejectedValue(new Error('oops'));
     const onRefresh = vi.fn();
     const onError = vi.fn();
     const { user } = setup({ onRefresh, onError });
@@ -289,12 +317,12 @@ describe('QueueSidebar — clear queue', () => {
     const { user } = setup({ setItems });
     await user.click(screen.getByTitle('Clear queue'));
     await user.click(screen.getByRole('button', { name: 'Clear' }));
-    await waitFor(() => expect(window.sonos.clearQueue).toHaveBeenCalled());
+    await waitFor(() => expect(mockClearQueue).toHaveBeenCalled());
     expect(setItems).toHaveBeenCalledWith([]);
   });
 
   it('clearQueue error calls onRefresh and onError', async () => {
-    vi.mocked(window.sonos.clearQueue).mockResolvedValue({ error: 'fail' });
+    mockClearQueue.mockRejectedValue(new Error('fail'));
     const onRefresh = vi.fn();
     const onError = vi.fn();
     const { user } = setup({ onRefresh, onError });

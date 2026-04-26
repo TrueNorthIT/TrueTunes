@@ -1,17 +1,36 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { DraggableQueueRow } from '../DraggableQueueRow';
-import type { QueueItem } from '../../../types/sonos';
+import type { NormalizedQueueItem } from '../../../types/provider';
+
+const { mockSkipToTrack } = vi.hoisted(() => ({
+  mockSkipToTrack: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock('../../../hooks/useImage',    () => ({ useImage: () => null }));
 vi.mock('../../../hooks/useOpenItem', () => ({ useOpenItem: () => vi.fn() }));
+vi.mock('../../../providers', () => ({ getActiveProvider: () => ({ skipToTrack: mockSkipToTrack }) }));
 
 const mockUseQueueTrack = vi.fn();
 vi.mock('../../../hooks/useQueueTrack', () => ({
   useQueueTrack: (...args: unknown[]) => mockUseQueueTrack(...args),
 }));
 
-const item: QueueItem = { name: 'Come Together', type: 'TRACK' };
+const item: NormalizedQueueItem = {
+  index: 2,
+  track: {
+    id: 'obj1',
+    title: 'Come Together',
+    artist: '',
+    albumName: null,
+    albumId: null,
+    imageUrl: null,
+    durationMs: 0,
+    isExplicit: false,
+    serviceId: null,
+    accountId: null,
+  },
+};
 
 function makeQTResult(overrides: Record<string, unknown> = {}) {
   return {
@@ -65,10 +84,10 @@ describe('DraggableQueueRow', () => {
     expect(onRowClick).toHaveBeenCalledWith(2, expect.any(Object));
   });
 
-  it('calls window.sonos.skipToTrack on double-click', () => {
+  it('calls skipToTrack on double-click', () => {
     render(<DraggableQueueRow {...baseProps} />);
     fireEvent.doubleClick(screen.getByText('Come Together'));
-    expect(window.sonos.skipToTrack).toHaveBeenCalledWith(3); // index + 1
+    expect(mockSkipToTrack).toHaveBeenCalledWith(3); // index + 1
   });
 
   it('shows playing indicator when isPlaying=true by currentQueueItemId', () => {

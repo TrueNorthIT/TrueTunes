@@ -1,13 +1,13 @@
 import { useImage } from '../../hooks/useImage';
 import { useOpenItem } from '../../hooks/useOpenItem';
 import { useQueueTrack } from '../../hooks/useQueueTrack';
-import { getName } from '../../lib/itemHelpers';
+import { getActiveProvider } from '../../providers';
 import { ExplicitBadge } from '../common/ExplicitBadge';
-import type { QueueItem } from '../../types/sonos';
+import type { NormalizedQueueItem } from '../../types/provider';
 import styles from '../../styles/QueueSidebar.module.css';
 
 interface Props {
-  item: QueueItem;
+  item: NormalizedQueueItem;
   index: number;
   currentObjectId: string | null;
   currentQueueItemId: string | null;
@@ -31,7 +31,7 @@ export function DraggableQueueRow({
     : isPlayingByObjectId;
   const cachedArt = useImage(artUrl);
   const openItem  = useOpenItem();
-  const name = getName(item);
+  const name = item.track.title;
 
   return (
     <div
@@ -43,7 +43,7 @@ export function DraggableQueueRow({
       data-playing={isPlaying ? 'true' : undefined}
       draggable
       onClick={e => onRowClick(index, e)}
-      onDoubleClick={() => window.sonos.skipToTrack(index + 1)}
+      onDoubleClick={() => getActiveProvider().skipToTrack(index + 1)}
       onDragStart={e => onDragStart(index, e)}
       onDragOver={e => onDragOver(index, e)}
       onDrop={onDrop}
