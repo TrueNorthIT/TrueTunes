@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type React from 'react';
 import { SkipBack, Play, Pause, SkipForward } from 'lucide-react';
+import { getActiveProvider } from '../providers';
 import { useAuth } from '../hooks/useAuth';
 import { useGroups } from '../hooks/useGroups';
 import { usePlayback } from '../hooks/usePlayback';
@@ -18,7 +19,7 @@ export function MiniPlayerShell() {
   // same group the user has selected in the main window, not just groups[0].
   useEffect(() => {
     if (groups.length === 0 || activeGroupId) return;
-    window.sonos.getActiveGroup().then((savedCoordinatorId) => {
+    getActiveProvider().getActiveGroup().then((savedCoordinatorId) => {
       const match = savedCoordinatorId ? groups.find((g) => g.coordinatorId === savedCoordinatorId) : null;
       setActiveGroupId(match ? match.id : groups[0].id);
     }).catch(() => setActiveGroupId(groups[0].id));
@@ -46,7 +47,7 @@ function MiniPlayer({
     if (!durationMs) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    window.sonos.seek(Math.floor(pct * durationMs)).then(refresh);
+    getActiveProvider().seek(Math.floor(pct * durationMs)).then(refresh);
   };
 
   const shellStyle: React.CSSProperties | undefined = dominantColor
@@ -87,7 +88,7 @@ function MiniPlayer({
           <button
             className={styles.btn}
             disabled={!isAuthed}
-            onClick={() => window.sonos.skipPrev().then(refresh)}
+            onClick={() => getActiveProvider().skipPrev().then(refresh)}
             title="Previous"
           >
             <SkipBack size={13} />
@@ -95,7 +96,7 @@ function MiniPlayer({
           <button
             className={`${styles.btn} ${styles.playBtn}`}
             disabled={!isAuthed}
-            onClick={() => (isPlaying ? window.sonos.pause() : window.sonos.play()).then(refresh)}
+            onClick={() => (isPlaying ? getActiveProvider().pause() : getActiveProvider().play()).then(refresh)}
             title={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? <Pause size={14} /> : <Play size={14} />}
@@ -103,7 +104,7 @@ function MiniPlayer({
           <button
             className={styles.btn}
             disabled={!isAuthed}
-            onClick={() => window.sonos.skipNext().then(refresh)}
+            onClick={() => getActiveProvider().skipNext().then(refresh)}
             title="Next"
           >
             <SkipForward size={13} />

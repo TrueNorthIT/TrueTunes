@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useGroups } from '../useGroups';
-import type { GroupInfo } from '../../types/sonos';
+import type { NormalizedGroup } from '../../types/provider';
 
 const mockOnWsGroups = vi.mocked(window.sonos.onWsGroups);
 
@@ -10,11 +10,18 @@ beforeEach(() => {
   mockOnWsGroups.mockReturnValue(() => {});
 });
 
-const group: GroupInfo = {
+const rawGroup = {
   id: 'g:1',
   coordinatorId: 'RINCON_1',
   name: 'Living Room',
   playerIds: ['RINCON_1'],
+};
+
+const normalizedGroup: NormalizedGroup = {
+  id: 'g:1',
+  coordinatorId: 'RINCON_1',
+  name: 'Living Room',
+  providerId: 'sonos',
 };
 
 describe('useGroups', () => {
@@ -35,8 +42,8 @@ describe('useGroups', () => {
     const { result } = renderHook(() => useGroups());
     expect(result.current).toEqual([]);
 
-    act(() => { captured?.([group]); });
-    expect(result.current).toEqual([group]);
+    act(() => { captured?.([rawGroup]); });
+    expect(result.current).toEqual([normalizedGroup]);
   });
 
   it('calls the unsub function on unmount', () => {

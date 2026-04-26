@@ -15,7 +15,7 @@ vi.mock('react-router-dom', () => ({
 
 const defaultProps = {
   isAuthed: true,
-  groups: [{ id: 'g1', name: 'Living Room', coordinatorId: 'g1', playerIds: ['g1'] }],
+  groups: [{ id: 'g1', name: 'Living Room', coordinatorId: 'g1', providerId: 'sonos' as const }],
   activeGroupId: 'g1',
   onGroupChange: vi.fn(),
   queueOpen: false,

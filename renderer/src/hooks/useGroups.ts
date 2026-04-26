@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import type { GroupInfo } from '../types/sonos';
+import { getActiveProvider } from '../providers';
+import type { NormalizedGroup } from '../types/provider';
 
-export function useGroups(): GroupInfo[] {
-  const [groups, setGroups] = useState<GroupInfo[]>([]);
+export function useGroups(): NormalizedGroup[] {
+  const [groups, setGroups] = useState<NormalizedGroup[]>([]);
 
   useEffect(() => {
-    const unsub = window.sonos.onWsGroups((raw) => setGroups(raw as GroupInfo[]));
+    const unsub = getActiveProvider().subscribeGroups(setGroups);
     return unsub;
   }, []);
 

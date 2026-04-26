@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api } from '../lib/sonosApi';
-import { extractItems } from '../lib/itemHelpers';
-import type { QueueItem } from '../types/sonos';
+import { getActiveProvider } from '../providers';
+import type { NormalizedQueueItem } from '../types/provider';
 
 const PAGE = 50;
 
@@ -11,7 +10,7 @@ export function useQueue(
   queueId: string | null,
   onEtag?: (etag: string) => void,
 ) {
-  const [items, setItems]       = useState<QueueItem[]>([]);
+  const [items, setItems]       = useState<NormalizedQueueItem[]>([]);
   const [isLoading, setLoading] = useState(false);
   const [error, setError]       = useState<string | null>(null);
   const hasLoaded                = useRef(false);
@@ -24,26 +23,25 @@ export function useQueue(
     if (!hasLoaded.current) setLoading(true);
     setError(null);
 
-    const all: QueueItem[] = [];
+    const all: NormalizedQueueItem[] = [];
     let offset = 0;
     let freshEtag: string | undefined;
+    const provider = getActiveProvider();
+
     while (true) {
-      const r = await api.queue.list({ queueId: queueId ?? undefined, count: PAGE, offset });
+      const r = await provider.getQueue({ count: PAGE, offset });
       if (r.error) { setError(r.error); setLoading(false); return; }
-      // Capture the etag from the first page — this is the authoritative version
-      // for the current queue state, fresher than any cached WS value.
       if (offset === 0 && r.etag) freshEtag = r.etag;
-      const page = extractItems(r.data) as QueueItem[];
-      all.push(...page);
-      if (page.length < PAGE) break;
-      offset += page.length;
+      all.push(...r.items);
+      if (r.items.length < PAGE) break;
+      offset += r.items.length;
     }
 
     if (freshEtag) onEtagRef.current?.(freshEtag);
     setItems(all);
     hasLoaded.current = true;
     setLoading(false);
-  }, [activeGroupId, queueId]);
+  }, [activeGroupId, queueId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (isAuthed && activeGroupId) load();
