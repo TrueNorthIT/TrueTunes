@@ -17,6 +17,7 @@ import {
   DownloadCloud,
   Lightbulb,
   Group,
+  SquareMousePointer,
 } from 'lucide-react';
 import type { NormalizedGroup } from '../types/provider';
 import styles from '../styles/TopNav.module.css';
@@ -296,6 +297,20 @@ export function TopNav({
             <button className={styles.iconBtn} onClick={onChangelogOpen} title="What's new">
               <Lightbulb size={15} />
             </button>
+
+            {import.meta.env.DEV && (
+              <button
+                className={styles.iconBtn}
+                onClick={() => {
+                  window.sonos.openDevTools();
+                  window.sonos.openHttpMonitor();
+                  window.sonos.openWsMonitor();
+                }}
+                title="Inspect"
+              >
+                <SquareMousePointer size={15} />
+              </button>
+            )}
 
             <button
               className={`${styles.iconBtn}${queueOpen ? ' ' + styles.active : ''}`}

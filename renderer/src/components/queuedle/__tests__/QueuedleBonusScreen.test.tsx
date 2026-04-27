@@ -18,10 +18,7 @@ function item(overrides: Partial<GameItem> & { id: string; name: string }): Game
 }
 
 describe('QueuedleBonusScreen', () => {
-  const winningItems: GameItem[] = [
-    item({ id: 'w1', name: 'First Song' }),
-    item({ id: 'w2', name: 'Second Song' }),
-  ];
+  const winningItems: GameItem[] = [item({ id: 'w1', name: 'First Song' }), item({ id: 'w2', name: 'Second Song' })];
 
   it('disables the submit button until all selections are made', () => {
     const onSelect = vi.fn();
@@ -33,7 +30,7 @@ describe('QueuedleBonusScreen', () => {
         onSelect={onSelect}
         onSubmit={onSubmit}
         submitting={false}
-      />,
+      />
     );
     expect(screen.getByRole('button', { name: 'Submit' })).toBeDisabled();
   });
@@ -46,7 +43,7 @@ describe('QueuedleBonusScreen', () => {
         onSelect={() => {}}
         onSubmit={() => {}}
         submitting={false}
-      />,
+      />
     );
     expect(screen.getByRole('button', { name: 'Submit' })).not.toBeDisabled();
   });
@@ -60,7 +57,7 @@ describe('QueuedleBonusScreen', () => {
         onSelect={onSelect}
         onSubmit={() => {}}
         submitting={false}
-      />,
+      />
     );
     const daveButtons = screen.getAllByRole('button', { name: 'dan' });
     fireEvent.click(daveButtons[1]);
@@ -76,7 +73,7 @@ describe('QueuedleBonusScreen', () => {
         onSelect={() => {}}
         onSubmit={onSubmit}
         submitting={false}
-      />,
+      />
     );
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
     expect(onSubmit).toHaveBeenCalled();

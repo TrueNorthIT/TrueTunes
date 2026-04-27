@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useDailyGame, useSubmitGameScore, useGameLeaderboard, useGameDates } from '../hooks/useDailyGame';
+import { useDailyGame, useSubmitGameScore, useGameLeaderboard, useGameDates } from '../../hooks/useDailyGame';
 import { QueuedleIntro } from './QueuedleIntro';
 import { QueuedleQuestionCard } from './QueuedleQuestionCard';
 import { QueuedleBonusScreen } from './QueuedleBonusScreen';

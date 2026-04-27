@@ -1143,6 +1143,7 @@ ipcMain.handle('playback:pause', (_event: IpcMainInvokeEvent) => {
 
 ipcMain.handle('debug:openWsMonitor', () => openDebugWindow());
 ipcMain.handle('debug:openHttpMonitor', () => openHttpDebugWindow());
+ipcMain.handle('debug:openDevTools', () => { if (!app.isPackaged) uiWin?.webContents.openDevTools(); });
 
 ipcMain.handle('app:version', () => app.getVersion());
 ipcMain.handle('app:isNewVersion', () => isNewVersion);

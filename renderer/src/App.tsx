@@ -10,7 +10,17 @@ import { trackQueryOptions } from './hooks/useTrackDetails';
 import { albumQueryOptions, type AlbumTrack } from './hooks/useAlbumBrowse';
 import { playlistQueryOptions } from './hooks/usePlaylistBrowse';
 import { api } from './lib/sonosApi';
-import { normalizeForQueue, isTrack, isProgram, isAlbum, isPlaylist, extractItems, resolveAlbumParams, getItemArt, sonosItemToNormalizedQueueItem } from './lib/itemHelpers';
+import {
+  normalizeForQueue,
+  isTrack,
+  isProgram,
+  isAlbum,
+  isPlaylist,
+  extractItems,
+  resolveAlbumParams,
+  getItemArt,
+  sonosItemToNormalizedQueueItem,
+} from './lib/itemHelpers';
 import type { SonosItem, SonosItemId } from './types/sonos';
 
 import { TopNav } from './components/TopNav';
@@ -21,7 +31,7 @@ import { AlbumPanel } from './components/album/AlbumPanel';
 import { ArtistPanel } from './components/artist/ArtistPanel';
 import { ContainerPanel } from './components/ContainerPanel';
 import { LeaderboardPanel } from './components/LeaderboardPanel';
-import { QueuedlePanel } from './components/QueuedlePanel';
+import { QueuedlePanel } from './components/queuedle/QueuedlePanel';
 import { QueueSidebar } from './components/queue/QueueSidebar';
 import { MiniPlayerShell } from './components/MiniPlayer';
 import { DisplayNameModal } from './components/DisplayNameModal';
@@ -38,14 +48,20 @@ import styles from './styles/App.module.css';
 // ── Main app ──────────────────────────────────────────────────────────────────
 
 function MainApp() {
-  const queryClient                               = useQueryClient();
-  const isAuthed                                  = useAuth();
-  const groups                                    = useGroups();
-  const [activeGroupId, setActiveGroupId]         = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const isAuthed = useAuth();
+  const groups = useGroups();
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const { playback, applyGroupCache, queueIdRef, queueVersionRef } = usePlayback(activeGroupId);
-  const { items: queueItems, setItems: setQueueItems, isLoading: queueLoading, error: queueError, reload: reloadQueueRaw }
-                                                  = useQueue(isAuthed, activeGroupId, playback.queueId,
-                                                      (etag) => { queueVersionRef.current = etag; });
+  const {
+    items: queueItems,
+    setItems: setQueueItems,
+    isLoading: queueLoading,
+    error: queueError,
+    reload: reloadQueueRaw,
+  } = useQueue(isAuthed, activeGroupId, playback.queueId, (etag) => {
+    queueVersionRef.current = etag;
+  });
 
   const reloadQueue = useCallback(() => {
     reloadQueueRaw();
@@ -61,11 +77,11 @@ function MainApp() {
     reloadQueue();
   }, [playback.queueVersion, reloadQueue]);
 
-  const [queueOpen, setQueueOpen]       = useState(false);
-  const [feedbackOpen, setFeedbackOpen]     = useState(false);
-  const [changelogOpen, setChangelogOpen]   = useState(false);
-  const [toastMsg, setToastMsg]         = useState<string | null>(null);
-  const toastTimer                    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [queueOpen, setQueueOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [changelogOpen, setChangelogOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [displayName, setDisplayName] = useState<string | null | undefined>(undefined); // undefined = not yet loaded
 
   useEffect(() => {
@@ -77,7 +93,12 @@ function MainApp() {
     const splashReady = isAuthed && groups.length > 0;
     if (!splashReady || splashReadyRef.current) return;
     splashReadyRef.current = true;
-    window.sonos.isNewVersion().then(isNew => { if (isNew) setChangelogOpen(true); }).catch(() => {});
+    window.sonos
+      .isNewVersion()
+      .then((isNew) => {
+        if (isNew) setChangelogOpen(true);
+      })
+      .catch(() => {});
   }, [isAuthed, groups.length]);
 
   // Reload queue as soon as the WS session is up — catches the case where the
@@ -88,14 +109,19 @@ function MainApp() {
 
   useEffect(() => {
     if (groups.length === 0 || activeGroupId) return;
-    getActiveProvider().getActiveGroup().then((savedCoordinatorId) => {
-      const match = savedCoordinatorId ? groups.find((g) => g.coordinatorId === savedCoordinatorId) : null;
-      setActiveGroupId(match ? match.id : groups[0].id);
-    }).catch(() => setActiveGroupId(groups[0].id));
+    getActiveProvider()
+      .getActiveGroup()
+      .then((savedCoordinatorId) => {
+        const match = savedCoordinatorId ? groups.find((g) => g.coordinatorId === savedCoordinatorId) : null;
+        setActiveGroupId(match ? match.id : groups[0].id);
+      })
+      .catch(() => setActiveGroupId(groups[0].id));
   }, [groups, activeGroupId]);
 
   useEffect(() => {
-    const onFocus = () => { window.sonos.refreshPlayback().catch(() => {}); };
+    const onFocus = () => {
+      window.sonos.refreshPlayback().catch(() => {});
+    };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, []);
@@ -106,37 +132,41 @@ function MainApp() {
     toastTimer.current = setTimeout(() => setToastMsg(null), 4000);
   }, []);
 
-  const handleGroupChange = useCallback((groupId: string) => {
-    setActiveGroupId(groupId);
-    getActiveProvider().setGroup(groupId);
-    applyGroupCache(groupId);
-    window.sonos.refreshAttribution().catch(() => {});
-    window.sonos.trackEvent('group_changed').catch(() => {});
-  }, [applyGroupCache]);
+  const handleGroupChange = useCallback(
+    (groupId: string) => {
+      setActiveGroupId(groupId);
+      getActiveProvider().setGroup(groupId);
+      applyGroupCache(groupId);
+      window.sonos.refreshAttribution().catch(() => {});
+      window.sonos.trackEvent('group_changed').catch(() => {});
+    },
+    [applyGroupCache]
+  );
 
-  const publishTrackAttribution = useCallback((
-    trackId: string,
-    serviceId: string,
-    accountId: string,
-    fallback: { trackName: string; imageUrl?: string },
-  ) => {
-    queryClient.fetchQuery(trackQueryOptions(trackId, serviceId, accountId))
-      .then((td) => {
-        window.sonos.publishQueued({
-          eventType: 'track',
-          uri: trackId,
-          trackName: td?.trackName ?? fallback.trackName,
-          artist:    td?.artist ?? '',
-          serviceId,
-          accountId,
-          artistId:  td?.artistId,
-          album:     td?.albumName,
-          albumId:   td?.albumId,
-          imageUrl:  td?.artUrl ?? fallback.imageUrl,
+  const publishTrackAttribution = useCallback(
+    (trackId: string, serviceId: string, accountId: string, fallback: { trackName: string; imageUrl?: string }) => {
+      queryClient
+        .fetchQuery(trackQueryOptions(trackId, serviceId, accountId))
+        .then((td) => {
+          window.sonos.publishQueued({
+            eventType: 'track',
+            uri: trackId,
+            trackName: td?.trackName ?? fallback.trackName,
+            artist: td?.artist ?? '',
+            serviceId,
+            accountId,
+            artistId: td?.artistId,
+            album: td?.albumName,
+            albumId: td?.albumId,
+            imageUrl: td?.artUrl ?? fallback.imageUrl,
+          });
+        })
+        .catch(() => {
+          /* silent */
         });
-      })
-      .catch(() => { /* silent */ });
-  }, [queryClient]);
+    },
+    [queryClient]
+  );
 
   /**
    * Publishes one 'track' event per track using only the AlbumTrack data
@@ -144,169 +174,205 @@ function MainApp() {
    * getTrackNowPlaying calls. For an N-track album this is the difference
    * between O(N) and O(1) Sonos lookups.
    */
-  const fanOutTrackAttribution = useCallback((
-    tracks: AlbumTrack[],
-    context: { album?: string | null; albumId?: string | null; artist?: string; artistId?: string; artUrl?: string | null; serviceId?: string; accountId?: string },
-  ) => {
-    for (const t of tracks) {
-      const tid = t.id;
-      if (!tid?.objectId) continue;
-      window.sonos.publishQueued({
-        eventType: 'track',
-        uri: tid.objectId,
-        trackName: t.title,
-        artist:    t.artists[0] ?? context.artist ?? '',
-        serviceId: tid.serviceId ?? context.serviceId,
-        accountId: tid.accountId?.replace(/^sn_/, '') ?? context.accountId,
-        artistId:  t.artistObjects?.[0]?.objectId ?? context.artistId,
-        album:     t.albumName ?? context.album ?? undefined,
-        albumId:   t.albumId   ?? context.albumId ?? undefined,
-        imageUrl:  t.artUrl ?? context.artUrl ?? undefined,
-      });
-    }
-  }, []);
-
-  const handleAddToQueue = useCallback(async (item: SonosItem, position = -1) => {
-    if (isProgram(item)) {
-      const rid = item.resource?.id as SonosItemId | undefined;
-      const iid = typeof item.id === 'object' ? item.id as SonosItemId : undefined;
-      const r = await window.sonos.loadContent({
-        type: item.resource?.type ?? item.type ?? 'PROGRAM',
-        id: {
-          objectId:  rid?.objectId  ?? iid?.objectId,
-          accountId: rid?.accountId ?? iid?.accountId,
-          serviceId: rid?.serviceId ?? iid?.serviceId,
-        },
-        playbackAction: 'PLAY',
-        playModes: { shuffle: false },
-        defaults: item.resource?.defaults ?? undefined,
-        queueAction: 'REPLACE',
-      }) as { error?: string } | null;
-      if (r && 'error' in r && r.error) showToast('Play failed: ' + r.error);
-      else reloadQueue();
-      return;
-    }
-
-    const normalized = normalizeForQueue(item);
-    const isSingleTrack = isTrack(item);
-    const isAlbumItem    = !isSingleTrack && isAlbum(item);
-    const isPlaylistItem = !isSingleTrack && isPlaylist(item);
-
-    if (isSingleTrack) {
-      const insertIndex = position === -1 ? Infinity : position;
-      const normalizedQueueItem = sonosItemToNormalizedQueueItem(normalized, insertIndex === Infinity ? 0 : insertIndex);
-      setQueueItems(prev => {
-        if (insertIndex === Infinity || insertIndex >= prev.length) {
-          return [...prev, { ...normalizedQueueItem, index: prev.length }];
-        }
-        const next = [...prev];
-        next.splice(insertIndex, 0, { ...normalizedQueueItem, index: insertIndex });
-        return next.map((item, i) => ({ ...item, index: i }));
-      });
-
-      const tid = normalized.track?.id as SonosItemId | undefined;
-      if (tid?.objectId && tid?.serviceId && tid?.accountId) {
-        queryClient.prefetchQuery(trackQueryOptions(tid.objectId, tid.serviceId, tid.accountId));
+  const fanOutTrackAttribution = useCallback(
+    (
+      tracks: AlbumTrack[],
+      context: {
+        album?: string | null;
+        albumId?: string | null;
+        artist?: string;
+        artistId?: string;
+        artUrl?: string | null;
+        serviceId?: string;
+        accountId?: string;
       }
-    }
+    ) => {
+      for (const t of tracks) {
+        const tid = t.id;
+        if (!tid?.objectId) continue;
+        window.sonos.publishQueued({
+          eventType: 'track',
+          uri: tid.objectId,
+          trackName: t.title,
+          artist: t.artists[0] ?? context.artist ?? '',
+          serviceId: tid.serviceId ?? context.serviceId,
+          accountId: tid.accountId?.replace(/^sn_/, '') ?? context.accountId,
+          artistId: t.artistObjects?.[0]?.objectId ?? context.artistId,
+          album: t.albumName ?? context.album ?? undefined,
+          albumId: t.albumId ?? context.albumId ?? undefined,
+          imageUrl: t.artUrl ?? context.artUrl ?? undefined,
+        });
+      }
+    },
+    []
+  );
 
-    const rid = normalized.resource?.id;
-    const iid = typeof normalized.id === 'object' ? normalized.id : undefined;
-    const body = {
-      id: {
-        objectId:  rid?.objectId  ?? iid?.objectId,
-        serviceId: rid?.serviceId ?? iid?.serviceId,
-        accountId: (rid?.accountId ?? iid?.accountId)?.replace(/^sn_/, ''),
-      },
-      type: (normalized.type ?? normalized.resource?.type ?? 'TRACK').replace(/^ITEM_/, ''),
-    };
-    let result = await api.queue.add(body, {
-      queueId: queueIdRef.current ?? undefined,
-      ifMatch: queueVersionRef.current ?? undefined,
-      position,
-    });
+  const handleAddToQueue = useCallback(
+    async (item: SonosItem, position = -1) => {
+      if (isProgram(item)) {
+        const rid = item.resource?.id as SonosItemId | undefined;
+        const iid = typeof item.id === 'object' ? (item.id as SonosItemId) : undefined;
+        const r = (await window.sonos.loadContent({
+          type: item.resource?.type ?? item.type ?? 'PROGRAM',
+          id: {
+            objectId: rid?.objectId ?? iid?.objectId,
+            accountId: rid?.accountId ?? iid?.accountId,
+            serviceId: rid?.serviceId ?? iid?.serviceId,
+          },
+          playbackAction: 'PLAY',
+          playModes: { shuffle: false },
+          defaults: item.resource?.defaults ?? undefined,
+          queueAction: 'REPLACE',
+        })) as { error?: string } | null;
+        if (r && 'error' in r && r.error) showToast('Play failed: ' + r.error);
+        else reloadQueue();
+        return;
+      }
 
-    let retried = false;
-    if (result.error) {
-      // Stale etag — refresh queue (which updates queueVersionRef via onEtag) then retry once
-      retried = true;
-      await reloadQueueRaw();
-      result = await api.queue.add(body, {
+      const normalized = normalizeForQueue(item);
+      const isSingleTrack = isTrack(item);
+      const isAlbumItem = !isSingleTrack && isAlbum(item);
+      const isPlaylistItem = !isSingleTrack && isPlaylist(item);
+
+      if (isSingleTrack) {
+        const insertIndex = position === -1 ? Infinity : position;
+        const normalizedQueueItem = sonosItemToNormalizedQueueItem(
+          normalized,
+          insertIndex === Infinity ? 0 : insertIndex
+        );
+        setQueueItems((prev) => {
+          if (insertIndex === Infinity || insertIndex >= prev.length) {
+            return [...prev, { ...normalizedQueueItem, index: prev.length }];
+          }
+          const next = [...prev];
+          next.splice(insertIndex, 0, { ...normalizedQueueItem, index: insertIndex });
+          return next.map((item, i) => ({ ...item, index: i }));
+        });
+
+        const tid = normalized.track?.id as SonosItemId | undefined;
+        if (tid?.objectId && tid?.serviceId && tid?.accountId) {
+          queryClient.prefetchQuery(trackQueryOptions(tid.objectId, tid.serviceId, tid.accountId));
+        }
+      }
+
+      const rid = normalized.resource?.id;
+      const iid = typeof normalized.id === 'object' ? normalized.id : undefined;
+      const body = {
+        id: {
+          objectId: rid?.objectId ?? iid?.objectId,
+          serviceId: rid?.serviceId ?? iid?.serviceId,
+          accountId: (rid?.accountId ?? iid?.accountId)?.replace(/^sn_/, ''),
+        },
+        type: (normalized.type ?? normalized.resource?.type ?? 'TRACK').replace(/^ITEM_/, ''),
+      };
+      let result = await api.queue.add(body, {
         queueId: queueIdRef.current ?? undefined,
         ifMatch: queueVersionRef.current ?? undefined,
         position,
       });
-    }
 
-    if (result.error) {
-      showToast('Add failed: ' + result.error);
-      void window.sonos.trackEvent('queue_add', { success: 'false', itemType: body.type });
-      return;
-    }
-    if (result.etag) queueVersionRef.current = result.etag;
-    void window.sonos.trackEvent('queue_add', { success: 'true', itemType: body.type });
-
-    // Publish attribution — shape depends on item kind.
-    const uri = body.id.objectId;
-    const serviceId = body.id.serviceId ?? '';
-    const accountId = body.id.accountId ?? '';
-
-    if (isSingleTrack && uri) {
-      publishTrackAttribution(uri, serviceId, accountId, {
-        trackName: getName(normalized),
-        imageUrl: getItemArt(item) ?? undefined,
-      });
-    } else if (isAlbumItem && uri) {
-      // Fetch the album browse first so the rollup event has the canonical
-      // artist + cover from Sonos (the card item often lacks usable art);
-      // then fan out one event per track. Cache hit if the user just opened
-      // the album page.
-      const { albumId, serviceId: aSvc, accountId: aAcc, defaults } = resolveAlbumParams(item);
-      if (albumId && aSvc && aAcc) {
-        queryClient.fetchQuery(albumQueryOptions(albumId, aSvc, aAcc, defaults))
-          .then((album) => {
-            const artistId = (album.artistItem?.resource?.id as SonosItemId | undefined)?.objectId;
-            window.sonos.publishQueued({
-              eventType: 'album',
-              uri,
-              trackName: album.title || getName(item),
-              artist:    album.artist || ((item as Record<string, unknown>)['subtitle'] as string) || (item.artists?.[0]?.name ?? ''),
-              serviceId: aSvc,
-              accountId: aAcc,
-              artistId,
-              album:     album.title || getName(item),
-              albumId:   uri,
-              imageUrl:  album.artUrl ?? getItemArt(item) ?? undefined,
-            });
-            fanOutTrackAttribution(album.tracks, {
-              album:    album.title,
-              albumId:  uri,
-              artist:   album.artist,
-              artistId,
-              artUrl:   album.artUrl,
-              serviceId: aSvc,
-              accountId: aAcc,
-            });
-          })
-          .catch(() => { /* silent */ });
+      let retried = false;
+      if (result.error) {
+        // Stale etag — refresh queue (which updates queueVersionRef via onEtag) then retry once
+        retried = true;
+        await reloadQueueRaw();
+        result = await api.queue.add(body, {
+          queueId: queueIdRef.current ?? undefined,
+          ifMatch: queueVersionRef.current ?? undefined,
+          position,
+        });
       }
-    } else if (isPlaylistItem) {
-      // Playlists have no albumMap rollup — fan out per-track only. Each
-      // playlist track already carries its own albumName/albumId/artist via
-      // decoded defaults, so no per-album context is needed.
-      const { albumId: pid, serviceId: pSvc, accountId: pAcc, defaults } = resolveAlbumParams(item);
-      if (pid && pSvc && pAcc) {
-        queryClient.fetchQuery(playlistQueryOptions(pid, pSvc, pAcc, defaults))
-          .then((tracks) => fanOutTrackAttribution(tracks, { serviceId: pSvc, accountId: pAcc }))
-          .catch(() => { /* silent */ });
-      }
-    }
 
-    if (!isSingleTrack || retried) {
-      reloadQueue();
-      setTimeout(reloadQueue, 1500);
-    }
-  }, [queryClient, setQueueItems, reloadQueue, reloadQueueRaw, queueIdRef, queueVersionRef, showToast, publishTrackAttribution, fanOutTrackAttribution]);
+      if (result.error) {
+        showToast('Add failed: ' + result.error);
+        void window.sonos.trackEvent('queue_add', { success: 'false', itemType: body.type });
+        return;
+      }
+      if (result.etag) queueVersionRef.current = result.etag;
+      void window.sonos.trackEvent('queue_add', { success: 'true', itemType: body.type });
+
+      // Publish attribution — shape depends on item kind.
+      const uri = body.id.objectId;
+      const serviceId = body.id.serviceId ?? '';
+      const accountId = body.id.accountId ?? '';
+
+      if (isSingleTrack && uri) {
+        publishTrackAttribution(uri, serviceId, accountId, {
+          trackName: getName(normalized),
+          imageUrl: getItemArt(item) ?? undefined,
+        });
+      } else if (isAlbumItem && uri) {
+        // Fetch the album browse first so the rollup event has the canonical
+        // artist + cover from Sonos (the card item often lacks usable art);
+        // then fan out one event per track. Cache hit if the user just opened
+        // the album page.
+        const { albumId, serviceId: aSvc, accountId: aAcc, defaults } = resolveAlbumParams(item);
+        if (albumId && aSvc && aAcc) {
+          queryClient
+            .fetchQuery(albumQueryOptions(albumId, aSvc, aAcc, defaults))
+            .then((album) => {
+              const artistId = (album.artistItem?.resource?.id as SonosItemId | undefined)?.objectId;
+              window.sonos.publishQueued({
+                eventType: 'album',
+                uri,
+                trackName: album.title || getName(item),
+                artist:
+                  album.artist ||
+                  ((item as Record<string, unknown>)['subtitle'] as string) ||
+                  (item.artists?.[0]?.name ?? ''),
+                serviceId: aSvc,
+                accountId: aAcc,
+                artistId,
+                album: album.title || getName(item),
+                albumId: uri,
+                imageUrl: album.artUrl ?? getItemArt(item) ?? undefined,
+              });
+              fanOutTrackAttribution(album.tracks, {
+                album: album.title,
+                albumId: uri,
+                artist: album.artist,
+                artistId,
+                artUrl: album.artUrl,
+                serviceId: aSvc,
+                accountId: aAcc,
+              });
+            })
+            .catch(() => {
+              /* silent */
+            });
+        }
+      } else if (isPlaylistItem) {
+        // Playlists have no albumMap rollup — fan out per-track only. Each
+        // playlist track already carries its own albumName/albumId/artist via
+        // decoded defaults, so no per-album context is needed.
+        const { albumId: pid, serviceId: pSvc, accountId: pAcc, defaults } = resolveAlbumParams(item);
+        if (pid && pSvc && pAcc) {
+          queryClient
+            .fetchQuery(playlistQueryOptions(pid, pSvc, pAcc, defaults))
+            .then((tracks) => fanOutTrackAttribution(tracks, { serviceId: pSvc, accountId: pAcc }))
+            .catch(() => {
+              /* silent */
+            });
+        }
+      }
+
+      if (!isSingleTrack || retried) {
+        reloadQueue();
+        setTimeout(reloadQueue, 1500);
+      }
+    },
+    [
+      queryClient,
+      setQueueItems,
+      reloadQueue,
+      reloadQueueRaw,
+      queueIdRef,
+      queueVersionRef,
+      showToast,
+      publishTrackAttribution,
+      fanOutTrackAttribution,
+    ]
+  );
 
   useEffect(() => {
     function onKey(e: globalThis.KeyboardEvent) {
@@ -356,7 +422,7 @@ function MainApp() {
         activeGroupId={activeGroupId}
         onGroupChange={handleGroupChange}
         queueOpen={queueOpen}
-        onToggleQueue={() => setQueueOpen(o => !o)}
+        onToggleQueue={() => setQueueOpen((o) => !o)}
         onResync={() => window.sonos.resync()}
         displayName={displayName}
         onSaveName={(name) => {
@@ -367,13 +433,37 @@ function MainApp() {
       />
       <div className={styles.body}>
         <Routes>
-          <Route path="/"       element={<HomePanel isAuthed={isAuthed} onAddToQueue={handleAddToQueue} ytm={ytm} ytmLoading={ytmLoading} history={history} histLoading={histLoading} />} />
-          <Route path="/search" element={<HomePanel isAuthed={isAuthed} onAddToQueue={handleAddToQueue} ytm={ytm} ytmLoading={ytmLoading} history={history} histLoading={histLoading} />} />
-          <Route path="/album/:id"  element={<AlbumPanel onAddToQueue={handleAddToQueue} queueOpen={queueOpen} />} />
+          <Route
+            path="/"
+            element={
+              <HomePanel
+                isAuthed={isAuthed}
+                onAddToQueue={handleAddToQueue}
+                ytm={ytm}
+                ytmLoading={ytmLoading}
+                history={history}
+                histLoading={histLoading}
+              />
+            }
+          />
+          <Route
+            path="/search"
+            element={
+              <HomePanel
+                isAuthed={isAuthed}
+                onAddToQueue={handleAddToQueue}
+                ytm={ytm}
+                ytmLoading={ytmLoading}
+                history={history}
+                histLoading={histLoading}
+              />
+            }
+          />
+          <Route path="/album/:id" element={<AlbumPanel onAddToQueue={handleAddToQueue} queueOpen={queueOpen} />} />
           <Route path="/artist/:id" element={<ArtistPanel onAddToQueue={handleAddToQueue} />} />
-          <Route path="/container/:id"  element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
-          <Route path="/leaderboard"    element={<LeaderboardPanel />} />
-          <Route path="/queuedle"       element={<QueuedlePanel />} />
+          <Route path="/container/:id" element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
+          <Route path="/leaderboard" element={<LeaderboardPanel />} />
+          <Route path="/queuedle" element={<QueuedlePanel />} />
         </Routes>
       </div>
       <QueueSidebar
@@ -392,14 +482,16 @@ function MainApp() {
       <PlayerBar
         isAuthed={isAuthed}
         playback={playback}
-        onToggleQueue={() => setQueueOpen(o => !o)}
+        onToggleQueue={() => setQueueOpen((o) => !o)}
         onShuffle={reloadQueue}
       />
       {toastMsg && <div className={styles.toast}>{toastMsg}</div>}
       {displayName === null && (
         <DisplayNameModal
           onSave={(name) => {
-            window.sonos.setDisplayName(name).catch(() => { /* silent */ });
+            window.sonos.setDisplayName(name).catch(() => {
+              /* silent */
+            });
             setDisplayName(name);
           }}
         />

@@ -41,6 +41,7 @@ Object.defineProperty(window, 'sonos', {
     clearQueue:         vi.fn(pending),
     openWsMonitor:      vi.fn(() => Promise.resolve()),
     openHttpMonitor:    vi.fn(() => Promise.resolve()),
+    openDevTools:       vi.fn(() => Promise.resolve()),
     openMiniPlayer:     vi.fn(() => Promise.resolve()),
     closeMiniPlayer:    vi.fn(() => Promise.resolve()),
     getDisplayName:     vi.fn(pending),

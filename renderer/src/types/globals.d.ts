@@ -184,6 +184,7 @@ interface SonosPreload {
   clearQueue: () => Promise<unknown>;
   openWsMonitor: () => Promise<void>;
   openHttpMonitor: () => Promise<void>;
+  openDevTools: () => Promise<void>;
   openMiniPlayer: () => Promise<void>;
   closeMiniPlayer: () => Promise<void>;
   // Attribution / office presence

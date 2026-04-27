@@ -22,6 +22,7 @@ export interface SonosAPI {
   setGroupVolume: (volume: number) => Promise<unknown>;
   openWsMonitor: () => Promise<void>;
   openHttpMonitor: () => Promise<void>;
+  openDevTools: () => Promise<void>;
   openMiniPlayer: () => Promise<void>;
   closeMiniPlayer: () => Promise<void>;
   refreshPlayback: () => Promise<void>;
@@ -125,6 +126,7 @@ contextBridge.exposeInMainWorld('sonos', {
   setGroupVolume: (volume: number) => ipcRenderer.invoke('volume:group:set', volume),
   openWsMonitor: () => ipcRenderer.invoke('debug:openWsMonitor'),
   openHttpMonitor: () => ipcRenderer.invoke('debug:openHttpMonitor'),
+  openDevTools: () => ipcRenderer.invoke('debug:openDevTools'),
   openMiniPlayer: () => ipcRenderer.invoke('mini:open'),
   closeMiniPlayer: () => ipcRenderer.invoke('mini:close'),
   refreshPlayback: () => ipcRenderer.invoke('playback:refresh'),

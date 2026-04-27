@@ -10,26 +10,12 @@ const dates: GameDateEntry[] = [
 
 describe('QueuedleCalendar', () => {
   it('opens on the month containing today', () => {
-    render(
-      <QueuedleCalendar
-        dates={dates}
-        selectedDate={null}
-        todayId="2025-03-15"
-        onSelectDate={() => {}}
-      />,
-    );
+    render(<QueuedleCalendar dates={dates} selectedDate={null} todayId="2025-03-15" onSelectDate={() => {}} />);
     expect(screen.getByText('March 2025')).toBeInTheDocument();
   });
 
   it('renders cells for every day of the month', () => {
-    render(
-      <QueuedleCalendar
-        dates={dates}
-        selectedDate={null}
-        todayId="2025-03-15"
-        onSelectDate={() => {}}
-      />,
-    );
+    render(<QueuedleCalendar dates={dates} selectedDate={null} todayId="2025-03-15" onSelectDate={() => {}} />);
     // 31 days in March
     expect(screen.getByText('1')).toBeInTheDocument();
     expect(screen.getByText('31')).toBeInTheDocument();
@@ -37,41 +23,20 @@ describe('QueuedleCalendar', () => {
 
   it('makes playable dates clickable and calls onSelectDate', () => {
     const onSelect = vi.fn();
-    render(
-      <QueuedleCalendar
-        dates={dates}
-        selectedDate={null}
-        todayId="2025-03-15"
-        onSelectDate={onSelect}
-      />,
-    );
+    render(<QueuedleCalendar dates={dates} selectedDate={null} todayId="2025-03-15" onSelectDate={onSelect} />);
     const playable = screen.getByLabelText(/2025-03-12 \(play\)/);
     fireEvent.click(playable);
     expect(onSelect).toHaveBeenCalledWith('2025-03-12');
   });
 
   it('disables already-played dates', () => {
-    render(
-      <QueuedleCalendar
-        dates={dates}
-        selectedDate={null}
-        todayId="2025-03-15"
-        onSelectDate={() => {}}
-      />,
-    );
+    render(<QueuedleCalendar dates={dates} selectedDate={null} todayId="2025-03-15" onSelectDate={() => {}} />);
     const played = screen.getByLabelText(/2025-03-10 \(played\)/);
     expect(played).toBeDisabled();
   });
 
   it('disables dates without a game entry and dates in the future', () => {
-    render(
-      <QueuedleCalendar
-        dates={dates}
-        selectedDate={null}
-        todayId="2025-03-15"
-        onSelectDate={() => {}}
-      />,
-    );
+    render(<QueuedleCalendar dates={dates} selectedDate={null} todayId="2025-03-15" onSelectDate={() => {}} />);
     // 2025-03-20 has no entry → not available
     expect(screen.getByLabelText(/2025-03-20 \(not available\)/)).toBeDisabled();
     // Future date
@@ -79,14 +44,7 @@ describe('QueuedleCalendar', () => {
   });
 
   it('disables the next button when viewing the current month', () => {
-    render(
-      <QueuedleCalendar
-        dates={dates}
-        selectedDate={null}
-        todayId="2025-03-15"
-        onSelectDate={() => {}}
-      />,
-    );
+    render(<QueuedleCalendar dates={dates} selectedDate={null} todayId="2025-03-15" onSelectDate={() => {}} />);
     expect(screen.getByLabelText('Next month')).toBeDisabled();
   });
 
@@ -100,7 +58,7 @@ describe('QueuedleCalendar', () => {
         selectedDate={null}
         todayId="2025-03-15"
         onSelectDate={() => {}}
-      />,
+      />
     );
     fireEvent.click(screen.getByLabelText('Previous month'));
     expect(screen.getByText('February 2025')).toBeInTheDocument();
