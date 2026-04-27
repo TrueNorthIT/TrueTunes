@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState, Fragment } from 'react';
 import { Loader2 } from 'lucide-react';
-import { getName } from '../../lib/itemHelpers';
 import { applyReorderLocally } from '../../lib/queueHelpers';
+import { getActiveProvider } from '../../providers';
 import { useAttribution } from '../../hooks/useAttribution';
 import { DraggableQueueRow } from './DraggableQueueRow';
-import type { QueueItem, SonosItem, SonosItemId } from '../../types/sonos';
+import type { NormalizedQueueItem } from '../../types/provider';
+import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/QueueSidebar.module.css';
 
 interface Props {
   open: boolean;
-  items: QueueItem[];
-  setItems: (updater: QueueItem[] | ((prev: QueueItem[]) => QueueItem[])) => void;
+  items: NormalizedQueueItem[];
+  setItems: (updater: NormalizedQueueItem[] | ((prev: NormalizedQueueItem[]) => NormalizedQueueItem[])) => void;
   isLoading: boolean;
   error: string | null;
   currentObjectId: string | null;
@@ -54,8 +55,7 @@ export function QueueSidebar(
       const indices = [...selected];
       setItems(prev => prev.filter((_, i) => !selected.has(i)));
       setSelected(new Set());
-      const result = await window.sonos.removeFromQueue(indices) as { error?: string } | null;
-      if (result?.error) { onRefresh(); onError('Failed to remove track'); }
+      await getActiveProvider().removeFromQueue(indices).catch(() => { onRefresh(); onError('Failed to remove track'); });
     }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
@@ -103,7 +103,7 @@ export function QueueSidebar(
       fontSize: '12px', fontWeight: '600', pointerEvents: 'none',
       whiteSpace: 'nowrap', zIndex: '9999',
     });
-    const label = toMove.size > 1 ? `${toMove.size} tracks` : getName(items[index]);
+    const label = toMove.size > 1 ? `${toMove.size} tracks` : (items[index]?.track.title ?? '');
     ghost.textContent = label;
     document.body.appendChild(ghost);
     e.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, 20);
@@ -143,8 +143,7 @@ export function QueueSidebar(
     setDragOverIndex(null);
     setSelected(new Set());
     setItems(applyReorderLocally(items, fromIndices, targetIndex));
-    const result = await window.sonos.reorderQueue(fromIndices, targetIndex, currentLength) as { error?: string } | null;
-    if (result?.error) { onRefresh(); onError('Failed to reorder queue'); }
+    await getActiveProvider().reorderQueue(fromIndices, targetIndex, currentLength).catch(() => { onRefresh(); onError('Failed to reorder queue'); });
   }
 
   function handleDragEnd() {
@@ -172,8 +171,7 @@ export function QueueSidebar(
             <button className={styles.confirmYes} onClick={async () => {
               setPendingClear(false);
               setItems([]);
-              const result = await window.sonos.clearQueue() as { error?: string } | null;
-              if (result?.error) { onRefresh(); onError('Failed to clear queue'); }
+              await getActiveProvider().clearQueue().catch(() => { onRefresh(); onError('Failed to clear queue'); });
             }}>Clear</button>
             <button className={styles.confirmNo} onClick={() => setPendingClear(false)}>Cancel</button>
           </div>
@@ -216,11 +214,7 @@ export function QueueSidebar(
               index={i}
               currentObjectId={currentObjectId}
               currentQueueItemId={currentQueueItemId}
-              attribution={attributionMap[
-                (item.track?.id as SonosItemId | undefined)?.objectId ??
-                (item.id as SonosItemId | undefined)?.objectId ??
-                ''
-              ]}
+              attribution={attributionMap[item.track.id ?? '']}
               isSelected={selected.has(i)}
               onRowClick={handleRowClick}
               onDragStart={handleDragStart}
@@ -240,8 +234,7 @@ export function QueueSidebar(
             const indices = [...selected];
             setItems(prev => prev.filter((_, i) => !selected.has(i)));
             setSelected(new Set());
-            const result = await window.sonos.removeFromQueue(indices) as { error?: string } | null;
-            if (result?.error) { onRefresh(); onError('Failed to remove tracks'); }
+            await getActiveProvider().removeFromQueue(indices).catch(() => { onRefresh(); onError('Failed to remove tracks'); });
           }}>
             Delete
           </button>

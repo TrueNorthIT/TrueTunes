@@ -65,7 +65,7 @@ describe('useQueue — initial load', () => {
     mockFetch.mockResolvedValue(queueResponse(items));
     const { result } = renderHook(() => useQueue(true, 'g1', 'q1'));
     await waitFor(() => expect(result.current.items).toHaveLength(1));
-    expect(result.current.items[0].name).toBe('Song A');
+    expect(result.current.items[0].track.title).toBe('Song A');
   });
 
   it('clears isLoading after load completes', async () => {
@@ -141,11 +141,11 @@ describe('useQueue — reload', () => {
       .mockResolvedValueOnce(queueResponse([{ name: 'Old Song' }]))
       .mockResolvedValueOnce(queueResponse([{ name: 'New Song' }]));
     const { result } = renderHook(() => useQueue(true, 'g1', 'q1'));
-    await waitFor(() => expect(result.current.items[0]?.name).toBe('Old Song'));
+    await waitFor(() => expect(result.current.items[0]?.track.title).toBe('Old Song'));
     await act(async () => {
       await result.current.reload();
     });
-    expect(result.current.items[0]?.name).toBe('New Song');
+    expect(result.current.items[0]?.track.title).toBe('New Song');
   });
 
   it('does not fire onEtag on reload when list response has no etag', async () => {

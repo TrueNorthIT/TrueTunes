@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Home, Trophy, Search, X, Users, User, List, RefreshCw, Minus, Maximize2, Minimize2, Gamepad2, DownloadCloud, Lightbulb } from 'lucide-react';
-import type { GroupInfo } from '../types/sonos';
+import type { NormalizedGroup } from '../types/provider';
 import styles from '../styles/TopNav.module.css';
 
 interface Props {
   isAuthed: boolean;
-  groups: GroupInfo[];
+  groups: NormalizedGroup[];
   activeGroupId: string | null;
   onGroupChange: (groupId: string) => void;
   queueOpen: boolean;
