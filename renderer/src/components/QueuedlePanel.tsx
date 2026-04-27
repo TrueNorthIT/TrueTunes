@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useDailyGame, useSubmitGameScore, useGameLeaderboard, useGameDates } from '../hooks/useDailyGame';
 import { QueuedleIntro } from './QueuedleIntro';
 import { QueuedleQuestionCard } from './QueuedleQuestionCard';
@@ -25,7 +24,6 @@ function londonDateToday(): string {
 }
 
 export function QueuedlePanel() {
-  const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const todayId = useMemo(() => londonDateToday(), []);
   const { data, isLoading, error } = useDailyGame(selectedDate ?? undefined);
@@ -82,7 +80,7 @@ export function QueuedlePanel() {
         JSON.stringify({
           mainScore: alreadyPlayed.mainScore,
           bonusScore: alreadyPlayed.bonusScore,
-        }),
+        })
       );
     } catch {
       // ignore quota / disabled storage
@@ -180,9 +178,8 @@ export function QueuedlePanel() {
 
   const justPlayed = localScore !== null;
   const showAlreadyPlayed = !justPlayed && (localPlayed !== null || alreadyPlayed !== null);
-  const stillResolving = !justPlayed && !showAlreadyPlayed && (
-    displayName === undefined || leaderboard.isLoading === true
-  );
+  const stillResolving =
+    !justPlayed && !showAlreadyPlayed && (displayName === undefined || leaderboard.isLoading === true);
 
   const headerActions = (
     <>
@@ -191,16 +188,13 @@ export function QueuedlePanel() {
           ← Today
         </button>
       )}
-      <button className={styles.leaderLink} onClick={() => navigate('/leaderboard')}>
-        Leaderboard →
-      </button>
     </>
   );
 
   if (showAlreadyPlayed) {
-    const cachedScore = localPlayed ?? (alreadyPlayed
-      ? { mainScore: alreadyPlayed.mainScore, bonusScore: alreadyPlayed.bonusScore }
-      : null);
+    const cachedScore =
+      localPlayed ??
+      (alreadyPlayed ? { mainScore: alreadyPlayed.mainScore, bonusScore: alreadyPlayed.bonusScore } : null);
     const scores = leaderboard.data && 'scores' in leaderboard.data ? leaderboard.data.scores : [];
     const calendarDates = gameDates.data?.dates ?? [];
     return (
@@ -219,9 +213,6 @@ export function QueuedlePanel() {
               📅 Calendar
             </button>
           )}
-          <button className={styles.leaderLink} onClick={() => navigate('/leaderboard')}>
-            Leaderboard →
-          </button>
         </div>
         <div className={styles.body}>
           {cachedScore && (
@@ -240,9 +231,7 @@ export function QueuedlePanel() {
               </h2>
               {scores.slice(0, 10).map((s, i) => (
                 <div key={s.userName} className={styles.scoreRow}>
-                  <span className={styles.scoreRank}>
-                    {i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}
-                  </span>
+                  <span className={styles.scoreRank}>{i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span>
                   <span className={styles.scoreName}>{s.userName}</span>
                   <span className={styles.scoreBreakdown}>
                     {s.mainScore}/{game.questions.length} · {s.bonusScore}/{game.questions.length}
@@ -347,10 +336,7 @@ export function QueuedlePanel() {
     } else if (result.existing) {
       scored = { main: result.existing.mainScore, bonus: result.existing.bonusScore };
     } else {
-      const correctMain = mainGuesses.reduce(
-        (acc, g, i) => acc + (g === game.questions[i].winner ? 1 : 0),
-        0,
-      );
+      const correctMain = mainGuesses.reduce((acc, g, i) => acc + (g === game.questions[i].winner ? 1 : 0), 0);
       const correctBonus = bonusGuesses.reduce((acc, g, i) => {
         const q = game.questions[i];
         const bonusSide = q.bonusItem ?? q.winner;
@@ -363,7 +349,7 @@ export function QueuedlePanel() {
     try {
       localStorage.setItem(
         `queuedle-played:${game.id}`,
-        JSON.stringify({ mainScore: scored.main, bonusScore: scored.bonus }),
+        JSON.stringify({ mainScore: scored.main, bonusScore: scored.bonus })
       );
     } catch {
       // ignore quota / disabled storage

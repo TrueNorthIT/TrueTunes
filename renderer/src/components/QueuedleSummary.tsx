@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom';
 import styles from '../styles/Queuedle.module.css';
 
 interface Props {
@@ -9,14 +8,7 @@ interface Props {
   alreadySubmitted?: boolean;
 }
 
-export function QueuedleSummary({
-  mainScore,
-  bonusScore,
-  maxMain,
-  maxBonus,
-  alreadySubmitted,
-}: Props) {
-  const navigate = useNavigate();
+export function QueuedleSummary({ mainScore, bonusScore, maxMain, maxBonus, alreadySubmitted }: Props) {
   const total = mainScore + bonusScore;
   const maxTotal = maxMain + maxBonus;
   return (
@@ -42,11 +34,6 @@ export function QueuedleSummary({
           You&apos;ve already played today — come back tomorrow for a new Queuedle.
         </p>
       )}
-      <div className={styles.nextRow}>
-        <button className={styles.nextBtn} onClick={() => navigate('/leaderboard')}>
-          See leaderboard
-        </button>
-      </div>
     </div>
   );
 }
