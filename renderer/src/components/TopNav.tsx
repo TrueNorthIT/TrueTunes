@@ -1,6 +1,23 @@
 import { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Home, Trophy, Search, X, Users, User, List, RefreshCw, Minus, Maximize2, Minimize2, Gamepad2, DownloadCloud, Lightbulb } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Home,
+  Trophy,
+  Search,
+  X,
+  User,
+  List,
+  RefreshCw,
+  Minus,
+  Maximize2,
+  Minimize2,
+  Gamepad2,
+  DownloadCloud,
+  Lightbulb,
+  Group,
+} from 'lucide-react';
 import type { NormalizedGroup } from '../types/provider';
 import styles from '../styles/TopNav.module.css';
 
@@ -18,9 +35,16 @@ interface Props {
 }
 
 export function TopNav({
-  isAuthed, groups, activeGroupId,
-  onGroupChange, queueOpen, onToggleQueue, onResync,
-  displayName, onSaveName, onChangelogOpen,
+  isAuthed,
+  groups,
+  activeGroupId,
+  onGroupChange,
+  queueOpen,
+  onToggleQueue,
+  onResync,
+  displayName,
+  onSaveName,
+  onChangelogOpen,
 }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -36,17 +60,23 @@ export function TopNav({
 
   // React Router sets window.history.state = { idx, key } on every navigation
   const histIdx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
-  const canGoBack    = histIdx > 0;
+  const canGoBack = histIdx > 0;
   const canGoForward = histIdx < window.history.length - 1;
 
   const [isMaximized, setIsMaximized] = useState(false);
   useEffect(() => {
-    window.sonos.isWindowMaximized().then(setIsMaximized).catch(() => {});
+    window.sonos
+      .isWindowMaximized()
+      .then(setIsMaximized)
+      .catch(() => {});
     return window.sonos.onWindowMaximized(setIsMaximized);
   }, []);
 
   useEffect(() => {
-    window.sonos.getVersion().then(setAppVersion).catch(() => {});
+    window.sonos
+      .getVersion()
+      .then(setAppVersion)
+      .catch(() => {});
   }, []);
 
   useEffect(() => window.sonos.onUpdateDownloaded(setUpdateVersion), []);
@@ -79,7 +109,10 @@ export function TopNav({
 
   function submitName() {
     const trimmed = nameValue.trim();
-    if (trimmed) { onSaveName(trimmed); setNameOpen(false); }
+    if (trimmed) {
+      onSaveName(trimmed);
+      setNameOpen(false);
+    }
   }
 
   useEffect(() => {
@@ -95,15 +128,21 @@ export function TopNav({
       const q = searchText.trim();
       if (q) navigate(`/search?q=${encodeURIComponent(q)}`);
     }
-    if (e.key === 'Escape') { setSearchText(''); navigate('/'); }
+    if (e.key === 'Escape') {
+      setSearchText('');
+      navigate('/');
+    }
   };
 
-  const handleClear = () => { setSearchText(''); navigate('/'); };
+  const handleClear = () => {
+    setSearchText('');
+    navigate('/');
+  };
 
-  const isAtRoot      = location.pathname === '/';
-  const isInSearch    = location.pathname === '/search';
+  const isAtRoot = location.pathname === '/';
+  const isInSearch = location.pathname === '/search';
   const isLeaderboard = location.pathname === '/leaderboard';
-  const isQueuedle    = location.pathname === '/queuedle';
+  const isQueuedle = location.pathname === '/queuedle';
 
   return (
     <>
@@ -111,31 +150,19 @@ export function TopNav({
 
       {/* Back / forward pill — fixed top-left */}
       <div className={styles.historyPill}>
-          <button
-            className={styles.historyBtn}
-            disabled={!canGoBack}
-            onClick={() => navigate(-1)}
-            title="Back"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button
-            className={styles.historyBtn}
-            disabled={!canGoForward}
-            onClick={() => navigate(1)}
-            title="Forward"
-          >
-            <ChevronRight size={16} />
-          </button>
+        <button className={styles.historyBtn} disabled={!canGoBack} onClick={() => navigate(-1)} title="Back">
+          <ChevronLeft size={16} />
+        </button>
+        <button className={styles.historyBtn} disabled={!canGoForward} onClick={() => navigate(1)} title="Forward">
+          <ChevronRight size={16} />
+        </button>
       </div>
 
       {/* Outer wrapper — centered */}
       <div className={styles.navRoot}>
-
         {/* Main nav pill */}
         <nav className={styles.nav}>
           <div className={styles.inner}>
-
             <button
               className={`${styles.iconBtn}${isAtRoot ? ' ' + styles.active : ''}`}
               onClick={handleClear}
@@ -167,7 +194,7 @@ export function TopNav({
                 type="text"
                 placeholder="Search…"
                 value={searchText}
-                onChange={e => setSearchText(e.target.value)}
+                onChange={(e) => setSearchText(e.target.value)}
                 onKeyDown={handleKeyDown}
                 disabled={!isAuthed}
               />
@@ -175,7 +202,7 @@ export function TopNav({
                 className={styles.clearBtn}
                 onClick={handleClear}
                 title="Clear"
-                style={{ visibility: (isInSearch || searchText) ? 'visible' : 'hidden' }}
+                style={{ visibility: isInSearch || searchText ? 'visible' : 'hidden' }}
               >
                 <X size={12} />
               </button>
@@ -191,20 +218,23 @@ export function TopNav({
               <div className={styles.groupWrap} ref={groupRef}>
                 <button
                   className={`${styles.iconBtn}${groupOpen ? ' ' + styles.active : ''}`}
-                  onClick={() => groups.length > 1 && setGroupOpen(o => !o)}
-                  title={groups.find(g => g.id === activeGroupId)?.name ?? 'Group'}
+                  onClick={() => groups.length > 1 && setGroupOpen((o) => !o)}
+                  title={groups.find((g) => g.id === activeGroupId)?.name ?? 'Group'}
                   disabled={!isAuthed}
                 >
-                  <Users size={15} />
+                  <Group size={15} />
                 </button>
                 {groupOpen && groups.length > 1 && (
                   <div className={styles.groupPopover}>
                     <div className={styles.groupPopoverLabel}>Group</div>
-                    {groups.map(g => (
+                    {groups.map((g) => (
                       <button
                         key={g.id}
                         className={`${styles.groupOption}${g.id === activeGroupId ? ' ' + styles.groupOptionActive : ''}`}
-                        onClick={() => { onGroupChange(g.id); setGroupOpen(false); }}
+                        onClick={() => {
+                          onGroupChange(g.id);
+                          setGroupOpen(false);
+                        }}
                       >
                         {g.name}
                       </button>
@@ -218,7 +248,7 @@ export function TopNav({
               <div className={styles.nameWrap} ref={popoverRef}>
                 <button
                   className={`${styles.iconBtn}${nameOpen ? ' ' + styles.active : ''}`}
-                  onClick={() => setNameOpen(o => !o)}
+                  onClick={() => setNameOpen((o) => !o)}
                   title={displayName ?? 'Set your name'}
                 >
                   <User size={15} />
@@ -229,8 +259,8 @@ export function TopNav({
                     <input
                       className={styles.nameInput}
                       value={nameValue}
-                      onChange={e => setNameValue(e.target.value)}
-                      onKeyDown={e => {
+                      onChange={(e) => setNameValue(e.target.value)}
+                      onKeyDown={(e) => {
                         if (e.key === 'Enter') submitName();
                         if (e.key === 'Escape') setNameOpen(false);
                       }}
@@ -263,11 +293,7 @@ export function TopNav({
               </div>
             )}
 
-            <button
-              className={styles.iconBtn}
-              onClick={onChangelogOpen}
-              title="What's new"
-            >
+            <button className={styles.iconBtn} onClick={onChangelogOpen} title="What's new">
               <Lightbulb size={15} />
             </button>
 
@@ -278,10 +304,8 @@ export function TopNav({
             >
               <List size={15} />
             </button>
-
           </div>
         </nav>
-
       </div>
 
       {/* Window controls — fixed top-right, independent of the centered navRoot */}
@@ -289,10 +313,18 @@ export function TopNav({
         <button className={styles.winBtn} onClick={() => window.sonos.minimizeWindow()} title="Minimise">
           <Minus size={13} />
         </button>
-        <button className={styles.winBtn} onClick={() => window.sonos.maximizeWindow()} title={isMaximized ? 'Restore' : 'Maximise'}>
+        <button
+          className={styles.winBtn}
+          onClick={() => window.sonos.maximizeWindow()}
+          title={isMaximized ? 'Restore' : 'Maximise'}
+        >
           {isMaximized ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
         </button>
-        <button className={`${styles.winBtn} ${styles.closeBtn}`} onClick={() => window.sonos.closeWindow()} title="Close">
+        <button
+          className={`${styles.winBtn} ${styles.closeBtn}`}
+          onClick={() => window.sonos.closeWindow()}
+          title="Close"
+        >
           <X size={13} />
         </button>
       </div>
