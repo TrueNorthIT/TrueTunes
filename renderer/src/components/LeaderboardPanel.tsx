@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useStats, StatsPeriod } from '../hooks/useStats';
 import { useGameLeaderboard } from '../hooks/useDailyGame';
 import { useImage } from '../hooks/useImage';
+import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
 import styles from '../styles/LeaderboardPanel.module.css';
 import queuedleStyles from '../styles/Queuedle.module.css';
 
@@ -37,6 +38,7 @@ export function LeaderboardPanel() {
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const { data, isLoading, error, refetch } = useStats(period, selectedUser ?? undefined);
   const navigate = useNavigate();
+  const { resolveAndOpen } = useResolveAndOpen();
   const queuedleLeaderboard = useGameLeaderboard();
   const [myName, setMyName] = useState<string | null>(null);
   useEffect(() => {
@@ -187,7 +189,7 @@ export function LeaderboardPanel() {
                                     },
                                   },
                                 });
-                              else navigate(`/search?q=${encodeURIComponent(t.artist)}`);
+                              else resolveAndOpen(t.artist, 'artist');
                             }}
                           >
                             {t.artist}
@@ -203,7 +205,7 @@ export function LeaderboardPanel() {
                                 navigate(`/album/${encodeURIComponent(t.albumId)}`, {
                                   state: { item: { type: 'ALBUM', id: { objectId: t.albumId, serviceId: t.serviceId, accountId: t.accountId } } },
                                 });
-                              else navigate(`/search?q=${encodeURIComponent(t.album!)}`);
+                              else resolveAndOpen(t.album!, 'album', { artist: t.artist });
                             }}
                           >
                             {t.album}
@@ -239,7 +241,7 @@ export function LeaderboardPanel() {
                               item: { type: 'ARTIST', resource: { type: 'ARTIST', id: { objectId: a.artistId, serviceId: a.serviceId, accountId: a.accountId } } },
                             },
                           });
-                        else navigate(`/search?q=${encodeURIComponent(a.artist)}`);
+                        else resolveAndOpen(a.artist, 'artist');
                       }}
                     >
                       {a.artist}
@@ -260,12 +262,14 @@ export function LeaderboardPanel() {
                   <div
                     key={i}
                     className={styles.trackRow}
-                    style={{ cursor: (a.albumId && a.serviceId && a.accountId) ? 'pointer' : 'default' }}
+                    style={{ cursor: 'pointer' }}
                     onClick={() => {
                       if (a.albumId && a.serviceId && a.accountId)
                         navigate(`/album/${encodeURIComponent(a.albumId)}`, {
                           state: { item: { type: 'ALBUM', id: { objectId: a.albumId, serviceId: a.serviceId, accountId: a.accountId } } },
                         });
+                      else if (a.album)
+                        resolveAndOpen(a.album, 'album', { artist: a.artist });
                     }}
                   >
                     {a.imageUrl ? (
@@ -290,7 +294,7 @@ export function LeaderboardPanel() {
                                     },
                                   },
                                 });
-                              else navigate(`/search?q=${encodeURIComponent(a.artist)}`);
+                              else resolveAndOpen(a.artist, 'artist');
                             }}
                           >
                             {a.artist}
