@@ -42,6 +42,8 @@ interface StatsUser {
 interface StatsTrack {
   trackName: string;
   artist: string;
+  serviceId?: string;
+  accountId?: string;
   artistId?: string;
   album?: string;
   albumId?: string;
@@ -51,6 +53,8 @@ interface StatsTrack {
 }
 interface StatsArtist {
   artist: string;
+  serviceId?: string;
+  accountId?: string;
   artistId?: string;
   imageUrl?: string;
   count: number;
@@ -59,6 +63,8 @@ interface StatsAlbum {
   album: string;
   albumId?: string;
   artist: string;
+  serviceId?: string;
+  accountId?: string;
   artistId?: string;
   imageUrl?: string;
   count: number;
@@ -188,6 +194,8 @@ interface SonosPreload {
     uri: string;
     trackName: string;
     artist: string;
+    serviceId?: string;
+    accountId?: string;
     artistId?: string;
     album?: string;
     albumId?: string;

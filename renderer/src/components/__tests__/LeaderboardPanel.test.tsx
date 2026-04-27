@@ -1,6 +1,42 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { LeaderboardPanel } from '../LeaderboardPanel';
+
+interface AlbumResource {
+  name: string;
+  objectId: string;
+  serviceId: string;
+  accountId: string;
+  artistName?: string;
+}
+
+function mockSearchResolves(opts: {
+  artist?: { name: string; objectId: string; serviceId: string; accountId: string };
+  album?: AlbumResource;
+  albums?: AlbumResource[];
+}) {
+  const albumList = opts.albums ?? (opts.album ? [opts.album] : []);
+  vi.mocked(window.sonos.fetch).mockResolvedValueOnce({
+    data: {
+      resourceOrder: ['ARTISTS', 'ALBUMS'],
+      ARTISTS: {
+        resources: opts.artist
+          ? [{ id: { objectId: opts.artist.objectId, serviceId: opts.artist.serviceId, accountId: opts.artist.accountId }, name: opts.artist.name, images: [] }]
+          : [],
+      },
+      ALBUMS: {
+        resources: albumList.map((a) => ({
+          id: { objectId: a.objectId, serviceId: a.serviceId, accountId: a.accountId },
+          name: a.name,
+          images: [],
+          artists: a.artistName
+            ? [{ name: a.artistName, id: { objectId: `${a.objectId}-artist`, serviceId: a.serviceId, accountId: a.accountId } }]
+            : [],
+        })),
+      },
+    },
+  } as never);
+}
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async (importActual) => {
@@ -33,15 +69,15 @@ const mockData: StatsResult = {
     { userId: 'bob',   count: 7  },
   ],
   topTracks: [
-    { trackName: 'Bohemian Rhapsody', artist: 'Queen', count: 5, artistId: 'art1' },
+    { trackName: 'Bohemian Rhapsody', artist: 'Queen', count: 5, artistId: 'art1', serviceId: 'svc1', accountId: 'acc1' },
     { trackName: 'Hotel California',  artist: 'Eagles', count: 3 },
   ],
   topArtists: [
-    { artist: 'Queen',  artistId: 'art1', count: 5 },
+    { artist: 'Queen',  artistId: 'art1', serviceId: 'svc1', accountId: 'acc1', count: 5 },
     { artist: 'Eagles', count: 3 },
   ],
   topAlbums: [
-    { album: 'A Night at the Opera', artist: 'Queen', albumId: 'alb1', count: 4 },
+    { album: 'A Night at the Opera', artist: 'Queen', albumId: 'alb1', serviceId: 'svc1', accountId: 'acc1', count: 4 },
   ],
   totalEvents: 25,
   periodStart: 0,
@@ -209,13 +245,17 @@ describe('LeaderboardPanel', () => {
       );
     });
 
-    it('clicking an artist link without artistId navigates to search', () => {
+    it('clicking an artist link without artistId resolves via search and opens artist page', async () => {
+      mockSearchResolves({ artist: { name: 'Eagles', objectId: 'eagles-id', serviceId: 'svc1', accountId: 'acc1' } });
       render(<LeaderboardPanel />);
-      // Eagles has no artistId
+      // Eagles has no artistId — fall back to a Sonos search that resolves to a real artist
       fireEvent.click(screen.getAllByText('Eagles')[0]);
-      expect(mockNavigate).toHaveBeenCalledWith(
-        expect.stringMatching(/^\/search\?q=/)
-      );
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith(
+          expect.stringMatching(/^\/artist\//),
+          expect.anything()
+        );
+      });
     });
 
     it('shows "No data yet" for empty topTracks', () => {
@@ -243,7 +283,7 @@ describe('LeaderboardPanel', () => {
         ...mockData,
         topAlbums: [],
         topTracks: [
-          { trackName: 'My Song', artist: 'Artist', count: 5, artistId: 'art1', album: 'Great Album', albumId: 'alb9' },
+          { trackName: 'My Song', artist: 'Artist', count: 5, artistId: 'art1', serviceId: 'svc1', accountId: 'acc1', album: 'Great Album', albumId: 'alb9' },
         ],
       });
       render(<LeaderboardPanel />);
@@ -254,7 +294,7 @@ describe('LeaderboardPanel', () => {
       );
     });
 
-    it('clicking album link without albumId navigates to search', () => {
+    it('clicking album link without albumId resolves via search and opens album page', async () => {
       mockLoaded({
         ...mockData,
         topAlbums: [],
@@ -262,11 +302,15 @@ describe('LeaderboardPanel', () => {
           { trackName: 'Track', artist: 'Artist', count: 1, album: 'Rare Album' },
         ],
       });
+      mockSearchResolves({ album: { name: 'Rare Album', objectId: 'rare-id', serviceId: 'svc1', accountId: 'acc1', artistName: 'Artist' } });
       render(<LeaderboardPanel />);
       fireEvent.click(screen.getByText('Rare Album'));
-      expect(mockNavigate).toHaveBeenCalledWith(
-        expect.stringMatching(/^\/search\?q=/)
-      );
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith(
+          expect.stringMatching(/^\/album\//),
+          expect.anything()
+        );
+      });
     });
   });
 
@@ -298,13 +342,17 @@ describe('LeaderboardPanel', () => {
       );
     });
 
-    it('clicking artist without artistId navigates to search', () => {
+    it('clicking artist without artistId resolves via search and opens artist page', async () => {
+      mockSearchResolves({ artist: { name: 'Eagles', objectId: 'eagles-id', serviceId: 'svc1', accountId: 'acc1' } });
       render(<LeaderboardPanel />);
       // Eagles appears in both topTracks and topArtists — click the second instance (topArtists)
       fireEvent.click(screen.getAllByText('Eagles')[1]);
-      expect(mockNavigate).toHaveBeenCalledWith(
-        expect.stringMatching(/^\/search\?q=/)
-      );
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith(
+          expect.stringMatching(/^\/artist\//),
+          expect.anything()
+        );
+      });
     });
   });
 
@@ -322,22 +370,66 @@ describe('LeaderboardPanel', () => {
     it('shows art image when album has imageUrl', () => {
       mockLoaded({
         ...mockData,
-        topAlbums: [{ album: 'Pictured Album', artist: 'Band', albumId: 'alb2', count: 1, imageUrl: 'http://img.com/art.jpg' }],
+        topAlbums: [{ album: 'Pictured Album', artist: 'Band', albumId: 'alb2', serviceId: 'svc1', accountId: 'acc1', count: 1, imageUrl: 'http://img.com/art.jpg' }],
       });
       const { container } = render(<LeaderboardPanel />);
       expect(container.querySelector('img[src="http://img.com/art.jpg"]')).toBeTruthy();
     });
 
-    it('clicking artist in top album without artistId navigates to search', () => {
+    it('clicking artist in top album without artistId resolves via search and opens artist page', async () => {
       mockLoaded({
         ...mockData,
         topAlbums: [{ album: 'No Artist Album', artist: 'Unknown Artist', albumId: 'alb3', count: 1 }],
       });
+      mockSearchResolves({ artist: { name: 'Unknown Artist', objectId: 'unk-id', serviceId: 'svc1', accountId: 'acc1' } });
       render(<LeaderboardPanel />);
       fireEvent.click(screen.getByText('Unknown Artist'));
-      expect(mockNavigate).toHaveBeenCalledWith(
-        expect.stringMatching(/^\/search\?q=/)
-      );
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith(
+          expect.stringMatching(/^\/artist\//),
+          expect.anything()
+        );
+      });
+    });
+
+    it('clicking album row without albumId resolves via search and opens album page', async () => {
+      mockLoaded({
+        ...mockData,
+        topAlbums: [{ album: 'Legacy Album', artist: 'Legacy Artist', count: 2 }],
+      });
+      mockSearchResolves({
+        album: { name: 'Legacy Album', objectId: 'legacy-id', serviceId: 'svc1', accountId: 'acc1', artistName: 'Legacy Artist' },
+      });
+      render(<LeaderboardPanel />);
+      fireEvent.click(screen.getByText('Legacy Album'));
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith(
+          expect.stringMatching(/^\/album\//),
+          expect.anything()
+        );
+      });
+    });
+
+    it('clicking album row without albumId picks the candidate that matches the displayed artist', async () => {
+      mockLoaded({
+        ...mockData,
+        topAlbums: [{ album: 'Greatest Hits', artist: 'Queen', count: 3 }],
+      });
+      // Search returns two same-named albums; the artist hint must pick Queen, not Eagles.
+      mockSearchResolves({
+        albums: [
+          { name: 'Greatest Hits', objectId: 'eagles-album', serviceId: 'svc1', accountId: 'acc1', artistName: 'Eagles' },
+          { name: 'Greatest Hits', objectId: 'queen-album',  serviceId: 'svc1', accountId: 'acc1', artistName: 'Queen'  },
+        ],
+      });
+      render(<LeaderboardPanel />);
+      fireEvent.click(screen.getByText('Greatest Hits'));
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith(
+          expect.stringContaining('queen-album'),
+          expect.anything()
+        );
+      });
     });
   });
 });
