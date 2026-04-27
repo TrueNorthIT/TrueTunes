@@ -1265,6 +1265,27 @@ ipcMain.handle('game:dates', async (_: IpcMainInvokeEvent, userName: string) => 
   }
 });
 
+ipcMain.handle('game:my-score', async (_: IpcMainInvokeEvent, gameId: string, userName: string) => {
+  try {
+    const url = `${PUBSUB_FUNCTION_URL}/api/my-score?gameId=${encodeURIComponent(gameId)}&userName=${encodeURIComponent(userName)}`;
+    const res = await fetch(url);
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle('game:stats', async (_: IpcMainInvokeEvent, date?: string) => {
+  try {
+    const d = date && date.length ? date : 'today';
+    const url = `${PUBSUB_FUNCTION_URL}/api/game-stats?date=${encodeURIComponent(d)}`;
+    const res = await fetch(url);
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
 ipcMain.handle('attribution:refresh', async () => {
   try {
     const map = await officePubSub.refresh();

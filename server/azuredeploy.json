@@ -53,9 +53,7 @@
       "name": "[variables('appInsightsName')]",
       "location": "[parameters('location')]",
       "kind": "other",
-      "dependsOn": [
-        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]"
-      ],
+      "dependsOn": ["[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]"],
       "properties": {
         "Application_Type": "other",
         "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]"
@@ -80,9 +78,7 @@
       "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
       "apiVersion": "2023-01-01",
       "name": "[concat(variables('storageName'), '/default/', variables('containerName'))]",
-      "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"
-      ],
+      "dependsOn": ["[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"],
       "properties": {
         "publicAccess": "None"
       }
@@ -105,9 +101,7 @@
       "type": "Microsoft.SignalRService/webPubSub/hubs",
       "apiVersion": "2023-02-01",
       "name": "[concat(variables('webPubSubName'), '/', variables('hubName'))]",
-      "dependsOn": [
-        "[resourceId('Microsoft.SignalRService/webPubSub', variables('webPubSubName'))]"
-      ],
+      "dependsOn": ["[resourceId('Microsoft.SignalRService/webPubSub', variables('webPubSubName'))]"],
       "properties": {
         "anonymousConnectPolicy": "deny"
       }
@@ -128,9 +122,7 @@
       "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
       "apiVersion": "2024-02-15-preview",
       "name": "[concat(variables('cosmosName'), '/truetunes')]",
-      "dependsOn": [
-        "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosName'))]"
-      ],
+      "dependsOn": ["[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosName'))]"],
       "properties": { "resource": { "id": "truetunes" } }
     },
     {
@@ -143,8 +135,7 @@
       "properties": {
         "resource": {
           "id": "events",
-          "partitionKey": { "paths": ["/userId"], "kind": "Hash" },
-          "defaultTtl": 7776000
+          "partitionKey": { "paths": ["/userId"], "kind": "Hash" }
         }
       }
     },

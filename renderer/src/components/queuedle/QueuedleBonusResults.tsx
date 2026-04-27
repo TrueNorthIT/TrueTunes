@@ -1,4 +1,4 @@
-import styles from '../styles/Queuedle.module.css';
+import styles from '../../styles/Queuedle.module.css';
 
 interface Props {
   winningItems: GameItem[];

@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useDailyGame, useSubmitGameScore, useGameLeaderboard, useGameDates } from '../../hooks/useDailyGame';
+import { useDailyGame, useSubmitGameScore, useGameLeaderboard, useGameDates, useMyScore, useGameStats } from '../../hooks/useDailyGame';
 import { QueuedleIntro } from './QueuedleIntro';
 import { QueuedleQuestionCard } from './QueuedleQuestionCard';
 import { QueuedleBonusScreen } from './QueuedleBonusScreen';
 import { QueuedleBonusResults } from './QueuedleBonusResults';
 import { QueuedleSummary } from './QueuedleSummary';
 import { QueuedleCalendar } from './QueuedleCalendar';
-import styles from '../styles/Queuedle.module.css';
+import { ScoreDistribution } from './ScoreDistribution';
+import { MyScores } from './MyScores';
+import styles from '../../styles/Queuedle.module.css';
 
 type Phase = 'intro' | 'main' | 'bonus' | 'bonus-results' | 'summary';
 
@@ -40,20 +42,26 @@ export function QueuedlePanel() {
 
   const leaderboard = useGameLeaderboard(gameId ?? undefined);
   const gameDates = useGameDates(displayName ?? undefined);
+  const myScore = useMyScore(gameId, displayName);
+  const gameStats = useGameStats(gameId);
   const alreadyPlayed = useMemo(() => {
     if (!displayName || !leaderboard.data || !('scores' in leaderboard.data)) return null;
     const existing = leaderboard.data.scores.find((s) => s.userName === displayName);
     return existing ?? null;
   }, [displayName, leaderboard.data]);
 
-  const localPlayed = useMemo<{ mainScore: number; bonusScore: number } | null>(() => {
+  const localPlayed = useMemo<{ mainScore: number; bonusScore: number; guesses?: Array<'left' | 'right'> } | null>(() => {
     if (!gameId) return null;
     try {
       const raw = localStorage.getItem(`queuedle-played:${gameId}`);
       if (!raw) return null;
       const parsed = JSON.parse(raw);
       if (typeof parsed?.mainScore === 'number' && typeof parsed?.bonusScore === 'number') {
-        return { mainScore: parsed.mainScore, bonusScore: parsed.bonusScore };
+        return {
+          mainScore: parsed.mainScore,
+          bonusScore: parsed.bonusScore,
+          guesses: Array.isArray(parsed.guesses) ? parsed.guesses : undefined,
+        };
       }
     } catch {
       // ignore corrupt entry
@@ -69,6 +77,7 @@ export function QueuedlePanel() {
   const [bonusSelections, setBonusSelections] = useState<(string | null)[]>([]);
   const [localScore, setLocalScore] = useState<{ main: number; bonus: number } | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [devReplay, setDevReplay] = useState(false);
 
   // Backfill localStorage from the cloud when the leaderboard shows the user has
   // played but the local key is missing (fresh install, cleared cache, new machine).
@@ -103,6 +112,18 @@ export function QueuedlePanel() {
   }, [game, bonusSelections.length]);
 
   function resetGameState() {
+    setPhase('intro');
+    setCurrentIdx(0);
+    setRevealed(false);
+    setPickedSide(null);
+    setMainGuesses([]);
+    setBonusSelections([]);
+    setLocalScore(null);
+    setDevReplay(false);
+  }
+
+  function handleDevPlayAgain() {
+    setDevReplay(true);
     setPhase('intro');
     setCurrentIdx(0);
     setRevealed(false);
@@ -177,7 +198,7 @@ export function QueuedlePanel() {
   }
 
   const justPlayed = localScore !== null;
-  const showAlreadyPlayed = !justPlayed && (localPlayed !== null || alreadyPlayed !== null);
+  const showAlreadyPlayed = !justPlayed && !devReplay && (localPlayed !== null || alreadyPlayed !== null);
   const stillResolving =
     !justPlayed && !showAlreadyPlayed && (displayName === undefined || leaderboard.isLoading === true);
 
@@ -215,32 +236,61 @@ export function QueuedlePanel() {
           )}
         </div>
         <div className={styles.body}>
-          {cachedScore && (
-            <QueuedleSummary
-              mainScore={cachedScore.mainScore}
-              bonusScore={cachedScore.bonusScore}
-              maxMain={game.questions.length}
-              maxBonus={game.questions.length}
-              alreadySubmitted
-            />
-          )}
-          {scores.length > 0 && (
+          <div className={styles.alreadyPlayedColumns}>
+            {cachedScore && (
+              <QueuedleSummary
+                mainScore={cachedScore.mainScore}
+                bonusScore={cachedScore.bonusScore}
+                maxMain={game.questions.length}
+                maxBonus={game.questions.length}
+                alreadySubmitted
+                hideScoreSummary
+                questions={game.questions}
+                mainGuesses={cachedScore.guesses ?? myScore.data?.score?.guesses?.main}
+                stats={gameStats.data}
+                onPlayAgain={handleDevPlayAgain}
+              />
+            )}
             <div className={styles.leaderboardSection}>
-              <h2 className={styles.leaderboardTitle}>
-                {selectedDate && selectedDate !== todayId ? `${selectedDate} Leaderboard` : "Today's Leaderboard"}
-              </h2>
-              {scores.slice(0, 10).map((s, i) => (
-                <div key={s.userName} className={styles.scoreRow}>
-                  <span className={styles.scoreRank}>{i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span>
-                  <span className={styles.scoreName}>{s.userName}</span>
-                  <span className={styles.scoreBreakdown}>
-                    {s.mainScore}/{game.questions.length} · {s.bonusScore}/{game.questions.length}
-                  </span>
-                  <span className={styles.scoreTotal}>{s.total}</span>
-                </div>
-              ))}
+              {cachedScore && (
+                <MyScores
+                  mainScore={cachedScore.mainScore}
+                  bonusScore={cachedScore.bonusScore}
+                  maxMain={game.questions.length}
+                  maxBonus={game.questions.length}
+                />
+              )}
+              {scores.length > 0 && (
+                <>
+                  <h2 className={styles.leaderboardTitle}>
+                    {selectedDate && selectedDate !== todayId ? `${selectedDate} Leaderboard` : "Today's Leaderboard"}
+                  </h2>
+                  {scores.slice(0, 10).map((s, i) => (
+                    <div key={s.userName} className={styles.scoreRow}>
+                      <span className={styles.scoreRank}>{i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span>
+                      <span className={styles.scoreName}>{s.userName}</span>
+                      <span className={styles.scoreBreakdown}>
+                        {s.mainScore}/{game.questions.length} · {s.bonusScore}/{game.questions.length}
+                      </span>
+                      <span className={styles.scoreTotal}>{s.total}</span>
+                    </div>
+                  ))}
+                  <ScoreDistribution
+                    scores={scores.map((s) => s.mainScore)}
+                    maxScore={game.questions.length}
+                    playerScore={cachedScore?.mainScore ?? -1}
+                    title="Higher or Lower"
+                  />
+                  <ScoreDistribution
+                    scores={scores.map((s) => s.bonusScore)}
+                    maxScore={game.questions.length}
+                    playerScore={cachedScore?.bonusScore ?? -1}
+                    title="Top Queuer"
+                  />
+                </>
+              )}
             </div>
-          )}
+          </div>
         </div>
         {calendarOpen && calendarDates.length > 0 && (
           <div className={styles.calendarOverlay} onClick={() => setCalendarOpen(false)}>
@@ -325,6 +375,21 @@ export function QueuedlePanel() {
   async function handleSubmit() {
     if (!game || !displayName) return;
     const bonusGuesses = bonusSelections.map((s) => s ?? '');
+
+    const correctMain = mainGuesses.reduce((acc, g, i) => acc + (g === game.questions[i].winner ? 1 : 0), 0);
+    const correctBonus = bonusGuesses.reduce((acc, g, i) => {
+      const q = game.questions[i];
+      const bonusSide = q.bonusItem ?? q.winner;
+      const bonusTargetItem = bonusSide === 'left' ? q.left : q.right;
+      return acc + (g === bonusTargetItem.topQueuer ? 1 : 0);
+    }, 0);
+
+    if (devReplay) {
+      setLocalScore({ main: correctMain, bonus: correctBonus });
+      setPhase('bonus-results');
+      return;
+    }
+
     const result = await submit.mutateAsync({
       gameId: game.id,
       userName: displayName,
@@ -336,20 +401,13 @@ export function QueuedlePanel() {
     } else if (result.existing) {
       scored = { main: result.existing.mainScore, bonus: result.existing.bonusScore };
     } else {
-      const correctMain = mainGuesses.reduce((acc, g, i) => acc + (g === game.questions[i].winner ? 1 : 0), 0);
-      const correctBonus = bonusGuesses.reduce((acc, g, i) => {
-        const q = game.questions[i];
-        const bonusSide = q.bonusItem ?? q.winner;
-        const bonusTargetItem = bonusSide === 'left' ? q.left : q.right;
-        return acc + (g === bonusTargetItem.topQueuer ? 1 : 0);
-      }, 0);
       scored = { main: correctMain, bonus: correctBonus };
     }
     setLocalScore(scored);
     try {
       localStorage.setItem(
         `queuedle-played:${game.id}`,
-        JSON.stringify({ mainScore: scored.main, bonusScore: scored.bonus })
+        JSON.stringify({ mainScore: scored.main, bonusScore: scored.bonus, guesses: mainGuesses })
       );
     } catch {
       // ignore quota / disabled storage
@@ -424,6 +482,9 @@ export function QueuedlePanel() {
             bonusScore={localScore.bonus}
             maxMain={game.questions.length}
             maxBonus={game.questions.length}
+            questions={game.questions}
+            mainGuesses={mainGuesses}
+            stats={gameStats.data}
           />
         )}
       </div>

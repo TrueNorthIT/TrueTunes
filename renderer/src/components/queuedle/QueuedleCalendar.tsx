@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import styles from '../styles/Queuedle.module.css';
+import styles from '../../styles/Queuedle.module.css';
 
 interface Props {
   dates: GameDateEntry[];
@@ -139,8 +139,8 @@ export function QueuedleCalendar({ dates, selectedDate, todayId, onSelectDate }:
               key={i}
               type="button"
               className={cls}
-              disabled={!playable}
-              onClick={() => { if (playable && c.gameId) onSelectDate(c.gameId); }}
+              disabled={!playable && !played}
+              onClick={() => { if ((playable || played) && c.gameId) onSelectDate(c.gameId); }}
               aria-label={`${c.gameId}${played ? ' (played)' : playable ? ' (play)' : ' (not available)'}`}
             >
               {c.day}
