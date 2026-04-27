@@ -1,11 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStats, StatsPeriod } from '../hooks/useStats';
-import { useGameLeaderboard } from '../hooks/useDailyGame';
 import { useImage } from '../hooks/useImage';
 import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
 import styles from '../styles/LeaderboardPanel.module.css';
-import queuedleStyles from '../styles/Queuedle.module.css';
 
 function CachedArt({ url, className }: { url: string | undefined; className: string }) {
   const cached = useImage(url ?? null);
@@ -39,17 +37,6 @@ export function LeaderboardPanel() {
   const { data, isLoading, error, refetch } = useStats(period, selectedUser ?? undefined);
   const navigate = useNavigate();
   const { resolveAndOpen } = useResolveAndOpen();
-  const queuedleLeaderboard = useGameLeaderboard();
-  const [myName, setMyName] = useState<string | null>(null);
-  useEffect(() => {
-    window.sonos.getDisplayName().then(setMyName).catch(() => {});
-  }, []);
-  const queuedleScores =
-    queuedleLeaderboard.data && 'scores' in queuedleLeaderboard.data
-      ? queuedleLeaderboard.data.scores
-      : [];
-  const hasPlayedToday = !!(myName && queuedleScores.some((s) => s.userName === myName));
-  const [queuedleOpen, setQueuedleOpen] = useState(true);
 
   const maxUserCount = data?.topUsers?.[0]?.count ?? 1;
 
@@ -85,44 +72,6 @@ export function LeaderboardPanel() {
 
       {data && !data.error && !isLoading && (
         <div className={styles.body}>
-          {!selectedUser && !hasPlayedToday && (
-            <div className={queuedleStyles.banner}>
-              <span className={queuedleStyles.bannerText}>
-                Today&apos;s Queuedle is ready — test how well you know the office&apos;s taste.
-              </span>
-              <button className={queuedleStyles.bannerCta} onClick={() => navigate('/queuedle')}>
-                Play
-              </button>
-            </div>
-          )}
-
-          {!selectedUser && queuedleScores.length > 0 && (
-            <section className={styles.section}>
-              <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>Today&apos;s Queuedle</h2>
-                <button
-                  className={styles.collapseBtn}
-                  onClick={() => setQueuedleOpen((o) => !o)}
-                  title={queuedleOpen ? 'Collapse' : 'Expand'}
-                >
-                  {queuedleOpen ? '▾' : '▸'}
-                </button>
-              </div>
-              {queuedleOpen && queuedleScores.slice(0, 10).map((s, i) => (
-                <div key={s.userName} className={queuedleStyles.scoreRow}>
-                  <span className={queuedleStyles.scoreRank}>
-                    {i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}
-                  </span>
-                  <span className={queuedleStyles.scoreName}>{s.userName}</span>
-                  <span className={queuedleStyles.scoreBreakdown}>
-                    {s.mainScore}/10 · {s.bonusScore}/10
-                  </span>
-                  <span className={queuedleStyles.scoreTotal}>{s.total}</span>
-                </div>
-              ))}
-            </section>
-          )}
-
           {/* ── Top queuers (leaderboard view only) ── */}
           {!selectedUser && (
             <section className={styles.section}>
@@ -185,7 +134,10 @@ export function LeaderboardPanel() {
                                   state: {
                                     item: {
                                       type: 'ARTIST',
-                                      resource: { type: 'ARTIST', id: { objectId: t.artistId, serviceId: t.serviceId, accountId: t.accountId } },
+                                      resource: {
+                                        type: 'ARTIST',
+                                        id: { objectId: t.artistId, serviceId: t.serviceId, accountId: t.accountId },
+                                      },
                                     },
                                   },
                                 });
@@ -203,7 +155,12 @@ export function LeaderboardPanel() {
                               e.stopPropagation();
                               if (t.albumId && t.serviceId && t.accountId)
                                 navigate(`/album/${encodeURIComponent(t.albumId)}`, {
-                                  state: { item: { type: 'ALBUM', id: { objectId: t.albumId, serviceId: t.serviceId, accountId: t.accountId } } },
+                                  state: {
+                                    item: {
+                                      type: 'ALBUM',
+                                      id: { objectId: t.albumId, serviceId: t.serviceId, accountId: t.accountId },
+                                    },
+                                  },
                                 });
                               else resolveAndOpen(t.album!, 'album', { artist: t.artist });
                             }}
@@ -228,9 +185,11 @@ export function LeaderboardPanel() {
                 data.topArtists.map((a, i) => (
                   <div key={i} className={styles.artistRow}>
                     <span className={styles.rankNum}>{i + 1}</span>
-                    {a.imageUrl
-                      ? <CachedArt url={a.imageUrl} className={styles.artistArt} />
-                      : <div className={styles.artistArtPh} />}
+                    {a.imageUrl ? (
+                      <CachedArt url={a.imageUrl} className={styles.artistArt} />
+                    ) : (
+                      <div className={styles.artistArtPh} />
+                    )}
                     <button
                       className={styles.artistLink}
                       onClick={(e) => {
@@ -238,7 +197,13 @@ export function LeaderboardPanel() {
                         if (a.artistId && a.serviceId && a.accountId)
                           navigate(`/artist/${encodeURIComponent(a.artistId)}`, {
                             state: {
-                              item: { type: 'ARTIST', resource: { type: 'ARTIST', id: { objectId: a.artistId, serviceId: a.serviceId, accountId: a.accountId } } },
+                              item: {
+                                type: 'ARTIST',
+                                resource: {
+                                  type: 'ARTIST',
+                                  id: { objectId: a.artistId, serviceId: a.serviceId, accountId: a.accountId },
+                                },
+                              },
                             },
                           });
                         else resolveAndOpen(a.artist, 'artist');
@@ -266,10 +231,14 @@ export function LeaderboardPanel() {
                     onClick={() => {
                       if (a.albumId && a.serviceId && a.accountId)
                         navigate(`/album/${encodeURIComponent(a.albumId)}`, {
-                          state: { item: { type: 'ALBUM', id: { objectId: a.albumId, serviceId: a.serviceId, accountId: a.accountId } } },
+                          state: {
+                            item: {
+                              type: 'ALBUM',
+                              id: { objectId: a.albumId, serviceId: a.serviceId, accountId: a.accountId },
+                            },
+                          },
                         });
-                      else if (a.album)
-                        resolveAndOpen(a.album, 'album', { artist: a.artist });
+                      else if (a.album) resolveAndOpen(a.album, 'album', { artist: a.artist });
                     }}
                   >
                     {a.imageUrl ? (
@@ -290,7 +259,10 @@ export function LeaderboardPanel() {
                                   state: {
                                     item: {
                                       type: 'ARTIST',
-                                      resource: { type: 'ARTIST', id: { objectId: a.artistId, serviceId: a.serviceId, accountId: a.accountId } },
+                                      resource: {
+                                        type: 'ARTIST',
+                                        id: { objectId: a.artistId, serviceId: a.serviceId, accountId: a.accountId },
+                                      },
                                     },
                                   },
                                 });
