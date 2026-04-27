@@ -8,6 +8,8 @@ interface QueueEvent {
   uri: string;
   trackName: string;
   artist: string;
+  serviceId?: string;
+  accountId?: string;
   artistId?: string;
   album?: string;
   albumId?: string;
@@ -52,6 +54,8 @@ export async function logEventHandler(
       uri: body.uri,
       trackName: body.trackName,
       artist: body.artist,
+      serviceId: body.serviceId ?? null,
+      accountId: body.accountId ?? null,
       artistId: body.artistId ?? null,
       album: body.album ?? null,
       albumId: body.albumId ?? null,

@@ -20,6 +20,8 @@ export interface AttributionEvent {
   uri: string;
   trackName: string;
   artist: string;
+  serviceId?: string;
+  accountId?: string;
   artistId?: string;
   album?: string;
   albumId?: string;
