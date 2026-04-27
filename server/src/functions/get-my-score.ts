@@ -34,10 +34,19 @@ export async function getMyScoreHandler(
     }
     return {
       status: 200,
-      jsonBody: { score: resource },
+      jsonBody: {
+        score: {
+          mainScore: resource.mainScore,
+          bonusScore: resource.bonusScore,
+          guesses: resource.guesses,
+        },
+      },
       headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
+    if (typeof err === 'object' && err !== null && 'code' in err && err.code === 404) {
+      return { status: 404, jsonBody: { error: 'Score not found' }, headers: { 'Access-Control-Allow-Origin': '*' } };
+    }
     context.error('[get-my-score] failed:', err);
     return { status: 500, jsonBody: { error: String(err) } };
   }

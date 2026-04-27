@@ -23,7 +23,7 @@ function ReviewRow({ question: q, guess, qStat }: ReviewRowProps) {
   return (
     <div className={styles.reviewItem}>
       <div className={styles.reviewRow} style={{ background: bg }}>
-        {leftArt ? <img src={leftArt} className={styles.reviewArt} /> : <div className={styles.reviewArt} />}
+        {leftArt ? <img src={leftArt} className={styles.reviewArt} alt={q.left.name} /> : <div className={styles.reviewArt} />}
         <span className={`${styles.reviewSide} ${q.winner === 'left' ? styles.reviewSidePicked : ''}`}>
           <span className={styles.reviewName}>{q.left.name}</span>
           <span className={styles.reviewCount}>{q.left.count.toLocaleString()}</span>
@@ -39,7 +39,7 @@ function ReviewRow({ question: q, guess, qStat }: ReviewRowProps) {
           <span className={styles.reviewName}>{q.right.name}</span>
           <span className={styles.reviewCount}>{q.right.count.toLocaleString()}</span>
         </span>
-        {rightArt ? <img src={rightArt} className={styles.reviewArt} /> : <div className={styles.reviewArt} />}
+        {rightArt ? <img src={rightArt} className={styles.reviewArt} alt={q.right.name} /> : <div className={styles.reviewArt} />}
       </div>
       {qStat && (
         <div className={styles.reviewMeta}>
@@ -103,11 +103,11 @@ export function QueuedleSummary({
         </>
       )}
 
-      {questions && mainGuesses && questions.length > 0 && (
+      {questions && mainGuesses && questions.length > 0 && mainGuesses.length >= questions.length && (
         <div className={styles.reviewList}>
           <h2 className={styles.leaderboardTitle}>Question Breakdown</h2>
           {questions.map((q, i) => (
-            <ReviewRow key={i} question={q} guess={mainGuesses[i]} qStat={stats?.questions[i]} />
+            <ReviewRow key={i} question={q} guess={mainGuesses[i]} qStat={stats?.questions?.[i]} />
           ))}
         </div>
       )}

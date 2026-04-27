@@ -9,10 +9,12 @@ interface Props {
 
 export function ScoreDistribution({ scores, maxScore, playerScore, title }: Props) {
   const total = scores.length;
-  const buckets = Array.from({ length: maxScore + 1 }, (_, i) => {
-    const count = scores.filter((s) => s === i).length;
-    return { score: i, pct: total > 0 ? (count / total) * 100 : 0 };
-  });
+  const counts = Array.from({ length: maxScore + 1 }, () => 0);
+  scores.forEach((s) => { if (s >= 0 && s <= maxScore) counts[s]++; });
+  const buckets = counts.map((count, score) => ({
+    score,
+    pct: total > 0 ? (count / total) * 100 : 0,
+  }));
 
   return (
     <div>

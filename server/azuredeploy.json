@@ -135,7 +135,8 @@
       "properties": {
         "resource": {
           "id": "events",
-          "partitionKey": { "paths": ["/userId"], "kind": "Hash" }
+          "partitionKey": { "paths": ["/userId"], "kind": "Hash" },
+          "defaultTtl": 7776000
         }
       }
     },
