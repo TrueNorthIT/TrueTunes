@@ -29,10 +29,13 @@ describe('QueuedleCalendar', () => {
     expect(onSelect).toHaveBeenCalledWith('2025-03-12');
   });
 
-  it('disables already-played dates', () => {
-    render(<QueuedleCalendar dates={dates} selectedDate={null} todayId="2025-03-15" onSelectDate={() => {}} />);
+  it('allows clicking already-played dates to view the summary', () => {
+    const onSelect = vi.fn();
+    render(<QueuedleCalendar dates={dates} selectedDate={null} todayId="2025-03-15" onSelectDate={onSelect} />);
     const played = screen.getByLabelText(/2025-03-10 \(played\)/);
-    expect(played).toBeDisabled();
+    expect(played).not.toBeDisabled();
+    fireEvent.click(played);
+    expect(onSelect).toHaveBeenCalledWith('2025-03-10');
   });
 
   it('disables dates without a game entry and dates in the future', () => {

@@ -10,11 +10,15 @@ const mockUseDailyGame = vi.fn();
 const mockUseSubmitGameScore = vi.fn();
 const mockUseGameLeaderboard = vi.fn();
 const mockUseGameDates = vi.fn();
-vi.mock('../../hooks/useDailyGame', () => ({
+const mockUseMyScore = vi.fn();
+const mockUseGameStats = vi.fn();
+vi.mock('@/hooks/useDailyGame', () => ({
   useDailyGame: (date?: string) => mockUseDailyGame(date),
   useSubmitGameScore: () => mockUseSubmitGameScore(),
   useGameLeaderboard: (date?: string) => mockUseGameLeaderboard(date),
   useGameDates: (userName?: string | null) => mockUseGameDates(userName),
+  useMyScore: (gameId: string | null, userName: string | null | undefined) => mockUseMyScore(gameId, userName),
+  useGameStats: (gameId: string | null) => mockUseGameStats(gameId),
 }));
 
 vi.mock('../QueuedleIntro', () => ({
@@ -145,6 +149,8 @@ beforeEach(() => {
   mockUseSubmitGameScore.mockReturnValue({ mutateAsync: vi.fn(), isPending: false });
   mockUseGameLeaderboard.mockReturnValue({ data: { scores: [] }, isLoading: false });
   mockUseGameDates.mockReturnValue({ data: { dates: [] }, isLoading: false });
+  mockUseMyScore.mockReturnValue({ data: undefined, isLoading: false });
+  mockUseGameStats.mockReturnValue({ data: undefined, isLoading: false });
 });
 
 describe('QueuedlePanel', () => {
@@ -338,7 +344,9 @@ describe('QueuedlePanel', () => {
     await user.click(screen.getByText('Next'));
     await user.click(screen.getByText('Submit Bonus'));
     await waitFor(() => screen.getByText('Bonus results'));
-    expect(localStorage.getItem('queuedle-played:2024-01-01')).toBe(JSON.stringify({ mainScore: 1, bonusScore: 0 }));
+    expect(localStorage.getItem('queuedle-played:2024-01-01')).toBe(
+      JSON.stringify({ mainScore: 1, bonusScore: 0, guesses: ['left'] })
+    );
   });
 
   // ── already-played ────────────────────────────────────────────────────────
