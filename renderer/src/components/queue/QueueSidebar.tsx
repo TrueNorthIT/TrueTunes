@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState, Fragment } from 'react';
+import { useEffect, useMemo, useRef, useState, Fragment } from 'react';
 import { Loader2 } from 'lucide-react';
 import { applyReorderLocally } from '../../lib/queueHelpers';
 import { getActiveProvider } from '../../providers';
 import { useAttribution } from '../../hooks/useAttribution';
 import { DraggableQueueRow } from './DraggableQueueRow';
+import { RestoreQueueButton } from './RestoreQueueButton';
+import type { RestoreSummary } from '../../hooks/useRestoreQueue';
 import type { NormalizedQueueItem } from '../../types/provider';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/QueueSidebar.module.css';
@@ -20,11 +22,18 @@ interface Props {
   onRefresh: () => void;
   onError: (msg: string) => void;
   onAddToQueue: (item: SonosItem, position: number) => void;
+  onRestore: (tracks: RecentQueuedTrack[]) => Promise<RestoreSummary>;
+  onRestoreResult: (msg: string) => void;
 }
 
 export function QueueSidebar(
-  { open, items, setItems, isLoading, error, currentObjectId, currentQueueItemId, onClose, onRefresh, onError, onAddToQueue }: Props
+  { open, items, setItems, isLoading, error, currentObjectId, currentQueueItemId, onClose, onRefresh, onError, onAddToQueue, onRestore, onRestoreResult }: Props
 ) {
+  const currentObjectIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const it of items) if (it.track.id) set.add(it.track.id);
+    return set;
+  }, [items]);
   const contentRef = useRef<HTMLDivElement>(null);
   const attributionMap = useAttribution(onRefresh);
   const [selected, setSelected]           = useState<Set<number>>(new Set());
@@ -179,6 +188,11 @@ export function QueueSidebar(
           <div className={styles.headerActions}>
             <button className={styles.iconBtn} onClick={onRefresh} title="Refresh">↺</button>
             <button className={styles.iconBtn} onClick={scrollToNowPlaying} title="Jump to now playing">⊙</button>
+            <RestoreQueueButton
+              currentObjectIds={currentObjectIds}
+              onRestore={onRestore}
+              onResult={onRestoreResult}
+            />
             {items.length > 0 && (
               <button className={styles.iconBtn} title="Clear queue" onClick={() => setPendingClear(true)}>⊘</button>
             )}
