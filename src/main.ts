@@ -1203,6 +1203,17 @@ ipcMain.handle('stats:fetch', async (_: IpcMainInvokeEvent, period: string, user
   }
 });
 
+ipcMain.handle('queue:fetchRecent', async (_: IpcMainInvokeEvent, sinceMs: number, limit?: number) => {
+  try {
+    let url = `${PUBSUB_FUNCTION_URL}/api/recent-queued?sinceMs=${encodeURIComponent(String(sinceMs))}`;
+    if (typeof limit === 'number' && limit > 0) url += `&limit=${encodeURIComponent(String(limit))}`;
+    const res = await fetch(url);
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
 ipcMain.handle('game:fetch', async (_: IpcMainInvokeEvent, date?: string) => {
   try {
     const d = date && date.length ? date : 'today';
