@@ -79,6 +79,23 @@ interface StatsResult {
   error?: string;
 }
 
+interface RecentQueuedTrack {
+  uri: string;
+  serviceId: string;
+  accountId: string;
+  trackName: string;
+  artist: string;
+  album?: string;
+  imageUrl?: string;
+  timestamp: number;
+  queuedBy: string;
+}
+
+interface RecentQueuedResult {
+  tracks?: RecentQueuedTrack[];
+  error?: string;
+}
+
 type GameItemCategory = 'track' | 'artist' | 'album';
 
 interface GameItem {
@@ -202,6 +219,7 @@ interface SonosPreload {
     imageUrl?: string;
   }) => Promise<void>;
   fetchStats: (period: string, userId?: string) => Promise<StatsResult>;
+  fetchRecentQueued: (sinceMs: number, limit?: number) => Promise<RecentQueuedResult>;
   fetchDailyGame: (date?: string) => Promise<GameFetchResult>;
   submitGameScore: (input: {
     gameId: string;
