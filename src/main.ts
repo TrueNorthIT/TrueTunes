@@ -327,61 +327,97 @@ async function sonosFetch(request: FetchRequest): Promise<FetchResponse> {
     ...request.headers,
   };
 
-  const reqId = randomUUID();
-  const startTs = Date.now();
+  // Retry transient failures (5xx, network errors) for idempotent methods only.
+  // Non-idempotent methods (POST/PUT/PATCH/DELETE) are never retried — they can
+  // have side effects, and queue mutations use If-Match etags that don't survive
+  // a blind replay.
+  const isIdempotent = operation.method === 'GET';
+  const TRANSIENT_STATUSES = new Set([500, 502, 503, 504]);
+  const RETRY_DELAYS_MS = [250, 750];
 
-  httpDebugWin?.webContents.send('http:req', {
-    id: reqId,
-    ts: startTs,
-    operationId: request.operationId,
-    method: operation.method,
-    url,
-    headers: reqHeaders,
-    body: request.body !== undefined ? JSON.stringify(request.body) : undefined,
-  });
-
-  log(`[api] ${operation.method} ${url}`);
-
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      method: operation.method,
-      headers: reqHeaders,
-      ...(request.body !== undefined ? { body: JSON.stringify(request.body) } : {}),
-    });
-  } catch (err) {
-    const errorMsg = `Fetch failed: ${err instanceof Error ? err.message : String(err)}`;
-    httpDebugWin?.webContents.send('http:res', {
-      id: reqId,
-      status: 0,
-      statusText: 'Network Error',
-      headers: {},
-      body: errorMsg,
-      durationMs: Date.now() - startTs,
-    });
-    return { error: errorMsg };
-  }
-
-  // Read as text once — used for both debug window and response parsing
-  const resHeaders: Record<string, string> = {};
-  response.headers.forEach((val: string, key: string) => {
-    resHeaders[key] = val;
-  });
+  let response!: Response;
   let bodyText = '';
-  try {
-    bodyText = await response.text();
-  } catch {
-    /* ignore */
-  }
+  let resHeaders: Record<string, string> = {};
 
-  httpDebugWin?.webContents.send('http:res', {
-    id: reqId,
-    status: response.status,
-    statusText: response.statusText,
-    headers: resHeaders,
-    body: bodyText,
-    durationMs: Date.now() - startTs,
-  });
+  for (let attempt = 0; ; attempt++) {
+    const reqId = randomUUID();
+    const startTs = Date.now();
+
+    httpDebugWin?.webContents.send('http:req', {
+      id: reqId,
+      ts: startTs,
+      operationId: request.operationId,
+      method: operation.method,
+      url,
+      headers: reqHeaders,
+      body: request.body !== undefined ? JSON.stringify(request.body) : undefined,
+    });
+
+    log(`[api] ${operation.method} ${url}${attempt > 0 ? ` (retry ${attempt})` : ''}`);
+
+    let networkError: string | null = null;
+    let attemptResponse: Response | null = null;
+    let attemptBodyText = '';
+    const attemptHeaders: Record<string, string> = {};
+
+    try {
+      attemptResponse = await fetch(url, {
+        method: operation.method,
+        headers: reqHeaders,
+        ...(request.body !== undefined ? { body: JSON.stringify(request.body) } : {}),
+      });
+    } catch (err) {
+      networkError = `Fetch failed: ${err instanceof Error ? err.message : String(err)}`;
+      httpDebugWin?.webContents.send('http:res', {
+        id: reqId,
+        status: 0,
+        statusText: 'Network Error',
+        headers: {},
+        body: networkError,
+        durationMs: Date.now() - startTs,
+      });
+    }
+
+    if (attemptResponse) {
+      attemptResponse.headers.forEach((val: string, key: string) => {
+        attemptHeaders[key] = val;
+      });
+      try {
+        attemptBodyText = await attemptResponse.text();
+      } catch {
+        /* ignore */
+      }
+      httpDebugWin?.webContents.send('http:res', {
+        id: reqId,
+        status: attemptResponse.status,
+        statusText: attemptResponse.statusText,
+        headers: attemptHeaders,
+        body: attemptBodyText,
+        durationMs: Date.now() - startTs,
+      });
+    }
+
+    const isTransient =
+      networkError !== null ||
+      (attemptResponse !== null && TRANSIENT_STATUSES.has(attemptResponse.status));
+
+    if (isTransient && isIdempotent && attempt < RETRY_DELAYS_MS.length) {
+      telemetry.event('api_retry', {
+        operationId: request.operationId,
+        attempt: attempt + 1,
+        statusCode: attemptResponse ? attemptResponse.status : 0,
+      });
+      await new Promise<void>((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+      continue;
+    }
+
+    if (networkError) return { error: networkError };
+
+    response = attemptResponse!;
+    bodyText = attemptBodyText;
+    resHeaders = attemptHeaders;
+    break;
+  }
 
   if (response.status === 401) {
     log('[api] 401 — auth expired, re-showing auth window');
