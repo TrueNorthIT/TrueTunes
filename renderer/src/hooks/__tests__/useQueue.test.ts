@@ -164,3 +164,37 @@ describe('useQueue — reload', () => {
     expect(onEtag).not.toHaveBeenCalled();
   });
 });
+
+// ─── reload error handling ────────────────────────────────────────────────────
+
+describe('useQueue — reload error handling', () => {
+  it('keeps existing items visible and routes the error to onReloadError when a background reload fails', async () => {
+    mockFetch
+      .mockResolvedValueOnce(queueResponse([{ name: 'Old Song' }], 'etag-v1'))
+      .mockResolvedValueOnce({ data: null, error: '500 Internal Server Error' });
+    const onReloadError = vi.fn();
+    const { result } = renderHook(() =>
+      useQueue(true, 'g1', 'q1', undefined, onReloadError),
+    );
+    await waitFor(() => expect(result.current.items[0]?.track.title).toBe('Old Song'));
+
+    await act(async () => {
+      await result.current.reload();
+    });
+
+    expect(result.current.error).toBeNull();
+    expect(result.current.items[0]?.track.title).toBe('Old Song');
+    expect(onReloadError).toHaveBeenCalledWith('500 Internal Server Error');
+  });
+
+  it('still surfaces the error in state when the very first load fails (no items yet)', async () => {
+    mockFetch.mockResolvedValueOnce({ data: null, error: '500 Internal Server Error' });
+    const onReloadError = vi.fn();
+    const { result } = renderHook(() =>
+      useQueue(true, 'g1', 'q1', undefined, onReloadError),
+    );
+    await waitFor(() => expect(result.current.error).toBe('500 Internal Server Error'));
+    expect(result.current.items).toHaveLength(0);
+    expect(onReloadError).not.toHaveBeenCalled();
+  });
+});

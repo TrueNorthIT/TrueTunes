@@ -45,6 +45,7 @@ export interface SonosAPI {
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;
   refreshAttribution: () => Promise<void>;
   fetchStats: (period: string, userId?: string) => Promise<unknown>;
+  fetchRecentQueued: (sinceMs: number, limit?: number) => Promise<unknown>;
   fetchDailyGame: (date?: string) => Promise<unknown>;
   submitGameScore: (input: {
     gameId: string;
@@ -156,6 +157,8 @@ contextBridge.exposeInMainWorld('sonos', {
   },
   refreshAttribution: () => ipcRenderer.invoke('attribution:refresh'),
   fetchStats: (period: string, userId?: string) => ipcRenderer.invoke('stats:fetch', period, userId),
+  fetchRecentQueued: (sinceMs: number, limit?: number) =>
+    ipcRenderer.invoke('queue:fetchRecent', sinceMs, limit),
   fetchDailyGame: (date?: string) => ipcRenderer.invoke('game:fetch', date),
   submitGameScore: (input) => ipcRenderer.invoke('game:submit', input),
   fetchGameLeaderboard: (date?: string) => ipcRenderer.invoke('game:leaderboard', date),

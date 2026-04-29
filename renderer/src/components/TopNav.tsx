@@ -278,16 +278,6 @@ export function TopNav({
                     </button>
                     <div className={styles.versionRow}>
                       {appVersion && <div className={styles.appVersion}>v{appVersion}</div>}
-                      {updateVersion && (
-                        <button
-                          className={styles.updateBtn}
-                          onClick={() => window.sonos.installUpdate()}
-                          title={`v${updateVersion} ready — click to restart and install`}
-                        >
-                          <DownloadCloud size={12} />
-                          <span>Update</span>
-                        </button>
-                      )}
                     </div>
                   </div>
                 )}
@@ -325,6 +315,16 @@ export function TopNav({
 
       {/* Window controls — fixed top-right, independent of the centered navRoot */}
       <div className={styles.windowPill}>
+        {updateVersion && (
+          <button
+            className={styles.titleBarUpdateBtn}
+            onClick={() => window.sonos.installUpdate()}
+            title={`v${updateVersion} ready — click to restart and install`}
+          >
+            <DownloadCloud size={13} />
+            <span>Update</span>
+          </button>
+        )}
         <button className={styles.winBtn} onClick={() => window.sonos.minimizeWindow()} title="Minimise">
           <Minus size={13} />
         </button>

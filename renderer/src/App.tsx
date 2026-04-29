@@ -6,6 +6,8 @@ import { useAuth } from './hooks/useAuth';
 import { useGroups } from './hooks/useGroups';
 import { usePlayback } from './hooks/usePlayback';
 import { useQueue } from './hooks/useQueue';
+import { useRestoreQueueAction } from './hooks/useRestoreQueue';
+import type { RestoreSummary } from './hooks/useRestoreQueue';
 import { trackQueryOptions } from './hooks/useTrackDetails';
 import { albumQueryOptions, type AlbumTrack } from './hooks/useAlbumBrowse';
 import { playlistQueryOptions } from './hooks/usePlaylistBrowse';
@@ -48,20 +50,23 @@ import styles from './styles/App.module.css';
 // ── Main app ──────────────────────────────────────────────────────────────────
 
 function MainApp() {
-  const queryClient = useQueryClient();
-  const isAuthed = useAuth();
-  const groups = useGroups();
-  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  const queryClient                               = useQueryClient();
+  const isAuthed                                  = useAuth();
+  const groups                                    = useGroups();
+  const [activeGroupId, setActiveGroupId]         = useState<string | null>(null);
+  const [toastMsg, setToastMsg]                   = useState<string | null>(null);
+  const toastTimer                                = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showToast = useCallback((msg: string) => {
+    setToastMsg(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastMsg(null), 4000);
+  }, []);
   const { playback, applyGroupCache, queueIdRef, queueVersionRef } = usePlayback(activeGroupId);
-  const {
-    items: queueItems,
-    setItems: setQueueItems,
-    isLoading: queueLoading,
-    error: queueError,
-    reload: reloadQueueRaw,
-  } = useQueue(isAuthed, activeGroupId, playback.queueId, (etag) => {
-    queueVersionRef.current = etag;
-  });
+  const { items: queueItems, setItems: setQueueItems, isLoading: queueLoading, error: queueError, reload: reloadQueueRaw }
+                                                  = useQueue(isAuthed, activeGroupId, playback.queueId,
+                                                      (etag) => { queueVersionRef.current = etag; },
+                                                      (msg) => showToast(`Queue refresh failed: ${msg}`));
+  const { restore: runRestore } = useRestoreQueueAction();
 
   const reloadQueue = useCallback(() => {
     reloadQueueRaw();
@@ -77,11 +82,9 @@ function MainApp() {
     reloadQueue();
   }, [playback.queueVersion, reloadQueue]);
 
-  const [queueOpen, setQueueOpen] = useState(false);
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [changelogOpen, setChangelogOpen] = useState(false);
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [queueOpen, setQueueOpen]       = useState(false);
+  const [feedbackOpen, setFeedbackOpen]     = useState(false);
+  const [changelogOpen, setChangelogOpen]   = useState(false);
   const [displayName, setDisplayName] = useState<string | null | undefined>(undefined); // undefined = not yet loaded
 
   useEffect(() => {
@@ -126,22 +129,13 @@ function MainApp() {
     return () => window.removeEventListener('focus', onFocus);
   }, []);
 
-  const showToast = useCallback((msg: string) => {
-    setToastMsg(msg);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToastMsg(null), 4000);
-  }, []);
-
-  const handleGroupChange = useCallback(
-    (groupId: string) => {
-      setActiveGroupId(groupId);
-      getActiveProvider().setGroup(groupId);
-      applyGroupCache(groupId);
-      window.sonos.refreshAttribution().catch(() => {});
-      window.sonos.trackEvent('group_changed').catch(() => {});
-    },
-    [applyGroupCache]
-  );
+  const handleGroupChange = useCallback((groupId: string) => {
+    setActiveGroupId(groupId);
+    getActiveProvider().setGroup(groupId);
+    applyGroupCache(groupId);
+    window.sonos.refreshAttribution().catch(() => {});
+    window.sonos.trackEvent('group_changed').catch(() => {});
+  }, [applyGroupCache]);
 
   const publishTrackAttribution = useCallback(
     (trackId: string, serviceId: string, accountId: string, fallback: { trackName: string; imageUrl?: string }) => {
@@ -374,6 +368,26 @@ function MainApp() {
     ]
   );
 
+    if (!isSingleTrack || retried) {
+      reloadQueue();
+      setTimeout(reloadQueue, 1500);
+    }
+  }, [queryClient, setQueueItems, reloadQueue, reloadQueueRaw, queueIdRef, queueVersionRef, showToast, publishTrackAttribution, fanOutTrackAttribution]);
+
+  const handleRestore = useCallback(async (tracks: RecentQueuedTrack[]): Promise<RestoreSummary> => {
+    const summary = await runRestore(tracks, {
+      queueId: queueIdRef.current ?? undefined,
+      initialEtag: queueVersionRef.current ?? undefined,
+      onEtagChange: (etag) => { queueVersionRef.current = etag; },
+      reloadEtag: async () => {
+        await reloadQueueRaw();
+        return queueVersionRef.current ?? undefined;
+      },
+    });
+    reloadQueue();
+    return summary;
+  }, [runRestore, queueIdRef, queueVersionRef, reloadQueue, reloadQueueRaw]);
+
   useEffect(() => {
     function onKey(e: globalThis.KeyboardEvent) {
       if (e.ctrlKey && e.shiftKey && e.key === 'H') window.sonos.openHttpMonitor();
@@ -478,6 +492,8 @@ function MainApp() {
         onRefresh={reloadQueue}
         onError={showToast}
         onAddToQueue={handleAddToQueue}
+        onRestore={handleRestore}
+        onRestoreResult={showToast}
       />
       <PlayerBar
         isAuthed={isAuthed}

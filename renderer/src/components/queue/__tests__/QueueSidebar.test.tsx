@@ -73,6 +73,8 @@ const defaultProps = {
   onRefresh: vi.fn(),
   onError: vi.fn(),
   onAddToQueue: vi.fn(),
+  onRestore: vi.fn().mockResolvedValue({ added: 0, failed: 0 }),
+  onRestoreResult: vi.fn(),
 };
 
 function setup(props = {}) {
