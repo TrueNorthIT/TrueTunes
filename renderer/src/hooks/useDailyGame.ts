@@ -40,6 +40,25 @@ export function useGameDates(userName: string | null | undefined) {
   });
 }
 
+export function useGameStats(gameId: string | null) {
+  return useQuery<GameStatsResult>({
+    queryKey: ['queuedle-stats', gameId ?? 'today'],
+    queryFn: () => window.sonos.fetchGameStats(gameId ?? undefined),
+    enabled: !!gameId,
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+  });
+}
+
+export function useMyScore(gameId: string | null, userName: string | null | undefined) {
+  return useQuery<GameMyScoreResult>({
+    queryKey: ['queuedle-my-score', gameId ?? '', userName ?? ''],
+    queryFn: () => window.sonos.fetchMyScore(gameId!, userName!),
+    enabled: !!gameId && !!userName,
+    staleTime: Infinity,
+  });
+}
+
 export function useSubmitGameScore() {
   const qc = useQueryClient();
   return useMutation<

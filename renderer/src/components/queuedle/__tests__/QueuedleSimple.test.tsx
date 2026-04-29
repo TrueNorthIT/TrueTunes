@@ -12,8 +12,26 @@ beforeEach(() => {
 });
 
 const items: GameItem[] = [
-  { id: '1', name: 'Come Together', category: 'track', subtitle: 'Abbey Road', imageUrl: undefined, topQueuer: 'alice', count: 5, queuerCandidates: [] },
-  { id: '2', name: 'The Beatles', category: 'artist', subtitle: '', imageUrl: 'http://img.com/art.jpg', topQueuer: 'bob', count: 3, queuerCandidates: [] },
+  {
+    id: '1',
+    name: 'Come Together',
+    category: 'track',
+    subtitle: 'Abbey Road',
+    imageUrl: undefined,
+    topQueuer: 'alice',
+    count: 5,
+    queuerCandidates: [],
+  },
+  {
+    id: '2',
+    name: 'The Beatles',
+    category: 'artist',
+    subtitle: '',
+    imageUrl: 'http://img.com/art.jpg',
+    topQueuer: 'bob',
+    count: 3,
+    queuerCandidates: [],
+  },
 ];
 
 describe('QueuedleBonusResults', () => {
@@ -67,12 +85,5 @@ describe('QueuedleSummary', () => {
   it('shows already submitted message when alreadySubmitted is true', () => {
     render(<QueuedleSummary mainScore={3} bonusScore={2} maxMain={5} maxBonus={3} alreadySubmitted />);
     expect(screen.getByText(/already played today/)).toBeInTheDocument();
-  });
-
-  it('navigates to /leaderboard when See leaderboard is clicked', async () => {
-    const user = userEvent.setup();
-    render(<QueuedleSummary mainScore={3} bonusScore={2} maxMain={5} maxBonus={3} />);
-    await user.click(screen.getByText('See leaderboard'));
-    expect(mockNavigate).toHaveBeenCalledWith('/leaderboard');
   });
 });

@@ -10,11 +10,15 @@ const mockUseDailyGame = vi.fn();
 const mockUseSubmitGameScore = vi.fn();
 const mockUseGameLeaderboard = vi.fn();
 const mockUseGameDates = vi.fn();
-vi.mock('../../hooks/useDailyGame', () => ({
+const mockUseMyScore = vi.fn();
+const mockUseGameStats = vi.fn();
+vi.mock('@/hooks/useDailyGame', () => ({
   useDailyGame: (date?: string) => mockUseDailyGame(date),
   useSubmitGameScore: () => mockUseSubmitGameScore(),
   useGameLeaderboard: (date?: string) => mockUseGameLeaderboard(date),
   useGameDates: (userName?: string | null) => mockUseGameDates(userName),
+  useMyScore: (gameId: string | null, userName: string | null | undefined) => mockUseMyScore(gameId, userName),
+  useGameStats: (gameId: string | null) => mockUseGameStats(gameId),
 }));
 
 vi.mock('../QueuedleIntro', () => ({
@@ -40,7 +44,9 @@ vi.mock('../QueuedleQuestionCard', () => ({
     onNext: () => void;
   }) => (
     <div>
-      <div>Question: {question.left.name} vs {question.right.name}</div>
+      <div>
+        Question: {question.left.name} vs {question.right.name}
+      </div>
       {revealed && <div>revealed-{pickedSide}</div>}
       <button onClick={() => onPick('left')}>Pick Left</button>
       <button onClick={onNext}>Next</button>
@@ -48,13 +54,7 @@ vi.mock('../QueuedleQuestionCard', () => ({
   ),
 }));
 vi.mock('../QueuedleBonusScreen', () => ({
-  QueuedleBonusScreen: ({
-    onSubmit,
-    submitting,
-  }: {
-    onSubmit: () => void;
-    submitting: boolean;
-  }) => (
+  QueuedleBonusScreen: ({ onSubmit, submitting }: { onSubmit: () => void; submitting: boolean }) => (
     <div>
       {submitting ? 'Bonus screen (submitting)' : 'Bonus screen'}
       <button onClick={onSubmit}>Submit Bonus</button>
@@ -75,7 +75,11 @@ vi.mock('../QueuedleSummary', () => ({
   ),
 }));
 vi.mock('../QueuedleCalendar', () => ({
-  QueuedleCalendar: ({ dates, selectedDate, onSelectDate }: {
+  QueuedleCalendar: ({
+    dates,
+    selectedDate,
+    onSelectDate,
+  }: {
     dates: GameDateEntry[];
     selectedDate: string | null;
     onSelectDate: (id: string) => void;
@@ -83,12 +87,9 @@ vi.mock('../QueuedleCalendar', () => ({
     <div>
       <div>Calendar (selected: {selectedDate ?? 'none'})</div>
       {dates.map((d) => (
-        <button
-          key={d.gameId}
-          onClick={() => onSelectDate(d.gameId)}
-          disabled={d.userPlayed}
-        >
-          cal-{d.gameId}{d.userPlayed ? '-played' : ''}
+        <button key={d.gameId} onClick={() => onSelectDate(d.gameId)} disabled={d.userPlayed}>
+          cal-{d.gameId}
+          {d.userPlayed ? '-played' : ''}
         </button>
       ))}
     </div>
@@ -97,8 +98,26 @@ vi.mock('../QueuedleCalendar', () => ({
 
 const baseQuestion: GameQuestion = {
   index: 0,
-  left:  { id: 'l1', name: 'Song A', category: 'track', subtitle: '', imageUrl: undefined, count: 10, topQueuer: 'alice', queuerCandidates: [] },
-  right: { id: 'r1', name: 'Song B', category: 'track', subtitle: '', imageUrl: undefined, count: 8,  topQueuer: 'bob',   queuerCandidates: [] },
+  left: {
+    id: 'l1',
+    name: 'Song A',
+    category: 'track',
+    subtitle: '',
+    imageUrl: undefined,
+    count: 10,
+    topQueuer: 'alice',
+    queuerCandidates: [],
+  },
+  right: {
+    id: 'r1',
+    name: 'Song B',
+    category: 'track',
+    subtitle: '',
+    imageUrl: undefined,
+    count: 8,
+    topQueuer: 'bob',
+    queuerCandidates: [],
+  },
   winner: 'left',
   bonusItem: 'left',
 };
@@ -112,7 +131,9 @@ const baseGame: GameDoc = {
 };
 
 function flushPromises() {
-  return act(async () => { await Promise.resolve(); });
+  return act(async () => {
+    await Promise.resolve();
+  });
 }
 
 async function startGame(user: ReturnType<typeof userEvent.setup>) {
@@ -128,6 +149,8 @@ beforeEach(() => {
   mockUseSubmitGameScore.mockReturnValue({ mutateAsync: vi.fn(), isPending: false });
   mockUseGameLeaderboard.mockReturnValue({ data: { scores: [] }, isLoading: false });
   mockUseGameDates.mockReturnValue({ data: { dates: [] }, isLoading: false });
+  mockUseMyScore.mockReturnValue({ data: undefined, isLoading: false });
+  mockUseGameStats.mockReturnValue({ data: undefined, isLoading: false });
 });
 
 describe('QueuedlePanel', () => {
@@ -191,14 +214,6 @@ describe('QueuedlePanel', () => {
     expect(screen.getByText('2024-01-01')).toBeInTheDocument();
   });
 
-  it('navigates to /leaderboard when the header button is clicked', async () => {
-    const user = userEvent.setup();
-    render(<QueuedlePanel />);
-    await flushPromises();
-    await user.click(screen.getByText('Leaderboard →'));
-    expect(mockNavigate).toHaveBeenCalledWith('/leaderboard');
-  });
-
   it('picking an answer reveals the result', async () => {
     const user = userEvent.setup();
     render(<QueuedlePanel />);
@@ -220,10 +235,14 @@ describe('QueuedlePanel', () => {
     const q2: GameQuestion = {
       ...baseQuestion,
       index: 1,
-      left:  { ...baseQuestion.left,  name: 'Song C' },
+      left: { ...baseQuestion.left, name: 'Song C' },
       right: { ...baseQuestion.right, name: 'Song D' },
     };
-    mockUseDailyGame.mockReturnValue({ data: { ...baseGame, questions: [baseQuestion, q2] }, isLoading: false, error: null });
+    mockUseDailyGame.mockReturnValue({
+      data: { ...baseGame, questions: [baseQuestion, q2] },
+      isLoading: false,
+      error: null,
+    });
     const user = userEvent.setup();
     render(<QueuedlePanel />);
     await startGame(user);
@@ -326,7 +345,7 @@ describe('QueuedlePanel', () => {
     await user.click(screen.getByText('Submit Bonus'));
     await waitFor(() => screen.getByText('Bonus results'));
     expect(localStorage.getItem('queuedle-played:2024-01-01')).toBe(
-      JSON.stringify({ mainScore: 1, bonusScore: 0 }),
+      JSON.stringify({ mainScore: 1, bonusScore: 0, guesses: ['left'] })
     );
   });
 
@@ -335,12 +354,14 @@ describe('QueuedlePanel', () => {
   it('shows already-played summary when user has a leaderboard entry', async () => {
     mockUseGameLeaderboard.mockReturnValue({
       data: {
-        scores: [{
-          userName: 'TestUser',
-          mainScore: 3,
-          bonusScore: 2,
-          total: 5,
-        }],
+        scores: [
+          {
+            userName: 'TestUser',
+            mainScore: 3,
+            bonusScore: 2,
+            total: 5,
+          },
+        ],
       },
       isLoading: false,
     });
@@ -377,10 +398,12 @@ describe('QueuedlePanel', () => {
   it('exposes the calendar behind a header button on the already-played view', async () => {
     localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
     mockUseGameDates.mockReturnValue({
-      data: { dates: [
-        { gameId: '2024-01-01', status: 'ready', userPlayed: true },
-        { gameId: '2023-12-31', status: 'ready', userPlayed: false },
-      ]},
+      data: {
+        dates: [
+          { gameId: '2024-01-01', status: 'ready', userPlayed: true },
+          { gameId: '2023-12-31', status: 'ready', userPlayed: false },
+        ],
+      },
       isLoading: false,
     });
     const user = userEvent.setup();
@@ -456,9 +479,7 @@ describe('QueuedlePanel', () => {
     render(<QueuedlePanel />);
     await waitFor(() => expect(screen.getByText('Score: 5')).toBeInTheDocument());
     await waitFor(() =>
-      expect(localStorage.getItem('queuedle-played:2024-01-01')).toBe(
-        JSON.stringify({ mainScore: 3, bonusScore: 2 }),
-      ),
+      expect(localStorage.getItem('queuedle-played:2024-01-01')).toBe(JSON.stringify({ mainScore: 3, bonusScore: 2 }))
     );
   });
 });
