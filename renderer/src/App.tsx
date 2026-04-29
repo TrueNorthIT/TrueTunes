@@ -368,12 +368,6 @@ function MainApp() {
     ]
   );
 
-    if (!isSingleTrack || retried) {
-      reloadQueue();
-      setTimeout(reloadQueue, 1500);
-    }
-  }, [queryClient, setQueueItems, reloadQueue, reloadQueueRaw, queueIdRef, queueVersionRef, showToast, publishTrackAttribution, fanOutTrackAttribution]);
-
   const handleRestore = useCallback(async (tracks: RecentQueuedTrack[]): Promise<RestoreSummary> => {
     const summary = await runRestore(tracks, {
       queueId: queueIdRef.current ?? undefined,
