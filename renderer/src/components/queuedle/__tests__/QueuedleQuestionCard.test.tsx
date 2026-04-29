@@ -34,7 +34,7 @@ describe('QueuedleQuestionCard', () => {
         pickedSide={null}
         onPick={() => {}}
         onNext={() => {}}
-      />,
+      />
     );
     expect(screen.getByRole('button', { name: 'Pick song' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Pick artist' })).toBeInTheDocument();
@@ -43,13 +43,7 @@ describe('QueuedleQuestionCard', () => {
   it('calls onPick with the clicked side', () => {
     const onPick = vi.fn();
     render(
-      <QueuedleQuestionCard
-        question={question}
-        revealed={false}
-        pickedSide={null}
-        onPick={onPick}
-        onNext={() => {}}
-      />,
+      <QueuedleQuestionCard question={question} revealed={false} pickedSide={null} onPick={onPick} onNext={() => {}} />
     );
     fireEvent.click(screen.getByRole('button', { name: 'Pick song' }));
     expect(onPick).toHaveBeenCalledWith('left');
@@ -58,13 +52,7 @@ describe('QueuedleQuestionCard', () => {
   it('shows counts and a Next button when revealed', () => {
     const onNext = vi.fn();
     render(
-      <QueuedleQuestionCard
-        question={question}
-        revealed={true}
-        pickedSide="left"
-        onPick={() => {}}
-        onNext={onNext}
-      />,
+      <QueuedleQuestionCard question={question} revealed={true} pickedSide="left" onPick={() => {}} onNext={onNext} />
     );
     expect(screen.getByText('20')).toBeInTheDocument();
     expect(screen.getByText('12')).toBeInTheDocument();
@@ -75,13 +63,7 @@ describe('QueuedleQuestionCard', () => {
 
   it('hides Pick buttons when revealed', () => {
     render(
-      <QueuedleQuestionCard
-        question={question}
-        revealed={true}
-        pickedSide="left"
-        onPick={() => {}}
-        onNext={() => {}}
-      />,
+      <QueuedleQuestionCard question={question} revealed={true} pickedSide="left" onPick={() => {}} onNext={() => {}} />
     );
     expect(screen.queryAllByRole('button', { name: 'Pick song' })).toHaveLength(0);
   });
@@ -95,7 +77,7 @@ describe('QueuedleQuestionCard', () => {
         pickedSide={null}
         onPick={() => {}}
         onNext={() => {}}
-      />,
+      />
     );
     // Carry-over side reveals its count up front but is still pickable
     expect(screen.getByText('20')).toBeInTheDocument();

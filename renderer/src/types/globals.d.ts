@@ -171,6 +171,30 @@ interface GameSubmitResult {
   error?: string;
 }
 
+interface GameMyScoreResult {
+  score?: {
+    mainScore: number;
+    bonusScore: number;
+    total: number;
+    guesses?: { main: Array<'left' | 'right'>; bonus: string[] };
+  };
+  error?: string;
+}
+
+interface GameQuestionStat {
+  questionIndex: number;
+  leftPct: number;
+  rightPct: number;
+  bonusOptions: { name: string; pct: number }[];
+}
+
+interface GameStatsResult {
+  gameId?: string;
+  totalPlayers: number;
+  questions: GameQuestionStat[];
+  error?: string;
+}
+
 interface SonosPreload {
   getVersion: () => Promise<string>;
   isNewVersion: () => Promise<boolean>;
@@ -201,6 +225,7 @@ interface SonosPreload {
   clearQueue: () => Promise<unknown>;
   openWsMonitor: () => Promise<void>;
   openHttpMonitor: () => Promise<void>;
+  openDevTools: () => Promise<void>;
   openMiniPlayer: () => Promise<void>;
   closeMiniPlayer: () => Promise<void>;
   // Attribution / office presence
@@ -228,6 +253,8 @@ interface SonosPreload {
   }) => Promise<GameSubmitResult>;
   fetchGameLeaderboard: (date?: string) => Promise<GameLeaderboardResult>;
   fetchGameDates: (userName: string) => Promise<GameDatesResult>;
+  fetchMyScore: (gameId: string, userName: string) => Promise<GameMyScoreResult>;
+  fetchGameStats: (date?: string) => Promise<GameStatsResult>;
   refreshAttribution: () => Promise<void>;
   onAttributionMap: (cb: (map: AttributionMap) => void) => Unsubscribe;
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;

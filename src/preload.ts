@@ -22,6 +22,7 @@ export interface SonosAPI {
   setGroupVolume: (volume: number) => Promise<unknown>;
   openWsMonitor: () => Promise<void>;
   openHttpMonitor: () => Promise<void>;
+  openDevTools: () => Promise<void>;
   openMiniPlayer: () => Promise<void>;
   closeMiniPlayer: () => Promise<void>;
   refreshPlayback: () => Promise<void>;
@@ -53,6 +54,8 @@ export interface SonosAPI {
   }) => Promise<unknown>;
   fetchGameLeaderboard: (date?: string) => Promise<unknown>;
   fetchGameDates: (userName: string) => Promise<unknown>;
+  fetchMyScore: (gameId: string, userName: string) => Promise<unknown>;
+  fetchGameStats: (date?: string) => Promise<unknown>;
   trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
   minimizeWindow:    () => Promise<void>;
   maximizeWindow:    () => Promise<void>;
@@ -126,6 +129,7 @@ contextBridge.exposeInMainWorld('sonos', {
   setGroupVolume: (volume: number) => ipcRenderer.invoke('volume:group:set', volume),
   openWsMonitor: () => ipcRenderer.invoke('debug:openWsMonitor'),
   openHttpMonitor: () => ipcRenderer.invoke('debug:openHttpMonitor'),
+  openDevTools: () => ipcRenderer.invoke('debug:openDevTools'),
   openMiniPlayer: () => ipcRenderer.invoke('mini:open'),
   closeMiniPlayer: () => ipcRenderer.invoke('mini:close'),
   refreshPlayback: () => ipcRenderer.invoke('playback:refresh'),
@@ -159,6 +163,8 @@ contextBridge.exposeInMainWorld('sonos', {
   submitGameScore: (input) => ipcRenderer.invoke('game:submit', input),
   fetchGameLeaderboard: (date?: string) => ipcRenderer.invoke('game:leaderboard', date),
   fetchGameDates: (userName: string) => ipcRenderer.invoke('game:dates', userName),
+  fetchMyScore: (gameId: string, userName: string) => ipcRenderer.invoke('game:my-score', gameId, userName),
+  fetchGameStats: (date?: string) => ipcRenderer.invoke('game:stats', date),
   onAttributionEvent: (cb: (event: AttributionEvent) => void): Unsubscribe => {
     const listener = (_e: unknown, event: AttributionEvent) => cb(event);
     ipcRenderer.on('attribution:event', listener);

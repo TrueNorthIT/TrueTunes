@@ -1179,6 +1179,7 @@ ipcMain.handle('playback:pause', (_event: IpcMainInvokeEvent) => {
 
 ipcMain.handle('debug:openWsMonitor', () => openDebugWindow());
 ipcMain.handle('debug:openHttpMonitor', () => openHttpDebugWindow());
+ipcMain.handle('debug:openDevTools', () => { if (!app.isPackaged) uiWin?.webContents.openDevTools(); });
 
 ipcMain.handle('app:version', () => app.getVersion());
 ipcMain.handle('app:isNewVersion', () => isNewVersion);
@@ -1304,6 +1305,27 @@ ipcMain.handle('game:leaderboard', async (_: IpcMainInvokeEvent, date?: string) 
 ipcMain.handle('game:dates', async (_: IpcMainInvokeEvent, userName: string) => {
   try {
     const url = `${PUBSUB_FUNCTION_URL}/api/game-dates?userName=${encodeURIComponent(userName ?? '')}`;
+    const res = await fetch(url);
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle('game:my-score', async (_: IpcMainInvokeEvent, gameId: string, userName: string) => {
+  try {
+    const url = `${PUBSUB_FUNCTION_URL}/api/my-score?gameId=${encodeURIComponent(gameId)}&userName=${encodeURIComponent(userName)}`;
+    const res = await fetch(url);
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle('game:stats', async (_: IpcMainInvokeEvent, date?: string) => {
+  try {
+    const d = date && date.length ? date : 'today';
+    const url = `${PUBSUB_FUNCTION_URL}/api/game-stats?date=${encodeURIComponent(d)}`;
     const res = await fetch(url);
     return await res.json();
   } catch (err) {
