@@ -7,6 +7,11 @@ import type { PlaybackState } from '../../hooks/usePlayback';
 
 // ─── module mocks ────────────────────────────────────────────────────────────
 
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => vi.fn(),
+  useLocation: () => ({ pathname: '/' }),
+}));
+
 vi.mock('../../hooks/useNowPlaying', () => ({
   useNowPlaying: vi.fn(),
 }));
