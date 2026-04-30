@@ -39,6 +39,8 @@ import { MiniPlayerShell } from './components/MiniPlayer';
 import { DisplayNameModal } from './components/DisplayNameModal';
 import { FeedbackDialog } from './components/FeedbackDialog';
 import { ChangelogDialog } from './components/ChangelogDialog';
+import { LyricsPanel } from './components/LyricsPanel';
+import { usePrefetchNextLyrics } from './hooks/usePrefetchNextLyrics';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Splash } from './components/Splash';
 import { getName } from './lib/itemHelpers';
@@ -67,6 +69,7 @@ function MainApp() {
                                                       (etag) => { queueVersionRef.current = etag; },
                                                       (msg) => showToast(`Queue refresh failed: ${msg}`));
   const { restore: runRestore } = useRestoreQueueAction();
+  usePrefetchNextLyrics(queueItems, playback.queueItemId);
 
   const reloadQueue = useCallback(() => {
     reloadQueueRaw();
@@ -472,6 +475,7 @@ function MainApp() {
           <Route path="/container/:id" element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/leaderboard" element={<LeaderboardPanel />} />
           <Route path="/queuedle" element={<QueuedlePanel />} />
+          <Route path="/lyrics" element={<LyricsPanel playback={playback} />} />
         </Routes>
       </div>
       <QueueSidebar

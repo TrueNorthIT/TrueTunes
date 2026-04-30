@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { getActiveProvider } from "../providers";
 import { useNowPlaying } from "../hooks/useNowPlaying";
 import { useOpenItem } from "../hooks/useOpenItem";
@@ -18,6 +19,7 @@ import {
   List,
   Music,
   PictureInPicture2,
+  Mic,
 } from "lucide-react";
 import type { PlaybackState } from "../hooks/usePlayback";
 import styles from "../styles/PlayerBar.module.css";
@@ -139,12 +141,10 @@ function VolumeButton({ volume }: { volume: number }) {
   );
 }
 
-export function PlayerBar({
-  isAuthed,
-  playback,
-  onToggleQueue,
-  onShuffle,
-}: Props) {
+export function PlayerBar({ isAuthed, playback, onToggleQueue, onShuffle }: Props) {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const lyricsActive = pathname === '/lyrics';
   const openItem = useOpenItem();
   const {
     displayTrack, displayArtist, cachedArt, dominantColor,
@@ -294,9 +294,16 @@ export function PlayerBar({
           </button>
         </div>
 
-        {/* Right — volume + queue + mini player */}
+        {/* Right — volume + lyrics + queue + mini player */}
         <div className={styles.right}>
           <VolumeButton volume={volume} />
+          <button
+            className={`${styles.ctrl}${lyricsActive ? " " + styles.active : ""}`}
+            onClick={() => lyricsActive ? navigate(-1) : navigate('/lyrics')}
+            title="Lyrics"
+          >
+            <Mic size={14} />
+          </button>
           <button className={styles.ctrl} onClick={onToggleQueue} title="Queue">
             <List size={14} />
           </button>

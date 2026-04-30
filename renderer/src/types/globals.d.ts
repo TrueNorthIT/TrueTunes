@@ -1,5 +1,7 @@
 // Ambient declarations for contextBridge APIs injected by preload.ts
 
+type GeniusDomNode = string | { tag: string; children?: GeniusDomNode[]; attributes?: Record<string, string> };
+
 interface AttributionEntry {
   user: string;
   timestamp: number;
@@ -258,6 +260,7 @@ interface SonosPreload {
   refreshAttribution: () => Promise<void>;
   onAttributionMap: (cb: (map: AttributionMap) => void) => Unsubscribe;
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;
+  geniusDescription: (trackName: string, artistName: string) => Promise<GeniusDomNode | null>;
   /** Fire-and-forget telemetry event routed through the main process. No-op when App Insights is not configured. */
   trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
   minimizeWindow:    () => Promise<void>;

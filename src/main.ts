@@ -1,3 +1,6 @@
+import { config as loadEnv } from 'dotenv';
+loadEnv(); // loads .env from cwd (repo root) in dev; no-op if file absent
+
 import { app, BrowserWindow, ipcMain, safeStorage, session, shell, Menu, IpcMainInvokeEvent } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { officePubSub } from './pubsub';
@@ -1630,6 +1633,47 @@ ipcMain.handle('group:set', (_event: IpcMainInvokeEvent, groupId: string) => {
     wsSend({ namespace: 'groupVolume', groupId: group.id, command: 'subscribe' }, {}).catch(() => {});
   }
   return { ok: true };
+});
+
+// ─── Genius API ───────────────────────────────────────────────────────────────
+
+ipcMain.handle('genius:description', async (_: IpcMainInvokeEvent, trackName: string, artistName: string) => {
+  const key = process.env.GENIUS_ACCESS_TOKEN;
+  if (!key) {
+    log('[genius] GENIUS_ACCESS_TOKEN not set — skipping');
+    return null;
+  }
+
+  const debugReq = (id: string, url: string, ts: number) =>
+    httpDebugWin?.webContents.send('http:req', { id, ts, operationId: 'genius', method: 'GET', url, headers: { Authorization: 'Bearer ***' } });
+  const debugRes = (id: string, status: number, body: string, ts: number) =>
+    httpDebugWin?.webContents.send('http:res', { id, status, statusText: String(status), headers: {}, body, durationMs: Date.now() - ts });
+
+  try {
+    const searchUrl = `https://api.genius.com/search?q=${encodeURIComponent(`${trackName} ${artistName}`)}`;
+    const searchId = randomUUID(); const searchTs = Date.now();
+    debugReq(searchId, searchUrl, searchTs);
+    const searchRes = await fetch(searchUrl, { headers: { Authorization: `Bearer ${key}` } });
+    const searchBody = await searchRes.text();
+    debugRes(searchId, searchRes.status, searchBody, searchTs);
+    if (!searchRes.ok) return null;
+    const searchData = JSON.parse(searchBody) as { response: { hits: { result: { id: number } }[] } };
+    const songId = searchData.response?.hits?.[0]?.result?.id;
+    if (!songId) return null;
+
+    const songUrl = `https://api.genius.com/songs/${songId}`;
+    const songId2 = randomUUID(); const songTs = Date.now();
+    debugReq(songId2, songUrl, songTs);
+    const songRes = await fetch(songUrl, { headers: { Authorization: `Bearer ${key}` } });
+    const songBody = await songRes.text();
+    debugRes(songId2, songRes.status, songBody, songTs);
+    if (!songRes.ok) return null;
+    const songData = JSON.parse(songBody) as { response: { song: { description: { dom: unknown } } } };
+    return songData.response?.song?.description?.dom ?? null;
+  } catch (err) {
+    log(`[genius] error: ${err}`);
+    return null;
+  }
 });
 
 // ─── Application menu ────────────────────────────────────────────────────────
