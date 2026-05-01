@@ -1,12 +1,10 @@
-import { useEffect, useImperativeHandle, useMemo, useRef, useState, Fragment, forwardRef } from 'react';
+import { useEffect, useImperativeHandle, useRef, useState, Fragment, forwardRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { applyReorderLocally } from '../../lib/queueHelpers';
 import { getActiveProvider } from '../../providers';
 import { useAttribution } from '../../hooks/useAttribution';
 import { DraggableQueueRow } from './DraggableQueueRow';
-import { RestoreQueueButton } from './RestoreQueueButton';
 import { WindowControls } from '../WindowControls';
-import type { RestoreSummary } from '../../hooks/useRestoreQueue';
 import type { NormalizedQueueItem } from '../../types/provider';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/QueueSidebar.module.css';
@@ -20,12 +18,11 @@ interface Props {
   error: string | null;
   currentObjectId: string | null;
   currentQueueItemId: string | null;
+  groupName: string | null;
   onClose: () => void;
   onRefresh: () => void;
   onError: (msg: string) => void;
   onAddToQueue: (item: SonosItem, position: number) => void;
-  onRestore: (tracks: RecentQueuedTrack[]) => Promise<RestoreSummary>;
-  onRestoreResult: (msg: string) => void;
   dockedWidth?: number;
   onResizeWidth?: (width: number) => void;
 }
@@ -48,12 +45,11 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     error,
     currentObjectId,
     currentQueueItemId,
+    groupName,
     onClose,
     onRefresh,
     onError,
     onAddToQueue,
-    onRestore,
-    onRestoreResult,
     dockedWidth,
     onResizeWidth,
   },
@@ -62,11 +58,6 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   const isDocked = mode === 'docked';
   const isActive = isDocked || open;
 
-  const currentObjectIds = useMemo(() => {
-    const set = new Set<string>();
-    for (const it of items) if (it.track.id) set.add(it.track.id);
-    return set;
-  }, [items]);
   const contentRef = useRef<HTMLDivElement>(null);
   const attributionMap = useAttribution(onRefresh);
   const [selected, setSelected]           = useState<Set<number>>(new Set());
@@ -96,6 +87,20 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     const id = setTimeout(scrollToNowPlaying, 50);
     return () => clearTimeout(id);
   }, [isActive]);
+
+  // Track change while queue is open
+  useEffect(() => {
+    if (!open) return;
+    const id = setTimeout(scrollToNowPlaying, 50);
+    return () => clearTimeout(id);
+  }, [currentQueueItemId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Group switch — queue reloads async so use a longer delay
+  useEffect(() => {
+    if (!open) return;
+    const id = setTimeout(scrollToNowPlaying, 400);
+    return () => clearTimeout(id);
+  }, [groupName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!isActive) return;
@@ -256,7 +261,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
       )}
       <div className={styles.header}>
         <span className={styles.title}>
-          Queue{items.length > 0 ? ` · ${items.length}` : ''}
+          Queue{groupName ? ` · ${groupName}` : ''}{items.length > 0 ? ` · ${items.length}` : ''}
           {selCount > 0 && <span className={styles.selBadge}>{selCount} selected</span>}
         </span>
         {pendingClear ? (
@@ -273,11 +278,6 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
           <div className={styles.headerActions}>
             <button className={styles.iconBtn} onClick={onRefresh} title="Refresh">↺</button>
             <button className={styles.iconBtn} onClick={scrollToNowPlaying} title="Jump to now playing">⊙</button>
-            <RestoreQueueButton
-              currentObjectIds={currentObjectIds}
-              onRestore={onRestore}
-              onResult={onRestoreResult}
-            />
             {items.length > 0 && (
               <button className={styles.iconBtn} title="Clear queue" onClick={() => setPendingClear(true)}>⊘</button>
             )}

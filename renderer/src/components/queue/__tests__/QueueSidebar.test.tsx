@@ -70,12 +70,11 @@ const defaultProps = {
   error: null,
   currentObjectId: null,
   currentQueueItemId: null,
+  groupName: 'Living Room',
   onClose: vi.fn(),
   onRefresh: vi.fn(),
   onError: vi.fn(),
   onAddToQueue: vi.fn(),
-  onRestore: vi.fn().mockResolvedValue({ added: 0, failed: 0 }),
-  onRestoreResult: vi.fn(),
 };
 
 function setup(props = {}) {
@@ -97,7 +96,7 @@ beforeEach(() => {
 describe('QueueSidebar — rendering', () => {
   it('renders item count in header', () => {
     setup();
-    expect(screen.getByText(/Queue · 3/)).toBeInTheDocument();
+    expect(screen.getByText(/Queue · Living Room · 3/)).toBeInTheDocument();
   });
 
   it('shows empty message when no items', () => {
