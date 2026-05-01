@@ -233,6 +233,10 @@ interface SonosPreload {
   // Attribution / office presence
   getDisplayName: () => Promise<string | null>;
   setDisplayName: (name: string) => Promise<void>;
+  getQueueMode: () => Promise<'floating' | 'docked'>;
+  setQueueMode: (mode: 'floating' | 'docked') => Promise<void>;
+  getQueueDockedWidth: () => Promise<number>;
+  setQueueDockedWidth: (width: number) => Promise<void>;
   publishQueued: (item: {
     eventType: 'track' | 'album';
     uri: string;

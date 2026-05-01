@@ -40,6 +40,10 @@ export interface SonosAPI {
   // Attribution / office presence
   getDisplayName: () => Promise<string | null>;
   setDisplayName: (name: string) => Promise<void>;
+  getQueueMode: () => Promise<'floating' | 'docked'>;
+  setQueueMode: (mode: 'floating' | 'docked') => Promise<void>;
+  getQueueDockedWidth: () => Promise<number>;
+  setQueueDockedWidth: (width: number) => Promise<void>;
   publishQueued: (item: { eventType: 'track' | 'album'; uri: string; trackName: string; artist: string; serviceId?: string; accountId?: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }) => Promise<void>;
   onAttributionMap: (cb: (map: AttributionMap) => void) => Unsubscribe;
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;
@@ -149,6 +153,10 @@ contextBridge.exposeInMainWorld('sonos', {
   // Attribution / office presence
   getDisplayName: () => ipcRenderer.invoke('config:getDisplayName'),
   setDisplayName: (name) => ipcRenderer.invoke('config:setDisplayName', name),
+  getQueueMode: () => ipcRenderer.invoke('config:getQueueMode'),
+  setQueueMode: (mode: 'floating' | 'docked') => ipcRenderer.invoke('config:setQueueMode', mode),
+  getQueueDockedWidth: () => ipcRenderer.invoke('config:getQueueDockedWidth'),
+  setQueueDockedWidth: (width: number) => ipcRenderer.invoke('config:setQueueDockedWidth', width),
   publishQueued: (item) => ipcRenderer.invoke('pubsub:publishQueued', item),
   onAttributionMap: (cb: (map: AttributionMap) => void): Unsubscribe => {
     if (_attributionMap !== null) cb(_attributionMap);
