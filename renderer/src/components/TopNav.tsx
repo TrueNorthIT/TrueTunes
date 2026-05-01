@@ -10,17 +10,14 @@ import {
   User,
   List,
   RefreshCw,
-  Minus,
-  Maximize2,
-  Minimize2,
   Gamepad2,
-  DownloadCloud,
   Lightbulb,
   Group,
   SquareMousePointer,
 } from 'lucide-react';
 import type { NormalizedGroup } from '../types/provider';
 import styles from '../styles/TopNav.module.css';
+import { WindowControls } from './WindowControls';
 
 interface Props {
   isAuthed: boolean;
@@ -55,7 +52,6 @@ export function TopNav({
   const [nameValue, setNameValue] = useState('');
   const [groupOpen, setGroupOpen] = useState(false);
   const [appVersion, setAppVersion] = useState<string | null>(null);
-  const [updateVersion, setUpdateVersion] = useState<string | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const groupRef = useRef<HTMLDivElement>(null);
 
@@ -64,23 +60,12 @@ export function TopNav({
   const canGoBack = histIdx > 0;
   const canGoForward = histIdx < window.history.length - 1;
 
-  const [isMaximized, setIsMaximized] = useState(false);
-  useEffect(() => {
-    window.sonos
-      .isWindowMaximized()
-      .then(setIsMaximized)
-      .catch(() => {});
-    return window.sonos.onWindowMaximized(setIsMaximized);
-  }, []);
-
   useEffect(() => {
     window.sonos
       .getVersion()
       .then(setAppVersion)
       .catch(() => {});
   }, []);
-
-  useEffect(() => window.sonos.onUpdateDownloaded(setUpdateVersion), []);
 
   useEffect(() => {
     if (nameOpen) setNameValue(displayName ?? '');
