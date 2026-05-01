@@ -1,14 +1,16 @@
-import { useEffect, useRef, useState, Fragment } from 'react';
+import { useEffect, useImperativeHandle, useRef, useState, Fragment, forwardRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { applyReorderLocally } from '../../lib/queueHelpers';
 import { getActiveProvider } from '../../providers';
 import { useAttribution } from '../../hooks/useAttribution';
 import { DraggableQueueRow } from './DraggableQueueRow';
+import { WindowControls } from '../WindowControls';
 import type { NormalizedQueueItem } from '../../types/provider';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/QueueSidebar.module.css';
 
 interface Props {
+  mode: 'floating' | 'docked';
   open: boolean;
   items: NormalizedQueueItem[];
   setItems: (updater: NormalizedQueueItem[] | ((prev: NormalizedQueueItem[]) => NormalizedQueueItem[])) => void;
@@ -21,11 +23,41 @@ interface Props {
   onRefresh: () => void;
   onError: (msg: string) => void;
   onAddToQueue: (item: SonosItem, position: number) => void;
+  dockedWidth?: number;
+  onResizeWidth?: (width: number) => void;
 }
 
-export function QueueSidebar(
-  { open, items, setItems, isLoading, error, currentObjectId, currentQueueItemId, groupName, onClose, onRefresh, onError, onAddToQueue }: Props
+export interface QueueSidebarHandle {
+  scrollToNowPlaying: () => void;
+}
+
+const MIN_DOCKED_WIDTH = 280;
+const MAX_DOCKED_WIDTH = 700;
+const MIN_ROUTES_WIDTH = 320;
+
+export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function QueueSidebar(
+  {
+    mode,
+    open,
+    items,
+    setItems,
+    isLoading,
+    error,
+    currentObjectId,
+    currentQueueItemId,
+    groupName,
+    onClose,
+    onRefresh,
+    onError,
+    onAddToQueue,
+    dockedWidth,
+    onResizeWidth,
+  },
+  ref
 ) {
+  const isDocked = mode === 'docked';
+  const isActive = isDocked || open;
+
   const contentRef = useRef<HTMLDivElement>(null);
   const attributionMap = useAttribution(onRefresh);
   const [selected, setSelected]           = useState<Set<number>>(new Set());
@@ -34,18 +66,27 @@ export function QueueSidebar(
   const lastSelected = useRef<number | null>(null);
   const draggingSet  = useRef<Set<number>>(new Set());
 
+  const [liveWidth, setLiveWidth] = useState<number>(dockedWidth ?? 380);
+  useEffect(() => {
+    if (typeof dockedWidth === 'number') setLiveWidth(dockedWidth);
+  }, [dockedWidth]);
+  const liveWidthRef = useRef(liveWidth);
+  useEffect(() => { liveWidthRef.current = liveWidth; }, [liveWidth]);
+
   function scrollToNowPlaying() {
     contentRef.current?.querySelector<HTMLElement>('[data-playing="true"]')
       ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }
 
+  useImperativeHandle(ref, () => ({ scrollToNowPlaying }), []);
+
   useEffect(() => { setSelected(new Set()); }, [open, items]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!isActive) return;
     const id = setTimeout(scrollToNowPlaying, 50);
     return () => clearTimeout(id);
-  }, [open]);
+  }, [isActive]);
 
   // Track change while queue is open
   useEffect(() => {
@@ -62,7 +103,7 @@ export function QueueSidebar(
   }, [groupName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!open) return;
+    if (!isActive) return;
     async function onKeyDown(e: KeyboardEvent) {
       if (e.key !== 'Delete' && e.key !== 'Backspace') return;
       if (selected.size === 0) return;
@@ -74,7 +115,34 @@ export function QueueSidebar(
     }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [open, selected, setItems, onRefresh, onError]);
+  }, [isActive, selected, setItems, onRefresh, onError]);
+
+  function handleResizePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (!isDocked) return;
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = liveWidthRef.current;
+    const handle = e.currentTarget;
+    handle.setPointerCapture(e.pointerId);
+    document.documentElement.classList.add('resizingQueue');
+
+    const max = () => Math.min(MAX_DOCKED_WIDTH, window.innerWidth - MIN_ROUTES_WIDTH);
+
+    const onMove = (ev: PointerEvent) => {
+      const next = Math.max(MIN_DOCKED_WIDTH, Math.min(max(), startWidth + (startX - ev.clientX)));
+      setLiveWidth(next);
+    };
+    const onUp = () => {
+      document.documentElement.classList.remove('resizingQueue');
+      handle.removeEventListener('pointermove', onMove);
+      handle.removeEventListener('pointerup', onUp);
+      handle.removeEventListener('pointercancel', onUp);
+      onResizeWidth?.(liveWidthRef.current);
+    };
+    handle.addEventListener('pointermove', onMove);
+    handle.addEventListener('pointerup', onUp);
+    handle.addEventListener('pointercancel', onUp);
+  }
 
   function handleRowClick(index: number, e: React.MouseEvent) {
     e.stopPropagation();
@@ -172,12 +240,28 @@ export function QueueSidebar(
   }
 
   const selCount = selected.size;
+  const sidebarClass = `${styles.sidebar}${isDocked ? ' ' + styles.docked : ''}${!isDocked && open ? ' ' + styles.open : ''}`;
+  const sidebarStyle = isDocked ? { width: liveWidth } : undefined;
 
   return (
-    <div className={`${styles.sidebar}${open ? ' ' + styles.open : ''}`}>
+    <div className={sidebarClass} style={sidebarStyle}>
+      {isDocked && (
+        <div
+          className={styles.resizeHandle}
+          onPointerDown={handleResizePointerDown}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize queue"
+        />
+      )}
+      {isDocked && (
+        <div className={styles.dockedTopBar}>
+          <WindowControls />
+        </div>
+      )}
       <div className={styles.header}>
         <span className={styles.title}>
-          Queue{groupName ? ` \u00b7 ${groupName}` : ''}{items.length > 0 ? ` \u00b7 ${items.length}` : ''}
+          Queue{groupName ? ` · ${groupName}` : ''}{items.length > 0 ? ` · ${items.length}` : ''}
           {selCount > 0 && <span className={styles.selBadge}>{selCount} selected</span>}
         </span>
         {pendingClear ? (
@@ -197,7 +281,9 @@ export function QueueSidebar(
             {items.length > 0 && (
               <button className={styles.iconBtn} title="Clear queue" onClick={() => setPendingClear(true)}>⊘</button>
             )}
-            <button className={styles.iconBtn} onClick={onClose} title="Close">✕</button>
+            {!isDocked && (
+              <button className={styles.iconBtn} onClick={onClose} title="Close">✕</button>
+            )}
           </div>
         )}
       </div>
@@ -257,4 +343,4 @@ export function QueueSidebar(
       )}
     </div>
   );
-}
+});
