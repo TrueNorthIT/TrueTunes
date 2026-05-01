@@ -95,7 +95,7 @@ beforeEach(() => {
 describe('QueueSidebar — rendering', () => {
   it('renders item count in header', () => {
     setup();
-    expect(screen.getByText(/Queue · 3/)).toBeInTheDocument();
+    expect(screen.getByText(/Queue · Living Room · 3/)).toBeInTheDocument();
   });
 
   it('shows empty message when no items', () => {
