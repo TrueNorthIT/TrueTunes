@@ -1026,15 +1026,23 @@ function createAuthWindow(): void {
   );
 }
 
+let pubsubInitialised = false;
+
 /** Initialise Azure PubSub if a Function URL and display name are configured. */
 async function initPubSub(): Promise<void> {
   if (!PUBSUB_FUNCTION_URL || !config.displayName) return;
+  if (pubsubInitialised) {
+    // Disconnect cleanly before reconnecting (resets eventCbs too)
+    officePubSub.disconnect();
+    pubsubInitialised = false;
+  }
   try {
     const initialMap = await officePubSub.connect(config.displayName, PUBSUB_FUNCTION_URL);
     broadcastToRenderers('attribution:map', initialMap);
     officePubSub.onEvent((event) => {
       broadcastToRenderers('attribution:event', event);
     });
+    pubsubInitialised = true;
     log('[pubsub] Connected as', config.displayName);
   } catch (err) {
     console.warn('[pubsub] Failed to connect:', (err as Error).message);
@@ -1243,16 +1251,6 @@ ipcMain.handle('stats:fetch', async (_: IpcMainInvokeEvent, period: string, user
   }
 });
 
-ipcMain.handle('queue:fetchRecent', async (_: IpcMainInvokeEvent, sinceMs: number, limit?: number) => {
-  try {
-    let url = `${PUBSUB_FUNCTION_URL}/api/recent-queued?sinceMs=${encodeURIComponent(String(sinceMs))}`;
-    if (typeof limit === 'number' && limit > 0) url += `&limit=${encodeURIComponent(String(limit))}`;
-    const res = await fetch(url);
-    return await res.json();
-  } catch (err) {
-    return { error: String(err) };
-  }
-});
 
 ipcMain.handle('game:fetch', async (_: IpcMainInvokeEvent, date?: string) => {
   try {

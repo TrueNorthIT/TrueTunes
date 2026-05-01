@@ -15,7 +15,6 @@ Object.defineProperty(window, 'sonos', {
   writable: true,
   value: {
     fetchStats:         vi.fn(pending),
-    fetchRecentQueued:  vi.fn(pending),
     fetchDailyGame:     vi.fn(pending),
     submitGameScore:    vi.fn(pending),
     fetchGameLeaderboard: vi.fn(pending),

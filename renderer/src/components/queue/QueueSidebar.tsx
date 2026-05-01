@@ -4,8 +4,6 @@ import { applyReorderLocally } from '../../lib/queueHelpers';
 import { getActiveProvider } from '../../providers';
 import { useAttribution } from '../../hooks/useAttribution';
 import { DraggableQueueRow } from './DraggableQueueRow';
-import { RestoreQueueButton } from './RestoreQueueButton';
-import type { RestoreSummary } from '../../hooks/useRestoreQueue';
 import type { NormalizedQueueItem } from '../../types/provider';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/QueueSidebar.module.css';
@@ -18,16 +16,15 @@ interface Props {
   error: string | null;
   currentObjectId: string | null;
   currentQueueItemId: string | null;
+  groupName: string | null;
   onClose: () => void;
   onRefresh: () => void;
   onError: (msg: string) => void;
   onAddToQueue: (item: SonosItem, position: number) => void;
-  onRestore: (tracks: RecentQueuedTrack[]) => Promise<RestoreSummary>;
-  onRestoreResult: (msg: string) => void;
 }
 
 export function QueueSidebar(
-  { open, items, setItems, isLoading, error, currentObjectId, currentQueueItemId, onClose, onRefresh, onError, onAddToQueue, onRestore, onRestoreResult }: Props
+  { open, items, setItems, isLoading, error, currentObjectId, currentQueueItemId, groupName, onClose, onRefresh, onError, onAddToQueue }: Props
 ) {
   const currentObjectIds = useMemo(() => {
     const set = new Set<string>();
@@ -54,6 +51,20 @@ export function QueueSidebar(
     const id = setTimeout(scrollToNowPlaying, 50);
     return () => clearTimeout(id);
   }, [open]);
+
+  // Track change while queue is open
+  useEffect(() => {
+    if (!open) return;
+    const id = setTimeout(scrollToNowPlaying, 50);
+    return () => clearTimeout(id);
+  }, [currentQueueItemId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Group switch — queue reloads async so use a longer delay
+  useEffect(() => {
+    if (!open) return;
+    const id = setTimeout(scrollToNowPlaying, 400);
+    return () => clearTimeout(id);
+  }, [groupName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!open) return;
@@ -171,7 +182,7 @@ export function QueueSidebar(
     <div className={`${styles.sidebar}${open ? ' ' + styles.open : ''}`}>
       <div className={styles.header}>
         <span className={styles.title}>
-          Queue{items.length > 0 ? ` \u00b7 ${items.length}` : ''}
+          Queue{groupName ? ` \u00b7 ${groupName}` : ''}{items.length > 0 ? ` \u00b7 ${items.length}` : ''}
           {selCount > 0 && <span className={styles.selBadge}>{selCount} selected</span>}
         </span>
         {pendingClear ? (
@@ -188,11 +199,6 @@ export function QueueSidebar(
           <div className={styles.headerActions}>
             <button className={styles.iconBtn} onClick={onRefresh} title="Refresh">↺</button>
             <button className={styles.iconBtn} onClick={scrollToNowPlaying} title="Jump to now playing">⊙</button>
-            <RestoreQueueButton
-              currentObjectIds={currentObjectIds}
-              onRestore={onRestore}
-              onResult={onRestoreResult}
-            />
             {items.length > 0 && (
               <button className={styles.iconBtn} title="Clear queue" onClick={() => setPendingClear(true)}>⊘</button>
             )}

@@ -6,8 +6,6 @@ import { useAuth } from './hooks/useAuth';
 import { useGroups } from './hooks/useGroups';
 import { usePlayback } from './hooks/usePlayback';
 import { useQueue } from './hooks/useQueue';
-import { useRestoreQueueAction } from './hooks/useRestoreQueue';
-import type { RestoreSummary } from './hooks/useRestoreQueue';
 import { trackQueryOptions } from './hooks/useTrackDetails';
 import { albumQueryOptions, type AlbumTrack } from './hooks/useAlbumBrowse';
 import { playlistQueryOptions } from './hooks/usePlaylistBrowse';
@@ -68,7 +66,6 @@ function MainApp() {
                                                   = useQueue(isAuthed, activeGroupId, playback.queueId,
                                                       (etag) => { queueVersionRef.current = etag; },
                                                       (msg) => showToast(`Queue refresh failed: ${msg}`));
-  const { restore: runRestore } = useRestoreQueueAction();
   usePrefetchNextLyrics(queueItems, playback.queueItemId);
 
   const reloadQueue = useCallback(() => {
@@ -142,25 +139,23 @@ function MainApp() {
 
   const publishTrackAttribution = useCallback(
     (trackId: string, serviceId: string, accountId: string, fallback: { trackName: string; imageUrl?: string }) => {
-      queryClient
-        .fetchQuery(trackQueryOptions(trackId, serviceId, accountId))
-        .then((td) => {
-          window.sonos.publishQueued({
-            eventType: 'track',
-            uri: trackId,
-            trackName: td?.trackName ?? fallback.trackName,
-            artist: td?.artist ?? '',
-            serviceId,
-            accountId,
-            artistId: td?.artistId,
-            album: td?.albumName,
-            albumId: td?.albumId,
-            imageUrl: td?.artUrl ?? fallback.imageUrl,
-          });
-        })
-        .catch(() => {
-          /* silent */
-        });
+      // Use cached metadata if available; publish immediately with fallback so attribution
+      // is never lost because of a secondary metadata fetch failing.
+      const cached = queryClient.getQueryData(
+        trackQueryOptions(trackId, serviceId, accountId).queryKey
+      ) as { trackName?: string; artist?: string; artistId?: string; albumName?: string; albumId?: string; artUrl?: string } | undefined;
+      window.sonos.publishQueued({
+        eventType: 'track',
+        uri: trackId,
+        trackName: cached?.trackName ?? fallback.trackName,
+        artist: cached?.artist ?? '',
+        serviceId,
+        accountId,
+        artistId: cached?.artistId,
+        album: cached?.albumName,
+        albumId: cached?.albumId,
+        imageUrl: cached?.artUrl ?? fallback.imageUrl,
+      }).catch(() => {});
     },
     [queryClient]
   );
@@ -299,31 +294,27 @@ function MainApp() {
           imageUrl: getItemArt(item) ?? undefined,
         });
       } else if (isAlbumItem && uri) {
-        // Fetch the album browse first so the rollup event has the canonical
-        // artist + cover from Sonos (the card item often lacks usable art);
-        // then fan out one event per track. Cache hit if the user just opened
-        // the album page.
         const { albumId, serviceId: aSvc, accountId: aAcc, defaults } = resolveAlbumParams(item);
         if (albumId && aSvc && aAcc) {
+          // Publish album-level event immediately with card data as fallback so attribution
+          // is captured even if the album browse fails. Fan-out track events follow async.
+          window.sonos.publishQueued({
+            eventType: 'album',
+            uri,
+            trackName: getName(item),
+            artist:
+              ((item as Record<string, unknown>)['subtitle'] as string) ||
+              (item.artists?.[0]?.name ?? ''),
+            serviceId: aSvc,
+            accountId: aAcc,
+            album: getName(item),
+            albumId: uri,
+            imageUrl: getItemArt(item) ?? undefined,
+          }).catch(() => {});
           queryClient
             .fetchQuery(albumQueryOptions(albumId, aSvc, aAcc, defaults))
             .then((album) => {
               const artistId = (album.artistItem?.resource?.id as SonosItemId | undefined)?.objectId;
-              window.sonos.publishQueued({
-                eventType: 'album',
-                uri,
-                trackName: album.title || getName(item),
-                artist:
-                  album.artist ||
-                  ((item as Record<string, unknown>)['subtitle'] as string) ||
-                  (item.artists?.[0]?.name ?? ''),
-                serviceId: aSvc,
-                accountId: aAcc,
-                artistId,
-                album: album.title || getName(item),
-                albumId: uri,
-                imageUrl: album.artUrl ?? getItemArt(item) ?? undefined,
-              });
               fanOutTrackAttribution(album.tracks, {
                 album: album.title,
                 albumId: uri,
@@ -334,9 +325,7 @@ function MainApp() {
                 accountId: aAcc,
               });
             })
-            .catch(() => {
-              /* silent */
-            });
+            .catch(() => { /* silent — album event already published above */ });
         }
       } else if (isPlaylistItem) {
         // Playlists have no albumMap rollup — fan out per-track only. Each
@@ -344,12 +333,14 @@ function MainApp() {
         // decoded defaults, so no per-album context is needed.
         const { albumId: pid, serviceId: pSvc, accountId: pAcc, defaults } = resolveAlbumParams(item);
         if (pid && pSvc && pAcc) {
-          queryClient
-            .fetchQuery(playlistQueryOptions(pid, pSvc, pAcc, defaults))
-            .then((tracks) => fanOutTrackAttribution(tracks, { serviceId: pSvc, accountId: pAcc }))
-            .catch(() => {
-              /* silent */
-            });
+          const doFanOut = () =>
+            queryClient
+              .fetchQuery(playlistQueryOptions(pid, pSvc, pAcc, defaults))
+              .then((tracks) => fanOutTrackAttribution(tracks, { serviceId: pSvc, accountId: pAcc }));
+          doFanOut().catch(() => {
+            // Retry once after a short delay on transient failure
+            setTimeout(() => doFanOut().catch(() => {}), 3000);
+          });
         }
       }
 
@@ -370,20 +361,6 @@ function MainApp() {
       fanOutTrackAttribution,
     ]
   );
-
-  const handleRestore = useCallback(async (tracks: RecentQueuedTrack[]): Promise<RestoreSummary> => {
-    const summary = await runRestore(tracks, {
-      queueId: queueIdRef.current ?? undefined,
-      initialEtag: queueVersionRef.current ?? undefined,
-      onEtagChange: (etag) => { queueVersionRef.current = etag; },
-      reloadEtag: async () => {
-        await reloadQueueRaw();
-        return queueVersionRef.current ?? undefined;
-      },
-    });
-    reloadQueue();
-    return summary;
-  }, [runRestore, queueIdRef, queueVersionRef, reloadQueue, reloadQueueRaw]);
 
   useEffect(() => {
     function onKey(e: globalThis.KeyboardEvent) {
@@ -486,12 +463,11 @@ function MainApp() {
         error={queueError}
         currentObjectId={playback.currentObjectId}
         currentQueueItemId={playback.queueItemId}
+        groupName={groups.find(g => g.id === activeGroupId)?.name ?? null}
         onClose={() => setQueueOpen(false)}
         onRefresh={reloadQueue}
         onError={showToast}
         onAddToQueue={handleAddToQueue}
-        onRestore={handleRestore}
-        onRestoreResult={showToast}
       />
       <PlayerBar
         isAuthed={isAuthed}
