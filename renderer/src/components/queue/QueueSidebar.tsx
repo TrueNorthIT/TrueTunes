@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, Fragment } from 'react';
+import { useEffect, useRef, useState, Fragment } from 'react';
 import { Loader2 } from 'lucide-react';
 import { applyReorderLocally } from '../../lib/queueHelpers';
 import { getActiveProvider } from '../../providers';
@@ -26,11 +26,6 @@ interface Props {
 export function QueueSidebar(
   { open, items, setItems, isLoading, error, currentObjectId, currentQueueItemId, groupName, onClose, onRefresh, onError, onAddToQueue }: Props
 ) {
-  const currentObjectIds = useMemo(() => {
-    const set = new Set<string>();
-    for (const it of items) if (it.track.id) set.add(it.track.id);
-    return set;
-  }, [items]);
   const contentRef = useRef<HTMLDivElement>(null);
   const attributionMap = useAttribution(onRefresh);
   const [selected, setSelected]           = useState<Set<number>>(new Set());
