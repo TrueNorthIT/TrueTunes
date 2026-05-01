@@ -62,6 +62,7 @@ function makeItem(i: number): NormalizedQueueItem {
 }
 
 const defaultProps = {
+  mode: 'floating' as const,
   open: true,
   items: [makeItem(0), makeItem(1), makeItem(2)],
   setItems: vi.fn(),

@@ -29,6 +29,7 @@ interface Props {
   playback: PlaybackState;
   onToggleQueue: () => void;
   onShuffle: () => void;
+  queueMode?: 'floating' | 'docked';
 }
 
 function ScrollingText({
@@ -141,7 +142,7 @@ function VolumeButton({ volume }: { volume: number }) {
   );
 }
 
-export function PlayerBar({ isAuthed, playback, onToggleQueue, onShuffle }: Props) {
+export function PlayerBar({ isAuthed, playback, onToggleQueue, onShuffle, queueMode }: Props) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const lyricsActive = pathname === '/lyrics';
@@ -304,7 +305,7 @@ export function PlayerBar({ isAuthed, playback, onToggleQueue, onShuffle }: Prop
           >
             <MicVocal size={14} />
           </button>
-          <button className={styles.ctrl} onClick={onToggleQueue} title="Queue">
+          <button className={styles.ctrl} onClick={onToggleQueue} title={queueMode === 'docked' ? 'Jump to now playing' : 'Queue'}>
             <List size={14} />
           </button>
           <button

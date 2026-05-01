@@ -10,17 +10,14 @@ import {
   User,
   List,
   RefreshCw,
-  Minus,
-  Maximize2,
-  Minimize2,
   Gamepad2,
-  DownloadCloud,
   Lightbulb,
   Group,
   SquareMousePointer,
 } from 'lucide-react';
 import type { NormalizedGroup } from '../types/provider';
 import styles from '../styles/TopNav.module.css';
+import { WindowControls } from './WindowControls';
 
 interface Props {
   isAuthed: boolean;
@@ -33,6 +30,8 @@ interface Props {
   displayName: string | null | undefined;
   onSaveName: (name: string) => void;
   onChangelogOpen: () => void;
+  queueMode: 'floating' | 'docked';
+  onSetQueueMode: (mode: 'floating' | 'docked') => void;
 }
 
 export function TopNav({
@@ -46,6 +45,8 @@ export function TopNav({
   displayName,
   onSaveName,
   onChangelogOpen,
+  queueMode,
+  onSetQueueMode,
 }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -55,7 +56,6 @@ export function TopNav({
   const [nameValue, setNameValue] = useState('');
   const [groupOpen, setGroupOpen] = useState(false);
   const [appVersion, setAppVersion] = useState<string | null>(null);
-  const [updateVersion, setUpdateVersion] = useState<string | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const groupRef = useRef<HTMLDivElement>(null);
 
@@ -64,23 +64,12 @@ export function TopNav({
   const canGoBack = histIdx > 0;
   const canGoForward = histIdx < window.history.length - 1;
 
-  const [isMaximized, setIsMaximized] = useState(false);
-  useEffect(() => {
-    window.sonos
-      .isWindowMaximized()
-      .then(setIsMaximized)
-      .catch(() => {});
-    return window.sonos.onWindowMaximized(setIsMaximized);
-  }, []);
-
   useEffect(() => {
     window.sonos
       .getVersion()
       .then(setAppVersion)
       .catch(() => {});
   }, []);
-
-  useEffect(() => window.sonos.onUpdateDownloaded(setUpdateVersion), []);
 
   useEffect(() => {
     if (nameOpen) setNameValue(displayName ?? '');
@@ -276,6 +265,21 @@ export function TopNav({
                     >
                       Save
                     </button>
+                    <div className={styles.namePopoverLabel}>Queue display</div>
+                    <div className={styles.queueModeToggle}>
+                      <button
+                        className={`${styles.queueModeBtn}${queueMode === 'floating' ? ' ' + styles.queueModeBtnActive : ''}`}
+                        onClick={() => onSetQueueMode('floating')}
+                      >
+                        Floating
+                      </button>
+                      <button
+                        className={`${styles.queueModeBtn}${queueMode === 'docked' ? ' ' + styles.queueModeBtnActive : ''}`}
+                        onClick={() => onSetQueueMode('docked')}
+                      >
+                        Docked
+                      </button>
+                    </div>
                     <div className={styles.versionRow}>
                       {appVersion && <div className={styles.appVersion}>v{appVersion}</div>}
                     </div>
@@ -303,9 +307,9 @@ export function TopNav({
             )}
 
             <button
-              className={`${styles.iconBtn}${queueOpen ? ' ' + styles.active : ''}`}
+              className={`${styles.iconBtn}${queueMode === 'floating' && queueOpen ? ' ' + styles.active : ''}`}
               onClick={onToggleQueue}
-              title="Queue"
+              title={queueMode === 'docked' ? 'Jump to now playing' : 'Queue'}
             >
               <List size={15} />
             </button>
@@ -313,36 +317,12 @@ export function TopNav({
         </nav>
       </div>
 
-      {/* Window controls — fixed top-right, independent of the centered navRoot */}
-      <div className={styles.windowPill}>
-        {updateVersion && (
-          <button
-            className={styles.titleBarUpdateBtn}
-            onClick={() => window.sonos.installUpdate()}
-            title={`v${updateVersion} ready — click to restart and install`}
-          >
-            <DownloadCloud size={13} />
-            <span>Update</span>
-          </button>
-        )}
-        <button className={styles.winBtn} onClick={() => window.sonos.minimizeWindow()} title="Minimise">
-          <Minus size={13} />
-        </button>
-        <button
-          className={styles.winBtn}
-          onClick={() => window.sonos.maximizeWindow()}
-          title={isMaximized ? 'Restore' : 'Maximise'}
-        >
-          {isMaximized ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
-        </button>
-        <button
-          className={`${styles.winBtn} ${styles.closeBtn}`}
-          onClick={() => window.sonos.closeWindow()}
-          title="Close"
-        >
-          <X size={13} />
-        </button>
-      </div>
+      {/* Window controls — fixed top-right when queue is floating; moved into the docked sidebar otherwise */}
+      {queueMode === 'floating' && (
+        <div className={styles.windowPill}>
+          <WindowControls />
+        </div>
+      )}
     </>
   );
 }

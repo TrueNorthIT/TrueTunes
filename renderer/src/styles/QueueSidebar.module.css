@@ -29,6 +29,60 @@
   }
 }
 
+/* ── Docked mode (right-side column inside .body flex row) ── */
+.sidebar.docked {
+  position: relative;
+  top: auto; right: auto; bottom: auto;
+  width: auto;
+  height: 100%;
+  flex-shrink: 0;
+  /* Always pin to the right of .body — even when the active route is out
+     of flow (e.g. LyricsPanel uses position:fixed), the auto margin
+     consumes any leftover space on the sidebar's left side. */
+  margin-left: auto;
+  border-radius: 0;
+  border: none;
+  border-left: 1px solid var(--border);
+  box-shadow: none;
+  backdrop-filter: none;
+  background: var(--bg-1);
+  transform: none;
+  transition: none;
+  /* Sit above the TopNav drag region (z-index 199) so the buttons below
+     are clickable; the dockedTopBar provides its own drag region. */
+  z-index: 200;
+}
+
+/* Top strip in docked mode — hosts window controls; aligns with TopNav height
+   so the visual horizon across the app stays consistent. */
+.dockedTopBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: var(--nav-h);
+  padding: 0 8px;
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+}
+
+.resizeHandle {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 6px;
+  cursor: ew-resize;
+  background: transparent;
+  z-index: 2;
+  touch-action: none;
+  -webkit-app-region: no-drag;
+}
+.resizeHandle:hover { background: rgba(255, 255, 255, 0.08); }
+
+:global(html.resizingQueue),
+:global(html.resizingQueue) * {
+  cursor: ew-resize !important;
+  user-select: none !important;
+}
+
 /* ── Header ── */
 .header {
   display: flex;
