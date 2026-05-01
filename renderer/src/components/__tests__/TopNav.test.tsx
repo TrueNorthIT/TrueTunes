@@ -24,6 +24,8 @@ const defaultProps = {
   displayName: 'Alice',
   onSaveName: vi.fn(),
   onChangelogOpen: vi.fn(),
+  queueMode: 'floating' as const,
+  onSetQueueMode: vi.fn(),
 };
 
 beforeEach(() => {

@@ -261,6 +261,31 @@
 .nameSaveBtn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.18); }
 .nameSaveBtn:disabled { opacity: 0.35; cursor: default; }
 
+.queueModeToggle {
+  display: flex;
+  gap: 4px;
+}
+
+.queueModeBtn {
+  flex: 1;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 6px 0;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.queueModeBtn:hover { color: var(--text); }
+.queueModeBtnActive {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--border-2);
+  color: var(--text);
+}
+
 .versionRow {
   display: flex;
   align-items: center;
