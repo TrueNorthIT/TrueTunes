@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Music2, Mic } from 'lucide-react';
+import { Music2, MicVocal } from 'lucide-react';
 import { useNowPlaying } from '../hooks/useNowPlaying';
 import { useLyrics } from '../hooks/useLyrics';
 import { useGeniusDescription } from '../hooks/useGeniusDescription';
@@ -79,10 +79,6 @@ export function LyricsPanel({ playback }: Props) {
       <div className={styles.waveBg} />
       <div className={styles.vignette} />
 
-      <button className={styles.closeBtn} onClick={onClose} title="Close (Esc)">
-        <X size={18} />
-      </button>
-
       <div className={styles.content}>
         {/* Left — art + metadata + genius description */}
         <div className={styles.leftPanel} style={{ '--tc': textColor(dominantColor) } as React.CSSProperties}>
@@ -106,7 +102,7 @@ export function LyricsPanel({ playback }: Props) {
         <div ref={containerRef} className={styles.lyricsContainer}>
           {lyricsLoading && (
             <div className={styles.loadingWrap}>
-              <div className={styles.loadingIcon}><Mic size={36} /></div>
+              <div className={styles.loadingIcon}><MicVocal size={36} /></div>
               <div className={styles.loadingLabel}>Loading</div>
               <div className={styles.dots}>
                 <span /><span /><span />

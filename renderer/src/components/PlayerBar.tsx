@@ -19,7 +19,7 @@ import {
   List,
   Music,
   PictureInPicture2,
-  Mic,
+  MicVocal,
 } from "lucide-react";
 import type { PlaybackState } from "../hooks/usePlayback";
 import styles from "../styles/PlayerBar.module.css";
@@ -302,7 +302,7 @@ export function PlayerBar({ isAuthed, playback, onToggleQueue, onShuffle }: Prop
             onClick={() => lyricsActive ? navigate(-1) : navigate('/lyrics')}
             title="Lyrics"
           >
-            <Mic size={14} />
+            <MicVocal size={14} />
           </button>
           <button className={styles.ctrl} onClick={onToggleQueue} title="Queue">
             <List size={14} />
