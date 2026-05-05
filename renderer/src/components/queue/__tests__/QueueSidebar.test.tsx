@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { QueueSidebar } from '../QueueSidebar';
 import type { NormalizedQueueItem } from '../../../types/provider';
 
@@ -43,6 +44,10 @@ vi.mock('../../../hooks/useAttribution', () => ({
   useAttribution: () => ({}),
 }));
 
+vi.mock('../../../hooks/useTrackDetails', () => ({
+  trackQueryOptions: () => ({ queryKey: [], queryFn: () => null, enabled: false }),
+}));
+
 function makeItem(i: number): NormalizedQueueItem {
   return {
     index: i,
@@ -77,10 +82,18 @@ const defaultProps = {
   onAddToQueue: vi.fn(),
 };
 
+function makeQueryClient() {
+  return new QueryClient({ defaultOptions: { queries: { retry: false } } });
+}
+
+function Wrapper({ children }: { children: React.ReactNode }) {
+  return <QueryClientProvider client={makeQueryClient()}>{children}</QueryClientProvider>;
+}
+
 function setup(props = {}) {
   const user = userEvent.setup();
   const merged = { ...defaultProps, ...props };
-  const result = render(<QueueSidebar {...merged} />);
+  const result = render(<QueueSidebar {...merged} />, { wrapper: Wrapper });
   return { user, ...result };
 }
 
@@ -366,10 +379,12 @@ describe('QueueSidebar — items change clears selection', () => {
     await user.click(screen.getByTestId('row-0'));
     expect(screen.getByTestId('row-0').dataset.selected).toBe('true');
     rerender(
-      <QueueSidebar
-        {...defaultProps}
-        items={[makeItem(0), makeItem(1), makeItem(2), makeItem(3)]}
-      />
+      <Wrapper>
+        <QueueSidebar
+          {...defaultProps}
+          items={[makeItem(0), makeItem(1), makeItem(2), makeItem(3)]}
+        />
+      </Wrapper>
     );
     // After rerender with new items, selection should be cleared
     await waitFor(() =>

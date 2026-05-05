@@ -13,6 +13,7 @@ interface Props {
   currentQueueItemId: string | null;
   attribution?: AttributionEntry;
   isSelected: boolean;
+  timeToPlay?: number;
   onRowClick: (index: number, e: React.MouseEvent) => void;
   onDragStart: (index: number, e: React.DragEvent) => void;
   onDragOver: (index: number, e: React.DragEvent) => void;
@@ -20,9 +21,17 @@ interface Props {
   onDragEnd: () => void;
 }
 
+function fmtClockTime(ms: number): string {
+  const d = new Date(ms);
+  const h = d.getHours();
+  const m = String(d.getMinutes()).padStart(2, '0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  return `${h % 12 || 12}:${m} ${ampm}`;
+}
+
 export function DraggableQueueRow({
   item, index, currentObjectId, currentQueueItemId, attribution,
-  isSelected, onRowClick, onDragStart, onDragOver, onDrop, onDragEnd,
+  isSelected, timeToPlay, onRowClick, onDragStart, onDragOver, onDrop, onDragEnd,
 }: Props) {
   const { artUrl, artist, albumName, albumItem, prefetchAlbum, artistItem, prefetchArtist, isPlaying: isPlayingByObjectId, explicit } =
     useQueueTrack(item, currentObjectId);
@@ -84,6 +93,9 @@ export function DraggableQueueRow({
           <div className={styles.attribution}>by {attribution.user}</div>
         )}
       </div>
+      {timeToPlay !== undefined && (
+        <div className={styles.timeToPlay}>{fmtClockTime(timeToPlay)}</div>
+      )}
     </div>
   );
 }

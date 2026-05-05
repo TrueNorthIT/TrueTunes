@@ -6,9 +6,10 @@ import styles from '../../styles/ArtistPanel.module.css';
 interface Props {
   album: SonosItem;
   onOpen: (item: SonosItem) => void;
+  onAdd: (item: SonosItem) => void;
 }
 
-export function ArtistAlbumCard({ album, onOpen }: Props) {
+export function ArtistAlbumCard({ album, onOpen, onAdd }: Props) {
   const rawUrl = (album.images as Record<string, string> | undefined)?.['tile1x1'] ?? null;
   const art = useImage(rawUrl);
   const raw = album as Record<string, unknown>;
@@ -18,6 +19,9 @@ export function ArtistAlbumCard({ album, onOpen }: Props) {
     <div className={styles.albumCard} onClick={() => onOpen(album)}>
       <div className={styles.albumArt}>
         {art ? <img src={art} alt="" /> : <div className={styles.albumArtPh}>♪</div>}
+        <div className={styles.albumOverlay}>
+          <button className={styles.albumAddBtn} onClick={e => { e.stopPropagation(); onAdd(album); }}>+</button>
+        </div>
       </div>
       <div className={styles.albumTitle}>
         <span className={styles.albumTitleText}>{album.title}</span>

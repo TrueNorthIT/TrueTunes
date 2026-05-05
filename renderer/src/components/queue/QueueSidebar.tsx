@@ -1,8 +1,10 @@
-import { useEffect, useImperativeHandle, useRef, useState, Fragment, forwardRef } from 'react';
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, Fragment, forwardRef } from 'react';
+import { useQueries } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { applyReorderLocally } from '../../lib/queueHelpers';
 import { getActiveProvider } from '../../providers';
 import { useAttribution } from '../../hooks/useAttribution';
+import { trackQueryOptions } from '../../hooks/useTrackDetails';
 import { DraggableQueueRow } from './DraggableQueueRow';
 import { WindowControls } from '../WindowControls';
 import type { NormalizedQueueItem } from '../../types/provider';
@@ -18,6 +20,8 @@ interface Props {
   error: string | null;
   currentObjectId: string | null;
   currentQueueItemId: string | null;
+  positionMs?: number;
+  currentTrackDurationMs?: number;
   groupName: string | null;
   onClose: () => void;
   onRefresh: () => void;
@@ -45,6 +49,8 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     error,
     currentObjectId,
     currentQueueItemId,
+    positionMs = 0,
+    currentTrackDurationMs = 0,
     groupName,
     onClose,
     onRefresh,
@@ -65,6 +71,34 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   const [pendingClear, setPendingClear]    = useState(false);
   const lastSelected = useRef<number | null>(null);
   const draggingSet  = useRef<Set<number>>(new Set());
+
+  const trackDetailsResults = useQueries({
+    queries: items.map(item => ({
+      ...trackQueryOptions(
+        item.track.id || '',
+        item.track.serviceId ?? '',
+        item.track.accountId ?? '',
+      ),
+      enabled: !!(item.track.id && item.track.serviceId && item.track.accountId),
+    })),
+  });
+
+  const [nowMs, setNowMs] = useState(0);
+  useEffect(() => { setNowMs(Date.now()); }, [positionMs]);
+
+  const timesToPlay = useMemo(() => {
+    const result: (number | undefined)[] = new Array(items.length).fill(undefined);
+    if (!currentQueueItemId || currentTrackDurationMs <= 0 || nowMs === 0) return result;
+    const currentIdx = Number(currentQueueItemId) - 1;
+    let acc = Math.max(0, currentTrackDurationMs - positionMs);
+    for (let i = currentIdx + 1; i < items.length; i++) {
+      result[i] = nowMs + acc;
+      const itemDur = trackDetailsResults[i]?.data?.durationMs ?? items[i].track.durationMs;
+      if (!itemDur) break;
+      acc += itemDur;
+    }
+    return result;
+  }, [items, currentQueueItemId, positionMs, currentTrackDurationMs, trackDetailsResults, nowMs]);
 
   const [liveWidth, setLiveWidth] = useState<number>(dockedWidth ?? 380);
   useEffect(() => {
@@ -317,6 +351,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
               currentQueueItemId={currentQueueItemId}
               attribution={attributionMap[item.track.id ?? '']}
               isSelected={selected.has(i)}
+              timeToPlay={timesToPlay[i]}
               onRowClick={handleRowClick}
               onDragStart={handleDragStart}
               onDragOver={handleDragOver}

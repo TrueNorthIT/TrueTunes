@@ -501,6 +501,8 @@ function MainApp() {
             error={queueError}
             currentObjectId={playback.currentObjectId}
             currentQueueItemId={playback.queueItemId}
+            positionMs={playback.positionMs}
+            currentTrackDurationMs={playback.durationMs}
             groupName={groups.find(g => g.id === activeGroupId)?.name ?? null}
             onClose={() => {}}
             onRefresh={reloadQueue}
@@ -522,6 +524,8 @@ function MainApp() {
           error={queueError}
           currentObjectId={playback.currentObjectId}
           currentQueueItemId={playback.queueItemId}
+          positionMs={playback.positionMs}
+          currentTrackDurationMs={playback.durationMs}
           groupName={groups.find(g => g.id === activeGroupId)?.name ?? null}
           onClose={() => setQueueOpen(false)}
           onRefresh={reloadQueue}
