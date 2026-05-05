@@ -11,6 +11,7 @@ export interface PlaybackState {
   stateIcon: string;
   timeLabel: string;
   progressPct: number;
+  positionMs: number;
   durationMs: number;
   isPlaying: boolean;
   shuffle: boolean;
@@ -35,6 +36,7 @@ const IDLE_STATE: PlaybackState = {
   stateIcon: "–",
   timeLabel: "",
   progressPct: 0,
+  positionMs: 0,
   durationMs: 0,
   isPlaying: false,
   shuffle: false,
@@ -114,6 +116,7 @@ export function usePlayback(activeGroupId: string | null) {
       stateIcon: status === 'playing' ? "▶" : status === 'paused' ? "⏸" : "–",
       timeLabel: durationMs > 0 ? `${fmtTime(positionMs)} / ${fmtTime(durationMs)}` : "",
       progressPct: pct,
+      positionMs,
       durationMs,
       isPlaying,
       shuffle,
@@ -146,6 +149,7 @@ export function usePlayback(activeGroupId: string | null) {
       const pct = dur > 0 ? (pos / dur) * 100 : 0;
       setState((prev) => ({
         ...prev,
+        positionMs: pos,
         timeLabel: dur > 0 ? `${fmtTime(pos)} / ${fmtTime(dur)}` : "",
         progressPct: pct,
       }));

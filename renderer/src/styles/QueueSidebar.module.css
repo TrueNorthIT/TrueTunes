@@ -259,6 +259,15 @@
   text-overflow: ellipsis;
 }
 
+.timeToPlay {
+  font-size: 10px;
+  color: var(--text-3);
+  white-space: nowrap;
+  flex-shrink: 0;
+  align-self: flex-end;
+  padding-bottom: 2px;
+}
+
 /* ── Drop indicator ── */
 .dropLine {
   height: 2px;

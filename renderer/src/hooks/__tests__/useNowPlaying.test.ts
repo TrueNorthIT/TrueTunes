@@ -28,6 +28,7 @@ function makePlayback(overrides: Partial<PlaybackState> = {}): PlaybackState {
     stateIcon: '▶',
     timeLabel: '1:30 / 4:00',
     progressPct: 37,
+    positionMs: 90000,
     durationMs: 240000,
     isPlaying: true,
     shuffle: false,
