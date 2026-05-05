@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useImage } from '../../hooks/useImage';
 import { useArtistBrowse } from '../../hooks/useArtistBrowse';
@@ -34,6 +34,43 @@ export function ArtistPanel({ onAddToQueue }: Props) {
     null;
 
   const [showAllSongs, setShowAllSongs] = useState(false);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const lastSelected = useRef<number | null>(null);
+
+  const visibleSongs = showAllSongs ? (data?.topSongs ?? []) : (data?.topSongs.slice(0, 10) ?? []);
+
+  function handleTrackClick(index: number, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (e.shiftKey && lastSelected.current !== null) {
+      const lo = Math.min(lastSelected.current, index);
+      const hi = Math.max(lastSelected.current, index);
+      setSelected(prev => { const next = new Set(prev); for (let i = lo; i <= hi; i++) next.add(i); return next; });
+    } else if (e.ctrlKey || e.metaKey) {
+      setSelected(prev => { const next = new Set(prev); if (next.has(index)) next.delete(index); else next.add(index); return next; });
+      lastSelected.current = index;
+    } else {
+      if (selected.size === 1 && selected.has(index)) { setSelected(new Set()); lastSelected.current = null; }
+      else { setSelected(new Set([index])); lastSelected.current = index; }
+    }
+  }
+
+  function handleDragStart(index: number, e: React.DragEvent) {
+    const toMove = selected.has(index) ? [...selected].sort((a, b) => a - b) : [index];
+    if (!selected.has(index)) { setSelected(new Set([index])); lastSelected.current = index; }
+    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(toMove.map(i => visibleSongs[i].raw)));
+    const ghost = document.createElement('div');
+    Object.assign(ghost.style, {
+      position: 'fixed', top: '-100px', left: '0',
+      background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
+      color: '#fff', padding: '5px 12px', borderRadius: '6px',
+      fontSize: '12px', fontWeight: '600', pointerEvents: 'none', whiteSpace: 'nowrap',
+    });
+    ghost.textContent = toMove.length > 1 ? `${toMove.length} tracks` : visibleSongs[index].title;
+    document.body.appendChild(ghost);
+    e.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, 20);
+    setTimeout(() => ghost.remove(), 0);
+  }
 
   const cachedArt     = useImage(imageUrl);
   const dominantColor = useDominantColor(cachedArt);
@@ -82,11 +119,19 @@ export function ArtistPanel({ onAddToQueue }: Props) {
             <div className={styles.topSongsCol}>
               {data && data.topSongs.length > 0 && (
                 <>
-                  <button className={styles.sectionTitleBtn} onClick={() => setShowAllSongs(s => !s)}>
+                  <button className={styles.sectionTitleBtn} onClick={() => { setShowAllSongs(s => !s); setSelected(new Set()); }}>
                     Top Songs <span className={styles.sectionChevron}>{showAllSongs ? '∨' : '›'}</span>
                   </button>
-                  {(showAllSongs ? data.topSongs : data.topSongs.slice(0, 10)).map((track, i) => (
-                    <TopSongRow key={track.id.objectId ?? i} track={track} index={i} onAdd={onAddToQueue} />
+                  {visibleSongs.map((track, i) => (
+                    <TopSongRow
+                      key={track.id.objectId ?? i}
+                      track={track}
+                      index={i}
+                      isSelected={selected.has(i)}
+                      onAdd={onAddToQueue}
+                      onClick={handleTrackClick}
+                      onDragStart={handleDragStart}
+                    />
                   ))}
                 </>
               )}

@@ -181,11 +181,12 @@
   padding: 5px 6px;
   border-radius: var(--r-sm);
   transition: background 0.12s;
-  cursor: default;
+  cursor: grab;
 }
-.topSongRow:hover {
-  background: var(--bg-2);
-}
+.topSongRow:active { cursor: grabbing; }
+.topSongRow:hover { background: var(--bg-2); }
+.topSongSelected { background: rgba(255,255,255,0.08); }
+.topSongSelected:hover { background: rgba(255,255,255,0.12); }
 
 .topSongNum {
   width: 18px;
