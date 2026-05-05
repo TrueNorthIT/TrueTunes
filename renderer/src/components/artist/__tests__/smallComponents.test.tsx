@@ -100,26 +100,26 @@ describe('ArtistAlbumCard', () => {
   const album: SonosItem = { title: 'Abbey Road', type: 'ITEM_ALBUM' };
 
   it('renders album title', () => {
-    render(<ArtistAlbumCard album={album} onOpen={vi.fn()} />);
+    render(<ArtistAlbumCard album={album} onOpen={vi.fn()} onAdd={vi.fn()} />);
     expect(screen.getByText('Abbey Road')).toBeInTheDocument();
   });
 
   it('calls onOpen when clicked', () => {
     const onOpen = vi.fn();
-    render(<ArtistAlbumCard album={album} onOpen={onOpen} />);
+    render(<ArtistAlbumCard album={album} onOpen={onOpen} onAdd={vi.fn()} />);
     fireEvent.click(screen.getByText('Abbey Road'));
     expect(onOpen).toHaveBeenCalledWith(album);
   });
 
   it('renders subtitle when present', () => {
     const withSub = { ...album, subtitle: '1969' };
-    render(<ArtistAlbumCard album={withSub} onOpen={vi.fn()} />);
+    render(<ArtistAlbumCard album={withSub} onOpen={vi.fn()} onAdd={vi.fn()} />);
     expect(screen.getByText('1969')).toBeInTheDocument();
   });
 
   it('shows ExplicitBadge when isExplicit is true', () => {
     const explicit = { ...album, isExplicit: true };
-    render(<ArtistAlbumCard album={explicit} onOpen={vi.fn()} />);
+    render(<ArtistAlbumCard album={explicit} onOpen={vi.fn()} onAdd={vi.fn()} />);
     expect(screen.getByTitle('Explicit')).toBeInTheDocument();
   });
 });
