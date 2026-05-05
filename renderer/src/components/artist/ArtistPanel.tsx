@@ -153,6 +153,7 @@ export function ArtistPanel({ onAddToQueue }: Props) {
                 key={(typeof album.id === 'string' ? album.id : album.id?.objectId) ?? album.title}
                 album={album}
                 onOpen={openItem}
+                onAdd={onAddToQueue}
               />
             ))}
           </div>
