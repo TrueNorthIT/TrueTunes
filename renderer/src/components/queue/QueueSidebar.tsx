@@ -122,16 +122,16 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     return () => clearTimeout(id);
   }, [isActive]);
 
-  // Track change while queue is open
+  // Track change while queue is visible
   useEffect(() => {
-    if (!open) return;
+    if (!isActive) return;
     const id = setTimeout(scrollToNowPlaying, 50);
     return () => clearTimeout(id);
   }, [currentQueueItemId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Group switch — queue reloads async so use a longer delay
   useEffect(() => {
-    if (!open) return;
+    if (!isActive) return;
     const id = setTimeout(scrollToNowPlaying, 400);
     return () => clearTimeout(id);
   }, [groupName]); // eslint-disable-line react-hooks/exhaustive-deps
