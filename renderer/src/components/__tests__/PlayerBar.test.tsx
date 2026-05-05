@@ -33,6 +33,7 @@ function makePlayback(overrides: Partial<PlaybackState> = {}): PlaybackState {
     stateIcon: '▶',
     timeLabel: '1:00 / 3:00',
     progressPct: 33,
+    positionMs: 60000,
     durationMs: 180000,
     isPlaying: true,
     shuffle: false,

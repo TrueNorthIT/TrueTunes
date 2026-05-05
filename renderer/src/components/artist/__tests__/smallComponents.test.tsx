@@ -64,30 +64,30 @@ function makeAlbumTrack(overrides: Partial<AlbumTrack> = {}): AlbumTrack {
 
 describe('TopSongRow', () => {
   it('renders track title', () => {
-    render(<TopSongRow track={makeAlbumTrack()} index={0} onAdd={vi.fn()} />);
+    render(<TopSongRow track={makeAlbumTrack()} index={0} isSelected={false} onAdd={vi.fn()} onClick={vi.fn()} onDragStart={vi.fn()} />);
     expect(screen.getByText('Come Together')).toBeInTheDocument();
   });
 
   it('renders 1-based index number', () => {
-    render(<TopSongRow track={makeAlbumTrack()} index={2} onAdd={vi.fn()} />);
+    render(<TopSongRow track={makeAlbumTrack()} index={2} isSelected={false} onAdd={vi.fn()} onClick={vi.fn()} onDragStart={vi.fn()} />);
     expect(screen.getByText('3')).toBeInTheDocument();
   });
 
   it('renders formatted duration', () => {
-    render(<TopSongRow track={makeAlbumTrack({ durationSeconds: 259 })} index={0} onAdd={vi.fn()} />);
+    render(<TopSongRow track={makeAlbumTrack({ durationSeconds: 259 })} index={0} isSelected={false} onAdd={vi.fn()} onClick={vi.fn()} onDragStart={vi.fn()} />);
     expect(screen.getByText('4:19')).toBeInTheDocument();
   });
 
   it('calls onAdd with raw item when + is clicked', () => {
     const onAdd = vi.fn();
     const raw = { name: 'CT', type: 'TRACK' } as SonosItem;
-    render(<TopSongRow track={makeAlbumTrack({ raw })} index={0} onAdd={onAdd} />);
+    render(<TopSongRow track={makeAlbumTrack({ raw })} index={0} isSelected={false} onAdd={onAdd} onClick={vi.fn()} onDragStart={vi.fn()} />);
     fireEvent.click(screen.getByText('+'));
     expect(onAdd).toHaveBeenCalledWith(raw);
   });
 
   it('shows ExplicitBadge when explicit is true', () => {
-    render(<TopSongRow track={makeAlbumTrack({ explicit: true })} index={0} onAdd={vi.fn()} />);
+    render(<TopSongRow track={makeAlbumTrack({ explicit: true })} index={0} isSelected={false} onAdd={vi.fn()} onClick={vi.fn()} onDragStart={vi.fn()} />);
     expect(screen.getByTitle('Explicit')).toBeInTheDocument();
   });
 });
@@ -100,26 +100,26 @@ describe('ArtistAlbumCard', () => {
   const album: SonosItem = { title: 'Abbey Road', type: 'ITEM_ALBUM' };
 
   it('renders album title', () => {
-    render(<ArtistAlbumCard album={album} onOpen={vi.fn()} />);
+    render(<ArtistAlbumCard album={album} onOpen={vi.fn()} onAdd={vi.fn()} />);
     expect(screen.getByText('Abbey Road')).toBeInTheDocument();
   });
 
   it('calls onOpen when clicked', () => {
     const onOpen = vi.fn();
-    render(<ArtistAlbumCard album={album} onOpen={onOpen} />);
+    render(<ArtistAlbumCard album={album} onOpen={onOpen} onAdd={vi.fn()} />);
     fireEvent.click(screen.getByText('Abbey Road'));
     expect(onOpen).toHaveBeenCalledWith(album);
   });
 
   it('renders subtitle when present', () => {
     const withSub = { ...album, subtitle: '1969' };
-    render(<ArtistAlbumCard album={withSub} onOpen={vi.fn()} />);
+    render(<ArtistAlbumCard album={withSub} onOpen={vi.fn()} onAdd={vi.fn()} />);
     expect(screen.getByText('1969')).toBeInTheDocument();
   });
 
   it('shows ExplicitBadge when isExplicit is true', () => {
     const explicit = { ...album, isExplicit: true };
-    render(<ArtistAlbumCard album={explicit} onOpen={vi.fn()} />);
+    render(<ArtistAlbumCard album={explicit} onOpen={vi.fn()} onAdd={vi.fn()} />);
     expect(screen.getByTitle('Explicit')).toBeInTheDocument();
   });
 });
