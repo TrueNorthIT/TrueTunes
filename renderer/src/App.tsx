@@ -90,8 +90,26 @@ function MainApp() {
   const [queueDockedWidth, setQueueDockedWidth] = useState<number>(380);
   const queueSidebarRef = useRef<QueueSidebarHandle>(null);
   const shellRef = useRef<HTMLDivElement>(null);
+  const routesRef = useRef<HTMLDivElement>(null);
   const handleResizeWidthLive = useCallback((width: number) => {
     shellRef.current?.style.setProperty('--docked-queue-w', `${width}px`);
+  }, []);
+
+  // Fade the queue panel-colour gradient when the main content is scrolled down
+  const location = useLocation();
+  useEffect(() => {
+    shellRef.current?.style.setProperty('--panel-gradient-opacity', '1');
+  }, [location.pathname]);
+  useEffect(() => {
+    const el = routesRef.current;
+    if (!el) return;
+    function onScroll(e: Event) {
+      const target = e.target as HTMLElement;
+      const opacity = Math.max(0, 1 - target.scrollTop / 250);
+      shellRef.current?.style.setProperty('--panel-gradient-opacity', String(opacity));
+    }
+    el.addEventListener('scroll', onScroll, true);
+    return () => el.removeEventListener('scroll', onScroll, true);
   }, []);
 
   useEffect(() => {
@@ -464,6 +482,7 @@ function MainApp() {
         onSetQueueMode={handleSetQueueMode}
       />
       <div className={styles.body}>
+        <div ref={routesRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
         <Routes>
           <Route
             path="/"
@@ -498,6 +517,7 @@ function MainApp() {
           <Route path="/queuedle" element={<QueuedlePanel />} />
           <Route path="/lyrics" element={<LyricsPanel playback={playback} />} />
         </Routes>
+        </div>
         {queueMode === 'docked' && (
           <QueueSidebar
             ref={queueSidebarRef}

@@ -38,5 +38,14 @@ export function useDominantColor(src: string | null): string | null {
     img.src = src;
   }, [src]);
 
+  useEffect(() => {
+    if (color) {
+      document.documentElement.style.setProperty('--panel-color', color);
+    } else {
+      document.documentElement.style.removeProperty('--panel-color');
+    }
+    return () => { document.documentElement.style.removeProperty('--panel-color'); };
+  }, [color]);
+
   return color;
 }
