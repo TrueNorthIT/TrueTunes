@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useDailyGame, useSubmitGameScore, useGameLeaderboard, useGameDates, useMyScore, useGameStats } from '../../hooks/useDailyGame';
+import {
+  useDailyGame,
+  useSubmitGameScore,
+  useGameLeaderboard,
+  useGameDates,
+  useGameRankings,
+  useMyScore,
+  useGameStats,
+} from '../../hooks/useDailyGame';
 import { QueuedleIntro } from './QueuedleIntro';
 import { QueuedleQuestionCard } from './QueuedleQuestionCard';
 import { QueuedleBonusScreen } from './QueuedleBonusScreen';
@@ -8,9 +16,11 @@ import { QueuedleSummary } from './QueuedleSummary';
 import { QueuedleCalendar } from './QueuedleCalendar';
 import { ScoreDistribution } from './ScoreDistribution';
 import { MyScores } from './MyScores';
+import { getGameRankIcon } from '../../lib/gameRankAssets';
 import styles from '../../styles/Queuedle.module.css';
 
 type Phase = 'intro' | 'main' | 'bonus' | 'bonus-results' | 'summary';
+type LeaderboardTab = 'today' | 'ranked';
 
 function londonDateToday(): string {
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -27,6 +37,7 @@ function londonDateToday(): string {
 
 export function QueuedlePanel() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [leaderboardTab, setLeaderboardTab] = useState<LeaderboardTab>('today');
   const todayId = useMemo(() => londonDateToday(), []);
   const { data, isLoading, error } = useDailyGame(selectedDate ?? undefined);
   const submit = useSubmitGameScore();
@@ -42,6 +53,7 @@ export function QueuedlePanel() {
 
   const leaderboard = useGameLeaderboard(gameId ?? undefined);
   const gameDates = useGameDates(displayName ?? undefined);
+  const rankings = useGameRankings(displayName ?? undefined, leaderboardTab === 'ranked');
   const myScore = useMyScore(gameId, displayName);
   const gameStats = useGameStats(gameId);
   const alreadyPlayed = useMemo(() => {
@@ -50,7 +62,11 @@ export function QueuedlePanel() {
     return existing ?? null;
   }, [displayName, leaderboard.data]);
 
-  const localPlayed = useMemo<{ mainScore: number; bonusScore: number; guesses?: Array<'left' | 'right'> } | null>(() => {
+  const localPlayed = useMemo<{
+    mainScore: number;
+    bonusScore: number;
+    guesses?: Array<'left' | 'right'>;
+  } | null>(() => {
     if (!gameId) return null;
     try {
       const raw = localStorage.getItem(`queuedle-played:${gameId}`);
@@ -138,12 +154,14 @@ export function QueuedlePanel() {
     const next = pickedGameId === todayId ? null : pickedGameId;
     if (next === selectedDate) return;
     setSelectedDate(next);
+    setLeaderboardTab('today');
     resetGameState();
   }
 
   function handleBackToToday() {
     if (selectedDate === null) return;
     setSelectedDate(null);
+    setLeaderboardTab('today');
     resetGameState();
   }
 
@@ -212,11 +230,116 @@ export function QueuedlePanel() {
     </>
   );
 
+  function renderLeaderboardArea(
+    currentGame: GameDoc,
+    scoreForDistributions: { mainScore: number; bonusScore: number } | null,
+    showMyScores: boolean
+  ) {
+    const scores = leaderboard.data && 'scores' in leaderboard.data ? leaderboard.data.scores : [];
+    const rankedRows = rankings.data ?? [];
+    const todayTabClass = `${styles.leaderboardTab}${
+      leaderboardTab === 'today' ? ' ' + styles.leaderboardTabActive : ''
+    }`;
+    const rankedTabClass = `${styles.leaderboardTab}${
+      leaderboardTab === 'ranked' ? ' ' + styles.leaderboardTabActive : ''
+    }`;
+
+    return (
+      <div className={styles.leaderboardSection}>
+        {showMyScores && scoreForDistributions && (
+          <MyScores
+            mainScore={scoreForDistributions.mainScore}
+            bonusScore={scoreForDistributions.bonusScore}
+            maxMain={currentGame.questions.length}
+            maxBonus={currentGame.questions.length}
+          />
+        )}
+        <div className={styles.leaderboardTabs} role="tablist" aria-label="Queuedle leaderboard views">
+          <button
+            className={todayTabClass}
+            role="tab"
+            aria-selected={leaderboardTab === 'today'}
+            onClick={() => setLeaderboardTab('today')}
+          >
+            Today
+          </button>
+          <button
+            className={rankedTabClass}
+            role="tab"
+            aria-selected={leaderboardTab === 'ranked'}
+            onClick={() => setLeaderboardTab('ranked')}
+          >
+            Ranked
+          </button>
+        </div>
+        {leaderboardTab === 'today' && scores.length > 0 && (
+          <>
+            <h2 className={styles.leaderboardTitle}>
+              {selectedDate && selectedDate !== todayId ? `${selectedDate} Leaderboard` : "Today's Leaderboard"}
+            </h2>
+            {scores.slice(0, 10).map((s, i) => (
+              <div key={s.userName} className={styles.scoreRow}>
+                <span className={styles.scoreRank}>{i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span>
+                <span className={styles.scoreName}>{s.userName}</span>
+                <span className={styles.scoreBreakdown}>
+                  {s.mainScore}/{currentGame.questions.length} · {s.bonusScore}/{currentGame.questions.length}
+                </span>
+                <span className={styles.scoreTotal}>{s.total}</span>
+              </div>
+            ))}
+            <ScoreDistribution
+              scores={scores.map((s) => s.mainScore)}
+              maxScore={currentGame.questions.length}
+              playerScore={scoreForDistributions?.mainScore ?? -1}
+              title="Higher or Lower"
+            />
+            <ScoreDistribution
+              scores={scores.map((s) => s.bonusScore)}
+              maxScore={currentGame.questions.length}
+              playerScore={scoreForDistributions?.bonusScore ?? -1}
+              title="Top Queuer"
+            />
+          </>
+        )}
+        {leaderboardTab === 'ranked' && (
+          <>
+            <h2 className={styles.leaderboardTitle}>Ranked Leaderboard</h2>
+            {rankings.isLoading && <div className={styles.rankedState}>Loading rankings...</div>}
+            {!rankings.isLoading && rankedRows.length === 0 && (
+              <div className={styles.rankedState}>No ranked scores yet.</div>
+            )}
+            {!rankings.isLoading &&
+              rankedRows.slice(0, 10).map((ranked, i) => (
+                <div key={ranked.userName} className={styles.scoreRow}>
+                  <span className={styles.scoreRank}>{i + 1}</span>
+                  <span className={styles.scoreName}>{ranked.userName}</span>
+                  <span className={styles.scoreBreakdown}>
+                    {ranked.gamesPlayed} {ranked.gamesPlayed === 1 ? 'game' : 'games'} ·{' '}
+                    <span className={styles.rankedTier}>
+                      {getGameRankIcon(ranked.tierKey) && (
+                        <img
+                          className={styles.rankedTierIcon}
+                          src={getGameRankIcon(ranked.tierKey)!}
+                          alt=""
+                          loading="lazy"
+                        />
+                      )}
+                      {ranked.tierName}
+                    </span>
+                  </span>
+                  <span className={styles.scoreTotal}>{ranked.averageTotal.toFixed(1)}</span>
+                </div>
+              ))}
+          </>
+        )}
+      </div>
+    );
+  }
+
   if (showAlreadyPlayed) {
     const cachedScore =
       localPlayed ??
       (alreadyPlayed ? { mainScore: alreadyPlayed.mainScore, bonusScore: alreadyPlayed.bonusScore } : null);
-    const scores = leaderboard.data && 'scores' in leaderboard.data ? leaderboard.data.scores : [];
     const calendarDates = gameDates.data?.dates ?? [];
     return (
       <div className={styles.page}>
@@ -251,45 +374,7 @@ export function QueuedlePanel() {
                 onPlayAgain={handleDevPlayAgain}
               />
             )}
-            <div className={styles.leaderboardSection}>
-              {cachedScore && (
-                <MyScores
-                  mainScore={cachedScore.mainScore}
-                  bonusScore={cachedScore.bonusScore}
-                  maxMain={game.questions.length}
-                  maxBonus={game.questions.length}
-                />
-              )}
-              {scores.length > 0 && (
-                <>
-                  <h2 className={styles.leaderboardTitle}>
-                    {selectedDate && selectedDate !== todayId ? `${selectedDate} Leaderboard` : "Today's Leaderboard"}
-                  </h2>
-                  {scores.slice(0, 10).map((s, i) => (
-                    <div key={s.userName} className={styles.scoreRow}>
-                      <span className={styles.scoreRank}>{i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span>
-                      <span className={styles.scoreName}>{s.userName}</span>
-                      <span className={styles.scoreBreakdown}>
-                        {s.mainScore}/{game.questions.length} · {s.bonusScore}/{game.questions.length}
-                      </span>
-                      <span className={styles.scoreTotal}>{s.total}</span>
-                    </div>
-                  ))}
-                  <ScoreDistribution
-                    scores={scores.map((s) => s.mainScore)}
-                    maxScore={game.questions.length}
-                    playerScore={cachedScore?.mainScore ?? -1}
-                    title="Higher or Lower"
-                  />
-                  <ScoreDistribution
-                    scores={scores.map((s) => s.bonusScore)}
-                    maxScore={game.questions.length}
-                    playerScore={cachedScore?.bonusScore ?? -1}
-                    title="Top Queuer"
-                  />
-                </>
-              )}
-            </div>
+            {renderLeaderboardArea(game, cachedScore, true)}
           </div>
         </div>
         {calendarOpen && calendarDates.length > 0 && (
@@ -477,15 +562,18 @@ export function QueuedlePanel() {
         )}
 
         {phase === 'summary' && localScore && (
-          <QueuedleSummary
-            mainScore={localScore.main}
-            bonusScore={localScore.bonus}
-            maxMain={game.questions.length}
-            maxBonus={game.questions.length}
-            questions={game.questions}
-            mainGuesses={mainGuesses}
-            stats={gameStats.data}
-          />
+          <div className={styles.alreadyPlayedColumns}>
+            <QueuedleSummary
+              mainScore={localScore.main}
+              bonusScore={localScore.bonus}
+              maxMain={game.questions.length}
+              maxBonus={game.questions.length}
+              questions={game.questions}
+              mainGuesses={mainGuesses}
+              stats={gameStats.data}
+            />
+            {renderLeaderboardArea(game, { mainScore: localScore.main, bonusScore: localScore.bonus }, false)}
+          </div>
         )}
       </div>
     </div>

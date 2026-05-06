@@ -21,7 +21,17 @@ function mockSearchResolves(opts: {
       resourceOrder: ['ARTISTS', 'ALBUMS'],
       ARTISTS: {
         resources: opts.artist
-          ? [{ id: { objectId: opts.artist.objectId, serviceId: opts.artist.serviceId, accountId: opts.artist.accountId }, name: opts.artist.name, images: [] }]
+          ? [
+              {
+                id: {
+                  objectId: opts.artist.objectId,
+                  serviceId: opts.artist.serviceId,
+                  accountId: opts.artist.accountId,
+                },
+                name: opts.artist.name,
+                images: [],
+              },
+            ]
           : [],
       },
       ALBUMS: {
@@ -30,7 +40,12 @@ function mockSearchResolves(opts: {
           name: a.name,
           images: [],
           artists: a.artistName
-            ? [{ name: a.artistName, id: { objectId: `${a.objectId}-artist`, serviceId: a.serviceId, accountId: a.accountId } }]
+            ? [
+                {
+                  name: a.artistName,
+                  id: { objectId: `${a.objectId}-artist`, serviceId: a.serviceId, accountId: a.accountId },
+                },
+              ]
             : [],
         })),
       },
@@ -39,6 +54,7 @@ function mockSearchResolves(opts: {
 }
 
 const mockNavigate = vi.fn();
+const mockUseGameRankings = vi.fn();
 vi.mock('react-router-dom', async (importActual) => {
   const actual = await importActual<typeof import('react-router-dom')>();
   return { ...actual, useNavigate: () => mockNavigate };
@@ -56,6 +72,7 @@ vi.mock('../../hooks/useImage', () => ({
 
 vi.mock('../../hooks/useDailyGame', () => ({
   useGameLeaderboard: () => ({ data: { gameId: 'today', scores: [] }, isLoading: false }),
+  useGameRankings: (userName: string | null | undefined, enabled: boolean) => mockUseGameRankings(userName, enabled),
   useDailyGame: () => ({ data: undefined, isLoading: false }),
   useSubmitGameScore: () => ({ mutateAsync: vi.fn(), isPending: false }),
   dailyGameQueryOptions: () => ({ queryKey: [], queryFn: vi.fn() }),
@@ -66,14 +83,21 @@ const mockRefetch = vi.fn();
 const mockData: StatsResult = {
   topUsers: [
     { userId: 'alice', count: 10 },
-    { userId: 'bob',   count: 7  },
+    { userId: 'bob', count: 7 },
   ],
   topTracks: [
-    { trackName: 'Bohemian Rhapsody', artist: 'Queen', count: 5, artistId: 'art1', serviceId: 'svc1', accountId: 'acc1' },
-    { trackName: 'Hotel California',  artist: 'Eagles', count: 3 },
+    {
+      trackName: 'Bohemian Rhapsody',
+      artist: 'Queen',
+      count: 5,
+      artistId: 'art1',
+      serviceId: 'svc1',
+      accountId: 'acc1',
+    },
+    { trackName: 'Hotel California', artist: 'Eagles', count: 3 },
   ],
   topArtists: [
-    { artist: 'Queen',  artistId: 'art1', serviceId: 'svc1', accountId: 'acc1', count: 5 },
+    { artist: 'Queen', artistId: 'art1', serviceId: 'svc1', accountId: 'acc1', count: 5 },
     { artist: 'Eagles', count: 3 },
   ],
   topAlbums: [
@@ -95,6 +119,7 @@ function mockLoaded(data: StatsResult = mockData) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockLoaded();
+  mockUseGameRankings.mockReturnValue({ data: [], isLoading: false, error: null, refetch: vi.fn() });
 });
 
 describe('LeaderboardPanel', () => {
@@ -143,6 +168,7 @@ describe('LeaderboardPanel', () => {
       expect(screen.getByRole('button', { name: 'Today' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'This week' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'All time' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Queuedle' })).toBeInTheDocument();
     });
 
     it('renders top queuers', () => {
@@ -188,6 +214,62 @@ describe('LeaderboardPanel', () => {
       fireEvent.click(screen.getByRole('button', { name: 'All time' }));
       expect(mockUseStats).toHaveBeenCalledWith('alltime', undefined);
     });
+
+    it('switches to Queuedle all-time average rankings', () => {
+      mockUseGameRankings.mockReturnValue({
+        data: [
+          {
+            userName: 'queuedle-player',
+            gamesPlayed: 3,
+            averageTotal: 4.666,
+            averageMain: 3,
+            averageBonus: 1.666,
+            averagePercent: 77.7,
+            bestTotal: 6,
+            tierKey: 'algorithm-whisperer',
+            tierName: 'Algorithm Whisperer',
+            isProvisional: false,
+          },
+        ],
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
+      const { container } = render(<LeaderboardPanel />);
+      fireEvent.click(screen.getByRole('button', { name: 'Queuedle' }));
+      expect(screen.getByText('Queuedle all-time average')).toBeInTheDocument();
+      expect(screen.getByText('queuedle-player')).toBeInTheDocument();
+      expect(screen.getByText('3 games')).toBeInTheDocument();
+      expect(screen.getByText('Algorithm Whisperer')).toBeInTheDocument();
+      expect(screen.getByText('4.7')).toBeInTheDocument();
+      expect(container.querySelector('.rankTierIcon')).toBeTruthy();
+      expect(mockUseGameRankings).toHaveBeenLastCalledWith(null, true);
+    });
+
+    it('shows provisional tier in Queuedle rankings', () => {
+      mockUseGameRankings.mockReturnValue({
+        data: [
+          {
+            userName: 'new-player',
+            gamesPlayed: 2,
+            averageTotal: 5,
+            averageMain: 3,
+            averageBonus: 2,
+            averagePercent: 90,
+            bestTotal: 6,
+            tierKey: 'provisional',
+            tierName: 'Provisional',
+            isProvisional: true,
+          },
+        ],
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
+      render(<LeaderboardPanel />);
+      fireEvent.click(screen.getByRole('button', { name: 'Queuedle' }));
+      expect(screen.getByText('Provisional')).toBeInTheDocument();
+    });
   });
 
   describe('refresh button', () => {
@@ -195,6 +277,21 @@ describe('LeaderboardPanel', () => {
       render(<LeaderboardPanel />);
       fireEvent.click(screen.getByTitle('Refresh'));
       expect(mockRefetch).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('rank info', () => {
+    it('opens and closes the Queuedle rank tier info dialog', () => {
+      const { container } = render(<LeaderboardPanel />);
+      fireEvent.click(screen.getByRole('button', { name: 'Rank info' }));
+      expect(screen.getByRole('dialog', { name: 'Queuedle Rank Tiers' })).toBeInTheDocument();
+      expect(screen.getByText(/total points earned divided by total possible points/i)).toBeInTheDocument();
+      expect(screen.getByText('Skip Button Survivor')).toBeInTheDocument();
+      expect(screen.getByText('Playlist Prophet')).toBeInTheDocument();
+      expect(screen.getByText('85%+')).toBeInTheDocument();
+      expect(container.querySelectorAll('.rankInfoImage')).toHaveLength(5);
+      fireEvent.click(screen.getByRole('button', { name: 'Close rank info' }));
+      expect(screen.queryByRole('dialog', { name: 'Queuedle Rank Tiers' })).not.toBeInTheDocument();
     });
   });
 
@@ -239,10 +336,7 @@ describe('LeaderboardPanel', () => {
       render(<LeaderboardPanel />);
       // Queen has artistId 'art1'
       fireEvent.click(screen.getAllByText('Queen')[0]);
-      expect(mockNavigate).toHaveBeenCalledWith(
-        expect.stringMatching(/^\/artist\//),
-        expect.anything()
-      );
+      expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/^\/artist\//), expect.anything());
     });
 
     it('clicking an artist link without artistId resolves via search and opens artist page', async () => {
@@ -251,10 +345,7 @@ describe('LeaderboardPanel', () => {
       // Eagles has no artistId — fall back to a Sonos search that resolves to a real artist
       fireEvent.click(screen.getAllByText('Eagles')[0]);
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith(
-          expect.stringMatching(/^\/artist\//),
-          expect.anything()
-        );
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/^\/artist\//), expect.anything());
       });
     });
 
@@ -283,33 +374,36 @@ describe('LeaderboardPanel', () => {
         ...mockData,
         topAlbums: [],
         topTracks: [
-          { trackName: 'My Song', artist: 'Artist', count: 5, artistId: 'art1', serviceId: 'svc1', accountId: 'acc1', album: 'Great Album', albumId: 'alb9' },
+          {
+            trackName: 'My Song',
+            artist: 'Artist',
+            count: 5,
+            artistId: 'art1',
+            serviceId: 'svc1',
+            accountId: 'acc1',
+            album: 'Great Album',
+            albumId: 'alb9',
+          },
         ],
       });
       render(<LeaderboardPanel />);
       fireEvent.click(screen.getByText('Great Album'));
-      expect(mockNavigate).toHaveBeenCalledWith(
-        expect.stringMatching(/^\/album\//),
-        expect.anything()
-      );
+      expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/^\/album\//), expect.anything());
     });
 
     it('clicking album link without albumId resolves via search and opens album page', async () => {
       mockLoaded({
         ...mockData,
         topAlbums: [],
-        topTracks: [
-          { trackName: 'Track', artist: 'Artist', count: 1, album: 'Rare Album' },
-        ],
+        topTracks: [{ trackName: 'Track', artist: 'Artist', count: 1, album: 'Rare Album' }],
       });
-      mockSearchResolves({ album: { name: 'Rare Album', objectId: 'rare-id', serviceId: 'svc1', accountId: 'acc1', artistName: 'Artist' } });
+      mockSearchResolves({
+        album: { name: 'Rare Album', objectId: 'rare-id', serviceId: 'svc1', accountId: 'acc1', artistName: 'Artist' },
+      });
       render(<LeaderboardPanel />);
       fireEvent.click(screen.getByText('Rare Album'));
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith(
-          expect.stringMatching(/^\/album\//),
-          expect.anything()
-        );
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/^\/album\//), expect.anything());
       });
     });
   });
@@ -336,10 +430,7 @@ describe('LeaderboardPanel', () => {
       render(<LeaderboardPanel />);
       // Queen appears in both topTracks and topArtists — click the second instance (topArtists)
       fireEvent.click(screen.getAllByText('Queen')[1]);
-      expect(mockNavigate).toHaveBeenCalledWith(
-        expect.stringMatching(/^\/artist\//),
-        expect.anything()
-      );
+      expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/^\/artist\//), expect.anything());
     });
 
     it('clicking artist without artistId resolves via search and opens artist page', async () => {
@@ -348,10 +439,7 @@ describe('LeaderboardPanel', () => {
       // Eagles appears in both topTracks and topArtists — click the second instance (topArtists)
       fireEvent.click(screen.getAllByText('Eagles')[1]);
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith(
-          expect.stringMatching(/^\/artist\//),
-          expect.anything()
-        );
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/^\/artist\//), expect.anything());
       });
     });
   });
@@ -361,16 +449,23 @@ describe('LeaderboardPanel', () => {
       render(<LeaderboardPanel />);
       // Click the album title in the top albums section
       fireEvent.click(screen.getByText('A Night at the Opera'));
-      expect(mockNavigate).toHaveBeenCalledWith(
-        expect.stringMatching(/^\/album\//),
-        expect.anything()
-      );
+      expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/^\/album\//), expect.anything());
     });
 
     it('shows art image when album has imageUrl', () => {
       mockLoaded({
         ...mockData,
-        topAlbums: [{ album: 'Pictured Album', artist: 'Band', albumId: 'alb2', serviceId: 'svc1', accountId: 'acc1', count: 1, imageUrl: 'http://img.com/art.jpg' }],
+        topAlbums: [
+          {
+            album: 'Pictured Album',
+            artist: 'Band',
+            albumId: 'alb2',
+            serviceId: 'svc1',
+            accountId: 'acc1',
+            count: 1,
+            imageUrl: 'http://img.com/art.jpg',
+          },
+        ],
       });
       const { container } = render(<LeaderboardPanel />);
       expect(container.querySelector('img[src="http://img.com/art.jpg"]')).toBeTruthy();
@@ -381,14 +476,13 @@ describe('LeaderboardPanel', () => {
         ...mockData,
         topAlbums: [{ album: 'No Artist Album', artist: 'Unknown Artist', albumId: 'alb3', count: 1 }],
       });
-      mockSearchResolves({ artist: { name: 'Unknown Artist', objectId: 'unk-id', serviceId: 'svc1', accountId: 'acc1' } });
+      mockSearchResolves({
+        artist: { name: 'Unknown Artist', objectId: 'unk-id', serviceId: 'svc1', accountId: 'acc1' },
+      });
       render(<LeaderboardPanel />);
       fireEvent.click(screen.getByText('Unknown Artist'));
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith(
-          expect.stringMatching(/^\/artist\//),
-          expect.anything()
-        );
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/^\/artist\//), expect.anything());
       });
     });
 
@@ -398,15 +492,18 @@ describe('LeaderboardPanel', () => {
         topAlbums: [{ album: 'Legacy Album', artist: 'Legacy Artist', count: 2 }],
       });
       mockSearchResolves({
-        album: { name: 'Legacy Album', objectId: 'legacy-id', serviceId: 'svc1', accountId: 'acc1', artistName: 'Legacy Artist' },
+        album: {
+          name: 'Legacy Album',
+          objectId: 'legacy-id',
+          serviceId: 'svc1',
+          accountId: 'acc1',
+          artistName: 'Legacy Artist',
+        },
       });
       render(<LeaderboardPanel />);
       fireEvent.click(screen.getByText('Legacy Album'));
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith(
-          expect.stringMatching(/^\/album\//),
-          expect.anything()
-        );
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/^\/album\//), expect.anything());
       });
     });
 
@@ -418,17 +515,20 @@ describe('LeaderboardPanel', () => {
       // Search returns two same-named albums; the artist hint must pick Queen, not Eagles.
       mockSearchResolves({
         albums: [
-          { name: 'Greatest Hits', objectId: 'eagles-album', serviceId: 'svc1', accountId: 'acc1', artistName: 'Eagles' },
-          { name: 'Greatest Hits', objectId: 'queen-album',  serviceId: 'svc1', accountId: 'acc1', artistName: 'Queen'  },
+          {
+            name: 'Greatest Hits',
+            objectId: 'eagles-album',
+            serviceId: 'svc1',
+            accountId: 'acc1',
+            artistName: 'Eagles',
+          },
+          { name: 'Greatest Hits', objectId: 'queen-album', serviceId: 'svc1', accountId: 'acc1', artistName: 'Queen' },
         ],
       });
       render(<LeaderboardPanel />);
       fireEvent.click(screen.getByText('Greatest Hits'));
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith(
-          expect.stringContaining('queen-album'),
-          expect.anything()
-        );
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('queen-album'), expect.anything());
       });
     });
   });
