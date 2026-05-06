@@ -10,6 +10,7 @@ const mockUseDailyGame = vi.fn();
 const mockUseSubmitGameScore = vi.fn();
 const mockUseGameLeaderboard = vi.fn();
 const mockUseGameDates = vi.fn();
+const mockUseGameRankings = vi.fn();
 const mockUseMyScore = vi.fn();
 const mockUseGameStats = vi.fn();
 vi.mock('@/hooks/useDailyGame', () => ({
@@ -17,6 +18,7 @@ vi.mock('@/hooks/useDailyGame', () => ({
   useSubmitGameScore: () => mockUseSubmitGameScore(),
   useGameLeaderboard: (date?: string) => mockUseGameLeaderboard(date),
   useGameDates: (userName?: string | null) => mockUseGameDates(userName),
+  useGameRankings: (userName?: string | null, enabled?: boolean) => mockUseGameRankings(userName, enabled),
   useMyScore: (gameId: string | null, userName: string | null | undefined) => mockUseMyScore(gameId, userName),
   useGameStats: (gameId: string | null) => mockUseGameStats(gameId),
 }));
@@ -149,6 +151,7 @@ beforeEach(() => {
   mockUseSubmitGameScore.mockReturnValue({ mutateAsync: vi.fn(), isPending: false });
   mockUseGameLeaderboard.mockReturnValue({ data: { scores: [] }, isLoading: false });
   mockUseGameDates.mockReturnValue({ data: { dates: [] }, isLoading: false });
+  mockUseGameRankings.mockReturnValue({ data: [], isLoading: false });
   mockUseMyScore.mockReturnValue({ data: undefined, isLoading: false });
   mockUseGameStats.mockReturnValue({ data: undefined, isLoading: false });
 });
@@ -280,6 +283,21 @@ describe('QueuedlePanel', () => {
     expect(screen.getByText('Score: 2')).toBeInTheDocument();
   });
 
+  it('shows ranked tab immediately after finishing the game', async () => {
+    const mutateAsync = vi.fn().mockResolvedValue({ score: { mainScore: 1, bonusScore: 1 } });
+    mockUseSubmitGameScore.mockReturnValue({ mutateAsync, isPending: false });
+    const user = userEvent.setup();
+    render(<QueuedlePanel />);
+    await startGame(user);
+    await user.click(screen.getByText('Pick Left'));
+    await user.click(screen.getByText('Next'));
+    await user.click(screen.getByText('Submit Bonus'));
+    await waitFor(() => screen.getByText('Bonus results'));
+    await user.click(screen.getByText('See Score'));
+    expect(screen.getByText('Score: 2')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Ranked' })).toBeInTheDocument();
+  });
+
   it('uses result.existing score when no result.score', async () => {
     const mutateAsync = vi.fn().mockResolvedValue({ existing: { mainScore: 0, bonusScore: 1 } });
     mockUseSubmitGameScore.mockReturnValue({ mutateAsync, isPending: false });
@@ -382,6 +400,80 @@ describe('QueuedlePanel', () => {
     render(<QueuedlePanel />);
     await waitFor(() => expect(screen.getByText("Today's Leaderboard")).toBeInTheDocument());
     expect(screen.getByText('alice')).toBeInTheDocument();
+  });
+
+  it('shows ranked tab after the user has played', async () => {
+    localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
+    render(<QueuedlePanel />);
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Ranked' })).toBeInTheDocument());
+    await waitFor(() => expect(mockUseGameRankings).toHaveBeenLastCalledWith('TestUser', false));
+  });
+
+  it('clicking Ranked shows average total rankings', async () => {
+    localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
+    mockUseGameRankings.mockReturnValue({
+      data: [
+        {
+          userName: 'alice',
+          gamesPlayed: 2,
+          averageTotal: 4.5,
+          averageMain: 3,
+          averageBonus: 1.5,
+          averagePercent: 75,
+          bestTotal: 5,
+          tierKey: 'provisional',
+          tierName: 'Provisional',
+          isProvisional: true,
+        },
+      ],
+      isLoading: false,
+    });
+    const user = userEvent.setup();
+    render(<QueuedlePanel />);
+    await user.click(await screen.findByRole('tab', { name: 'Ranked' }));
+    expect(screen.getByText('Ranked Leaderboard')).toBeInTheDocument();
+    expect(screen.getByText('alice')).toBeInTheDocument();
+    expect(screen.getByText('Provisional')).toBeInTheDocument();
+    expect(screen.getByText('4.5')).toBeInTheDocument();
+    await waitFor(() => expect(mockUseGameRankings).toHaveBeenLastCalledWith('TestUser', true));
+  });
+
+  it('clicking Today restores the daily leaderboard', async () => {
+    localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
+    mockUseGameLeaderboard.mockReturnValue({
+      data: {
+        scores: [
+          { userName: 'TestUser', mainScore: 2, bonusScore: 1, total: 3 },
+          { userName: 'daily-player', mainScore: 1, bonusScore: 1, total: 2 },
+        ],
+      },
+      isLoading: false,
+    });
+    mockUseGameRankings.mockReturnValue({
+      data: [
+        {
+          userName: 'ranked-player',
+          gamesPlayed: 2,
+          averageTotal: 4.5,
+          averageMain: 3,
+          averageBonus: 1.5,
+          averagePercent: 75,
+          bestTotal: 5,
+          tierKey: 'algorithm-whisperer',
+          tierName: 'Algorithm Whisperer',
+          isProvisional: false,
+        },
+      ],
+      isLoading: false,
+    });
+    const user = userEvent.setup();
+    render(<QueuedlePanel />);
+    await user.click(await screen.findByRole('tab', { name: 'Ranked' }));
+    expect(screen.getByText('ranked-player')).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'Today' }));
+    expect(screen.getByText("Today's Leaderboard")).toBeInTheDocument();
+    expect(screen.getByText('daily-player')).toBeInTheDocument();
+    expect(screen.queryByText('ranked-player')).not.toBeInTheDocument();
   });
 
   it('skips the intro and shows already-played when localStorage has the score', async () => {

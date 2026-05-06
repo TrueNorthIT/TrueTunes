@@ -751,7 +751,9 @@
   border-radius: var(--r-sm);
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
 .playAgainBtn:hover {
   background: var(--bg-2);
@@ -895,6 +897,50 @@
   margin: 0 0 12px;
 }
 
+.leaderboardTabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  margin: 0 0 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+}
+
+.leaderboardTab {
+  background: transparent;
+  border: 0;
+  color: var(--text-3);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: calc(var(--r-sm) - 2px);
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.leaderboardTab:hover {
+  color: var(--text);
+}
+
+.leaderboardTabActive {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.leaderboardTabActive:hover {
+  color: var(--bg);
+}
+
+.rankedState {
+  padding: 12px 4px;
+  color: var(--text-3);
+  font-size: 13px;
+}
+
 /* ── Leaderboard rows ── */
 .scoreRow {
   display: grid;
@@ -924,6 +970,18 @@
   font-size: 11px;
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
+}
+.rankedTier {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
+}
+.rankedTierIcon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 .scoreTotal {
   font-size: 18px;
