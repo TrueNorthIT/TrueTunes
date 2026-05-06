@@ -79,7 +79,7 @@
 .resizeHandle {
   position: absolute;
   top: 0; left: 0; bottom: 0;
-  width: 6px;
+  width: 16px;
   cursor: ew-resize;
   background: transparent;
   z-index: 2;
@@ -90,16 +90,17 @@
   content: '';
   position: absolute;
   left: 0;
+  top: 0;
+  bottom: 0;
   width: 280px;
-  height: 400px;
-  top: calc(var(--mouse-y, 50%) - 200px);
-  background: radial-gradient(ellipse 100% 50% at 0% 50%,
+  background: radial-gradient(
+    ellipse 100% 300px at 0px var(--mouse-y, 50%),
     rgba(200, 160, 255, 0.18) 0%,
     rgba(160, 110, 255, 0.08) 50%,
     transparent 80%
   );
   opacity: 0;
-  transition: opacity 0.2s, top 0s;
+  transition: opacity 0.2s;
   pointer-events: none;
 }
 .resizeHandle:hover::after { opacity: 1; }
