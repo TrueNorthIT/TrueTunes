@@ -290,7 +290,9 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
       )}
       {isDocked && (
         <div className={styles.dockedTopBar}>
-          <WindowControls />
+          <div className={styles.winPill}>
+            <WindowControls />
+          </div>
         </div>
       )}
       <div className={styles.header}>
