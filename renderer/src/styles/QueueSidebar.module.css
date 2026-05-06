@@ -43,14 +43,9 @@
   border-radius: 0;
   border: none;
   border-left: 1px solid var(--border);
-  box-shadow: -1px 0 40px rgba(0, 0, 0, 0.35);
+  box-shadow: none;
   backdrop-filter: none;
-  background: linear-gradient(
-    175deg,
-    #2c2c32 0%,
-    #232327 40%,
-    #1e1e22 100%
-  );
+  background: transparent;
   transform: none;
   transition: none;
   /* Sit above the TopNav drag region (z-index 199) so the buttons below
