@@ -42,7 +42,6 @@
   margin-left: auto;
   border-radius: 0;
   border: none;
-  border-left: 1px solid var(--border);
   box-shadow: none;
   backdrop-filter: none;
   background: transparent;
