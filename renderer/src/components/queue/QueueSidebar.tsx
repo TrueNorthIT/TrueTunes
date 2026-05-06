@@ -29,6 +29,7 @@ interface Props {
   onAddToQueue: (item: SonosItem, position: number) => void;
   dockedWidth?: number;
   onResizeWidth?: (width: number) => void;
+  onResizeWidthLive?: (width: number) => void;
 }
 
 export interface QueueSidebarHandle {
@@ -58,6 +59,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     onAddToQueue,
     dockedWidth,
     onResizeWidth,
+    onResizeWidthLive,
   },
   ref
 ) {
@@ -165,6 +167,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     const onMove = (ev: PointerEvent) => {
       const next = Math.max(MIN_DOCKED_WIDTH, Math.min(max(), startWidth + (startX - ev.clientX)));
       setLiveWidth(next);
+      onResizeWidthLive?.(next);
     };
     const onUp = () => {
       document.documentElement.classList.remove('resizingQueue');

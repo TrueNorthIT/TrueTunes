@@ -89,6 +89,10 @@ function MainApp() {
   const [queueMode, setQueueMode] = useState<'floating' | 'docked'>('floating');
   const [queueDockedWidth, setQueueDockedWidth] = useState<number>(380);
   const queueSidebarRef = useRef<QueueSidebarHandle>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
+  const handleResizeWidthLive = useCallback((width: number) => {
+    shellRef.current?.style.setProperty('--docked-queue-w', `${width}px`);
+  }, []);
 
   useEffect(() => {
     window.sonos.getDisplayName().then(setDisplayName);
@@ -437,6 +441,7 @@ function MainApp() {
 
   return (
     <div
+      ref={shellRef}
       className={styles.shell}
       style={queueMode === 'docked' ? { '--docked-queue-w': `${queueDockedWidth}px` } as React.CSSProperties : undefined}
     >
@@ -513,6 +518,7 @@ function MainApp() {
             onAddToQueue={handleAddToQueue}
             dockedWidth={queueDockedWidth}
             onResizeWidth={handleSetQueueDockedWidth}
+            onResizeWidthLive={handleResizeWidthLive}
           />
         )}
       </div>
