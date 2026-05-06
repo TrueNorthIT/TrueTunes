@@ -47,6 +47,7 @@
   background: transparent;
   transform: none;
   transition: none;
+  overflow: visible;
   /* Sit above the TopNav drag region (z-index 199) so the buttons below
      are clickable; the dockedTopBar provides its own drag region. */
   z-index: 200;
@@ -88,14 +89,22 @@
 .resizeHandle::after {
   content: '';
   position: absolute;
-  left: 1px; right: 1px;
-  height: 200px;
-  top: calc(var(--mouse-y, 50%) - 100px);
-  background: rgba(255, 255, 255, 0.18);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 220px;
+  top: calc(var(--mouse-y, 50%) - 110px);
+  background: radial-gradient(ellipse 50% 50% at 50% 50%,
+    rgba(200, 170, 255, 0.55) 0%,
+    rgba(160, 120, 255, 0.2) 45%,
+    transparent 70%
+  );
   border-radius: 99px;
   opacity: 0;
-  transition: opacity 0.15s, top 0s;
+  transition: opacity 0.2s, top 0s;
   pointer-events: none;
+  filter: blur(2px);
+  box-shadow: 0 0 18px 6px rgba(160, 100, 255, 0.3);
 }
 .resizeHandle:hover::after { opacity: 1; }
 
