@@ -192,19 +192,23 @@
 }
 
 .content::-webkit-scrollbar {
-  width: 6px;
+  width: 16px; /* wide hit box */
 }
 .content::-webkit-scrollbar-track {
   background: transparent;
+  margin-top: 20px; /* never touch top */
+  margin-bottom: 8px;
 }
 .content::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
+  /* transparent border shrinks visual width while keeping 16px hit box */
+  border: 5px solid transparent;
+  background-clip: padding-box;
+  background-color: rgba(255, 255, 255, 0.18);
   border-radius: 99px;
-  min-height: 0;
-  max-height: 48px;
+  max-height: 32px;
 }
 .content::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.32);
+  background-color: rgba(255, 255, 255, 0.32);
 }
 
 /* ── Track row ── */
