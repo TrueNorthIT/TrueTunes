@@ -89,21 +89,18 @@
 .resizeHandle::after {
   content: '';
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 28px;
+  left: 0;
+  width: 120px;
   height: 220px;
   top: calc(var(--mouse-y, 50%) - 110px);
-  background: radial-gradient(ellipse 50% 50% at 50% 50%,
-    rgba(200, 170, 255, 0.55) 0%,
-    rgba(160, 120, 255, 0.2) 45%,
+  background: radial-gradient(ellipse 100% 50% at 0% 50%,
+    rgba(200, 160, 255, 0.55) 0%,
+    rgba(160, 110, 255, 0.25) 45%,
     transparent 70%
   );
-  border-radius: 99px;
   opacity: 0;
   transition: opacity 0.2s, top 0s;
   pointer-events: none;
-  filter: blur(2px);
 }
 .resizeHandle:hover::after { opacity: 1; }
 
