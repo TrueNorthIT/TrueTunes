@@ -171,6 +171,22 @@
   padding: 6px 6px 24px;
 }
 
+.content::-webkit-scrollbar {
+  width: 6px;
+}
+.content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 99px;
+  min-height: 0;
+  max-height: 48px;
+}
+.content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
 /* ── Track row ── */
 .row {
   display: flex;
