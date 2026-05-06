@@ -103,7 +103,7 @@ function MainApp() {
   useEffect(() => {
     if (queueMode !== 'docked') return;
     function clamp() {
-      const max = Math.min(700, window.innerWidth - 320);
+      const max = window.innerWidth - (800 + 64);
       setQueueDockedWidth((w) => (w > max ? max : w));
     }
     window.addEventListener('resize', clamp);

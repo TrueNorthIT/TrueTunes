@@ -37,8 +37,8 @@ export interface QueueSidebarHandle {
 }
 
 const MIN_DOCKED_WIDTH = 280;
-const MAX_DOCKED_WIDTH = 700;
-const MIN_ROUTES_WIDTH = 320;
+const PLAYER_BAR_W = 800;   // matches .inner width in PlayerBar.module.css
+const PLAYER_BAR_PADDING = 64; // 32px breathing room each side
 
 export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function QueueSidebar(
   {
@@ -162,7 +162,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     handle.setPointerCapture(e.pointerId);
     document.documentElement.classList.add('resizingQueue');
 
-    const max = () => Math.min(MAX_DOCKED_WIDTH, window.innerWidth - MIN_ROUTES_WIDTH);
+    const max = () => window.innerWidth - (PLAYER_BAR_W + PLAYER_BAR_PADDING);
 
     const onMove = (ev: PointerEvent) => {
       const next = Math.max(MIN_DOCKED_WIDTH, Math.min(max(), startWidth + (startX - ev.clientX)));
