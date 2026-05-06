@@ -89,8 +89,12 @@ function MainApp() {
   const [queueMode, setQueueMode] = useState<'floating' | 'docked'>('floating');
   const [queueDockedWidth, setQueueDockedWidth] = useState<number>(380);
   const queueSidebarRef = useRef<QueueSidebarHandle>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
+  const handleResizeWidthLive = useCallback((width: number) => {
+    shellRef.current?.style.setProperty('--docked-queue-w', `${width}px`);
+  }, []);
 
-  useEffect(() => {
+useEffect(() => {
     window.sonos.getDisplayName().then(setDisplayName);
     window.sonos.getQueueMode().then(setQueueMode).catch(() => {});
     window.sonos.getQueueDockedWidth().then(setQueueDockedWidth).catch(() => {});
@@ -99,7 +103,7 @@ function MainApp() {
   useEffect(() => {
     if (queueMode !== 'docked') return;
     function clamp() {
-      const max = Math.min(700, window.innerWidth - 320);
+      const max = window.innerWidth - (800 + 64);
       setQueueDockedWidth((w) => (w > max ? max : w));
     }
     window.addEventListener('resize', clamp);
@@ -436,7 +440,11 @@ function MainApp() {
   const splashReady = isAuthed && groups.length > 0 && !ytmLoading && !histLoading;
 
   return (
-    <div className={styles.shell}>
+    <div
+      ref={shellRef}
+      className={styles.shell}
+      style={queueMode === 'docked' ? { '--docked-queue-w': `${queueDockedWidth}px` } as React.CSSProperties : undefined}
+    >
       <Splash ready={splashReady} />
       <TopNav
         isAuthed={isAuthed}
@@ -510,6 +518,7 @@ function MainApp() {
             onAddToQueue={handleAddToQueue}
             dockedWidth={queueDockedWidth}
             onResizeWidth={handleSetQueueDockedWidth}
+            onResizeWidthLive={handleResizeWidthLive}
           />
         )}
       </div>

@@ -73,7 +73,7 @@ export function ArtistPanel({ onAddToQueue }: Props) {
   }
 
   const cachedArt     = useImage(imageUrl);
-  const dominantColor = useDominantColor(cachedArt);
+  const dominantColor = useDominantColor(cachedArt, { setGlobal: true });
 
   const artistRadio = data?.playlists.find(p => (p.title as string)?.toLowerCase().includes('radio'));
   const latestAlbum = data?.albums[0] ?? null;

@@ -26,25 +26,25 @@
   user-select: none;
 }
 
-input[type="text"],
+input[type='text'],
 input:not([type]),
 textarea {
   user-select: text;
 }
 
 @font-face {
-  font-family: "San Francisco";
+  font-family: 'San Francisco';
   font-weight: 400;
-  src: url("https://applesocial.s3.amazonaws.com/assets/styles/fonts/sanfrancisco/sanfranciscodisplay-regular-webfont.woff");
+  src: url('https://applesocial.s3.amazonaws.com/assets/styles/fonts/sanfrancisco/sanfranciscodisplay-regular-webfont.woff');
 }
 
 body {
   font-family:
-    "San Francisco",
+    'San Francisco',
     -apple-system,
     BlinkMacSystemFont,
-    "SF Pro Text",
-    "Segoe UI",
+    'SF Pro Text',
+    'Segoe UI',
     sans-serif;
   background: var(--bg);
   color: var(--text);
@@ -76,16 +76,21 @@ html[data-mini] #root {
 }
 
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 10px;
+  height: 10px;
+  background: transparent;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
+  margin-top: 20px;
+  margin-bottom: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background-color: rgba(255, 255, 255, 0.22);
 }

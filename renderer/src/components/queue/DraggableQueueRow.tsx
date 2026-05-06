@@ -51,6 +51,11 @@ export function DraggableQueueRow({
       ].filter(Boolean).join(' ')}
       data-playing={isPlaying ? 'true' : undefined}
       draggable
+      onPointerMove={e => {
+        const r = e.currentTarget.getBoundingClientRect();
+        e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`);
+        e.currentTarget.style.setProperty('--my', `${e.clientY - r.top}px`);
+      }}
       onClick={e => onRowClick(index, e)}
       onDoubleClick={() => getActiveProvider().skipToTrack(index + 1)}
       onDragStart={e => onDragStart(index, e)}
