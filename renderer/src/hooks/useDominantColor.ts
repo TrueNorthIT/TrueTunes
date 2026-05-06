@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-export function useDominantColor(src: string | null): string | null {
+export function useDominantColor(src: string | null, { setGlobal = false } = {}): string | null {
   const [color, setColor] = useState<string | null>(null);
 
   useEffect(() => {
@@ -39,13 +39,14 @@ export function useDominantColor(src: string | null): string | null {
   }, [src]);
 
   useEffect(() => {
+    if (!setGlobal) return;
     if (color) {
       document.documentElement.style.setProperty('--panel-color', color);
     } else {
       document.documentElement.style.removeProperty('--panel-color');
     }
     return () => { document.documentElement.style.removeProperty('--panel-color'); };
-  }, [color]);
+  }, [color, setGlobal]);
 
   return color;
 }

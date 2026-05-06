@@ -52,7 +52,7 @@ export function AlbumPanel({ onAddToQueue, queueOpen }: Props) {
   const artist = data?.artist ?? ((item as Record<string, unknown>)?.['subtitle'] as string) ?? '';
   const artUrl = data?.artUrl ?? (item ? getItemArt(item) : null);
   const cachedArt     = useImage(artUrl);
-  const dominantColor = useDominantColor(cachedArt);
+  const dominantColor = useDominantColor(cachedArt, { setGlobal: true });
 
   useEffect(() => {
     setSelected(new Set());
