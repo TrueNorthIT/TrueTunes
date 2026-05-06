@@ -94,24 +94,7 @@ function MainApp() {
     shellRef.current?.style.setProperty('--docked-queue-w', `${width}px`);
   }, []);
 
-  // Fade the queue panel-colour gradient when the main content is scrolled down
-  const location = useLocation();
-  useEffect(() => {
-    shellRef.current?.style.setProperty('--panel-gradient-opacity', '1');
-  }, [location.pathname]);
-  useEffect(() => {
-    function onScroll(e: Event) {
-      const target = e.target as HTMLElement;
-      // Ignore queue sidebar's own scroll container
-      if (target.dataset.queueContent) return;
-      const opacity = Math.max(0, 1 - target.scrollTop / 250);
-      shellRef.current?.style.setProperty('--panel-gradient-opacity', String(opacity));
-    }
-    document.addEventListener('scroll', onScroll, true);
-    return () => document.removeEventListener('scroll', onScroll, true);
-  }, []);
-
-  useEffect(() => {
+useEffect(() => {
     window.sonos.getDisplayName().then(setDisplayName);
     window.sonos.getQueueMode().then(setQueueMode).catch(() => {});
     window.sonos.getQueueDockedWidth().then(setQueueDockedWidth).catch(() => {});

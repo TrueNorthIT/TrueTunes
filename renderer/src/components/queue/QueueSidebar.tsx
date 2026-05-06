@@ -331,8 +331,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
       <div
         className={styles.content}
         ref={contentRef}
-        data-queue-content="1"
-        onClick={handleContentClick}
+onClick={handleContentClick}
         onDragOver={e => {
           e.preventDefault();
           e.dataTransfer.dropEffect = e.dataTransfer.types.includes('application/sonos-item-list') ? 'copy' : 'move';
