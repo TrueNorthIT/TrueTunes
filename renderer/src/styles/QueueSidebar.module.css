@@ -90,13 +90,13 @@
   content: '';
   position: absolute;
   left: 0;
-  width: 120px;
-  height: 220px;
-  top: calc(var(--mouse-y, 50%) - 110px);
+  width: 280px;
+  height: 400px;
+  top: calc(var(--mouse-y, 50%) - 200px);
   background: radial-gradient(ellipse 100% 50% at 0% 50%,
-    rgba(200, 160, 255, 0.55) 0%,
-    rgba(160, 110, 255, 0.25) 45%,
-    transparent 70%
+    rgba(200, 160, 255, 0.18) 0%,
+    rgba(160, 110, 255, 0.08) 50%,
+    transparent 80%
   );
   opacity: 0;
   transition: opacity 0.2s, top 0s;
