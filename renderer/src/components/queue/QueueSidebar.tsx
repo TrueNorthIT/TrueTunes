@@ -283,6 +283,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
         <div
           className={styles.resizeHandle}
           onPointerDown={handleResizePointerDown}
+          onPointerMove={e => e.currentTarget.style.setProperty('--mouse-y', `${e.nativeEvent.offsetY}px`)}
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize queue"
