@@ -436,7 +436,10 @@ function MainApp() {
   const splashReady = isAuthed && groups.length > 0 && !ytmLoading && !histLoading;
 
   return (
-    <div className={styles.shell}>
+    <div
+      className={styles.shell}
+      style={queueMode === 'docked' ? { '--docked-queue-w': `${queueDockedWidth}px` } as React.CSSProperties : undefined}
+    >
       <Splash ready={splashReady} />
       <TopNav
         isAuthed={isAuthed}

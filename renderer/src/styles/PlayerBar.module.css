@@ -2,7 +2,7 @@
 .bar {
   position: fixed;
   bottom: 24px;
-  left: 50%;
+  left: calc((100vw - var(--docked-queue-w, 0px)) / 2);
   transform: translateX(-50%) translateZ(0);
   z-index: 150;
   border-radius: 22px;
