@@ -104,7 +104,6 @@
   transition: opacity 0.2s, top 0s;
   pointer-events: none;
   filter: blur(2px);
-  box-shadow: 0 0 18px 6px rgba(160, 100, 255, 0.3);
 }
 .resizeHandle:hover::after { opacity: 1; }
 
