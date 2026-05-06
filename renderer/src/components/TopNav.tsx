@@ -306,13 +306,15 @@ export function TopNav({
               </button>
             )}
 
-            <button
-              className={`${styles.iconBtn}${queueMode === 'floating' && queueOpen ? ' ' + styles.active : ''}`}
-              onClick={onToggleQueue}
-              title={queueMode === 'docked' ? 'Jump to now playing' : 'Queue'}
-            >
-              <List size={15} />
-            </button>
+            {queueMode !== 'docked' && (
+              <button
+                className={`${styles.iconBtn}${queueOpen ? ' ' + styles.active : ''}`}
+                onClick={onToggleQueue}
+                title="Queue"
+              >
+                <List size={15} />
+              </button>
+            )}
           </div>
         </nav>
       </div>

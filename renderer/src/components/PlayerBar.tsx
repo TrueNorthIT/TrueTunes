@@ -305,9 +305,11 @@ export function PlayerBar({ isAuthed, playback, onToggleQueue, onShuffle, queueM
           >
             <MicVocal size={14} />
           </button>
-          <button className={styles.ctrl} onClick={onToggleQueue} title={queueMode === 'docked' ? 'Jump to now playing' : 'Queue'}>
-            <List size={14} />
-          </button>
+          {queueMode !== 'docked' && (
+            <button className={styles.ctrl} onClick={onToggleQueue} title="Queue">
+              <List size={14} />
+            </button>
+          )}
           <button
             className={styles.ctrl}
             onClick={() => window.sonos.openMiniPlayer()}
