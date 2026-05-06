@@ -201,11 +201,11 @@
 }
 .content::-webkit-scrollbar-thumb {
   /* transparent border shrinks visual width while keeping 16px hit box */
-  border: 5px solid transparent;
+  border: 6px solid transparent;
   background-clip: padding-box;
   background-color: rgba(255, 255, 255, 0.18);
   border-radius: 99px;
-  max-height: 32px;
+  max-height: 52px;
 }
 .content::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.32);
