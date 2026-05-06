@@ -24,7 +24,7 @@ export function ArtistHero({
   });
 
   const cachedArt     = useImage(getItemArt(artist));
-  const dominantColor = useDominantColor(cachedArt);
+  const dominantColor = useDominantColor(cachedArt, { setGlobal: true });
   const name          = (artist.title ?? artist.name ?? '') as string;
 
   const [selected, setSelected]   = useState<Set<number>>(new Set());

@@ -13,7 +13,7 @@
 .navRoot {
   position: fixed;
   top: 12px;
-  left: 50%;
+  left: calc((100vw - var(--docked-queue-w, 0px)) / 2);
   transform: translateX(-50%);
   z-index: 200;
   display: flex;

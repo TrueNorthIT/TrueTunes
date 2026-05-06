@@ -29,6 +29,7 @@ interface Props {
   onAddToQueue: (item: SonosItem, position: number) => void;
   dockedWidth?: number;
   onResizeWidth?: (width: number) => void;
+  onResizeWidthLive?: (width: number) => void;
 }
 
 export interface QueueSidebarHandle {
@@ -36,8 +37,8 @@ export interface QueueSidebarHandle {
 }
 
 const MIN_DOCKED_WIDTH = 280;
-const MAX_DOCKED_WIDTH = 700;
-const MIN_ROUTES_WIDTH = 320;
+const PLAYER_BAR_W = 800;   // matches .inner width in PlayerBar.module.css
+const PLAYER_BAR_PADDING = 64; // 32px breathing room each side
 
 export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function QueueSidebar(
   {
@@ -58,6 +59,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     onAddToQueue,
     dockedWidth,
     onResizeWidth,
+    onResizeWidthLive,
   },
   ref
 ) {
@@ -122,16 +124,16 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     return () => clearTimeout(id);
   }, [isActive]);
 
-  // Track change while queue is open
+  // Track change while queue is visible
   useEffect(() => {
-    if (!open) return;
+    if (!isActive) return;
     const id = setTimeout(scrollToNowPlaying, 50);
     return () => clearTimeout(id);
   }, [currentQueueItemId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Group switch — queue reloads async so use a longer delay
   useEffect(() => {
-    if (!open) return;
+    if (!isActive) return;
     const id = setTimeout(scrollToNowPlaying, 400);
     return () => clearTimeout(id);
   }, [groupName]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -160,11 +162,12 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     handle.setPointerCapture(e.pointerId);
     document.documentElement.classList.add('resizingQueue');
 
-    const max = () => Math.min(MAX_DOCKED_WIDTH, window.innerWidth - MIN_ROUTES_WIDTH);
+    const max = () => window.innerWidth - (PLAYER_BAR_W + PLAYER_BAR_PADDING);
 
     const onMove = (ev: PointerEvent) => {
       const next = Math.max(MIN_DOCKED_WIDTH, Math.min(max(), startWidth + (startX - ev.clientX)));
       setLiveWidth(next);
+      onResizeWidthLive?.(next);
     };
     const onUp = () => {
       document.documentElement.classList.remove('resizingQueue');
@@ -283,6 +286,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
         <div
           className={styles.resizeHandle}
           onPointerDown={handleResizePointerDown}
+          onPointerMove={e => e.currentTarget.style.setProperty('--mouse-y', `${e.nativeEvent.offsetY}px`)}
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize queue"
@@ -290,7 +294,9 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
       )}
       {isDocked && (
         <div className={styles.dockedTopBar}>
-          <WindowControls />
+          <div className={styles.winPill}>
+            <WindowControls />
+          </div>
         </div>
       )}
       <div className={styles.header}>
@@ -325,7 +331,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
       <div
         className={styles.content}
         ref={contentRef}
-        onClick={handleContentClick}
+onClick={handleContentClick}
         onDragOver={e => {
           e.preventDefault();
           e.dataTransfer.dropEffect = e.dataTransfer.types.includes('application/sonos-item-list') ? 'copy' : 'move';

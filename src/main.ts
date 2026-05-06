@@ -1078,8 +1078,10 @@ function onAuthReady(): void {
 
 function createUIWindow(): void {
   uiWin = new BrowserWindow({
-    width: 960,
-    height: 640,
+    width: 1280,
+    height: 720,
+    minWidth: 864 + 280, // player bar (800) + 32px each side + min queue width
+    minHeight: 480,
     title: `True-Tunes v${app.getVersion()}`,
     backgroundColor: '#1c1c1e',
     frame: false,

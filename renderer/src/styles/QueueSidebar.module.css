@@ -42,12 +42,12 @@
   margin-left: auto;
   border-radius: 0;
   border: none;
-  border-left: 1px solid var(--border);
   box-shadow: none;
   backdrop-filter: none;
-  background: var(--bg-1);
+  background: transparent;
   transform: none;
   transition: none;
+  overflow: visible;
   /* Sit above the TopNav drag region (z-index 199) so the buttons below
      are clickable; the dockedTopBar provides its own drag region. */
   z-index: 200;
@@ -60,22 +60,50 @@
   align-items: center;
   justify-content: flex-end;
   height: var(--nav-h);
-  padding: 0 8px;
+  padding: 0 12px;
   flex-shrink: 0;
   -webkit-app-region: drag;
+}
+
+.dockedTopBar .winPill {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 3px 4px;
+  -webkit-app-region: no-drag;
 }
 
 .resizeHandle {
   position: absolute;
   top: 0; left: 0; bottom: 0;
-  width: 6px;
+  width: 16px;
   cursor: ew-resize;
   background: transparent;
   z-index: 2;
   touch-action: none;
   -webkit-app-region: no-drag;
 }
-.resizeHandle:hover { background: rgba(255, 255, 255, 0.08); }
+.resizeHandle::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 280px;
+  background: radial-gradient(
+    ellipse 100% 300px at 0px var(--mouse-y, 50%),
+    rgba(200, 160, 255, 0.18) 0%,
+    rgba(160, 110, 255, 0.08) 50%,
+    transparent 80%
+  );
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+.resizeHandle:hover::after { opacity: 1; }
 
 :global(html.resizingQueue),
 :global(html.resizingQueue) * {
@@ -92,6 +120,14 @@
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
+
+.sidebar.docked .header {
+  order: 99;
+  border-bottom: none;
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+}
+
 
 .title {
   font-size: 14px;
@@ -161,6 +197,26 @@
   padding: 6px 6px 24px;
 }
 
+.content::-webkit-scrollbar {
+  width: 10px;
+}
+.content::-webkit-scrollbar-track {
+  background: transparent;
+  margin-top: 20px; /* never touch top */
+  margin-bottom: 8px;
+}
+.content::-webkit-scrollbar-thumb {
+  /* transparent border shrinks visual width while keeping 16px hit box */
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  background-color: rgba(255, 255, 255, 0.18);
+  border-radius: 99px;
+  max-height: 300px;
+}
+.content::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.32);
+}
+
 /* ── Track row ── */
 .row {
   display: flex;
@@ -170,8 +226,25 @@
   border-radius: var(--r-sm);
   transition: background 0.1s;
   cursor: default;
+  position: relative;
+  overflow: hidden;
 }
-.row:hover { background: var(--bg-2); }
+.row::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 60% 120% at var(--mx, 50%) var(--my, 50%),
+    rgba(190, 150, 255, 0.13) 0%,
+    rgba(150, 100, 255, 0.05) 50%,
+    transparent 75%
+  );
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+.row:hover::before { opacity: 1; }
+.row:hover { background: rgba(255, 255, 255, 0.03); }
 .row.selected { background: rgba(255,255,255,0.1); }
 .row.selected:hover { background: rgba(255,255,255,0.13); }
 .row.playing .name { color: #fff; font-weight: 600; }
@@ -241,11 +314,13 @@
 
 .subAlbum {
   display: block;
+  width: fit-content;
+  max-width: 100%;
   background: none; border: none; padding: 0;
   font-size: 11px; font-family: inherit;
   color: var(--text-2);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  width: 100%; text-align: left;
+  text-align: left;
   cursor: pointer; transition: color 0.12s;
 }
 .subAlbum:hover { color: var(--text); text-decoration: underline; }
