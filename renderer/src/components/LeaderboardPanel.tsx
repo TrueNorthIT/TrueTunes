@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Info, X } from 'lucide-react';
+import type { GameRankTierKey } from '../hooks/useDailyGame';
 import { useStats, StatsPeriod } from '../hooks/useStats';
+import { useGameRankings } from '../hooks/useDailyGame';
 import { useImage } from '../hooks/useImage';
+import { getGameRankIcon, getGameRankInfoImage } from '../lib/gameRankAssets';
 import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
 import styles from '../styles/LeaderboardPanel.module.css';
 
@@ -19,6 +23,18 @@ const PERIODS: { value: StatsPeriod; label: string }[] = [
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
+const QUEUEDLE_RANK_INFO: Array<{
+  key: Exclude<GameRankTierKey, 'provisional'>;
+  name: string;
+  range: string;
+}> = [
+  { key: 'skip-button-survivor', name: 'Skip Button Survivor', range: '< 40%' },
+  { key: 'background-bopper', name: 'Background Bopper', range: '40% - 54.9%' },
+  { key: 'aux-cable-apprentice', name: 'Aux Cable Apprentice', range: '55% - 69.9%' },
+  { key: 'algorithm-whisperer', name: 'Algorithm Whisperer', range: '70% - 84.9%' },
+  { key: 'playlist-prophet', name: 'Playlist Prophet', range: '85%+' },
+];
+
 function makeDragItem(t: StatsTrack) {
   return JSON.stringify([
     {
@@ -33,12 +49,18 @@ function makeDragItem(t: StatsTrack) {
 
 export function LeaderboardPanel() {
   const [period, setPeriod] = useState<StatsPeriod>('week');
+  const [view, setView] = useState<'stats' | 'queuedle'>('stats');
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const [rankInfoOpen, setRankInfoOpen] = useState(false);
   const { data, isLoading, error, refetch } = useStats(period, selectedUser ?? undefined);
+  const rankings = useGameRankings(null, view === 'queuedle');
   const navigate = useNavigate();
   const { resolveAndOpen } = useResolveAndOpen();
 
   const maxUserCount = data?.topUsers?.[0]?.count ?? 1;
+  const isQueuedleView = view === 'queuedle';
+  const queuedleRows = rankings.data ?? [];
+  const maxQueuedleAverage = queuedleRows[0]?.averageTotal ?? 1;
 
   return (
     <div className={styles.page}>
@@ -55,23 +77,91 @@ export function LeaderboardPanel() {
           {PERIODS.map((p) => (
             <button
               key={p.value}
-              className={`${styles.periodBtn}${period === p.value ? ' ' + styles.active : ''}`}
-              onClick={() => setPeriod(p.value)}
+              className={`${styles.periodBtn}${!isQueuedleView && period === p.value ? ' ' + styles.active : ''}`}
+              onClick={() => {
+                setView('stats');
+                setPeriod(p.value);
+              }}
             >
               {p.label}
             </button>
           ))}
+          <button
+            className={`${styles.periodBtn}${isQueuedleView ? ' ' + styles.active : ''}`}
+            onClick={() => {
+              setSelectedUser(null);
+              setView('queuedle');
+            }}
+          >
+            Queuedle
+          </button>
         </div>
-        <button className={styles.refreshBtn} onClick={() => refetch()} title="Refresh">
+        <button
+          className={styles.refreshBtn}
+          onClick={() => (isQueuedleView ? rankings.refetch() : refetch())}
+          title="Refresh"
+        >
           ↺
+        </button>
+        <button
+          className={styles.infoBtn}
+          onClick={() => setRankInfoOpen(true)}
+          title="Rank info"
+          aria-label="Rank info"
+        >
+          <Info size={16} strokeWidth={2} />
         </button>
       </div>
 
-      {isLoading && <div className={styles.state}>Loading…</div>}
-      {(error || data?.error) && <div className={styles.state}>{data?.error ?? 'Failed to load stats'}</div>}
+      {isQueuedleView && rankings.isLoading && <div className={styles.state}>Loading Queuedle rankings…</div>}
+      {isQueuedleView && rankings.error && <div className={styles.state}>Failed to load Queuedle rankings</div>}
+      {!isQueuedleView && isLoading && <div className={styles.state}>Loading…</div>}
+      {!isQueuedleView && (error || data?.error) && (
+        <div className={styles.state}>{data?.error ?? 'Failed to load stats'}</div>
+      )}
 
-      {data && !data.error && !isLoading && (
-        <div className={styles.body}>
+      {isQueuedleView && !rankings.isLoading && !rankings.error && (
+        <div key="queuedle" className={styles.body}>
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Queuedle all-time average</h2>
+            {queuedleRows.length === 0 ? (
+              <div className={styles.empty}>No Queuedle scores yet</div>
+            ) : (
+              queuedleRows.slice(0, 25).map((r, i) => (
+                <div key={r.userName} className={styles.queuedleRow}>
+                  <span className={styles.rank}>
+                    {i < 3 ? MEDALS[i] : <span className={styles.rankNum}>{i + 1}</span>}
+                  </span>
+                  <span className={styles.userName}>{r.userName}</span>
+                  <div className={styles.barWrap}>
+                    <div
+                      className={styles.bar}
+                      style={{ width: `${Math.round((r.averageTotal / maxQueuedleAverage) * 100)}%` }}
+                    />
+                  </div>
+                  <span className={styles.queuedleGames}>
+                    {r.gamesPlayed} {r.gamesPlayed === 1 ? 'game' : 'games'}
+                  </span>
+                  <span
+                    className={`${styles.rankTier}${r.isProvisional ? ' ' + styles.rankTierProvisional : ''}`}
+                    title={`${r.averagePercent.toFixed(0)}% average`}
+                    data-tier={r.tierKey}
+                  >
+                    {getGameRankIcon(r.tierKey) && (
+                      <img className={styles.rankTierIcon} src={getGameRankIcon(r.tierKey)!} alt="" loading="lazy" />
+                    )}
+                    {r.tierName}
+                  </span>
+                  <span className={styles.count}>{r.averageTotal.toFixed(1)}</span>
+                </div>
+              ))
+            )}
+          </section>
+        </div>
+      )}
+
+      {!isQueuedleView && data && !data.error && !isLoading && (
+        <div key={`stats-${period}-${selectedUser ?? 'all'}`} className={styles.body}>
           {/* ── Top queuers (leaderboard view only) ── */}
           {!selectedUser && (
             <section className={styles.section}>
@@ -285,6 +375,50 @@ export function LeaderboardPanel() {
             {data.totalEvents} queue event{data.totalEvents !== 1 ? 's' : ''}
             {selectedUser ? ` by ${selectedUser}` : ''}
             {data.periodStart > 0 ? ` since ${new Date(data.periodStart).toLocaleDateString()}` : ' total'}
+          </div>
+        </div>
+      )}
+
+      {rankInfoOpen && (
+        <div className={styles.rankInfoOverlay} onClick={() => setRankInfoOpen(false)}>
+          <div
+            className={styles.rankInfoDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rank-info-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.rankInfoHeader}>
+              <h2 id="rank-info-title" className={styles.rankInfoTitle}>
+                Queuedle Rank Tiers
+              </h2>
+              <button
+                className={styles.rankInfoClose}
+                onClick={() => setRankInfoOpen(false)}
+                aria-label="Close rank info"
+              >
+                <X size={16} strokeWidth={2} />
+              </button>
+            </div>
+            <p className={styles.rankInfoText}>
+              Rank tiers use your all-time Queuedle percentage: total points earned divided by total possible points
+              across games played. You need 3 played days before a tier unlocks.
+            </p>
+            <div className={styles.rankInfoList}>
+              {QUEUEDLE_RANK_INFO.map((tier) => {
+                const infoImage = getGameRankInfoImage(tier.key);
+                return (
+                  <div key={tier.key} className={styles.rankInfoRow} data-tier={tier.key}>
+                    {infoImage && <img className={styles.rankInfoImage} src={infoImage} alt="" loading="lazy" />}
+                    <span className={styles.rankInfoName}>{tier.name}</span>
+                    <span className={styles.rankInfoRange}>{tier.range}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className={styles.rankInfoFooter}>
+              Fewer than 3 played days = Provisional (no tier)
+            </div>
           </div>
         </div>
       )}
