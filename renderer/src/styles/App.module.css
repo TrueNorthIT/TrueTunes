@@ -4,9 +4,9 @@
   flex-direction: column;
   overflow: hidden;
   background:
-    radial-gradient(ellipse at 20% 50%, rgba(70, 45, 110, 0.45) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 15%, rgba(25, 55, 95, 0.35) 0%, transparent 55%),
-    radial-gradient(ellipse at 55% 85%, rgba(20, 55, 85, 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 50%, rgba(90, 50, 150, 0.7) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 15%, rgba(25, 70, 130, 0.55) 0%, transparent 55%),
+    radial-gradient(ellipse at 55% 85%, rgba(20, 65, 110, 0.45) 0%, transparent 50%),
     #0f0f14;
 }
 
