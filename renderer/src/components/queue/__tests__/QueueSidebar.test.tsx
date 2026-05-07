@@ -67,8 +67,6 @@ function makeItem(i: number): NormalizedQueueItem {
 }
 
 const defaultProps = {
-  mode: 'floating' as const,
-  open: true,
   items: [makeItem(0), makeItem(1), makeItem(2)],
   setItems: vi.fn(),
   isLoading: false,
@@ -76,7 +74,6 @@ const defaultProps = {
   currentObjectId: null,
   currentQueueItemId: null,
   groupName: 'Living Room',
-  onClose: vi.fn(),
   onRefresh: vi.fn(),
   onError: vi.fn(),
   onAddToQueue: vi.fn(),
@@ -363,12 +360,6 @@ describe('QueueSidebar — header buttons', () => {
     expect(onRefresh).toHaveBeenCalled();
   });
 
-  it('Close button calls onClose', async () => {
-    const onClose = vi.fn();
-    const { user } = setup({ onClose });
-    await user.click(screen.getByTitle('Close'));
-    expect(onClose).toHaveBeenCalled();
-  });
 });
 
 // ─── items/open state ─────────────────────────────────────────────────────────

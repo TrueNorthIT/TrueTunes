@@ -18,14 +18,10 @@ const defaultProps = {
   groups: [{ id: 'g1', name: 'Living Room', coordinatorId: 'g1', providerId: 'sonos' as const }],
   activeGroupId: 'g1',
   onGroupChange: vi.fn(),
-  queueOpen: false,
-  onToggleQueue: vi.fn(),
   onResync: vi.fn(),
   displayName: 'Alice',
   onSaveName: vi.fn(),
   onChangelogOpen: vi.fn(),
-  queueMode: 'floating' as const,
-  onSetQueueMode: vi.fn(),
 };
 
 beforeEach(() => {
@@ -46,7 +42,6 @@ describe('TopNav', () => {
     render(<TopNav {...defaultProps} />);
     expect(screen.getByTitle('Home')).toBeInTheDocument();
     expect(screen.getByTitle('Leaderboard')).toBeInTheDocument();
-    expect(screen.getByTitle('Queue')).toBeInTheDocument();
   });
 
   it('navigates to /leaderboard when Leaderboard is clicked', async () => {
@@ -85,14 +80,6 @@ describe('TopNav', () => {
     render(<TopNav {...defaultProps} />);
     await user.click(screen.getByTitle('Clear'));
     expect(mockNavigate).toHaveBeenCalledWith('/');
-  });
-
-  it('calls onToggleQueue when Queue is clicked', async () => {
-    const onToggleQueue = vi.fn();
-    const user = userEvent.setup();
-    render(<TopNav {...defaultProps} onToggleQueue={onToggleQueue} />);
-    await user.click(screen.getByTitle('Queue'));
-    expect(onToggleQueue).toHaveBeenCalled();
   });
 
   it('calls onChangelogOpen when changelog button is clicked', async () => {
@@ -138,13 +125,6 @@ describe('TopNav', () => {
     render(<TopNav {...defaultProps} groups={[]} onResync={onResync} />);
     await user.click(screen.getByTitle('Reconnect'));
     expect(onResync).toHaveBeenCalled();
-  });
-
-  it('calls minimizeWindow on Minimise click', async () => {
-    const user = userEvent.setup();
-    render(<TopNav {...defaultProps} />);
-    await user.click(screen.getByTitle('Minimise'));
-    expect(window.sonos.minimizeWindow).toHaveBeenCalled();
   });
 
   it('shows app version in name popover after load', async () => {

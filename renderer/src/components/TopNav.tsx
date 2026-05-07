@@ -8,7 +8,6 @@ import {
   Search,
   X,
   User,
-  List,
   RefreshCw,
   Gamepad2,
   Lightbulb,
@@ -17,21 +16,16 @@ import {
 } from 'lucide-react';
 import type { NormalizedGroup } from '../types/provider';
 import styles from '../styles/TopNav.module.css';
-import { WindowControls } from './WindowControls';
 
 interface Props {
   isAuthed: boolean;
   groups: NormalizedGroup[];
   activeGroupId: string | null;
   onGroupChange: (groupId: string) => void;
-  queueOpen: boolean;
-  onToggleQueue: () => void;
   onResync: () => void;
   displayName: string | null | undefined;
   onSaveName: (name: string) => void;
   onChangelogOpen: () => void;
-  queueMode: 'floating' | 'docked';
-  onSetQueueMode: (mode: 'floating' | 'docked') => void;
 }
 
 export function TopNav({
@@ -39,14 +33,10 @@ export function TopNav({
   groups,
   activeGroupId,
   onGroupChange,
-  queueOpen,
-  onToggleQueue,
   onResync,
   displayName,
   onSaveName,
   onChangelogOpen,
-  queueMode,
-  onSetQueueMode,
 }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -265,21 +255,6 @@ export function TopNav({
                     >
                       Save
                     </button>
-                    <div className={styles.namePopoverLabel}>Queue display</div>
-                    <div className={styles.queueModeToggle}>
-                      <button
-                        className={`${styles.queueModeBtn}${queueMode === 'floating' ? ' ' + styles.queueModeBtnActive : ''}`}
-                        onClick={() => onSetQueueMode('floating')}
-                      >
-                        Floating
-                      </button>
-                      <button
-                        className={`${styles.queueModeBtn}${queueMode === 'docked' ? ' ' + styles.queueModeBtnActive : ''}`}
-                        onClick={() => onSetQueueMode('docked')}
-                      >
-                        Docked
-                      </button>
-                    </div>
                     <div className={styles.versionRow}>
                       {appVersion && <div className={styles.appVersion}>v{appVersion}</div>}
                     </div>
@@ -306,25 +281,10 @@ export function TopNav({
               </button>
             )}
 
-            {queueMode !== 'docked' && (
-              <button
-                className={`${styles.iconBtn}${queueOpen ? ' ' + styles.active : ''}`}
-                onClick={onToggleQueue}
-                title="Queue"
-              >
-                <List size={15} />
-              </button>
-            )}
           </div>
         </nav>
       </div>
 
-      {/* Window controls — fixed top-right when queue is floating; moved into the docked sidebar otherwise */}
-      {queueMode === 'floating' && (
-        <div className={styles.windowPill}>
-          <WindowControls />
-        </div>
-      )}
     </>
   );
 }

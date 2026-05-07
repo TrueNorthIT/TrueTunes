@@ -56,6 +56,7 @@
   display: grid;
   grid-template-columns: 38% 62%;
   min-height: 0;
+  margin-right: var(--docked-queue-w, 0px);
 }
 
 /* ── Left panel ── */

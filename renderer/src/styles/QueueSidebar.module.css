@@ -1,53 +1,15 @@
 .sidebar {
-  position: fixed;
-  top: calc(var(--nav-h) + 8px);
-  right: 16px;
-  bottom: 100px;
-  width: clamp(300px, 22vw, 420px);
-  background: rgba(12, 12, 18, 0.72);
-  backdrop-filter: blur(48px) saturate(200%) brightness(1.03);
-  will-change: backdrop-filter;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 22px;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.5),
-    0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 -1px 0 rgba(0, 0, 0, 0.3) inset;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  z-index: 160;
-  transform: translateX(calc(100% + 32px));
-  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.sidebar.open { transform: translateX(0); }
-
-@media (min-width: 1520px) {
-  .sidebar {
-    bottom: 12px;
-  }
-}
-
-/* ── Docked mode (right-side column inside .body flex row) ── */
-.sidebar.docked {
   position: relative;
-  top: auto; right: auto; bottom: auto;
-  width: auto;
   height: 100%;
   flex-shrink: 0;
   /* Always pin to the right of .body — even when the active route is out
      of flow (e.g. LyricsPanel uses position:fixed), the auto margin
      consumes any leftover space on the sidebar's left side. */
   margin-left: auto;
-  border-radius: 0;
-  border: none;
-  box-shadow: none;
-  backdrop-filter: none;
   background: transparent;
-  transform: none;
-  transition: none;
   overflow: visible;
+  display: flex;
+  flex-direction: column;
   /* Sit above the TopNav drag region (z-index 199) so the buttons below
      are clickable; the dockedTopBar provides its own drag region. */
   z-index: 200;
@@ -121,7 +83,7 @@
   flex-shrink: 0;
 }
 
-.sidebar.docked .header {
+.sidebar .header {
   order: 99;
   border-bottom: none;
   border-top: 1px solid var(--border);

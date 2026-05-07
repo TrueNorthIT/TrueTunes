@@ -13,10 +13,9 @@ import styles from '../../styles/AlbumPanel.module.css';
 
 interface Props {
   onAddToQueue: (item: SonosItem) => Promise<void> | void;
-  queueOpen?: boolean;
 }
 
-export function AlbumPanel({ onAddToQueue, queueOpen }: Props) {
+export function AlbumPanel({ onAddToQueue }: Props) {
   const { state } = useLocation();
   const item = (state as { item?: SonosItem } | null)?.item;
   const navigate = useNavigate();
@@ -111,10 +110,6 @@ export function AlbumPanel({ onAddToQueue, queueOpen }: Props) {
     navigate(`/artist/${encodeURIComponent(rid?.objectId ?? '_')}`, { state: { item: data.artistItem } });
   }
 
-  const tracksStyle = queueOpen
-    ? { paddingRight: 'calc(clamp(300px, 22vw, 420px) + 32px)' }
-    : undefined;
-
   return (
     <div className={styles.panel}>
       <div className={styles.header} style={headerStyle}>
@@ -157,7 +152,7 @@ export function AlbumPanel({ onAddToQueue, queueOpen }: Props) {
 
       <div
         className={styles.tracks}
-        style={{ '--track-cols': isPlaylistOrProgram ? '24px 42px 1fr 260px 260px 50px 28px' : '24px 1fr 160px 50px 28px', ...tracksStyle } as React.CSSProperties}
+        style={{ '--track-cols': isPlaylistOrProgram ? '24px 42px 1fr 260px 260px 50px 28px' : '24px 1fr 160px 50px 28px' } as React.CSSProperties}
         onClick={() => { setSelected(new Set()); lastSelected.current = null; }}
       >
         {data && (
