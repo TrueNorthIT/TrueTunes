@@ -17,16 +17,16 @@ function domToText(node: GeniusDomNode): string {
   return (node.children ?? []).map(domToText).join('');
 }
 
-function firstBlurb(description: GeniusDomNode | null, maxLen = 220): string {
+function extractBio(description: GeniusDomNode | null): string {
   if (!description || typeof description === 'string') return '';
   const root = description as { tag: string; children?: GeniusDomNode[] };
-  const paras = (root.children ?? []).filter(c => typeof c !== 'string' && (c as { tag: string }).tag === 'p');
-  for (const p of paras) {
-    const text = domToText(p as GeniusDomNode).trim();
-    if (!text) continue;
-    return text.length > maxLen ? text.slice(0, maxLen).trimEnd() + '…' : text;
-  }
-  return '';
+  const paras = (root.children ?? []).filter(
+    c => typeof c !== 'string' && (c as { tag: string }).tag === 'p',
+  );
+  return paras
+    .map(p => domToText(p as GeniusDomNode).trim())
+    .filter(Boolean)
+    .join('\n\n');
 }
 
 interface Props {
@@ -39,7 +39,9 @@ export function ArtistPanel({ onAddToQueue }: Props) {
   const openItem = useOpenItem();
 
   const { artistId, serviceId, accountId, defaults, name: fallbackName } =
-    item ? resolveArtistParams(item) : { artistId: undefined, serviceId: undefined, accountId: undefined, defaults: undefined, name: undefined };
+    item
+      ? resolveArtistParams(item)
+      : { artistId: undefined, serviceId: undefined, accountId: undefined, defaults: undefined, name: undefined };
 
   const { data, isLoading } = useArtistBrowse(artistId, serviceId, accountId, defaults);
 
@@ -61,13 +63,27 @@ export function ArtistPanel({ onAddToQueue }: Props) {
     if (e.shiftKey && lastSelected.current !== null) {
       const lo = Math.min(lastSelected.current, index);
       const hi = Math.max(lastSelected.current, index);
-      setSelected(prev => { const next = new Set(prev); for (let i = lo; i <= hi; i++) next.add(i); return next; });
+      setSelected(prev => {
+        const next = new Set(prev);
+        for (let i = lo; i <= hi; i++) next.add(i);
+        return next;
+      });
     } else if (e.ctrlKey || e.metaKey) {
-      setSelected(prev => { const next = new Set(prev); if (next.has(index)) next.delete(index); else next.add(index); return next; });
+      setSelected(prev => {
+        const next = new Set(prev);
+        if (next.has(index)) next.delete(index);
+        else next.add(index);
+        return next;
+      });
       lastSelected.current = index;
     } else {
-      if (selected.size === 1 && selected.has(index)) { setSelected(new Set()); lastSelected.current = null; }
-      else { setSelected(new Set([index])); lastSelected.current = index; }
+      if (selected.size === 1 && selected.has(index)) {
+        setSelected(new Set());
+        lastSelected.current = null;
+      } else {
+        setSelected(new Set([index]));
+        lastSelected.current = index;
+      }
     }
   }
 
@@ -95,6 +111,11 @@ export function ArtistPanel({ onAddToQueue }: Props) {
   const artistRadio = data?.playlists.find(p => (p.title as string)?.toLowerCase().includes('radio'));
   const latestAlbum = data?.albums[0] ?? null;
 
+  const genius   = data?.genius ?? null;
+  const blurb    = genius ? extractBio(genius.description) : '';
+  const altNames = genius?.alternateNames?.filter(Boolean).slice(0, 4) ?? [];
+  const hasAbout = !!(blurb || genius?.instagram || genius?.twitter);
+
   if (!item) return null;
 
   return (
@@ -116,25 +137,10 @@ export function ArtistPanel({ onAddToQueue }: Props) {
           </div>
           <div className={styles.headerInfo}>
             <div className={styles.artistName}>{name}</div>
-            {data?.genius && (() => {
-              const blurb = firstBlurb(data.genius.description);
-              return blurb ? <p className={styles.artistBlurb}>{blurb}</p> : null;
-            })()}
+            {altNames.length > 0 && (
+              <div className={styles.altNames}>{altNames.join(' · ')}</div>
+            )}
           </div>
-          {data?.genius && (data.genius.instagram || data.genius.twitter) && (
-            <div className={styles.headerSocial}>
-              {data.genius.instagram && (
-                <button className={styles.socialLink} onClick={() => window.sonos.openExternal(`https://instagram.com/${data.genius!.instagram}`)}>
-                  IG
-                </button>
-              )}
-              {data.genius.twitter && (
-                <button className={styles.socialLink} onClick={() => window.sonos.openExternal(`https://twitter.com/${data.genius!.twitter}`)}>
-                  𝕏
-                </button>
-              )}
-            </div>
-          )}
         </div>
       </div>
 
@@ -154,7 +160,10 @@ export function ArtistPanel({ onAddToQueue }: Props) {
             <div className={styles.topSongsCol}>
               {data && data.topSongs.length > 0 && (
                 <>
-                  <button className={styles.sectionTitleBtn} onClick={() => { setShowAllSongs(s => !s); setSelected(new Set()); }}>
+                  <button
+                    className={styles.sectionTitleBtn}
+                    onClick={() => { setShowAllSongs(s => !s); setSelected(new Set()); }}
+                  >
                     Top Songs <span className={styles.sectionChevron}>{showAllSongs ? '∨' : '›'}</span>
                   </button>
                   {visibleSongs.map((track, i) => (
@@ -171,9 +180,39 @@ export function ArtistPanel({ onAddToQueue }: Props) {
                 </>
               )}
             </div>
+
             <div className={styles.sideCol}>
+              {blurb && (
+                <div className={styles.aboutSection}>
+                  <div className={styles.sectionTitle}>About</div>
+                  {blurb.split('\n\n').map((para, i) => (
+                    <p key={i} className={styles.aboutText}>{para}</p>
+                  ))}
+                </div>
+              )}
+              {(genius?.instagram || genius?.twitter) && (
+                <div className={styles.socialSection}>
+                  <div className={styles.socialIcons}>
+                    {genius.instagram && (
+                      <button className={styles.socialIconBtn} title={`@${genius.instagram}`} onClick={() => window.sonos.openExternal(`https://instagram.com/${genius.instagram}`)}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                          <circle cx="12" cy="12" r="4"/>
+                          <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+                        </svg>
+                      </button>
+                    )}
+                    {genius.twitter && (
+                      <button className={styles.socialIconBtn} title={`@${genius.twitter}`} onClick={() => window.sonos.openExternal(`https://twitter.com/${genius.twitter}`)}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.261 5.635 5.903-5.635zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
               {latestAlbum && <LatestReleaseCard album={latestAlbum} onOpen={openItem} />}
-              {artistRadio && <RadioCard item={artistRadio} artUrl={cachedArt} onOpen={openItem} />}
             </div>
           </>
         )}
