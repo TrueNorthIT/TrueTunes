@@ -6,6 +6,15 @@ import { autoUpdater } from 'electron-updater';
 import { officePubSub } from './pubsub';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import { readFileSync } from 'fs';
+
+// Load secrets baked in at build time — fills gaps that dotenv didn't cover (packaged app has no .env)
+try {
+  const baked = JSON.parse(readFileSync(path.join(__dirname, 'build-env.json'), 'utf8')) as Record<string, string>;
+  for (const [k, v] of Object.entries(baked)) {
+    if (v && !process.env[k]) process.env[k] = v;
+  }
+} catch { /* dev: dotenv already handled it */ }
 import { randomUUID } from 'crypto';
 import WebSocket from 'ws';
 import type { FetchRequest, FetchResponse } from './types';

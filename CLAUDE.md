@@ -27,6 +27,30 @@ The renderer is **never type-checked by Vite** (esbuild strips types). `npm run 
 
 ---
 
+## Visual verification (Claude Code)
+
+The app supports visual feedback via Chrome DevTools Protocol during development.
+
+### Verify and connect
+
+```bash
+curl -s http://localhost:9333/json/version   # should return Electron/Chrome JSON
+agent-browser connect 9333
+agent-browser screenshot /tmp/screenshot.png
+agent-browser snapshot -i                   # DOM inspection
+```
+
+### Workflow
+
+After making UI changes:
+
+1. `npm run dev` (CDP already enabled)
+2. `agent-browser connect 9333`
+3. `agent-browser screenshot /tmp/tt2-screenshot.png`
+4. Inspect the screenshot and fix any rendering issues before committing
+
+---
+
 ## Architecture
 
 ### IPC bridge
@@ -122,7 +146,7 @@ Main process (`src/`), IPC handlers, WebSocket bootstrap, auth flow, and most ho
 
 - **`globals.d.ts` must stay ambient** — no `export {}`, no `import`. Adding either makes it a module and breaks global type resolution silently in the renderer.
 - **Renderer typecheck is separate** — `tsc` at the root only checks `src/`. Always run `npm run typecheck` (which checks both) not just `tsc`.
-- **`applyReorderLocally` index math** — `insertAt` is the count of non-selected items whose *original* index is less than `toIndex`, not `toIndex` itself. See `queueHelpers.ts` for comments.
+- **`applyReorderLocally` index math** — `insertAt` is the count of non-selected items whose _original_ index is less than `toIndex`, not `toIndex` itself. See `queueHelpers.ts` for comments.
 - **Image cache is a singleton module** — tests that import `imageCache` must use `vi.resetModules()` and dynamic `import()` in `beforeEach` to avoid state leaking between tests.
 - **Sandbox mode** — both `uiWin` and `miniWin` have `sandbox: true`. The preload script runs in the sandboxed context; do not use Node.js APIs directly in `preload.ts`.
 - **Debug windows are intentionally insecure** — `nodeIntegration: true` on the WS/HTTP debug windows is by design and guarded by `app.isPackaged` check. Do not "fix" this.
@@ -133,13 +157,13 @@ Main process (`src/`), IPC handlers, WebSocket bootstrap, auth flow, and most ho
 
 Resource group: `truetunes-rg` (uksouth)
 
-| Resource | Name |
-|---|---|
-| Function App | `truetunes-fn` |
-| Web PubSub | `truetunes-wps` |
-| Cosmos DB | `truetunes-cosmos` |
-| Storage | `truetunesfoywo62izs34i` |
-| App Insights | `truetunes-ai` |
-| Log Analytics | `truetunes-law` |
+| Resource      | Name                     |
+| ------------- | ------------------------ |
+| Function App  | `truetunes-fn`           |
+| Web PubSub    | `truetunes-wps`          |
+| Cosmos DB     | `truetunes-cosmos`       |
+| Storage       | `truetunesfoywo62izs34i` |
+| App Insights  | `truetunes-ai`           |
+| Log Analytics | `truetunes-law`          |
 
 Deploy: `cd server && npm run deploy` — wraps `az deployment group create` and reads `VESTABOARD_API_KEY` from the root `.env`, passing it as the `vestaboardApiKey` ARM parameter so the secret is never committed.
