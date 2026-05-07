@@ -62,6 +62,7 @@ Object.defineProperty(window, 'sonos', {
     isNewVersion:       vi.fn(() => Promise.resolve(false)),
     openExternal:       vi.fn(() => Promise.resolve()),
     geniusDescription:  vi.fn(() => Promise.resolve(null)),
+    geniusArtist:       vi.fn(() => Promise.resolve(null)),
     trackEvent:         vi.fn(() => Promise.resolve()),
     minimizeWindow:     vi.fn(() => Promise.resolve()),
     maximizeWindow:     vi.fn(() => Promise.resolve()),

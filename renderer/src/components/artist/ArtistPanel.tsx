@@ -12,6 +12,23 @@ import { ArtistAlbumCard } from './ArtistAlbumCard';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/ArtistPanel.module.css';
 
+function domToText(node: GeniusDomNode): string {
+  if (typeof node === 'string') return node;
+  return (node.children ?? []).map(domToText).join('');
+}
+
+function firstBlurb(description: GeniusDomNode | null, maxLen = 220): string {
+  if (!description || typeof description === 'string') return '';
+  const root = description as { tag: string; children?: GeniusDomNode[] };
+  const paras = (root.children ?? []).filter(c => typeof c !== 'string' && (c as { tag: string }).tag === 'p');
+  for (const p of paras) {
+    const text = domToText(p as GeniusDomNode).trim();
+    if (!text) continue;
+    return text.length > maxLen ? text.slice(0, maxLen).trimEnd() + '…' : text;
+  }
+  return '';
+}
+
 interface Props {
   onAddToQueue: (item: SonosItem) => void;
 }
@@ -99,7 +116,25 @@ export function ArtistPanel({ onAddToQueue }: Props) {
           </div>
           <div className={styles.headerInfo}>
             <div className={styles.artistName}>{name}</div>
+            {data?.genius && (() => {
+              const blurb = firstBlurb(data.genius.description);
+              return blurb ? <p className={styles.artistBlurb}>{blurb}</p> : null;
+            })()}
           </div>
+          {data?.genius && (data.genius.instagram || data.genius.twitter) && (
+            <div className={styles.headerSocial}>
+              {data.genius.instagram && (
+                <button className={styles.socialLink} onClick={() => window.sonos.openExternal(`https://instagram.com/${data.genius!.instagram}`)}>
+                  IG
+                </button>
+              )}
+              {data.genius.twitter && (
+                <button className={styles.socialLink} onClick={() => window.sonos.openExternal(`https://twitter.com/${data.genius!.twitter}`)}>
+                  𝕏
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
