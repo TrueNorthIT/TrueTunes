@@ -31,9 +31,11 @@ function extractBio(description: GeniusDomNode | null): string {
 
 interface Props {
   onAddToQueue: (item: SonosItem) => void;
+  currentObjectId: string | null;
+  isPlaybackActive: boolean;
 }
 
-export function ArtistPanel({ onAddToQueue }: Props) {
+export function ArtistPanel({ onAddToQueue, currentObjectId, isPlaybackActive }: Props) {
   const { state } = useLocation();
   const item = (state as { item?: SonosItem } | null)?.item;
   const openItem = useOpenItem();
@@ -108,13 +110,13 @@ export function ArtistPanel({ onAddToQueue }: Props) {
   const cachedArt     = useImage(imageUrl);
   const dominantColor = useDominantColor(cachedArt, { setGlobal: true });
 
-  const artistRadio = data?.playlists.find(p => (p.title as string)?.toLowerCase().includes('radio'));
   const latestAlbum = data?.albums[0] ?? null;
 
-  const genius   = data?.genius ?? null;
-  const blurb    = genius ? extractBio(genius.description) : '';
-  const altNames = genius?.alternateNames?.filter(Boolean).slice(0, 4) ?? [];
-  const hasAbout = !!(blurb || genius?.instagram || genius?.twitter);
+  const genius          = data?.genius ?? null;
+  const blurb           = genius ? extractBio(genius.description) : '';
+  const altNames        = genius?.alternateNames?.filter(Boolean).slice(0, 4) ?? [];
+  const geniusHeaderImg = useImage(genius?.headerImageUrl ?? null);
+
 
   if (!item) return null;
 
@@ -129,6 +131,9 @@ export function ArtistPanel({ onAddToQueue }: Props) {
             : undefined
         }
       >
+        {geniusHeaderImg && (
+          <img className={styles.headerBgImg} src={geniusHeaderImg} alt="" aria-hidden="true" />
+        )}
         <div className={styles.headerRow}>
           <div className={styles.headerArtWrap}>
             {cachedArt
@@ -172,6 +177,8 @@ export function ArtistPanel({ onAddToQueue }: Props) {
                       track={track}
                       index={i}
                       isSelected={selected.has(i)}
+                      isCurrentTrack={track.id.objectId === currentObjectId}
+                      isPlaybackActive={isPlaybackActive}
                       onAdd={onAddToQueue}
                       onClick={handleTrackClick}
                       onDragStart={handleDragStart}

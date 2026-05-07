@@ -48,6 +48,8 @@ function makeData(overrides = {}) {
   };
 }
 
+const defaultProps = { onAddToQueue: vi.fn(), currentObjectId: null, isPlaybackActive: false };
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockUseLocation.mockReturnValue({ state: { item: artistItem } });
@@ -57,18 +59,18 @@ beforeEach(() => {
 describe('ArtistPanel', () => {
   it('returns nothing when no item in state', () => {
     mockUseLocation.mockReturnValue({ state: null });
-    const { container } = render(<ArtistPanel onAddToQueue={vi.fn()} />);
+    const { container } = render(<ArtistPanel {...defaultProps} />);
     expect(container.firstChild).toBeNull();
   });
 
   it('shows artist name from data', () => {
-    render(<ArtistPanel onAddToQueue={vi.fn()} />);
+    render(<ArtistPanel {...defaultProps} />);
     expect(screen.getByText('The Beatles')).toBeInTheDocument();
   });
 
   it('shows loading skeletons while loading', () => {
     mockUseArtistBrowse.mockReturnValue({ data: undefined, isLoading: true });
-    const { container } = render(<ArtistPanel onAddToQueue={vi.fn()} />);
+    const { container } = render(<ArtistPanel {...defaultProps} />);
     expect(container.querySelectorAll('[class*="skeletonRow"]').length).toBeGreaterThan(0);
   });
 
@@ -78,7 +80,7 @@ describe('ArtistPanel', () => {
       { name: 'Let It Be', id: { objectId: 'trk-2' } },
     ];
     mockUseArtistBrowse.mockReturnValue({ data: makeData({ topSongs }), isLoading: false });
-    render(<ArtistPanel onAddToQueue={vi.fn()} />);
+    render(<ArtistPanel {...defaultProps} />);
     expect(screen.getByText('Come Together')).toBeInTheDocument();
     expect(screen.getByText('Let It Be')).toBeInTheDocument();
   });
@@ -90,11 +92,9 @@ describe('ArtistPanel', () => {
     }));
     mockUseArtistBrowse.mockReturnValue({ data: makeData({ topSongs }), isLoading: false });
     const user = userEvent.setup();
-    render(<ArtistPanel onAddToQueue={vi.fn()} />);
-    // Initially shows first 10
+    render(<ArtistPanel {...defaultProps} />);
     expect(screen.queryByText('Song 11')).not.toBeInTheDocument();
     await user.click(screen.getByText(/Top Songs/));
-    // After click shows all 12
     expect(screen.getByText('Song 11')).toBeInTheDocument();
   });
 
@@ -104,7 +104,7 @@ describe('ArtistPanel', () => {
       { title: 'Album Two', id: { objectId: 'alb-2' } },
     ];
     mockUseArtistBrowse.mockReturnValue({ data: makeData({ albums }), isLoading: false });
-    render(<ArtistPanel onAddToQueue={vi.fn()} />);
+    render(<ArtistPanel {...defaultProps} />);
     expect(screen.getByText('Albums')).toBeInTheDocument();
     expect(screen.getAllByText('Album Two').length).toBeGreaterThan(0);
   });
@@ -112,7 +112,7 @@ describe('ArtistPanel', () => {
   it('does not render albums section when only one album', () => {
     const albums = [{ title: 'Abbey Road', id: { objectId: 'alb-1' } }];
     mockUseArtistBrowse.mockReturnValue({ data: makeData({ albums }), isLoading: false });
-    render(<ArtistPanel onAddToQueue={vi.fn()} />);
+    render(<ArtistPanel {...defaultProps} />);
     expect(screen.queryByText('Albums')).not.toBeInTheDocument();
   });
 });
