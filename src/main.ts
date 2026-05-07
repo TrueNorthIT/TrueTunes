@@ -32,8 +32,6 @@ interface AppConfig {
   displayName?: string;
   /** Last app version the user opened — used to detect first launch on a new version. */
   lastSeenVersion?: string;
-  /** Queue display mode — floating overlay vs docked right-side column. */
-  queueMode?: 'floating' | 'docked';
   /** Width (px) of the docked queue column. */
   queueDockedWidth?: number;
 }
@@ -65,7 +63,6 @@ async function loadConfig(): Promise<void> {
     if (typeof parsed.displayName === 'string') config.displayName = parsed.displayName;
     if (typeof parsed.lastSeenVersion === 'string') config.lastSeenVersion = parsed.lastSeenVersion;
     if (typeof parsed.preferredCoordinatorId === 'string') config.preferredCoordinatorId = parsed.preferredCoordinatorId;
-    if (parsed.queueMode === 'floating' || parsed.queueMode === 'docked') config.queueMode = parsed.queueMode;
     if (typeof parsed.queueDockedWidth === 'number') config.queueDockedWidth = parsed.queueDockedWidth;
   } catch {
     // No config file yet — use defaults
@@ -79,7 +76,6 @@ async function saveConfig(): Promise<void> {
       displayName: config.displayName,
       lastSeenVersion: config.lastSeenVersion,
       preferredCoordinatorId: config.preferredCoordinatorId,
-      queueMode: config.queueMode,
       queueDockedWidth: config.queueDockedWidth,
     };
     await fs.writeFile(configFilePath(), JSON.stringify(toSave, null, 2), 'utf8');
@@ -1219,12 +1215,6 @@ ipcMain.handle('config:setDisplayName', async (_: IpcMainInvokeEvent, name: stri
   await saveConfig();
   // Start pubsub now that we have a name (first-time setup path)
   initPubSub().catch(console.error);
-});
-
-ipcMain.handle('config:getQueueMode', () => config.queueMode ?? 'floating');
-ipcMain.handle('config:setQueueMode', async (_: IpcMainInvokeEvent, mode: 'floating' | 'docked') => {
-  config.queueMode = mode;
-  await saveConfig();
 });
 
 ipcMain.handle('config:getQueueDockedWidth', () => config.queueDockedWidth ?? 380);

@@ -82,11 +82,9 @@ function MainApp() {
     reloadQueue();
   }, [playback.queueVersion, reloadQueue]);
 
-  const [queueOpen, setQueueOpen]       = useState(false);
   const [feedbackOpen, setFeedbackOpen]     = useState(false);
   const [changelogOpen, setChangelogOpen]   = useState(false);
   const [displayName, setDisplayName] = useState<string | null | undefined>(undefined); // undefined = not yet loaded
-  const [queueMode, setQueueMode] = useState<'floating' | 'docked'>('floating');
   const [queueDockedWidth, setQueueDockedWidth] = useState<number>(380);
   const queueSidebarRef = useRef<QueueSidebarHandle>(null);
   const shellRef = useRef<HTMLDivElement>(null);
@@ -96,12 +94,10 @@ function MainApp() {
 
 useEffect(() => {
     window.sonos.getDisplayName().then(setDisplayName);
-    window.sonos.getQueueMode().then(setQueueMode).catch(() => {});
     window.sonos.getQueueDockedWidth().then(setQueueDockedWidth).catch(() => {});
   }, []);
 
   useEffect(() => {
-    if (queueMode !== 'docked') return;
     function clamp() {
       const max = window.innerWidth - (800 + 64);
       setQueueDockedWidth((w) => (w > max ? max : w));
@@ -109,25 +105,12 @@ useEffect(() => {
     window.addEventListener('resize', clamp);
     clamp();
     return () => window.removeEventListener('resize', clamp);
-  }, [queueMode]);
-
-  const handleSetQueueMode = useCallback((mode: 'floating' | 'docked') => {
-    setQueueMode(mode);
-    window.sonos.setQueueMode(mode).catch(() => {});
   }, []);
 
   const handleSetQueueDockedWidth = useCallback((width: number) => {
     setQueueDockedWidth(width);
     window.sonos.setQueueDockedWidth(width).catch(() => {});
   }, []);
-
-  const handleQueueButton = useCallback(() => {
-    if (queueMode === 'docked') {
-      queueSidebarRef.current?.scrollToNowPlaying();
-    } else {
-      setQueueOpen((o) => !o);
-    }
-  }, [queueMode]);
 
   const splashReadyRef = useRef(false);
   useEffect(() => {
@@ -443,7 +426,7 @@ useEffect(() => {
     <div
       ref={shellRef}
       className={styles.shell}
-      style={queueMode === 'docked' ? { '--docked-queue-w': `${queueDockedWidth}px` } as React.CSSProperties : undefined}
+      style={{ '--docked-queue-w': `${queueDockedWidth}px` } as React.CSSProperties}
     >
       <Splash ready={splashReady} />
       <TopNav
@@ -451,8 +434,6 @@ useEffect(() => {
         groups={groups}
         activeGroupId={activeGroupId}
         onGroupChange={handleGroupChange}
-        queueOpen={queueOpen}
-        onToggleQueue={handleQueueButton}
         onResync={() => window.sonos.resync()}
         displayName={displayName}
         onSaveName={(name) => {
@@ -460,8 +441,6 @@ useEffect(() => {
           setDisplayName(name);
         }}
         onChangelogOpen={() => setChangelogOpen(true)}
-        queueMode={queueMode}
-        onSetQueueMode={handleSetQueueMode}
       />
       <div className={styles.body}>
         <Routes>
@@ -491,42 +470,15 @@ useEffect(() => {
               />
             }
           />
-          <Route path="/album/:id" element={<AlbumPanel onAddToQueue={handleAddToQueue} queueOpen={queueOpen || queueMode === 'docked'} />} />
+          <Route path="/album/:id" element={<AlbumPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/artist/:id" element={<ArtistPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/container/:id" element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/leaderboard" element={<LeaderboardPanel />} />
           <Route path="/queuedle" element={<QueuedlePanel />} />
           <Route path="/lyrics" element={<LyricsPanel playback={playback} />} />
         </Routes>
-        {queueMode === 'docked' && (
-          <QueueSidebar
-            ref={queueSidebarRef}
-            mode="docked"
-            open
-            items={queueItems}
-            setItems={setQueueItems}
-            isLoading={queueLoading}
-            error={queueError}
-            currentObjectId={playback.currentObjectId}
-            currentQueueItemId={playback.queueItemId}
-            positionMs={playback.positionMs}
-            currentTrackDurationMs={playback.durationMs}
-            groupName={groups.find(g => g.id === activeGroupId)?.name ?? null}
-            onClose={() => {}}
-            onRefresh={reloadQueue}
-            onError={showToast}
-            onAddToQueue={handleAddToQueue}
-            dockedWidth={queueDockedWidth}
-            onResizeWidth={handleSetQueueDockedWidth}
-            onResizeWidthLive={handleResizeWidthLive}
-          />
-        )}
-      </div>
-      {queueMode === 'floating' && (
         <QueueSidebar
           ref={queueSidebarRef}
-          mode="floating"
-          open={queueOpen}
           items={queueItems}
           setItems={setQueueItems}
           isLoading={queueLoading}
@@ -536,18 +488,18 @@ useEffect(() => {
           positionMs={playback.positionMs}
           currentTrackDurationMs={playback.durationMs}
           groupName={groups.find(g => g.id === activeGroupId)?.name ?? null}
-          onClose={() => setQueueOpen(false)}
           onRefresh={reloadQueue}
           onError={showToast}
           onAddToQueue={handleAddToQueue}
+          dockedWidth={queueDockedWidth}
+          onResizeWidth={handleSetQueueDockedWidth}
+          onResizeWidthLive={handleResizeWidthLive}
         />
-      )}
+      </div>
       <PlayerBar
         isAuthed={isAuthed}
         playback={playback}
-        onToggleQueue={handleQueueButton}
         onShuffle={reloadQueue}
-        queueMode={queueMode}
       />
       {toastMsg && <div className={styles.toast}>{toastMsg}</div>}
       {displayName === null && (

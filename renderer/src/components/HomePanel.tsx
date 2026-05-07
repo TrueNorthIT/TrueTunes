@@ -45,10 +45,10 @@ export async function fetchYtmSections(): Promise<YtmSections> {
   const rootItems = (stack?.['items'] ?? []) as SonosItem[];
 
   const find = (title: string) => rootItems.find((i) => (i.title ?? i.name) === title);
-  const homeItem        = find('Home');
+  const homeItem = find('Home');
   const newReleasesItem = find('New releases');
-  const chartsItem      = find('Charts');
-  const supermixItem    = find('My Supermix');
+  const chartsItem = find('Charts');
+  const supermixItem = find('My Supermix');
 
   const browseContainer = async (item: SonosItem | undefined): Promise<SonosItem[]> => {
     if (!item) return [];
@@ -72,7 +72,7 @@ export async function fetchYtmSections(): Promise<YtmSections> {
 
   return {
     forYou: supermixItem
-      ? [{ ...supermixItem, images: [] as { url: string }[], imageUrl: '/icon.png' }, ...homeItems]
+      ? [{ ...supermixItem, images: [] as { url: string }[], imageUrl: '../../public/icon.png' }, ...homeItems]
       : homeItems,
     newReleases: newItems,
     charts: chartItems,
@@ -81,11 +81,11 @@ export async function fetchYtmSections(): Promise<YtmSections> {
 
 export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, history, histLoading }: Props) {
   const queryClient = useQueryClient();
-  const location    = useLocation();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
-  const openItem    = useOpenItem();
+  const openItem = useOpenItem();
 
-  const view         = location.pathname === '/search' ? 'search' : 'home';
+  const view = location.pathname === '/search' ? 'search' : 'home';
   const activeSearch = searchParams.get('q') ?? '';
 
   const { data: searchResults = [], isFetching: searchLoading } = useQuery({
@@ -122,10 +122,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, history, hi
         {searchLoading ? (
           <div className={styles.msg}>Searching…</div>
         ) : (
-          <SearchResults
-            results={searchResults}
-            onAddToQueue={onAddToQueue}
-          />
+          <SearchResults results={searchResults} onAddToQueue={onAddToQueue} />
         )}
       </div>
     );

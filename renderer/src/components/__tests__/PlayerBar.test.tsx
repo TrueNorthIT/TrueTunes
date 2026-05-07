@@ -79,7 +79,7 @@ function makeNowPlaying(overrides: Partial<ReturnType<typeof useNowPlaying>> = {
 function setup(
   playbackOverrides: Partial<PlaybackState> = {},
   nowPlayingOverrides: Partial<ReturnType<typeof useNowPlaying>> = {},
-  extraProps: { isAuthed?: boolean; onToggleQueue?: () => void; onShuffle?: () => void } = {}
+  extraProps: { isAuthed?: boolean; onShuffle?: () => void } = {}
 ) {
   vi.mocked(useNowPlaying).mockReturnValue(makeNowPlaying(nowPlayingOverrides) as ReturnType<typeof useNowPlaying>);
 
@@ -87,7 +87,6 @@ function setup(
   const props = {
     isAuthed: true,
     playback: makePlayback(playbackOverrides),
-    onToggleQueue: vi.fn(),
     onShuffle: vi.fn(),
     ...extraProps,
   };
@@ -127,7 +126,6 @@ describe('PlayerBar — visibility', () => {
         <PlayerBar
           isAuthed={true}
           playback={makePlayback()}
-          onToggleQueue={vi.fn()}
           onShuffle={vi.fn()}
         />
       </QueryClientProvider>
@@ -333,13 +331,6 @@ describe('PlayerBar — volume button', () => {
 // ─── right-side controls ─────────────────────────────────────────────────────
 
 describe('PlayerBar — right controls', () => {
-  it('Queue button calls onToggleQueue', async () => {
-    const onToggleQueue = vi.fn();
-    const { user } = setup({}, {}, { onToggleQueue });
-    await user.click(screen.getByTitle('Queue'));
-    expect(onToggleQueue).toHaveBeenCalled();
-  });
-
   it('Mini player button calls openMiniPlayer', async () => {
     const { user } = setup();
     await user.click(screen.getByTitle('Mini player'));

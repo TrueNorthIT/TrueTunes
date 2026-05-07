@@ -184,12 +184,6 @@ describe('AlbumPanel', () => {
     expect(header?.style.background).toContain('200, 100, 50');
   });
 
-  it('queueOpen prop adds padding-right to tracks container', () => {
-    const { container } = render(<AlbumPanel onAddToQueue={vi.fn()} queueOpen />, { wrapper });
-    const tracks = container.querySelector('[class*="tracks"]') as HTMLElement;
-    expect(tracks?.style.paddingRight).toBeTruthy();
-  });
-
   // ── add to queue ──────────────────────────────────────────────────────────
 
   it('add to queue button calls onAddToQueue once with the album item (handler fans out per-track)', async () => {

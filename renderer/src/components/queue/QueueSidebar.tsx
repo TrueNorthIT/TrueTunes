@@ -12,8 +12,6 @@ import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/QueueSidebar.module.css';
 
 interface Props {
-  mode: 'floating' | 'docked';
-  open: boolean;
   items: NormalizedQueueItem[];
   setItems: (updater: NormalizedQueueItem[] | ((prev: NormalizedQueueItem[]) => NormalizedQueueItem[])) => void;
   isLoading: boolean;
@@ -23,7 +21,6 @@ interface Props {
   positionMs?: number;
   currentTrackDurationMs?: number;
   groupName: string | null;
-  onClose: () => void;
   onRefresh: () => void;
   onError: (msg: string) => void;
   onAddToQueue: (item: SonosItem, position: number) => void;
@@ -42,8 +39,6 @@ const PLAYER_BAR_PADDING = 64; // 32px breathing room each side
 
 export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function QueueSidebar(
   {
-    mode,
-    open,
     items,
     setItems,
     isLoading,
@@ -53,7 +48,6 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     positionMs = 0,
     currentTrackDurationMs = 0,
     groupName,
-    onClose,
     onRefresh,
     onError,
     onAddToQueue,
@@ -63,8 +57,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   },
   ref
 ) {
-  const isDocked = mode === 'docked';
-  const isActive = isDocked || open;
+  const isActive = true;
 
   const contentRef = useRef<HTMLDivElement>(null);
   const attributionMap = useAttribution(onRefresh);
@@ -116,7 +109,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
 
   useImperativeHandle(ref, () => ({ scrollToNowPlaying }), []);
 
-  useEffect(() => { setSelected(new Set()); }, [open, items]);
+  useEffect(() => { setSelected(new Set()); }, [items]);
 
   useEffect(() => {
     if (!isActive) return;
@@ -154,7 +147,6 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   }, [isActive, selected, setItems, onRefresh, onError]);
 
   function handleResizePointerDown(e: React.PointerEvent<HTMLDivElement>) {
-    if (!isDocked) return;
     e.preventDefault();
     const startX = e.clientX;
     const startWidth = liveWidthRef.current;
@@ -277,28 +269,24 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   }
 
   const selCount = selected.size;
-  const sidebarClass = `${styles.sidebar}${isDocked ? ' ' + styles.docked : ''}${!isDocked && open ? ' ' + styles.open : ''}`;
-  const sidebarStyle = isDocked ? { width: liveWidth } : undefined;
+  const sidebarClass = styles.sidebar;
+  const sidebarStyle = { width: liveWidth };
 
   return (
     <div className={sidebarClass} style={sidebarStyle}>
-      {isDocked && (
-        <div
-          className={styles.resizeHandle}
-          onPointerDown={handleResizePointerDown}
-          onPointerMove={e => e.currentTarget.style.setProperty('--mouse-y', `${e.nativeEvent.offsetY}px`)}
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Resize queue"
-        />
-      )}
-      {isDocked && (
-        <div className={styles.dockedTopBar}>
-          <div className={styles.winPill}>
-            <WindowControls />
-          </div>
+      <div
+        className={styles.resizeHandle}
+        onPointerDown={handleResizePointerDown}
+        onPointerMove={e => e.currentTarget.style.setProperty('--mouse-y', `${e.nativeEvent.offsetY}px`)}
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize queue"
+      />
+      <div className={styles.dockedTopBar}>
+        <div className={styles.winPill}>
+          <WindowControls />
         </div>
-      )}
+      </div>
       <div className={styles.header}>
         <span className={styles.title}>
           Queue{groupName ? ` · ${groupName}` : ''}{items.length > 0 ? ` · ${items.length}` : ''}
@@ -320,9 +308,6 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
             <button className={styles.iconBtn} onClick={scrollToNowPlaying} title="Jump to now playing">⊙</button>
             {items.length > 0 && (
               <button className={styles.iconBtn} title="Clear queue" onClick={() => setPendingClear(true)}>⊘</button>
-            )}
-            {!isDocked && (
-              <button className={styles.iconBtn} onClick={onClose} title="Close">✕</button>
             )}
           </div>
         )}

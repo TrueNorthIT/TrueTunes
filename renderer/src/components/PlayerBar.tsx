@@ -16,7 +16,6 @@ import {
   Volume1,
   Volume2,
   VolumeX,
-  List,
   Music,
   PictureInPicture2,
   MicVocal,
@@ -27,9 +26,7 @@ import styles from "../styles/PlayerBar.module.css";
 interface Props {
   isAuthed: boolean;
   playback: PlaybackState;
-  onToggleQueue: () => void;
   onShuffle: () => void;
-  queueMode?: 'floating' | 'docked';
 }
 
 function ScrollingText({
@@ -142,7 +139,7 @@ function VolumeButton({ volume }: { volume: number }) {
   );
 }
 
-export function PlayerBar({ isAuthed, playback, onToggleQueue, onShuffle, queueMode }: Props) {
+export function PlayerBar({ isAuthed, playback, onShuffle }: Props) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const lyricsActive = pathname === '/lyrics';
@@ -305,11 +302,6 @@ export function PlayerBar({ isAuthed, playback, onToggleQueue, onShuffle, queueM
           >
             <MicVocal size={14} />
           </button>
-          {queueMode !== 'docked' && (
-            <button className={styles.ctrl} onClick={onToggleQueue} title="Queue">
-              <List size={14} />
-            </button>
-          )}
           <button
             className={styles.ctrl}
             onClick={() => window.sonos.openMiniPlayer()}
