@@ -12,27 +12,11 @@
   /* background gradient applied via inline style from dominant colour */
 }
 
-.headerBgImg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center top;
-  filter: blur(28px) brightness(0.18) saturate(1.6);
-  transform: scale(1.08);
-  z-index: 0;
-  pointer-events: none;
-  clip-path: inset(0);
-}
-
 /* flex row: circle + name, vertically centred together */
 .headerRow {
   display: flex;
   align-items: center;
   gap: 24px;
-  position: relative;
-  z-index: 1;
 }
 
 /* Circle: in flow, negative margin-bottom makes bottom half bleed into body */

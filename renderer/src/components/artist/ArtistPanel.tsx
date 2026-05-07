@@ -115,9 +115,6 @@ export function ArtistPanel({ onAddToQueue, currentObjectId, isPlaybackActive }:
   const genius          = data?.genius ?? null;
   const blurb           = genius ? extractBio(genius.description) : '';
   const altNames        = genius?.alternateNames?.filter(Boolean).slice(0, 4) ?? [];
-  const geniusHeaderImg = useImage(genius?.headerImageUrl ?? null);
-
-
   if (!item) return null;
 
   return (
@@ -131,9 +128,6 @@ export function ArtistPanel({ onAddToQueue, currentObjectId, isPlaybackActive }:
             : undefined
         }
       >
-        {geniusHeaderImg && (
-          <img className={styles.headerBgImg} src={geniusHeaderImg} alt="" aria-hidden="true" />
-        )}
         <div className={styles.headerRow}>
           <div className={styles.headerArtWrap}>
             {cachedArt
