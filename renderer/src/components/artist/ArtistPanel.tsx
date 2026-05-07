@@ -31,11 +31,11 @@ function extractBio(description: GeniusDomNode | null): string {
 
 interface Props {
   onAddToQueue: (item: SonosItem) => void;
-  currentObjectId: string | null;
+  currentTrackName: string;
   isPlaybackActive: boolean;
 }
 
-export function ArtistPanel({ onAddToQueue, currentObjectId, isPlaybackActive }: Props) {
+export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }: Props) {
   const { state } = useLocation();
   const item = (state as { item?: SonosItem } | null)?.item;
   const openItem = useOpenItem();
@@ -171,7 +171,7 @@ export function ArtistPanel({ onAddToQueue, currentObjectId, isPlaybackActive }:
                       track={track}
                       index={i}
                       isSelected={selected.has(i)}
-                      isCurrentTrack={track.id.objectId === currentObjectId}
+                      isCurrentTrack={track.title === currentTrackName}
                       isPlaybackActive={isPlaybackActive}
                       onAdd={onAddToQueue}
                       onClick={handleTrackClick}

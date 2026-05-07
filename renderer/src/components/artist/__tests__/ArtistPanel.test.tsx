@@ -48,7 +48,7 @@ function makeData(overrides = {}) {
   };
 }
 
-const defaultProps = { onAddToQueue: vi.fn(), currentObjectId: null, isPlaybackActive: false };
+const defaultProps = { onAddToQueue: vi.fn(), currentTrackName: '', isPlaybackActive: false };
 
 beforeEach(() => {
   vi.clearAllMocks();
