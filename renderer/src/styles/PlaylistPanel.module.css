@@ -336,11 +336,6 @@
 
 /* ── Skeleton ────────────────────────────────────────────────────────────── */
 
-@keyframes skelPulse {
-  0%, 100% { opacity: 0.3; }
-  50%       { opacity: 0.55; }
-}
-
 .skelBlock {
   border-radius: 4px;
   background: var(--bg-1);

@@ -431,8 +431,9 @@ useEffect(() => {
         onResync={() => window.sonos.resync()}
         displayName={displayName}
         onSaveName={(name) => {
-          window.sonos.setDisplayName(name).catch(() => {});
-          setDisplayName(name);
+          const stored = name.trim();
+          window.sonos.setDisplayName(stored).catch(() => {});
+          setDisplayName(stored || null);
         }}
         onChangelogOpen={() => setChangelogOpen(true)}
       />
@@ -468,7 +469,7 @@ useEffect(() => {
           <Route path="/leaderboard" element={<LeaderboardPanel />} />
           <Route path="/queuedle" element={<QueuedlePanel />} />
           <Route path="/lyrics" element={<LyricsPanel playback={playback} />} />
-          <Route path="/profile/:userName" element={<ProfilePanel onAddToQueue={handleAddToQueue} displayName={displayName} />} />
+          <Route path="/profile/:userName" element={<ProfilePanel onAddToQueue={handleAddToQueue} displayName={displayName} onSignOut={() => { window.sonos.setDisplayName('').catch(() => {}); setDisplayName(null); }} />} />
           <Route path="/playlist/:id" element={<PlaylistPanel displayName={displayName} onAddToQueue={handleAddToQueue} />} />
         </Routes>
         <QueueSidebar

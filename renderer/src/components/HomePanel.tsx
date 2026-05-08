@@ -18,6 +18,8 @@ import { useRecentlyPlayed } from '../hooks/useRecentlyPlayed';
 import { useMyPlaylists } from '../hooks/usePlaylists';
 import { useDailyGame, useMyScore } from '../hooks/useDailyGame';
 import { useImage } from '../hooks/useImage';
+import { createDragGhost } from '../lib/dragHelpers';
+import { PlaylistCard } from './common/PlaylistCard';
 import type { ServiceSearch } from '../types/ServiceSearch';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
 import { artistQueryOptions } from '../hooks/useArtistBrowse';
@@ -33,17 +35,7 @@ function AlbumListItem({ item, onOpen, onAdd }: { item: SonosItem; onOpen: () =>
   function handleDragStart(e: React.DragEvent) {
     e.dataTransfer.effectAllowed = 'copy';
     e.dataTransfer.setData('application/sonos-item-list', JSON.stringify([item]));
-    const ghost = document.createElement('div');
-    Object.assign(ghost.style, {
-      position: 'fixed', top: '-100px', left: '0',
-      background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
-      color: '#fff', padding: '5px 12px', borderRadius: '6px',
-      fontSize: '12px', fontWeight: '600', pointerEvents: 'none', whiteSpace: 'nowrap',
-    });
-    ghost.textContent = getName(item);
-    document.body.appendChild(ghost);
-    e.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, 20);
-    setTimeout(() => ghost.remove(), 0);
+    createDragGhost(getName(item), e.dataTransfer);
   }
 
   return (
@@ -136,38 +128,6 @@ export async function fetchYtmSections(): Promise<YtmSections> {
     newReleases: newItems,
     charts: chartItems,
   };
-}
-
-function getPlaylistColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    hash |= 0;
-  }
-  const hue = Math.abs(hash) % 360;
-  return `linear-gradient(135deg, hsl(${hue},45%,28%), hsl(${(hue + 50) % 360},50%,20%))`;
-}
-
-function PlaylistCard({ pl, displayName, onClick }: { pl: PlaylistMeta; displayName?: string | null; onClick: () => void }) {
-  const art = useImage(pl.imageUrl ?? null);
-  return (
-    <button className={styles.playlistCard} onClick={onClick} title={pl.name}>
-      <div
-        className={styles.playlistCardArt}
-        style={art ? undefined : { background: getPlaylistColor(pl.name) }}
-      >
-        {art
-          ? <img src={art} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: 'inherit' }} />
-          : pl.name[0].toUpperCase()
-        }
-      </div>
-      <span className={styles.playlistCardName}>{pl.name}</span>
-      <span className={styles.playlistCardMeta}>
-        {pl.trackCount} track{pl.trackCount !== 1 ? 's' : ''}
-        {pl.owner !== displayName && <span> · {pl.owner}</span>}
-      </span>
-    </button>
-  );
 }
 
 export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName }: Props) {

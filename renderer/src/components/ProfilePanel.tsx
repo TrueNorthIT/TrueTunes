@@ -6,44 +6,12 @@ import { useGameRankings } from '../hooks/useDailyGame';
 import { useMyPlaylists } from '../hooks/usePlaylists';
 import { getGameRankIcon } from '../lib/gameRankAssets';
 import { useOpenItem } from '../hooks/useOpenItem';
-import { useImage } from '../hooks/useImage';
 import { CardRow } from './CardRow';
 import { MediaRow } from './common/MediaRow';
 import { CreatePlaylistDialog } from './common/ContextMenu';
+import { PlaylistCard } from './common/PlaylistCard';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/ProfilePanel.module.css';
-
-function getPlaylistColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    hash |= 0;
-  }
-  const hue = Math.abs(hash) % 360;
-  return `linear-gradient(135deg, hsl(${hue},45%,28%), hsl(${(hue + 50) % 360},50%,20%))`;
-}
-
-function PlaylistCard({ pl, onClick }: { pl: PlaylistMeta; onClick: () => void }) {
-  const art = useImage(pl.imageUrl ?? null);
-  return (
-    <button className={styles.playlistCard} onClick={onClick} title={pl.name}>
-      <div
-        className={styles.playlistCardArt}
-        style={art ? undefined : { background: getPlaylistColor(pl.name) }}
-      >
-        {art
-          ? <img src={art} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: 'inherit' }} />
-          : pl.name[0].toUpperCase()
-        }
-      </div>
-      <span className={styles.playlistCardName}>{pl.name}</span>
-      <span className={styles.playlistCardMeta}>
-        {pl.trackCount} track{pl.trackCount !== 1 ? 's' : ''}
-        {!pl.isPublic && <span> · Private</span>}
-      </span>
-    </button>
-  );
-}
 
 function getAvatarStyle(name: string): React.CSSProperties {
   let hash = 0;
@@ -60,9 +28,10 @@ function getAvatarStyle(name: string): React.CSSProperties {
 interface Props {
   onAddToQueue: (item: SonosItem) => void;
   displayName?: string | null;
+  onSignOut?: () => void;
 }
 
-export function ProfilePanel({ onAddToQueue, displayName }: Props) {
+export function ProfilePanel({ onAddToQueue, displayName, onSignOut }: Props) {
   const { userName } = useParams<{ userName: string }>();
   const navigate = useNavigate();
   const openItem = useOpenItem();
@@ -97,9 +66,17 @@ export function ProfilePanel({ onAddToQueue, displayName }: Props) {
         </div>
         <div className={styles.headerInfo}>
           <h1 className={styles.userName}>{userName}</h1>
-          {totalEvents > 0 && (
+          {(totalEvents > 0 || isOwnProfile) && (
             <span className={styles.statChip}>
-              <span className={styles.statChipValue}>{totalEvents.toLocaleString()}</span> total plays
+              {totalEvents > 0 && (
+                <><span className={styles.statChipValue}>{totalEvents.toLocaleString()}</span> plays</>
+              )}
+              {isOwnProfile && onSignOut && (
+                <>
+                  {totalEvents > 0 && <span className={styles.statChipSep}>|</span>}
+                  <button className={styles.signOutInline} onClick={onSignOut}>Sign out</button>
+                </>
+              )}
             </span>
           )}
         </div>

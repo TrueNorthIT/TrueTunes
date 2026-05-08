@@ -208,18 +208,65 @@
 .groupOption:hover { background: var(--bg-2); color: var(--text); }
 .groupOptionActive { color: var(--text) !important; font-weight: 600; }
 
-/* ── Name popover ── */
-.nameWrap { position: relative; }
+/* ── Profile chip + popover ── */
+.profileWrap { position: relative; }
 
-.namePopover {
+.profileChip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 4px 8px 4px 4px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.12s;
+  flex-shrink: 0;
+  max-width: 140px;
+}
+.profileChip:hover { background: rgba(255, 255, 255, 0.08); }
+.profileChipOpen  { background: rgba(255, 255, 255, 0.10); }
+.profileChipActive { background: rgba(255, 255, 255, 0.08); }
+
+.profileAvatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.profileName {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profileSignIn {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 0 4px;
+}
+
+.profilePopover {
   position: absolute;
-  top: calc(100% + 20px);
-  right: 0;
+  top: calc(100% + 16px);
+  left: 0;
   background: var(--bg-1);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   padding: 12px;
-  width: 200px;
+  width: 220px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -227,11 +274,84 @@
   z-index: 300;
 }
 
-.namePopoverLabel {
+.profileHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 4px;
+}
+
+.profileAvatarLg {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.profileHeaderName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profileViewBtn {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 7px 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s, color 0.12s;
+}
+.profileViewBtn:hover { background: rgba(255, 255, 255, 0.12); color: var(--text); }
+
+.profileDivider {
+  height: 1px;
+  background: var(--border);
+  margin: 0 -12px;
+}
+
+.profileChangeSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.profileChangeLabel {
   font-size: 11px;
   color: var(--text-3);
   font-weight: 500;
 }
+
+.profileSignOutBtn {
+  background: none;
+  border: none;
+  color: rgba(255, 80, 80, 0.75);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 4px 0;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.12s;
+}
+.profileSignOutBtn:hover { color: rgba(255, 80, 80, 1); }
+
+/* ── Name input (shared by profile popover) ── */
 
 .nameInput {
   background: var(--bg-2);

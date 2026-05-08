@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { useImage } from '../../hooks/useImage';
 import { useOpenItem } from '../../hooks/useOpenItem';
 import { getName, browseSub, getItemArt, isAlbum, isArtist, isTrack } from '../../lib/itemHelpers';
+import { createDragGhost } from '../../lib/dragHelpers';
 import { ArtistHero } from '../artist/ArtistHero';
 import { ArtistCircle } from './ArtistCircle';
 import { MediaRow } from '../common/MediaRow';
@@ -82,17 +83,7 @@ export function SearchResults({
     if (!selected.has(i)) { setSelected(new Set([i])); lastSelected.current = i; }
     e.dataTransfer.effectAllowed = 'copy';
     e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(toMove.map(idx => tracks[idx])));
-    const ghost = document.createElement('div');
-    Object.assign(ghost.style, {
-      position: 'fixed', top: '-100px', left: '0',
-      background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
-      color: '#fff', padding: '5px 12px', borderRadius: '6px',
-      fontSize: '12px', fontWeight: '600', pointerEvents: 'none', whiteSpace: 'nowrap',
-    });
-    ghost.textContent = toMove.length > 1 ? `${toMove.length} tracks` : getName(tracks[i]);
-    document.body.appendChild(ghost);
-    e.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, 20);
-    setTimeout(() => ghost.remove(), 0);
+    createDragGhost(toMove.length > 1 ? `${toMove.length} tracks` : getName(tracks[i]), e.dataTransfer);
   }
 
   if (results.length === 0) return <div className={styles.msg}>No results.</div>;
