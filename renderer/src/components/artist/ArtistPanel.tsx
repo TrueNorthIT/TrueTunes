@@ -7,7 +7,6 @@ import { useOpenItem } from '../../hooks/useOpenItem';
 import { resolveArtistParams } from '../../lib/itemHelpers';
 import { TopSongRow } from './TopSongRow';
 import { LatestReleaseCard } from './LatestReleaseCard';
-import { RadioCard } from './RadioCard';
 import { ArtistAlbumCard } from './ArtistAlbumCard';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/ArtistPanel.module.css';
