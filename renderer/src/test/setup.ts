@@ -72,5 +72,11 @@ Object.defineProperty(window, 'sonos', {
     onWindowMaximized:  vi.fn(() => () => {}),
     onUpdateDownloaded: vi.fn(noop),
     installUpdate:      vi.fn(pending),
+    fetchPlaylists:       vi.fn(() => Promise.resolve([])),
+    fetchPlaylist:        vi.fn(pending),
+    createPlaylist:       vi.fn(pending),
+    addTrackToPlaylist:   vi.fn(pending),
+    joinPlaylist:         vi.fn(pending),
+    uploadPlaylistImage:  vi.fn(pending),
   },
 });

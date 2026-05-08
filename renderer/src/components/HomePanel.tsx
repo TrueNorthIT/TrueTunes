@@ -15,6 +15,7 @@ import {
 } from '../lib/itemHelpers';
 import { useOpenItem } from '../hooks/useOpenItem';
 import { useRecentlyPlayed } from '../hooks/useRecentlyPlayed';
+import { useMyPlaylists } from '../hooks/usePlaylists';
 import { useDailyGame, useMyScore } from '../hooks/useDailyGame';
 import { useImage } from '../hooks/useImage';
 import type { ServiceSearch } from '../types/ServiceSearch';
@@ -22,6 +23,7 @@ import { albumQueryOptions } from '../hooks/useAlbumBrowse';
 import { artistQueryOptions } from '../hooks/useArtistBrowse';
 import { CardRow } from './CardRow';
 import { SearchResults } from './search/SearchResults';
+import { CreatePlaylistDialog } from './common/ContextMenu';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/HomePanel.module.css';
 
@@ -82,6 +84,7 @@ interface Props {
   onAddToQueue: (item: SonosItem) => void;
   ytm: YtmSections | undefined;
   ytmLoading: boolean;
+  displayName?: string | null;
 }
 
 export interface YtmSections {
@@ -135,7 +138,39 @@ export async function fetchYtmSections(): Promise<YtmSections> {
   };
 }
 
-export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading }: Props) {
+function getPlaylistColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    hash |= 0;
+  }
+  const hue = Math.abs(hash) % 360;
+  return `linear-gradient(135deg, hsl(${hue},45%,28%), hsl(${(hue + 50) % 360},50%,20%))`;
+}
+
+function PlaylistCard({ pl, displayName, onClick }: { pl: PlaylistMeta; displayName?: string | null; onClick: () => void }) {
+  const art = useImage(pl.imageUrl ?? null);
+  return (
+    <button className={styles.playlistCard} onClick={onClick} title={pl.name}>
+      <div
+        className={styles.playlistCardArt}
+        style={art ? undefined : { background: getPlaylistColor(pl.name) }}
+      >
+        {art
+          ? <img src={art} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: 'inherit' }} />
+          : pl.name[0].toUpperCase()
+        }
+      </div>
+      <span className={styles.playlistCardName}>{pl.name}</span>
+      <span className={styles.playlistCardMeta}>
+        {pl.trackCount} track{pl.trackCount !== 1 ? 's' : ''}
+        {pl.owner !== displayName && <span> · {pl.owner}</span>}
+      </span>
+    </button>
+  );
+}
+
+export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName }: Props) {
   const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
@@ -145,6 +180,9 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading }: Props) {
   const view = location.pathname === '/search' ? 'search' : 'home';
   const activeSearch = searchParams.get('q') ?? '';
 
+  const { owned: ownedPlaylists, joined: joinedPlaylists } = useMyPlaylists(displayName);
+
+  const [createPlaylistOpen, setCreatePlaylistOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<string | undefined>(undefined);
   const [pickerOpen, setPickerOpen] = useState(false);
   const pickerRef = useRef<HTMLSpanElement>(null);
@@ -227,6 +265,25 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading }: Props) {
             </div>
             <CardRow items={ytm?.forYou ?? []} isLoading={ytmLoading} onAdd={onAddToQueue} onOpen={openItem} />
           </section>
+
+          {displayName && (ownedPlaylists.length > 0 || joinedPlaylists.length > 0) && (
+            <section className={styles.section}>
+              <div className={styles.sectionHeader}>
+                <h2 className={styles.sectionTitle}>Playlists</h2>
+                <button className={styles.sectionAction} onClick={() => setCreatePlaylistOpen(true)}>+ New</button>
+              </div>
+              <div className={styles.playlistRow}>
+                {[...ownedPlaylists, ...joinedPlaylists].map((pl) => (
+                  <PlaylistCard
+                    key={pl.id}
+                    pl={pl}
+                    displayName={displayName}
+                    onClick={() => navigate(`/playlist/${pl.id}`)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
 
           {hasRecent && (
             <>
@@ -368,6 +425,13 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading }: Props) {
             <CardRow items={ytm?.charts ?? []} isLoading={ytmLoading} onAdd={onAddToQueue} onOpen={openItem} />
           </section>
         </>
+      )}
+      {createPlaylistOpen && (
+        <CreatePlaylistDialog
+          displayName={displayName}
+          pendingTrack={null}
+          onClose={() => setCreatePlaylistOpen(false)}
+        />
       )}
     </div>
   );

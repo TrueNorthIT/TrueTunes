@@ -1236,6 +1236,79 @@ ipcMain.handle('telemetry:event', (_: IpcMainInvokeEvent, name: string, props?: 
   telemetry.event(name, props);
 });
 
+ipcMain.handle('playlist:list', async (_: IpcMainInvokeEvent, filter: { owner?: string; member?: string }) => {
+  try {
+    const params = new URLSearchParams();
+    if (filter.owner) params.set('owner', filter.owner);
+    if (filter.member) params.set('member', filter.member);
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/playlists?${params}`);
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle('playlist:get', async (_: IpcMainInvokeEvent, id: string) => {
+  try {
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(id)}`);
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle('playlist:create', async (_: IpcMainInvokeEvent, name: string, isPublic: boolean) => {
+  try {
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/playlists`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, isPublic, owner: config.displayName }),
+    });
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle('playlist:addTrack', async (_: IpcMainInvokeEvent, playlistId: string, track: unknown) => {
+  try {
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/tracks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ track, userName: config.displayName }),
+    });
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle('playlist:join', async (_: IpcMainInvokeEvent, playlistId: string, action: 'join' | 'leave') => {
+  try {
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userName: config.displayName, action }),
+    });
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle('playlist:uploadImage', async (_: IpcMainInvokeEvent, playlistId: string, data: ArrayBuffer, mimeType: string) => {
+  try {
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/image`, {
+      method: 'POST',
+      headers: { 'Content-Type': mimeType },
+      body: Buffer.from(data),
+    });
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
 ipcMain.handle(
   'pubsub:publishQueued',
   async (_: IpcMainInvokeEvent, item: { eventType: 'track' | 'album'; uri: string; trackName: string; artist: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }) => {

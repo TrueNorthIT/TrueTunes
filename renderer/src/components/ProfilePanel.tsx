@@ -1,13 +1,49 @@
-import { useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useRecentlyPlayed } from '../hooks/useRecentlyPlayed';
 import { useUserStats } from '../hooks/useUserStats';
 import { useGameRankings } from '../hooks/useDailyGame';
+import { useMyPlaylists } from '../hooks/usePlaylists';
 import { getGameRankIcon } from '../lib/gameRankAssets';
 import { useOpenItem } from '../hooks/useOpenItem';
+import { useImage } from '../hooks/useImage';
 import { CardRow } from './CardRow';
 import { MediaRow } from './common/MediaRow';
+import { CreatePlaylistDialog } from './common/ContextMenu';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/ProfilePanel.module.css';
+
+function getPlaylistColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    hash |= 0;
+  }
+  const hue = Math.abs(hash) % 360;
+  return `linear-gradient(135deg, hsl(${hue},45%,28%), hsl(${(hue + 50) % 360},50%,20%))`;
+}
+
+function PlaylistCard({ pl, onClick }: { pl: PlaylistMeta; onClick: () => void }) {
+  const art = useImage(pl.imageUrl ?? null);
+  return (
+    <button className={styles.playlistCard} onClick={onClick} title={pl.name}>
+      <div
+        className={styles.playlistCardArt}
+        style={art ? undefined : { background: getPlaylistColor(pl.name) }}
+      >
+        {art
+          ? <img src={art} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: 'inherit' }} />
+          : pl.name[0].toUpperCase()
+        }
+      </div>
+      <span className={styles.playlistCardName}>{pl.name}</span>
+      <span className={styles.playlistCardMeta}>
+        {pl.trackCount} track{pl.trackCount !== 1 ? 's' : ''}
+        {!pl.isPublic && <span> · Private</span>}
+      </span>
+    </button>
+  );
+}
 
 function getAvatarStyle(name: string): React.CSSProperties {
   let hash = 0;
@@ -23,11 +59,14 @@ function getAvatarStyle(name: string): React.CSSProperties {
 
 interface Props {
   onAddToQueue: (item: SonosItem) => void;
+  displayName?: string | null;
 }
 
-export function ProfilePanel({ onAddToQueue }: Props) {
+export function ProfilePanel({ onAddToQueue, displayName }: Props) {
   const { userName } = useParams<{ userName: string }>();
+  const navigate = useNavigate();
   const openItem = useOpenItem();
+  const [createPlaylistOpen, setCreatePlaylistOpen] = useState(false);
 
   const { artistItems: recentArtists, albumItems: recentAlbums, isLoading: recentLoading } =
     useRecentlyPlayed(userName);
@@ -37,6 +76,12 @@ export function ProfilePanel({ onAddToQueue }: Props) {
 
   const { data: rankings } = useGameRankings(userName, !!userName);
   const ranking = rankings?.find(r => r.userName === userName) ?? null;
+
+  const isOwnProfile = !!displayName && displayName === userName;
+  const { owned: ownedPlaylists, joined: joinedPlaylists } = useMyPlaylists(userName);
+  const visiblePlaylists = isOwnProfile
+    ? [...ownedPlaylists, ...joinedPlaylists]
+    : ownedPlaylists.filter(p => p.isPublic);
 
   if (!userName) return null;
 
@@ -74,6 +119,27 @@ export function ProfilePanel({ onAddToQueue }: Props) {
           </div>
         )}
       </div>
+
+      {/* ── Playlists ────────────────────────────────────────────────────── */}
+      {(visiblePlaylists.length > 0 || isOwnProfile) && (
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Playlists</h2>
+            {isOwnProfile && (
+              <button className={styles.sectionAction} onClick={() => setCreatePlaylistOpen(true)}>+ New</button>
+            )}
+          </div>
+          <div className={styles.playlistRow}>
+            {visiblePlaylists.map((pl) => (
+              <PlaylistCard
+                key={pl.id}
+                pl={pl}
+                onClick={() => navigate(`/playlist/${pl.id}`)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Recently Played ──────────────────────────────────────────────── */}
       {hasRecent && (
@@ -170,6 +236,14 @@ export function ProfilePanel({ onAddToQueue }: Props) {
           <p className={styles.emptyMsg}>No Queuedle data yet</p>
         )}
       </section>
+
+      {createPlaylistOpen && (
+        <CreatePlaylistDialog
+          displayName={displayName}
+          pendingTrack={null}
+          onClose={() => setCreatePlaylistOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -39,6 +39,8 @@ import { FeedbackDialog } from './components/FeedbackDialog';
 import { ChangelogDialog } from './components/ChangelogDialog';
 import { LyricsPanel } from './components/LyricsPanel';
 import { ProfilePanel } from './components/ProfilePanel';
+import { PlaylistPanel } from './components/PlaylistPanel';
+import { ContextMenuProvider } from './components/common/ContextMenu';
 import { usePrefetchNextLyrics } from './hooks/usePrefetchNextLyrics';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Splash } from './components/Splash';
@@ -414,6 +416,7 @@ useEffect(() => {
   const splashReady = isAuthed && groups.length > 0 && !ytmLoading;
 
   return (
+    <ContextMenuProvider displayName={displayName} onAddToQueue={handleAddToQueue}>
     <div
       ref={shellRef}
       className={styles.shell}
@@ -443,6 +446,7 @@ useEffect(() => {
                 onAddToQueue={handleAddToQueue}
                 ytm={ytm}
                 ytmLoading={ytmLoading}
+                displayName={displayName}
               />
             }
           />
@@ -454,6 +458,7 @@ useEffect(() => {
                 onAddToQueue={handleAddToQueue}
                 ytm={ytm}
                 ytmLoading={ytmLoading}
+                displayName={displayName}
               />
             }
           />
@@ -463,7 +468,8 @@ useEffect(() => {
           <Route path="/leaderboard" element={<LeaderboardPanel />} />
           <Route path="/queuedle" element={<QueuedlePanel />} />
           <Route path="/lyrics" element={<LyricsPanel playback={playback} />} />
-          <Route path="/profile/:userName" element={<ProfilePanel onAddToQueue={handleAddToQueue} />} />
+          <Route path="/profile/:userName" element={<ProfilePanel onAddToQueue={handleAddToQueue} displayName={displayName} />} />
+          <Route path="/playlist/:id" element={<PlaylistPanel displayName={displayName} onAddToQueue={handleAddToQueue} />} />
         </Routes>
         <QueueSidebar
           ref={queueSidebarRef}
@@ -503,6 +509,7 @@ useEffect(() => {
       {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
       {changelogOpen && <ChangelogDialog onClose={() => setChangelogOpen(false)} />}
     </div>
+    </ContextMenuProvider>
   );
 }
 

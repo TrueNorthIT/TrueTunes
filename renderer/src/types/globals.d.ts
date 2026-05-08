@@ -229,6 +229,36 @@ interface RecentlyPlayedData {
   availableUsers?: string[];
 }
 
+interface PlaylistTrack {
+  uri: string;
+  trackName: string;
+  artist: string;
+  albumName?: string;
+  imageUrl?: string | null;
+  serviceId: string;
+  accountId: string;
+  addedBy: string;
+  addedAt: number;
+}
+
+interface PlaylistMeta {
+  id: string;
+  name: string;
+  owner: string;
+  isPublic: boolean;
+  memberCount: number;
+  trackCount: number;
+  updatedAt: number;
+  imageUrl?: string | null;
+}
+
+interface PlaylistDoc extends PlaylistMeta {
+  members: string[];
+  tracks: PlaylistTrack[];
+  createdAt: number;
+  imageUrl?: string | null;
+}
+
 interface SonosPreload {
   getVersion: () => Promise<string>;
   isNewVersion: () => Promise<boolean>;
@@ -305,6 +335,12 @@ interface SonosPreload {
   onWindowMaximized: (cb: (maximized: boolean) => void) => Unsubscribe;
   onUpdateDownloaded: (cb: (version: string) => void) => Unsubscribe;
   installUpdate: () => Promise<void>;
+  fetchPlaylists: (filter: { owner?: string; member?: string }) => Promise<PlaylistMeta[]>;
+  fetchPlaylist: (id: string) => Promise<PlaylistDoc>;
+  createPlaylist: (name: string, isPublic: boolean) => Promise<PlaylistDoc>;
+  addTrackToPlaylist: (playlistId: string, track: PlaylistTrack) => Promise<PlaylistDoc>;
+  joinPlaylist: (playlistId: string, action: 'join' | 'leave') => Promise<PlaylistMeta>;
+  uploadPlaylistImage: (playlistId: string, data: ArrayBuffer, mimeType: string) => Promise<{ imageUrl: string } | { error: string }>;
 }
 
 interface Window {

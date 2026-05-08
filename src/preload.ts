@@ -61,6 +61,12 @@ export interface SonosAPI {
   geniusDescription: (trackName: string, artistName: string) => Promise<string | null>;
   geniusArtist: (artistName: string, trackHint?: string) => Promise<unknown>;
   trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
+  fetchPlaylists: (filter: { owner?: string; member?: string }) => Promise<unknown>;
+  fetchPlaylist: (id: string) => Promise<unknown>;
+  createPlaylist: (name: string, isPublic: boolean) => Promise<unknown>;
+  addTrackToPlaylist: (playlistId: string, track: unknown) => Promise<unknown>;
+  joinPlaylist: (playlistId: string, action: 'join' | 'leave') => Promise<unknown>;
+  uploadPlaylistImage: (playlistId: string, data: ArrayBuffer, mimeType: string) => Promise<unknown>;
   minimizeWindow:    () => Promise<void>;
   maximizeWindow:    () => Promise<void>;
   closeWindow:       () => Promise<void>;
@@ -197,4 +203,10 @@ contextBridge.exposeInMainWorld('sonos', {
     return () => ipcRenderer.removeListener('update:downloaded', listener);
   },
   installUpdate: () => ipcRenderer.invoke('update:install'),
+  fetchPlaylists: (filter) => ipcRenderer.invoke('playlist:list', filter),
+  fetchPlaylist: (id) => ipcRenderer.invoke('playlist:get', id),
+  createPlaylist: (name, isPublic) => ipcRenderer.invoke('playlist:create', name, isPublic),
+  addTrackToPlaylist: (playlistId, track) => ipcRenderer.invoke('playlist:addTrack', playlistId, track),
+  joinPlaylist: (playlistId, action) => ipcRenderer.invoke('playlist:join', playlistId, action),
+  uploadPlaylistImage: (playlistId, data, mimeType) => ipcRenderer.invoke('playlist:uploadImage', playlistId, data, mimeType),
 } satisfies SonosAPI);

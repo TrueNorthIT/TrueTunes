@@ -5,7 +5,8 @@ import { getName, browseSub, getItemArt, isAlbum, isArtist, isTrack } from '../.
 import { ArtistHero } from '../artist/ArtistHero';
 import { ArtistCircle } from './ArtistCircle';
 import { MediaRow } from '../common/MediaRow';
-import type { SonosItem, SonosArtist } from '../../types/sonos';
+import { useTrackContextMenu } from '../common/ContextMenu';
+import type { SonosItem, SonosArtist, SonosItemId } from '../../types/sonos';
 import styles from './SearchResults.module.css';
 
 function SearchAlbumCard({ album, onOpen, onAdd }: { album: SonosItem; onOpen: (item: SonosItem) => void; onAdd: () => void }) {
@@ -32,8 +33,28 @@ export function SearchResults({
   onAddToQueue: (item: SonosItem) => void;
 }) {
   const openItem = useOpenItem();
+  const { showTrackMenu } = useTrackContextMenu();
   const [selected, setSelected]   = useState<Set<number>>(new Set());
   const lastSelected               = useRef<number | null>(null);
+
+  function buildTrackPayload(item: SonosItem): PlaylistTrack {
+    const rid = (typeof item.id === 'object' ? item.id : item.resource?.id) as SonosItemId | undefined;
+    const artist = typeof item.artist === 'string' ? item.artist
+      : (item.artist as SonosArtist | undefined)?.name
+      ?? item.artists?.[0]?.name ?? '';
+    const albumName = typeof item.album === 'string' ? item.album : item.album?.name;
+    return {
+      uri: rid?.objectId ?? item.objectId ?? '',
+      trackName: (item.title ?? item.name ?? '') as string,
+      artist,
+      albumName,
+      imageUrl: getItemArt(item),
+      serviceId: rid?.serviceId ?? item.serviceId ?? '',
+      accountId: rid?.accountId ?? item.accountId ?? '',
+      addedBy: '',
+      addedAt: 0,
+    };
+  }
 
   const topArtist        = results.length > 0 && isArtist(results[0]) ? results[0] : null;
   const artists          = results.filter(isArtist);
@@ -148,6 +169,7 @@ export function SearchResults({
                   subtitle={subtitle}
                   onAdd={() => onAddToQueue(item)}
                   onClick={e => { e.stopPropagation(); handleTrackClick(i, e); }}
+                  onContextMenu={e => showTrackMenu({ track: buildTrackPayload(item) }, e)}
                   draggable
                   onDragStart={e => handleDragStart(e, i)}
                 />

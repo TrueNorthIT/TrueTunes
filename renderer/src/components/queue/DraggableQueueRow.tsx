@@ -4,6 +4,7 @@ import { useOpenItem } from '../../hooks/useOpenItem';
 import { useQueueTrack } from '../../hooks/useQueueTrack';
 import { getActiveProvider } from '../../providers';
 import { ExplicitBadge } from '../common/ExplicitBadge';
+import { useTrackContextMenu } from '../common/ContextMenu';
 import type { NormalizedQueueItem } from '../../types/provider';
 import styles from '../../styles/QueueSidebar.module.css';
 
@@ -42,7 +43,20 @@ export function DraggableQueueRow({
   const cachedArt = useImage(artUrl);
   const openItem  = useOpenItem();
   const navigate  = useNavigate();
+  const { showTrackMenu } = useTrackContextMenu();
   const name = item.track.title;
+
+  const trackPayload: PlaylistTrack = {
+    uri: item.track.id,
+    trackName: item.track.title,
+    artist: item.track.artist,
+    albumName: item.track.albumName ?? undefined,
+    imageUrl: item.track.imageUrl,
+    serviceId: item.track.serviceId ?? '',
+    accountId: item.track.accountId ?? '',
+    addedBy: '',
+    addedAt: 0,
+  };
 
   return (
     <div
@@ -60,6 +74,7 @@ export function DraggableQueueRow({
       }}
       onClick={e => onRowClick(index, e)}
       onDoubleClick={() => getActiveProvider().skipToTrack(index + 1)}
+      onContextMenu={e => showTrackMenu({ track: trackPayload }, e)}
       onDragStart={e => onDragStart(index, e)}
       onDragOver={e => onDragOver(index, e)}
       onDrop={onDrop}

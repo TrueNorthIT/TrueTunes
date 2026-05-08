@@ -89,13 +89,34 @@
   margin-bottom: 44px;
 }
 
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
 .sectionTitle {
   font-size: 22px;
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.4px;
-  margin-bottom: 4px;
+  margin-bottom: 0;
 }
+
+.sectionAction {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.sectionAction:hover { border-color: var(--border-2); color: var(--text); background: rgba(255,255,255,0.05); }
 
 .subSectionTitle {
   font-size: 13px;
@@ -222,4 +243,63 @@
   border-radius: 4px;
   background: var(--bg-1);
   animation: skelPulse 1.8s ease-in-out infinite;
+}
+
+/* ── Playlists ───────────────────────────────────────────────────────────── */
+
+.playlistRow {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+.playlistRow::-webkit-scrollbar { height: 6px; }
+.playlistRow::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+
+.playlistCard {
+  background: none;
+  border: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 120px;
+  text-align: left;
+}
+.playlistCard:hover .playlistCardArt { opacity: 0.85; }
+
+.playlistCardArt {
+  width: 120px;
+  height: 120px;
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+  transition: opacity 0.15s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.playlistCardName {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.playlistCardMeta {
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
 }
