@@ -15,13 +15,14 @@ interface Props {
   onClick?: (e: React.MouseEvent) => void;
   onDoubleClick?: () => void;
   onHover?: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
   draggable?: boolean;
   onDragStart?: (e: React.DragEvent) => void;
 }
 
 export function MediaRow({
   name, artUrl, explicit, isPlaying, isSelected, leading, subtitle, trailing,
-  onAdd, onClick, onDoubleClick, onHover, draggable, onDragStart,
+  onAdd, onClick, onDoubleClick, onHover, onContextMenu, draggable, onDragStart,
 }: Props) {
   const cachedArt = useImage(artUrl);
   const classes = [
@@ -39,6 +40,7 @@ export function MediaRow({
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       onMouseEnter={onHover}
+      onContextMenu={onContextMenu}
       onDragStart={onDragStart}
     >
       {leading !== undefined && <div className={styles.leading}>{leading}</div>}

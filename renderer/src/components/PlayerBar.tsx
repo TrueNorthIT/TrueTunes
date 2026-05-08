@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { getActiveProvider } from "../providers";
 import { useNowPlaying } from "../hooks/useNowPlaying";
 import { useOpenItem } from "../hooks/useOpenItem";
+import { useFavourite } from "../hooks/usePlaylists";
 import { ExplicitBadge } from "./common/ExplicitBadge";
 import type React from "react";
 import {
@@ -19,6 +20,7 @@ import {
   Music,
   PictureInPicture2,
   MicVocal,
+  Heart,
 } from "lucide-react";
 import type { PlaybackState } from "../hooks/usePlayback";
 import styles from "../styles/PlayerBar.module.css";
@@ -27,6 +29,7 @@ interface Props {
   isAuthed: boolean;
   playback: PlaybackState;
   onShuffle: () => void;
+  displayName?: string | null;
 }
 
 function ScrollingText({
@@ -139,7 +142,7 @@ function VolumeButton({ volume }: { volume: number }) {
   );
 }
 
-export function PlayerBar({ isAuthed, playback, onShuffle }: Props) {
+export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const lyricsActive = pathname === '/lyrics';
@@ -149,7 +152,17 @@ export function PlayerBar({ isAuthed, playback, onShuffle }: Props) {
     elapsedLabel, durationLabel, progressPct, durationMs,
     isPlaying, isVisible, shuffle, repeat, volume, isExplicit,
     albumItem, prefetchAlbum,
+    currentObjectId, currentServiceId, currentAccountId, artUrlRaw,
   } = useNowPlaying(playback);
+
+  const { isFavourited, toggle: toggleFavourite } = useFavourite(displayName, {
+    uri: currentObjectId,
+    trackName: displayTrack,
+    artist: displayArtist,
+    imageUrl: artUrlRaw,
+    serviceId: currentServiceId,
+    accountId: currentAccountId,
+  });
 
   const { shuffle: rawShuffle, repeat: rawRepeat } = playback;
 
@@ -294,6 +307,15 @@ export function PlayerBar({ isAuthed, playback, onShuffle }: Props) {
 
         {/* Right — volume + lyrics + queue + mini player */}
         <div className={styles.right}>
+          {displayName && currentObjectId && (
+            <button
+              className={`${styles.ctrl}${isFavourited ? ' ' + styles.favourited : ''}`}
+              onClick={toggleFavourite}
+              title={isFavourited ? 'Remove from Favourites' : 'Add to Favourites'}
+            >
+              <Heart size={14} fill={isFavourited ? 'currentColor' : 'none'} />
+            </button>
+          )}
           <VolumeButton volume={volume} />
           <button
             className={`${styles.ctrl}${lyricsActive ? " " + styles.active : ""}`}

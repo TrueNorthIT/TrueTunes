@@ -7,6 +7,7 @@ import { useGroups } from './hooks/useGroups';
 import { usePlayback } from './hooks/usePlayback';
 import { useQueue } from './hooks/useQueue';
 import { trackQueryOptions } from './hooks/useTrackDetails';
+import { useEnsureFavourites } from './hooks/usePlaylists';
 import { albumQueryOptions, type AlbumTrack } from './hooks/useAlbumBrowse';
 import { playlistQueryOptions } from './hooks/usePlaylistBrowse';
 import { api } from './lib/sonosApi';
@@ -16,7 +17,6 @@ import {
   isProgram,
   isAlbum,
   isPlaylist,
-  extractItems,
   resolveAlbumParams,
   getItemArt,
   sonosItemToNormalizedQueueItem,
@@ -38,6 +38,10 @@ import { DisplayNameModal } from './components/DisplayNameModal';
 import { FeedbackDialog } from './components/FeedbackDialog';
 import { ChangelogDialog } from './components/ChangelogDialog';
 import { LyricsPanel } from './components/LyricsPanel';
+import { ProfilePanel } from './components/ProfilePanel';
+import { PlaylistPanel } from './components/PlaylistPanel';
+import { ContextMenuProvider } from './components/common/ContextMenu';
+import { ToastProvider } from './components/common/Toast';
 import { usePrefetchNextLyrics } from './hooks/usePrefetchNextLyrics';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Splash } from './components/Splash';
@@ -85,6 +89,7 @@ function MainApp() {
   const [feedbackOpen, setFeedbackOpen]     = useState(false);
   const [changelogOpen, setChangelogOpen]   = useState(false);
   const [displayName, setDisplayName] = useState<string | null | undefined>(undefined); // undefined = not yet loaded
+  useEnsureFavourites(displayName);
   const [queueDockedWidth, setQueueDockedWidth] = useState<number>(380);
   const queueSidebarRef = useRef<QueueSidebarHandle>(null);
   const shellRef = useRef<HTMLDivElement>(null);
@@ -410,19 +415,11 @@ useEffect(() => {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: history = [], isLoading: histLoading } = useQuery<SonosItem[]>({
-    queryKey: ['history'],
-    queryFn: async () => {
-      const r = await api.content.history({ count: 20 });
-      return r.error ? [] : extractItems(r.data);
-    },
-    enabled: homeEnabled,
-    staleTime: 60 * 1000,
-  });
-
-  const splashReady = isAuthed && groups.length > 0 && !ytmLoading && !histLoading;
+  const splashReady = isAuthed && groups.length > 0 && !ytmLoading;
 
   return (
+    <ToastProvider>
+    <ContextMenuProvider displayName={displayName} onAddToQueue={handleAddToQueue}>
     <div
       ref={shellRef}
       className={styles.shell}
@@ -437,8 +434,9 @@ useEffect(() => {
         onResync={() => window.sonos.resync()}
         displayName={displayName}
         onSaveName={(name) => {
-          window.sonos.setDisplayName(name).catch(() => {});
-          setDisplayName(name);
+          const stored = name.trim();
+          window.sonos.setDisplayName(stored).catch(() => {});
+          setDisplayName(stored || null);
         }}
         onChangelogOpen={() => setChangelogOpen(true)}
       />
@@ -452,8 +450,7 @@ useEffect(() => {
                 onAddToQueue={handleAddToQueue}
                 ytm={ytm}
                 ytmLoading={ytmLoading}
-                history={history}
-                histLoading={histLoading}
+                displayName={displayName}
               />
             }
           />
@@ -465,8 +462,7 @@ useEffect(() => {
                 onAddToQueue={handleAddToQueue}
                 ytm={ytm}
                 ytmLoading={ytmLoading}
-                history={history}
-                histLoading={histLoading}
+                displayName={displayName}
               />
             }
           />
@@ -476,6 +472,8 @@ useEffect(() => {
           <Route path="/leaderboard" element={<LeaderboardPanel />} />
           <Route path="/queuedle" element={<QueuedlePanel />} />
           <Route path="/lyrics" element={<LyricsPanel playback={playback} />} />
+          <Route path="/profile/:userName" element={<ProfilePanel onAddToQueue={handleAddToQueue} displayName={displayName} onSignOut={() => { window.sonos.setDisplayName('').catch(() => {}); setDisplayName(null); }} />} />
+          <Route path="/playlist/:id" element={<PlaylistPanel displayName={displayName} onAddToQueue={handleAddToQueue} />} />
         </Routes>
         <QueueSidebar
           ref={queueSidebarRef}
@@ -500,6 +498,7 @@ useEffect(() => {
         isAuthed={isAuthed}
         playback={playback}
         onShuffle={reloadQueue}
+        displayName={displayName}
       />
       {toastMsg && <div className={styles.toast}>{toastMsg}</div>}
       {displayName === null && (
@@ -515,6 +514,8 @@ useEffect(() => {
       {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
       {changelogOpen && <ChangelogDialog onClose={() => setChangelogOpen(false)} />}
     </div>
+    </ContextMenuProvider>
+    </ToastProvider>
   );
 }
 

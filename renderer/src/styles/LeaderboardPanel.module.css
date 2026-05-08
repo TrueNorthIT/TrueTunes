@@ -298,6 +298,24 @@
   white-space: nowrap;
 }
 
+.userNameBtn {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  width: 120px;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+.userNameBtn:hover { text-decoration: underline; }
+
 .barWrap {
   flex: 1;
   height: 6px;

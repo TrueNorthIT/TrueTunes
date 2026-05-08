@@ -189,6 +189,89 @@ interface GameStatsResult {
   error?: string;
 }
 
+interface RecentTrack {
+  trackName: string;
+  artist: string;
+  serviceId?: string;
+  accountId?: string;
+  artistId?: string;
+  album?: string;
+  albumId?: string;
+  imageUrl?: string;
+  uri?: string;
+  lastPlayed: number;
+}
+
+interface RecentArtist {
+  artist: string;
+  serviceId?: string;
+  accountId?: string;
+  artistId?: string;
+  imageUrl?: string;
+  lastPlayed: number;
+}
+
+interface RecentAlbum {
+  album: string;
+  artist: string;
+  serviceId?: string;
+  accountId?: string;
+  artistId?: string;
+  albumId?: string;
+  imageUrl?: string;
+  lastPlayed: number;
+}
+
+interface RecentlyPlayedData {
+  tracks: RecentTrack[];
+  artists: RecentArtist[];
+  albums: RecentAlbum[];
+  availableUsers?: string[];
+}
+
+interface UserProfile {
+  id: string;
+  imageUrl?: string | null;
+  updatedAt?: number;
+}
+
+interface UserSummary {
+  userId: string;
+  lastQueued: number;
+  imageUrl?: string | null;
+}
+
+interface PlaylistTrack {
+  uri: string;
+  trackName: string;
+  artist: string;
+  albumName?: string;
+  imageUrl?: string | null;
+  serviceId: string;
+  accountId: string;
+  addedBy: string;
+  addedAt: number;
+}
+
+interface PlaylistMeta {
+  id: string;
+  name: string;
+  owner: string;
+  isPublic: boolean;
+  isFavourites?: boolean;
+  memberCount: number;
+  trackCount: number;
+  updatedAt: number;
+  imageUrl?: string | null;
+}
+
+interface PlaylistDoc extends PlaylistMeta {
+  members: string[];
+  tracks: PlaylistTrack[];
+  createdAt: number;
+  imageUrl?: string | null;
+}
+
 interface SonosPreload {
   getVersion: () => Promise<string>;
   isNewVersion: () => Promise<boolean>;
@@ -239,7 +322,8 @@ interface SonosPreload {
     albumId?: string;
     imageUrl?: string;
   }) => Promise<void>;
-  fetchStats: (period: string, userId?: string) => Promise<StatsResult>;
+  fetchRecentlyPlayed: (userId: string) => Promise<RecentlyPlayedData | null>;
+  fetchStats: (period: string, userId?: string, count?: number) => Promise<StatsResult>;
   fetchDailyGame: (date?: string) => Promise<GameFetchResult>;
   submitGameScore: (input: {
     gameId: string;
@@ -264,6 +348,20 @@ interface SonosPreload {
   onWindowMaximized: (cb: (maximized: boolean) => void) => Unsubscribe;
   onUpdateDownloaded: (cb: (version: string) => void) => Unsubscribe;
   installUpdate: () => Promise<void>;
+  ensureFavourites: () => Promise<PlaylistDoc>;
+  fetchPlaylists: (filter: { owner?: string; member?: string }) => Promise<PlaylistMeta[]>;
+  fetchPlaylist: (id: string) => Promise<PlaylistDoc>;
+  createPlaylist: (name: string, isPublic: boolean) => Promise<PlaylistDoc>;
+  updatePlaylist: (playlistId: string, patch: { name?: string; isPublic?: boolean }) => Promise<PlaylistDoc>;
+  deletePlaylist: (playlistId: string) => Promise<{ ok?: boolean; error?: string }>;
+  addTrackToPlaylist: (playlistId: string, track: PlaylistTrack) => Promise<PlaylistDoc>;
+  removeTrackFromPlaylist: (playlistId: string, uri: string) => Promise<PlaylistDoc>;
+  reorderPlaylistTracks: (playlistId: string, fromIndex: number, toIndex: number) => Promise<PlaylistDoc>;
+  joinPlaylist: (playlistId: string, action: 'join' | 'leave') => Promise<PlaylistMeta>;
+  uploadPlaylistImage: (playlistId: string, data: ArrayBuffer, mimeType: string, userName: string) => Promise<{ imageUrl: string } | { error: string }>;
+  fetchUsers: () => Promise<UserSummary[]>;
+  fetchUserProfile: (userName: string) => Promise<UserProfile | null>;
+  uploadProfileImage: (userName: string, data: ArrayBuffer, mimeType: string) => Promise<{ imageUrl: string } | { error: string }>;
 }
 
 interface Window {

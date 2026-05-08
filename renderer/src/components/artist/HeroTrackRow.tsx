@@ -1,5 +1,6 @@
 import { useImage } from '../../hooks/useImage';
 import { ExplicitBadge } from '../common/ExplicitBadge';
+import { useTrackContextMenu } from '../common/ContextMenu';
 import { fmtDuration } from '../../lib/itemHelpers';
 import styles from './ArtistHero.module.css';
 
@@ -23,11 +24,26 @@ interface Props {
 
 export function HeroTrackRow({ track, index, isSelected, onClick, onDragStart, onAdd }: Props) {
   const art = useImage(track.artUrl);
+  const { showTrackMenu } = useTrackContextMenu();
+
+  const rid = track.raw.resource?.id;
+  const trackPayload: PlaylistTrack = {
+    uri: track.id?.objectId ?? rid?.objectId ?? '',
+    trackName: track.title,
+    artist: typeof track.raw.artist === 'string' ? track.raw.artist : (track.raw.artist?.name ?? ''),
+    imageUrl: track.artUrl,
+    serviceId: rid?.serviceId ?? '',
+    accountId: rid?.accountId ?? '',
+    addedBy: '',
+    addedAt: 0,
+  };
+
   return (
     <div
       className={`${styles.heroTrackRow}${isSelected ? ' ' + styles.heroTrackSelected : ''}`}
       draggable
       onClick={e => onClick(index, e)}
+      onContextMenu={e => showTrackMenu({ track: trackPayload }, e)}
       onDragStart={e => onDragStart(index, e)}
     >
       <div className={styles.heroTrackArt}>

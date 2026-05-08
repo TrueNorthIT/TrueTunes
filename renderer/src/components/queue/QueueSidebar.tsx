@@ -2,6 +2,7 @@ import { useEffect, useImperativeHandle, useMemo, useRef, useState, Fragment, fo
 import { useQueries } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { applyReorderLocally } from '../../lib/queueHelpers';
+import { createDragGhost } from '../../lib/dragHelpers';
 import { getActiveProvider } from '../../providers';
 import { useAttribution } from '../../hooks/useAttribution';
 import { trackQueryOptions } from '../../hooks/useTrackDetails';
@@ -207,19 +208,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     draggingSet.current = toMove;
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('application/queue-indices', JSON.stringify([...toMove]));
-    const ghost = document.createElement('div');
-    Object.assign(ghost.style, {
-      position: 'fixed', top: '-100px', left: '0',
-      background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
-      color: '#fff', padding: '5px 12px', borderRadius: '6px',
-      fontSize: '12px', fontWeight: '600', pointerEvents: 'none',
-      whiteSpace: 'nowrap', zIndex: '9999',
-    });
-    const label = toMove.size > 1 ? `${toMove.size} tracks` : (items[index]?.track.title ?? '');
-    ghost.textContent = label;
-    document.body.appendChild(ghost);
-    e.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, 20);
-    setTimeout(() => ghost.remove(), 0);
+    createDragGhost(toMove.size > 1 ? `${toMove.size} tracks` : (items[index]?.track.title ?? ''), e.dataTransfer);
   }
 
   function handleDragOver(index: number, e: React.DragEvent) {

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useImage } from '../../hooks/useImage';
 import { ExplicitBadge } from '../common/ExplicitBadge';
+import { useTrackContextMenu } from '../common/ContextMenu';
 import { fmtDuration } from '../../lib/itemHelpers';
 import type { AlbumTrack } from '../../hooks/useAlbumBrowse';
 import type { SonosItem } from '../../types/sonos';
@@ -27,12 +28,26 @@ export function AlbumTrackRow({
   onClick, onDragStart, onAdd,
 }: Props) {
   const navigate = useNavigate();
+  const { showTrackMenu } = useTrackContextMenu();
+
+  const trackPayload: PlaylistTrack = {
+    uri: track.id.objectId ?? '',
+    trackName: track.title,
+    artist: track.artists.join(', '),
+    albumName: track.albumName ?? undefined,
+    imageUrl: track.artUrl,
+    serviceId: track.id.serviceId ?? serviceId,
+    accountId: track.id.accountId ?? accountId,
+    addedBy: '',
+    addedAt: 0,
+  };
 
   return (
     <div
       className={[styles.trackRow, isSelected ? styles.selected : ''].filter(Boolean).join(' ')}
       draggable
       onClick={onClick}
+      onContextMenu={e => showTrackMenu({ track: trackPayload }, e)}
       onDragStart={onDragStart}
     >
       <span className={styles.ordinal}>{track.ordinal}</span>
