@@ -18,7 +18,8 @@ function toAlbumItem(a: RecentAlbum): SonosItem {
   return {
     type: 'ITEM_ALBUM',
     title: a.album,
-    name: a.artist,
+    name: a.album,
+    artist: a.artist,
     imageUrl: a.imageUrl,
     id: { objectId: a.albumId, serviceId: a.serviceId, accountId: a.accountId },
   };
@@ -29,6 +30,7 @@ function toTrackItem(t: RecentTrack): SonosItem {
     type: 'ITEM_TRACK',
     title: t.trackName,
     name: t.trackName,
+    artist: t.artist,
     imageUrl: t.imageUrl,
     // Use albumId so useOpenItem's else branch navigates to the parent album
     id: { objectId: t.albumId ?? '', serviceId: t.serviceId, accountId: t.accountId },
