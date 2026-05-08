@@ -129,11 +129,45 @@
 
 /* ── Queuedle stats grid ─────────────────────────────────────────────────── */
 
-.queuedleMeta {
+.rankHero {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
+  gap: 16px;
+  margin-left: auto;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  flex-shrink: 0;
+}
+
+.rankHeroIcon {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.5));
+}
+
+.rankHeroText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.rankHeroName {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.rankHeroPercent {
+  font-size: 13px;
+  color: var(--text-3);
+  letter-spacing: 0;
 }
 
 .queuedleStats {

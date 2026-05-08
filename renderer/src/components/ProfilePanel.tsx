@@ -52,20 +52,27 @@ export function ProfilePanel({ onAddToQueue }: Props) {
         </div>
         <div className={styles.headerInfo}>
           <h1 className={styles.userName}>{userName}</h1>
-          <div className={styles.headerMeta}>
-            {ranking && (
-              <span className={styles.tierBadge}>
-                {tierIcon && <img src={tierIcon} alt="" className={styles.tierIcon} />}
+          {totalEvents > 0 && (
+            <span className={styles.statChip}>
+              <span className={styles.statChipValue}>{totalEvents.toLocaleString()}</span> total plays
+            </span>
+          )}
+        </div>
+        {ranking && (
+          <div className={styles.rankHero}>
+            {tierIcon && <img src={tierIcon} alt="" className={styles.rankHeroIcon} />}
+            <div className={styles.rankHeroText}>
+              <span className={styles.rankHeroName}>
                 {ranking.isProvisional ? 'Provisional' : ranking.tierName}
               </span>
-            )}
-            {totalEvents > 0 && (
-              <span className={styles.statChip}>
-                <span className={styles.statChipValue}>{totalEvents.toLocaleString()}</span> total plays
-              </span>
-            )}
+              {!ranking.isProvisional && (
+                <span className={styles.rankHeroPercent}>
+                  {ranking.averagePercent.toFixed(0)}% avg · {ranking.gamesPlayed} {ranking.gamesPlayed === 1 ? 'game' : 'games'}
+                </span>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* ── Recently Played ──────────────────────────────────────────────── */}
@@ -140,12 +147,6 @@ export function ProfilePanel({ onAddToQueue }: Props) {
         <h2 className={styles.sectionTitle}>Queuedle</h2>
         {ranking ? (
           <>
-            <div className={styles.queuedleMeta}>
-              <span className={styles.tierBadge}>
-                {tierIcon && <img src={tierIcon} alt="" className={styles.tierIcon} />}
-                {ranking.isProvisional ? 'Provisional' : ranking.tierName}
-              </span>
-            </div>
             <div className={styles.queuedleStats}>
               <div className={styles.statCell}>
                 <span className={styles.statCellValue}>{ranking.gamesPlayed}</span>
