@@ -2,19 +2,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { withOCC } from '../lib/withOCC';
 import { getPlaylistContainer } from '../lib/getContainer';
 
-interface PlaylistTrack {
-  uri: string;
-  trackName: string;
-  artist: string;
-  albumName?: string;
-  imageUrl?: string | null;
-  serviceId: string;
-  accountId: string;
-  addedBy: string;
-  addedAt: number;
-}
-
-export async function playlistAddTrackHandler(
+export async function playlistRemoveTrackHandler(
   request: HttpRequest,
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
@@ -23,36 +11,40 @@ export async function playlistAddTrackHandler(
     return { status: 400, jsonBody: { error: 'id param required' } };
   }
 
-  let body: { track?: PlaylistTrack; userName?: string };
+  let body: { userName?: string; uri?: string };
   try {
     body = (await request.json()) as typeof body;
   } catch {
     return { status: 400, jsonBody: { error: 'Invalid JSON body' } };
   }
 
-  const { track, userName } = body;
-  if (!track || !userName) {
-    return { status: 400, jsonBody: { error: 'track and userName required' } };
+  const { userName, uri } = body;
+  if (!userName || !uri) {
+    return { status: 400, jsonBody: { error: 'userName and uri required' } };
   }
 
   try {
     const container = getPlaylistContainer();
 
-    const updatedTrack: PlaylistTrack = { ...track, addedBy: userName, addedAt: Date.now() };
-
     const resource = await withOCC(
       () => container.item(id, id).read(),
       (doc) => {
-        if (!doc.members.includes(userName) && doc.owner !== userName) {
+        if (doc.owner !== userName && !doc.members.includes(userName)) {
           throw Object.assign(new Error('Not a member of this playlist'), { statusCode: 403 });
         }
-        doc.tracks = [...(doc.tracks ?? []), updatedTrack];
+        const tracks: { uri: string }[] = doc.tracks ?? [];
+        const firstIdx = tracks.findIndex((t) => t.uri === uri);
+        if (firstIdx === -1) {
+          throw Object.assign(new Error('Track not found in playlist'), { statusCode: 404 });
+        }
+        tracks.splice(firstIdx, 1);
+        doc.tracks = tracks;
         doc.updatedAt = Date.now();
       },
       (doc, etag) => container.item(id, id).replace(doc, { accessCondition: { type: 'IfMatch', condition: etag } }),
     );
 
-    context.log(`[playlist-add-track] id=${id} userName=${userName} track=${track.trackName}`);
+    context.log(`[playlist-remove-track] id=${id} uri=${uri}`);
 
     return {
       jsonBody: resource,
@@ -60,16 +52,16 @@ export async function playlistAddTrackHandler(
     };
   } catch (err) {
     const code = (err as { statusCode?: number }).statusCode;
-    if (code === 404) return { status: 404, jsonBody: { error: 'Playlist not found' } };
+    if (code === 404) return { status: 404, jsonBody: { error: (err as Error).message } };
     if (code === 403) return { status: 403, jsonBody: { error: 'Not a member of this playlist' } };
-    context.error('[playlist-add-track] failed:', err);
+    context.error('[playlist-remove-track] failed:', err);
     return { status: 500, jsonBody: { error: 'Internal server error' } };
   }
 }
 
-app.http('playlist-add-track', {
-  methods: ['POST'],
+app.http('playlist-remove-track', {
+  methods: ['DELETE'],
   route: 'playlist/{id}/tracks',
   authLevel: 'anonymous',
-  handler: playlistAddTrackHandler,
+  handler: playlistRemoveTrackHandler,
 });

@@ -1,11 +1,12 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
-import { CosmosClient } from '@azure/cosmos';
+import { getPlaylistContainer } from '../lib/getContainer';
 
 interface PlaylistDoc {
   id: string;
   name: string;
   owner: string;
   isPublic: boolean;
+  isFavourites?: boolean;
   members: string[];
   tracks: unknown[];
   imageUrl?: string | null;
@@ -17,13 +18,6 @@ export async function playlistListHandler(
   request: HttpRequest,
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
-  const connStr = process.env['COSMOS_CONNECTION_STRING'];
-  const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
-
-  if (!connStr) {
-    return { status: 500, jsonBody: { error: 'Cosmos not configured' } };
-  }
-
   const owner = request.query.get('owner');
   const member = request.query.get('member');
 
@@ -32,19 +26,18 @@ export async function playlistListHandler(
   }
 
   try {
-    const client = new CosmosClient(connStr);
-    const container = client.database(dbName).container('playlists');
+    const container = getPlaylistContainer();
 
     let query: { query: string; parameters: { name: string; value: string }[] };
 
     if (owner) {
       query = {
-        query: 'SELECT c.id, c.name, c.owner, c.isPublic, c.members, c.imageUrl, c.createdAt, c.updatedAt, ARRAY_LENGTH(c.tracks) AS trackCount FROM c WHERE c.owner = @owner ORDER BY c.updatedAt DESC',
+        query: 'SELECT c.id, c.name, c.owner, c.isPublic, c.isFavourites, c.members, c.imageUrl, c.createdAt, c.updatedAt, ARRAY_LENGTH(c.tracks) AS trackCount FROM c WHERE c.owner = @owner ORDER BY c.updatedAt DESC',
         parameters: [{ name: '@owner', value: owner }],
       };
     } else {
       query = {
-        query: 'SELECT c.id, c.name, c.owner, c.isPublic, c.members, c.imageUrl, c.createdAt, c.updatedAt, ARRAY_LENGTH(c.tracks) AS trackCount FROM c WHERE c.isPublic = true AND ARRAY_CONTAINS(c.members, @member) AND c.owner != @member ORDER BY c.updatedAt DESC',
+        query: 'SELECT c.id, c.name, c.owner, c.isPublic, c.isFavourites, c.members, c.imageUrl, c.createdAt, c.updatedAt, ARRAY_LENGTH(c.tracks) AS trackCount FROM c WHERE ARRAY_CONTAINS(c.members, @member) AND c.owner != @member ORDER BY c.updatedAt DESC',
         parameters: [{ name: '@member', value: member! }],
       };
     }
@@ -56,6 +49,7 @@ export async function playlistListHandler(
       name: r.name,
       owner: r.owner,
       isPublic: r.isPublic,
+      isFavourites: r.isFavourites ?? false,
       memberCount: (r.members ?? []).length,
       trackCount: r.trackCount ?? 0,
       updatedAt: r.updatedAt,
@@ -70,7 +64,7 @@ export async function playlistListHandler(
     };
   } catch (err) {
     context.error('[playlist-list] query failed:', err);
-    return { status: 500, jsonBody: { error: String(err) } };
+    return { status: 500, jsonBody: { error: 'Internal server error' } };
   }
 }
 

@@ -1,17 +1,11 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
-import { CosmosClient } from '@azure/cosmos';
+import { withOCC } from '../lib/withOCC';
+import { getPlaylistContainer } from '../lib/getContainer';
 
 export async function playlistJoinHandler(
   request: HttpRequest,
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
-  const connStr = process.env['COSMOS_CONNECTION_STRING'];
-  const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
-
-  if (!connStr) {
-    return { status: 500, jsonBody: { error: 'Cosmos not configured' } };
-  }
-
   const id = request.params['id'];
   if (!id) {
     return { status: 400, jsonBody: { error: 'id param required' } };
@@ -30,31 +24,29 @@ export async function playlistJoinHandler(
   }
 
   try {
-    const client = new CosmosClient(connStr);
-    const container = client.database(dbName).container('playlists');
+    const container = getPlaylistContainer();
 
-    const { resource } = await container.item(id, id).read();
-    if (!resource) {
-      return { status: 404, jsonBody: { error: 'Playlist not found' } };
-    }
-
-    if (action === 'join') {
-      if (!resource.isPublic) {
-        return { status: 403, jsonBody: { error: 'Playlist is private' } };
-      }
-      if (!resource.members.includes(userName)) {
-        resource.members = [...resource.members, userName];
-        resource.updatedAt = Date.now();
-        await container.item(id, id).replace(resource);
-      }
-    } else {
-      if (resource.owner === userName) {
-        return { status: 400, jsonBody: { error: 'Owner cannot leave their own playlist' } };
-      }
-      resource.members = resource.members.filter((m: string) => m !== userName);
-      resource.updatedAt = Date.now();
-      await container.item(id, id).replace(resource);
-    }
+    const resource = await withOCC(
+      () => container.item(id, id).read(),
+      (doc) => {
+        if (action === 'join') {
+          if (!doc.isPublic) {
+            throw Object.assign(new Error('Playlist is private'), { statusCode: 403 });
+          }
+          if (!doc.members.includes(userName)) {
+            doc.members = [...doc.members, userName];
+            doc.updatedAt = Date.now();
+          }
+        } else {
+          if (doc.owner === userName) {
+            throw Object.assign(new Error('Owner cannot leave their own playlist'), { statusCode: 400 });
+          }
+          doc.members = doc.members.filter((m: string) => m !== userName);
+          doc.updatedAt = Date.now();
+        }
+      },
+      (doc, etag) => container.item(id, id).replace(doc, { accessCondition: { type: 'IfMatch', condition: etag } }),
+    );
 
     context.log(`[playlist-join] id=${id} userName=${userName} action=${action}`);
 
@@ -71,8 +63,12 @@ export async function playlistJoinHandler(
       headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
+    const code = (err as { statusCode?: number }).statusCode;
+    if (code === 404) return { status: 404, jsonBody: { error: 'Playlist not found' } };
+    if (code === 403) return { status: 403, jsonBody: { error: (err as Error).message } };
+    if (code === 400) return { status: 400, jsonBody: { error: (err as Error).message } };
     context.error('[playlist-join] failed:', err);
-    return { status: 500, jsonBody: { error: String(err) } };
+    return { status: 500, jsonBody: { error: 'Internal server error' } };
   }
 }
 

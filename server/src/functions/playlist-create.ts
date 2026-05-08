@@ -1,17 +1,10 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
-import { CosmosClient } from '@azure/cosmos';
+import { getPlaylistContainer } from '../lib/getContainer';
 
 export async function playlistCreateHandler(
   request: HttpRequest,
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
-  const connStr = process.env['COSMOS_CONNECTION_STRING'];
-  const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
-
-  if (!connStr) {
-    return { status: 500, jsonBody: { error: 'Cosmos not configured' } };
-  }
-
   let body: { name?: string; isPublic?: boolean; owner?: string };
   try {
     body = (await request.json()) as typeof body;
@@ -39,8 +32,7 @@ export async function playlistCreateHandler(
   };
 
   try {
-    const client = new CosmosClient(connStr);
-    const container = client.database(dbName).container('playlists');
+    const container = getPlaylistContainer();
 
     await container.items.create(doc);
 
@@ -53,7 +45,7 @@ export async function playlistCreateHandler(
     };
   } catch (err) {
     context.error('[playlist-create] create failed:', err);
-    return { status: 500, jsonBody: { error: String(err) } };
+    return { status: 500, jsonBody: { error: 'Internal server error' } };
   }
 }
 

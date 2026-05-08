@@ -1257,48 +1257,81 @@ ipcMain.handle('playlist:get', async (_: IpcMainInvokeEvent, id: string) => {
   }
 });
 
-ipcMain.handle('playlist:create', async (_: IpcMainInvokeEvent, name: string, isPublic: boolean) => {
-  try {
-    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/playlists`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, isPublic, owner: config.displayName }),
-    });
-    return await res.json();
-  } catch (err) {
-    return { error: String(err) };
-  }
+ipcMain.handle('playlist:create', (_: IpcMainInvokeEvent, name: string, isPublic: boolean) =>
+  playlistFetch(`${PUBSUB_FUNCTION_URL}/api/playlists`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, isPublic, owner: config.displayName }),
+  }),
+);
+
+async function playlistFetch(url: string, init: RequestInit): Promise<unknown> {
+  const res = await fetch(url, init);
+  const body = await res.json().catch(() => ({})) as { error?: string };
+  if (!res.ok) throw new Error(body.error ?? `Server error ${res.status}`);
+  return body;
+}
+
+ipcMain.handle('playlist:addTrack', (_: IpcMainInvokeEvent, playlistId: string, track: unknown) =>
+  playlistFetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/tracks`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ track, userName: config.displayName }),
+  }),
+);
+
+ipcMain.handle('playlist:join', (_: IpcMainInvokeEvent, playlistId: string, action: 'join' | 'leave') =>
+  playlistFetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/members`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userName: config.displayName, action }),
+  }),
+);
+
+ipcMain.handle('profile:ensureFavourites', async () => {
+  const userName = config.displayName;
+  if (!userName) throw new Error('No display name set');
+  return playlistFetch(`${PUBSUB_FUNCTION_URL}/api/profile/${encodeURIComponent(userName)}/favourites`, {
+    method: 'POST',
+  });
 });
 
-ipcMain.handle('playlist:addTrack', async (_: IpcMainInvokeEvent, playlistId: string, track: unknown) => {
-  try {
-    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/tracks`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ track, userName: config.displayName }),
-    });
-    return await res.json();
-  } catch (err) {
-    return { error: String(err) };
-  }
-});
+ipcMain.handle('playlist:delete', (_: IpcMainInvokeEvent, playlistId: string) =>
+  playlistFetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userName: config.displayName ?? '' }),
+  }),
+);
 
-ipcMain.handle('playlist:join', async (_: IpcMainInvokeEvent, playlistId: string, action: 'join' | 'leave') => {
-  try {
-    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/members`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userName: config.displayName, action }),
-    });
-    return await res.json();
-  } catch (err) {
-    return { error: String(err) };
-  }
-});
+ipcMain.handle('playlist:update', (_: IpcMainInvokeEvent, playlistId: string, patch: { name?: string; isPublic?: boolean }) =>
+  playlistFetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userName: config.displayName, ...patch }),
+  }),
+);
 
-ipcMain.handle('playlist:uploadImage', async (_: IpcMainInvokeEvent, playlistId: string, data: ArrayBuffer, mimeType: string) => {
+ipcMain.handle('playlist:removeTrack', (_: IpcMainInvokeEvent, playlistId: string, uri: string) =>
+  playlistFetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/tracks`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userName: config.displayName, uri }),
+  }),
+);
+
+ipcMain.handle('playlist:reorderTracks', (_: IpcMainInvokeEvent, playlistId: string, fromIndex: number, toIndex: number) =>
+  playlistFetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/tracks`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userName: config.displayName, fromIndex, toIndex }),
+  }),
+);
+
+ipcMain.handle('playlist:uploadImage', async (_: IpcMainInvokeEvent, playlistId: string, data: ArrayBuffer, mimeType: string, userName: string) => {
   try {
-    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/image`, {
+    const url = `${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/image?userName=${encodeURIComponent(userName)}`;
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': mimeType },
       body: Buffer.from(data),
@@ -1306,6 +1339,18 @@ ipcMain.handle('playlist:uploadImage', async (_: IpcMainInvokeEvent, playlistId:
     return await res.json();
   } catch (err) {
     return { error: String(err) };
+  }
+});
+
+ipcMain.handle('users:list', async () => {
+  const exclude = config.displayName ?? '';
+  const params = exclude ? `?exclude=${encodeURIComponent(exclude)}` : '';
+  try {
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/users${params}`);
+    const body = await res.json() as unknown;
+    return Array.isArray(body) ? body : [];
+  } catch {
+    return [];
   }
 });
 

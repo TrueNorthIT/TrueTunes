@@ -123,9 +123,13 @@ const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, 
   }
 
   const { owned: ownedPlaylists, joined: joinedPlaylists } = useMyPlaylists(userName);
-  const visiblePlaylists = isOwnProfile
+  const allPlaylists = isOwnProfile
     ? [...ownedPlaylists, ...joinedPlaylists]
     : ownedPlaylists.filter(p => p.isPublic);
+  const visiblePlaylists = [...allPlaylists].sort((a, b) => {
+    if (!!b.isFavourites !== !!a.isFavourites) return b.isFavourites ? 1 : -1;
+    return b.updatedAt - a.updatedAt;
+  });
 
   if (!userName) return null;
 
@@ -276,6 +280,7 @@ const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, 
               <PlaylistCard
                 key={pl.id}
                 pl={pl}
+                displayName={isOwnProfile ? displayName : userName}
                 onClick={() => navigate(`/playlist/${pl.id}`)}
               />
             ))}

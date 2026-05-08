@@ -64,9 +64,15 @@ export interface SonosAPI {
   fetchPlaylists: (filter: { owner?: string; member?: string }) => Promise<unknown>;
   fetchPlaylist: (id: string) => Promise<unknown>;
   createPlaylist: (name: string, isPublic: boolean) => Promise<unknown>;
+  updatePlaylist: (playlistId: string, patch: { name?: string; isPublic?: boolean }) => Promise<unknown>;
+  deletePlaylist: (playlistId: string) => Promise<unknown>;
   addTrackToPlaylist: (playlistId: string, track: unknown) => Promise<unknown>;
+  removeTrackFromPlaylist: (playlistId: string, uri: string) => Promise<unknown>;
+  reorderPlaylistTracks: (playlistId: string, fromIndex: number, toIndex: number) => Promise<unknown>;
   joinPlaylist: (playlistId: string, action: 'join' | 'leave') => Promise<unknown>;
-  uploadPlaylistImage: (playlistId: string, data: ArrayBuffer, mimeType: string) => Promise<unknown>;
+  uploadPlaylistImage: (playlistId: string, data: ArrayBuffer, mimeType: string, userName: string) => Promise<unknown>;
+  ensureFavourites: () => Promise<unknown>;
+  fetchUsers: () => Promise<unknown>;
   fetchUserProfile: (userName: string) => Promise<unknown>;
   uploadProfileImage: (userName: string, data: ArrayBuffer, mimeType: string) => Promise<unknown>;
   minimizeWindow:    () => Promise<void>;
@@ -208,9 +214,15 @@ contextBridge.exposeInMainWorld('sonos', {
   fetchPlaylists: (filter) => ipcRenderer.invoke('playlist:list', filter),
   fetchPlaylist: (id) => ipcRenderer.invoke('playlist:get', id),
   createPlaylist: (name, isPublic) => ipcRenderer.invoke('playlist:create', name, isPublic),
+  updatePlaylist: (playlistId, patch) => ipcRenderer.invoke('playlist:update', playlistId, patch),
+  deletePlaylist: (playlistId) => ipcRenderer.invoke('playlist:delete', playlistId),
   addTrackToPlaylist: (playlistId, track) => ipcRenderer.invoke('playlist:addTrack', playlistId, track),
+  removeTrackFromPlaylist: (playlistId, uri) => ipcRenderer.invoke('playlist:removeTrack', playlistId, uri),
+  reorderPlaylistTracks: (playlistId, fromIndex, toIndex) => ipcRenderer.invoke('playlist:reorderTracks', playlistId, fromIndex, toIndex),
   joinPlaylist: (playlistId, action) => ipcRenderer.invoke('playlist:join', playlistId, action),
-  uploadPlaylistImage: (playlistId, data, mimeType) => ipcRenderer.invoke('playlist:uploadImage', playlistId, data, mimeType),
+  uploadPlaylistImage: (playlistId, data, mimeType, userName) => ipcRenderer.invoke('playlist:uploadImage', playlistId, data, mimeType, userName),
+  ensureFavourites: () => ipcRenderer.invoke('profile:ensureFavourites'),
+  fetchUsers: () => ipcRenderer.invoke('users:list'),
   fetchUserProfile: (userName) => ipcRenderer.invoke('profile:get', userName),
   uploadProfileImage: (userName, data, mimeType) => ipcRenderer.invoke('profile:uploadImage', userName, data, mimeType),
 } satisfies SonosAPI);

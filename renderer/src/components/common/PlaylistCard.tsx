@@ -14,11 +14,11 @@ export function PlaylistCard({ pl, displayName, onClick }: Props) {
     <button className={styles.playlistCard} onClick={onClick} title={pl.name}>
       <div
         className={styles.playlistCardArt}
-        style={art ? undefined : { background: getPlaylistColor(pl.name) }}
+        style={art ? undefined : { background: pl.isFavourites ? 'linear-gradient(135deg, hsl(350,65%,35%), hsl(320,60%,25%))' : getPlaylistColor(pl.name) }}
       >
         {art
           ? <img src={art} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: 'inherit' }} />
-          : pl.name[0].toUpperCase()
+          : pl.isFavourites ? '❤️' : pl.name[0].toUpperCase()
         }
       </div>
       <span className={styles.playlistCardName}>{pl.name}</span>

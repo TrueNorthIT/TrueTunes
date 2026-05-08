@@ -235,6 +235,12 @@ interface UserProfile {
   updatedAt?: number;
 }
 
+interface UserSummary {
+  userId: string;
+  lastQueued: number;
+  imageUrl?: string | null;
+}
+
 interface PlaylistTrack {
   uri: string;
   trackName: string;
@@ -252,6 +258,7 @@ interface PlaylistMeta {
   name: string;
   owner: string;
   isPublic: boolean;
+  isFavourites?: boolean;
   memberCount: number;
   trackCount: number;
   updatedAt: number;
@@ -341,12 +348,18 @@ interface SonosPreload {
   onWindowMaximized: (cb: (maximized: boolean) => void) => Unsubscribe;
   onUpdateDownloaded: (cb: (version: string) => void) => Unsubscribe;
   installUpdate: () => Promise<void>;
+  ensureFavourites: () => Promise<PlaylistDoc>;
   fetchPlaylists: (filter: { owner?: string; member?: string }) => Promise<PlaylistMeta[]>;
   fetchPlaylist: (id: string) => Promise<PlaylistDoc>;
   createPlaylist: (name: string, isPublic: boolean) => Promise<PlaylistDoc>;
+  updatePlaylist: (playlistId: string, patch: { name?: string; isPublic?: boolean }) => Promise<PlaylistDoc>;
+  deletePlaylist: (playlistId: string) => Promise<{ ok?: boolean; error?: string }>;
   addTrackToPlaylist: (playlistId: string, track: PlaylistTrack) => Promise<PlaylistDoc>;
+  removeTrackFromPlaylist: (playlistId: string, uri: string) => Promise<PlaylistDoc>;
+  reorderPlaylistTracks: (playlistId: string, fromIndex: number, toIndex: number) => Promise<PlaylistDoc>;
   joinPlaylist: (playlistId: string, action: 'join' | 'leave') => Promise<PlaylistMeta>;
-  uploadPlaylistImage: (playlistId: string, data: ArrayBuffer, mimeType: string) => Promise<{ imageUrl: string } | { error: string }>;
+  uploadPlaylistImage: (playlistId: string, data: ArrayBuffer, mimeType: string, userName: string) => Promise<{ imageUrl: string } | { error: string }>;
+  fetchUsers: () => Promise<UserSummary[]>;
   fetchUserProfile: (userName: string) => Promise<UserProfile | null>;
   uploadProfileImage: (userName: string, data: ArrayBuffer, mimeType: string) => Promise<{ imageUrl: string } | { error: string }>;
 }

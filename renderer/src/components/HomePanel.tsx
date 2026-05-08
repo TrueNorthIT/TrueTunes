@@ -16,6 +16,7 @@ import {
 import { useOpenItem } from '../hooks/useOpenItem';
 import { useRecentlyPlayed } from '../hooks/useRecentlyPlayed';
 import { useMyPlaylists } from '../hooks/usePlaylists';
+import { useUsers } from '../hooks/useUsers';
 import { useDailyGame, useMyScore } from '../hooks/useDailyGame';
 import { useImage } from '../hooks/useImage';
 import { createDragGhost } from '../lib/dragHelpers';
@@ -28,6 +29,25 @@ import { SearchResults } from './search/SearchResults';
 import { CreatePlaylistDialog } from './common/ContextMenu';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/HomePanel.module.css';
+
+function avatarGradient(name: string) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) { h = name.charCodeAt(i) + ((h << 5) - h); h |= 0; }
+  const hue = Math.abs(h) % 360;
+  return `linear-gradient(135deg, hsl(${hue},55%,38%), hsl(${(hue + 40) % 360},60%,28%))`;
+}
+
+function UserAvatarChip({ user, onClick }: { user: UserSummary; onClick: () => void }) {
+  const art = useImage(user.imageUrl ?? null);
+  return (
+    <button className={styles.userChip} onClick={onClick} title={user.userId}>
+      <div className={styles.userAvatar} style={art ? undefined : { background: avatarGradient(user.userId) }}>
+        {art ? <img src={art} alt="" /> : user.userId[0].toUpperCase()}
+      </div>
+      <span className={styles.userName}>{user.userId}</span>
+    </button>
+  );
+}
 
 function AlbumListItem({ item, onOpen, onAdd }: { item: SonosItem; onOpen: () => void; onAdd: () => void }) {
   const art = useImage(item.imageUrl);
@@ -141,6 +161,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
   const activeSearch = searchParams.get('q') ?? '';
 
   const { owned: ownedPlaylists, joined: joinedPlaylists } = useMyPlaylists(displayName);
+  const { data: colleagues = [], isLoading: colleaguesLoading } = useUsers(isAuthed);
 
   const [createPlaylistOpen, setCreatePlaylistOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<string | undefined>(undefined);
@@ -226,6 +247,26 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
             <CardRow items={ytm?.forYou ?? []} isLoading={ytmLoading} onAdd={onAddToQueue} onOpen={openItem} />
           </section>
 
+          {(colleaguesLoading || colleagues.length > 0) && (
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle} style={{ marginBottom: 16 }}>People</h2>
+              <div className={styles.usersRow}>
+                {colleaguesLoading
+                  ? Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className={styles.userAvatarSkel} style={{ animationDelay: `${i * 80}ms` }} />
+                    ))
+                  : colleagues.map((u) => (
+                      <UserAvatarChip
+                        key={u.userId}
+                        user={u}
+                        onClick={() => navigate(`/profile/${encodeURIComponent(u.userId)}`)}
+                      />
+                    ))
+                }
+              </div>
+            </section>
+          )}
+
           {displayName && (ownedPlaylists.length > 0 || joinedPlaylists.length > 0) && (
             <section className={styles.section}>
               <div className={styles.sectionHeader}>
@@ -233,7 +274,12 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                 <button className={styles.sectionAction} onClick={() => setCreatePlaylistOpen(true)}>+ New</button>
               </div>
               <div className={styles.playlistRow}>
-                {[...ownedPlaylists, ...joinedPlaylists].map((pl) => (
+                {[...ownedPlaylists, ...joinedPlaylists]
+                  .sort((a, b) => {
+                    if (!!b.isFavourites !== !!a.isFavourites) return b.isFavourites ? 1 : -1;
+                    return b.updatedAt - a.updatedAt;
+                  })
+                  .map((pl) => (
                   <PlaylistCard
                     key={pl.id}
                     pl={pl}

@@ -99,11 +99,6 @@ export function TopNav({
     }
   }
 
-  function signOut() {
-    onSaveName('');
-    setProfileOpen(false);
-  }
-
   useEffect(() => {
     if (location.pathname === '/search') {
       setSearchText(searchParams.get('q') ?? '');

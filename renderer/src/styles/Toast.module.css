@@ -1,0 +1,52 @@
+.container {
+  position: fixed;
+  bottom: 108px; /* above the player bar (24px bottom + 68px bar + 16px gap) */
+  right: 20px;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.toast {
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  max-width: 320px;
+  backdrop-filter: blur(16px);
+  border: 1px solid transparent;
+  animation: toastIn 0.2s ease;
+  pointer-events: auto;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.error {
+  background: rgba(220, 38, 38, 0.85);
+  border-color: rgba(248, 113, 113, 0.3);
+  color: #fff;
+}
+
+.success {
+  background: rgba(22, 163, 74, 0.85);
+  border-color: rgba(74, 222, 128, 0.3);
+  color: #fff;
+}
+
+.info {
+  background: rgba(30, 30, 40, 0.92);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+}

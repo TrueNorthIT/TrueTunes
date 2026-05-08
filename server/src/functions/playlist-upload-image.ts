@@ -32,6 +32,9 @@ export async function playlistUploadImageHandler(
   const id = request.params['id'];
   if (!id) return { status: 400, jsonBody: { error: 'id required' } };
 
+  const userName = request.query.get('userName');
+  if (!userName) return { status: 400, jsonBody: { error: 'userName required' } };
+
   const storageConn = process.env['STORAGE_CONNECTION_STRING'];
   const cosmosConn  = process.env['COSMOS_CONNECTION_STRING'];
   const dbName      = process.env['COSMOS_DATABASE'] ?? 'truetunes';
@@ -39,6 +42,12 @@ export async function playlistUploadImageHandler(
   if (!storageConn || !cosmosConn) {
     return { status: 500, jsonBody: { error: 'Storage or Cosmos not configured' } };
   }
+
+  // Verify ownership before uploading to storage
+  const cosmos = new CosmosClient(cosmosConn);
+  const { resource: playlistDoc } = await cosmos.database(dbName).container('playlists').item(id, id).read();
+  if (!playlistDoc) return { status: 404, jsonBody: { error: 'Playlist not found' } };
+  if (playlistDoc.owner !== userName) return { status: 403, jsonBody: { error: 'Only the owner can change the playlist image' } };
 
   const mimeType = request.headers.get('content-type')?.split(';')[0]?.trim() ?? '';
   const ext = ALLOWED_TYPES[mimeType];
@@ -83,7 +92,6 @@ export async function playlistUploadImageHandler(
     const imageUrl = `${blockBlob.url}?${sas}`;
 
     // Patch Cosmos doc
-    const cosmos = new CosmosClient(cosmosConn);
     await cosmos.database(dbName).container('playlists').item(id, id).patch([
       { op: 'set', path: '/imageUrl', value: imageUrl },
       { op: 'set', path: '/updatedAt', value: Date.now() },
@@ -97,7 +105,7 @@ export async function playlistUploadImageHandler(
     };
   } catch (err) {
     context.error('[playlist-upload-image] failed:', err);
-    return { status: 500, jsonBody: { error: String(err) } };
+    return { status: 500, jsonBody: { error: 'Internal server error' } };
   }
 }
 

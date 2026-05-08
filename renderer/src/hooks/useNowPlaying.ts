@@ -54,6 +54,11 @@ export function useNowPlaying(playback: PlaybackState) {
     // Passthrough from playback state
     progressPct, durationMs, isPlaying, isVisible,
     shuffle, repeat, volume, isExplicit,
+    // Current track identity (for favouriting etc.)
+    currentObjectId: currentObjectId ?? null,
+    currentServiceId: svcId ?? null,
+    currentAccountId: accId ?? null,
+    artUrlRaw: td?.artUrl ?? artUrl ?? null,
     // Derived
     albumItem,
     prefetchAlbum,
