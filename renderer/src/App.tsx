@@ -10,7 +10,6 @@ import { trackQueryOptions } from './hooks/useTrackDetails';
 import { albumQueryOptions, type AlbumTrack } from './hooks/useAlbumBrowse';
 import { playlistQueryOptions } from './hooks/usePlaylistBrowse';
 import { api } from './lib/sonosApi';
-import { useRecentlyPlayed } from './hooks/useRecentlyPlayed';
 import {
   normalizeForQueue,
   isTrack,
@@ -411,8 +410,6 @@ useEffect(() => {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { artistItems: recentArtists, albumItems: recentAlbums, trackItems: recentTracks, isLoading: recentLoading } = useRecentlyPlayed();
-
   const splashReady = isAuthed && groups.length > 0 && !ytmLoading;
 
   return (
@@ -445,10 +442,6 @@ useEffect(() => {
                 onAddToQueue={handleAddToQueue}
                 ytm={ytm}
                 ytmLoading={ytmLoading}
-                recentArtists={recentArtists}
-                recentAlbums={recentAlbums}
-                recentTracks={recentTracks}
-                recentLoading={recentLoading}
               />
             }
           />
@@ -460,10 +453,6 @@ useEffect(() => {
                 onAddToQueue={handleAddToQueue}
                 ytm={ytm}
                 ytmLoading={ytmLoading}
-                recentArtists={recentArtists}
-                recentAlbums={recentAlbums}
-                recentTracks={recentTracks}
-                recentLoading={recentLoading}
               />
             }
           />

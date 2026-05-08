@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/sonosApi';
@@ -9,8 +9,13 @@ import {
   resolveArtistParams,
   isAlbum,
   isArtist,
+  getName,
+  browseSub,
 } from '../lib/itemHelpers';
 import { useOpenItem } from '../hooks/useOpenItem';
+import { useRecentlyPlayed } from '../hooks/useRecentlyPlayed';
+import { useDailyGame, useMyScore } from '../hooks/useDailyGame';
+import { useImage } from '../hooks/useImage';
 import type { ServiceSearch } from '../types/ServiceSearch';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
 import { artistQueryOptions } from '../hooks/useArtistBrowse';
@@ -19,15 +24,63 @@ import { SearchResults } from './search/SearchResults';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/HomePanel.module.css';
 
+function AlbumListItem({ item, onOpen, onAdd }: { item: SonosItem; onOpen: () => void; onAdd: () => void }) {
+  const art = useImage(item.imageUrl);
+
+  function handleDragStart(e: React.DragEvent) {
+    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.setData('application/sonos-item-list', JSON.stringify([item]));
+    const ghost = document.createElement('div');
+    Object.assign(ghost.style, {
+      position: 'fixed', top: '-100px', left: '0',
+      background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
+      color: '#fff', padding: '5px 12px', borderRadius: '6px',
+      fontSize: '12px', fontWeight: '600', pointerEvents: 'none', whiteSpace: 'nowrap',
+    });
+    ghost.textContent = getName(item);
+    document.body.appendChild(ghost);
+    e.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, 20);
+    setTimeout(() => ghost.remove(), 0);
+  }
+
+  return (
+    <div className={styles.albumRow} draggable onClick={onOpen} onDragStart={handleDragStart}>
+      <div className={styles.albumArtWrap}>
+        {art ? <img className={styles.albumArt} src={art} alt="" /> : <div className={styles.albumArtPh} />}
+      </div>
+      <div className={styles.albumInfo}>
+        <div className={styles.albumName}>{getName(item)}</div>
+        <div className={styles.albumSub}>{browseSub(item)}</div>
+      </div>
+      <button
+        className={styles.albumAddBtn}
+        onClick={(e) => { e.stopPropagation(); onAdd(); }}
+        title="Add to queue"
+      >+</button>
+    </div>
+  );
+}
+
+function ArtistGridCell({ item, onOpen }: { item: SonosItem; onOpen: () => void }) {
+  const art = useImage(item.imageUrl);
+  return (
+    <div className={styles.artistCell} onClick={onOpen}>
+      <div className={styles.artistCircle}>
+        {art
+          ? <img className={styles.artistImg} src={art} alt="" />
+          : <div className={styles.artistPh}>♪</div>
+        }
+      </div>
+      <div className={styles.artistCellName}>{getName(item)}</div>
+    </div>
+  );
+}
+
 interface Props {
   isAuthed: boolean;
   onAddToQueue: (item: SonosItem) => void;
   ytm: YtmSections | undefined;
   ytmLoading: boolean;
-  recentArtists: SonosItem[];
-  recentAlbums: SonosItem[];
-  recentTracks: SonosItem[];
-  recentLoading: boolean;
 }
 
 export interface YtmSections {
@@ -81,7 +134,7 @@ export async function fetchYtmSections(): Promise<YtmSections> {
   };
 }
 
-export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, recentArtists, recentAlbums, recentTracks, recentLoading }: Props) {
+export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading }: Props) {
   const queryClient = useQueryClient();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -89,6 +142,31 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, recentArtis
 
   const view = location.pathname === '/search' ? 'search' : 'home';
   const activeSearch = searchParams.get('q') ?? '';
+
+  const [selectedUser, setSelectedUser] = useState<string | undefined>(undefined);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerRef = useRef<HTMLSpanElement>(null);
+  const { artistItems, albumItems, availableUsers, currentUserId, isLoading: recentLoading } = useRecentlyPlayed(selectedUser);
+
+  // Default to current user once we know who they are
+  useEffect(() => {
+    if (currentUserId && !selectedUser) setSelectedUser(currentUserId);
+  }, [currentUserId, selectedUser]);
+
+  const { data: todayGame } = useDailyGame();
+  const todayGameId = todayGame && 'id' in todayGame ? todayGame.id : null;
+  const { data: myScore } = useMyScore(todayGameId, currentUserId);
+  const hasCompletedToday = !!myScore?.score;
+
+  // Close picker on outside click
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setPickerOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [pickerOpen]);
 
   const { data: searchResults = [], isFetching: searchLoading } = useQuery({
     queryKey: ['search', activeSearch],
@@ -130,6 +208,11 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, recentArtis
     );
   }
 
+  const hasRecent = !!selectedUser || recentLoading || artistItems.length > 0 || albumItems.length > 0;
+  const recentEmpty = !!selectedUser && !recentLoading && artistItems.length === 0 && albumItems.length === 0;
+  const users = availableUsers.length > 0 ? availableUsers : (currentUserId ? [currentUserId] : []);
+  const isPickerLocked = users.length > 1 && !hasCompletedToday;
+
   return (
     <div className={styles.panel}>
       {!isAuthed ? (
@@ -143,29 +226,123 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, recentArtis
             <CardRow items={ytm?.forYou ?? []} isLoading={ytmLoading} onAdd={onAddToQueue} onOpen={openItem} />
           </section>
 
-          {(recentLoading || recentArtists.length > 0) && (
-            <section className={styles.section}>
-              <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>Recently Played Artists</h2>
+          {hasRecent && (
+            <>
+              <div className={styles.recentHeader}>
+                <h2 className={styles.sectionTitle}>
+                  Recently Played — Last 7 Days
+                  {selectedUser && (
+                    <span className={styles.userSep}> — </span>
+                  )}
+                  {selectedUser && (
+                    <span
+                      className={styles.userDropdown}
+                      ref={pickerRef}
+                      data-tooltip={isPickerLocked ? "Complete Today's Quedle to see your colleagues' recently played" : undefined}
+                    >
+                      <button
+                        className={styles.userDropdownTrigger}
+                        onClick={() => !isPickerLocked && setPickerOpen((o) => !o)}
+                        disabled={users.length <= 1}
+                      >
+                        {selectedUser}
+                        {users.length > 1 && (
+                          <span className={isPickerLocked ? styles.chevronLocked : styles.chevron}>
+                            {isPickerLocked ? '🔒' : '▾'}
+                          </span>
+                        )}
+                      </button>
+                      {pickerOpen && !isPickerLocked && users.length > 1 && (
+                        <ul className={styles.userDropdownList}>
+                          {users.map((u) => (
+                            <li key={u}>
+                              <button
+                                className={u === selectedUser ? styles.userDropdownItemActive : styles.userDropdownItem}
+                                onClick={() => { setSelectedUser(u); setPickerOpen(false); }}
+                              >
+                                {u}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </span>
+                  )}
+                </h2>
               </div>
-              <CardRow items={recentArtists} isLoading={recentLoading} onAdd={onAddToQueue} onOpen={openItem} />
-            </section>
-          )}
-          {(recentLoading || recentAlbums.length > 0) && (
-            <section className={styles.section}>
-              <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>Recently Played Albums</h2>
-              </div>
-              <CardRow items={recentAlbums} isLoading={recentLoading} onAdd={onAddToQueue} onOpen={openItem} />
-            </section>
-          )}
-          {(recentLoading || recentTracks.length > 0) && (
-            <section className={styles.section}>
-              <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>Recently Played Tracks</h2>
-              </div>
-              <CardRow items={recentTracks} isLoading={recentLoading} onAdd={onAddToQueue} onOpen={openItem} />
-            </section>
+
+              {recentEmpty && (
+                <div className={styles.recentEmpty}>Nothing queued in the last 7 days</div>
+              )}
+
+              {recentLoading && (
+                <div className={styles.recentGrid}>
+                  <div className={styles.albumList}>
+                    <div className={styles.skelTitle} />
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className={styles.albumRow} style={{ animationDelay: `${i * 80}ms` }}>
+                        <div className={styles.skelAlbumArt} />
+                        <div className={styles.albumInfo}>
+                          <div className={styles.skelLine} />
+                          <div className={styles.skelLineShort} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className={styles.artistGrid}>
+                    <div className={styles.skelTitle} />
+                    <div className={styles.artistGridInner} style={{ height: `${6 * 62 - 2}px` }}>
+                      {Array.from({ length: 9 }).map((_, i) => (
+                        <div key={i} className={styles.artistCell}>
+                          <div className={styles.skelCircle} style={{ animationDelay: `${i * 60}ms` }} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {!recentEmpty && !recentLoading && (
+                <div className={styles.recentGrid}>
+                  {albumItems.length > 0 && (
+                    <div className={styles.albumList}>
+                      <h2 className={styles.subSectionTitle}>Albums</h2>
+                      {albumItems.map((item, i) => (
+                        <AlbumListItem key={i} item={item} onOpen={() => openItem(item)} onAdd={() => onAddToQueue(item)} />
+                      ))}
+                    </div>
+                  )}
+                  {artistItems.length > 0 && (() => {
+                    const noAlbums = albumItems.length === 0;
+                    const numCols = Math.min(noAlbums ? 5 : 3, artistItems.length);
+                    const numRows = Math.ceil(artistItems.length / numCols);
+                    const gridHeight = noAlbums
+                      ? numRows === 1 ? 200 : numRows * 80
+                      : albumItems.length * 62 - 2;
+                    return (
+                      <div
+                        className={styles.artistGrid}
+                        style={noAlbums ? { gridColumn: '1 / -1' } : undefined}
+                      >
+                        <h2 className={styles.subSectionTitle}>Artists</h2>
+                        <div
+                          className={styles.artistGridInner}
+                          style={{
+                            height: `${gridHeight}px`,
+                            '--grid-cols': numCols,
+                            '--grid-rows': numRows,
+                          } as React.CSSProperties}
+                        >
+                          {artistItems.map((item, i) => (
+                            <ArtistGridCell key={i} item={item} onOpen={() => openItem(item)} />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </>
           )}
 
           <section className={styles.section}>

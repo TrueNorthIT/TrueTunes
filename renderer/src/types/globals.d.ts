@@ -226,6 +226,7 @@ interface RecentlyPlayedData {
   tracks: RecentTrack[];
   artists: RecentArtist[];
   albums: RecentAlbum[];
+  availableUsers?: string[];
 }
 
 interface SonosPreload {

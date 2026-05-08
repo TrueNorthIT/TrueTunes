@@ -68,16 +68,26 @@ export async function recentlyPlayedHandler(
     const client    = new CosmosClient(connStr);
     const container = client.database(dbName).container(ctrName);
 
-    const { resources } = await container.items.query<RawEvent>({
-      query: `SELECT c.eventType, c.trackName, c.artist, c.serviceId, c.accountId,
-                     c.artistId, c.album, c.albumId, c.imageUrl, c.uri, c.timestamp
-              FROM c
-              WHERE c.userId = @userId AND c.timestamp >= @start`,
-      parameters: [
-        { name: '@userId', value: userId },
-        { name: '@start',  value: startMs },
-      ],
-    }).fetchAll();
+    const usersStart = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const [eventsResult, usersResult] = await Promise.all([
+      container.items.query<RawEvent>({
+        query: `SELECT c.eventType, c.trackName, c.artist, c.serviceId, c.accountId,
+                       c.artistId, c.album, c.albumId, c.imageUrl, c.uri, c.timestamp
+                FROM c
+                WHERE c.userId = @userId AND c.timestamp >= @start`,
+        parameters: [
+          { name: '@userId', value: userId },
+          { name: '@start',  value: startMs },
+        ],
+      }).fetchAll(),
+      container.items.query<string>({
+        query: 'SELECT DISTINCT VALUE c.userId FROM c WHERE c.timestamp >= @usersStart',
+        parameters: [{ name: '@usersStart', value: usersStart }],
+      }).fetchAll(),
+    ]);
+
+    const { resources } = eventsResult;
+    const availableUsers: string[] = usersResult.resources.filter(Boolean).sort();
 
     // Sort most-recent first, then deduplicate — keeping the first (most recent) occurrence of each key.
     resources.sort((a, b) => b.timestamp - a.timestamp);
@@ -143,10 +153,10 @@ export async function recentlyPlayedHandler(
     const artists = [...artistMap.values()].slice(0, 10);
     const albums  = [...albumMap.values()].slice(0, 10);
 
-    context.log(`[recently-played] userId=${userId} tracks=${tracks.length} artists=${artists.length} albums=${albums.length}`);
+    context.log(`[recently-played] userId=${userId} tracks=${tracks.length} artists=${artists.length} albums=${albums.length} users=${availableUsers.length}`);
 
     return {
-      jsonBody: { tracks, artists, albums },
+      jsonBody: { tracks, artists, albums, availableUsers },
       headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {

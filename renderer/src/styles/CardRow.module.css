@@ -2,7 +2,8 @@
   display: flex;
   gap: 14px;
   overflow-x: auto;
-  padding-bottom: 4px;
+  padding: 16px 2px 4px;
+  margin-top: -10px;
 }
 .cardRow::-webkit-scrollbar {
   height: 6px;
