@@ -59,8 +59,10 @@ const defaultProps = {
   onAddToQueue: vi.fn(),
   ytm: { forYou: [], newReleases: [], charts: [] },
   ytmLoading: false,
-  history: [],
-  histLoading: false,
+  recentArtists: [],
+  recentAlbums: [],
+  recentTracks: [],
+  recentLoading: false,
 };
 
 beforeEach(() => {
@@ -106,8 +108,7 @@ describe('fetchYtmSections', () => {
     const track: SonosItem = { name: 'Track A', type: 'TRACK' } as SonosItem;
     mockBrowseContainer
       .mockResolvedValueOnce({ error: null, data: makeRootData([homeItem]) })
-      .mockResolvedValueOnce({ error: null, data: { items: [track] } }); // home browse
-    // nr and charts return empty (default mock)
+      .mockResolvedValueOnce({ error: null, data: { items: [track] } });
 
     const result = await fetchYtmSections();
     expect(result.forYou).toHaveLength(1);
@@ -120,7 +121,7 @@ describe('fetchYtmSections', () => {
     const track: SonosItem = { name: 'Home Track', type: 'TRACK' } as SonosItem;
     mockBrowseContainer
       .mockResolvedValueOnce({ error: null, data: makeRootData([supermixItem, homeItem]) })
-      .mockResolvedValueOnce({ error: null, data: { items: [track] } }); // home browse
+      .mockResolvedValueOnce({ error: null, data: { items: [track] } });
 
     const result = await fetchYtmSections();
     expect(result.forYou[0].title).toBe('My Supermix');
@@ -139,7 +140,7 @@ describe('fetchYtmSections', () => {
     const homeItem = makeRootItem('Home', 'home-id');
     mockBrowseContainer
       .mockResolvedValueOnce({ error: null, data: makeRootData([homeItem]) })
-      .mockResolvedValueOnce({ error: 'fail', data: null }); // home browse fails
+      .mockResolvedValueOnce({ error: 'fail', data: null });
 
     const result = await fetchYtmSections();
     expect(result.forYou).toEqual([]);
@@ -152,7 +153,6 @@ describe('HomePanel', () => {
   it('shows sections when authed on home view', () => {
     render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
     expect(screen.getByText('For You')).toBeInTheDocument();
-    expect(screen.getByText('Recently Played')).toBeInTheDocument();
     expect(screen.getByText('New Releases')).toBeInTheDocument();
     expect(screen.getByText('Charts')).toBeInTheDocument();
   });
@@ -174,15 +174,24 @@ describe('HomePanel', () => {
     expect(screen.getAllByText('Loading cards').length).toBeGreaterThan(0);
   });
 
-  it('shows loading card row when histLoading is true', () => {
-    render(<HomePanel {...defaultProps} histLoading />, { wrapper: makeWrapper() });
+  it('shows loading card rows when recentLoading is true', () => {
+    const artist = { type: 'ARTIST', title: 'The Beatles' } as SonosItem;
+    render(<HomePanel {...defaultProps} recentArtists={[artist]} recentLoading />, { wrapper: makeWrapper() });
     expect(screen.getAllByText('Loading cards').length).toBeGreaterThan(0);
   });
 
-  it('passes history items to recently played row', () => {
-    const history = [{ name: 'Track 1', type: 'TRACK' } as SonosItem, { name: 'Track 2', type: 'TRACK' } as SonosItem];
-    render(<HomePanel {...defaultProps} history={history} />, { wrapper: makeWrapper() });
-    expect(screen.getByText('Card row (2)')).toBeInTheDocument();
+  it('renders recently played artist row when data is present', () => {
+    const artist = { type: 'ARTIST', title: 'The Beatles' } as SonosItem;
+    render(<HomePanel {...defaultProps} recentArtists={[artist]} />, { wrapper: makeWrapper() });
+    expect(screen.getByText('Recently Played Artists')).toBeInTheDocument();
+    expect(screen.getByText('Card row (1)')).toBeInTheDocument();
+  });
+
+  it('hides recently played sections when all are empty and not loading', () => {
+    render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
+    expect(screen.queryByText('Recently Played Artists')).not.toBeInTheDocument();
+    expect(screen.queryByText('Recently Played Albums')).not.toBeInTheDocument();
+    expect(screen.queryByText('Recently Played Tracks')).not.toBeInTheDocument();
   });
 
   it('shows SearchResults on /search path after query resolves', async () => {

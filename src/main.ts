@@ -1272,6 +1272,16 @@ ipcMain.handle('stats:fetch', async (_: IpcMainInvokeEvent, period: string, user
   }
 });
 
+ipcMain.handle('history:recent', async (_: IpcMainInvokeEvent, userId: string) => {
+  try {
+    const url = `${PUBSUB_FUNCTION_URL}/api/recently-played?userId=${encodeURIComponent(userId)}`;
+    const res = await fetch(url);
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
 
 ipcMain.handle('game:fetch', async (_: IpcMainInvokeEvent, date?: string) => {
   try {

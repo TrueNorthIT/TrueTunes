@@ -189,6 +189,45 @@ interface GameStatsResult {
   error?: string;
 }
 
+interface RecentTrack {
+  trackName: string;
+  artist: string;
+  serviceId?: string;
+  accountId?: string;
+  artistId?: string;
+  album?: string;
+  albumId?: string;
+  imageUrl?: string;
+  uri?: string;
+  lastPlayed: number;
+}
+
+interface RecentArtist {
+  artist: string;
+  serviceId?: string;
+  accountId?: string;
+  artistId?: string;
+  imageUrl?: string;
+  lastPlayed: number;
+}
+
+interface RecentAlbum {
+  album: string;
+  artist: string;
+  serviceId?: string;
+  accountId?: string;
+  artistId?: string;
+  albumId?: string;
+  imageUrl?: string;
+  lastPlayed: number;
+}
+
+interface RecentlyPlayedData {
+  tracks: RecentTrack[];
+  artists: RecentArtist[];
+  albums: RecentAlbum[];
+}
+
 interface SonosPreload {
   getVersion: () => Promise<string>;
   isNewVersion: () => Promise<boolean>;
@@ -239,6 +278,7 @@ interface SonosPreload {
     albumId?: string;
     imageUrl?: string;
   }) => Promise<void>;
+  fetchRecentlyPlayed: (userId: string) => Promise<RecentlyPlayedData | null>;
   fetchStats: (period: string, userId?: string) => Promise<StatsResult>;
   fetchDailyGame: (date?: string) => Promise<GameFetchResult>;
   submitGameScore: (input: {

@@ -10,6 +10,7 @@ import { trackQueryOptions } from './hooks/useTrackDetails';
 import { albumQueryOptions, type AlbumTrack } from './hooks/useAlbumBrowse';
 import { playlistQueryOptions } from './hooks/usePlaylistBrowse';
 import { api } from './lib/sonosApi';
+import { useRecentlyPlayed } from './hooks/useRecentlyPlayed';
 import {
   normalizeForQueue,
   isTrack,
@@ -410,17 +411,9 @@ useEffect(() => {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: history = [], isLoading: histLoading } = useQuery<SonosItem[]>({
-    queryKey: ['history'],
-    queryFn: async () => {
-      const r = await api.content.history({ count: 20 });
-      return r.error ? [] : extractItems(r.data);
-    },
-    enabled: homeEnabled,
-    staleTime: 60 * 1000,
-  });
+  const { artistItems: recentArtists, albumItems: recentAlbums, trackItems: recentTracks, isLoading: recentLoading } = useRecentlyPlayed();
 
-  const splashReady = isAuthed && groups.length > 0 && !ytmLoading && !histLoading;
+  const splashReady = isAuthed && groups.length > 0 && !ytmLoading;
 
   return (
     <div
@@ -452,8 +445,10 @@ useEffect(() => {
                 onAddToQueue={handleAddToQueue}
                 ytm={ytm}
                 ytmLoading={ytmLoading}
-                history={history}
-                histLoading={histLoading}
+                recentArtists={recentArtists}
+                recentAlbums={recentAlbums}
+                recentTracks={recentTracks}
+                recentLoading={recentLoading}
               />
             }
           />
@@ -465,8 +460,10 @@ useEffect(() => {
                 onAddToQueue={handleAddToQueue}
                 ytm={ytm}
                 ytmLoading={ytmLoading}
-                history={history}
-                histLoading={histLoading}
+                recentArtists={recentArtists}
+                recentAlbums={recentAlbums}
+                recentTracks={recentTracks}
+                recentLoading={recentLoading}
               />
             }
           />

@@ -57,6 +57,7 @@ export interface SonosAPI {
   fetchGameDates: (userName: string) => Promise<unknown>;
   fetchMyScore: (gameId: string, userName: string) => Promise<unknown>;
   fetchGameStats: (date?: string) => Promise<unknown>;
+  fetchRecentlyPlayed: (userId: string) => Promise<unknown>;
   geniusDescription: (trackName: string, artistName: string) => Promise<string | null>;
   geniusArtist: (artistName: string, trackHint?: string) => Promise<unknown>;
   trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
@@ -173,6 +174,8 @@ contextBridge.exposeInMainWorld('sonos', {
     ipcRenderer.on('attribution:event', listener);
     return () => ipcRenderer.removeListener('attribution:event', listener);
   },
+  fetchRecentlyPlayed: (userId: string) =>
+    ipcRenderer.invoke('history:recent', userId),
   geniusDescription: (trackName: string, artistName: string) =>
     ipcRenderer.invoke('genius:description', trackName, artistName),
   geniusArtist: (artistName: string, trackHint?: string) =>

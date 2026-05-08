@@ -24,8 +24,10 @@ interface Props {
   onAddToQueue: (item: SonosItem) => void;
   ytm: YtmSections | undefined;
   ytmLoading: boolean;
-  history: SonosItem[];
-  histLoading: boolean;
+  recentArtists: SonosItem[];
+  recentAlbums: SonosItem[];
+  recentTracks: SonosItem[];
+  recentLoading: boolean;
 }
 
 export interface YtmSections {
@@ -79,7 +81,7 @@ export async function fetchYtmSections(): Promise<YtmSections> {
   };
 }
 
-export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, history, histLoading }: Props) {
+export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, recentArtists, recentAlbums, recentTracks, recentLoading }: Props) {
   const queryClient = useQueryClient();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -141,12 +143,30 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, history, hi
             <CardRow items={ytm?.forYou ?? []} isLoading={ytmLoading} onAdd={onAddToQueue} onOpen={openItem} />
           </section>
 
-          <section className={styles.section}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Recently Played</h2>
-            </div>
-            <CardRow items={history} isLoading={histLoading} onAdd={onAddToQueue} onOpen={openItem} />
-          </section>
+          {(recentLoading || recentArtists.length > 0) && (
+            <section className={styles.section}>
+              <div className={styles.sectionHeader}>
+                <h2 className={styles.sectionTitle}>Recently Played Artists</h2>
+              </div>
+              <CardRow items={recentArtists} isLoading={recentLoading} onAdd={onAddToQueue} onOpen={openItem} />
+            </section>
+          )}
+          {(recentLoading || recentAlbums.length > 0) && (
+            <section className={styles.section}>
+              <div className={styles.sectionHeader}>
+                <h2 className={styles.sectionTitle}>Recently Played Albums</h2>
+              </div>
+              <CardRow items={recentAlbums} isLoading={recentLoading} onAdd={onAddToQueue} onOpen={openItem} />
+            </section>
+          )}
+          {(recentLoading || recentTracks.length > 0) && (
+            <section className={styles.section}>
+              <div className={styles.sectionHeader}>
+                <h2 className={styles.sectionTitle}>Recently Played Tracks</h2>
+              </div>
+              <CardRow items={recentTracks} isLoading={recentLoading} onAdd={onAddToQueue} onOpen={openItem} />
+            </section>
+          )}
 
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
