@@ -2,6 +2,15 @@
 
 type GeniusDomNode = string | { tag: string; children?: GeniusDomNode[]; attributes?: Record<string, string> };
 
+interface GeniusArtistInfo {
+  description: GeniusDomNode | null;
+  alternateNames: string[];
+  imageUrl: string | null;
+  headerImageUrl: string | null;
+  instagram: string | null;
+  twitter: string | null;
+}
+
 interface AttributionEntry {
   user: string;
   timestamp: number;
@@ -245,6 +254,7 @@ interface SonosPreload {
   onAttributionMap: (cb: (map: AttributionMap) => void) => Unsubscribe;
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;
   geniusDescription: (trackName: string, artistName: string) => Promise<GeniusDomNode | null>;
+  geniusArtist: (artistName: string, trackHint?: string) => Promise<GeniusArtistInfo | null>;
   /** Fire-and-forget telemetry event routed through the main process. No-op when App Insights is not configured. */
   trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
   minimizeWindow:    () => Promise<void>;

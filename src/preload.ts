@@ -58,6 +58,7 @@ export interface SonosAPI {
   fetchMyScore: (gameId: string, userName: string) => Promise<unknown>;
   fetchGameStats: (date?: string) => Promise<unknown>;
   geniusDescription: (trackName: string, artistName: string) => Promise<string | null>;
+  geniusArtist: (artistName: string, trackHint?: string) => Promise<unknown>;
   trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
   minimizeWindow:    () => Promise<void>;
   maximizeWindow:    () => Promise<void>;
@@ -174,6 +175,8 @@ contextBridge.exposeInMainWorld('sonos', {
   },
   geniusDescription: (trackName: string, artistName: string) =>
     ipcRenderer.invoke('genius:description', trackName, artistName),
+  geniusArtist: (artistName: string, trackHint?: string) =>
+    ipcRenderer.invoke('genius:artist', artistName, trackHint),
   trackEvent: (name: string, properties?: Record<string, string>) =>
     ipcRenderer.invoke('telemetry:event', name, properties),
   minimizeWindow:    () => ipcRenderer.invoke('win:minimize'),

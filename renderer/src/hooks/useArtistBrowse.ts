@@ -11,9 +11,10 @@ export interface ArtistData {
   albums: SonosItem[];
   playlists: SonosItem[]; // Artist Shuffle, Artist Radio (no Top Songs)
   topSongs: AlbumTrack[];
+  genius: GeniusArtistInfo | null;
 }
 
-function parseArtist(data: ArtistResponse): { parsed: Omit<ArtistData, 'topSongs'>; topSongsItem: SonosItem | null } {
+function parseArtist(data: ArtistResponse): { parsed: Omit<ArtistData, 'topSongs' | 'genius'>; topSongsItem: SonosItem | null } {
   const name = data.title ?? '';
   const imageUrl = data.images?.tile1x1 ?? null;
   const allItems = (data.sections?.items?.[0]?.items ?? []) as unknown as SonosItem[];
@@ -42,21 +43,25 @@ export function artistQueryOptions(
 
       const { parsed, topSongsItem } = parseArtist(r.data as ArtistResponse);
 
-      let topSongs: AlbumTrack[] = [];
-      if (topSongsItem) {
+      const fetchTopSongs = async (): Promise<AlbumTrack[]> => {
+        if (!topSongsItem) return [];
         const rid = topSongsItem.resource?.id as SonosItemId | undefined;
-        if (rid?.objectId && rid?.serviceId && rid?.accountId) {
-          const pr = await api.browse.playlist(rid.objectId, {
-            serviceId: rid.serviceId,
-            accountId: rid.accountId,
-            defaults: topSongsItem.resource?.defaults as string | undefined,
-            muse2: true,
-          });
-          if (!pr.error) topSongs = parsePlaylistTracks(pr.data);
-        }
-      }
+        if (!rid?.objectId || !rid?.serviceId || !rid?.accountId) return [];
+        const pr = await api.browse.playlist(rid.objectId, {
+          serviceId: rid.serviceId,
+          accountId: rid.accountId,
+          defaults: topSongsItem.resource?.defaults as string | undefined,
+          muse2: true,
+        });
+        return pr.error ? [] : parsePlaylistTracks(pr.data);
+      };
 
-      return { ...parsed, topSongs };
+      const [topSongs, genius] = await Promise.all([
+        fetchTopSongs(),
+        window.sonos.geniusArtist(parsed.name),
+      ]);
+
+      return { ...parsed, topSongs, genius };
     },
     staleTime: Infinity,
     gcTime: 60 * 60 * 1000,

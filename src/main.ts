@@ -1695,6 +1695,74 @@ ipcMain.handle('genius:description', async (_: IpcMainInvokeEvent, trackName: st
   }
 });
 
+ipcMain.handle('genius:artist', async (_: IpcMainInvokeEvent, artistName: string, trackHint?: string) => {
+  const key = process.env.GENIUS_ACCESS_TOKEN;
+  if (!key) {
+    log('[genius] GENIUS_ACCESS_TOKEN not set — skipping artist lookup');
+    return null;
+  }
+
+  const debugReq = (id: string, url: string, ts: number) =>
+    httpDebugWin?.webContents.send('http:req', { id, ts, operationId: 'genius:artist', method: 'GET', url, headers: { Authorization: 'Bearer ***' } });
+  const debugRes = (id: string, status: number, body: string, ts: number) =>
+    httpDebugWin?.webContents.send('http:res', { id, status, statusText: String(status), headers: {}, body, durationMs: Date.now() - ts });
+
+  try {
+    const q = trackHint ? `${trackHint} ${artistName}` : artistName;
+    const searchUrl = `https://api.genius.com/search?q=${encodeURIComponent(q)}`;
+    const searchId = randomUUID(); const searchTs = Date.now();
+    debugReq(searchId, searchUrl, searchTs);
+    const searchRes = await fetch(searchUrl, { headers: { Authorization: `Bearer ${key}` } });
+    const searchBody = await searchRes.text();
+    debugRes(searchId, searchRes.status, searchBody, searchTs);
+    if (!searchRes.ok) return null;
+
+    type SearchHit = { result: { primary_artist: { id: number; name: string } } };
+    const searchData = JSON.parse(searchBody) as { response: { hits: SearchHit[] } };
+    const hits = searchData.response?.hits ?? [];
+    const artistNameLower = artistName.toLowerCase();
+    const hit = hits.find((h) => h.result.primary_artist.name.toLowerCase().includes(artistNameLower)) ?? hits[0];
+    const artistId = hit?.result?.primary_artist?.id;
+    if (!artistId) return null;
+
+    const artistUrl = `https://api.genius.com/artists/${artistId}`;
+    const artistReqId = randomUUID(); const artistTs = Date.now();
+    debugReq(artistReqId, artistUrl, artistTs);
+    const artistRes = await fetch(artistUrl, { headers: { Authorization: `Bearer ${key}` } });
+    const artistBody = await artistRes.text();
+    debugRes(artistReqId, artistRes.status, artistBody, artistTs);
+    if (!artistRes.ok) return null;
+
+    type ArtistPayload = {
+      response: {
+        artist: {
+          description: { dom: unknown };
+          alternate_names: string[];
+          image_url: string | null;
+          header_image_url: string | null;
+          instagram_name: string | null;
+          twitter_name: string | null;
+        };
+      };
+    };
+    const artistData = JSON.parse(artistBody) as ArtistPayload;
+    const a = artistData.response?.artist;
+    if (!a) return null;
+
+    return {
+      description: a.description?.dom ?? null,
+      alternateNames: a.alternate_names ?? [],
+      imageUrl: a.image_url ?? null,
+      headerImageUrl: a.header_image_url ?? null,
+      instagram: a.instagram_name ?? null,
+      twitter: a.twitter_name ?? null,
+    };
+  } catch (err) {
+    log(`[genius] artist error: ${err}`);
+    return null;
+  }
+});
+
 // ─── Application menu ────────────────────────────────────────────────────────
 
 function buildMenu(): void {

@@ -471,7 +471,7 @@ useEffect(() => {
             }
           />
           <Route path="/album/:id" element={<AlbumPanel onAddToQueue={handleAddToQueue} />} />
-          <Route path="/artist/:id" element={<ArtistPanel onAddToQueue={handleAddToQueue} />} />
+          <Route path="/artist/:id" element={<ArtistPanel onAddToQueue={handleAddToQueue} currentTrackName={playback.trackName} isPlaybackActive={playback.isPlaying} />} />
           <Route path="/container/:id" element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/leaderboard" element={<LeaderboardPanel />} />
           <Route path="/queuedle" element={<QueuedlePanel />} />
