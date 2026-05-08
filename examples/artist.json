@@ -1,0 +1,2488 @@
+{
+  "meta": { "status": 200 },
+  "response": {
+    "artist": {
+      "alternate_names": ["OKLAMA", "Kendrick L. Duckworth", "Kendrick Duckworth", "Kendrick Lamar Duckworth", "K-Dot"],
+      "api_path": "/artists/1421",
+      "description": {
+        "dom": {
+          "tag": "root",
+          "children": [
+            {
+              "tag": "p",
+              "children": [
+                {
+                  "tag": "a",
+                  "attributes": { "href": "http://www.kendricklamar.com/", "rel": "noopener nofollow" },
+                  "children": ["Kendrick Lamar"]
+                },
+                " Duckworth (born June 17, 1987) is an American rapper and songwriter from Compton, California."
+              ]
+            },
+            "",
+            {
+              "tag": "p",
+              "children": [
+                "He first gained major attention after the release of his 2010 mixtape ",
+                {
+                  "tag": "a",
+                  "attributes": {
+                    "href": "https://genius.com/albums/Kendrick-lamar/Overly-dedicated",
+                    "rel": "noopener"
+                  },
+                  "data": { "api_path": "/albums/10919" },
+                  "children": [{ "tag": "em", "children": ["O(verly) D(edicated)"] }]
+                },
+                ". In 2011, his album ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/albums/Kendrick-lamar/Section-80", "rel": "noopener" },
+                  "data": { "api_path": "/albums/11160" },
+                  "children": [{ "tag": "em", "children": ["Section.80"] }]
+                },
+                ", released exclusively through iTunes, instantly ranked as one of the top digital hip-hop releases of the year. In 2012, he crossed over to mainstream audiences with his major label debut, ",
+                {
+                  "tag": "a",
+                  "attributes": {
+                    "href": "https://genius.com/albums/Kendrick-lamar/Good-kid-m-a-a-d-city",
+                    "rel": "noopener"
+                  },
+                  "data": { "api_path": "/albums/15946" },
+                  "children": [{ "tag": "em", "children": ["good kid, m.A.A.d city"] }]
+                },
+                ", which was widely regarded as an instant classic. In 2015, he released ",
+                {
+                  "tag": "a",
+                  "attributes": {
+                    "href": "https://genius.com/albums/Kendrick-lamar/To-pimp-a-butterfly",
+                    "rel": "noopener"
+                  },
+                  "data": { "api_path": "/albums/120991" },
+                  "children": [{ "tag": "em", "children": ["To Pimp a Butterfly"] }]
+                },
+                " to widespread acclaim. The album debuted at No. 1 on the Billboard 200 Albums Chart. The following year, ",
+                {
+                  "tag": "a",
+                  "attributes": {
+                    "href": "https://genius.com/albums/Kendrick-lamar/Untitled-unmastered",
+                    "rel": "noopener"
+                  },
+                  "data": { "api_path": "/albums/145606" },
+                  "children": [{ "tag": "em", "children": ["untitled unmastered."] }]
+                },
+                " was released by surprise. In April of 2017, Kendrick released ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/albums/Kendrick-lamar/Damn", "rel": "noopener" },
+                  "data": { "api_path": "/albums/337082" },
+                  "children": [{ "tag": "em", "children": ["DAMN."] }]
+                },
+                " on ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://www.britannica.com/topic/Good-Friday", "rel": "noopener nofollow" },
+                  "children": ["Good Friday"]
+                },
+                ". After five years of silence, on May 13, 2022, Kendrick released his fifth studio album, ",
+                {
+                  "tag": "a",
+                  "attributes": {
+                    "href": "https://genius.com/albums/Kendrick-lamar/Mr-morale-the-big-steppers",
+                    "rel": "noopener"
+                  },
+                  "data": { "api_path": "/albums/657430" },
+                  "children": [{ "tag": "em", "children": ["Mr. Morale & The Big Steppers"] }]
+                },
+                "."
+              ]
+            },
+            "",
+            {
+              "tag": "p",
+              "children": [
+                "Known for his storytelling, imagery, wordplay, passion and varied song structures, Kendrick brings hard-hitting lyricism with narratives to the West Coast, not traditionally known for its lyricists."
+              ]
+            },
+            "",
+            {
+              "tag": "p",
+              "children": [
+                "Kendrick Lamar’s position within the rap game is held incredibly high. Lamar was ranked at No. 2 on Billboard’s ",
+                {
+                  "tag": "a",
+                  "attributes": {
+                    "href": "https://www.billboard.com/lists/best-rappers-all-time/2-kendrick-lamar/",
+                    "rel": "noopener nofollow"
+                  },
+                  "children": [{ "tag": "em", "children": ["10 Best Rappers of All Time"] }]
+                },
+                " list, alongside artists like ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/artists/Jay-z", "rel": "noopener" },
+                  "data": { "api_path": "/artists/2" },
+                  "children": ["Jay-Z"]
+                },
+                ", ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/artists/Nas", "rel": "noopener" },
+                  "data": { "api_path": "/artists/56" },
+                  "children": ["Nas"]
+                },
+                ", ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/artists/The-notorious-big", "rel": "noopener" },
+                  "data": { "api_path": "/artists/22" },
+                  "children": ["Notorious B.I.G."]
+                },
+                " and more.  To-date, he has also been ",
+                {
+                  "tag": "a",
+                  "attributes": {
+                    "href": "https://www.grammy.com/artists/kendrick-lamar/17949",
+                    "rel": "noopener nofollow"
+                  },
+                  "children": ["nominated for 57 Grammy Awards"]
+                },
+                " and has won 22 of them; with three for Best Rap Album. He is also the first rapper to win all of the Grammy Awards in the rap categories at the same ceremony; doing so in 2016 and 2018.  This feat wouldn’t be accomplished again until 2024 when Atlanta veteran rapper, ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/artists/Killer-mike", "rel": "noopener" },
+                  "data": { "api_path": "/artists/547" },
+                  "children": ["Killer Mike"]
+                },
+                ", ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/5047179", "rel": "noopener" },
+                  "data": { "api_path": "/referents/5047179" },
+                  "children": ["already mentioned"]
+                },
+                " on Kendrick Lamar’s “Hood Politics” swept the three Rap categories for ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/albums/Killer-mike/Michael", "rel": "noopener" },
+                  "data": { "api_path": "/albums/964374" },
+                  "children": ["MICHAEL"]
+                },
+                ". During the 67th Grammy Awards Ceremony, Kendrick Lamar would extend his historic wins by sweeping all five  categories he was nominated for, including; Best Music Video, Best Rap Performance,  Best Rap Song, Song of The Year, and Record of The Year. The latter two wins, marks only ",
+                {
+                  "tag": "a",
+                  "attributes": {
+                    "href": "https://www.billboard.com/music/awards/childish-gambino-this-is-america-wins-record-of-the-year-grammys-8497638/",
+                    "rel": "noopener nofollow"
+                  },
+                  "children": ["the second-time a rapper has accomplished this"]
+                },
+                "."
+              ]
+            },
+            "",
+            {
+              "tag": "p",
+              "children": [
+                "Lamar is a member of the hip-hop collective ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/artists/Black-hippy", "rel": "noopener" },
+                  "data": { "api_path": "/artists/17985" },
+                  "children": ["Black Hippy"]
+                },
+                ", along with ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/artists/Jay-rock", "rel": "noopener" },
+                  "data": { "api_path": "/artists/1403" },
+                  "children": ["Jay Rock"]
+                },
+                ", ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/artists/Schoolboy-q", "rel": "noopener" },
+                  "data": { "api_path": "/artists/11353" },
+                  "children": ["ScHoolboy Q"]
+                },
+                " and ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/artists/Ab-soul", "rel": "noopener" },
+                  "data": { "api_path": "/artists/2049" },
+                  "children": ["Ab-Soul"]
+                },
+                "—all of whom came up together as a part of ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/artists/Top-dawg-entertainment", "rel": "noopener" },
+                  "data": { "api_path": "/artists/1108010" },
+                  "children": ["Top Dawg Entertainment"]
+                },
+                "; however, in 2022, it was ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://oklama.com/nuthoughts", "rel": "noopener nofollow" },
+                  "children": ["announced"]
+                },
+                " that Kendrick would be departing TDE following the release of his fifth studio album. He is also signed to ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/artists/Dr-dre", "rel": "noopener" },
+                  "data": { "api_path": "/artists/123" },
+                  "children": ["Dr. Dre"]
+                },
+                "’s ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/artists/Aftermath-entertainment/bio", "rel": "noopener" },
+                  "data": { "api_path": "/artists/1136259" },
+                  "children": ["Aftermath Entertainment"]
+                },
+                " imprint, under ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/artists/Interscope-records", "rel": "noopener" },
+                  "data": { "api_path": "/artists/143490" },
+                  "children": ["Interscope Records"]
+                },
+                "."
+              ]
+            },
+            "",
+            {
+              "tag": "p",
+              "children": [
+                "In February of 2018, Kendrick and TDE released ",
+                {
+                  "tag": "a",
+                  "attributes": {
+                    "href": "https://genius.com/albums/Kendrick-lamar-the-weeknd-and-sza/Black-panther-the-album-music-from-and-inspired-by",
+                    "rel": "noopener"
+                  },
+                  "data": { "api_path": "/albums/363114" },
+                  "children": [{ "tag": "em", "children": ["Black Panther: The Album (Music from and Inspired by)"] }]
+                },
+                ". It debuted at No. 1 on the ",
+                {
+                  "tag": "a",
+                  "attributes": {
+                    "href": "https://www.billboard.com/charts/billboard-200",
+                    "rel": "noopener nofollow"
+                  },
+                  "children": ["Billboard 200"]
+                },
+                ". In April, later the same year, he won the ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "http://www.pulitzer.org/", "rel": "noopener nofollow" },
+                  "children": ["Pulitzer Prize"]
+                },
+                " in music for his album, ",
+                { "tag": "em", "children": ["DAMN."] }
+              ]
+            },
+            "",
+            {
+              "tag": "p",
+              "children": [
+                "Several years of relative inactivity followed, with Kendrick only resurfacing for features or collaborative efforts. In March of 2020, Lamar and ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/artists/Dave-free", "rel": "noopener" },
+                  "data": { "api_path": "/artists/27862" },
+                  "children": ["Dave Free"]
+                },
+                " launched ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/artists/Pglang", "rel": "noopener" },
+                  "data": { "api_path": "/artists/2135881" },
+                  "children": ["PgLang"]
+                },
+                ", a production company whose name stands for “program language.” In August 2021, Kendrick launched a ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "http://oklama.com/", "rel": "noopener nofollow" },
+                  "children": ["new website"]
+                },
+                ", where he proceeded to announce the release date for his next project in April of 2022. ",
+                { "tag": "em", "children": ["Mr. Morale & The Big Steppers"] },
+                " appeared on Friday, May 13, as promised—a double album five years in the making."
+              ]
+            },
+            "",
+            {
+              "tag": "p",
+              "children": [
+                "Kendrick would finally surface again in 2024 with a surprise feature on ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/artists/Future", "rel": "noopener" },
+                  "data": { "api_path": "/artists/2197" },
+                  "children": ["Future"]
+                },
+                " and ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/artists/Metro-boomin", "rel": "noopener" },
+                  "data": { "api_path": "/artists/33010" },
+                  "children": ["Metro Boomin"]
+                },
+                "’s March collaboration, ",
+                {
+                  "tag": "a",
+                  "attributes": {
+                    "href": "https://genius.com/Future-metro-boomin-and-kendrick-lamar-like-that-lyrics",
+                    "rel": "noopener"
+                  },
+                  "data": { "api_path": "/songs/10125497" },
+                  "children": ["“Like That.”"]
+                },
+                " This verse kicked off Kendrick’s ",
+                {
+                  "tag": "a",
+                  "attributes": {
+                    "href": "https://www.nytimes.com/2024/05/06/arts/music/kendrick-lamar-drake-explainer.html",
+                    "rel": "noopener nofollow"
+                  },
+                  "children": ["well-documented battle"]
+                },
+                " against ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/artists/Drake", "rel": "noopener" },
+                  "data": { "api_path": "/artists/130" },
+                  "children": ["Drake"]
+                },
+                " which saw the Compton MC release four diss tracks. The most popular of which, ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/Kendrick-lamar-not-like-us-lyrics", "rel": "noopener" },
+                  "data": { "api_path": "/songs/10359264" },
+                  "children": ["“Not Like Us,”"]
+                },
+                " would become Kendrick’s second solo ",
+                {
+                  "tag": "a",
+                  "attributes": {
+                    "href": "https://www.billboard.com/lists/kendrick-lamar-not-like-us-hot-100-number-one-debut/",
+                    "rel": "noopener nofollow"
+                  },
+                  "children": ["number one single"]
+                },
+                ". The track’s ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://www.youtube.com/watch?v=H58vbez_m4E", "rel": "noopener nofollow" },
+                  "children": ["music video"]
+                },
+                " would release on ",
+                {
+                  "tag": "a",
+                  "attributes": {
+                    "href": "https://www.britannica.com/topic/Independence-Day-United-States-holiday",
+                    "rel": "noopener nofollow"
+                  },
+                  "children": ["July 4/Independence Day"]
+                },
+                ", two months after its initial release."
+              ]
+            },
+            "",
+            {
+              "tag": "p",
+              "children": [
+                "Coming off the heel of the battle, Kendrick would announce ",
+                {
+                  "tag": "a",
+                  "attributes": {
+                    "href": "https://www.youtube.com/watch?v=oIEKK_j0fss&feature=youtu.be",
+                    "rel": "noopener nofollow"
+                  },
+                  "children": ["his Superbowl Half Time performance"]
+                },
+                " via ",
+                {
+                  "tag": "a",
+                  "attributes": {
+                    "href": "https://x.com/kendricklamar/status/1832804013894689232",
+                    "rel": "noopener nofollow"
+                  },
+                  "children": ["his own social media accounts"]
+                },
+                " on September 8, 2024. On November 22, 2024, K-Dot released his much-anticipated sixth studio album, ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://genius.com/albums/Kendrick-lamar/Gnx", "rel": "noopener" },
+                  "data": { "api_path": "/albums/1209251" },
+                  "children": [{ "tag": "em", "children": ["GNX"] }]
+                },
+                ", after ",
+                {
+                  "tag": "a",
+                  "attributes": { "href": "https://www.youtube.com/watch?v=D7liwdjvhWc", "rel": "noopener nofollow" },
+                  "children": ["teasing the project"]
+                },
+                " only thirty minutes beforehand."
+              ]
+            }
+          ]
+        }
+      },
+      "facebook_name": "kendricklamar",
+      "header_image_url": "https://images.genius.com/1d39f4a8c2906db0e696e5cc4427fa92.300x300x1.png",
+      "id": 1421,
+      "image_url": "https://images.genius.com/43c7fc30a6d9fd31b239bb47cf1533f4.1000x1000x1.png",
+      "instagram_name": "kendricklamar",
+      "is_meme_verified": true,
+      "is_verified": true,
+      "name": "Kendrick Lamar",
+      "social_links": {
+        "tidal": "https://tidal.com/artist/3816041",
+        "shazam": "https://www.shazam.com/artist/kendrick-lamar/368183298",
+        "spotify": "https://open.spotify.com/intl-de/artist/2YZyLoL8N0Wb9xBt1NhZWg",
+        "twitter": "kendricklamar",
+        "youtube": "https://youtube.com/@kendricklamar",
+        "facebook": "kendricklamar",
+        "instagram": "kendricklamar",
+        "soundcloud": "https://soundcloud.com/kendrick-lamar-music",
+        "apple_music": "https://music.apple.com/de/artist/kendrick-lamar/368183298",
+        "amazon_music": "https://music.amazon.de/artists/B0042QIKAK"
+      },
+      "translation_artist": false,
+      "twitter_name": "kendricklamar",
+      "url": "https://genius.com/artists/Kendrick-lamar",
+      "current_user_metadata": {
+        "permissions": ["follow", "view_activity_stream", "view_contribution_opportunities", "view_discography"],
+        "excluded_permissions": [
+          "edit",
+          "edit_images",
+          "edit_names",
+          "edit_anything",
+          "merge",
+          "sort_artist_songs",
+          "edit_translation_artist",
+          "split",
+          "sort_artist_songs_by_lyrics_edit_proposals",
+          "see_short_id"
+        ],
+        "interactions": { "following": false }
+      },
+      "followers_count": 31826,
+      "iq": 69426,
+      "artist_relationships": [
+        {
+          "relationship_type": "member_of",
+          "artists": [
+            {
+              "api_path": "/artists/17985",
+              "header_image_url": "https://images.genius.com/2e678143ab605d48fc9f852b589894e4.722x354x1.jpg",
+              "id": 17985,
+              "image_url": "https://images.genius.com/671e489c8dd0b99c784889fe87415033.452x452x1.jpg",
+              "is_meme_verified": false,
+              "is_verified": false,
+              "name": "Black Hippy",
+              "url": "https://genius.com/artists/Black-hippy"
+            }
+          ]
+        }
+      ],
+      "description_annotation": {
+        "_type": "referent",
+        "annotator_id": 1057,
+        "annotator_login": "dragon191",
+        "api_path": "/referents/6927681",
+        "classification": "accepted",
+        "fragment": "Kendrick Lamar",
+        "id": 6927681,
+        "is_description": true,
+        "path": "/6927681/Kendrick-lamar/Kendrick-lamar",
+        "range": { "content": "Kendrick Lamar" },
+        "song_id": null,
+        "url": "https://genius.com/6927681/Kendrick-lamar/Kendrick-lamar",
+        "verified_annotator_ids": [],
+        "annotatable": {
+          "api_path": "/artists/1421",
+          "context": null,
+          "id": 1421,
+          "image_url": "https://images.genius.com/43c7fc30a6d9fd31b239bb47cf1533f4.1000x1000x1.png",
+          "link_title": "Kendrick Lamar",
+          "title": "Kendrick Lamar",
+          "type": "Artist",
+          "url": "https://genius.com/artists/Kendrick-lamar"
+        },
+        "annotations": [
+          {
+            "api_path": "/annotations/6927681",
+            "body": {
+              "dom": {
+                "tag": "root",
+                "children": [
+                  {
+                    "tag": "p",
+                    "children": [
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "http://www.kendricklamar.com/", "rel": "noopener nofollow" },
+                        "children": ["Kendrick Lamar"]
+                      },
+                      " Duckworth (born June 17, 1987) is an American rapper and songwriter from Compton, California."
+                    ]
+                  },
+                  "",
+                  {
+                    "tag": "p",
+                    "children": [
+                      "He first gained major attention after the release of his 2010 mixtape ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://genius.com/albums/Kendrick-lamar/Overly-dedicated",
+                          "rel": "noopener"
+                        },
+                        "data": { "api_path": "/albums/10919" },
+                        "children": [{ "tag": "em", "children": ["O(verly) D(edicated)"] }]
+                      },
+                      ". In 2011, his album ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://genius.com/albums/Kendrick-lamar/Section-80",
+                          "rel": "noopener"
+                        },
+                        "data": { "api_path": "/albums/11160" },
+                        "children": [{ "tag": "em", "children": ["Section.80"] }]
+                      },
+                      ", released exclusively through iTunes, instantly ranked as one of the top digital hip-hop releases of the year. In 2012, he crossed over to mainstream audiences with his major label debut, ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://genius.com/albums/Kendrick-lamar/Good-kid-m-a-a-d-city",
+                          "rel": "noopener"
+                        },
+                        "data": { "api_path": "/albums/15946" },
+                        "children": [{ "tag": "em", "children": ["good kid, m.A.A.d city"] }]
+                      },
+                      ", which was widely regarded as an instant classic. In 2015, he released ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://genius.com/albums/Kendrick-lamar/To-pimp-a-butterfly",
+                          "rel": "noopener"
+                        },
+                        "data": { "api_path": "/albums/120991" },
+                        "children": [{ "tag": "em", "children": ["To Pimp a Butterfly"] }]
+                      },
+                      " to widespread acclaim. The album debuted at No. 1 on the Billboard 200 Albums Chart. The following year, ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://genius.com/albums/Kendrick-lamar/Untitled-unmastered",
+                          "rel": "noopener"
+                        },
+                        "data": { "api_path": "/albums/145606" },
+                        "children": [{ "tag": "em", "children": ["untitled unmastered."] }]
+                      },
+                      " was released by surprise. In April of 2017, Kendrick released ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "https://genius.com/albums/Kendrick-lamar/Damn", "rel": "noopener" },
+                        "data": { "api_path": "/albums/337082" },
+                        "children": [{ "tag": "em", "children": ["DAMN."] }]
+                      },
+                      " on ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://www.britannica.com/topic/Good-Friday",
+                          "rel": "noopener nofollow"
+                        },
+                        "children": ["Good Friday"]
+                      },
+                      ". After five years of silence, on May 13, 2022, Kendrick released his fifth studio album, ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://genius.com/albums/Kendrick-lamar/Mr-morale-the-big-steppers",
+                          "rel": "noopener"
+                        },
+                        "data": { "api_path": "/albums/657430" },
+                        "children": [{ "tag": "em", "children": ["Mr. Morale & The Big Steppers"] }]
+                      },
+                      "."
+                    ]
+                  },
+                  "",
+                  {
+                    "tag": "p",
+                    "children": [
+                      "Known for his storytelling, imagery, wordplay, passion and varied song structures, Kendrick brings hard-hitting lyricism with narratives to the West Coast, not traditionally known for its lyricists."
+                    ]
+                  },
+                  "",
+                  {
+                    "tag": "p",
+                    "children": [
+                      "Kendrick Lamar’s position within the rap game is held incredibly high. Lamar was ranked at No. 2 on Billboard’s ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://www.billboard.com/lists/best-rappers-all-time/2-kendrick-lamar/",
+                          "rel": "noopener nofollow"
+                        },
+                        "children": [{ "tag": "em", "children": ["10 Best Rappers of All Time"] }]
+                      },
+                      " list, alongside artists like ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "https://genius.com/artists/Jay-z", "rel": "noopener" },
+                        "data": { "api_path": "/artists/2" },
+                        "children": ["Jay-Z"]
+                      },
+                      ", ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "https://genius.com/artists/Nas", "rel": "noopener" },
+                        "data": { "api_path": "/artists/56" },
+                        "children": ["Nas"]
+                      },
+                      ", ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "https://genius.com/artists/The-notorious-big", "rel": "noopener" },
+                        "data": { "api_path": "/artists/22" },
+                        "children": ["Notorious B.I.G."]
+                      },
+                      " and more.  To-date, he has also been ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://www.grammy.com/artists/kendrick-lamar/17949",
+                          "rel": "noopener nofollow"
+                        },
+                        "children": ["nominated for 57 Grammy Awards"]
+                      },
+                      " and has won 22 of them; with three for Best Rap Album. He is also the first rapper to win all of the Grammy Awards in the rap categories at the same ceremony; doing so in 2016 and 2018.  This feat wouldn’t be accomplished again until 2024 when Atlanta veteran rapper, ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "https://genius.com/artists/Killer-mike", "rel": "noopener" },
+                        "data": { "api_path": "/artists/547" },
+                        "children": ["Killer Mike"]
+                      },
+                      ", ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "https://genius.com/5047179", "rel": "noopener" },
+                        "data": { "api_path": "/referents/5047179" },
+                        "children": ["already mentioned"]
+                      },
+                      " on Kendrick Lamar’s “Hood Politics” swept the three Rap categories for ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "https://genius.com/albums/Killer-mike/Michael", "rel": "noopener" },
+                        "data": { "api_path": "/albums/964374" },
+                        "children": ["MICHAEL"]
+                      },
+                      ". During the 67th Grammy Awards Ceremony, Kendrick Lamar would extend his historic wins by sweeping all five  categories he was nominated for, including; Best Music Video, Best Rap Performance,  Best Rap Song, Song of The Year, and Record of The Year. The latter two wins, marks only ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://www.billboard.com/music/awards/childish-gambino-this-is-america-wins-record-of-the-year-grammys-8497638/",
+                          "rel": "noopener nofollow"
+                        },
+                        "children": ["the second-time a rapper has accomplished this"]
+                      },
+                      "."
+                    ]
+                  },
+                  "",
+                  {
+                    "tag": "p",
+                    "children": [
+                      "Lamar is a member of the hip-hop collective ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "https://genius.com/artists/Black-hippy", "rel": "noopener" },
+                        "data": { "api_path": "/artists/17985" },
+                        "children": ["Black Hippy"]
+                      },
+                      ", along with ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "https://genius.com/artists/Jay-rock", "rel": "noopener" },
+                        "data": { "api_path": "/artists/1403" },
+                        "children": ["Jay Rock"]
+                      },
+                      ", ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "https://genius.com/artists/Schoolboy-q", "rel": "noopener" },
+                        "data": { "api_path": "/artists/11353" },
+                        "children": ["ScHoolboy Q"]
+                      },
+                      " and ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "https://genius.com/artists/Ab-soul", "rel": "noopener" },
+                        "data": { "api_path": "/artists/2049" },
+                        "children": ["Ab-Soul"]
+                      },
+                      "—all of whom came up together as a part of ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://genius.com/artists/Top-dawg-entertainment",
+                          "rel": "noopener"
+                        },
+                        "data": { "api_path": "/artists/1108010" },
+                        "children": ["Top Dawg Entertainment"]
+                      },
+                      "; however, in 2022, it was ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "https://oklama.com/nuthoughts", "rel": "noopener nofollow" },
+                        "children": ["announced"]
+                      },
+                      " that Kendrick would be departing TDE following the release of his fifth studio album. He is also signed to ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "https://genius.com/artists/Dr-dre", "rel": "noopener" },
+                        "data": { "api_path": "/artists/123" },
+                        "children": ["Dr. Dre"]
+                      },
+                      "’s ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://genius.com/artists/Aftermath-entertainment/bio",
+                          "rel": "noopener"
+                        },
+                        "data": { "api_path": "/artists/1136259" },
+                        "children": ["Aftermath Entertainment"]
+                      },
+                      " imprint, under ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "https://genius.com/artists/Interscope-records", "rel": "noopener" },
+                        "data": { "api_path": "/artists/143490" },
+                        "children": ["Interscope Records"]
+                      },
+                      "."
+                    ]
+                  },
+                  "",
+                  {
+                    "tag": "p",
+                    "children": [
+                      "In February of 2018, Kendrick and TDE released ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://genius.com/albums/Kendrick-lamar-the-weeknd-and-sza/Black-panther-the-album-music-from-and-inspired-by",
+                          "rel": "noopener"
+                        },
+                        "data": { "api_path": "/albums/363114" },
+                        "children": [
+                          { "tag": "em", "children": ["Black Panther: The Album (Music from and Inspired by)"] }
+                        ]
+                      },
+                      ". It debuted at No. 1 on the ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://www.billboard.com/charts/billboard-200",
+                          "rel": "noopener nofollow"
+                        },
+                        "children": ["Billboard 200"]
+                      },
+                      ". In April, later the same year, he won the ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "http://www.pulitzer.org/", "rel": "noopener nofollow" },
+                        "children": ["Pulitzer Prize"]
+                      },
+                      " in music for his album, ",
+                      { "tag": "em", "children": ["DAMN."] }
+                    ]
+                  },
+                  "",
+                  {
+                    "tag": "p",
+                    "children": [
+                      "Several years of relative inactivity followed, with Kendrick only resurfacing for features or collaborative efforts. In March of 2020, Lamar and ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "https://genius.com/artists/Dave-free", "rel": "noopener" },
+                        "data": { "api_path": "/artists/27862" },
+                        "children": ["Dave Free"]
+                      },
+                      " launched ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "https://genius.com/artists/Pglang", "rel": "noopener" },
+                        "data": { "api_path": "/artists/2135881" },
+                        "children": ["PgLang"]
+                      },
+                      ", a production company whose name stands for “program language.” In August 2021, Kendrick launched a ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "http://oklama.com/", "rel": "noopener nofollow" },
+                        "children": ["new website"]
+                      },
+                      ", where he proceeded to announce the release date for his next project in April of 2022. ",
+                      { "tag": "em", "children": ["Mr. Morale & The Big Steppers"] },
+                      " appeared on Friday, May 13, as promised—a double album five years in the making."
+                    ]
+                  },
+                  "",
+                  {
+                    "tag": "p",
+                    "children": [
+                      "Kendrick would finally surface again in 2024 with a surprise feature on ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "https://genius.com/artists/Future", "rel": "noopener" },
+                        "data": { "api_path": "/artists/2197" },
+                        "children": ["Future"]
+                      },
+                      " and ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "https://genius.com/artists/Metro-boomin", "rel": "noopener" },
+                        "data": { "api_path": "/artists/33010" },
+                        "children": ["Metro Boomin"]
+                      },
+                      "’s March collaboration, ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://genius.com/Future-metro-boomin-and-kendrick-lamar-like-that-lyrics",
+                          "rel": "noopener"
+                        },
+                        "data": { "api_path": "/songs/10125497" },
+                        "children": ["“Like That.”"]
+                      },
+                      " This verse kicked off Kendrick’s ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://www.nytimes.com/2024/05/06/arts/music/kendrick-lamar-drake-explainer.html",
+                          "rel": "noopener nofollow"
+                        },
+                        "children": ["well-documented battle"]
+                      },
+                      " against ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "https://genius.com/artists/Drake", "rel": "noopener" },
+                        "data": { "api_path": "/artists/130" },
+                        "children": ["Drake"]
+                      },
+                      " which saw the Compton MC release four diss tracks. The most popular of which, ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://genius.com/Kendrick-lamar-not-like-us-lyrics",
+                          "rel": "noopener"
+                        },
+                        "data": { "api_path": "/songs/10359264" },
+                        "children": ["“Not Like Us,”"]
+                      },
+                      " would become Kendrick’s second solo ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://www.billboard.com/lists/kendrick-lamar-not-like-us-hot-100-number-one-debut/",
+                          "rel": "noopener nofollow"
+                        },
+                        "children": ["number one single"]
+                      },
+                      ". The track’s ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://www.youtube.com/watch?v=H58vbez_m4E",
+                          "rel": "noopener nofollow"
+                        },
+                        "children": ["music video"]
+                      },
+                      " would release on ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://www.britannica.com/topic/Independence-Day-United-States-holiday",
+                          "rel": "noopener nofollow"
+                        },
+                        "children": ["July 4/Independence Day"]
+                      },
+                      ", two months after its initial release."
+                    ]
+                  },
+                  "",
+                  {
+                    "tag": "p",
+                    "children": [
+                      "Coming off the heel of the battle, Kendrick would announce ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://www.youtube.com/watch?v=oIEKK_j0fss&feature=youtu.be",
+                          "rel": "noopener nofollow"
+                        },
+                        "children": ["his Superbowl Half Time performance"]
+                      },
+                      " via ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://x.com/kendricklamar/status/1832804013894689232",
+                          "rel": "noopener nofollow"
+                        },
+                        "children": ["his own social media accounts"]
+                      },
+                      " on September 8, 2024. On November 22, 2024, K-Dot released his much-anticipated sixth studio album, ",
+                      {
+                        "tag": "a",
+                        "attributes": { "href": "https://genius.com/albums/Kendrick-lamar/Gnx", "rel": "noopener" },
+                        "data": { "api_path": "/albums/1209251" },
+                        "children": [{ "tag": "em", "children": ["GNX"] }]
+                      },
+                      ", after ",
+                      {
+                        "tag": "a",
+                        "attributes": {
+                          "href": "https://www.youtube.com/watch?v=D7liwdjvhWc",
+                          "rel": "noopener nofollow"
+                        },
+                        "children": ["teasing the project"]
+                      },
+                      " only thirty minutes beforehand."
+                    ]
+                  }
+                ]
+              }
+            },
+            "comment_count": 5,
+            "community": true,
+            "custom_preview": null,
+            "has_voters": true,
+            "id": 6927681,
+            "pinned": false,
+            "share_url": "https://genius.com/6927681",
+            "source": null,
+            "state": "accepted",
+            "url": "https://genius.com/6927681/Kendrick-lamar/Kendrick-lamar",
+            "verified": false,
+            "votes_total": 1785,
+            "current_user_metadata": {
+              "permissions": ["vote", "propose_edit_to", "report_as_abusive", "create_comment"],
+              "excluded_permissions": [
+                "edit",
+                "cosign",
+                "uncosign",
+                "destroy",
+                "accept",
+                "reject",
+                "see_unreviewed",
+                "clear_votes",
+                "pin_to_profile",
+                "unpin_from_profile",
+                "update_source",
+                "edit_custom_preview"
+              ],
+              "interactions": { "cosign": false, "pyong": false, "vote": null },
+              "iq_by_action": {
+                "accept": { "primary": { "multiplier": 1, "base": 10.0, "applicable": true } },
+                "reject": { "primary": { "multiplier": 1, "base": 2.0, "applicable": true } },
+                "delete": { "primary": { "multiplier": 1, "base": 5.0, "applicable": true } }
+              }
+            },
+            "authors": [
+              {
+                "attribution": 0.1695402298850575,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/1603328",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.genius.com/avatars/tiny/773f9640b0b2e0ad1c6f7fedffb70a1d",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.genius.com/avatars/thumb/773f9640b0b2e0ad1c6f7fedffb70a1d",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.genius.com/avatars/small/773f9640b0b2e0ad1c6f7fedffb70a1d",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.genius.com/avatars/medium/773f9640b0b2e0ad1c6f7fedffb70a1d",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://images.genius.com/e372f40ee0a6d090ffd11b4c5518a5a9.1000x370x1.jpg",
+                  "human_readable_role_for_display": "Moderator",
+                  "id": 1603328,
+                  "iq": 459911,
+                  "login": "kingkillmonger",
+                  "name": "ʞ|ace|woe|k",
+                  "role_for_display": "moderator",
+                  "url": "https://genius.com/kingkillmonger",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.1235632183908046,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/8365583",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.genius.com/avatars/tiny/908e5e61944cbd2d062211d345a50693",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.genius.com/avatars/thumb/908e5e61944cbd2d062211d345a50693",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.genius.com/avatars/small/908e5e61944cbd2d062211d345a50693",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.genius.com/avatars/medium/908e5e61944cbd2d062211d345a50693",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://images.genius.com/74d4dae12f8165c5a11572bd2479cfdb.728x228x1.jpg",
+                  "human_readable_role_for_display": "Editor",
+                  "id": 8365583,
+                  "iq": 91517,
+                  "login": "LGF",
+                  "name": "LGF",
+                  "role_for_display": "editor",
+                  "url": "https://genius.com/LGF",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.11494252873563218,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/1057",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://s3.amazonaws.com/rapgenius/avatars/tiny/1057_ae_universe.jpg",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://s3.amazonaws.com/rapgenius/avatars/thumb/1358288265_1057_ae_universe.jpg",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://s3.amazonaws.com/rapgenius/avatars/small/1358288265_1057_ae_universe.jpg",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://s3.amazonaws.com/rapgenius/avatars/medium/1358288265_1057_ae_universe.jpg",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 1057,
+                  "iq": 2334,
+                  "login": "dragon191",
+                  "name": "dragon191",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/dragon191",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.07758620689655173,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/21720218",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.genius.com/avatars/tiny/0e78497a508fb4960ac2a25d9c4cf906",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.genius.com/avatars/thumb/0e78497a508fb4960ac2a25d9c4cf906",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.genius.com/avatars/small/0e78497a508fb4960ac2a25d9c4cf906",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.genius.com/avatars/medium/0e78497a508fb4960ac2a25d9c4cf906",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 21720218,
+                  "iq": 744,
+                  "login": "CrownedxKay",
+                  "name": "CrownedxKay",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/CrownedxKay",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.0617816091954023,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/46981",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.rapgenius.com/avatars/tiny/a2e3c022d0b2b4b87a17acec38db0d95",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.rapgenius.com/avatars/thumb/a2e3c022d0b2b4b87a17acec38db0d95",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.rapgenius.com/avatars/small/a2e3c022d0b2b4b87a17acec38db0d95",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.rapgenius.com/avatars/medium/a2e3c022d0b2b4b87a17acec38db0d95",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 46981,
+                  "iq": 156755,
+                  "login": "BennySwans",
+                  "name": "BennySwoons",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/BennySwans",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.04166666666666667,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/4256751",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://filepicker-images.genius.com/d48ytvIiQS65JTlfrSU2_352fd7954b2a08321132d80e2cb3531a.354x240x6.gif",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://filepicker-images.genius.com/d48ytvIiQS65JTlfrSU2_352fd7954b2a08321132d80e2cb3531a.354x240x6.gif",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://filepicker-images.genius.com/d48ytvIiQS65JTlfrSU2_352fd7954b2a08321132d80e2cb3531a.354x240x6.gif",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://filepicker-images.genius.com/d48ytvIiQS65JTlfrSU2_352fd7954b2a08321132d80e2cb3531a.354x240x6.gif",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://filepicker-images.genius.com/ywcq538ti4",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 4256751,
+                  "iq": 623,
+                  "login": "BluntLotion",
+                  "name": "BluntLotion",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/BluntLotion",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.040229885057471264,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/8092777",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.genius.com/avatars/tiny/03f31b0214bb9e62e774ace0d1cd3eee",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.genius.com/avatars/thumb/03f31b0214bb9e62e774ace0d1cd3eee",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.genius.com/avatars/small/03f31b0214bb9e62e774ace0d1cd3eee",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.genius.com/avatars/medium/03f31b0214bb9e62e774ace0d1cd3eee",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://images.genius.com/760c0a8e1037cd845860db2a45f7c86a.1000x1000x1.png",
+                  "human_readable_role_for_display": "Editor",
+                  "id": 8092777,
+                  "iq": 467299,
+                  "login": "thedevilwalksamongstus",
+                  "name": "THEDEVILWALKSAMONGSTUS",
+                  "role_for_display": "editor",
+                  "url": "https://genius.com/thedevilwalksamongstus",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.034482758620689655,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/33985",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.genius.com/avatars/tiny/74331624454cc69ca53c07ce6f2533f8",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.genius.com/avatars/thumb/74331624454cc69ca53c07ce6f2533f8",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.genius.com/avatars/small/74331624454cc69ca53c07ce6f2533f8",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.genius.com/avatars/medium/74331624454cc69ca53c07ce6f2533f8",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": "Editor",
+                  "id": 33985,
+                  "iq": 130704,
+                  "login": "Haifisch",
+                  "name": "Haifisch",
+                  "role_for_display": "editor",
+                  "url": "https://genius.com/Haifisch",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.027298850574712645,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/143147",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.genius.com/avatars/tiny/720cefbaf38d10f0d4e25ab4eb93bfc8",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.genius.com/avatars/thumb/720cefbaf38d10f0d4e25ab4eb93bfc8",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.genius.com/avatars/small/720cefbaf38d10f0d4e25ab4eb93bfc8",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.genius.com/avatars/medium/720cefbaf38d10f0d4e25ab4eb93bfc8",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 143147,
+                  "iq": 12054,
+                  "login": "NSLRB",
+                  "name": "NSLRB",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/NSLRB",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.02586206896551724,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/6072426",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.genius.com/avatars/tiny/00d604d742fd777130247c94034ec9cb",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.genius.com/avatars/thumb/00d604d742fd777130247c94034ec9cb",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.genius.com/avatars/small/00d604d742fd777130247c94034ec9cb",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.genius.com/avatars/medium/00d604d742fd777130247c94034ec9cb",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 6072426,
+                  "iq": 474,
+                  "login": "LilMash",
+                  "name": "LilMash",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/LilMash",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.024425287356321837,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/1272178",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.rapgenius.com/avatars/tiny/c6e6d17c35b4d49b1a2768cdb87c1c32",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.rapgenius.com/avatars/thumb/c6e6d17c35b4d49b1a2768cdb87c1c32",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.rapgenius.com/avatars/small/c6e6d17c35b4d49b1a2768cdb87c1c32",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.rapgenius.com/avatars/medium/c6e6d17c35b4d49b1a2768cdb87c1c32",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 1272178,
+                  "iq": 542,
+                  "login": "INFINITY--GEM",
+                  "name": "INFINITY--GEM",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/INFINITY--GEM",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.01867816091954023,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/133552",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://s3.amazonaws.com/rapgenius/avatars/tiny/133552_converse.png",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://s3.amazonaws.com/rapgenius/avatars/thumb/1358291197_133552_converse.png",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://s3.amazonaws.com/rapgenius/avatars/small/1358291197_133552_converse.png",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://s3.amazonaws.com/rapgenius/avatars/medium/1358291197_133552_converse.png",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 133552,
+                  "iq": 853,
+                  "login": "TheNotoriousJIV",
+                  "name": "TheNotoriousJIV",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/TheNotoriousJIV",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.01867816091954023,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/2582485",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.rapgenius.com/avatars/tiny/e45567bb06ff6bad8d48adf1d4937a8c",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.rapgenius.com/avatars/thumb/e45567bb06ff6bad8d48adf1d4937a8c",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.rapgenius.com/avatars/small/e45567bb06ff6bad8d48adf1d4937a8c",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.rapgenius.com/avatars/medium/e45567bb06ff6bad8d48adf1d4937a8c",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 2582485,
+                  "iq": 1232,
+                  "login": "CNolan75",
+                  "name": "CNolan75",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/CNolan75",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.017241379310344827,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/265732",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.rapgenius.com/avatars/tiny/c9afb3ba2c2704fa76ff242f1eadcd03",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.rapgenius.com/avatars/thumb/c9afb3ba2c2704fa76ff242f1eadcd03",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.rapgenius.com/avatars/small/c9afb3ba2c2704fa76ff242f1eadcd03",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.rapgenius.com/avatars/medium/c9afb3ba2c2704fa76ff242f1eadcd03",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": "Editor",
+                  "id": 265732,
+                  "iq": 263070,
+                  "login": "Vesuvius",
+                  "name": "Vesuvius",
+                  "role_for_display": "editor",
+                  "url": "https://genius.com/Vesuvius",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.017241379310344827,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/2797923",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://filepicker-images.genius.com/sjzb34wbwff",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://filepicker-images.genius.com/sjzb34wbwff",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://filepicker-images.genius.com/sjzb34wbwff",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://filepicker-images.genius.com/sjzb34wbwff",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://filepicker-images.genius.com/dx7250a8mc8",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 2797923,
+                  "iq": 519,
+                  "login": "escobadmon",
+                  "name": "escobadmon",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/escobadmon",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.015804597701149427,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/336394",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.rapgenius.com/avatars/tiny/Fy086iwPSEW3Z3JNXhGN",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.rapgenius.com/avatars/thumb/Fy086iwPSEW3Z3JNXhGN",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.rapgenius.com/avatars/small/Fy086iwPSEW3Z3JNXhGN",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.rapgenius.com/avatars/medium/Fy086iwPSEW3Z3JNXhGN",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": null,
+                  "id": 336394,
+                  "iq": 221,
+                  "login": "Pat_Riot",
+                  "name": "Pat_Riot",
+                  "role_for_display": null,
+                  "url": "https://genius.com/Pat_Riot",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.015804597701149427,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/993805",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://filepicker-images.genius.com/ruar8gm48qe",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://filepicker-images.genius.com/ruar8gm48qe",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://filepicker-images.genius.com/ruar8gm48qe",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://filepicker-images.genius.com/ruar8gm48qe",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://filepicker-images.genius.com/73c9ellj2f7",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 993805,
+                  "iq": 85759,
+                  "login": "StayInTheHouse",
+                  "name": "StayInTheHouse",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/StayInTheHouse",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.015804597701149427,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/4512480",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://lh4.googleusercontent.com/-AGd8J2m9hl4/AAAAAAAAAAI/AAAAAAAAADM/ZsTG9EONkHs/photo.jpg",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://lh4.googleusercontent.com/-AGd8J2m9hl4/AAAAAAAAAAI/AAAAAAAAADM/ZsTG9EONkHs/photo.jpg",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://lh4.googleusercontent.com/-AGd8J2m9hl4/AAAAAAAAAAI/AAAAAAAAADM/ZsTG9EONkHs/photo.jpg",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://lh4.googleusercontent.com/-AGd8J2m9hl4/AAAAAAAAAAI/AAAAAAAAADM/ZsTG9EONkHs/photo.jpg",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://filepicker-images.genius.com/jlbxh6h1brs",
+                  "human_readable_role_for_display": "Editor",
+                  "id": 4512480,
+                  "iq": 7811,
+                  "login": "SeventhDimension",
+                  "name": "SeventhDimension",
+                  "role_for_display": "editor",
+                  "url": "https://genius.com/SeventhDimension",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.014367816091954023,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/94414",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.rapgenius.com/avatars/tiny/44c07903206ea93d4502404cf6170171",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.rapgenius.com/avatars/thumb/44c07903206ea93d4502404cf6170171",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.rapgenius.com/avatars/small/44c07903206ea93d4502404cf6170171",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.rapgenius.com/avatars/medium/44c07903206ea93d4502404cf6170171",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": null,
+                  "id": 94414,
+                  "iq": 217,
+                  "login": "nolanick504",
+                  "name": "nolanick504",
+                  "role_for_display": null,
+                  "url": "https://genius.com/nolanick504",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.011494252873563218,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/14187",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://s3.amazonaws.com/rapgenius/avatars/original/14187_3ibKg.jpg?1333323077",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://s3.amazonaws.com/rapgenius/avatars/original/14187_3ibKg.jpg?1333323077",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://s3.amazonaws.com/rapgenius/avatars/original/14187_3ibKg.jpg?1333323077",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://s3.amazonaws.com/rapgenius/avatars/original/14187_3ibKg.jpg?1333323077",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://filepicker-images.genius.com/yglf64lqvzc",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 14187,
+                  "iq": 36321,
+                  "login": "TwistedMental",
+                  "name": "TwistedMental",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/TwistedMental",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.011494252873563218,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/11524",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.rapgenius.com/avatars/tiny/e7b84a26140d5becfc5614929303367f",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.rapgenius.com/avatars/thumb/e7b84a26140d5becfc5614929303367f",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.rapgenius.com/avatars/small/e7b84a26140d5becfc5614929303367f",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.rapgenius.com/avatars/medium/e7b84a26140d5becfc5614929303367f",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": "Editor",
+                  "id": 11524,
+                  "iq": 327638,
+                  "login": "tomi",
+                  "name": "Tomi Fischer",
+                  "role_for_display": "editor",
+                  "url": "https://genius.com/tomi",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.011494252873563218,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/1237897",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://assets.genius.com/images/default_cover_image.png?1778095399",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://assets.genius.com/images/default_cover_image.png?1778095399",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://assets.genius.com/images/default_cover_image.png?1778095399",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://assets.genius.com/images/default_cover_image.png?1778095399",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": null,
+                  "id": 1237897,
+                  "iq": 82,
+                  "login": "dr_dre23",
+                  "name": "dr_dre23",
+                  "role_for_display": null,
+                  "url": "https://genius.com/dr_dre23",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.011494252873563218,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/316149",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.rapgenius.com/avatars/tiny/WpBNgaRyR76L7XJad60a",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.rapgenius.com/avatars/thumb/WpBNgaRyR76L7XJad60a",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.rapgenius.com/avatars/small/WpBNgaRyR76L7XJad60a",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.rapgenius.com/avatars/medium/WpBNgaRyR76L7XJad60a",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 316149,
+                  "iq": 863,
+                  "login": "RGHOST",
+                  "name": "RGHOST",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/RGHOST",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.011494252873563218,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/312329",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.genius.com/avatars/tiny/92d93001f24a7c355040c34124518b00",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.genius.com/avatars/thumb/92d93001f24a7c355040c34124518b00",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.genius.com/avatars/small/92d93001f24a7c355040c34124518b00",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.genius.com/avatars/medium/92d93001f24a7c355040c34124518b00",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://images.genius.com/5c3c91a6060df690301d93aeab39e25c.351x356x1.jpg",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 312329,
+                  "iq": 25667,
+                  "login": "whenigetfree",
+                  "name": "Whenigetfree",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/whenigetfree",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.011494252873563218,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/481008",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.rapgenius.com/avatars/tiny/29c2eaddc6461b2d8a54b11241eb6e0d",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.rapgenius.com/avatars/thumb/29c2eaddc6461b2d8a54b11241eb6e0d",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.rapgenius.com/avatars/small/29c2eaddc6461b2d8a54b11241eb6e0d",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.rapgenius.com/avatars/medium/29c2eaddc6461b2d8a54b11241eb6e0d",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 481008,
+                  "iq": 4890,
+                  "login": "meehaww",
+                  "name": "meehaww",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/meehaww",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.008620689655172414,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/3355118",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.genius.com/avatars/tiny/0ca5fd8b17872345d7d0318c0ce737b7",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.genius.com/avatars/thumb/0ca5fd8b17872345d7d0318c0ce737b7",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.genius.com/avatars/small/0ca5fd8b17872345d7d0318c0ce737b7",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.genius.com/avatars/medium/0ca5fd8b17872345d7d0318c0ce737b7",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://images.genius.com/9980d4ad7fef159fb09f8f4920adc9b2.1000x714x1.jpg",
+                  "human_readable_role_for_display": "Editor",
+                  "id": 3355118,
+                  "iq": 322198,
+                  "login": "chanhmatt",
+                  "name": "Matthew Huynh",
+                  "role_for_display": "editor",
+                  "url": "https://genius.com/chanhmatt",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.008620689655172414,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/16697104",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.genius.com/avatars/tiny/9c6548ea5180eaab0004beca230fca2f",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.genius.com/avatars/thumb/9c6548ea5180eaab0004beca230fca2f",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.genius.com/avatars/small/9c6548ea5180eaab0004beca230fca2f",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.genius.com/avatars/medium/9c6548ea5180eaab0004beca230fca2f",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 16697104,
+                  "iq": 1474,
+                  "login": "muhsee6",
+                  "name": "muhsee6",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/muhsee6",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.007183908045977011,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/923739",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.genius.com/avatars/tiny/ea9b6b625c739d23c95760ce89a3b2d8",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.genius.com/avatars/thumb/ea9b6b625c739d23c95760ce89a3b2d8",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.genius.com/avatars/small/ea9b6b625c739d23c95760ce89a3b2d8",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.genius.com/avatars/medium/ea9b6b625c739d23c95760ce89a3b2d8",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": "Editor",
+                  "id": 923739,
+                  "iq": 113467,
+                  "login": "theKuzG",
+                  "name": "The Kuz Giacometti",
+                  "role_for_display": "editor",
+                  "url": "https://genius.com/theKuzG",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.005747126436781609,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/5749685",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.genius.com/avatars/tiny/daea91c933d27b98f2361446237603dd",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.genius.com/avatars/thumb/daea91c933d27b98f2361446237603dd",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.genius.com/avatars/small/daea91c933d27b98f2361446237603dd",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.genius.com/avatars/medium/daea91c933d27b98f2361446237603dd",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": null,
+                  "id": 5749685,
+                  "iq": 209,
+                  "login": "Insffrbl",
+                  "name": "Insffrbl",
+                  "role_for_display": null,
+                  "url": "https://genius.com/Insffrbl",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.005747126436781609,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/21762091",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.genius.com/avatars/tiny/98921f0f7c45bbd1fc4014792b66d6fd",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.genius.com/avatars/thumb/98921f0f7c45bbd1fc4014792b66d6fd",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.genius.com/avatars/small/98921f0f7c45bbd1fc4014792b66d6fd",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.genius.com/avatars/medium/98921f0f7c45bbd1fc4014792b66d6fd",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://filepicker-images.genius.com/6473b08570993c9497f9876c3f90645b7f2ab8546b47c8d0d411c8eef0373480%2Fs1cjh3p0m2",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 21762091,
+                  "iq": 15944,
+                  "login": "camzvium",
+                  "name": "camzvium",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/camzvium",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.004310344827586207,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/2996174",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.genius.com/avatars/tiny/41e4aecf2b22be564e51d5b77e4d3b22",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.genius.com/avatars/thumb/41e4aecf2b22be564e51d5b77e4d3b22",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.genius.com/avatars/small/41e4aecf2b22be564e51d5b77e4d3b22",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.genius.com/avatars/medium/41e4aecf2b22be564e51d5b77e4d3b22",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://images.genius.com/d411654e6e45d9ce1a5178548892d340.562x1000x1.png",
+                  "human_readable_role_for_display": "Editor",
+                  "id": 2996174,
+                  "iq": 48534,
+                  "login": "UnannotatedUnmastered",
+                  "name": "Corban",
+                  "role_for_display": "editor",
+                  "url": "https://genius.com/UnannotatedUnmastered",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.0028735632183908046,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/3280867",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.genius.com/avatars/tiny/e0ac494f0dee814616b695fae91ab287",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.genius.com/avatars/thumb/e0ac494f0dee814616b695fae91ab287",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.genius.com/avatars/small/e0ac494f0dee814616b695fae91ab287",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.genius.com/avatars/medium/e0ac494f0dee814616b695fae91ab287",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://filepicker-images.genius.com/tnEL0bhURqSh2IWuDAkT_tumblr_o13n2leEUa1u6fq9ao1_500.gif",
+                  "human_readable_role_for_display": "Editor",
+                  "id": 3280867,
+                  "iq": 4851,
+                  "login": "ACRP",
+                  "name": "ACRP",
+                  "role_for_display": "editor",
+                  "url": "https://genius.com/ACRP",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.0028735632183908046,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/50988",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.rapgenius.com/avatars/tiny/8bccae9a677b2659c31cc151b5e4bfd8",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.rapgenius.com/avatars/thumb/8bccae9a677b2659c31cc151b5e4bfd8",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.rapgenius.com/avatars/small/8bccae9a677b2659c31cc151b5e4bfd8",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.rapgenius.com/avatars/medium/8bccae9a677b2659c31cc151b5e4bfd8",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": "Editor",
+                  "id": 50988,
+                  "iq": 182516,
+                  "login": "nietzsche",
+                  "name": "Briansusername",
+                  "role_for_display": "editor",
+                  "url": "https://genius.com/nietzsche",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.0028735632183908046,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/141291",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.rapgenius.com/avatars/tiny/845fd01203157969bce194cbc8065f03",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.rapgenius.com/avatars/thumb/845fd01203157969bce194cbc8065f03",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.rapgenius.com/avatars/small/845fd01203157969bce194cbc8065f03",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.rapgenius.com/avatars/medium/845fd01203157969bce194cbc8065f03",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 141291,
+                  "iq": 91311,
+                  "login": "123andtotha4",
+                  "name": "123andtotha4",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/123andtotha4",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.0028735632183908046,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/127469",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.rapgenius.com/avatars/tiny/bec6b4e5e1c79992ef430e06dd831f44",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.rapgenius.com/avatars/thumb/bec6b4e5e1c79992ef430e06dd831f44",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.rapgenius.com/avatars/small/bec6b4e5e1c79992ef430e06dd831f44",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.rapgenius.com/avatars/medium/bec6b4e5e1c79992ef430e06dd831f44",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 127469,
+                  "iq": 20148,
+                  "login": "Turkebaconsandwhich",
+                  "name": "Turkebaconsandwhich",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/Turkebaconsandwhich",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.0014367816091954023,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/14985074",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.genius.com/9ea93d60f90abfdfb72f017cec03c90d.719x719x1.jpg",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.genius.com/9ea93d60f90abfdfb72f017cec03c90d.719x719x1.jpg",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.genius.com/9ea93d60f90abfdfb72f017cec03c90d.719x719x1.jpg",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.genius.com/9ea93d60f90abfdfb72f017cec03c90d.719x719x1.jpg",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://images.genius.com/08019dd7988e1f2091e25c26d4b541af.1000x602x1.jpg",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 14985074,
+                  "iq": 13583,
+                  "login": "miketysonblowtotheface",
+                  "name": "miketysonblowtotheface",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/miketysonblowtotheface",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.0014367816091954023,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/12657641",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.genius.com/avatars/tiny/73e90badf9e35a8388b779fcd29b2543",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.genius.com/avatars/thumb/73e90badf9e35a8388b779fcd29b2543",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.genius.com/avatars/small/73e90badf9e35a8388b779fcd29b2543",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.genius.com/avatars/medium/73e90badf9e35a8388b779fcd29b2543",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": "Contributor",
+                  "id": 12657641,
+                  "iq": 4926,
+                  "login": "0gflo",
+                  "name": "0gflo",
+                  "role_for_display": "contributor",
+                  "url": "https://genius.com/0gflo",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              },
+              {
+                "attribution": 0.0014367816091954023,
+                "pinned_role": null,
+                "user": {
+                  "api_path": "/users/845202",
+                  "avatar": {
+                    "tiny": {
+                      "url": "https://images.genius.com/avatars/tiny/c8f629b872e29850b952a1df6d7c962a",
+                      "bounding_box": { "width": 16, "height": 16 }
+                    },
+                    "thumb": {
+                      "url": "https://images.genius.com/avatars/thumb/c8f629b872e29850b952a1df6d7c962a",
+                      "bounding_box": { "width": 32, "height": 32 }
+                    },
+                    "small": {
+                      "url": "https://images.genius.com/avatars/small/c8f629b872e29850b952a1df6d7c962a",
+                      "bounding_box": { "width": 100, "height": 100 }
+                    },
+                    "medium": {
+                      "url": "https://images.genius.com/avatars/medium/c8f629b872e29850b952a1df6d7c962a",
+                      "bounding_box": { "width": 300, "height": 400 }
+                    }
+                  },
+                  "header_image_url": "https://assets.genius.com/images/default_banner.png?1778095399",
+                  "human_readable_role_for_display": "Editor",
+                  "id": 845202,
+                  "iq": 71430,
+                  "login": "Zenameless",
+                  "name": "Zenameless",
+                  "role_for_display": "editor",
+                  "url": "https://genius.com/Zenameless",
+                  "current_user_metadata": {
+                    "permissions": ["follow"],
+                    "excluded_permissions": [],
+                    "interactions": { "following": false }
+                  }
+                }
+              }
+            ],
+            "cosigned_by": [],
+            "rejection_comment": null,
+            "verified_by": null
+          }
+        ]
+      },
+      "user": {
+        "api_path": "/users/117985",
+        "avatar": {
+          "tiny": {
+            "url": "https://images.genius.com/avatars/tiny/ccabbdc0aa0d50012e879f86f717a82d",
+            "bounding_box": { "width": 16, "height": 16 }
+          },
+          "thumb": {
+            "url": "https://images.genius.com/avatars/thumb/ccabbdc0aa0d50012e879f86f717a82d",
+            "bounding_box": { "width": 32, "height": 32 }
+          },
+          "small": {
+            "url": "https://images.genius.com/avatars/small/ccabbdc0aa0d50012e879f86f717a82d",
+            "bounding_box": { "width": 100, "height": 100 }
+          },
+          "medium": {
+            "url": "https://images.genius.com/avatars/medium/ccabbdc0aa0d50012e879f86f717a82d",
+            "bounding_box": { "width": 300, "height": 400 }
+          }
+        },
+        "header_image_url": "https://images.genius.com/1d39f4a8c2906db0e696e5cc4427fa92.300x300x1.png",
+        "human_readable_role_for_display": "Verified Artist",
+        "id": 117985,
+        "iq": 69426,
+        "login": "KendrickLamar",
+        "name": "Kendrick Lamar",
+        "role_for_display": "verified_artist",
+        "url": "https://genius.com/KendrickLamar",
+        "current_user_metadata": {
+          "permissions": ["follow"],
+          "excluded_permissions": [],
+          "interactions": { "following": false }
+        }
+      }
+    }
+  }
+}

@@ -9,12 +9,14 @@ interface Props {
   track: AlbumTrack;
   index: number;
   isSelected: boolean;
+  isCurrentTrack?: boolean;
+  isPlaybackActive?: boolean;
   onAdd: (item: SonosItem) => void;
   onClick: (index: number, e: React.MouseEvent) => void;
   onDragStart: (index: number, e: React.DragEvent) => void;
 }
 
-export function TopSongRow({ track, index, isSelected, onAdd, onClick, onDragStart }: Props) {
+export function TopSongRow({ track, index, isSelected, isCurrentTrack, isPlaybackActive, onAdd, onClick, onDragStart }: Props) {
   const art = useImage(track.artUrl);
   const subtitle = (track.raw as Record<string, unknown>)?.['subtitle'] as string | undefined;
   return (
@@ -24,12 +26,20 @@ export function TopSongRow({ track, index, isSelected, onAdd, onClick, onDragSta
       onClick={e => onClick(index, e)}
       onDragStart={e => onDragStart(index, e)}
     >
-      <span className={styles.topSongNum}>{index + 1}</span>
+      {isCurrentTrack ? (
+        <div className={`${styles.waveform}${!isPlaybackActive ? ' ' + styles.waveformPaused : ''}`}>
+          <div className={styles.waveformBar} />
+          <div className={styles.waveformBar} />
+          <div className={styles.waveformBar} />
+        </div>
+      ) : (
+        <span className={styles.topSongNum}>{index + 1}</span>
+      )}
       <div className={styles.topSongArt}>
         {art ? <img src={art} alt="" /> : <div className={styles.topSongArtPh} />}
       </div>
       <div className={styles.topSongInfo}>
-        <span className={styles.topSongName}>
+        <span className={`${styles.topSongName}${isCurrentTrack ? ' ' + styles.topSongNameActive : ''}`}>
           {track.title}
           {track.explicit && <ExplicitBadge />}
         </span>
