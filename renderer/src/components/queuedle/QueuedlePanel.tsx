@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   useDailyGame,
   useSubmitGameScore,
@@ -36,6 +37,7 @@ function londonDateToday(): string {
 }
 
 export function QueuedlePanel() {
+  const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [leaderboardTab, setLeaderboardTab] = useState<LeaderboardTab>('today');
   const todayId = useMemo(() => londonDateToday(), []);
@@ -280,7 +282,7 @@ export function QueuedlePanel() {
             {scores.slice(0, 10).map((s, i) => (
               <div key={s.userName} className={styles.scoreRow}>
                 <span className={styles.scoreRank}>{i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span>
-                <span className={styles.scoreName}>{s.userName}</span>
+                <button className={styles.scoreNameBtn} onClick={() => navigate(`/profile/${encodeURIComponent(s.userName)}`)}>{s.userName}</button>
                 <span className={styles.scoreBreakdown}>
                   {s.mainScore}/{currentGame.questions.length} · {s.bonusScore}/{currentGame.questions.length}
                 </span>
@@ -312,7 +314,7 @@ export function QueuedlePanel() {
               rankedRows.slice(0, 10).map((ranked, i) => (
                 <div key={ranked.userName} className={styles.scoreRow}>
                   <span className={styles.scoreRank}>{i + 1}</span>
-                  <span className={styles.scoreName}>{ranked.userName}</span>
+                  <button className={styles.scoreNameBtn} onClick={() => navigate(`/profile/${encodeURIComponent(ranked.userName)}`)}>{ranked.userName}</button>
                   <span className={styles.scoreBreakdown}>
                     {ranked.gamesPlayed} {ranked.gamesPlayed === 1 ? 'game' : 'games'} ·{' '}
                     <span className={styles.rankedTier}>

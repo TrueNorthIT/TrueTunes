@@ -8,6 +8,7 @@ import {
   Search,
   X,
   User,
+  Contact,
   RefreshCw,
   Gamepad2,
   Lightbulb,
@@ -261,6 +262,16 @@ export function TopNav({
                   </div>
                 )}
               </div>
+            )}
+
+            {displayName && (
+              <button
+                className={`${styles.iconBtn}${location.pathname.startsWith('/profile/') ? ' ' + styles.active : ''}`}
+                onClick={() => navigate(`/profile/${encodeURIComponent(displayName)}`)}
+                title="My profile"
+              >
+                <Contact size={15} />
+              </button>
             )}
 
             <button className={styles.iconBtn} onClick={onChangelogOpen} title="What's new">

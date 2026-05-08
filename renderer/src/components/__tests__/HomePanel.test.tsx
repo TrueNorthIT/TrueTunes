@@ -10,9 +10,11 @@ const mockBrowseContainer = vi.fn();
 
 const mockUseLocation = vi.fn();
 const mockUseSearchParams = vi.fn();
+const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({
   useLocation: () => mockUseLocation(),
   useSearchParams: () => mockUseSearchParams(),
+  useNavigate: () => mockNavigate,
 }));
 
 vi.mock('../../hooks/useOpenItem', () => ({ useOpenItem: () => vi.fn() }));

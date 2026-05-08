@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { User } from 'lucide-react';
 import { api } from '../lib/sonosApi';
 import {
   extractItems,
@@ -137,6 +138,7 @@ export async function fetchYtmSections(): Promise<YtmSections> {
 export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading }: Props) {
   const queryClient = useQueryClient();
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const openItem = useOpenItem();
 
@@ -255,12 +257,19 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading }: Props) {
                       {pickerOpen && !isPickerLocked && users.length > 1 && (
                         <ul className={styles.userDropdownList}>
                           {users.map((u) => (
-                            <li key={u}>
+                            <li key={u} className={styles.userDropdownLi}>
                               <button
                                 className={u === selectedUser ? styles.userDropdownItemActive : styles.userDropdownItem}
                                 onClick={() => { setSelectedUser(u); setPickerOpen(false); }}
                               >
                                 {u}
+                              </button>
+                              <button
+                                className={styles.profileLinkBtn}
+                                onClick={() => { setPickerOpen(false); navigate(`/profile/${encodeURIComponent(u)}`); }}
+                                title={`View ${u}'s profile`}
+                              >
+                                <User size={12} />
                               </button>
                             </li>
                           ))}

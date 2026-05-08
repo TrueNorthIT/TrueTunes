@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useImage } from '../../hooks/useImage';
 import { useOpenItem } from '../../hooks/useOpenItem';
 import { useQueueTrack } from '../../hooks/useQueueTrack';
@@ -40,6 +41,7 @@ export function DraggableQueueRow({
     : isPlayingByObjectId;
   const cachedArt = useImage(artUrl);
   const openItem  = useOpenItem();
+  const navigate  = useNavigate();
   const name = item.track.title;
 
   return (
@@ -95,7 +97,15 @@ export function DraggableQueueRow({
           </button>
         )}
         {attribution && (
-          <div className={styles.attribution}>by {attribution.user}</div>
+          <div className={styles.attribution}>
+            by{' '}
+            <button
+              className={styles.attributionUser}
+              onClick={e => { e.stopPropagation(); navigate(`/profile/${encodeURIComponent(attribution.user)}`); }}
+            >
+              {attribution.user}
+            </button>
+          </div>
         )}
       </div>
       {timeToPlay !== undefined && (

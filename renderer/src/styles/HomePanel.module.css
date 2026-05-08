@@ -306,10 +306,16 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
+.userDropdownLi {
+  display: flex;
+  align-items: center;
+}
+
 .userDropdownItem,
 .userDropdownItemActive {
   display: block;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   background: none;
   border: none;
   text-align: left;
@@ -320,6 +326,22 @@
   color: var(--text-2);
   transition: background 0.1s;
 }
+
+.profileLinkBtn {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.12s, color 0.12s, background 0.12s;
+}
+.userDropdownLi:hover .profileLinkBtn { opacity: 1; }
+.profileLinkBtn:hover { color: var(--text); background: rgba(255, 255, 255, 0.07); }
 
 .userDropdownItem:hover {
   background: rgba(255, 255, 255, 0.07);

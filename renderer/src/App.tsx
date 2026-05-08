@@ -38,6 +38,7 @@ import { DisplayNameModal } from './components/DisplayNameModal';
 import { FeedbackDialog } from './components/FeedbackDialog';
 import { ChangelogDialog } from './components/ChangelogDialog';
 import { LyricsPanel } from './components/LyricsPanel';
+import { ProfilePanel } from './components/ProfilePanel';
 import { usePrefetchNextLyrics } from './hooks/usePrefetchNextLyrics';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Splash } from './components/Splash';
@@ -462,6 +463,7 @@ useEffect(() => {
           <Route path="/leaderboard" element={<LeaderboardPanel />} />
           <Route path="/queuedle" element={<QueuedlePanel />} />
           <Route path="/lyrics" element={<LyricsPanel playback={playback} />} />
+          <Route path="/profile/:userName" element={<ProfilePanel onAddToQueue={handleAddToQueue} />} />
         </Routes>
         <QueueSidebar
           ref={queueSidebarRef}
