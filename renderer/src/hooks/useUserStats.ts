@@ -26,18 +26,18 @@ function toAlbumItem(a: StatsAlbum): SonosItem {
   };
 }
 
-export function useUserStats(userName: string | undefined) {
+export function useUserStats(userName: string | undefined, count?: number) {
   const { data, isLoading } = useQuery<StatsResult>({
-    queryKey: ['stats', 'alltime', userName ?? null],
-    queryFn: () => window.sonos.fetchStats('alltime', userName),
+    queryKey: ['stats', 'alltime', userName ?? null, count ?? 10],
+    queryFn: () => window.sonos.fetchStats('alltime', userName, count),
     enabled: !!userName,
     staleTime: 5 * 60_000,
   });
 
   return {
     topTracks:   data?.topTracks  ?? [],
-    artistItems: (data?.topArtists ?? []).slice(0, 12).map(toArtistItem),
-    albumItems:  (data?.topAlbums  ?? []).slice(0, 12).map(toAlbumItem),
+    artistItems: (data?.topArtists ?? []).map(toArtistItem),
+    albumItems:  (data?.topAlbums  ?? []).map(toAlbumItem),
     totalEvents: data?.totalEvents ?? 0,
     isLoading:   !!userName && isLoading,
   };

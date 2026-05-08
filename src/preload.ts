@@ -46,7 +46,7 @@ export interface SonosAPI {
   onAttributionMap: (cb: (map: AttributionMap) => void) => Unsubscribe;
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;
   refreshAttribution: () => Promise<void>;
-  fetchStats: (period: string, userId?: string) => Promise<unknown>;
+  fetchStats: (period: string, userId?: string, count?: number) => Promise<unknown>;
   fetchDailyGame: (date?: string) => Promise<unknown>;
   submitGameScore: (input: {
     gameId: string;
@@ -67,6 +67,8 @@ export interface SonosAPI {
   addTrackToPlaylist: (playlistId: string, track: unknown) => Promise<unknown>;
   joinPlaylist: (playlistId: string, action: 'join' | 'leave') => Promise<unknown>;
   uploadPlaylistImage: (playlistId: string, data: ArrayBuffer, mimeType: string) => Promise<unknown>;
+  fetchUserProfile: (userName: string) => Promise<unknown>;
+  uploadProfileImage: (userName: string, data: ArrayBuffer, mimeType: string) => Promise<unknown>;
   minimizeWindow:    () => Promise<void>;
   maximizeWindow:    () => Promise<void>;
   closeWindow:       () => Promise<void>;
@@ -168,7 +170,7 @@ contextBridge.exposeInMainWorld('sonos', {
     return () => ipcRenderer.removeListener('attribution:map', listener);
   },
   refreshAttribution: () => ipcRenderer.invoke('attribution:refresh'),
-  fetchStats: (period: string, userId?: string) => ipcRenderer.invoke('stats:fetch', period, userId),
+  fetchStats: (period: string, userId?: string, count?: number) => ipcRenderer.invoke('stats:fetch', period, userId, count),
   fetchDailyGame: (date?: string) => ipcRenderer.invoke('game:fetch', date),
   submitGameScore: (input) => ipcRenderer.invoke('game:submit', input),
   fetchGameLeaderboard: (date?: string) => ipcRenderer.invoke('game:leaderboard', date),
@@ -209,4 +211,6 @@ contextBridge.exposeInMainWorld('sonos', {
   addTrackToPlaylist: (playlistId, track) => ipcRenderer.invoke('playlist:addTrack', playlistId, track),
   joinPlaylist: (playlistId, action) => ipcRenderer.invoke('playlist:join', playlistId, action),
   uploadPlaylistImage: (playlistId, data, mimeType) => ipcRenderer.invoke('playlist:uploadImage', playlistId, data, mimeType),
+  fetchUserProfile: (userName) => ipcRenderer.invoke('profile:get', userName),
+  uploadProfileImage: (userName, data, mimeType) => ipcRenderer.invoke('profile:uploadImage', userName, data, mimeType),
 } satisfies SonosAPI);

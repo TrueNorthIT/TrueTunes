@@ -9,7 +9,7 @@
 
 .header {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 20px;
   margin-bottom: 40px;
   padding-bottom: 28px;
@@ -17,33 +17,70 @@
 }
 
 .avatar {
-  width: 72px;
-  height: 72px;
+  width: 140px;
+  height: 140px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
+  font-size: 60px;
   font-weight: 700;
   color: #fff;
   flex-shrink: 0;
   letter-spacing: -1px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+  position: relative;
+  overflow: hidden;
 }
+
+.avatarEditable {
+  cursor: pointer;
+}
+.avatarEditable:hover .avatarOverlay { opacity: 1; }
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 50%;
+}
+
+.avatarOverlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.85);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.avatarOverlayActive { opacity: 1 !important; }
 
 .headerInfo {
   display: flex;
   flex-direction: column;
-  gap: 8px;
   min-width: 0;
 }
 
+.nameWrap {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 20px;
+}
+
 .userName {
-  font-size: 26px;
+  font-size: 48px;
   font-weight: 700;
   color: var(--text);
-  letter-spacing: -0.5px;
-  line-height: 1.1;
+  letter-spacing: -1.5px;
+  line-height: 1;
 }
 
 .headerMeta {
@@ -121,7 +158,7 @@
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.4px;
-  margin-bottom: 0;
+  margin-bottom: 8px;
 }
 
 .sectionAction {
@@ -153,13 +190,38 @@
   padding: 16px 0 8px;
 }
 
-/* ── Top Tracks list ─────────────────────────────────────────────────────── */
+/* ── Top Tracks grid ─────────────────────────────────────────────────────── */
 
-.trackList {
-  display: flex;
-  flex-direction: column;
+.topTracksGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 12px;
   margin-top: 4px;
 }
+
+.topTracksCol {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .topTracksGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.trackLink {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.12s;
+}
+.trackLink:hover { opacity: 1; text-decoration: underline; }
 
 .countBadge {
   font-size: 12px;
@@ -209,6 +271,11 @@
   font-size: 13px;
   color: var(--text-3);
   letter-spacing: 0;
+}
+
+.sc {
+  font-variant-caps: small-caps;
+  letter-spacing: 0.04em;
 }
 
 .queuedleStats {
@@ -263,11 +330,8 @@
 /* ── Playlists ───────────────────────────────────────────────────────────── */
 
 .playlistRow {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding-bottom: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 16px;
 }
-.playlistRow::-webkit-scrollbar { height: 6px; }
-.playlistRow::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
 

@@ -78,5 +78,7 @@ Object.defineProperty(window, 'sonos', {
     addTrackToPlaylist:   vi.fn(pending),
     joinPlaylist:         vi.fn(pending),
     uploadPlaylistImage:  vi.fn(pending),
+    fetchUserProfile:     vi.fn(() => Promise.resolve(null)),
+    uploadProfileImage:   vi.fn(pending),
   },
 });

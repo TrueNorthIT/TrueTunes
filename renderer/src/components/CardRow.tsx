@@ -8,15 +8,18 @@ export function CardRow({
   isLoading,
   onAdd,
   onOpen,
+  cardSize,
 }: {
   items: SonosItem[];
   isLoading: boolean;
   onAdd: (item: SonosItem) => void;
   onOpen: (item: SonosItem) => void;
+  cardSize?: string;
 }) {
+  const sizeStyle = cardSize ? { '--card-size': cardSize } as React.CSSProperties : undefined;
   if (isLoading) {
     return (
-      <div className={styles.cardRow}>
+      <div className={styles.cardRow} style={sizeStyle}>
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className={styles.placeholder} />
         ))}
@@ -25,7 +28,7 @@ export function CardRow({
   }
   if (!items.length) return null;
   return (
-    <div className={styles.cardRow}>
+    <div className={styles.cardRow} style={sizeStyle}>
       {items.map((item, i) => (
         <MediaCard
           key={i}

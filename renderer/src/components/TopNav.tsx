@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { useUserProfile } from '../hooks/useUserProfile';
+import { useImage } from '../hooks/useImage';
 import {
   ChevronLeft,
   ChevronRight,
@@ -49,6 +51,9 @@ export function TopNav({
   const groupRef = useRef<HTMLDivElement>(null);
 
   // React Router sets window.history.state = { idx, key } on every navigation
+  const { data: profile } = useUserProfile(displayName ?? undefined);
+  const profileArt = useImage(profile?.imageUrl ?? null);
+
   const histIdx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
   const canGoBack = histIdx > 0;
   const canGoForward = histIdx < window.history.length - 1;
@@ -171,7 +176,30 @@ export function TopNav({
 
             <div className={styles.sep} />
 
-            {/* Profile chip — left of search */}
+            <div className={styles.searchWrap}>
+              <Search size={13} className={styles.searchIcon} />
+              <input
+                className={styles.searchInput}
+                type="text"
+                placeholder="Search…"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={!isAuthed}
+              />
+              <button
+                className={styles.clearBtn}
+                onClick={handleClear}
+                title="Clear"
+                style={{ visibility: isInSearch || searchText ? 'visible' : 'hidden' }}
+              >
+                <X size={12} />
+              </button>
+            </div>
+
+            <div className={styles.sep} />
+
+            {/* Profile chip — right of search */}
             {displayName !== undefined && (
               <div className={styles.profileWrap} ref={profileRef}>
                 {displayName ? (
@@ -180,7 +208,12 @@ export function TopNav({
                     onClick={() => navigate(`/profile/${encodeURIComponent(displayName)}`)}
                     title="My profile"
                   >
-                    <span className={styles.profileAvatar}>{displayName[0].toUpperCase()}</span>
+                    <span className={styles.profileAvatar}>
+                      {profileArt
+                        ? <img src={profileArt} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', display: 'block' }} />
+                        : displayName[0].toUpperCase()
+                      }
+                    </span>
                     <span className={styles.profileName}>{displayName}</span>
                   </button>
                 ) : (
@@ -224,29 +257,6 @@ export function TopNav({
                 )}
               </div>
             )}
-
-            <div className={styles.searchWrap}>
-              <Search size={13} className={styles.searchIcon} />
-              <input
-                className={styles.searchInput}
-                type="text"
-                placeholder="Search…"
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                onKeyDown={handleKeyDown}
-                disabled={!isAuthed}
-              />
-              <button
-                className={styles.clearBtn}
-                onClick={handleClear}
-                title="Clear"
-                style={{ visibility: isInSearch || searchText ? 'visible' : 'hidden' }}
-              >
-                <X size={12} />
-              </button>
-            </div>
-
-            <div className={styles.sep} />
 
             {isAuthed && groups.length === 0 ? (
               <button className={styles.iconBtn} onClick={onResync} title="Reconnect">

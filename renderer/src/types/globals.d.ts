@@ -229,6 +229,12 @@ interface RecentlyPlayedData {
   availableUsers?: string[];
 }
 
+interface UserProfile {
+  id: string;
+  imageUrl?: string | null;
+  updatedAt?: number;
+}
+
 interface PlaylistTrack {
   uri: string;
   trackName: string;
@@ -310,7 +316,7 @@ interface SonosPreload {
     imageUrl?: string;
   }) => Promise<void>;
   fetchRecentlyPlayed: (userId: string) => Promise<RecentlyPlayedData | null>;
-  fetchStats: (period: string, userId?: string) => Promise<StatsResult>;
+  fetchStats: (period: string, userId?: string, count?: number) => Promise<StatsResult>;
   fetchDailyGame: (date?: string) => Promise<GameFetchResult>;
   submitGameScore: (input: {
     gameId: string;
@@ -341,6 +347,8 @@ interface SonosPreload {
   addTrackToPlaylist: (playlistId: string, track: PlaylistTrack) => Promise<PlaylistDoc>;
   joinPlaylist: (playlistId: string, action: 'join' | 'leave') => Promise<PlaylistMeta>;
   uploadPlaylistImage: (playlistId: string, data: ArrayBuffer, mimeType: string) => Promise<{ imageUrl: string } | { error: string }>;
+  fetchUserProfile: (userName: string) => Promise<UserProfile | null>;
+  uploadProfileImage: (userName: string, data: ArrayBuffer, mimeType: string) => Promise<{ imageUrl: string } | { error: string }>;
 }
 
 interface Window {

@@ -28,6 +28,7 @@ export async function statsHandler(
 
   const period = (request.query.get('period') ?? 'alltime') as Period;
   const userId = request.query.get('userId') ?? undefined;
+  const count  = Math.min(100, Math.max(1, parseInt(request.query.get('count') ?? '10', 10) || 10));
   const startMs = periodStartMs(period);
 
   try {
@@ -55,16 +56,16 @@ export async function statsHandler(
 
     const topTracks = Object.values(trackMap)
       .sort((a, b) => b.count - a.count)
-      .slice(0, 10)
+      .slice(0, count)
       .map(({ key: _key, ...rest }) => rest);
 
     const topArtists = Object.values(artistMap)
       .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
+      .slice(0, count);
 
     const topAlbums = Object.values(albumMap)
       .sort((a, b) => b.count - a.count)
-      .slice(0, 10)
+      .slice(0, count)
       .map(({ key: _key, ...rest }) => rest);
 
     context.log(`[stats] period=${period} events=${resources.length}`);

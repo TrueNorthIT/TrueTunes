@@ -1309,6 +1309,28 @@ ipcMain.handle('playlist:uploadImage', async (_: IpcMainInvokeEvent, playlistId:
   }
 });
 
+ipcMain.handle('profile:get', async (_: IpcMainInvokeEvent, userName: string) => {
+  try {
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/profile/${encodeURIComponent(userName)}`);
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle('profile:uploadImage', async (_: IpcMainInvokeEvent, userName: string, data: ArrayBuffer, mimeType: string) => {
+  try {
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/profile/${encodeURIComponent(userName)}/image`, {
+      method: 'POST',
+      headers: { 'Content-Type': mimeType },
+      body: Buffer.from(data),
+    });
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
 ipcMain.handle(
   'pubsub:publishQueued',
   async (_: IpcMainInvokeEvent, item: { eventType: 'track' | 'album'; uri: string; trackName: string; artist: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }) => {
@@ -1334,10 +1356,11 @@ ipcMain.handle(
   }
 );
 
-ipcMain.handle('stats:fetch', async (_: IpcMainInvokeEvent, period: string, userId?: string) => {
+ipcMain.handle('stats:fetch', async (_: IpcMainInvokeEvent, period: string, userId?: string, count?: number) => {
   try {
     let url = `${PUBSUB_FUNCTION_URL}/api/stats?period=${encodeURIComponent(period)}`;
     if (userId) url += `&userId=${encodeURIComponent(userId)}`;
+    if (count)  url += `&count=${count}`;
     const res = await fetch(url);
     return await res.json();
   } catch (err) {

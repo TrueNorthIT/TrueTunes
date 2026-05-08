@@ -192,6 +192,20 @@
       }
     },
     {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+      "apiVersion": "2024-02-15-preview",
+      "name": "[concat(variables('cosmosName'), '/truetunes/profiles')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosName'), 'truetunes')]"
+      ],
+      "properties": {
+        "resource": {
+          "id": "profiles",
+          "partitionKey": { "paths": ["/id"], "kind": "Hash" }
+        }
+      }
+    },
+    {
       "type": "Microsoft.Web/serverfarms",
       "apiVersion": "2023-01-01",
       "name": "[variables('hostingPlanName')]",

@@ -7,7 +7,6 @@
   align-items: flex-start;
   gap: 6px;
   cursor: pointer;
-  flex-shrink: 0;
   width: 120px;
   text-align: left;
 }
