@@ -7,15 +7,16 @@ interface Props {
   sub?: string | null;
   artUrl?: string | null;
   explicit?: boolean;
+  circular?: boolean;
   onAdd?: () => void;
   onOpen?: () => void;
 }
 
-export function MediaCard({ name, sub, artUrl, explicit, onAdd, onOpen }: Props) {
+export function MediaCard({ name, sub, artUrl, explicit, circular, onAdd, onOpen }: Props) {
   const cachedArt = useImage(artUrl);
   return (
     <div className={styles.card} onClick={onOpen}>
-      <div className={styles.artWrap}>
+      <div className={circular ? styles.artWrapCircular : styles.artWrap}>
         {cachedArt
           ? <img className={styles.art} src={cachedArt} alt="" />
           : <div className={styles.artPh}>♪</div>

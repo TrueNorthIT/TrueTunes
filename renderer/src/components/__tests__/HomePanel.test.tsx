@@ -10,9 +10,11 @@ const mockBrowseContainer = vi.fn();
 
 const mockUseLocation = vi.fn();
 const mockUseSearchParams = vi.fn();
+const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({
   useLocation: () => mockUseLocation(),
   useSearchParams: () => mockUseSearchParams(),
+  useNavigate: () => mockNavigate,
 }));
 
 vi.mock('../../hooks/useOpenItem', () => ({ useOpenItem: () => vi.fn() }));
@@ -37,6 +39,11 @@ vi.mock('../search/SearchResults', () => ({
   SearchResults: ({ results }: { results: SonosItem[] }) => <div>Search results ({results.length})</div>,
 }));
 
+const mockUseRecentlyPlayed = vi.fn();
+vi.mock('../../hooks/useRecentlyPlayed', () => ({
+  useRecentlyPlayed: (...args: unknown[]) => mockUseRecentlyPlayed(...args),
+}));
+
 function makeWrapper() {
   return ({ children }: { children: React.ReactNode }) =>
     createElement(QueryClientProvider, { client: new QueryClient({ defaultOptions: { queries: { retry: false } } }) }, children);
@@ -54,13 +61,19 @@ function makeRootItem(title: string, objectId: string): SonosItem {
   } as unknown as SonosItem;
 }
 
+const defaultRecent = {
+  artistItems: [],
+  albumItems: [],
+  availableUsers: [],
+  currentUserId: 'testuser',
+  isLoading: false,
+};
+
 const defaultProps = {
   isAuthed: true,
   onAddToQueue: vi.fn(),
   ytm: { forYou: [], newReleases: [], charts: [] },
   ytmLoading: false,
-  history: [],
-  histLoading: false,
 };
 
 beforeEach(() => {
@@ -69,6 +82,7 @@ beforeEach(() => {
   mockUseSearchParams.mockReturnValue([new URLSearchParams()]);
   mockServiceQuery.mockResolvedValue({ error: null, data: { items: [] } });
   mockBrowseContainer.mockResolvedValue({ error: null, data: { items: [] } });
+  mockUseRecentlyPlayed.mockReturnValue(defaultRecent);
 });
 
 // ── fetchYtmSections ────────────────────────────────────────────────────────
@@ -106,8 +120,7 @@ describe('fetchYtmSections', () => {
     const track: SonosItem = { name: 'Track A', type: 'TRACK' } as SonosItem;
     mockBrowseContainer
       .mockResolvedValueOnce({ error: null, data: makeRootData([homeItem]) })
-      .mockResolvedValueOnce({ error: null, data: { items: [track] } }); // home browse
-    // nr and charts return empty (default mock)
+      .mockResolvedValueOnce({ error: null, data: { items: [track] } });
 
     const result = await fetchYtmSections();
     expect(result.forYou).toHaveLength(1);
@@ -120,7 +133,7 @@ describe('fetchYtmSections', () => {
     const track: SonosItem = { name: 'Home Track', type: 'TRACK' } as SonosItem;
     mockBrowseContainer
       .mockResolvedValueOnce({ error: null, data: makeRootData([supermixItem, homeItem]) })
-      .mockResolvedValueOnce({ error: null, data: { items: [track] } }); // home browse
+      .mockResolvedValueOnce({ error: null, data: { items: [track] } });
 
     const result = await fetchYtmSections();
     expect(result.forYou[0].title).toBe('My Supermix');
@@ -139,7 +152,7 @@ describe('fetchYtmSections', () => {
     const homeItem = makeRootItem('Home', 'home-id');
     mockBrowseContainer
       .mockResolvedValueOnce({ error: null, data: makeRootData([homeItem]) })
-      .mockResolvedValueOnce({ error: 'fail', data: null }); // home browse fails
+      .mockResolvedValueOnce({ error: 'fail', data: null });
 
     const result = await fetchYtmSections();
     expect(result.forYou).toEqual([]);
@@ -152,7 +165,6 @@ describe('HomePanel', () => {
   it('shows sections when authed on home view', () => {
     render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
     expect(screen.getByText('For You')).toBeInTheDocument();
-    expect(screen.getByText('Recently Played')).toBeInTheDocument();
     expect(screen.getByText('New Releases')).toBeInTheDocument();
     expect(screen.getByText('Charts')).toBeInTheDocument();
   });
@@ -174,15 +186,39 @@ describe('HomePanel', () => {
     expect(screen.getAllByText('Loading cards').length).toBeGreaterThan(0);
   });
 
-  it('shows loading card row when histLoading is true', () => {
-    render(<HomePanel {...defaultProps} histLoading />, { wrapper: makeWrapper() });
-    expect(screen.getAllByText('Loading cards').length).toBeGreaterThan(0);
+  it('shows loading skeleton when recentLoading is true', () => {
+    const artist = { type: 'ARTIST', title: 'The Beatles' } as SonosItem;
+    mockUseRecentlyPlayed.mockReturnValue({ ...defaultRecent, artistItems: [artist], isLoading: true });
+    const { container } = render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
+    expect(container.querySelector('.recentGrid')).toBeInTheDocument();
   });
 
-  it('passes history items to recently played row', () => {
-    const history = [{ name: 'Track 1', type: 'TRACK' } as SonosItem, { name: 'Track 2', type: 'TRACK' } as SonosItem];
-    render(<HomePanel {...defaultProps} history={history} />, { wrapper: makeWrapper() });
-    expect(screen.getByText('Card row (2)')).toBeInTheDocument();
+  it('renders recently played section when data is present', () => {
+    const artist = { type: 'ARTIST', title: 'The Beatles' } as SonosItem;
+    mockUseRecentlyPlayed.mockReturnValue({ ...defaultRecent, artistItems: [artist] });
+    render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
+    expect(screen.getByText(/Recently Played/)).toBeInTheDocument();
+    expect(screen.getByText('Artists')).toBeInTheDocument();
+    expect(screen.getByText('The Beatles')).toBeInTheDocument();
+  });
+
+  it('hides recently played sections when all are empty and not loading', () => {
+    render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
+    expect(screen.queryByText('Recently Played')).not.toBeInTheDocument();
+    expect(screen.queryByText('Artists')).not.toBeInTheDocument();
+    expect(screen.queryByText('Albums')).not.toBeInTheDocument();
+  });
+
+  it('shows user picker when availableUsers are present', () => {
+    const artist = { type: 'ARTIST', title: 'The Beatles' } as SonosItem;
+    mockUseRecentlyPlayed.mockReturnValue({
+      ...defaultRecent,
+      artistItems: [artist],
+      availableUsers: ['joe', 'jane'],
+      currentUserId: 'joe',
+    });
+    render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
+    expect(screen.getByRole('button', { name: /joe/i })).toBeInTheDocument();
   });
 
   it('shows SearchResults on /search path after query resolves', async () => {

@@ -48,13 +48,13 @@ function makeDragItem(t: StatsTrack) {
 }
 
 export function LeaderboardPanel() {
+  const navigate = useNavigate();
   const [period, setPeriod] = useState<StatsPeriod>('week');
   const [view, setView] = useState<'stats' | 'queuedle'>('stats');
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [rankInfoOpen, setRankInfoOpen] = useState(false);
   const { data, isLoading, error, refetch } = useStats(period, selectedUser ?? undefined);
   const rankings = useGameRankings(null, view === 'queuedle');
-  const navigate = useNavigate();
   const { resolveAndOpen } = useResolveAndOpen();
 
   const maxUserCount = data?.topUsers?.[0]?.count ?? 1;
@@ -132,7 +132,7 @@ export function LeaderboardPanel() {
                   <span className={styles.rank}>
                     {i < 3 ? MEDALS[i] : <span className={styles.rankNum}>{i + 1}</span>}
                   </span>
-                  <span className={styles.userName}>{r.userName}</span>
+                  <button className={styles.userNameBtn} onClick={() => navigate(`/profile/${encodeURIComponent(r.userName)}`)}>{r.userName}</button>
                   <div className={styles.barWrap}>
                     <div
                       className={styles.bar}
@@ -178,7 +178,7 @@ export function LeaderboardPanel() {
                     <span className={styles.rank}>
                       {i < 3 ? MEDALS[i] : <span className={styles.rankNum}>{i + 1}</span>}
                     </span>
-                    <span className={styles.userName}>{u.userId}</span>
+                    <button className={styles.userNameBtn} onClick={e => { e.stopPropagation(); navigate(`/profile/${encodeURIComponent(u.userId)}`); }}>{u.userId}</button>
                     <div className={styles.barWrap}>
                       <div className={styles.bar} style={{ width: `${Math.round((u.count / maxUserCount) * 100)}%` }} />
                     </div>

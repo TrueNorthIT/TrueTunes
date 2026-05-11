@@ -84,6 +84,15 @@
       }
     },
     {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2023-01-01",
+      "name": "[concat(variables('storageName'), '/default/playlist-images')]",
+      "dependsOn": ["[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"],
+      "properties": {
+        "publicAccess": "None"
+      }
+    },
+    {
       "type": "Microsoft.SignalRService/webPubSub",
       "apiVersion": "2023-02-01",
       "name": "[variables('webPubSubName')]",
@@ -165,6 +174,34 @@
         "resource": {
           "id": "scores",
           "partitionKey": { "paths": ["/gameId"], "kind": "Hash" }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+      "apiVersion": "2024-02-15-preview",
+      "name": "[concat(variables('cosmosName'), '/truetunes/playlists')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosName'), 'truetunes')]"
+      ],
+      "properties": {
+        "resource": {
+          "id": "playlists",
+          "partitionKey": { "paths": ["/id"], "kind": "Hash" }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+      "apiVersion": "2024-02-15-preview",
+      "name": "[concat(variables('cosmosName'), '/truetunes/profiles')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosName'), 'truetunes')]"
+      ],
+      "properties": {
+        "resource": {
+          "id": "profiles",
+          "partitionKey": { "paths": ["/id"], "kind": "Hash" }
         }
       }
     },

@@ -10,6 +10,7 @@ const { mockSkipToTrack } = vi.hoisted(() => ({
 vi.mock('../../../hooks/useImage',    () => ({ useImage: () => null }));
 vi.mock('../../../hooks/useOpenItem', () => ({ useOpenItem: () => vi.fn() }));
 vi.mock('../../../providers', () => ({ getActiveProvider: () => ({ skipToTrack: mockSkipToTrack }) }));
+vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
 
 const mockUseQueueTrack = vi.fn();
 vi.mock('../../../hooks/useQueueTrack', () => ({
@@ -123,7 +124,7 @@ describe('DraggableQueueRow', () => {
   it('shows attribution when provided', () => {
     const attribution: AttributionEntry = { user: 'alice', timestamp: 0, trackName: 'T', artist: 'A' };
     render(<DraggableQueueRow {...baseProps} attribution={attribution} />);
-    expect(screen.getByText('by alice')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'alice' })).toBeInTheDocument();
   });
 
   it('shows art placeholder when no image is cached', () => {

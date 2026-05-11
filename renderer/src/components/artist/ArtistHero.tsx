@@ -4,6 +4,7 @@ import { useImage } from '../../hooks/useImage';
 import { useDominantColor } from '../../hooks/useDominantColor';
 import { artistQueryOptions } from '../../hooks/useArtistBrowse';
 import { resolveArtistParams, getItemArt, getName } from '../../lib/itemHelpers';
+import { createDragGhost } from '../../lib/dragHelpers';
 import { HeroTrackRow } from './HeroTrackRow';
 import type { SonosItem } from '../../types/sonos';
 import styles from './ArtistHero.module.css';
@@ -64,17 +65,7 @@ export function ArtistHero({
     if (!selected.has(index)) { setSelected(new Set([index])); lastSelected.current = index; }
     e.dataTransfer.effectAllowed = 'copy';
     e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(toMove.map(i => tracks[i].raw)));
-    const ghost = document.createElement('div');
-    Object.assign(ghost.style, {
-      position: 'fixed', top: '-100px', left: '0',
-      background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
-      color: '#fff', padding: '5px 12px', borderRadius: '6px',
-      fontSize: '12px', fontWeight: '600', pointerEvents: 'none', whiteSpace: 'nowrap',
-    });
-    ghost.textContent = toMove.length > 1 ? `${toMove.length} tracks` : getName(tracks[index].raw);
-    document.body.appendChild(ghost);
-    e.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, 20);
-    setTimeout(() => ghost.remove(), 0);
+    createDragGhost(toMove.length > 1 ? `${toMove.length} tracks` : getName(tracks[index].raw), e.dataTransfer);
   }
 
   return (

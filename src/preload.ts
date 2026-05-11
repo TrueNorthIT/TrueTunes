@@ -46,7 +46,7 @@ export interface SonosAPI {
   onAttributionMap: (cb: (map: AttributionMap) => void) => Unsubscribe;
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;
   refreshAttribution: () => Promise<void>;
-  fetchStats: (period: string, userId?: string) => Promise<unknown>;
+  fetchStats: (period: string, userId?: string, count?: number) => Promise<unknown>;
   fetchDailyGame: (date?: string) => Promise<unknown>;
   submitGameScore: (input: {
     gameId: string;
@@ -57,9 +57,24 @@ export interface SonosAPI {
   fetchGameDates: (userName: string) => Promise<unknown>;
   fetchMyScore: (gameId: string, userName: string) => Promise<unknown>;
   fetchGameStats: (date?: string) => Promise<unknown>;
+  fetchRecentlyPlayed: (userId: string) => Promise<unknown>;
   geniusDescription: (trackName: string, artistName: string) => Promise<string | null>;
   geniusArtist: (artistName: string, trackHint?: string) => Promise<unknown>;
   trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
+  fetchPlaylists: (filter: { owner?: string; member?: string }) => Promise<unknown>;
+  fetchPlaylist: (id: string) => Promise<unknown>;
+  createPlaylist: (name: string, isPublic: boolean) => Promise<unknown>;
+  updatePlaylist: (playlistId: string, patch: { name?: string; isPublic?: boolean }) => Promise<unknown>;
+  deletePlaylist: (playlistId: string) => Promise<unknown>;
+  addTrackToPlaylist: (playlistId: string, track: unknown) => Promise<unknown>;
+  removeTrackFromPlaylist: (playlistId: string, uri: string) => Promise<unknown>;
+  reorderPlaylistTracks: (playlistId: string, fromIndex: number, toIndex: number) => Promise<unknown>;
+  joinPlaylist: (playlistId: string, action: 'join' | 'leave') => Promise<unknown>;
+  uploadPlaylistImage: (playlistId: string, data: ArrayBuffer, mimeType: string, userName: string) => Promise<unknown>;
+  ensureFavourites: () => Promise<unknown>;
+  fetchUsers: () => Promise<unknown>;
+  fetchUserProfile: (userName: string) => Promise<unknown>;
+  uploadProfileImage: (userName: string, data: ArrayBuffer, mimeType: string) => Promise<unknown>;
   minimizeWindow:    () => Promise<void>;
   maximizeWindow:    () => Promise<void>;
   closeWindow:       () => Promise<void>;
@@ -161,7 +176,7 @@ contextBridge.exposeInMainWorld('sonos', {
     return () => ipcRenderer.removeListener('attribution:map', listener);
   },
   refreshAttribution: () => ipcRenderer.invoke('attribution:refresh'),
-  fetchStats: (period: string, userId?: string) => ipcRenderer.invoke('stats:fetch', period, userId),
+  fetchStats: (period: string, userId?: string, count?: number) => ipcRenderer.invoke('stats:fetch', period, userId, count),
   fetchDailyGame: (date?: string) => ipcRenderer.invoke('game:fetch', date),
   submitGameScore: (input) => ipcRenderer.invoke('game:submit', input),
   fetchGameLeaderboard: (date?: string) => ipcRenderer.invoke('game:leaderboard', date),
@@ -173,6 +188,8 @@ contextBridge.exposeInMainWorld('sonos', {
     ipcRenderer.on('attribution:event', listener);
     return () => ipcRenderer.removeListener('attribution:event', listener);
   },
+  fetchRecentlyPlayed: (userId: string) =>
+    ipcRenderer.invoke('history:recent', userId),
   geniusDescription: (trackName: string, artistName: string) =>
     ipcRenderer.invoke('genius:description', trackName, artistName),
   geniusArtist: (artistName: string, trackHint?: string) =>
@@ -194,4 +211,18 @@ contextBridge.exposeInMainWorld('sonos', {
     return () => ipcRenderer.removeListener('update:downloaded', listener);
   },
   installUpdate: () => ipcRenderer.invoke('update:install'),
+  fetchPlaylists: (filter) => ipcRenderer.invoke('playlist:list', filter),
+  fetchPlaylist: (id) => ipcRenderer.invoke('playlist:get', id),
+  createPlaylist: (name, isPublic) => ipcRenderer.invoke('playlist:create', name, isPublic),
+  updatePlaylist: (playlistId, patch) => ipcRenderer.invoke('playlist:update', playlistId, patch),
+  deletePlaylist: (playlistId) => ipcRenderer.invoke('playlist:delete', playlistId),
+  addTrackToPlaylist: (playlistId, track) => ipcRenderer.invoke('playlist:addTrack', playlistId, track),
+  removeTrackFromPlaylist: (playlistId, uri) => ipcRenderer.invoke('playlist:removeTrack', playlistId, uri),
+  reorderPlaylistTracks: (playlistId, fromIndex, toIndex) => ipcRenderer.invoke('playlist:reorderTracks', playlistId, fromIndex, toIndex),
+  joinPlaylist: (playlistId, action) => ipcRenderer.invoke('playlist:join', playlistId, action),
+  uploadPlaylistImage: (playlistId, data, mimeType, userName) => ipcRenderer.invoke('playlist:uploadImage', playlistId, data, mimeType, userName),
+  ensureFavourites: () => ipcRenderer.invoke('profile:ensureFavourites'),
+  fetchUsers: () => ipcRenderer.invoke('users:list'),
+  fetchUserProfile: (userName) => ipcRenderer.invoke('profile:get', userName),
+  uploadProfileImage: (userName, data, mimeType) => ipcRenderer.invoke('profile:uploadImage', userName, data, mimeType),
 } satisfies SonosAPI);

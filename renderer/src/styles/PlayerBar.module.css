@@ -200,6 +200,13 @@
   color: #1ed760;
   background: rgba(255, 255, 255, 0.08);
 }
+.ctrl.favourited {
+  color: #e85d7a;
+}
+.ctrl.favourited:hover:not(:disabled) {
+  color: #ff6b8a;
+  background: rgba(232, 93, 122, 0.1);
+}
 
 .playBtn {
   width: 36px;

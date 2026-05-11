@@ -296,33 +296,39 @@ describe('LeaderboardPanel', () => {
   });
 
   describe('user drill-down', () => {
+    function clickAliceRow() {
+      // The username button navigates to profile (stopPropagation).
+      // Clicking the row div (via the medal/rank span) drills into that user's stats.
+      fireEvent.click(screen.getByRole('button', { name: 'alice' }).closest('div[class]')!);
+    }
+
     it('navigates to user stats when a user row is clicked', () => {
       render(<LeaderboardPanel />);
-      fireEvent.click(screen.getByText('alice'));
+      clickAliceRow();
       expect(mockUseStats).toHaveBeenCalledWith('week', 'alice');
     });
 
     it('shows the selected username as the title', () => {
       render(<LeaderboardPanel />);
-      fireEvent.click(screen.getByText('alice'));
+      clickAliceRow();
       expect(screen.getByRole('heading', { name: 'alice' })).toBeInTheDocument();
     });
 
     it('hides the top queuers section when a user is selected', () => {
       render(<LeaderboardPanel />);
-      fireEvent.click(screen.getByText('alice'));
+      clickAliceRow();
       expect(screen.queryByText('Top queuers')).toBeNull();
     });
 
     it('shows a back button when a user is selected', () => {
       render(<LeaderboardPanel />);
-      fireEvent.click(screen.getByText('alice'));
+      clickAliceRow();
       expect(screen.getByTitle('Back')).toBeInTheDocument();
     });
 
     it('returns to leaderboard when back button is clicked', () => {
       render(<LeaderboardPanel />);
-      fireEvent.click(screen.getByText('alice'));
+      clickAliceRow();
       fireEvent.click(screen.getByTitle('Back'));
 
       expect(screen.getByText('Leaderboard')).toBeInTheDocument();

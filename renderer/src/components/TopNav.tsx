@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { useUserProfile } from '../hooks/useUserProfile';
+import { useImage } from '../hooks/useImage';
 import {
   ChevronLeft,
   ChevronRight,
@@ -7,7 +9,6 @@ import {
   Trophy,
   Search,
   X,
-  User,
   RefreshCw,
   Gamepad2,
   Lightbulb,
@@ -42,14 +43,17 @@ export function TopNav({
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [searchText, setSearchText] = useState(searchParams.get('q') ?? '');
-  const [nameOpen, setNameOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [nameValue, setNameValue] = useState('');
   const [groupOpen, setGroupOpen] = useState(false);
   const [appVersion, setAppVersion] = useState<string | null>(null);
-  const popoverRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
   const groupRef = useRef<HTMLDivElement>(null);
 
   // React Router sets window.history.state = { idx, key } on every navigation
+  const { data: profile } = useUserProfile(displayName ?? undefined);
+  const profileArt = useImage(profile?.imageUrl ?? null);
+
   const histIdx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
   const canGoBack = histIdx > 0;
   const canGoForward = histIdx < window.history.length - 1;
@@ -62,19 +66,19 @@ export function TopNav({
   }, []);
 
   useEffect(() => {
-    if (nameOpen) setNameValue(displayName ?? '');
-  }, [nameOpen, displayName]);
+    if (profileOpen) setNameValue('');
+  }, [profileOpen]);
 
   useEffect(() => {
-    if (!nameOpen) return;
+    if (!profileOpen) return;
     function onDown(e: MouseEvent) {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
-        setNameOpen(false);
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
       }
     }
     document.addEventListener('mousedown', onDown);
     return () => document.removeEventListener('mousedown', onDown);
-  }, [nameOpen]);
+  }, [profileOpen]);
 
   useEffect(() => {
     if (!groupOpen) return;
@@ -91,7 +95,7 @@ export function TopNav({
     const trimmed = nameValue.trim();
     if (trimmed) {
       onSaveName(trimmed);
-      setNameOpen(false);
+      setProfileOpen(false);
     }
   }
 
@@ -190,6 +194,65 @@ export function TopNav({
 
             <div className={styles.sep} />
 
+            {/* Profile chip — right of search */}
+            {displayName !== undefined && (
+              <div className={styles.profileWrap} ref={profileRef}>
+                {displayName ? (
+                  <button
+                    className={`${styles.profileChip}${location.pathname.startsWith('/profile/') ? ' ' + styles.profileChipActive : ''}`}
+                    onClick={() => navigate(`/profile/${encodeURIComponent(displayName)}`)}
+                    title="My profile"
+                  >
+                    <span className={styles.profileAvatar}>
+                      {profileArt
+                        ? <img src={profileArt} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', display: 'block' }} />
+                        : displayName[0].toUpperCase()
+                      }
+                    </span>
+                    <span className={styles.profileName}>{displayName}</span>
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      className={`${styles.profileChip}${profileOpen ? ' ' + styles.profileChipOpen : ''}`}
+                      onClick={() => setProfileOpen((o) => !o)}
+                      title="Sign in"
+                    >
+                      <span className={styles.profileSignIn}>Sign in</span>
+                    </button>
+                    {profileOpen && (
+                      <div className={styles.profilePopover}>
+                        <div className={styles.profileChangeLabel}>Enter your name to get started</div>
+                        <input
+                          className={styles.nameInput}
+                          value={nameValue}
+                          placeholder="Your name"
+                          onChange={(e) => setNameValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') submitName();
+                            if (e.key === 'Escape') setProfileOpen(false);
+                          }}
+                          maxLength={32}
+                          spellCheck={false}
+                          autoFocus
+                        />
+                        <button
+                          className={styles.nameSaveBtn}
+                          onClick={submitName}
+                          disabled={!nameValue.trim()}
+                        >
+                          Sign in
+                        </button>
+                        <div className={styles.versionRow}>
+                          {appVersion && <div className={styles.appVersion}>v{appVersion}</div>}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
             {isAuthed && groups.length === 0 ? (
               <button className={styles.iconBtn} onClick={onResync} title="Reconnect">
                 <RefreshCw size={14} />
@@ -219,45 +282,6 @@ export function TopNav({
                         {g.name}
                       </button>
                     ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {displayName !== undefined && (
-              <div className={styles.nameWrap} ref={popoverRef}>
-                <button
-                  className={`${styles.iconBtn}${nameOpen ? ' ' + styles.active : ''}`}
-                  onClick={() => setNameOpen((o) => !o)}
-                  title={displayName ?? 'Set your name'}
-                >
-                  <User size={15} />
-                </button>
-                {nameOpen && (
-                  <div className={styles.namePopover}>
-                    <div className={styles.namePopoverLabel}>Display name</div>
-                    <input
-                      className={styles.nameInput}
-                      value={nameValue}
-                      onChange={(e) => setNameValue(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') submitName();
-                        if (e.key === 'Escape') setNameOpen(false);
-                      }}
-                      maxLength={32}
-                      spellCheck={false}
-                      autoFocus
-                    />
-                    <button
-                      className={styles.nameSaveBtn}
-                      onClick={submitName}
-                      disabled={!nameValue.trim() || nameValue.trim() === displayName}
-                    >
-                      Save
-                    </button>
-                    <div className={styles.versionRow}>
-                      {appVersion && <div className={styles.appVersion}>v{appVersion}</div>}
-                    </div>
                   </div>
                 )}
               </div>

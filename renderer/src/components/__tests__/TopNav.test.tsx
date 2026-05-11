@@ -13,6 +13,14 @@ vi.mock('react-router-dom', () => ({
   useSearchParams: () => mockUseSearchParams(),
 }));
 
+vi.mock('../../hooks/useUserProfile', () => ({
+  useUserProfile: () => ({ data: null, isLoading: false }),
+}));
+
+vi.mock('../../hooks/useImage', () => ({
+  useImage: () => null,
+}));
+
 const defaultProps = {
   isAuthed: true,
   groups: [{ id: 'g1', name: 'Living Room', coordinatorId: 'g1', providerId: 'sonos' as const }],
@@ -90,22 +98,20 @@ describe('TopNav', () => {
     expect(onChangelogOpen).toHaveBeenCalled();
   });
 
-  it('shows user name popover when User icon is clicked', async () => {
+  it('navigates to profile page when profile chip is clicked (signed in)', async () => {
     const user = userEvent.setup();
     render(<TopNav {...defaultProps} />);
-    await user.click(screen.getByTitle('Alice'));
-    expect(screen.getByText('Display name')).toBeInTheDocument();
+    await user.click(screen.getByTitle('My profile'));
+    expect(mockNavigate).toHaveBeenCalledWith('/profile/Alice');
   });
 
-  it('calls onSaveName with trimmed name when Save is clicked', async () => {
+  it('calls onSaveName with trimmed name when Sign in is submitted (unauthenticated)', async () => {
     const onSaveName = vi.fn();
     const user = userEvent.setup();
-    render(<TopNav {...defaultProps} displayName="Alice" onSaveName={onSaveName} />);
-    await user.click(screen.getByTitle('Alice'));
-    const input = screen.getByDisplayValue('Alice');
-    await user.clear(input);
-    await user.type(input, 'Bob');
-    await user.click(screen.getByText('Save'));
+    render(<TopNav {...defaultProps} displayName={null} onSaveName={onSaveName} />);
+    await user.click(screen.getByTitle('Sign in'));
+    await user.type(screen.getByPlaceholderText('Your name'), 'Bob');
+    await user.click(screen.getAllByText('Sign in')[1]);
     expect(onSaveName).toHaveBeenCalledWith('Bob');
   });
 
@@ -127,10 +133,10 @@ describe('TopNav', () => {
     expect(onResync).toHaveBeenCalled();
   });
 
-  it('shows app version in name popover after load', async () => {
+  it('shows app version in sign-in popover after load (unauthenticated)', async () => {
     const user = userEvent.setup();
-    render(<TopNav {...defaultProps} />);
-    await user.click(screen.getByTitle('Alice'));
+    render(<TopNav {...defaultProps} displayName={null} />);
+    await user.click(screen.getByTitle('Sign in'));
     await waitFor(() => expect(screen.getByText('v1.0.0')).toBeInTheDocument());
   });
 

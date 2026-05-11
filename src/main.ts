@@ -1236,6 +1236,146 @@ ipcMain.handle('telemetry:event', (_: IpcMainInvokeEvent, name: string, props?: 
   telemetry.event(name, props);
 });
 
+ipcMain.handle('playlist:list', async (_: IpcMainInvokeEvent, filter: { owner?: string; member?: string }) => {
+  try {
+    const params = new URLSearchParams();
+    if (filter.owner) params.set('owner', filter.owner);
+    if (filter.member) params.set('member', filter.member);
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/playlists?${params}`);
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle('playlist:get', async (_: IpcMainInvokeEvent, id: string) => {
+  try {
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(id)}`);
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle('playlist:create', (_: IpcMainInvokeEvent, name: string, isPublic: boolean) =>
+  playlistFetch(`${PUBSUB_FUNCTION_URL}/api/playlists`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, isPublic, owner: config.displayName }),
+  }),
+);
+
+async function playlistFetch(url: string, init: RequestInit): Promise<unknown> {
+  const res = await fetch(url, init);
+  const body = await res.json().catch(() => ({})) as { error?: string };
+  if (!res.ok) throw new Error(body.error ?? `Server error ${res.status}`);
+  return body;
+}
+
+ipcMain.handle('playlist:addTrack', (_: IpcMainInvokeEvent, playlistId: string, track: unknown) =>
+  playlistFetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/tracks`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ track, userName: config.displayName }),
+  }),
+);
+
+ipcMain.handle('playlist:join', (_: IpcMainInvokeEvent, playlistId: string, action: 'join' | 'leave') =>
+  playlistFetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/members`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userName: config.displayName, action }),
+  }),
+);
+
+ipcMain.handle('profile:ensureFavourites', async () => {
+  const userName = config.displayName;
+  if (!userName) throw new Error('No display name set');
+  return playlistFetch(`${PUBSUB_FUNCTION_URL}/api/profile/${encodeURIComponent(userName)}/favourites`, {
+    method: 'POST',
+  });
+});
+
+ipcMain.handle('playlist:delete', (_: IpcMainInvokeEvent, playlistId: string) =>
+  playlistFetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userName: config.displayName ?? '' }),
+  }),
+);
+
+ipcMain.handle('playlist:update', (_: IpcMainInvokeEvent, playlistId: string, patch: { name?: string; isPublic?: boolean }) =>
+  playlistFetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userName: config.displayName, ...patch }),
+  }),
+);
+
+ipcMain.handle('playlist:removeTrack', (_: IpcMainInvokeEvent, playlistId: string, uri: string) =>
+  playlistFetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/tracks`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userName: config.displayName, uri }),
+  }),
+);
+
+ipcMain.handle('playlist:reorderTracks', (_: IpcMainInvokeEvent, playlistId: string, fromIndex: number, toIndex: number) =>
+  playlistFetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/tracks`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userName: config.displayName, fromIndex, toIndex }),
+  }),
+);
+
+ipcMain.handle('playlist:uploadImage', async (_: IpcMainInvokeEvent, playlistId: string, data: ArrayBuffer, mimeType: string, userName: string) => {
+  try {
+    const url = `${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/image?userName=${encodeURIComponent(userName)}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': mimeType },
+      body: Buffer.from(data),
+    });
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle('users:list', async () => {
+  const exclude = config.displayName ?? '';
+  const params = exclude ? `?exclude=${encodeURIComponent(exclude)}` : '';
+  try {
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/users${params}`);
+    const body = await res.json() as unknown;
+    return Array.isArray(body) ? body : [];
+  } catch {
+    return [];
+  }
+});
+
+ipcMain.handle('profile:get', async (_: IpcMainInvokeEvent, userName: string) => {
+  try {
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/profile/${encodeURIComponent(userName)}`);
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle('profile:uploadImage', async (_: IpcMainInvokeEvent, userName: string, data: ArrayBuffer, mimeType: string) => {
+  try {
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/profile/${encodeURIComponent(userName)}/image`, {
+      method: 'POST',
+      headers: { 'Content-Type': mimeType },
+      body: Buffer.from(data),
+    });
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
 ipcMain.handle(
   'pubsub:publishQueued',
   async (_: IpcMainInvokeEvent, item: { eventType: 'track' | 'album'; uri: string; trackName: string; artist: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }) => {
@@ -1261,10 +1401,21 @@ ipcMain.handle(
   }
 );
 
-ipcMain.handle('stats:fetch', async (_: IpcMainInvokeEvent, period: string, userId?: string) => {
+ipcMain.handle('stats:fetch', async (_: IpcMainInvokeEvent, period: string, userId?: string, count?: number) => {
   try {
     let url = `${PUBSUB_FUNCTION_URL}/api/stats?period=${encodeURIComponent(period)}`;
     if (userId) url += `&userId=${encodeURIComponent(userId)}`;
+    if (count)  url += `&count=${count}`;
+    const res = await fetch(url);
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle('history:recent', async (_: IpcMainInvokeEvent, userId: string) => {
+  try {
+    const url = `${PUBSUB_FUNCTION_URL}/api/recently-played?userId=${encodeURIComponent(userId)}`;
     const res = await fetch(url);
     return await res.json();
   } catch (err) {

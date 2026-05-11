@@ -1,0 +1,427 @@
+.panel {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: calc(var(--player-h) + 24px);
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+
+.header {
+  padding: calc(var(--nav-h) + 24px) 28px 24px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.04), transparent);
+}
+
+.headerContent {
+  display: flex;
+  gap: 24px;
+  align-items: flex-end;
+}
+
+.coverArt {
+  width: 180px;
+  height: 180px;
+  border-radius: var(--r-md);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 64px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.coverArtOwner { cursor: pointer; }
+
+.coverArtImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.coverArtOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.coverArtOwner:hover .coverArtOverlay { opacity: 1; }
+.coverArtUploading { opacity: 1 !important; }
+
+.headerInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+
+.playlistLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.playlistName {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.6px;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.playlistNameEditable {
+  cursor: text;
+}
+.playlistNameEditable:hover { opacity: 0.8; }
+
+.renameInput {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.6px;
+  line-height: 1.1;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-family: inherit;
+  outline: none;
+  width: 100%;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.ownerLink {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+  color: var(--text-2);
+  cursor: pointer;
+  font-weight: 500;
+}
+.ownerLink:hover { color: var(--text); text-decoration: underline; }
+
+.metaDot { color: var(--text-3); }
+
+.badge {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.playAllBtn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.playAllBtn:hover { background: rgba(255, 255, 255, 0.18); }
+
+.joinBtn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.joinBtn:hover { border-color: var(--border-2); color: var(--text); background: rgba(255,255,255,0.05); }
+.joined { color: var(--text-3); }
+
+.deleteBtn {
+  background: none;
+  border: 1px solid rgba(255, 80, 80, 0.3);
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  color: rgba(255, 80, 80, 0.6);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.deleteBtn:hover { border-color: rgba(255, 80, 80, 0.7); color: rgba(255, 80, 80, 1); background: rgba(255,80,80,0.08); }
+
+.deleteConfirmBtn {
+  background: rgba(255, 80, 80, 0.15);
+  border: 1px solid rgba(255, 80, 80, 0.5);
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  color: rgba(255, 100, 100, 1);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.deleteConfirmBtn:hover { background: rgba(255, 80, 80, 0.25); }
+
+.cancelBtn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cancelBtn:hover { border-color: var(--border-2); color: var(--text-2); }
+
+/* ── Track table ─────────────────────────────────────────────────────────── */
+
+.tracks {
+  padding: 8px 28px 8px;
+  --playlist-cols: 32px 40px 3fr 1.4fr 56px;
+}
+
+.tableHeader {
+  display: grid;
+  grid-template-columns: var(--playlist-cols);
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-3);
+  text-transform: uppercase;
+}
+
+.trackRow {
+  display: grid;
+  grid-template-columns: var(--playlist-cols);
+  align-items: center;
+  gap: 12px;
+  padding: 5px 8px;
+  border-radius: var(--r-sm);
+  transition: background 0.12s;
+  cursor: grab;
+}
+.trackRow:active { cursor: grabbing; }
+.trackRow:hover { background: var(--bg-2); }
+.trackRow:hover .addBtn { opacity: 1; }
+.trackRow:hover .removeBtn { opacity: 1; }
+
+.ordinalCell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.ordinal {
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.dragHandle {
+  display: none;
+  font-size: 14px;
+  color: var(--text-3);
+  cursor: grab;
+  line-height: 1;
+}
+.trackRow:hover .dragHandle { display: block; }
+.trackRow:hover .ordinal { display: none; }
+
+.dropLine {
+  height: 2px;
+  background: rgba(255, 255, 255, 0.5);
+  margin: 1px 8px;
+  border-radius: 1px;
+}
+
+.trackArtWrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg-1);
+  flex-shrink: 0;
+}
+.trackArt { width: 100%; height: 100%; object-fit: cover; display: block; }
+.trackArtPh { width: 100%; height: 100%; background: var(--bg-2); }
+
+.trackMain {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.trackName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trackArtist {
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trackAlbum {
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.trackAddedBy {
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.addedByLink {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.addedByLink:hover { color: var(--text); text-decoration: underline; }
+
+.trackControls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.addBtn {
+  width: 26px;
+  height: 26px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  opacity: 0;
+  flex-shrink: 0;
+}
+.addBtn:hover { border-color: var(--border-2); color: var(--text-2); background: var(--bg-2); }
+
+.removeBtn {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  opacity: 0;
+  transition: color 0.12s, opacity 0.12s;
+  flex-shrink: 0;
+}
+.removeBtn:hover { color: rgba(255, 80, 80, 0.9); }
+
+.emptyMsg {
+  font-size: 13px;
+  color: var(--text-3);
+  padding: 32px 8px;
+}
+
+/* ── Members section ─────────────────────────────────────────────────────── */
+
+.section {
+  padding: 0 28px;
+  margin-top: 32px;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-2);
+  margin-bottom: 12px;
+  letter-spacing: -0.2px;
+}
+
+.memberList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.memberChip {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.memberChip:hover { border-color: var(--border-2); color: var(--text); background: rgba(255,255,255,0.05); }
+
+/* ── Skeleton ────────────────────────────────────────────────────────────── */
+
+.skelBlock {
+  border-radius: 4px;
+  background: var(--bg-1);
+  animation: skelPulse 1.8s ease-in-out infinite;
+}
