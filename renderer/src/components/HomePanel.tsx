@@ -303,7 +303,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                     <span
                       className={styles.userDropdown}
                       ref={pickerRef}
-                      data-tooltip={isPickerLocked ? "Complete Today's Quedle to see your colleagues' recently played" : undefined}
+                      data-tooltip={isPickerLocked ? "Complete Today's Queuedle to see your colleagues' recently played" : undefined}
                     >
                       <button
                         className={styles.userDropdownTrigger}

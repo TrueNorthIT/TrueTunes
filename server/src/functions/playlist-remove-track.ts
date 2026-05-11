@@ -29,8 +29,8 @@ export async function playlistRemoveTrackHandler(
     const resource = await withOCC(
       () => container.item(id, id).read(),
       (doc) => {
-        if (doc.owner !== userName && !doc.members.includes(userName)) {
-          throw Object.assign(new Error('Not a member of this playlist'), { statusCode: 403 });
+        if (doc.owner !== userName) {
+          throw Object.assign(new Error('Only the owner can remove tracks'), { statusCode: 403 });
         }
         const tracks: { uri: string }[] = doc.tracks ?? [];
         const firstIdx = tracks.findIndex((t) => t.uri === uri);

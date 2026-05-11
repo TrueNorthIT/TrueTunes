@@ -146,11 +146,13 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
     queryClient.setQueryData(['playlist', id], { ...playlist, tracks: newTracks });
     try {
       await window.sonos.reorderPlaylistTracks(id, from, index);
+      queryClient.invalidateQueries({ queryKey: ['playlist', id] });
+      queryClient.invalidateQueries({ queryKey: ['playlists', 'owned', displayName] });
     } catch {
       queryClient.setQueryData(['playlist', id], snapshot);
       showToast('Failed to reorder tracks');
     }
-  }, [playlist, id, queryClient]);
+  }, [playlist, id, queryClient, displayName]);
 
   const handleDragEnd = useCallback(() => {
     setDragOverIndex(null);

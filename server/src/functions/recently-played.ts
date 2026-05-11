@@ -61,7 +61,11 @@ export async function recentlyPlayedHandler(
   const userId = request.query.get('userId');
   if (!userId) return { status: 400, jsonBody: { error: 'userId required' } };
 
-  const days    = parseInt(request.query.get('days') ?? '7', 10);
+  const daysRaw = parseInt(request.query.get('days') ?? '7', 10);
+  if (!Number.isInteger(daysRaw) || daysRaw < 1) {
+    return { status: 400, jsonBody: { error: 'days must be a positive integer' } };
+  }
+  const days    = Math.min(daysRaw, 30);
   const startMs = Date.now() - days * 24 * 60 * 60 * 1000;
 
   try {

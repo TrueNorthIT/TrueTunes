@@ -43,12 +43,6 @@ export async function playlistUploadImageHandler(
     return { status: 500, jsonBody: { error: 'Storage or Cosmos not configured' } };
   }
 
-  // Verify ownership before uploading to storage
-  const cosmos = new CosmosClient(cosmosConn);
-  const { resource: playlistDoc } = await cosmos.database(dbName).container('playlists').item(id, id).read();
-  if (!playlistDoc) return { status: 404, jsonBody: { error: 'Playlist not found' } };
-  if (playlistDoc.owner !== userName) return { status: 403, jsonBody: { error: 'Only the owner can change the playlist image' } };
-
   const mimeType = request.headers.get('content-type')?.split(';')[0]?.trim() ?? '';
   const ext = ALLOWED_TYPES[mimeType];
   if (!ext) {
@@ -60,6 +54,11 @@ export async function playlistUploadImageHandler(
   if (body.byteLength > 5 * 1024 * 1024) return { status: 413, jsonBody: { error: 'Image must be under 5 MB' } };
 
   try {
+    // Verify ownership before uploading to storage
+    const cosmos = new CosmosClient(cosmosConn);
+    const { resource: playlistDoc } = await cosmos.database(dbName).container('playlists').item(id, id).read<{ owner: string }>();
+    if (!playlistDoc) return { status: 404, jsonBody: { error: 'Playlist not found' } };
+    if (playlistDoc.owner !== userName) return { status: 403, jsonBody: { error: 'Only the owner can change the playlist image' } };
     const { accountName, accountKey } = parseConnStr(storageConn);
     const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
     const blobServiceClient = new BlobServiceClient(
