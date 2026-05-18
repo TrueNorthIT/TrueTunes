@@ -72,12 +72,47 @@
   flex-shrink: 0;
   overflow: hidden;
 }
+.trackLine {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  min-width: 0;
+}
 .trackName {
   font-size: 13px;
   font-weight: 600;
   color: #fff;
   white-space: nowrap;
   overflow: hidden;
+  min-width: 0;
+}
+.trackSep {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+  white-space: pre;
+}
+.trackArtist {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+button.trackArtist {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.12s;
+}
+button.trackArtist:hover {
+  text-decoration: underline;
 }
 
 @keyframes tt-scroll {
@@ -254,6 +289,16 @@
   animation: volFadeIn 0.12s ease;
 }
 
+/* Invisible bridge so hover stays continuous between icon and popover */
+.volPopover::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 8px;
+}
+
 @keyframes volFadeIn {
   from {
     opacity: 0;
@@ -299,4 +344,25 @@
 }
 .volSliderV:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+.volStep {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.12s, background 0.12s;
+}
+.volStep:hover:not(:disabled) {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+.volStep:disabled {
+  opacity: 0.3;
+  cursor: default;
 }

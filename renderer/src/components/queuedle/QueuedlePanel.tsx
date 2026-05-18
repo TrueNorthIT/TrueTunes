@@ -8,11 +8,16 @@ import {
   useGameRankings,
   useMyScore,
   useGameStats,
+  computeQueuedleRating,
+  getGameRankTier,
 } from '../../hooks/useDailyGame';
+import type { GameRanking } from '../../hooks/useDailyGame';
 import { QueuedleIntro } from './QueuedleIntro';
 import { QueuedleQuestionCard } from './QueuedleQuestionCard';
 import { QueuedleBonusScreen } from './QueuedleBonusScreen';
 import { QueuedleBonusResults } from './QueuedleBonusResults';
+import { QueuedleRankChange } from './QueuedleRankChange';
+import type { RankSnapshot } from './QueuedleRankChange';
 import { QueuedleSummary } from './QueuedleSummary';
 import { QueuedleCalendar } from './QueuedleCalendar';
 import { ScoreDistribution } from './ScoreDistribution';
@@ -20,7 +25,7 @@ import { MyScores } from './MyScores';
 import { getGameRankIcon } from '../../lib/gameRankAssets';
 import styles from '../../styles/Queuedle.module.css';
 
-type Phase = 'intro' | 'main' | 'bonus' | 'bonus-results' | 'summary';
+type Phase = 'intro' | 'main' | 'bonus' | 'bonus-results' | 'rank-change' | 'summary';
 type LeaderboardTab = 'today' | 'ranked';
 
 function londonDateToday(): string {
@@ -55,7 +60,9 @@ export function QueuedlePanel() {
 
   const leaderboard = useGameLeaderboard(gameId ?? undefined);
   const gameDates = useGameDates(displayName ?? undefined);
-  const rankings = useGameRankings(displayName ?? undefined, leaderboardTab === 'ranked');
+  // Always fetch rankings (not just when "Ranked" tab is open) so the post-game
+  // rank-change screen has the user's prior totals available.
+  const rankings = useGameRankings(displayName ?? undefined, true);
   const myScore = useMyScore(gameId, displayName);
   const gameStats = useGameStats(gameId);
   const alreadyPlayed = useMemo(() => {
@@ -96,6 +103,9 @@ export function QueuedlePanel() {
   const [localScore, setLocalScore] = useState<{ main: number; bonus: number } | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [devReplay, setDevReplay] = useState(false);
+  // Snapshot of the user's prior ranking row, captured once before today's submission.
+  // undefined = not captured yet; null = captured, user has no prior games.
+  const [beforeRanking, setBeforeRanking] = useState<GameRanking | null | undefined>(undefined);
 
   // Backfill localStorage from the cloud when the leaderboard shows the user has
   // played but the local key is missing (fresh install, cleared cache, new machine).
@@ -129,6 +139,48 @@ export function QueuedlePanel() {
     }
   }, [game, bonusSelections.length]);
 
+  // Capture the user's prior rankings row exactly once, before today's submission
+  // refetches the rankings query (which would include today's score and ruin the delta).
+  useEffect(() => {
+    if (!displayName) return;
+    if (beforeRanking !== undefined) return;
+    if (rankings.isLoading) return;
+    if (localScore !== null) return; // user already submitted; don't capture after the fact
+    const row = rankings.data?.find((r) => r.userName === displayName) ?? null;
+    setBeforeRanking(row);
+  }, [displayName, rankings.data, rankings.isLoading, beforeRanking, localScore]);
+
+  const afterRanking = useMemo<RankSnapshot | null>(() => {
+    if (!localScore || !game || beforeRanking === undefined) return null;
+    const todayScore = localScore.main + localScore.bonus;
+    const todayMax = game.questions.length * 2;
+    const totalScore = (beforeRanking?.totalScore ?? 0) + todayScore;
+    const possibleScore = (beforeRanking?.possibleScore ?? 0) + todayMax;
+    const gamesPlayed = (beforeRanking?.gamesPlayed ?? 0) + 1;
+    const averagePercent = possibleScore > 0 ? (totalScore / possibleScore) * 100 : 0;
+    const tier = getGameRankTier(averagePercent, gamesPlayed);
+    return {
+      rating: computeQueuedleRating(averagePercent),
+      averagePercent,
+      gamesPlayed,
+      tierKey: tier.key,
+      tierName: tier.name,
+      isProvisional: tier.isProvisional,
+    };
+  }, [localScore, game, beforeRanking]);
+
+  const beforeRankSnapshot = useMemo<RankSnapshot | null>(() => {
+    if (!beforeRanking) return null;
+    return {
+      rating: computeQueuedleRating(beforeRanking.averagePercent),
+      averagePercent: beforeRanking.averagePercent,
+      gamesPlayed: beforeRanking.gamesPlayed,
+      tierKey: beforeRanking.tierKey,
+      tierName: beforeRanking.tierName,
+      isProvisional: beforeRanking.isProvisional,
+    };
+  }, [beforeRanking]);
+
   function resetGameState() {
     setPhase('intro');
     setCurrentIdx(0);
@@ -138,6 +190,7 @@ export function QueuedlePanel() {
     setBonusSelections([]);
     setLocalScore(null);
     setDevReplay(false);
+    setBeforeRanking(undefined);
   }
 
   function handleDevPlayAgain() {
@@ -524,7 +577,7 @@ export function QueuedlePanel() {
         {headerActions}
       </div>
       <div className={styles.body}>
-        {phase !== 'intro' && phase !== 'summary' && phase !== 'bonus-results' && (
+        {phase !== 'intro' && phase !== 'summary' && phase !== 'bonus-results' && phase !== 'rank-change' && (
           <div className={styles.progress}>
             {pips.map((cls, i) => (
               <div key={i} className={`${styles.pip}${cls ? ' ' + cls : ''}`} />
@@ -559,6 +612,19 @@ export function QueuedlePanel() {
           <QueuedleBonusResults
             winningItems={winningItems}
             bonusGuesses={bonusGuesses}
+            onContinue={() => {
+              // Skip the rank-change beat for dev replays (no real submission) and
+              // when we couldn't compute an "after" snapshot (e.g. no displayName).
+              if (devReplay || !afterRanking) setPhase('summary');
+              else setPhase('rank-change');
+            }}
+          />
+        )}
+
+        {phase === 'rank-change' && afterRanking && (
+          <QueuedleRankChange
+            before={beforeRankSnapshot}
+            after={afterRanking}
             onContinue={() => setPhase('summary')}
           />
         )}

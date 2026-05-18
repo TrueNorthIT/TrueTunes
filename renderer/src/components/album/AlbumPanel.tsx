@@ -5,6 +5,7 @@ import { useImage } from '../../hooks/useImage';
 import { useAlbumBrowse } from '../../hooks/useAlbumBrowse';
 import { usePlaylistBrowse } from '../../hooks/usePlaylistBrowse';
 import { useDominantColor } from '../../hooks/useDominantColor';
+import { useGeniusAlbumYear } from '../../hooks/useGeniusAlbumYear';
 import { artistQueryOptions } from '../../hooks/useArtistBrowse';
 import { resolveAlbumParams, isPlaylist, isProgram, getItemArt } from '../../lib/itemHelpers';
 import { createDragGhost } from '../../lib/dragHelpers';
@@ -53,6 +54,10 @@ export function AlbumPanel({ onAddToQueue }: Props) {
   const artUrl = data?.artUrl ?? (item ? getItemArt(item) : null);
   const cachedArt     = useImage(artUrl);
   const dominantColor = useDominantColor(cachedArt, { setGlobal: true });
+  const year = useGeniusAlbumYear(
+    isPlaylistOrProgram ? null : title,
+    isPlaylistOrProgram ? null : artist,
+  );
 
   useEffect(() => {
     setSelected(new Set());
@@ -120,7 +125,7 @@ export function AlbumPanel({ onAddToQueue }: Props) {
             )}
             {data && (
               <div className={styles.metaLine}>
-                {[data.totalTracks + ' songs', totalMins > 0 ? totalMins + ' min' : null].filter(Boolean).join(' \u2022 ')}
+                {[data.totalTracks + ' songs', totalMins > 0 ? totalMins + ' min' : null, year].filter(Boolean).join(' \u2022 ')}
               </div>
             )}
             <div className={styles.actions}>
