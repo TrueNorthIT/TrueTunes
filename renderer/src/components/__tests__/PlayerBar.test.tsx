@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PlayerBar } from '../PlayerBar';
@@ -308,24 +308,41 @@ describe('PlayerBar — seek bar', () => {
 // ─── volume ───────────────────────────────────────────────────────────────────
 
 describe('PlayerBar — volume button', () => {
-  it('clicking Volume button shows the popover', async () => {
-    const { user } = setup();
-    await user.click(screen.getByTitle('Volume'));
+  it('hovering the Volume button shows the popover', () => {
+    const { container } = setup();
+    const wrap = container.querySelector('[class*="volWrap"]') as HTMLElement;
+    fireEvent.mouseEnter(wrap);
     expect(screen.getByRole('slider')).toBeInTheDocument();
   });
 
-  it('clicking outside volume popover closes it', async () => {
-    const { user } = setup();
-    await user.click(screen.getByTitle('Volume'));
+  it('moving the mouse away closes the popover after a delay', async () => {
+    const { container } = setup();
+    const wrap = container.querySelector('[class*="volWrap"]') as HTMLElement;
+    fireEvent.mouseEnter(wrap);
     expect(screen.getByRole('slider')).toBeInTheDocument();
-    await user.click(document.body);
-    expect(screen.queryByRole('slider')).not.toBeInTheDocument();
+    fireEvent.mouseLeave(wrap);
+    await waitFor(() => expect(screen.queryByRole('slider')).not.toBeInTheDocument());
   });
 
-  it('shows current volume percentage in popover', async () => {
-    const { user } = setup({ volume: 72 }, { volume: 72 });
-    await user.click(screen.getByTitle('Volume'));
+  it('shows current volume percentage in popover', () => {
+    const { container } = setup({ volume: 72 }, { volume: 72 });
+    const wrap = container.querySelector('[class*="volWrap"]') as HTMLElement;
+    fireEvent.mouseEnter(wrap);
     expect(screen.getByText('72')).toBeInTheDocument();
+  });
+
+  it('clicking the icon mutes when volume is non-zero', async () => {
+    setup({ volume: 60 }, { volume: 60 });
+    fireEvent.click(screen.getByTitle('Mute'));
+    await waitFor(() => expect(window.sonos.setGroupVolume).toHaveBeenCalledWith(0));
+  });
+
+  it('clicking the icon while muted restores the previous volume', async () => {
+    setup({ volume: 60 }, { volume: 60 });
+    fireEvent.click(screen.getByTitle('Mute'));
+    await waitFor(() => expect(window.sonos.setGroupVolume).toHaveBeenLastCalledWith(0));
+    fireEvent.click(screen.getByTitle('Unmute'));
+    await waitFor(() => expect(window.sonos.setGroupVolume).toHaveBeenLastCalledWith(60));
   });
 });
 
