@@ -183,7 +183,7 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
     displayTrack, displayArtist, cachedArt, dominantColor,
     elapsedLabel, durationLabel, progressPct, durationMs,
     isPlaying, isVisible, shuffle, repeat, volume, isExplicit,
-    albumItem, prefetchAlbum,
+    albumItem, artistItem, prefetchAlbum,
     currentObjectId, currentServiceId, currentAccountId, artUrlRaw,
   } = useNowPlaying(playback);
 
@@ -250,17 +250,27 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
             )}
           </div>
           <div className={styles.trackInfo}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                overflow: "hidden",
-              }}
-            >
+            <div className={styles.trackLine}>
               <ScrollingText
-                text={`${displayTrack || "—"}${displayArtist ? ` - ${displayArtist}` : ""}`}
+                text={displayTrack || "—"}
                 className={styles.trackName}
               />
+              {displayArtist && (
+                <>
+                  <span className={styles.trackSep}>{' – '}</span>
+                  {artistItem ? (
+                    <button
+                      type="button"
+                      className={styles.trackArtist}
+                      onClick={() => openItem(artistItem)}
+                    >
+                      {displayArtist}
+                    </button>
+                  ) : (
+                    <span className={styles.trackArtist}>{displayArtist}</span>
+                  )}
+                </>
+              )}
               {isExplicit && <ExplicitBadge />}
             </div>
             <div className={styles.progressSection}>

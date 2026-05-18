@@ -72,12 +72,47 @@
   flex-shrink: 0;
   overflow: hidden;
 }
+.trackLine {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  min-width: 0;
+}
 .trackName {
   font-size: 13px;
   font-weight: 600;
   color: #fff;
   white-space: nowrap;
   overflow: hidden;
+  min-width: 0;
+}
+.trackSep {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+  white-space: pre;
+}
+.trackArtist {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+button.trackArtist {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.12s;
+}
+button.trackArtist:hover {
+  text-decoration: underline;
 }
 
 @keyframes tt-scroll {
