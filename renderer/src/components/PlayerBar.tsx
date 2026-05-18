@@ -21,6 +21,8 @@ import {
   PictureInPicture2,
   MicVocal,
   Heart,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import type { PlaybackState } from "../hooks/usePlayback";
 import styles from "../styles/PlayerBar.module.css";
@@ -102,6 +104,18 @@ function VolumeButton({ volume }: { volume: number }) {
     }, 150);
   };
 
+  const step = (delta: number) => {
+    setLocalVol((prev) => {
+      const next = Math.max(0, Math.min(100, prev + delta));
+      if (next === prev) return prev;
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        getActiveProvider().setVolume(next);
+      }, 150);
+      return next;
+    });
+  };
+
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
@@ -118,6 +132,15 @@ function VolumeButton({ volume }: { volume: number }) {
       {open && (
         <div className={styles.volPopover}>
           <span className={styles.volPct}>{localVol}</span>
+          <button
+            className={styles.volStep}
+            onClick={() => step(+1)}
+            disabled={localVol >= 100}
+            title="Volume up"
+            aria-label="Volume up"
+          >
+            <ChevronUp size={14} />
+          </button>
           <input
             className={styles.volSliderV}
             type="range"
@@ -129,6 +152,15 @@ function VolumeButton({ volume }: { volume: number }) {
             }}
             onChange={handleChange}
           />
+          <button
+            className={styles.volStep}
+            onClick={() => step(-1)}
+            disabled={localVol <= 0}
+            title="Volume down"
+            aria-label="Volume down"
+          >
+            <ChevronDown size={14} />
+          </button>
         </div>
       )}
       <button

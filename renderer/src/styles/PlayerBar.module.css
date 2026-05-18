@@ -300,3 +300,24 @@
 .volSliderV:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+
+.volStep {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.12s, background 0.12s;
+}
+.volStep:hover:not(:disabled) {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+.volStep:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
