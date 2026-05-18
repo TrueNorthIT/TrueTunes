@@ -183,11 +183,10 @@ function buildBonus(
 }
 
 function itemsOverlap(a: GameItem, b: GameItem): boolean {
-  if (a.category === b.category && a.id === b.id) return true;
+  if (a.category !== b.category) return true;
+  if (a.id === b.id) return true;
   if (a.artistKey && b.artistKey && a.artistKey === b.artistKey) {
-    if (a.category === 'artist' || b.category === 'artist') return true;
-    if (a.category === 'album' && b.category === 'track') return true;
-    if (a.category === 'track' && b.category === 'album') return true;
+    if (a.category === 'artist') return true;
   }
   if (a.albumKey && b.albumKey && a.albumKey === b.albumKey) {
     return true;
