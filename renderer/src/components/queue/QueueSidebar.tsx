@@ -1,7 +1,7 @@
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, Fragment, forwardRef } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
-import { applyReorderLocally } from '../../lib/queueHelpers';
+import { applyReorderLocally, expandToAlbumBlock } from '../../lib/queueHelpers';
 import { createDragGhost } from '../../lib/dragHelpers';
 import { getActiveProvider } from '../../providers';
 import { useAttribution } from '../../hooks/useAttribution';
@@ -78,6 +78,19 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
       enabled: !!(item.track.id && item.track.serviceId && item.track.accountId),
     })),
   });
+
+  // Album ids per item, resolved from useTrackDetails (the same data the queue row
+  // uses to render the album link) with the raw NormalizedTrack value as fallback.
+  // Sonos rarely embeds album info on raw queue rows so the resolved value is what
+  // the "Select album" button must match against.
+  const resolvedAlbumIds = useMemo<(string | null)[]>(
+    () =>
+      items.map((item, i) => {
+        const fromDetails = trackDetailsResults[i]?.data?.albumId;
+        return (fromDetails ?? item.track.albumId) || null;
+      }),
+    [items, trackDetailsResults],
+  );
 
   const [nowMs, setNowMs] = useState(0);
   useEffect(() => { setNowMs(Date.now()); }, [positionMs]);
@@ -346,14 +359,41 @@ onClick={handleContentClick}
       {selCount > 0 && (
         <div className={styles.selBar}>
           <span>{selCount} track{selCount !== 1 ? 's' : ''} selected</span>
-          <button className={styles.selDelBtn} onClick={async () => {
-            const indices = [...selected];
-            setItems(prev => prev.filter((_, i) => !selected.has(i)));
-            setSelected(new Set());
-            await getActiveProvider().removeFromQueue(indices).catch(() => { onRefresh(); onError('Failed to remove tracks'); });
-          }}>
-            Delete
-          </button>
+          <div className={styles.selActions}>
+            {selCount === 1 && (() => {
+              const anchor = [...selected][0];
+              const anchorTrack = items[anchor]?.track;
+              if (!anchorTrack) return null;
+              const block = expandToAlbumBlock(items.length, anchor, resolvedAlbumIds);
+              // Hide the button when there's nothing to expand to — keeps the bar
+              // from offering an action that would be a no-op (or that grabbed the
+              // whole queue back when this had an artist fallback).
+              if (block.size <= 1) return null;
+              const resolvedAlbumName =
+                trackDetailsResults[anchor]?.data?.albumName ?? anchorTrack.albumName;
+              const tooltip = `Expand to all ${block.size} tracks from ${resolvedAlbumName ?? 'this album'} in sequence`;
+              return (
+                <button
+                  className={styles.selExpandBtn}
+                  title={tooltip}
+                  onClick={() => {
+                    setSelected(block);
+                    lastSelected.current = anchor;
+                  }}
+                >
+                  Select album
+                </button>
+              );
+            })()}
+            <button className={styles.selDelBtn} onClick={async () => {
+              const indices = [...selected];
+              setItems(prev => prev.filter((_, i) => !selected.has(i)));
+              setSelected(new Set());
+              await getActiveProvider().removeFromQueue(indices).catch(() => { onRefresh(); onError('Failed to remove tracks'); });
+            }}>
+              Delete
+            </button>
+          </div>
         </div>
       )}
     </div>

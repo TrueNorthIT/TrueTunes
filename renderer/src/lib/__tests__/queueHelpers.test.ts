@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applyReorderLocally } from '../queueHelpers';
+import { applyReorderLocally, expandToAlbumBlock } from '../queueHelpers';
 
 // Using plain strings — applyReorderLocally is generic, no QueueItem needed here.
 const items = ['A', 'B', 'C', 'D', 'E'];
@@ -73,5 +73,54 @@ describe('applyReorderLocally', () => {
 
   it('toIndex at the very end equals length', () => {
     expect(applyReorderLocally(['A', 'B', 'C'], [0], 3)).toEqual(['B', 'C', 'A']);
+  });
+});
+
+describe('expandToAlbumBlock', () => {
+  it('selects a contiguous run of tracks sharing an albumId', () => {
+    const albumIds = ['A', 'A', 'A', 'B'];
+    expect([...expandToAlbumBlock(albumIds.length, 1, albumIds)].sort((a, b) => a - b)).toEqual([0, 1, 2]);
+  });
+
+  it('stops at the boundary of a different album', () => {
+    const albumIds = ['A', 'B', 'B', 'A'];
+    expect([...expandToAlbumBlock(albumIds.length, 1, albumIds)].sort((a, b) => a - b)).toEqual([1, 2]);
+  });
+
+  it('returns just the anchor when anchor has no albumId (no artist fallback)', () => {
+    const albumIds = [null, null, null];
+    expect([...expandToAlbumBlock(albumIds.length, 0, albumIds)]).toEqual([0]);
+  });
+
+  it('returns just the anchor when an empty-string albumId is passed', () => {
+    const albumIds = ['', '', ''];
+    expect([...expandToAlbumBlock(albumIds.length, 0, albumIds)]).toEqual([0]);
+  });
+
+  it('returns just the anchor when neighbours have different albums', () => {
+    const albumIds = ['A', 'B', 'C'];
+    expect([...expandToAlbumBlock(albumIds.length, 1, albumIds)]).toEqual([1]);
+  });
+
+  it('handles anchor at the start of the list', () => {
+    const albumIds = ['A', 'A', 'B'];
+    expect([...expandToAlbumBlock(albumIds.length, 0, albumIds)].sort((a, b) => a - b)).toEqual([0, 1]);
+  });
+
+  it('handles anchor at the end of the list', () => {
+    const albumIds = ['B', 'A', 'A'];
+    expect([...expandToAlbumBlock(albumIds.length, 2, albumIds)].sort((a, b) => a - b)).toEqual([1, 2]);
+  });
+
+  it('returns just the anchor when anchor is out of bounds', () => {
+    const albumIds = ['A'];
+    expect([...expandToAlbumBlock(albumIds.length, 5, albumIds)]).toEqual([5]);
+  });
+
+  it('does not run away when missing-albumId neighbours sit between two same-album items', () => {
+    // Regression: previous artist-fallback code could grab unmatched neighbours.
+    // With a strict same-album-id match, a null between two A's stops expansion.
+    const albumIds = ['A', null, 'A'];
+    expect([...expandToAlbumBlock(albumIds.length, 0, albumIds)]).toEqual([0]);
   });
 });
