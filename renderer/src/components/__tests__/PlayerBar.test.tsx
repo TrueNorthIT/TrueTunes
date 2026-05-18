@@ -144,7 +144,8 @@ describe('PlayerBar — visibility', () => {
 describe('PlayerBar — track info', () => {
   it('displays track and artist name', () => {
     setup();
-    expect(screen.getByText('Test Track - Test Artist')).toBeInTheDocument();
+    expect(screen.getByText('Test Track')).toBeInTheDocument();
+    expect(screen.getByText('Test Artist')).toBeInTheDocument();
   });
 
   it('shows elapsed and duration labels', () => {
