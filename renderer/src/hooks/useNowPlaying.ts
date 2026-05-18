@@ -46,6 +46,13 @@ export function useNowPlaying(playback: PlaybackState) {
     resource: { type: 'ALBUM', id: { objectId: albumId, serviceId: svcId, accountId: accId } },
   } as SonosItem : null;
 
+  const artistId = td?.artistId;
+  const artistItem: SonosItem | null = artistId ? {
+    title: displayArtist ?? '',
+    type: 'ARTIST',
+    resource: { type: 'ARTIST', id: { objectId: artistId, serviceId: svcId, accountId: accId } },
+  } as SonosItem : null;
+
   return {
     // Display values
     displayTrack, displayArtist, albumName, albumId,
@@ -61,6 +68,7 @@ export function useNowPlaying(playback: PlaybackState) {
     artUrlRaw: td?.artUrl ?? artUrl ?? null,
     // Derived
     albumItem,
+    artistItem,
     prefetchAlbum,
   };
 }
