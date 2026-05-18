@@ -21,6 +21,16 @@ vi.mock('@/hooks/useDailyGame', () => ({
   useGameRankings: (userName?: string | null, enabled?: boolean) => mockUseGameRankings(userName, enabled),
   useMyScore: (gameId: string | null, userName: string | null | undefined) => mockUseMyScore(gameId, userName),
   useGameStats: (gameId: string | null) => mockUseGameStats(gameId),
+  computeQueuedleRating: (averagePercent: number) =>
+    Math.round(Math.max(0, Math.min(100, averagePercent)) * 30),
+  getGameRankTier: (averagePercent: number, gamesPlayed: number) => {
+    if (gamesPlayed < 3) return { key: 'provisional', name: 'Provisional', isProvisional: true };
+    if (averagePercent >= 85) return { key: 'playlist-prophet', name: 'Playlist Prophet', isProvisional: false };
+    if (averagePercent >= 70) return { key: 'algorithm-whisperer', name: 'Algorithm Whisperer', isProvisional: false };
+    if (averagePercent >= 55) return { key: 'aux-cable-apprentice', name: 'Aux Cable Apprentice', isProvisional: false };
+    if (averagePercent >= 40) return { key: 'background-bopper', name: 'Background Bopper', isProvisional: false };
+    return { key: 'skip-button-survivor', name: 'Skip Button Survivor', isProvisional: false };
+  },
 }));
 
 vi.mock('../QueuedleIntro', () => ({

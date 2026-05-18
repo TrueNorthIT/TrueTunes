@@ -7,10 +7,18 @@ export interface GameRanking {
   averageMain: number;
   averageBonus: number;
   averagePercent: number;
+  totalScore: number;
+  possibleScore: number;
   bestTotal: number;
   tierKey: GameRankTierKey;
   tierName: string;
   isProvisional: boolean;
+}
+
+// 0-100% mapped to a 0-3000 SR-like rating, used by the post-game rank-change screen.
+export function computeQueuedleRating(averagePercent: number): number {
+  if (!Number.isFinite(averagePercent)) return 0;
+  return Math.round(Math.max(0, Math.min(100, averagePercent)) * 30);
 }
 
 interface RankingAccumulator {
@@ -124,6 +132,8 @@ export function calculateGameRankings(sources: GameRankingSource[]): GameRanking
         averageMain: entry.mainScore / entry.gamesPlayed,
         averageBonus: entry.bonusScore / entry.gamesPlayed,
         averagePercent,
+        totalScore: entry.totalScore,
+        possibleScore: entry.possibleScore,
         bestTotal: entry.bestTotal,
         tierKey: tier.key,
         tierName: tier.name,
