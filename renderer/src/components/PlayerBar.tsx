@@ -94,9 +94,7 @@ function VolumeButton({ volume }: { volume: number }) {
     if (!dragging.current) setLocalVol(volume);
   }, [volume]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = Number(e.target.value);
-    setLocalVol(val);
+  const commitVolume = (val: number) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       getActiveProvider().setVolume(val);
