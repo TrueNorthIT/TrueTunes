@@ -81,6 +81,14 @@ vi.mock('../QueuedleBonusResults', () => ({
     </div>
   ),
 }));
+vi.mock('../QueuedleRankChange', () => ({
+  QueuedleRankChange: ({ onContinue }: { onContinue: () => void }) => (
+    <div>
+      Rank change
+      <button onClick={onContinue}>Continue Rank</button>
+    </div>
+  ),
+}));
 vi.mock('../QueuedleSummary', () => ({
   QueuedleSummary: ({ mainScore, bonusScore }: { mainScore: number; bonusScore: number }) => (
     <div>Score: {mainScore + bonusScore}</div>
@@ -290,6 +298,7 @@ describe('QueuedlePanel', () => {
     await user.click(screen.getByText('Submit Bonus'));
     await waitFor(() => screen.getByText('Bonus results'));
     await user.click(screen.getByText('See Score'));
+    await user.click(screen.getByText('Continue Rank'));
     expect(screen.getByText('Score: 2')).toBeInTheDocument();
   });
 
@@ -304,6 +313,7 @@ describe('QueuedlePanel', () => {
     await user.click(screen.getByText('Submit Bonus'));
     await waitFor(() => screen.getByText('Bonus results'));
     await user.click(screen.getByText('See Score'));
+    await user.click(screen.getByText('Continue Rank'));
     expect(screen.getByText('Score: 2')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Ranked' })).toBeInTheDocument();
   });
@@ -319,6 +329,7 @@ describe('QueuedlePanel', () => {
     await user.click(screen.getByText('Submit Bonus'));
     await waitFor(() => screen.getByText('Bonus results'));
     await user.click(screen.getByText('See Score'));
+    await user.click(screen.getByText('Continue Rank'));
     expect(screen.getByText('Score: 1')).toBeInTheDocument();
   });
 
@@ -334,6 +345,7 @@ describe('QueuedlePanel', () => {
     await user.click(screen.getByText('Submit Bonus'));
     await waitFor(() => screen.getByText('Bonus results'));
     await user.click(screen.getByText('See Score'));
+    await user.click(screen.getByText('Continue Rank'));
     // main=1 (picked left, winner is left), bonus=0 (bonusSelections all null, topQueuer is 'alice')
     expect(screen.getByText('Score: 1')).toBeInTheDocument();
   });
@@ -359,6 +371,7 @@ describe('QueuedlePanel', () => {
     await flushPromises();
     expect(screen.getByText('Bonus results')).toBeInTheDocument();
     await user.click(screen.getByText('See Score'));
+    await user.click(screen.getByText('Continue Rank'));
     expect(screen.getByText('Score: 1')).toBeInTheDocument();
   });
 
@@ -416,7 +429,9 @@ describe('QueuedlePanel', () => {
     localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
     render(<QueuedlePanel />);
     await waitFor(() => expect(screen.getByRole('tab', { name: 'Ranked' })).toBeInTheDocument());
-    await waitFor(() => expect(mockUseGameRankings).toHaveBeenLastCalledWith('TestUser', false));
+    // Rankings are now always enabled so the post-game rank-change screen has the
+    // user's prior totals available without a tab switch.
+    await waitFor(() => expect(mockUseGameRankings).toHaveBeenLastCalledWith('TestUser', true));
   });
 
   it('clicking Ranked shows average total rankings', async () => {
