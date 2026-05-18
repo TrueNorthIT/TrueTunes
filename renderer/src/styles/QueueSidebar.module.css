@@ -337,6 +337,12 @@
 
 .selBar span { font-size: 12px; color: var(--text-2); }
 
+.selActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .selDelBtn {
   background: none;
   border: 1px solid rgba(255,80,80,0.4);
@@ -349,6 +355,20 @@
   background: rgba(255,60,60,0.15);
   border-color: rgba(255,80,80,0.7);
   color: #ff6464;
+}
+
+.selExpandBtn {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: var(--text-2);
+  font-size: 11px; font-weight: 600; font-family: inherit;
+  padding: 4px 12px; border-radius: 12px;
+  cursor: pointer; transition: all 0.15s;
+}
+.selExpandBtn:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.35);
+  color: var(--text);
 }
 
 /* ── Misc ── */

@@ -21,6 +21,8 @@ import {
   PictureInPicture2,
   MicVocal,
   Heart,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import type { PlaybackState } from "../hooks/usePlayback";
 import styles from "../styles/PlayerBar.module.css";
@@ -84,7 +86,8 @@ function VolumeButton({ volume }: { volume: number }) {
   const [open, setOpen] = useState(false);
   const [localVol, setLocalVol] = useState(volume);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const preMuteRef = useRef<number>(volume > 0 ? volume : 50);
 
   // Sync incoming WS volume only when the user isn't actively dragging
   const dragging = useRef(false);
@@ -92,9 +95,7 @@ function VolumeButton({ volume }: { volume: number }) {
     if (!dragging.current) setLocalVol(volume);
   }, [volume]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = Number(e.target.value);
-    setLocalVol(val);
+  const commitVolume = (val: number) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       getActiveProvider().setVolume(val);
@@ -102,22 +103,75 @@ function VolumeButton({ volume }: { volume: number }) {
     }, 150);
   };
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = Number(e.target.value);
+    setLocalVol(val);
+    if (val > 0) preMuteRef.current = val;
+    commitVolume(val);
+  };
+
+  const step = (delta: number) => {
+    setLocalVol((prev) => {
+      const next = Math.max(0, Math.min(100, prev + delta));
+      if (next === prev) return prev;
+      if (next > 0) preMuteRef.current = next;
+      commitVolume(next);
+      return next;
+    });
+  };
+
+  const toggleMute = () => {
+    if (localVol > 0) {
+      preMuteRef.current = localVol;
+      setLocalVol(0);
+      commitVolume(0);
+    } else {
+      const restored = preMuteRef.current > 0 ? preMuteRef.current : 50;
+      setLocalVol(restored);
+      commitVolume(restored);
+    }
+  };
+
+  const handleEnter = () => {
+    if (closeRef.current) {
+      clearTimeout(closeRef.current);
+      closeRef.current = null;
+    }
+    setOpen(true);
+  };
+
+  const handleLeave = () => {
+    if (closeRef.current) clearTimeout(closeRef.current);
+    closeRef.current = setTimeout(() => setOpen(false), 150);
+  };
+
   useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+    return () => {
+      if (closeRef.current) clearTimeout(closeRef.current);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+  }, []);
+
+  const muted = localVol === 0;
 
   return (
-    <div ref={wrapRef} className={styles.volWrap}>
+    <div
+      className={styles.volWrap}
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+    >
       {open && (
         <div className={styles.volPopover}>
           <span className={styles.volPct}>{localVol}</span>
+          <button
+            className={styles.volStep}
+            onClick={() => step(+1)}
+            disabled={localVol >= 100}
+            title="Volume up"
+            aria-label="Volume up"
+          >
+            <ChevronUp size={14} />
+          </button>
           <input
             className={styles.volSliderV}
             type="range"
@@ -129,12 +183,22 @@ function VolumeButton({ volume }: { volume: number }) {
             }}
             onChange={handleChange}
           />
+          <button
+            className={styles.volStep}
+            onClick={() => step(-1)}
+            disabled={localVol <= 0}
+            title="Volume down"
+            aria-label="Volume down"
+          >
+            <ChevronDown size={14} />
+          </button>
         </div>
       )}
       <button
         className={styles.ctrl}
-        onClick={() => setOpen((o) => !o)}
-        title="Volume"
+        onClick={toggleMute}
+        title={muted ? "Unmute" : "Mute"}
+        aria-label={muted ? "Unmute" : "Mute"}
       >
         <VolumeIconGlyph volume={localVol} />
       </button>
@@ -151,7 +215,7 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
     displayTrack, displayArtist, cachedArt, dominantColor,
     elapsedLabel, durationLabel, progressPct, durationMs,
     isPlaying, isVisible, shuffle, repeat, volume, isExplicit,
-    albumItem, prefetchAlbum,
+    albumItem, artistItem, prefetchAlbum,
     currentObjectId, currentServiceId, currentAccountId, artUrlRaw,
   } = useNowPlaying(playback);
 
@@ -218,17 +282,27 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
             )}
           </div>
           <div className={styles.trackInfo}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                overflow: "hidden",
-              }}
-            >
+            <div className={styles.trackLine}>
               <ScrollingText
-                text={`${displayTrack || "—"}${displayArtist ? ` - ${displayArtist}` : ""}`}
+                text={displayTrack || "—"}
                 className={styles.trackName}
               />
+              {displayArtist && (
+                <>
+                  <span className={styles.trackSep}>{' – '}</span>
+                  {artistItem ? (
+                    <button
+                      type="button"
+                      className={styles.trackArtist}
+                      onClick={() => openItem(artistItem)}
+                    >
+                      {displayArtist}
+                    </button>
+                  ) : (
+                    <span className={styles.trackArtist}>{displayArtist}</span>
+                  )}
+                </>
+              )}
               {isExplicit && <ExplicitBadge />}
             </div>
             <div className={styles.progressSection}>
