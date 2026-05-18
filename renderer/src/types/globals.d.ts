@@ -339,6 +339,7 @@ interface SonosPreload {
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;
   geniusDescription: (trackName: string, artistName: string) => Promise<GeniusDomNode | null>;
   geniusArtist: (artistName: string, trackHint?: string) => Promise<GeniusArtistInfo | null>;
+  geniusAlbumYear: (albumName: string, artistName: string) => Promise<number | null>;
   /** Fire-and-forget telemetry event routed through the main process. No-op when App Insights is not configured. */
   trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
   minimizeWindow:    () => Promise<void>;

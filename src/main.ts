@@ -1914,6 +1914,44 @@ ipcMain.handle('genius:artist', async (_: IpcMainInvokeEvent, artistName: string
   }
 });
 
+ipcMain.handle('genius:albumYear', async (_: IpcMainInvokeEvent, albumName: string, artistName: string) => {
+  const key = process.env.GENIUS_ACCESS_TOKEN;
+  if (!key) {
+    log('[genius] GENIUS_ACCESS_TOKEN not set — skipping albumYear');
+    return null;
+  }
+
+  const debugReq = (id: string, url: string, ts: number) =>
+    httpDebugWin?.webContents.send('http:req', { id, ts, operationId: 'genius:albumYear', method: 'GET', url, headers: { Authorization: 'Bearer ***' } });
+  const debugRes = (id: string, status: number, body: string, ts: number) =>
+    httpDebugWin?.webContents.send('http:res', { id, status, statusText: String(status), headers: {}, body, durationMs: Date.now() - ts });
+
+  try {
+    const searchUrl = `https://api.genius.com/search?q=${encodeURIComponent(`${albumName} ${artistName}`)}`;
+    const searchId = randomUUID(); const searchTs = Date.now();
+    debugReq(searchId, searchUrl, searchTs);
+    const searchRes = await fetch(searchUrl, { headers: { Authorization: `Bearer ${key}` } });
+    const searchBody = await searchRes.text();
+    debugRes(searchId, searchRes.status, searchBody, searchTs);
+    if (!searchRes.ok) return null;
+
+    type Hit = {
+      result: {
+        primary_artist: { name: string } | null;
+        release_date_components: { year: number | null } | null;
+      };
+    };
+    const searchData = JSON.parse(searchBody) as { response: { hits: Hit[] } };
+    const hits = searchData.response?.hits ?? [];
+    const lower = artistName.toLowerCase();
+    const hit = hits.find((h) => h.result.primary_artist?.name?.toLowerCase().includes(lower)) ?? hits[0];
+    return hit?.result?.release_date_components?.year ?? null;
+  } catch (err) {
+    log(`[genius] albumYear error: ${err}`);
+    return null;
+  }
+});
+
 // ─── Application menu ────────────────────────────────────────────────────────
 
 function buildMenu(): void {
