@@ -144,3 +144,8 @@ vite.config.ts.timestamp-*
 .vite/
 
 release/
+
+# Tauri / Rust
+src-tauri/target/
+src-tauri/gen/schemas/
+

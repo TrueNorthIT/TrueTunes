@@ -1,4 +1,4 @@
-// Ambient declarations for contextBridge APIs injected by preload.ts
+// Ambient declarations for the window.sonos bridge installed by tauriBridge.ts
 
 type GeniusDomNode = string | { tag: string; children?: GeniusDomNode[]; attributes?: Record<string, string> };
 

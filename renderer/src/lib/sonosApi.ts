@@ -1,6 +1,6 @@
 // renderer/src/lib/sonosApi.ts
 // ES module version of the Sonos API client.
-// Calls window.sonos.fetch (set by preload contextBridge) under the hood.
+// Calls window.sonos.fetch (set by tauriBridge) under the hood.
 
 // ─── IPC types ───────────────────────────────────────────────────────────────
 

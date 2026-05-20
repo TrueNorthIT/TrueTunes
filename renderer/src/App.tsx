@@ -119,7 +119,7 @@ useEffect(() => {
 
   const splashReadyRef = useRef(false);
   useEffect(() => {
-    const splashReady = isAuthed && groups.length > 0;
+    const splashReady = isAuthed;
     if (!splashReady || splashReadyRef.current) return;
     splashReadyRef.current = true;
     window.sonos
@@ -415,7 +415,7 @@ useEffect(() => {
     staleTime: 5 * 60 * 1000,
   });
 
-  const splashReady = isAuthed && groups.length > 0 && !ytmLoading;
+  const splashReady = isAuthed && (groups.length === 0 || !ytmLoading);
 
   return (
     <ToastProvider>

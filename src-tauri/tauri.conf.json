@@ -1,0 +1,62 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "True Tunes",
+  "version": "1.0.38",
+  "identifier": "uk.co.truenorthit.truetunes",
+  "build": {
+    "beforeDevCommand": "npm run dev:renderer",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "npm run build:renderer",
+    "frontendDist": "../renderer/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "True Tunes",
+        "width": 1280,
+        "height": 720,
+        "minWidth": 1144,
+        "minHeight": 480,
+        "decorations": false,
+        "backgroundColor": "#1c1c1e",
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "dialog": false,
+      "pubkey": "REPLACE_ME_WITH_TAURI_SIGNING_PUBLIC_KEY",
+      "endpoints": [
+        "https://github.com/TrueNorthIT/TrueTunes/releases/latest/download/latest.json"
+      ]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": [
+      "icons/icon.ico"
+    ],
+    "publisher": "True North IT",
+    "copyright": "Copyright © 2026 True North IT",
+    "category": "Music",
+    "shortDescription": "Sonos Web Player proxy app",
+    "longDescription": "True Tunes — Sonos web player and queue manager for True North IT.",
+    "resources": [],
+    "windows": {
+      "signCommand": "signtool sign /fd sha256 /tr http://timestamp.digicert.com /td sha256 /sha1 %TRUETUNES_SIGN_SHA1% %1",
+      "nsis": {
+        "displayLanguageSelector": false,
+        "installerIcon": "icons/icon.ico",
+        "installMode": "perMachine"
+      }
+    }
+  }
+}
