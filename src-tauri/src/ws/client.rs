@@ -1,3 +1,4 @@
+use super::creds;
 use super::ticket;
 use crate::sonos::operations::{BASE_URL, SPOOF_UA};
 use crate::sonos::SonosState;
@@ -57,6 +58,10 @@ pub struct WsClient {
     handle: RwLock<Option<WsHandle>>,
     state: Arc<SonosState>,
     pub groups: RwLock<Vec<GroupInfo>>,
+    /// One-shot push listeners keyed by `"namespace:name"` — fired on the first matching
+    /// unsolicited push frame and then removed. Used to await `devices:devicesStatus`,
+    /// which Sonos delivers separately from the `subscribe` ACK.
+    push_once: Mutex<HashMap<String, oneshot::Sender<Value>>>,
 }
 
 impl WsClient {
@@ -65,6 +70,7 @@ impl WsClient {
             handle: RwLock::new(None),
             state,
             groups: RwLock::new(Vec::new()),
+            push_once: Mutex::new(HashMap::new()),
         }
     }
 
@@ -161,7 +167,7 @@ impl WsClient {
             }
         });
 
-        let read_result = read_loop(app, &mut stream, &pending).await;
+        let read_result = read_loop(app, &mut stream, &pending, &self.push_once).await;
         bootstrap.abort();
         writer.abort();
         *self.handle.write().await = None;
@@ -196,8 +202,30 @@ impl WsClient {
             ids.household_id = Some(household_id.clone());
         }
 
-        // 2) Subscribe to devices — the immediate push carries the topology
-        let devices_payload = handle
+        // 1b) Discover serviceId/accountId from /integrations/registrations. Required for
+        //     every browse / search / nowplaying URL — these endpoints embed :serviceId
+        //     and :accountId rather than the hardcoded platform IDs the queue uses.
+        if let Some(token) = self.state.token().await {
+            match creds::discover_primary(&token, &household_id).await {
+                Ok((sid, aid)) => {
+                    let mut ids = self.state.ids.write().await;
+                    ids.service_id = Some(sid);
+                    ids.account_id = Some(aid);
+                }
+                Err(e) => eprintln!("[ws] service-creds discovery failed: {e}"),
+            }
+        }
+
+        // 2) Subscribe to devices — but the topology arrives as a SEPARATE push frame
+        //    (`devices:devicesStatus`), not in the subscribe ACK. Install a one-shot
+        //    waiter, then send subscribe, then await the push with a 10s timeout.
+        let (push_tx, push_rx) = oneshot::channel::<Value>();
+        self.push_once
+            .lock()
+            .await
+            .insert("devices:devicesStatus".into(), push_tx);
+
+        let _ack = handle
             .send(
                 json!({
                     "namespace": "devices",
@@ -207,6 +235,18 @@ impl WsClient {
                 json!({}),
             )
             .await?;
+
+        let devices_payload = match tokio::time::timeout(Duration::from_secs(10), push_rx).await {
+            Ok(Ok(p)) => p,
+            Ok(Err(_)) => return Err("devices push channel dropped".into()),
+            Err(_) => {
+                self.push_once
+                    .lock()
+                    .await
+                    .remove("devices:devicesStatus");
+                return Err("devices push timeout — no Sonos devices reachable?".into());
+            }
+        };
 
         let groups = extract_groups(&devices_payload);
         if let Some(g) = groups.first() {
@@ -218,6 +258,25 @@ impl WsClient {
 
         let _ = app.emit("ws:groups", &groups);
         let _ = app.emit("ws:ready", ());
+
+        // 3) Subscribe to playbackExtended + groupVolume for the active group so the
+        //    renderer receives playback/volume push updates.
+        if let Some(g) = groups.first() {
+            let gid = g.id.clone();
+            let _ = handle
+                .send(
+                    json!({ "namespace": "playbackExtended", "groupId": gid, "command": "subscribe" }),
+                    json!({}),
+                )
+                .await;
+            let _ = handle
+                .send(
+                    json!({ "namespace": "groupVolume", "groupId": gid, "command": "subscribe" }),
+                    json!({}),
+                )
+                .await;
+        }
+
         Ok(())
     }
 }
@@ -226,6 +285,7 @@ async fn read_loop<S>(
     app: &AppHandle,
     stream: &mut S,
     pending: &Arc<Mutex<HashMap<String, oneshot::Sender<Value>>>>,
+    push_once: &Mutex<HashMap<String, oneshot::Sender<Value>>>,
 ) -> Result<(), String>
 where
     S: futures_util::Stream<Item = Result<Message, tokio_tungstenite::tungstenite::Error>> + Unpin,
@@ -254,6 +314,19 @@ where
         if let Some(corr) = header.get("corrId").and_then(|v| v.as_str()) {
             if let Some(responder) = pending.lock().await.remove(corr) {
                 let _ = responder.send(payload.clone());
+            }
+        }
+
+        // Fire one-shot push listeners keyed by "namespace:name" (or "namespace:type").
+        let ns = header.get("namespace").and_then(|v| v.as_str());
+        let name = header
+            .get("name")
+            .and_then(|v| v.as_str())
+            .or_else(|| header.get("type").and_then(|v| v.as_str()));
+        if let (Some(ns), Some(name)) = (ns, name) {
+            let key = format!("{ns}:{name}");
+            if let Some(tx) = push_once.lock().await.remove(&key) {
+                let _ = tx.send(payload.clone());
             }
         }
 

@@ -1,8 +1,9 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "True Tunes",
+  "productName": "True Tunes (Tauri)",
+  "mainBinaryName": "TrueTunes-Tauri",
   "version": "1.0.38",
-  "identifier": "uk.co.truenorthit.truetunes",
+  "identifier": "uk.co.truenorthit.truetunes-tauri",
   "build": {
     "beforeDevCommand": "npm run dev:renderer",
     "devUrl": "http://localhost:5173",
@@ -30,7 +31,7 @@
   },
   "plugins": {
     "updater": {
-      "active": true,
+      "active": false,
       "dialog": false,
       "pubkey": "REPLACE_ME_WITH_TAURI_SIGNING_PUBLIC_KEY",
       "endpoints": [
@@ -51,11 +52,10 @@
     "longDescription": "True Tunes — Sonos web player and queue manager for True North IT.",
     "resources": [],
     "windows": {
-      "signCommand": "signtool sign /fd sha256 /tr http://timestamp.digicert.com /td sha256 /sha1 %TRUETUNES_SIGN_SHA1% %1",
       "nsis": {
         "displayLanguageSelector": false,
         "installerIcon": "icons/icon.ico",
-        "installMode": "perMachine"
+        "installMode": "currentUser"
       }
     }
   }
