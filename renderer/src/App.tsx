@@ -34,7 +34,6 @@ import { LeaderboardPanel } from './components/LeaderboardPanel';
 import { QueuedlePanel } from './components/queuedle/QueuedlePanel';
 import { QueueSidebar, type QueueSidebarHandle } from './components/queue/QueueSidebar';
 import { MiniPlayerShell } from './components/MiniPlayer';
-import { DisplayNameModal } from './components/DisplayNameModal';
 import { FeedbackDialog } from './components/FeedbackDialog';
 import { ChangelogDialog } from './components/ChangelogDialog';
 import { LyricsPanel } from './components/LyricsPanel';
@@ -89,6 +88,8 @@ function MainApp() {
   const [feedbackOpen, setFeedbackOpen]     = useState(false);
   const [changelogOpen, setChangelogOpen]   = useState(false);
   const [displayName, setDisplayName] = useState<string | null | undefined>(undefined); // undefined = not yet loaded
+  const [entraUser, setEntraUser] = useState<EntraUser | null | undefined>(undefined);
+  const [entraLoading, setEntraLoading] = useState(false);
   useEnsureFavourites(displayName);
   const [queueDockedWidth, setQueueDockedWidth] = useState<number>(380);
   const queueSidebarRef = useRef<QueueSidebarHandle>(null);
@@ -99,7 +100,12 @@ function MainApp() {
 
 useEffect(() => {
     window.sonos.getDisplayName().then(setDisplayName);
+    window.sonos.getEntraUser().then(setEntraUser).catch(() => setEntraUser(null));
     window.sonos.getQueueDockedWidth().then(setQueueDockedWidth).catch(() => {});
+    return window.sonos.onEntraReady((user) => {
+      setEntraUser(user);
+      window.sonos.getDisplayName().then(setDisplayName).catch(() => {});
+    });
   }, []);
 
   useEffect(() => {
@@ -435,8 +441,9 @@ useEffect(() => {
         displayName={displayName}
         onSaveName={(name) => {
           const stored = name.trim();
-          window.sonos.setDisplayName(stored).catch(() => {});
-          setDisplayName(stored || null);
+          void window.sonos.setDisplayName(stored).then((result) => {
+            if (!result?.error) setDisplayName(stored || null);
+          }).catch(() => {});
         }}
         onChangelogOpen={() => setChangelogOpen(true)}
       />
@@ -472,7 +479,7 @@ useEffect(() => {
           <Route path="/leaderboard" element={<LeaderboardPanel />} />
           <Route path="/queuedle" element={<QueuedlePanel />} />
           <Route path="/lyrics" element={<LyricsPanel playback={playback} />} />
-          <Route path="/profile/:userName" element={<ProfilePanel onAddToQueue={handleAddToQueue} displayName={displayName} onSignOut={() => { window.sonos.setDisplayName('').catch(() => {}); setDisplayName(null); }} />} />
+          <Route path="/profile/:userName" element={<ProfilePanel onAddToQueue={handleAddToQueue} displayName={displayName} onSignOut={async () => { setDisplayName(null); setEntraUser(null); setEntraLoading(true); await window.sonos.entraSignOut().catch(() => {}); await window.sonos.entraReLogin().catch(() => {}); const name = await window.sonos.getDisplayName().catch(() => null); setDisplayName(name); setEntraLoading(false); }} onChangeName={async (name) => { const result = await window.sonos.renameUser(displayName ?? '', name).catch(() => ({ error: 'network' })); if (!result?.error) setDisplayName(name); return result?.error ? { error: result.error } : null; }} />} />
           <Route path="/playlist/:id" element={<PlaylistPanel displayName={displayName} onAddToQueue={handleAddToQueue} />} />
         </Routes>
         <QueueSidebar
@@ -501,15 +508,10 @@ useEffect(() => {
         displayName={displayName}
       />
       {toastMsg && <div className={styles.toast}>{toastMsg}</div>}
-      {displayName === null && (
-        <DisplayNameModal
-          onSave={(name) => {
-            window.sonos.setDisplayName(name).catch(() => {
-              /* silent */
-            });
-            setDisplayName(name);
-          }}
-        />
+      {entraLoading && (
+        <div className={styles.entraSigningIn}>
+          <span>Signing in with your organisation account…</span>
+        </div>
       )}
       {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
       {changelogOpen && <ChangelogDialog onClose={() => setChangelogOpen(false)} />}

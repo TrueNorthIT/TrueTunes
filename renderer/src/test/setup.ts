@@ -87,5 +87,10 @@ Object.defineProperty(window, 'sonos', {
     fetchUsers:           vi.fn(() => Promise.resolve([])),
     fetchUserProfile:     vi.fn(() => Promise.resolve(null)),
     uploadProfileImage:   vi.fn(pending),
+    getEntraUser:         vi.fn(() => Promise.resolve(null)),
+    entraSignOut:         vi.fn(() => Promise.resolve()),
+    entraReLogin:         vi.fn(() => Promise.resolve()),
+    onEntraReady:         vi.fn(noop),
+    renameUser:           vi.fn(() => Promise.resolve({ ok: true })),
   },
 });

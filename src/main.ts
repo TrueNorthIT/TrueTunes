@@ -4,6 +4,8 @@ loadEnv(); // loads .env from cwd (repo root) in dev; no-op if file absent
 import { app, BrowserWindow, ipcMain, safeStorage, session, shell, Menu, IpcMainInvokeEvent } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { officePubSub } from './pubsub';
+import { EntraAuth } from './auth-entra';
+import type { EntraUser } from './auth-entra';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { readFileSync } from 'fs';
@@ -39,6 +41,12 @@ interface AppConfig {
   queueId?: string;
   /** Display name shown on tracks this user adds to the queue. */
   displayName?: string;
+  /** Entra ID object ID — stable identity tied to the org account. */
+  entraOid?: string;
+  /** Display name sourced from Entra — separate from the user-customisable displayName. */
+  entraName?: string;
+  /** Email address from Entra. */
+  entraEmail?: string;
   /** Last app version the user opened — used to detect first launch on a new version. */
   lastSeenVersion?: string;
   /** Width (px) of the docked queue column. */
@@ -70,6 +78,9 @@ async function loadConfig(): Promise<void> {
     const parsed = JSON.parse(raw) as Partial<AppConfig>;
     // Only load the fields we explicitly persist (not runtime-discovered ones)
     if (typeof parsed.displayName === 'string') config.displayName = parsed.displayName;
+    if (typeof parsed.entraOid === 'string') config.entraOid = parsed.entraOid;
+    if (typeof parsed.entraName === 'string') config.entraName = parsed.entraName;
+    if (typeof parsed.entraEmail === 'string') config.entraEmail = parsed.entraEmail;
     if (typeof parsed.lastSeenVersion === 'string') config.lastSeenVersion = parsed.lastSeenVersion;
     if (typeof parsed.preferredCoordinatorId === 'string') config.preferredCoordinatorId = parsed.preferredCoordinatorId;
     if (typeof parsed.queueDockedWidth === 'number') config.queueDockedWidth = parsed.queueDockedWidth;
@@ -83,6 +94,9 @@ async function saveConfig(): Promise<void> {
     // Only persist non-sensitive, user-set fields
     const toSave: Partial<AppConfig> = {
       displayName: config.displayName,
+      entraOid: config.entraOid,
+      entraName: config.entraName,
+      entraEmail: config.entraEmail,
       lastSeenVersion: config.lastSeenVersion,
       preferredCoordinatorId: config.preferredCoordinatorId,
       queueDockedWidth: config.queueDockedWidth,
@@ -1001,7 +1015,7 @@ function createAuthWindow(): void {
   session.defaultSession.webRequest.onCompleted({ urls: [`${BASE_URL}/api/content/*`] }, (details) => {
     if (details.statusCode === 200 && authWin) {
       log('[auth] /api/content/ 200 — auth confirmed');
-      onAuthReady();
+      void onAuthReady();
     }
   });
 
@@ -1063,12 +1077,91 @@ async function initPubSub(): Promise<void> {
   }
 }
 
-function onAuthReady(): void {
+// ─── Name claim ──────────────────────────────────────────────────────────────
+
+/** Returns true if the name is already owned by a different Entra OID. */
+async function claimDisplayName(oid: string, displayName: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/profile/claim`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ oid, displayName }),
+    });
+    return res.status === 409;
+  } catch {
+    return false; // network failure → allow gracefully
+  }
+}
+
+/** Returns the display name linked to this OID in Cosmos, or null if none. */
+async function lookupProfileByOid(oid: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/profile/lookup?oid=${encodeURIComponent(oid)}`);
+    if (res.status === 404) return null;
+    if (!res.ok) return null;
+    const data = await res.json() as { displayName?: string };
+    return data.displayName ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// ─── Entra auth ───────────────────────────────────────────────────────────────
+
+let entraAuth: EntraAuth | null = null;
+
+async function ensureEntraAuth(forcePrompt?: string): Promise<void> {
+  // Lazy-init so env vars are guaranteed to be loaded (dotenv + build-env.json
+  // run during app startup, before this function is ever called).
+  if (!entraAuth) {
+    const clientId = process.env['ENTRA_CLIENT_ID'];
+    const tenantId = process.env['ENTRA_TENANT_ID'];
+    if (!clientId || !tenantId) {
+      console.warn('[entra] ENTRA_CLIENT_ID / ENTRA_TENANT_ID not set — skipping Entra auth');
+      return;
+    }
+    const cacheFile = path.join(app.getPath('userData'), 'msal-cache.json');
+    entraAuth = new EntraAuth(clientId, tenantId, cacheFile);
+  }
+
+  let user: EntraUser | null = forcePrompt ? null : await entraAuth.acquireTokenSilent();
+  if (!user) {
+    user = await entraAuth.acquireTokenInteractive(forcePrompt);
+  }
+
+  config.entraOid = user.oid;
+  config.entraName = user.name;
+  config.entraEmail = user.email;
+
+  if (!config.displayName) {
+    // No local display name — check Cosmos for an existing profile tied to this OID.
+    const existing = await lookupProfileByOid(user.oid);
+    config.displayName = existing ?? user.name;
+  }
+
+  // Register this display name under this OID (no-op if already claimed; migrates pre-Entra users).
+  claimDisplayName(user.oid, config.displayName).catch(() => {});
+
+  await saveConfig();
+
+  telemetry.setContext({ userId: config.displayName });
+  log('[entra] Authenticated as', user.email, '→', config.displayName);
+  broadcastToRenderers('auth:entra-ready', user);
+}
+
+async function onAuthReady(): Promise<void> {
   if (authConfirmed) return; // fire only once per login
   authConfirmed = true;
   telemetry.event('auth_success');
 
   authWin?.hide();
+
+  try {
+    await ensureEntraAuth();
+  } catch (err) {
+    console.error('[entra] Auth failed:', err);
+    telemetry.exception(err, { phase: 'entra_auth' });
+  }
 
   if (!uiWin) {
     createUIWindow();
@@ -1218,12 +1311,39 @@ ipcMain.handle('win:is-maximized', () => uiWin?.isMaximized() ?? false);
 
 ipcMain.handle('config:getDisplayName', () => config.displayName ?? null);
 
-ipcMain.handle('config:setDisplayName', async (_: IpcMainInvokeEvent, name: string) => {
+ipcMain.handle('config:setDisplayName', async (_: IpcMainInvokeEvent, name: string): Promise<{ error: string } | null> => {
+  // Guard empty name (sign-out path) — skip claim check.
+  if (name && config.entraOid) {
+    const taken = await claimDisplayName(config.entraOid, name);
+    if (taken) return { error: 'taken' };
+  }
   config.displayName = name;
   telemetry.setContext({ userId: name });
   await saveConfig();
-  // Start pubsub now that we have a name (first-time setup path)
   initPubSub().catch(console.error);
+  return null;
+});
+
+ipcMain.handle('auth:getEntraUser', (): EntraUser | null => {
+  if (!config.entraOid) return null;
+  return { oid: config.entraOid, name: config.entraName ?? '', email: config.entraEmail ?? '' };
+});
+
+ipcMain.handle('auth:entraSignOut', async () => {
+  await entraAuth?.signOut();
+  config.entraOid = undefined;
+  config.entraName = undefined;
+  config.entraEmail = undefined;
+  config.displayName = undefined;
+  await saveConfig();
+});
+
+ipcMain.handle('auth:entraReLogin', async () => {
+  try {
+    await ensureEntraAuth('select_account');
+  } catch (err) {
+    console.error('[entra] Re-login failed:', err);
+  }
 });
 
 ipcMain.handle('config:getQueueDockedWidth', () => config.queueDockedWidth ?? 380);
@@ -1371,6 +1491,27 @@ ipcMain.handle('profile:uploadImage', async (_: IpcMainInvokeEvent, userName: st
       body: Buffer.from(data),
     });
     return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle('profile:rename', async (_: IpcMainInvokeEvent, oldName: string, newName: string): Promise<{ ok?: boolean; error?: string }> => {
+  if (!config.entraOid) return { error: 'not-authed' };
+  try {
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/profile/rename`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ oid: config.entraOid, oldName, newName }),
+    });
+    if (res.status === 409) return { error: 'taken' };
+    if (res.status === 403) return { error: 'not-owner' };
+    if (!res.ok) return { error: `server error ${res.status}` };
+    config.displayName = newName;
+    telemetry.setContext({ userId: newName });
+    await saveConfig();
+    initPubSub().catch(console.error);
+    return { ok: true };
   } catch (err) {
     return { error: String(err) };
   }
@@ -2053,11 +2194,8 @@ app.whenReady().then(async () => {
   if (storedToken && (await validateSessionToken(storedToken))) {
     sessionToken = storedToken;
     log('[auth] Restored session from storage');
-    authConfirmed = true;
     telemetry.event('app_started', { sessionRestored: true, appVersion: app.getVersion() });
-    createUIWindow();
-    connectWebSocket().catch(console.error);
-    initPubSub().catch(console.error);
+    void onAuthReady();
   } else {
     if (storedToken) await clearSessionToken(); // clear invalid token
     telemetry.event('app_started', { sessionRestored: false, appVersion: app.getVersion() });

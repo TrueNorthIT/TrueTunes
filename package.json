@@ -10,7 +10,7 @@
   },
   "main": "dist/main.js",
   "scripts": {
-    "build:main": "tsc && node -e \"const fs=require('fs');fs.copyFileSync('src/debug-ws.html','dist/debug-ws.html');fs.copyFileSync('src/debug-http.html','dist/debug-http.html');fs.writeFileSync('dist/build-env.json',JSON.stringify({GENIUS_ACCESS_TOKEN:process.env.GENIUS_ACCESS_TOKEN||'',APPINSIGHTS_CONNECTION_STRING:process.env.APPINSIGHTS_CONNECTION_STRING||''}))\"",
+    "build:main": "tsc && node -e \"require('dotenv').config();const fs=require('fs');fs.copyFileSync('src/debug-ws.html','dist/debug-ws.html');fs.copyFileSync('src/debug-http.html','dist/debug-http.html');fs.writeFileSync('dist/build-env.json',JSON.stringify({GENIUS_ACCESS_TOKEN:process.env.GENIUS_ACCESS_TOKEN||'',APPINSIGHTS_CONNECTION_STRING:process.env.APPINSIGHTS_CONNECTION_STRING||'',ENTRA_CLIENT_ID:process.env.ENTRA_CLIENT_ID||'',ENTRA_TENANT_ID:process.env.ENTRA_TENANT_ID||''}))\"",
     "build:renderer": "vite build --config renderer/vite.config.ts",
     "build": "npm run build:main && npm run build:renderer",
     "dev:renderer": "vite --config renderer/vite.config.ts",
@@ -32,6 +32,7 @@
     "typecheck": "tsc --noEmit && tsc --noEmit --project renderer/tsconfig.json"
   },
   "dependencies": {
+    "@azure/msal-node": "^5.2.2",
     "applicationinsights": "^3.14.0",
     "dompurify": "^3.4.1",
     "dotenv": "^17.4.2",

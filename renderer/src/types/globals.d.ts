@@ -229,6 +229,12 @@ interface RecentlyPlayedData {
   availableUsers?: string[];
 }
 
+interface EntraUser {
+  oid: string;
+  name: string;
+  email: string;
+}
+
 interface UserProfile {
   id: string;
   imageUrl?: string | null;
@@ -307,7 +313,7 @@ interface SonosPreload {
   closeMiniPlayer: () => Promise<void>;
   // Attribution / office presence
   getDisplayName: () => Promise<string | null>;
-  setDisplayName: (name: string) => Promise<void>;
+  setDisplayName: (name: string) => Promise<{ error: string } | null>;
   getQueueDockedWidth: () => Promise<number>;
   setQueueDockedWidth: (width: number) => Promise<void>;
   publishQueued: (item: {
@@ -363,6 +369,11 @@ interface SonosPreload {
   fetchUsers: () => Promise<UserSummary[]>;
   fetchUserProfile: (userName: string) => Promise<UserProfile | null>;
   uploadProfileImage: (userName: string, data: ArrayBuffer, mimeType: string) => Promise<{ imageUrl: string } | { error: string }>;
+  getEntraUser: () => Promise<EntraUser | null>;
+  entraSignOut: () => Promise<void>;
+  entraReLogin: () => Promise<void>;
+  onEntraReady: (cb: (user: EntraUser) => void) => Unsubscribe;
+  renameUser: (oldName: string, newName: string) => Promise<{ ok?: boolean; error?: string }>;
 }
 
 interface Window {
