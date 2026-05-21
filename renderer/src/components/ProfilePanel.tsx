@@ -61,13 +61,18 @@ interface Props {
   onAddToQueue: (item: SonosItem) => void;
   displayName?: string | null;
   onSignOut?: () => void;
+  onChangeName?: (name: string) => Promise<{ error: string } | null>;
 }
 
-export function ProfilePanel({ onAddToQueue, displayName, onSignOut }: Props) {
+export function ProfilePanel({ onAddToQueue, displayName, onSignOut, onChangeName }: Props) {
   const { userName } = useParams<{ userName: string }>();
   const navigate = useNavigate();
   const openItem = useOpenItem();
   const [createPlaylistOpen, setCreatePlaylistOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const [renameSaving, setRenameSaving] = useState(false);
 
 const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, isLoading: statsLoading } =
     useUserStats(userName, 25);
@@ -122,6 +127,22 @@ const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, 
     }
   }
 
+  async function handleRenameSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = renameValue.trim();
+    if (!trimmed || !onChangeName) return;
+    setRenameSaving(true);
+    setRenameError(null);
+    const result = await onChangeName(trimmed);
+    setRenameSaving(false);
+    if (result?.error === 'taken') {
+      setRenameError('That name is already taken.');
+    } else {
+      setRenaming(false);
+      navigate(`/profile/${trimmed}`);
+    }
+  }
+
   const { owned: ownedPlaylists, joined: joinedPlaylists } = useMyPlaylists(userName);
   const allPlaylists = isOwnProfile
     ? [...ownedPlaylists, ...joinedPlaylists]
@@ -164,16 +185,42 @@ const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, 
         </div>
         <div className={styles.headerInfo}>
           <div className={styles.nameWrap}>
-            <h1 className={styles.userName}>{userName}</h1>
+            {renaming ? (
+              <form onSubmit={handleRenameSubmit} className={styles.renameForm}>
+                <input
+                  className={styles.renameInput}
+                  value={renameValue}
+                  onChange={e => { setRenameValue(e.target.value); setRenameError(null); }}
+                  autoFocus
+                  maxLength={32}
+                  spellCheck={false}
+                />
+                <button type="submit" className={styles.renameBtn} disabled={!renameValue.trim() || renameSaving}>
+                  {renameSaving ? '…' : 'Save'}
+                </button>
+                <button type="button" className={styles.renameCancelBtn} onClick={() => { setRenaming(false); setRenameError(null); }}>
+                  Cancel
+                </button>
+                {renameError && <span className={styles.renameError}>{renameError}</span>}
+              </form>
+            ) : (
+              <h1 className={styles.userName}>{userName}</h1>
+            )}
           </div>
           {(totalEvents > 0 || isOwnProfile) && (
             <span className={styles.statChip}>
               {totalEvents > 0 && (
                 <><span className={styles.statChipValue}>{totalEvents.toLocaleString()}</span> plays</>
               )}
-              {isOwnProfile && onSignOut && (
+              {isOwnProfile && onChangeName && !renaming && (
                 <>
                   {totalEvents > 0 && <span className={styles.statChipSep}>|</span>}
+                  <button className={styles.changeNameInline} onClick={() => { setRenameValue(userName ?? ''); setRenaming(true); }}>Change name</button>
+                </>
+              )}
+              {isOwnProfile && onSignOut && (
+                <>
+                  <span className={styles.statChipSep}>|</span>
                   <button className={styles.signOutInline} onClick={onSignOut}>Sign out</button>
                 </>
               )}

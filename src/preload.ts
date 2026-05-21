@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { FetchRequest, FetchResponse, AttributionMap, AttributionEvent } from './types';
+import type { EntraUser } from './auth-entra';
 
 type VoidCallback = () => void;
 type Unsubscribe = () => void;
@@ -39,7 +40,7 @@ export interface SonosAPI {
   clearQueue: () => Promise<unknown>;
   // Attribution / office presence
   getDisplayName: () => Promise<string | null>;
-  setDisplayName: (name: string) => Promise<void>;
+  setDisplayName: (name: string) => Promise<{ error: string } | null>;
   getQueueDockedWidth: () => Promise<number>;
   setQueueDockedWidth: (width: number) => Promise<void>;
   publishQueued: (item: { eventType: 'track' | 'album'; uri: string; trackName: string; artist: string; serviceId?: string; accountId?: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }) => Promise<void>;
@@ -76,6 +77,11 @@ export interface SonosAPI {
   fetchUsers: () => Promise<unknown>;
   fetchUserProfile: (userName: string) => Promise<unknown>;
   uploadProfileImage: (userName: string, data: ArrayBuffer, mimeType: string) => Promise<unknown>;
+  getEntraUser: () => Promise<EntraUser | null>;
+  entraSignOut: () => Promise<void>;
+  entraReLogin: () => Promise<void>;
+  onEntraReady: (cb: (user: EntraUser) => void) => Unsubscribe;
+  renameUser: (oldName: string, newName: string) => Promise<{ ok?: boolean; error?: string }>;
   minimizeWindow:    () => Promise<void>;
   maximizeWindow:    () => Promise<void>;
   closeWindow:       () => Promise<void>;
@@ -90,6 +96,7 @@ let _authReady = false;
 let _wsReady = false;
 let _wsGroups: unknown[] | null = null;
 let _attributionMap: AttributionMap | null = null;
+let _entraUser: EntraUser | null = null;
 
 ipcRenderer.on('auth:ready', () => {
   _authReady = true;
@@ -105,6 +112,9 @@ ipcRenderer.on('ws:groups', (_e, groups: unknown[]) => {
 });
 ipcRenderer.on('attribution:map', (_e, map: AttributionMap) => {
   _attributionMap = map;
+});
+ipcRenderer.on('auth:entra-ready', (_e, user: EntraUser) => {
+  _entraUser = user;
 });
 
 contextBridge.exposeInMainWorld('sonos', {
@@ -228,4 +238,14 @@ contextBridge.exposeInMainWorld('sonos', {
   fetchUsers: () => ipcRenderer.invoke('users:list'),
   fetchUserProfile: (userName) => ipcRenderer.invoke('profile:get', userName),
   uploadProfileImage: (userName, data, mimeType) => ipcRenderer.invoke('profile:uploadImage', userName, data, mimeType),
+  getEntraUser: () => ipcRenderer.invoke('auth:getEntraUser'),
+  entraSignOut: () => ipcRenderer.invoke('auth:entraSignOut'),
+  entraReLogin: () => ipcRenderer.invoke('auth:entraReLogin'),
+  onEntraReady: (cb: (user: EntraUser) => void): Unsubscribe => {
+    if (_entraUser !== null) cb(_entraUser);
+    const listener = (_e: unknown, user: EntraUser) => cb(user);
+    ipcRenderer.on('auth:entra-ready', listener);
+    return () => ipcRenderer.removeListener('auth:entra-ready', listener);
+  },
+  renameUser: (oldName: string, newName: string) => ipcRenderer.invoke('profile:rename', oldName, newName),
 } satisfies SonosAPI);
