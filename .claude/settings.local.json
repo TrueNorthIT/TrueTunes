@@ -20,7 +20,12 @@
       "Bash(npm ci *)",
       "Bash(git commit -m ' *)",
       "Bash(git reset *)",
-      "Bash(git restore *)"
+      "Bash(git restore *)",
+      "Bash(gh issue *)",
+      "PowerShell(gh issue *)",
+      "WebFetch(domain:github.com)",
+      "Bash(az account show *)",
+      "Bash(az account *)"
     ]
   }
 }

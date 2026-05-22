@@ -270,6 +270,46 @@ describe('AlbumPanel', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/artist/art-1', expect.anything());
   });
 
+  it('renders each artist as a separate link for a multi-artist album header', () => {
+    mockUseAlbumBrowse.mockReturnValue({
+      data: makeAlbumData({ artist: 'Sonny Stitt, Kenny Garrett', artistItem: null }),
+      isLoading: false,
+      error: null,
+    });
+    render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    expect(screen.getByRole('button', { name: 'Sonny Stitt' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Kenny Garrett' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Sonny Stitt, Kenny Garrett' })).toBeNull();
+  });
+
+  it('clicking a single artist on a multi-artist album header resolves that artist via search', async () => {
+    mockUseAlbumBrowse.mockReturnValue({
+      data: makeAlbumData({ artist: 'Sonny Stitt, Kenny Garrett', artistItem: null }),
+      isLoading: false,
+      error: null,
+    });
+    vi.mocked(window.sonos.fetch).mockResolvedValueOnce({
+      data: {
+        resourceOrder: ['ARTISTS'],
+        ARTISTS: {
+          resources: [
+            {
+              id: { objectId: 'kg-id', serviceId: 'svc-1', accountId: 'acc-1' },
+              name: 'Kenny Garrett',
+              images: [],
+            },
+          ],
+        },
+      },
+    } as never);
+    const user = userEvent.setup();
+    render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    await user.click(screen.getByRole('button', { name: 'Kenny Garrett' }));
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/^\/artist\//), expect.anything());
+    });
+  });
+
   // ── playlist mode ─────────────────────────────────────────────────────────
 
   it('renders playlist tracks when item is a playlist', () => {
