@@ -1,6 +1,6 @@
 {
   "name": "true-tunes-2",
-  "version": "1.0.39",
+  "version": "1.0.40",
   "description": "Sonos Web Player proxy app",
   "repository": "https://github.com/TrueNorthIT/TrueTunes",
   "author": {
@@ -91,7 +91,10 @@
       "package.json"
     ],
     "extraResources": [
-      { "from": "assets/taskbar", "to": "assets/taskbar" }
+      {
+        "from": "assets/taskbar",
+        "to": "assets/taskbar"
+      }
     ],
     "win": {
       "target": "nsis",
