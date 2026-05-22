@@ -71,9 +71,38 @@ function albumKeyFor(e: RawEvent): string | null {
   return e.albumId ?? e.album;
 }
 
-function artistKeyFor(e: RawEvent): string | null {
-  if (!e.artist) return null;
-  return e.artist;
+/**
+ * Sonos serves multi-artist tracks/albums with a single joined subtitle
+ * ("Sonny Stitt, Kenny Garrett") which we publish verbatim. Splitting on
+ * commas lets each contributor count as their own artist.
+ *
+ * Some services (notably YT Music) instead pack release metadata into the
+ * subtitle — "Album, 2020", "Single, 4.2M views", "Album • Artist" — which
+ * isn't an artist at all. We drop those entries entirely instead of letting
+ * them become phantom "Album" / "2020" rows in topArtists.
+ */
+const RELEASE_TYPE_RE = /\b(Single|Album|EP|LP|Playlist|Various Artists|Compilation|Soundtrack)\b/i;
+const METADATA_SEPARATOR_RE = /[•·|]/;
+const VIEW_COUNT_RE = /views|plays|listeners|streams/i;
+
+function artistKeysFor(e: RawEvent): string[] {
+  if (!e.artist) return [];
+  const raw = e.artist.trim();
+  if (!raw) return [];
+
+  // Release-type subtitles and view/play counts aren't artists — drop them so
+  // they don't pollute topArtists at all.
+  if (RELEASE_TYPE_RE.test(raw)) return [];
+  if (METADATA_SEPARATOR_RE.test(raw)) return [];
+  if (VIEW_COUNT_RE.test(raw)) return [];
+  if (/^\d+$/.test(raw)) return [];
+
+  // Contains digits but no separators (e.g. "blink-182", "Maroon 5") — keep as
+  // a single entry, don't try to split.
+  if (/\d/.test(raw)) return [raw];
+
+  const parts = raw.split(/,\s*/).map((s) => s.trim()).filter(Boolean);
+  return parts.length > 0 ? parts : [raw];
 }
 
 function bumpQueuer(
@@ -104,26 +133,31 @@ export function aggregateEvents(events: RawEvent[]): AggregateResult {
     if (countsUser && e.userId) userCounts[e.userId] = (userCounts[e.userId] ?? 0) + 1;
 
     if (isTrack) {
-      const aKey = artistKeyFor(e);
-      if (aKey) {
+      const aKeys = artistKeysFor(e);
+      aKeys.forEach((aKey, idx) => {
+        // Only the first name is the primary artist that e.artistId references.
+        // The track art (e.imageUrl) goes on every artist for the row — it's
+        // not their real photo but it's better than an empty placeholder until
+        // we can resolve the real artist image.
+        const isPrimary = idx === 0;
         if (!artistMap[aKey]) {
           artistMap[aKey] = {
-            artist: e.artist,
+            artist: aKey,
             serviceId: e.serviceId ?? undefined,
             accountId: e.accountId ?? undefined,
-            artistId: e.artistId ?? undefined,
+            artistId: isPrimary ? (e.artistId ?? undefined) : undefined,
             imageUrl: e.imageUrl ?? undefined,
             count: 0,
           };
         } else {
           if (!artistMap[aKey].serviceId && e.serviceId) artistMap[aKey].serviceId = e.serviceId;
           if (!artistMap[aKey].accountId && e.accountId) artistMap[aKey].accountId = e.accountId;
-          if (!artistMap[aKey].artistId && e.artistId) artistMap[aKey].artistId = e.artistId;
+          if (isPrimary && !artistMap[aKey].artistId && e.artistId) artistMap[aKey].artistId = e.artistId;
           if (!artistMap[aKey].imageUrl && e.imageUrl) artistMap[aKey].imageUrl = e.imageUrl;
         }
         artistMap[aKey].count++;
         if (e.userId) bumpQueuer(queuersByItem, itemKey('artist', aKey), e.userId);
-      }
+      });
     }
 
     if (isAlbumOnly) {

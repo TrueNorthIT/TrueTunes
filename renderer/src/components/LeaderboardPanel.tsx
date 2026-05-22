@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Info, X } from 'lucide-react';
 import type { GameRankTierKey } from '../hooks/useDailyGame';
 import { useStats, StatsPeriod } from '../hooks/useStats';
 import { useGameRankings } from '../hooks/useDailyGame';
 import { useImage } from '../hooks/useImage';
+import { useArtistImage } from '../hooks/useArtistBrowse';
 import { getGameRankIcon, getGameRankInfoImage } from '../lib/gameRankAssets';
 import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
 import styles from '../styles/LeaderboardPanel.module.css';
@@ -13,6 +14,75 @@ function CachedArt({ url, className }: { url: string | undefined; className: str
   const cached = useImage(url ?? null);
   if (!cached) return <div className={className} data-placeholder />;
   return <img className={className} src={cached} alt="" loading="lazy" />;
+}
+
+// Tries to fetch the real artist image (so YT Music shows the artist's photo)
+// and falls back to whatever the event sent us — typically the track's album
+// art. The Sonos artist endpoint needs `defaults` we don't store in events, so
+// the fetch quietly returns null on many services; the fallback keeps the row
+// looking populated instead of empty.
+function ArtistAvatar({
+  artistId,
+  serviceId,
+  accountId,
+  fallbackUrl,
+  className,
+  placeholderClassName,
+}: {
+  artistId: string | undefined;
+  serviceId: string | undefined;
+  accountId: string | undefined;
+  fallbackUrl?: string;
+  className: string;
+  placeholderClassName: string;
+}) {
+  const { data: imageUrl } = useArtistImage(artistId, serviceId, accountId);
+  const cached = useImage(imageUrl ?? fallbackUrl ?? null);
+  if (!cached) return <div className={placeholderClassName} />;
+  return <img className={className} src={cached} alt="" loading="lazy" />;
+}
+
+// Multi-artist subtitles arrive as a single joined string (e.g. "Sonny Stitt, Kenny Garrett").
+// Rendering them as one button means resolveAndOpen searches for the whole string and never
+// matches an individual artist; for album rows the button also swallows the row click via
+// stopPropagation. Splitting on commas gives each artist its own link.
+function ArtistLinks({
+  artist,
+  artistId,
+  serviceId,
+  accountId,
+  onNavigateArtist,
+  onResolveArtist,
+}: {
+  artist: string;
+  artistId?: string;
+  serviceId?: string;
+  accountId?: string;
+  onNavigateArtist: (name: string, artistId: string, serviceId: string, accountId: string) => void;
+  onResolveArtist: (name: string) => void;
+}) {
+  const parts = artist.split(/,\s*/).map((s) => s.trim()).filter(Boolean);
+  if (parts.length === 0) return null;
+  const canUseDirect = parts.length === 1 && !!artistId && !!serviceId && !!accountId;
+  return (
+    <>
+      {parts.map((name, i) => (
+        <Fragment key={i}>
+          {i > 0 && ', '}
+          <button
+            className={styles.artistLink}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (canUseDirect) onNavigateArtist(name, artistId!, serviceId!, accountId!);
+              else onResolveArtist(name);
+            }}
+          >
+            {name}
+          </button>
+        </Fragment>
+      ))}
+    </>
+  );
 }
 
 const PERIODS: { value: StatsPeriod; label: string }[] = [
@@ -215,27 +285,28 @@ export function LeaderboardPanel() {
                       <span className={styles.trackName}>{t.trackName}</span>
                       <span className={styles.trackSub}>
                         {t.artist ? (
-                          <button
-                            className={styles.artistLink}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (t.artistId && t.serviceId && t.accountId)
-                                navigate(`/artist/${encodeURIComponent(t.artistId)}`, {
-                                  state: {
-                                    item: {
+                          <ArtistLinks
+                            artist={t.artist}
+                            artistId={t.artistId}
+                            serviceId={t.serviceId}
+                            accountId={t.accountId}
+                            onNavigateArtist={(name, aid, sid, acc) =>
+                              navigate(`/artist/${encodeURIComponent(aid)}`, {
+                                state: {
+                                  item: {
+                                    type: 'ARTIST',
+                                    title: name,
+                                    name,
+                                    resource: {
                                       type: 'ARTIST',
-                                      resource: {
-                                        type: 'ARTIST',
-                                        id: { objectId: t.artistId, serviceId: t.serviceId, accountId: t.accountId },
-                                      },
+                                      id: { objectId: aid, serviceId: sid, accountId: acc },
                                     },
                                   },
-                                });
-                              else resolveAndOpen(t.artist, 'artist');
-                            }}
-                          >
-                            {t.artist}
-                          </button>
+                                },
+                              })
+                            }
+                            onResolveArtist={(name) => resolveAndOpen(name, 'artist', { serviceId: t.serviceId, accountId: t.accountId })}
+                          />
                         ) : null}
                         {t.artist && t.album ? ' · ' : null}
                         {t.album ? (
@@ -275,11 +346,14 @@ export function LeaderboardPanel() {
                 data.topArtists.map((a, i) => (
                   <div key={i} className={styles.artistRow}>
                     <span className={styles.rankNum}>{i + 1}</span>
-                    {a.imageUrl ? (
-                      <CachedArt url={a.imageUrl} className={styles.artistArt} />
-                    ) : (
-                      <div className={styles.artistArtPh} />
-                    )}
+                    <ArtistAvatar
+                      artistId={a.artistId}
+                      serviceId={a.serviceId}
+                      accountId={a.accountId}
+                      fallbackUrl={a.imageUrl}
+                      className={styles.artistArt}
+                      placeholderClassName={styles.artistArtPh}
+                    />
                     <button
                       className={styles.artistLink}
                       onClick={(e) => {
@@ -289,6 +363,9 @@ export function LeaderboardPanel() {
                             state: {
                               item: {
                                 type: 'ARTIST',
+                                title: a.artist,
+                                name: a.artist,
+                                imageUrl: a.imageUrl,
                                 resource: {
                                   type: 'ARTIST',
                                   id: { objectId: a.artistId, serviceId: a.serviceId, accountId: a.accountId },
@@ -296,7 +373,7 @@ export function LeaderboardPanel() {
                               },
                             },
                           });
-                        else resolveAndOpen(a.artist, 'artist');
+                        else resolveAndOpen(a.artist, 'artist', { serviceId: a.serviceId, accountId: a.accountId });
                       }}
                     >
                       {a.artist}
@@ -340,27 +417,28 @@ export function LeaderboardPanel() {
                       <span className={styles.trackName}>{a.album}</span>
                       <span className={styles.trackSub}>
                         {a.artist ? (
-                          <button
-                            className={styles.artistLink}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (a.artistId && a.serviceId && a.accountId)
-                                navigate(`/artist/${encodeURIComponent(a.artistId)}`, {
-                                  state: {
-                                    item: {
+                          <ArtistLinks
+                            artist={a.artist}
+                            artistId={a.artistId}
+                            serviceId={a.serviceId}
+                            accountId={a.accountId}
+                            onNavigateArtist={(name, aid, sid, acc) =>
+                              navigate(`/artist/${encodeURIComponent(aid)}`, {
+                                state: {
+                                  item: {
+                                    type: 'ARTIST',
+                                    title: name,
+                                    name,
+                                    resource: {
                                       type: 'ARTIST',
-                                      resource: {
-                                        type: 'ARTIST',
-                                        id: { objectId: a.artistId, serviceId: a.serviceId, accountId: a.accountId },
-                                      },
+                                      id: { objectId: aid, serviceId: sid, accountId: acc },
                                     },
                                   },
-                                });
-                              else resolveAndOpen(a.artist, 'artist');
-                            }}
-                          >
-                            {a.artist}
-                          </button>
+                                },
+                              })
+                            }
+                            onResolveArtist={(name) => resolveAndOpen(name, 'artist', { serviceId: a.serviceId, accountId: a.accountId })}
+                          />
                         ) : null}
                       </span>
                     </div>

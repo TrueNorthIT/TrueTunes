@@ -44,7 +44,13 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
       ? resolveArtistParams(item)
       : { artistId: undefined, serviceId: undefined, accountId: undefined, defaults: undefined, name: undefined };
 
-  const { data, isLoading } = useArtistBrowse(artistId, serviceId, accountId, defaults);
+  const { data, isLoading } = useArtistBrowse(
+    artistId,
+    serviceId,
+    accountId,
+    defaults,
+    fallbackName ?? (item?.title as string | undefined) ?? (item?.name as string | undefined),
+  );
 
   const name = data?.name ?? fallbackName ?? item?.title ?? item?.name ?? '';
   const imageUrl =

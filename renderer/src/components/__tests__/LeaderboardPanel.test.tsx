@@ -70,6 +70,14 @@ vi.mock('../../hooks/useImage', () => ({
   useImage: (url: string | null | undefined) => url ?? null,
 }));
 
+// LeaderboardPanel renders artist avatars via useArtistImage; the tests don't
+// wrap with a QueryClientProvider, so stub it to return no image.
+vi.mock('../../hooks/useArtistBrowse', () => ({
+  useArtistImage: () => ({ data: null }),
+  useArtistBrowse: () => ({ data: undefined, isLoading: false, error: null }),
+  artistQueryOptions: vi.fn(() => ({ queryKey: [], queryFn: async () => null })),
+}));
+
 vi.mock('../../hooks/useDailyGame', () => ({
   useGameLeaderboard: () => ({ data: { gameId: 'today', scores: [] }, isLoading: false }),
   useGameRankings: (userName: string | null | undefined, enabled: boolean) => mockUseGameRankings(userName, enabled),
@@ -510,6 +518,52 @@ describe('LeaderboardPanel', () => {
       fireEvent.click(screen.getByText('Legacy Album'));
       await waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/^\/album\//), expect.anything());
+      });
+    });
+
+    it('renders each artist as a separate link for a multi-artist album', () => {
+      mockLoaded({
+        ...mockData,
+        topAlbums: [
+          {
+            album: 'Diz N Bird',
+            artist: 'Sonny Stitt, Kenny Garrett',
+            albumId: 'alb-multi',
+            serviceId: 'svc1',
+            accountId: 'acc1',
+            count: 2,
+          },
+        ],
+      });
+      render(<LeaderboardPanel />);
+      // Each artist should render as its own clickable button, not as one joined string.
+      expect(screen.getByRole('button', { name: 'Sonny Stitt' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Kenny Garrett' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Sonny Stitt, Kenny Garrett' })).toBeNull();
+    });
+
+    it('clicking a single artist in a multi-artist album resolves that individual artist', async () => {
+      mockLoaded({
+        ...mockData,
+        topAlbums: [
+          {
+            album: 'Diz N Bird',
+            artist: 'Sonny Stitt, Kenny Garrett',
+            albumId: 'alb-multi',
+            serviceId: 'svc1',
+            accountId: 'acc1',
+            count: 2,
+          },
+        ],
+      });
+      // The search returns the individual artist matching the clicked name.
+      mockSearchResolves({
+        artist: { name: 'Kenny Garrett', objectId: 'kg-id', serviceId: 'svc1', accountId: 'acc1' },
+      });
+      render(<LeaderboardPanel />);
+      fireEvent.click(screen.getByRole('button', { name: 'Kenny Garrett' }));
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/^\/artist\//), expect.anything());
       });
     });
 

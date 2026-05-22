@@ -10,6 +10,9 @@ type Target = 'artist' | 'album';
 interface ResolveOpts {
   /** Artist hint used to disambiguate same-named albums by different artists. */
   artist?: string;
+  /** Scope the Sonos search to this service+account; helps when the artist lives on YT Music etc. */
+  serviceId?: string;
+  accountId?: string;
 }
 
 function itemArtistNames(item: SonosItem): string[] {
@@ -28,7 +31,11 @@ export function useResolveAndOpen() {
     setPending(key);
     try {
       const searchQ = target === 'album' && opts?.artist ? `${query} ${opts.artist}` : query;
-      const r = await api.search.serviceQuery(searchQ, { count: 20 });
+      const r = await api.search.serviceQuery(searchQ, {
+        count: 20,
+        serviceId: opts?.serviceId,
+        accountId: opts?.accountId,
+      });
       if (r.error) return;
       const items = parseServiceSearch(r.data as ServiceSearch);
       const filter = target === 'artist' ? isArtist : isAlbum;
