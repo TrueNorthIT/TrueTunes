@@ -1,7 +1,7 @@
 import { config as loadEnv } from 'dotenv';
 loadEnv(); // loads .env from cwd (repo root) in dev; no-op if file absent
 
-import { app, BrowserWindow, ipcMain, safeStorage, session, shell, Menu, IpcMainInvokeEvent } from 'electron';
+import { app, BrowserWindow, ipcMain, nativeImage, safeStorage, session, shell, Menu, IpcMainInvokeEvent } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { officePubSub } from './pubsub';
 import { EntraAuth } from './auth-entra';
@@ -567,6 +567,13 @@ function handleWsMessage(raw: Buffer | string): void {
     return;
   }
 
+  if (ns === 'playbackExtended') {
+    const state = (payload as Record<string, unknown> | null)?.['playback'] as Record<string, unknown> | undefined;
+    if (state?.['playbackState']) {
+      updateThumbar(state['playbackState'] === 'PLAYBACK_STATE_PLAYING');
+    }
+  }
+
   broadcastToRenderers('ws:message', [header, payload]);
 }
 
@@ -926,6 +933,52 @@ let miniWin: BrowserWindow | null = null;
 let debugWin: BrowserWindow | null = null;
 let httpDebugWin: BrowserWindow | null = null;
 let authConfirmed = false; // prevents onAuthReady firing on every /api/content/ 200
+let thumbarIsPlaying = false;
+
+function taskbarAsset(name: string): Electron.NativeImage {
+  const base = app.isPackaged ? process.resourcesPath : path.join(__dirname, '..');
+  return nativeImage.createFromPath(path.join(base, 'assets', 'taskbar', name));
+}
+
+function setThumbar(win: BrowserWindow, isPlaying: boolean): void {
+  if (process.platform !== 'win32') return;
+  win.setThumbarButtons([
+    {
+      tooltip: 'Previous',
+      icon: taskbarAsset('prev.png'),
+      click() {
+        const groupId = config.groupId;
+        if (ws && ws.readyState === WebSocket.OPEN)
+          wsSend({ namespace: 'playback', groupId, command: 'skipBack' }, {}).catch(() => {});
+      },
+    },
+    {
+      tooltip: isPlaying ? 'Pause' : 'Play',
+      icon: taskbarAsset(isPlaying ? 'pause.png' : 'play.png'),
+      click() {
+        const groupId = config.groupId;
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+        const cmd = thumbarIsPlaying ? 'pause' : 'play';
+        wsSend({ namespace: 'playback', groupId, command: cmd }, { allowTvPauseRestore: true, deviceFeedback: 'NONE' }).catch(() => {});
+      },
+    },
+    {
+      tooltip: 'Next',
+      icon: taskbarAsset('next.png'),
+      click() {
+        const groupId = config.groupId;
+        if (ws && ws.readyState === WebSocket.OPEN)
+          wsSend({ namespace: 'playback', groupId, command: 'skipToNextTrack' }, {}).catch(() => {});
+      },
+    },
+  ]);
+}
+
+function updateThumbar(isPlaying: boolean): void {
+  thumbarIsPlaying = isPlaying;
+  if (uiWin && !uiWin.isDestroyed()) setThumbar(uiWin, isPlaying);
+  if (miniWin && !miniWin.isDestroyed()) setThumbar(miniWin, isPlaying);
+}
 
 /** Send a channel/args pair to all live renderer windows (main + mini player). */
 function broadcastToRenderers(channel: string, ...args: unknown[]): void {
@@ -1193,6 +1246,7 @@ function createUIWindow(): void {
 
   uiWin.on('maximize',   () => uiWin?.webContents.send('win:maximized', true));
   uiWin.on('unmaximize', () => uiWin?.webContents.send('win:maximized', false));
+  setThumbar(uiWin, thumbarIsPlaying);
 
   if (app.isPackaged) {
     uiWin.loadFile(path.join(__dirname, '..', 'renderer', 'dist', 'index.html'));
@@ -1258,6 +1312,8 @@ function createMiniPlayerWindow(): void {
       }
     }
   });
+
+  setThumbar(miniWin, thumbarIsPlaying);
 
   miniWin.on('closed', () => {
     miniWin = null;

@@ -90,6 +90,9 @@
       "renderer/dist/**",
       "package.json"
     ],
+    "extraResources": [
+      { "from": "assets/taskbar", "to": "assets/taskbar" }
+    ],
     "win": {
       "target": "nsis",
       "icon": "icon.ico",
