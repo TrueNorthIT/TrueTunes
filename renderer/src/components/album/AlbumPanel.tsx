@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useImage } from '../../hooks/useImage';
@@ -7,6 +7,7 @@ import { usePlaylistBrowse } from '../../hooks/usePlaylistBrowse';
 import { useDominantColor } from '../../hooks/useDominantColor';
 import { useGeniusAlbumYear } from '../../hooks/useGeniusAlbumYear';
 import { artistQueryOptions } from '../../hooks/useArtistBrowse';
+import { useResolveAndOpen } from '../../hooks/useResolveAndOpen';
 import { resolveAlbumParams, isPlaylist, isProgram, getItemArt } from '../../lib/itemHelpers';
 import { createDragGhost } from '../../lib/dragHelpers';
 import { AlbumTrackRow } from './AlbumTrackRow';
@@ -22,6 +23,7 @@ export function AlbumPanel({ onAddToQueue }: Props) {
   const item = (state as { item?: SonosItem } | null)?.item;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { resolveAndOpen } = useResolveAndOpen();
 
   const isPlaylistOrProgram = item ? (isPlaylist(item) || isProgram(item)) : false;
   const { albumId, serviceId, accountId, defaults } = item
@@ -106,6 +108,11 @@ export function AlbumPanel({ onAddToQueue }: Props) {
     navigate(`/artist/${encodeURIComponent(rid?.objectId ?? '_')}`, { state: { item: data.artistItem } });
   }
 
+  // Multi-artist subtitles ("Sonny Stitt, Kenny Garrett") arrive as a single string.
+  // Split on commas so each artist gets its own link; only the single-artist case
+  // can use the cached artistItem for direct navigation.
+  const artistParts = artist.split(/,\s*/).map((s) => s.trim()).filter(Boolean);
+
   return (
     <div className={styles.panel}>
       <div className={styles.header} style={headerStyle}>
@@ -115,12 +122,25 @@ export function AlbumPanel({ onAddToQueue }: Props) {
           </div>
           <div className={styles.meta}>
             <div className={styles.albumTitle}>{title}</div>
-            {artist && (
-              <div
-                className={`${styles.artist}${data?.artistItem ? ' ' + styles.artistLink : ''}`}
-                onClick={data?.artistItem ? openArtist : undefined}
-              >
-                {artist}
+            {artistParts.length > 0 && (
+              <div className={styles.artist}>
+                {artistParts.length === 1 && data?.artistItem ? (
+                  <button className={styles.artistBtn} onClick={openArtist}>
+                    {artistParts[0]}
+                  </button>
+                ) : (
+                  artistParts.map((name, i) => (
+                    <Fragment key={i}>
+                      {i > 0 && ', '}
+                      <button
+                        className={styles.artistBtn}
+                        onClick={() => resolveAndOpen(name, 'artist', { serviceId, accountId })}
+                      >
+                        {name}
+                      </button>
+                    </Fragment>
+                  ))
+                )}
               </div>
             )}
             {data && (

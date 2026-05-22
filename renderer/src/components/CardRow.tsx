@@ -1,7 +1,33 @@
 import { getName, browseSub, getItemArt, isAlbum, isArtist, isPlaylist, isContainer, isProgram } from '../lib/itemHelpers';
+import { useArtistImage } from '../hooks/useArtistBrowse';
 import { MediaCard } from './common/MediaCard';
-import type { SonosItem } from '../types/sonos';
+import type { SonosItem, SonosItemId } from '../types/sonos';
 import styles from '../styles/CardRow.module.css';
+
+// Artist cards used the item's imageUrl, which for leaderboard-derived artists
+// is undefined (we no longer seed the artist map with track album-art). Fetch
+// the real artist image from the Sonos artist endpoint instead.
+function ArtistMediaCard({
+  item,
+  onOpen,
+}: {
+  item: SonosItem;
+  onOpen: (item: SonosItem) => void;
+}) {
+  const rid = (item.resource?.id ?? (typeof item.id === 'object' ? item.id : undefined)) as
+    | SonosItemId
+    | undefined;
+  const { data: artistImg } = useArtistImage(rid?.objectId, rid?.serviceId, rid?.accountId);
+  return (
+    <MediaCard
+      name={getName(item)}
+      sub={browseSub(item)}
+      artUrl={artistImg ?? getItemArt(item)}
+      circular
+      onOpen={() => onOpen(item)}
+    />
+  );
+}
 
 export function CardRow({
   items,
@@ -29,17 +55,21 @@ export function CardRow({
   if (!items.length) return null;
   return (
     <div className={styles.cardRow} style={sizeStyle}>
-      {items.map((item, i) => (
-        <MediaCard
-          key={i}
-          name={getName(item)}
-          sub={browseSub(item)}
-          artUrl={getItemArt(item)}
-          circular={isArtist(item)}
-          onAdd={(isContainer(item) || isArtist(item)) ? undefined : () => onAdd(item)}
-          onOpen={(isAlbum(item) || isPlaylist(item) || isContainer(item) || isProgram(item) || isArtist(item)) ? () => onOpen(item) : undefined}
-        />
-      ))}
+      {items.map((item, i) =>
+        isArtist(item) ? (
+          <ArtistMediaCard key={i} item={item} onOpen={onOpen} />
+        ) : (
+          <MediaCard
+            key={i}
+            name={getName(item)}
+            sub={browseSub(item)}
+            artUrl={getItemArt(item)}
+            circular={false}
+            onAdd={isContainer(item) ? undefined : () => onAdd(item)}
+            onOpen={(isAlbum(item) || isPlaylist(item) || isContainer(item) || isProgram(item)) ? () => onOpen(item) : undefined}
+          />
+        ),
+      )}
     </div>
   );
 }
