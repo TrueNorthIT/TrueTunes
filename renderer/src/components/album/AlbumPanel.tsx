@@ -8,7 +8,7 @@ import { useDominantColor } from '../../hooks/useDominantColor';
 import { useGeniusAlbumYear } from '../../hooks/useGeniusAlbumYear';
 import { artistQueryOptions } from '../../hooks/useArtistBrowse';
 import { useResolveAndOpen } from '../../hooks/useResolveAndOpen';
-import { resolveAlbumParams, isPlaylist, isProgram, getItemArt } from '../../lib/itemHelpers';
+import { resolveAlbumParams, isPlaylist, isProgram, getItemArt, splitArtists } from '../../lib/itemHelpers';
 import { createDragGhost } from '../../lib/dragHelpers';
 import { AlbumTrackRow } from './AlbumTrackRow';
 import type { SonosItem, SonosItemId } from '../../types/sonos';
@@ -111,7 +111,7 @@ export function AlbumPanel({ onAddToQueue }: Props) {
   // Multi-artist subtitles ("Sonny Stitt, Kenny Garrett") arrive as a single string.
   // Split on commas so each artist gets its own link; only the single-artist case
   // can use the cached artistItem for direct navigation.
-  const artistParts = artist.split(/,\s*/).map((s) => s.trim()).filter(Boolean);
+  const artistParts = splitArtists(artist);
 
   return (
     <div className={styles.panel}>

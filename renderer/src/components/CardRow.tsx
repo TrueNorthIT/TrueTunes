@@ -17,7 +17,12 @@ function ArtistMediaCard({
   const rid = (item.resource?.id ?? (typeof item.id === 'object' ? item.id : undefined)) as
     | SonosItemId
     | undefined;
-  const { data: artistImg } = useArtistImage(rid?.objectId, rid?.serviceId, rid?.accountId);
+  const { data: artistImg } = useArtistImage(
+    rid?.objectId,
+    rid?.serviceId,
+    rid?.accountId,
+    item.resource?.defaults as string | undefined,
+  );
   return (
     <MediaCard
       name={getName(item)}

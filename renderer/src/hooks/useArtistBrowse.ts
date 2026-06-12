@@ -123,11 +123,12 @@ export function useArtistImage(
   artistId: string | undefined,
   serviceId: string | undefined,
   accountId: string | undefined,
+  defaults?: string,
 ) {
   return useQuery({
     queryKey: ['artist-image', artistId] as const,
     queryFn: async (): Promise<string | null> => {
-      const r = await api.browse.artist(artistId!, { serviceId, accountId, muse2: true });
+      const r = await api.browse.artist(artistId!, { serviceId, accountId, defaults, muse2: true });
       if (r.error || !r.data) return null;
       return (r.data as ArtistResponse).images?.tile1x1 ?? null;
     },

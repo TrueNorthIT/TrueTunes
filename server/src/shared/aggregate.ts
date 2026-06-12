@@ -101,8 +101,8 @@ function artistKeysFor(e: RawEvent): string[] {
   // a single entry, don't try to split.
   if (/\d/.test(raw)) return [raw];
 
-  const parts = raw.split(/,\s*/).map((s) => s.trim()).filter(Boolean);
-  return parts.length > 0 ? parts : [raw];
+  // parts is only empty when raw is nothing but separators — not a real artist.
+  return raw.split(/,\s*/).map((s) => s.trim()).filter(Boolean);
 }
 
 function bumpQueuer(
