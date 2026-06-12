@@ -106,6 +106,11 @@ export function getArtist(item: QueueItem): string {
   return resolveArtistName(item?.track?.artist ?? item?.artist ?? item?.primaryArtist ?? '');
 }
 
+// Sonos serves multi-artist credits as a single joined string ("Sonny Stitt, Kenny Garrett").
+export function splitArtists(artist: string): string[] {
+  return artist.split(/,\s*/).map((s) => s.trim()).filter(Boolean);
+}
+
 export function getAlbum(item: QueueItem): string {
   const raw = item?.track?.album ?? item?.album ?? '';
   if (!raw) return '';
