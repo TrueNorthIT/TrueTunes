@@ -8,6 +8,11 @@ import { vi } from 'vitest';
   disconnect() {}
 };
 
+// jsdom defaults innerWidth to 1024, which is below the skinny-mode breakpoint
+// (FULL_MIN = 1144) and would make the app render the skinny side-panel layout.
+// Use the app's real default window width so tests exercise the full layout.
+window.innerWidth = 1280;
+
 const noop = () => () => {};
 const pending = () => new Promise<never>(() => {});
 

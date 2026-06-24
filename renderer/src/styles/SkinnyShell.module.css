@@ -1,0 +1,9 @@
+/* Full-window skinny side-panel layout: queue fills the height, condensed
+   transport strip pinned at the bottom. */
+.shell {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}

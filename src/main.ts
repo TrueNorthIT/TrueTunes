@@ -1231,7 +1231,10 @@ function createUIWindow(): void {
   uiWin = new BrowserWindow({
     width: 1280,
     height: 720,
-    minWidth: 864 + 280, // player bar (800) + 32px each side + min queue width
+    // 320 is the skinny side-panel floor. The full layout needs ~1144px
+    // (player bar 800 + queue 280 + padding); below that the renderer collapses
+    // to skinny mode (see useSkinnyMode / FULL_MIN), so we let the window shrink.
+    minWidth: 320,
     minHeight: 480,
     title: `True-Tunes v${app.getVersion()}`,
     backgroundColor: '#1c1c1e',
