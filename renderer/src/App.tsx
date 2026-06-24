@@ -33,6 +33,8 @@ import { ContainerPanel } from './components/ContainerPanel';
 import { LeaderboardPanel } from './components/LeaderboardPanel';
 import { QueuedlePanel } from './components/queuedle/QueuedlePanel';
 import { QueueSidebar, type QueueSidebarHandle } from './components/queue/QueueSidebar';
+import { SkinnyShell } from './components/skinny/SkinnyShell';
+import { useSkinnyMode } from './hooks/useSkinnyMode';
 import { MiniPlayerShell } from './components/MiniPlayer';
 import { FeedbackDialog } from './components/FeedbackDialog';
 import { ChangelogDialog } from './components/ChangelogDialog';
@@ -93,6 +95,7 @@ function MainApp() {
   const [queueDockedWidth, setQueueDockedWidth] = useState<number>(380);
   const queueSidebarRef = useRef<QueueSidebarHandle>(null);
   const shellRef = useRef<HTMLDivElement>(null);
+  const skinny = useSkinnyMode();
   const handleResizeWidthLive = useCallback((width: number) => {
     shellRef.current?.style.setProperty('--docked-queue-w', `${width}px`);
   }, []);
@@ -423,12 +426,26 @@ useEffect(() => {
   return (
     <ToastProvider>
     <ContextMenuProvider displayName={displayName} onAddToQueue={handleAddToQueue}>
+    <Splash ready={splashReady} />
+    {skinny ? (
+      <SkinnyShell
+        isAuthed={isAuthed}
+        playback={playback}
+        queueItems={queueItems}
+        setQueueItems={setQueueItems}
+        queueLoading={queueLoading}
+        queueError={queueError}
+        reloadQueue={reloadQueue}
+        showToast={showToast}
+        groups={groups}
+        activeGroupId={activeGroupId}
+      />
+    ) : (
     <div
       ref={shellRef}
       className={styles.shell}
       style={{ '--docked-queue-w': `${queueDockedWidth}px` } as React.CSSProperties}
     >
-      <Splash ready={splashReady} />
       <TopNav
         isAuthed={isAuthed}
         groups={groups}
@@ -504,15 +521,16 @@ useEffect(() => {
         onShuffle={reloadQueue}
         displayName={displayName}
       />
-      {toastMsg && <div className={styles.toast}>{toastMsg}</div>}
-      {entraLoading && (
-        <div className={styles.entraSigningIn}>
-          <span>Signing in with your organisation account…</span>
-        </div>
-      )}
-      {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
-      {changelogOpen && <ChangelogDialog onClose={() => setChangelogOpen(false)} />}
     </div>
+    )}
+    {toastMsg && <div className={styles.toast}>{toastMsg}</div>}
+    {entraLoading && (
+      <div className={styles.entraSigningIn}>
+        <span>Signing in with your organisation account…</span>
+      </div>
+    )}
+    {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
+    {changelogOpen && <ChangelogDialog onClose={() => setChangelogOpen(false)} />}
     </ContextMenuProvider>
     </ToastProvider>
   );

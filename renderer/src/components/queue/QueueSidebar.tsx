@@ -28,6 +28,8 @@ interface Props {
   dockedWidth?: number;
   onResizeWidth?: (width: number) => void;
   onResizeWidthLive?: (width: number) => void;
+  /** 'docked' = resizable sidebar pinned to the right; 'skinny' = full-width panel, no resize. */
+  variant?: 'docked' | 'skinny';
 }
 
 export interface QueueSidebarHandle {
@@ -55,6 +57,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     dockedWidth,
     onResizeWidth,
     onResizeWidthLive,
+    variant = 'docked',
   },
   ref
 ) {
@@ -271,19 +274,22 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   }
 
   const selCount = selected.size;
-  const sidebarClass = styles.sidebar;
-  const sidebarStyle = { width: liveWidth };
+  const isSkinny = variant === 'skinny';
+  const sidebarClass = isSkinny ? `${styles.sidebar} ${styles.skinny}` : styles.sidebar;
+  const sidebarStyle = isSkinny ? undefined : { width: liveWidth };
 
   return (
     <div className={sidebarClass} style={sidebarStyle}>
-      <div
-        className={styles.resizeHandle}
-        onPointerDown={handleResizePointerDown}
-        onPointerMove={e => e.currentTarget.style.setProperty('--mouse-y', `${e.nativeEvent.offsetY}px`)}
-        role="separator"
-        aria-orientation="vertical"
-        aria-label="Resize queue"
-      />
+      {!isSkinny && (
+        <div
+          className={styles.resizeHandle}
+          onPointerDown={handleResizePointerDown}
+          onPointerMove={e => e.currentTarget.style.setProperty('--mouse-y', `${e.nativeEvent.offsetY}px`)}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize queue"
+        />
+      )}
       <div className={styles.dockedTopBar}>
         <div className={styles.winPill}>
           <WindowControls />
