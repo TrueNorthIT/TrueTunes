@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { applyReorderLocally, expandToAlbumBlock } from '../../lib/queueHelpers';
 import { createDragGhost } from '../../lib/dragHelpers';
 import { getActiveProvider } from '../../providers';
-import { useAttribution, attributionContentKeys } from '../../hooks/useAttribution';
+import { useAttribution, attributionContentKey } from '../../hooks/useAttribution';
 import { trackQueryOptions } from '../../hooks/useTrackDetails';
 import { DraggableQueueRow } from './DraggableQueueRow';
 import { WindowControls } from '../WindowControls';
@@ -21,10 +21,8 @@ function resolveAttribution(
 ): AttributionEntry | undefined {
   const byId = map[track.id ?? ''];
   if (byId) return byId;
-  for (const ck of attributionContentKeys(track.title, track.artist)) {
-    if (map[ck]) return map[ck];
-  }
-  return undefined;
+  const ck = attributionContentKey(track.title, track.artist);
+  return ck ? map[ck] : undefined;
 }
 
 interface Props {

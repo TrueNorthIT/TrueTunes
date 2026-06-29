@@ -33,7 +33,11 @@
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(f\\\\\"#{i['number']} [{'PR' if 'pull_request' in i else 'issue'}] {i['title']}\\\\\"\\) for i in d]\")",
       "Bash(curl -s http://localhost:9333/json/version)",
       "PowerShell(npm run *)",
-      "PowerShell(npx vitest run src/components/queue/__tests__/QueueSidebar.test.tsx src/hooks/__tests__/useAttribution.test.ts 2>&1 | Select-Object -Last 20)"
+      "PowerShell(npx vitest run src/components/queue/__tests__/QueueSidebar.test.tsx src/hooks/__tests__/useAttribution.test.ts 2>&1 | Select-Object -Last 20)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(f\\\\\"#{p['number']} {p['head']['ref']} -> {p['base']['ref']} | {p['title']}\\\\\"\\) for p in d]\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(f\\\\\"--- {r['user']['login']} [{r['state']}] \\({r.get\\('submitted_at'\\)}\\) ---\\\\n{r.get\\('body'\\)}\\\\n\\\\\"\\) for r in d]\")",
+      "Bash(git rm *)",
+      "Bash(git check-ignore *)"
     ]
   }
 }
