@@ -92,7 +92,15 @@ const PERIODS: { value: StatsPeriod; label: string }[] = [
   { value: 'alltime', label: 'All time' },
 ];
 
-const MEDALS = ['🥇', '🥈', '🥉'];
+const MEDAL_CLASS = [styles.medalGold, styles.medalSilver, styles.medalBronze];
+
+// Top-3 get a metallic medal disc; everyone else gets their plain rank number.
+function RankBadge({ index }: { index: number }) {
+  if (index < 3) {
+    return <span className={`${styles.medal} ${MEDAL_CLASS[index]}`}>{index + 1}</span>;
+  }
+  return <span className={styles.rankNum}>{index + 1}</span>;
+}
 
 const QUEUEDLE_RANK_INFO: Array<{
   key: Exclude<GameRankTierKey, 'provisional'>;
@@ -201,7 +209,7 @@ export function LeaderboardPanel() {
               queuedleRows.slice(0, 25).map((r, i) => (
                 <div key={r.userName} className={styles.queuedleRow}>
                   <span className={styles.rank}>
-                    {i < 3 ? MEDALS[i] : <span className={styles.rankNum}>{i + 1}</span>}
+                    <RankBadge index={i} />
                   </span>
                   <button className={styles.userNameBtn} onClick={() => navigate(`/profile/${encodeURIComponent(r.userName)}`)}>{r.userName}</button>
                   <div className={styles.barWrap}>
@@ -247,7 +255,7 @@ export function LeaderboardPanel() {
                     onClick={() => setSelectedUser(u.userId)}
                   >
                     <span className={styles.rank}>
-                      {i < 3 ? MEDALS[i] : <span className={styles.rankNum}>{i + 1}</span>}
+                      <RankBadge index={i} />
                     </span>
                     <button className={styles.userNameBtn} onClick={e => { e.stopPropagation(); navigate(`/profile/${encodeURIComponent(u.userId)}`); }}>{u.userId}</button>
                     <div className={styles.barWrap}>

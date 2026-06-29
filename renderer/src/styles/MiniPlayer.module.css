@@ -179,24 +179,32 @@
 }
 .playBtn:hover { background: rgba(255, 255, 255, 0.22); }
 
-/* ── Close button ── */
+/* ── Close button ──
+ * Tucked flush into the top-right corner. The outer corner radius matches the
+ * shell's 18px so the button reads as part of the rounded corner, with only the
+ * inner (bottom-left) corner rounded. Absolutely positioned so it sits hard
+ * against the shell edge regardless of the content padding. */
 .closeBtn {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
   border: none;
+  border-radius: 0 18px 0 8px;
   background: rgba(255, 255, 255, 0.07);
   color: rgba(255, 255, 255, 0.40);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding-top: 2px;
+  padding-right: 2px;
   font-size: 10px;
   line-height: 1;
   flex-shrink: 0;
-  align-self: flex-start;
-  margin-top: 4px;
   transition: background 0.12s, color 0.12s;
   -webkit-app-region: no-drag;
+  z-index: 2;
 }
 .closeBtn:hover { background: rgba(220, 50, 50, 0.55); color: #fff; }

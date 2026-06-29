@@ -4,13 +4,26 @@ import { Loader2 } from 'lucide-react';
 import { applyReorderLocally, expandToAlbumBlock } from '../../lib/queueHelpers';
 import { createDragGhost } from '../../lib/dragHelpers';
 import { getActiveProvider } from '../../providers';
-import { useAttribution } from '../../hooks/useAttribution';
+import { useAttribution, attributionContentKey } from '../../hooks/useAttribution';
 import { trackQueryOptions } from '../../hooks/useTrackDetails';
 import { DraggableQueueRow } from './DraggableQueueRow';
 import { WindowControls } from '../WindowControls';
 import type { NormalizedQueueItem } from '../../types/provider';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/QueueSidebar.module.css';
+
+// Match attribution by the track's objectId first; fall back to a title+artist
+// content key so a lone track keeps its badge after Sonos re-keys it in the
+// queue (see issue #84 and attributionContentKey).
+function resolveAttribution(
+  map: AttributionMap,
+  track: NormalizedQueueItem['track'],
+): AttributionEntry | undefined {
+  const byId = map[track.id ?? ''];
+  if (byId) return byId;
+  const ck = attributionContentKey(track.title, track.artist);
+  return ck ? map[ck] : undefined;
+}
 
 interface Props {
   items: NormalizedQueueItem[];
@@ -348,7 +361,7 @@ onClick={handleContentClick}
               index={i}
               currentObjectId={currentObjectId}
               currentQueueItemId={currentQueueItemId}
-              attribution={attributionMap[item.track.id ?? '']}
+              attribution={resolveAttribution(attributionMap, item.track)}
               isSelected={selected.has(i)}
               timeToPlay={timesToPlay[i]}
               onRowClick={handleRowClick}

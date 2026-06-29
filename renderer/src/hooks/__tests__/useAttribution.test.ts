@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useAttribution } from '../useAttribution';
+import { useAttribution, attributionContentKey } from '../useAttribution';
 
 const mockOnAttributionMap   = vi.mocked(window.sonos.onAttributionMap);
 const mockOnAttributionEvent = vi.mocked(window.sonos.onAttributionEvent);
@@ -61,6 +61,42 @@ describe('useAttribution', () => {
       eventCb?.({ type: 'queued', uri: 'uri:1', user: 'charlie', timestamp: 0, trackName: 'T', artist: 'A' });
     });
     expect(onRemoteQueue).toHaveBeenCalled();
+  });
+
+  it('indexes live events under a title+artist content key (issue #84)', () => {
+    let eventCb: ((event: AttributionEvent) => void) | undefined;
+    mockOnAttributionEvent.mockImplementation((cb) => { eventCb = cb; return () => {}; });
+
+    const { result } = renderHook(() => useAttribution());
+    act(() => {
+      eventCb?.({ type: 'queued', uri: 'obj:1', user: 'dana', timestamp: 9, trackName: 'Svefn-g-englar', artist: 'Sigur Rós' });
+    });
+
+    // A re-keyed queue row (different objectId, same title+artist) still resolves.
+    const ck = attributionContentKey('Svefn-g-englar', 'Sigur Rós')!;
+    expect(result.current[ck].user).toBe('dana');
+  });
+
+  it('does not build a content key without both title and artist', () => {
+    // Title-only would mis-attribute a different same-titled song, so it's refused.
+    expect(attributionContentKey('Intro', '')).toBeNull();
+    expect(attributionContentKey('', 'Some Artist')).toBeNull();
+  });
+
+  it('does not index the persisted snapshot under content keys', () => {
+    let mapCb: ((map: AttributionMap) => void) | undefined;
+    mockOnAttributionMap.mockImplementation((cb) => { mapCb = cb; return () => {}; });
+
+    const { result } = renderHook(() => useAttribution());
+    act(() => {
+      mapCb?.({ 'obj:1': { user: 'old', timestamp: 1, trackName: 'Foo', artist: 'Bar' } });
+    });
+
+    // Snapshot entries must stay objectId-keyed so a track queued hours ago can't
+    // falsely attribute an unrelated current row with the same title+artist.
+    const ck = attributionContentKey('Foo', 'Bar')!;
+    expect(result.current['obj:1'].user).toBe('old');
+    expect(result.current[ck]).toBeUndefined();
   });
 
   it('calls unsubscribe functions on unmount', () => {
