@@ -42,6 +42,7 @@ vi.mock('../../../providers', () => ({
 
 vi.mock('../../../hooks/useAttribution', () => ({
   useAttribution: () => ({}),
+  attributionContentKeys: () => [],
 }));
 
 vi.mock('../../../hooks/useTrackDetails', () => ({

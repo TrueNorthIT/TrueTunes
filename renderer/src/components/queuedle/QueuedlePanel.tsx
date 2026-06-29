@@ -28,6 +28,16 @@ import styles from '../../styles/Queuedle.module.css';
 type Phase = 'intro' | 'main' | 'bonus' | 'bonus-results' | 'rank-change' | 'summary';
 type LeaderboardTab = 'today' | 'ranked';
 
+const MEDAL_CLASS = [styles.medalGold, styles.medalSilver, styles.medalBronze];
+
+// Top-3 get a metallic medal disc; everyone else gets their plain rank number.
+function RankBadge({ index }: { index: number }) {
+  if (index < 3) {
+    return <span className={`${styles.medal} ${MEDAL_CLASS[index]}`}>{index + 1}</span>;
+  }
+  return <>{index + 1}</>;
+}
+
 function londonDateToday(): string {
   const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Europe/London',
@@ -334,7 +344,7 @@ export function QueuedlePanel() {
             </h2>
             {scores.slice(0, 10).map((s, i) => (
               <div key={s.userName} className={styles.scoreRow}>
-                <span className={styles.scoreRank}>{i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span>
+                <span className={styles.scoreRank}><RankBadge index={i} /></span>
                 <button className={styles.scoreNameBtn} onClick={() => navigate(`/profile/${encodeURIComponent(s.userName)}`)}>{s.userName}</button>
                 <span className={styles.scoreBreakdown}>
                   {s.mainScore}/{currentGame.questions.length} · {s.bonusScore}/{currentGame.questions.length}
@@ -366,7 +376,7 @@ export function QueuedlePanel() {
             {!rankings.isLoading &&
               rankedRows.slice(0, 10).map((ranked, i) => (
                 <div key={ranked.userName} className={styles.scoreRow}>
-                  <span className={styles.scoreRank}>{i + 1}</span>
+                  <span className={styles.scoreRank}><RankBadge index={i} /></span>
                   <button className={styles.scoreNameBtn} onClick={() => navigate(`/profile/${encodeURIComponent(ranked.userName)}`)}>{ranked.userName}</button>
                   <span className={styles.scoreBreakdown}>
                     {ranked.gamesPlayed} {ranked.gamesPlayed === 1 ? 'game' : 'games'} ·{' '}

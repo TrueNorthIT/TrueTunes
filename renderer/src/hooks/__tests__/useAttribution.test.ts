@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useAttribution } from '../useAttribution';
+import { useAttribution, attributionContentKeys } from '../useAttribution';
 
 const mockOnAttributionMap   = vi.mocked(window.sonos.onAttributionMap);
 const mockOnAttributionEvent = vi.mocked(window.sonos.onAttributionEvent);
@@ -61,6 +61,38 @@ describe('useAttribution', () => {
       eventCb?.({ type: 'queued', uri: 'uri:1', user: 'charlie', timestamp: 0, trackName: 'T', artist: 'A' });
     });
     expect(onRemoteQueue).toHaveBeenCalled();
+  });
+
+  it('indexes live events under title+artist and title-only content keys (issue #84)', () => {
+    let eventCb: ((event: AttributionEvent) => void) | undefined;
+    mockOnAttributionEvent.mockImplementation((cb) => { eventCb = cb; return () => {}; });
+
+    const { result } = renderHook(() => useAttribution());
+    act(() => {
+      eventCb?.({ type: 'queued', uri: 'obj:1', user: 'dana', timestamp: 9, trackName: 'Svefn-g-englar', artist: 'Sigur Rós' });
+    });
+
+    const [withArtist, nameOnly] = attributionContentKeys('Svefn-g-englar', 'Sigur Rós');
+    // A re-keyed queue row (different objectId, same title/artist) still resolves.
+    expect(result.current[withArtist].user).toBe('dana');
+    // And survives artist-string drift via the title-only key.
+    expect(result.current[nameOnly].user).toBe('dana');
+  });
+
+  it('does not index the persisted snapshot under content keys', () => {
+    let mapCb: ((map: AttributionMap) => void) | undefined;
+    mockOnAttributionMap.mockImplementation((cb) => { mapCb = cb; return () => {}; });
+
+    const { result } = renderHook(() => useAttribution());
+    act(() => {
+      mapCb?.({ 'obj:1': { user: 'old', timestamp: 1, trackName: 'Foo', artist: 'Bar' } });
+    });
+
+    // Snapshot entries must stay objectId-keyed so a track queued hours ago can't
+    // falsely attribute an unrelated current row with the same title.
+    const [withArtist] = attributionContentKeys('Foo', 'Bar');
+    expect(result.current['obj:1'].user).toBe('old');
+    expect(result.current[withArtist]).toBeUndefined();
   });
 
   it('calls unsubscribe functions on unmount', () => {

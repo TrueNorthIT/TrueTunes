@@ -8,6 +8,7 @@ import { useImage } from '../hooks/useImage';
 import { getGameRankIcon } from '../lib/gameRankAssets';
 import { useOpenItem } from '../hooks/useOpenItem';
 import { createDragGhost } from '../lib/dragHelpers';
+import { normalizeAvatar } from '../lib/avatarImage';
 import { CardRow } from './CardRow';
 import { MediaRow } from './common/MediaRow';
 import { CreatePlaylistDialog } from './common/ContextMenu';
@@ -118,8 +119,8 @@ const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, 
     if (!file || !userName) return;
     setUploading(true);
     try {
-      const buf = await file.arrayBuffer();
-      await window.sonos.uploadProfileImage(userName, buf, file.type);
+      const { buffer, mimeType } = await normalizeAvatar(file);
+      await window.sonos.uploadProfileImage(userName, buffer, mimeType);
       invalidateProfile(userName);
     } finally {
       setUploading(false);
