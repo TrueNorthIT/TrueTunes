@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { api } from '../lib/sonosApi';
-import { getName, isAlbum, isArtist, parseServiceSearch } from '../lib/itemHelpers';
+import { getName, isAlbum, isArtist, parseServiceSearch, splitArtists } from '../lib/itemHelpers';
 import type { ServiceSearch } from '../types/ServiceSearch';
 import type { SonosArtist, SonosItem } from '../types/sonos';
 import { useOpenItem } from './useOpenItem';
@@ -42,15 +42,18 @@ export function useResolveAndOpen() {
       const candidates = items.filter(filter);
 
       const lowerName = query.toLowerCase();
-      const lowerArtist = opts?.artist?.toLowerCase();
+      // The hint may be a joined multi-artist string ("Sonny Stitt, Kenny Garrett");
+      // candidates list artists individually, so match against each split name.
+      const hintArtists = opts?.artist ? splitArtists(opts.artist.toLowerCase()) : [];
       const nameMatches = candidates.filter((c) => getName(c).toLowerCase() === lowerName);
 
       // For albums with an artist hint, require the artist to match — otherwise we'd
       // happily land on a same-named album/single by a different artist.
       let match: SonosItem | undefined;
-      if (target === 'album' && lowerArtist) {
-        match = nameMatches.find((c) => itemArtistNames(c).includes(lowerArtist))
-          ?? candidates.find((c) => itemArtistNames(c).includes(lowerArtist));
+      if (target === 'album' && hintArtists.length > 0) {
+        const matchesHint = (c: SonosItem) =>
+          itemArtistNames(c).some((n) => hintArtists.includes(n));
+        match = nameMatches.find(matchesHint) ?? candidates.find(matchesHint);
       } else if (target === 'artist' && lowerName) {
         match = nameMatches[0] ?? candidates[0];
       } else {

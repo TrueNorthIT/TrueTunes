@@ -15,6 +15,14 @@
   z-index: 200;
 }
 
+/* Skinny side-panel mode — fills the whole window width, no docking/resize. */
+.sidebar.skinny {
+  width: 100%;
+  margin-left: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 /* Top strip in docked mode — hosts window controls; aligns with TopNav height
    so the visual horizon across the app stays consistent. */
 .dockedTopBar {

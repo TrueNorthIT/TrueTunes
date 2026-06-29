@@ -8,6 +8,7 @@ import { useImage } from '../hooks/useImage';
 import { useArtistImage } from '../hooks/useArtistBrowse';
 import { getGameRankIcon, getGameRankInfoImage } from '../lib/gameRankAssets';
 import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
+import { splitArtists } from '../lib/itemHelpers';
 import styles from '../styles/LeaderboardPanel.module.css';
 
 function CachedArt({ url, className }: { url: string | undefined; className: string }) {
@@ -61,7 +62,7 @@ function ArtistLinks({
   onNavigateArtist: (name: string, artistId: string, serviceId: string, accountId: string) => void;
   onResolveArtist: (name: string) => void;
 }) {
-  const parts = artist.split(/,\s*/).map((s) => s.trim()).filter(Boolean);
+  const parts = splitArtists(artist);
   if (parts.length === 0) return null;
   const canUseDirect = parts.length === 1 && !!artistId && !!serviceId && !!accountId;
   return (
