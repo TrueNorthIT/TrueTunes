@@ -403,6 +403,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                             height: `${gridHeight}px`,
                             '--grid-cols': numCols,
                             '--grid-rows': numRows,
+                            '--inner-h': `${gridHeight}px`,
                           } as React.CSSProperties}
                         >
                           {artistItems.map((item, i) => (

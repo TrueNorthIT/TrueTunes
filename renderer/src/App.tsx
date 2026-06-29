@@ -170,7 +170,7 @@ useEffect(() => {
   }, [applyGroupCache]);
 
   const publishTrackAttribution = useCallback(
-    (trackId: string, serviceId: string, accountId: string, fallback: { trackName: string; imageUrl?: string }) => {
+    (trackId: string, serviceId: string, accountId: string, fallback: { trackName: string; artist?: string; imageUrl?: string }) => {
       // Use cached metadata if available; publish immediately with fallback so attribution
       // is never lost because of a secondary metadata fetch failing.
       const cached = queryClient.getQueryData(
@@ -180,7 +180,7 @@ useEffect(() => {
         eventType: 'track',
         uri: trackId,
         trackName: cached?.trackName ?? fallback.trackName,
-        artist: cached?.artist ?? '',
+        artist: cached?.artist ?? fallback.artist ?? '',
         serviceId,
         accountId,
         artistId: cached?.artistId,
@@ -323,6 +323,9 @@ useEffect(() => {
       if (isSingleTrack && uri) {
         publishTrackAttribution(uri, serviceId, accountId, {
           trackName: getName(normalized),
+          // Artist powers the title+artist content-key fallback that keeps a lone
+          // track's badge after Sonos re-keys its objectId (issue #84).
+          artist: sonosItemToNormalizedQueueItem(normalized, 0).track.artist || undefined,
           imageUrl: getItemArt(item) ?? undefined,
         });
       } else if (isAlbumItem && uri) {

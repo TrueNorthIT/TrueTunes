@@ -277,9 +277,16 @@
 }
 
 .artistGridInner {
+  /* Cells are square (width tracks the row height) and packed to the left so the
+     first column lines up under the "Artists" title. Sizing columns as 1fr made
+     the cells stretch far wider than the height-driven circles on full-screen,
+     centering each circle in an over-wide cell and visibly drifting it away from
+     the title. */
+  --artist-cell: calc((var(--inner-h, 0px) - (var(--grid-rows, 1) - 1) * 4px) / var(--grid-rows, 1));
   display: grid;
-  grid-template-columns: repeat(var(--grid-cols, 3), 1fr);
+  grid-template-columns: repeat(var(--grid-cols, 3), var(--artist-cell));
   grid-template-rows: repeat(var(--grid-rows, 3), 1fr);
+  justify-content: start;
   row-gap: 4px;
   column-gap: 0;
 }

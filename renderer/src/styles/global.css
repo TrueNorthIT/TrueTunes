@@ -36,6 +36,12 @@ textarea {
   font-family: 'San Francisco';
   font-weight: 400;
   src: url('https://applesocial.s3.amazonaws.com/assets/styles/fonts/sanfrancisco/sanfranciscodisplay-regular-webfont.woff');
+  /* This webfont only ships Basic Latin glyphs and renders a visible box for
+     anything outside it (e.g. the æ/ó/ð in "Ágætis Byrjun" / "Sigur Rós").
+     A box counts as a glyph, so the browser won't fall back per-character.
+     Scoping the font to ASCII lets every other codepoint fall through to the
+     system fonts below, which have full multi-language coverage. */
+  unicode-range: U+0000-007F;
 }
 
 body {
