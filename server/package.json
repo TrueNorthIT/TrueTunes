@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "start": "npm run build && func start",
+    "start": "npm run build && func start --javascript",
     "prestart": "npm run build",
     "deploy": "node scripts/deploy.mjs"
   },
@@ -17,7 +17,7 @@
     "@azure/web-pubsub": "^1.1.3"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^20.19.43",
     "typescript": "^5.4.0"
   }
 }
