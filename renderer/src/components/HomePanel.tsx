@@ -21,6 +21,7 @@ import { useDailyGame, useMyScore } from '../hooks/useDailyGame';
 import { useImage } from '../hooks/useImage';
 import { createDragGhost } from '../lib/dragHelpers';
 import { PlaylistCard } from './common/PlaylistCard';
+import { UserAvatar } from './common/UserAvatar';
 import type { ServiceSearch } from '../types/ServiceSearch';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
 import { artistQueryOptions } from '../hooks/useArtistBrowse';
@@ -30,20 +31,10 @@ import { CreatePlaylistDialog } from './common/ContextMenu';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/HomePanel.module.css';
 
-function avatarGradient(name: string) {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) { h = name.charCodeAt(i) + ((h << 5) - h); h |= 0; }
-  const hue = Math.abs(h) % 360;
-  return `linear-gradient(135deg, hsl(${hue},55%,38%), hsl(${(hue + 40) % 360},60%,28%))`;
-}
-
 function UserAvatarChip({ user, onClick }: { user: UserSummary; onClick: () => void }) {
-  const art = useImage(user.imageUrl ?? null);
   return (
     <button className={styles.userChip} onClick={onClick} title={user.userId}>
-      <div className={styles.userAvatar} style={art ? undefined : { background: avatarGradient(user.userId) }}>
-        {art ? <img src={art} alt="" /> : user.userId[0].toUpperCase()}
-      </div>
+      <UserAvatar name={user.userId} imageUrl={user.imageUrl} className={styles.userAvatar} />
       <span className={styles.userName}>{user.userId}</span>
     </button>
   );

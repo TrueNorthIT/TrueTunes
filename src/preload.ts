@@ -59,6 +59,9 @@ export interface SonosAPI {
   fetchMyScore: (gameId: string, userName: string) => Promise<unknown>;
   fetchGameStats: (date?: string) => Promise<unknown>;
   fetchRecentlyPlayed: (userId: string) => Promise<unknown>;
+  fetchDjSet: (opts?: { users?: string[]; limit?: number; excludeUris?: string[] }) => Promise<unknown>;
+  fetchOfficePresence: () => Promise<unknown>;
+  djAutoplay: (body: unknown) => Promise<unknown>;
   geniusDescription: (trackName: string, artistName: string) => Promise<string | null>;
   geniusArtist: (artistName: string, trackHint?: string) => Promise<unknown>;
   geniusAlbumYear: (albumName: string, artistName: string) => Promise<number | null>;
@@ -74,7 +77,7 @@ export interface SonosAPI {
   joinPlaylist: (playlistId: string, action: 'join' | 'leave') => Promise<unknown>;
   uploadPlaylistImage: (playlistId: string, data: ArrayBuffer, mimeType: string, userName: string) => Promise<unknown>;
   ensureFavourites: () => Promise<unknown>;
-  fetchUsers: () => Promise<unknown>;
+  fetchUsers: (includeSelf?: boolean) => Promise<unknown>;
   fetchUserProfile: (userName: string) => Promise<unknown>;
   uploadProfileImage: (userName: string, data: ArrayBuffer, mimeType: string) => Promise<unknown>;
   getEntraUser: () => Promise<EntraUser | null>;
@@ -201,6 +204,10 @@ contextBridge.exposeInMainWorld('sonos', {
   },
   fetchRecentlyPlayed: (userId: string) =>
     ipcRenderer.invoke('history:recent', userId),
+  fetchDjSet: (opts?: { users?: string[]; limit?: number; excludeUris?: string[] }) =>
+    ipcRenderer.invoke('dj:fetch', opts ?? {}),
+  fetchOfficePresence: () => ipcRenderer.invoke('presence:office'),
+  djAutoplay: (body: unknown) => ipcRenderer.invoke('dj:autoplay', body),
   geniusDescription: (trackName: string, artistName: string) =>
     ipcRenderer.invoke('genius:description', trackName, artistName),
   geniusArtist: (artistName: string, trackHint?: string) =>
@@ -235,7 +242,7 @@ contextBridge.exposeInMainWorld('sonos', {
   joinPlaylist: (playlistId, action) => ipcRenderer.invoke('playlist:join', playlistId, action),
   uploadPlaylistImage: (playlistId, data, mimeType, userName) => ipcRenderer.invoke('playlist:uploadImage', playlistId, data, mimeType, userName),
   ensureFavourites: () => ipcRenderer.invoke('profile:ensureFavourites'),
-  fetchUsers: () => ipcRenderer.invoke('users:list'),
+  fetchUsers: (includeSelf?: boolean) => ipcRenderer.invoke('users:list', includeSelf),
   fetchUserProfile: (userName) => ipcRenderer.invoke('profile:get', userName),
   uploadProfileImage: (userName, data, mimeType) => ipcRenderer.invoke('profile:uploadImage', userName, data, mimeType),
   getEntraUser: () => ipcRenderer.invoke('auth:getEntraUser'),

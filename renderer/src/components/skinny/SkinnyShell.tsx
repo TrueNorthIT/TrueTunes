@@ -17,6 +17,13 @@ interface Props {
   showToast: (msg: string) => void;
   groups: NormalizedGroup[];
   activeGroupId: string | null;
+  /** Same DJ section as the docked queue — it's the same queue underneath. */
+  autoplay?: {
+    enabled: boolean;
+    upcoming: DjTrack[];
+    fillerUri: string | null;
+    setEnabled: (on: boolean) => void;
+  };
 }
 
 /**
@@ -25,6 +32,7 @@ interface Props {
  * Shown automatically when the window is narrower than FULL_MIN.
  */
 export function SkinnyShell({
+  autoplay,
   isAuthed,
   playback,
   queueItems,
@@ -49,6 +57,7 @@ export function SkinnyShell({
   return (
     <div className={styles.shell} style={shellStyle}>
       <QueueSidebar
+        autoplay={autoplay}
         variant="skinny"
         items={queueItems}
         setItems={setQueueItems}

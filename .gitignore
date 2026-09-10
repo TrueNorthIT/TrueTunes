@@ -148,3 +148,4 @@ release/
 # Claude Code per-user local settings — may hold session-generated allowlist
 # entries (incl. credential-reading commands); must never be committed.
 .claude/settings.local.json
+server/dist-test/

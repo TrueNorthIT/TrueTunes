@@ -32,10 +32,16 @@ export async function usersListHandler(
         try {
           const { resource } = await profilesContainer
             .item(r.userId, r.userId)
-            .read<{ id: string; imageUrl?: string | null }>();
-          return { userId: r.userId, lastQueued: r.lastQueued, imageUrl: resource?.imageUrl ?? null };
+            .read<{ id: string; imageUrl?: string | null; entraOid?: string }>();
+          return {
+            userId: r.userId,
+            lastQueued: r.lastQueued,
+            imageUrl: resource?.imageUrl ?? null,
+            // Lets the desktop app ask Graph who is actually in the office.
+            entraOid: resource?.entraOid ?? null,
+          };
         } catch {
-          return { userId: r.userId, lastQueued: r.lastQueued, imageUrl: null };
+          return { userId: r.userId, lastQueued: r.lastQueued, imageUrl: null, entraOid: null };
         }
       }),
     );

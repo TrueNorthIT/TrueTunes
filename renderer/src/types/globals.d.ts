@@ -229,6 +229,96 @@ interface RecentlyPlayedData {
   availableUsers?: string[];
 }
 
+interface DjTrack {
+  uri: string;
+  trackName: string;
+  artist: string;
+  serviceId?: string;
+  accountId?: string;
+  albumId?: string;
+  imageUrl?: string;
+  /** Group score, 0..1 — higher means less likely to annoy anyone listening. */
+  score: number;
+  /** Why this track was picked, e.g. "Rich and Alex queue Royal Blood". */
+  because: string;
+}
+
+/** What the autoplay coordinator decided this round. */
+interface AutoplayResult {
+  enabled: boolean;
+  /** Only the lease holder may act on `enqueue`. */
+  leaseHeld: boolean;
+  /** The track this client should append to the queue, unattributed. */
+  enqueue: DjTrack | null;
+  /** The three picks every client previews below the queue. */
+  upcoming: DjTrack[];
+  /** URI of the filler parked at the tail — user picks go in front of it. */
+  fillerUri: string | null;
+  error?: string;
+}
+
+interface AutoplayRequestBody {
+  groupId: string;
+  clientId: string;
+  queueUris: string[];
+  /** Name-based identity per queue entry, index-aligned with queueUris. */
+  queueKeys?: string[];
+  nowPlayingUri?: string | null;
+  nowPlayingKey?: string | null;
+  /** Zero-based playhead position — the reliable signal. */
+  nowPlayingIndex?: number | null;
+  users?: string[];
+  setEnabled?: boolean;
+}
+
+/** Who Graph says is in the office, and how confident that is. */
+interface OfficePresence {
+  inOffice: string[];
+  /**
+   * 'sensed'       — Teams detected them on the office network (trusted)
+   * 'rostered'     — their Outlook working pattern claims office today
+   * 'availability' — merely online; includes people working from home
+   * 'none'         — no presence available; fall back to queue inference
+   */
+  basis: 'sensed' | 'rostered' | 'availability' | 'none';
+  /** How many of `inOffice` Teams detected on the network, rather than rostered. */
+  observed: number;
+  detail: Array<{ userId: string; availability?: string; workLocationType?: string; source?: string }>;
+  error?: string;
+}
+
+/** A ranked act, plus what the office has already played by them. */
+interface DjArtist {
+  artist: string;
+  artistId?: string;
+  serviceId?: string;
+  accountId?: string;
+  imageUrl?: string;
+  score: number;
+  because: string;
+  /** "trackName||artist" for each track by this act already in the history. */
+  heardTrackKeys: string[];
+}
+
+interface DjSetResult {
+  tracks: DjTrack[];
+  /** Acts to browse for music the office has genuinely never played. */
+  artists: DjArtist[];
+  /** Listeners the set was built for, after dropping anyone with no history. */
+  listeners: string[];
+  artistsConsidered: number;
+  /** True when the room was inferred from recent activity rather than supplied. */
+  inferredListeners: boolean;
+  error?: string;
+}
+
+/**
+ * What the IPC bridge actually hands back. A failed fetch returns `{ error }`
+ * alone, so every field is optional here — `useDjSet` fills the gaps once so
+ * components never touch a half-shaped object.
+ */
+type DjSetResponse = Partial<DjSetResult> & { error?: string };
+
 interface EntraUser {
   oid: string;
   name: string;
@@ -329,6 +419,9 @@ interface SonosPreload {
     imageUrl?: string;
   }) => Promise<void>;
   fetchRecentlyPlayed: (userId: string) => Promise<RecentlyPlayedData | null>;
+  fetchDjSet: (opts?: { users?: string[]; limit?: number; excludeUris?: string[] }) => Promise<DjSetResponse>;
+  fetchOfficePresence: () => Promise<OfficePresence>;
+  djAutoplay: (body: AutoplayRequestBody) => Promise<AutoplayResult>;
   fetchStats: (period: string, userId?: string, count?: number) => Promise<StatsResult>;
   fetchDailyGame: (date?: string) => Promise<GameFetchResult>;
   submitGameScore: (input: {
@@ -366,7 +459,7 @@ interface SonosPreload {
   reorderPlaylistTracks: (playlistId: string, fromIndex: number, toIndex: number) => Promise<PlaylistDoc>;
   joinPlaylist: (playlistId: string, action: 'join' | 'leave') => Promise<PlaylistMeta>;
   uploadPlaylistImage: (playlistId: string, data: ArrayBuffer, mimeType: string, userName: string) => Promise<{ imageUrl: string } | { error: string }>;
-  fetchUsers: () => Promise<UserSummary[]>;
+  fetchUsers: (includeSelf?: boolean) => Promise<UserSummary[]>;
   fetchUserProfile: (userName: string) => Promise<UserProfile | null>;
   uploadProfileImage: (userName: string, data: ArrayBuffer, mimeType: string) => Promise<{ imageUrl: string } | { error: string }>;
   getEntraUser: () => Promise<EntraUser | null>;

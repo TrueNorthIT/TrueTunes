@@ -85,9 +85,14 @@ const RELEASE_TYPE_RE = /\b(Single|Album|EP|LP|Playlist|Various Artists|Compilat
 const METADATA_SEPARATOR_RE = /[•·|]/;
 const VIEW_COUNT_RE = /views|plays|listeners|streams/i;
 
-function artistKeysFor(e: RawEvent): string[] {
-  if (!e.artist) return [];
-  const raw = e.artist.trim();
+export function artistKeysFor(e: RawEvent): string[] {
+  return splitArtists(e.artist);
+}
+
+/** Exported for DJ mode, which groups tracks by the same split rules. */
+export function splitArtists(artist: string | null | undefined): string[] {
+  if (!artist) return [];
+  const raw = artist.trim();
   if (!raw) return [];
 
   // Release-type subtitles and view/play counts aren't artists — drop them so

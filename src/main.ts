@@ -4,7 +4,8 @@ loadEnv(); // loads .env from cwd (repo root) in dev; no-op if file absent
 import { app, BrowserWindow, ipcMain, nativeImage, safeStorage, session, shell, Menu, IpcMainInvokeEvent } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { officePubSub } from './pubsub';
-import { EntraAuth } from './auth-entra';
+import { EntraAuth, PRESENCE_SCOPE } from './auth-entra';
+import { fetchPresences, resolveRoster } from './graph-presence';
 import type { EntraUser } from './auth-entra';
 import * as path from 'path';
 import * as fs from 'fs/promises';
@@ -1521,8 +1522,10 @@ ipcMain.handle('playlist:uploadImage', async (_: IpcMainInvokeEvent, playlistId:
   }
 });
 
-ipcMain.handle('users:list', async () => {
-  const exclude = config.displayName ?? '';
+ipcMain.handle('users:list', async (_: IpcMainInvokeEvent, includeSelf?: boolean) => {
+  // HomePanel wants "other people", so excluding yourself is the default. The
+  // Discover room picker wants everyone — you're in the room too.
+  const exclude = includeSelf ? '' : (config.displayName ?? '');
   const params = exclude ? `?exclude=${encodeURIComponent(exclude)}` : '';
   try {
     const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/users${params}`);
@@ -1607,6 +1610,59 @@ ipcMain.handle('stats:fetch', async (_: IpcMainInvokeEvent, period: string, user
     if (userId) url += `&userId=${encodeURIComponent(userId)}`;
     if (count)  url += `&count=${count}`;
     const res = await fetch(url);
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle('dj:autoplay', async (_: IpcMainInvokeEvent, body: unknown) => {
+  try {
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/dj/autoplay`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body ?? {}),
+    });
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle('presence:office', async () => {
+  try {
+    if (!entraAuth) return { inOffice: [], basis: 'none', detail: [], error: 'not signed in' };
+
+    const token = await entraAuth.acquireGraphToken([PRESENCE_SCOPE]);
+    // No consent yet (or the scope isn't on the app registration) — the caller
+    // falls back to inferring the room from recent queue activity.
+    if (!token) return { inOffice: [], basis: 'none', detail: [], error: 'no presence consent' };
+
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/users`);
+    const users = (await res.json()) as Array<{ userId: string; entraOid?: string | null }>;
+    const oidToName: Record<string, string> = {};
+    for (const u of users) if (u.entraOid) oidToName[u.entraOid] = u.userId;
+
+    const oids = Object.keys(oidToName);
+    if (oids.length === 0) return { inOffice: [], basis: 'none', detail: [] };
+
+    const presences = await fetchPresences(token, oids);
+    return resolveRoster(presences, oidToName);
+  } catch (err) {
+    return { inOffice: [], basis: 'none', detail: [], error: String(err) };
+  }
+});
+
+ipcMain.handle('dj:fetch', async (
+  _: IpcMainInvokeEvent,
+  opts: { users?: string[]; limit?: number; excludeUris?: string[] } = {},
+) => {
+  try {
+    const params = new URLSearchParams();
+    if (opts.users?.length) params.set('users', opts.users.join(','));
+    if (opts.limit) params.set('limit', String(opts.limit));
+    if (opts.excludeUris?.length) params.set('exclude', opts.excludeUris.join(','));
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/dj?${params}`);
     return await res.json();
   } catch (err) {
     return { error: String(err) };

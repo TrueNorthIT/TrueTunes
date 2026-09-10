@@ -11,6 +11,13 @@ export interface EntraUser {
 
 const SCOPES = ['openid', 'profile', 'email'];
 
+/**
+ * Presence lives behind its own scope, acquired on demand rather than at sign-in.
+ * Bundling it into SCOPES would make the whole sign-in fail wherever the tenant
+ * hasn't consented to it, which is a bad trade for a nice-to-have.
+ */
+export const PRESENCE_SCOPE = 'https://graph.microsoft.com/Presence.Read.All';
+
 export class EntraAuth {
   private msalApp: PublicClientApplication;
   private cacheFile: string;
@@ -65,6 +72,23 @@ export class EntraAuth {
     };
     const result = await this.msalApp.acquireTokenInteractive(req);
     return this.extractUser(result);
+  }
+
+  /**
+   * Raw Graph access token for the given scopes, or null when the user hasn't
+   * consented. Silent-only by design: the DJ panel shouldn't throw a browser
+   * window at someone just for opening it. Consent happens at sign-in once the
+   * scope is on the app registration.
+   */
+  async acquireGraphToken(scopes: string[]): Promise<string | null> {
+    const accounts = await this.msalApp.getTokenCache().getAllAccounts();
+    if (accounts.length === 0) return null;
+    try {
+      const result = await this.msalApp.acquireTokenSilent({ scopes, account: accounts[0] });
+      return result?.accessToken ?? null;
+    } catch {
+      return null;
+    }
   }
 
   async signOut(): Promise<void> {

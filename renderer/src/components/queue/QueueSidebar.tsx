@@ -1,12 +1,13 @@
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, Fragment, forwardRef } from 'react';
 import { useQueries } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Disc3 } from 'lucide-react';
 import { applyReorderLocally, expandToAlbumBlock } from '../../lib/queueHelpers';
 import { createDragGhost } from '../../lib/dragHelpers';
 import { getActiveProvider } from '../../providers';
 import { useAttribution, attributionContentKey } from '../../hooks/useAttribution';
 import { trackQueryOptions } from '../../hooks/useTrackDetails';
 import { DraggableQueueRow } from './DraggableQueueRow';
+import { DjUpcomingRow } from './DjUpcomingRow';
 import { WindowControls } from '../WindowControls';
 import type { NormalizedQueueItem } from '../../types/provider';
 import type { SonosItem } from '../../types/sonos';
@@ -43,6 +44,13 @@ interface Props {
   onResizeWidthLive?: (width: number) => void;
   /** 'docked' = resizable sidebar pinned to the right; 'skinny' = full-width panel, no resize. */
   variant?: 'docked' | 'skinny';
+  /** DJ autoplay: what's coming once the queue runs dry. */
+  autoplay?: {
+    enabled: boolean;
+    upcoming: DjTrack[];
+    fillerUri: string | null;
+    setEnabled: (on: boolean) => void;
+  };
 }
 
 export interface QueueSidebarHandle {
@@ -71,6 +79,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     onResizeWidth,
     onResizeWidthLive,
     variant = 'docked',
+    autoplay,
   },
   ref
 ) {
@@ -373,6 +382,41 @@ onClick={handleContentClick}
           </Fragment>
         ))}
         {dragOverIndex === items.length && <div className={styles.dropLine} />}
+
+        {/* Always rendered, even with nothing queued up yet: it's the room's
+            signal that the DJ exists and whether it's armed. Hiding it until
+            picks arrive meant a failed poll looked identical to no feature. */}
+        {autoplay && (
+          <>
+            <div className={styles.djBreak}>
+              <span className={styles.djBreakLine} />
+              <button
+                className={styles.djBreakLabel}
+                onClick={() => autoplay.setEnabled(!autoplay.enabled)}
+                title={
+                  autoplay.enabled
+                    ? 'Stop the DJ filling the queue'
+                    : 'Let the DJ keep the music going'
+                }
+              >
+                <Disc3 size={11} className={autoplay.enabled ? styles.djSpin : undefined} />
+                {autoplay.enabled ? 'DJ takes over' : 'DJ paused'}
+              </button>
+              <span className={styles.djBreakLine} />
+            </div>
+
+            {autoplay.upcoming.length === 0 ? (
+              // The picks show whether or not autoplay is armed — the label above
+              // already says which — so an empty list means the DJ genuinely has
+              // nothing, not that it's switched off.
+              <div className={styles.djEmpty}>Nothing to suggest just yet.</div>
+            ) : (
+              autoplay.upcoming.map((track) => (
+                <DjUpcomingRow key={track.uri} track={track} idle={!autoplay.enabled} />
+              ))
+            )}
+          </>
+        )}
       </div>
 
       {selCount > 0 && (
