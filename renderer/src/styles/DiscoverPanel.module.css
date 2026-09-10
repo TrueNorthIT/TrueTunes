@@ -1,0 +1,354 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: var(--nav-h) 28px 12px;
+  flex-shrink: 0;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.titleIcon {
+  color: var(--text-2);
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.blurb {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.4;
+  max-width: 46ch;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ghostBtn,
+.primaryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  border-radius: 20px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 7px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    opacity 0.15s;
+}
+
+.ghostBtn {
+  background: var(--bg-2);
+  color: var(--text-2);
+}
+.ghostBtn:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.primaryBtn {
+  background: var(--text);
+  color: var(--bg);
+}
+.primaryBtn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.ghostBtn:disabled,
+.primaryBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.spinning {
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Listener chips ─────────────────────────────────────────────────────── */
+
+.listenerBar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 0 28px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* Each group keeps its own label attached to its chips, so the split survives
+   wrapping on a narrow window instead of the labels drifting off. */
+.chipGroup {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.chipGroupLabel {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  opacity: 0.75;
+}
+
+.listenerLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-2);
+  border: 1px solid transparent;
+  border-radius: 14px;
+  color: var(--text-3);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 3px 11px 3px 3px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.chipAvatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.chipAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.chip:hover {
+  color: var(--text-2);
+}
+
+.chipActive {
+  background: var(--text);
+  color: var(--bg);
+}
+
+/* Presence says they're here, though the user hasn't pinned anyone explicitly. */
+.chipInferred {
+  border-color: var(--border-2);
+  color: var(--text-2);
+}
+
+/* Not in the room — still selectable, just clearly not driving the picks. */
+.chipAway {
+  opacity: 0.5;
+}
+.chipAway:hover {
+  opacity: 0.85;
+}
+
+.chipYou {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  padding: 1px 5px;
+  margin-left: 2px;
+}
+.chipActive .chipYou {
+  color: var(--bg);
+  border-color: var(--bg);
+  opacity: 0.65;
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--text-3);
+  font-style: italic;
+}
+
+/* ── List ───────────────────────────────────────────────────────────────── */
+
+.list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 20px calc(var(--player-h) + 16px);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: var(--r-md);
+  transition: background 0.15s;
+}
+.row:hover {
+  background: var(--bg-2);
+}
+
+.art,
+.artPlaceholder {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-sm);
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.artPlaceholder {
+  background: var(--bg-1);
+}
+
+.rowText {
+  min-width: 0;
+  flex: 1;
+}
+
+.trackName {
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.artist {
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.because {
+  font-size: 11px;
+  color: var(--text-3);
+  opacity: 0.75;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.addBtn {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    background 0.15s,
+    color 0.15s;
+}
+.row:hover .addBtn {
+  opacity: 1;
+}
+.addBtn:hover {
+  background: var(--bg-2);
+  color: var(--text);
+}
+
+.empty {
+  padding: 40px 8px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+/* ── Familiar / Discover ────────────────────────────────────────────────── */
+
+.modeTabs {
+  display: flex;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 3px;
+}
+
+.modeBtn {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 14px;
+  border-radius: 16px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.modeBtn:hover {
+  color: var(--text-2);
+}
+
+.modeBtnActive {
+  background: var(--bg-2);
+  color: var(--text);
+}

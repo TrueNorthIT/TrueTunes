@@ -30,6 +30,9 @@ import type { YtmSections } from './components/HomePanel';
 import { AlbumPanel } from './components/album/AlbumPanel';
 import { ArtistPanel } from './components/artist/ArtistPanel';
 import { ContainerPanel } from './components/ContainerPanel';
+import { DiscoverPanel } from './components/DiscoverPanel';
+import { useAutoplay } from './hooks/useAutoplay';
+import type { NormalizedQueueItem } from './types/provider';
 import { LeaderboardPanel } from './components/LeaderboardPanel';
 import { QueuedlePanel } from './components/queuedle/QueuedlePanel';
 import { QueueSidebar, type QueueSidebarHandle } from './components/queue/QueueSidebar';
@@ -94,6 +97,11 @@ function MainApp() {
   useEnsureFavourites(displayName);
   const [queueDockedWidth, setQueueDockedWidth] = useState<number>(380);
   const queueSidebarRef = useRef<QueueSidebarHandle>(null);
+  // Read inside handleAddToQueue without making it depend on queue contents —
+  // it's passed to most of the tree, and rebuilding it on every queue tick would
+  // churn every consumer.
+  const queueItemsRef = useRef<NormalizedQueueItem[]>([]);
+  const fillerUriRef = useRef<string | null>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const skinny = useSkinnyMode();
   const handleResizeWidthLive = useCallback((width: number) => {
@@ -160,6 +168,44 @@ useEffect(() => {
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, []);
+
+  // Autoplay: the coordinator picks, this client enqueues only when it holds the
+  // lease. DJ picks are never attributed — they're the algorithm's choice.
+  const autoplay = useAutoplay({
+    groupId: activeGroupId,
+    items: queueItems,
+    nowPlayingUri: playback.currentObjectId,
+    nowPlayingQueueItemId: playback.queueItemId,
+    onEnqueue: async (track) => {
+      await handleAddToQueue(
+        {
+          title: track.trackName,
+          type: 'ITEM_TRACK',
+          subtitle: track.artist,
+          imageUrl: track.imageUrl,
+          resource: {
+            type: 'TRACK',
+            id: {
+              objectId: track.uri,
+              serviceId: track.serviceId ?? '',
+              accountId: track.accountId ?? '',
+            },
+          },
+        } as SonosItem,
+        -1,
+        // djFiller: this one really does belong at the very end.
+        { attribute: false, djFiller: true },
+      );
+    },
+  });
+
+  useEffect(() => {
+    queueItemsRef.current = queueItems;
+  }, [queueItems]);
+
+  useEffect(() => {
+    fillerUriRef.current = autoplay.fillerUri;
+  }, [autoplay.fillerUri]);
 
   const handleGroupChange = useCallback((groupId: string) => {
     setActiveGroupId(groupId);
@@ -232,7 +278,21 @@ useEffect(() => {
   );
 
   const handleAddToQueue = useCallback(
-    async (item: SonosItem, position = -1) => {
+    async (item: SonosItem, position = -1, opts?: { attribute?: boolean; djFiller?: boolean }) => {
+      // Autoplay parks a filler at the tail. A user's pick belongs in front of
+      // it — the filler only exists because nothing else was queued, so it must
+      // never jump ahead of something someone actually chose.
+      if (position === -1 && !opts?.djFiller && fillerUriRef.current) {
+        const fillerIndex = queueItemsRef.current.findIndex(
+          (q) => q.track.id === fillerUriRef.current,
+        );
+        if (fillerIndex >= 0) position = fillerIndex;
+      }
+      // DJ picks pass attribute:false. They're the algorithm's choice, not a
+      // person's: crediting the clicker would inflate their leaderboard count,
+      // hand Queuedle wrong answers for "who queued this?", and feed the
+      // recommender its own output until the corpus is mostly self-generated.
+      const attribute = opts?.attribute !== false;
       if (isProgram(item)) {
         const rid = item.resource?.id as SonosItemId | undefined;
         const iid = typeof item.id === 'object' ? (item.id as SonosItemId) : undefined;
@@ -320,7 +380,7 @@ useEffect(() => {
       const serviceId = body.id.serviceId ?? '';
       const accountId = body.id.accountId ?? '';
 
-      if (isSingleTrack && uri) {
+      if (attribute && isSingleTrack && uri) {
         publishTrackAttribution(uri, serviceId, accountId, {
           trackName: getName(normalized),
           // Artist powers the title+artist content-key fallback that keeps a lone
@@ -328,7 +388,7 @@ useEffect(() => {
           artist: sonosItemToNormalizedQueueItem(normalized, 0).track.artist || undefined,
           imageUrl: getItemArt(item) ?? undefined,
         });
-      } else if (isAlbumItem && uri) {
+      } else if (attribute && isAlbumItem && uri) {
         const { albumId, serviceId: aSvc, accountId: aAcc, defaults } = resolveAlbumParams(item);
         if (albumId && aSvc && aAcc) {
           // Publish album-level event immediately with card data as fallback so attribution
@@ -362,7 +422,7 @@ useEffect(() => {
             })
             .catch(() => { /* silent — album event already published above */ });
         }
-      } else if (isPlaylistItem) {
+      } else if (attribute && isPlaylistItem) {
         // Playlists have no albumMap rollup — fan out per-track only. Each
         // playlist track already carries its own albumName/albumId/artist via
         // decoded defaults, so no per-album context is needed.
@@ -432,6 +492,7 @@ useEffect(() => {
     <Splash ready={splashReady} />
     {skinny ? (
       <SkinnyShell
+        autoplay={autoplay}
         isAuthed={isAuthed}
         playback={playback}
         queueItems={queueItems}
@@ -490,6 +551,7 @@ useEffect(() => {
               />
             }
           />
+          <Route path="/discover" element={<DiscoverPanel onAddToQueue={handleAddToQueue} displayName={displayName} />} />
           <Route path="/album/:id" element={<AlbumPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/artist/:id" element={<ArtistPanel onAddToQueue={handleAddToQueue} currentTrackName={playback.trackName} isPlaybackActive={playback.isPlaying} />} />
           <Route path="/container/:id" element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
@@ -516,6 +578,7 @@ useEffect(() => {
           dockedWidth={queueDockedWidth}
           onResizeWidth={handleSetQueueDockedWidth}
           onResizeWidthLive={handleResizeWidthLive}
+          autoplay={autoplay}
         />
       </div>
       <PlayerBar

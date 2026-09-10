@@ -384,3 +384,93 @@ describe('QueueSidebar — items change clears selection', () => {
     );
   });
 });
+
+describe('DJ autoplay section', () => {
+  const autoplay = (over = {}) => ({
+    enabled: false,
+    upcoming: [] as DjTrack[],
+    fillerUri: null,
+    setEnabled: vi.fn(),
+    ...over,
+  });
+
+  /**
+   * It used to render only once picks had arrived, so a failed or in-flight poll
+   * was indistinguishable from the feature not existing.
+   */
+  it('is visible before any picks have arrived', () => {
+    setup({ autoplay: autoplay() });
+    expect(screen.getByText(/DJ paused/i)).toBeInTheDocument();
+    expect(screen.getByText(/Nothing to suggest just yet/i)).toBeInTheDocument();
+  });
+
+  it('previews the picks even while paused', () => {
+    // "What would play next" is useful information regardless of whether the DJ
+    // is armed — the label says which, the list stays either way.
+    setup({
+      autoplay: autoplay({
+        enabled: false,
+        upcoming: [
+          { uri: 'u1', trackName: 'Loser', artist: 'Tame Impala', score: 0.5, because: 'Rich queues Tame Impala' },
+        ] as DjTrack[],
+      }),
+    });
+    expect(screen.getByText(/DJ paused/i)).toBeInTheDocument();
+    expect(screen.getByText('Loser')).toBeInTheDocument();
+  });
+
+  it('renders picks as full queue rows, with art', () => {
+    const { container } = setup({
+      autoplay: autoplay({
+        enabled: true,
+        upcoming: [
+          {
+            uri: 'u1',
+            trackName: 'Loser',
+            artist: 'Tame Impala',
+            imageUrl: 'https://example.test/loser.jpg',
+            score: 0.5,
+            because: 'Rich queues Tame Impala',
+          },
+        ] as DjTrack[],
+      }),
+    });
+
+    // Same .row class as the real queue above it — anything else reads as a
+    // rendering bug rather than a distinction.
+    const row = container.querySelector('.djRow');
+    expect(row).toBeTruthy();
+    expect(row?.classList.contains('row')).toBe(true);
+    // Same art slot as a real row — the image itself resolves through the image
+    // cache, which is exercised in DjUpcomingRow's own tests.
+    expect(row?.querySelector('.artWrap')).toBeTruthy();
+    expect(screen.getByText('Rich queues Tame Impala')).toBeInTheDocument();
+  });
+
+  it('lists the upcoming picks', () => {
+    setup({
+      autoplay: autoplay({
+        enabled: true,
+        upcoming: [
+          { uri: 'u1', trackName: 'Loser', artist: 'Tame Impala', score: 0.5, because: 'Rich queues Tame Impala' },
+          { uri: 'u2', trackName: 'DVNO', artist: 'Justice', score: 0.4, because: 'Alex queues Justice' },
+        ] as DjTrack[],
+      }),
+    });
+    expect(screen.getByText('Loser')).toBeInTheDocument();
+    expect(screen.getByText('Justice')).toBeInTheDocument();
+  });
+
+  it('toggles autoplay for the whole room from the divider', async () => {
+    const setEnabled = vi.fn();
+    const { user } = setup({ autoplay: autoplay({ setEnabled }) });
+    await user.click(screen.getByText(/DJ paused/i));
+    expect(setEnabled).toHaveBeenCalledWith(true);
+  });
+
+  it('stays out of the way entirely when autoplay is not wired up', () => {
+    setup({});
+    expect(screen.queryByText(/DJ paused/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/DJ takes over/i)).not.toBeInTheDocument();
+  });
+});

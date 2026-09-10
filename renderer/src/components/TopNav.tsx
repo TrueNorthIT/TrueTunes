@@ -11,6 +11,7 @@ import {
   X,
   RefreshCw,
   Gamepad2,
+  Compass,
   Lightbulb,
   Group,
   SquareMousePointer,
@@ -127,6 +128,7 @@ export function TopNav({
   const isInSearch = location.pathname === '/search';
   const isLeaderboard = location.pathname === '/leaderboard';
   const isQueuedle = location.pathname === '/queuedle';
+  const isDiscover = location.pathname === '/discover';
 
   return (
     <>
@@ -167,6 +169,14 @@ export function TopNav({
               title="Queuedle — daily game"
             >
               <Gamepad2 size={15} />
+            </button>
+
+            <button
+              className={`${styles.iconBtn}${isDiscover ? ' ' + styles.active : ''}`}
+              onClick={() => navigate('/discover')}
+              title="Discover — music for the room"
+            >
+              <Compass size={15} />
             </button>
 
             <div className={styles.sep} />

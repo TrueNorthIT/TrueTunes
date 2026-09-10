@@ -1,14 +1,15 @@
 {
   "name": "true-tunes-server",
   "version": "1.0.0",
-  "description": "Azure Functions — office presence features for true-tunes-2",
+  "description": "Azure Functions \u2014 office presence features for true-tunes-2",
   "main": "dist/{**/,}*.js",
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
     "start": "npm run build && func start",
     "prestart": "npm run build",
-    "deploy": "node scripts/deploy.mjs"
+    "deploy": "node scripts/deploy.mjs",
+    "test": "tsc -p tsconfig.test.json && node --test dist-test/shared/*.test.js"
   },
   "dependencies": {
     "@azure/cosmos": "^4.1.0",
