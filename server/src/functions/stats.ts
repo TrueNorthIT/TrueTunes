@@ -1,5 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
-import { CosmosClient } from '@azure/cosmos';
+import { Container, CosmosClient } from '@azure/cosmos';
 import { aggregateEvents, RawEvent } from '../shared/aggregate';
 
 type Period = 'today' | 'week' | 'alltime';
@@ -12,6 +12,17 @@ function periodStartMs(period: Period): number {
   }
   if (period === 'week') return Date.now() - 7 * 24 * 60 * 60 * 1000;
   return 0;
+}
+
+// For a given track URI queries cosmos and returns the play count 
+async function checkTrackPlayCount(cosmosContainer: Container, trackURI: string): Promise<number> {
+  const query = {
+    query: "SELECT VALUE COUNT(1) FROM c WHERE c.uri = @uri",
+    parameters: [{ name: "@uri", value: trackURI }]
+  };
+  const { resources } = await cosmosContainer.items.query<number>(query).fetchAll();
+  console.log(`TrackURI: ${trackURI} has been played ${resources[0]} times `)
+  return resources[0] ?? 0;
 }
 
 export async function statsHandler(
@@ -28,7 +39,7 @@ export async function statsHandler(
 
   const period = (request.query.get('period') ?? 'alltime') as Period;
   const userId = request.query.get('userId') ?? undefined;
-  const count  = Math.min(100, Math.max(1, parseInt(request.query.get('count') ?? '10', 10) || 10));
+  const count = Math.min(100, Math.max(1, parseInt(request.query.get('count') ?? '10', 10) || 10));
   const startMs = periodStartMs(period);
 
   try {
@@ -38,7 +49,7 @@ export async function statsHandler(
     const conditions: string[] = [];
     const parameters: { name: string; value: string | number }[] = [];
     if (startMs > 0) { conditions.push('c.timestamp >= @start'); parameters.push({ name: '@start', value: startMs }); }
-    if (userId)       { conditions.push('c.userId = @userId');    parameters.push({ name: '@userId', value: userId }); }
+    if (userId) { conditions.push('c.userId = @userId'); parameters.push({ name: '@userId', value: userId }); }
     const where = conditions.length ? ' WHERE ' + conditions.join(' AND ') : '';
     const query = {
       query: `SELECT c.userId, c.eventType, c.trackName, c.artist, c.serviceId, c.accountId, c.artistId, c.album, c.albumId, c.imageUrl, c.uri FROM c${where}`,
@@ -67,6 +78,21 @@ export async function statsHandler(
       .sort((a, b) => b.count - a.count)
       .slice(0, count)
       .map(({ key: _key, ...rest }) => rest);
+
+    if (period === "today") {
+      const values = Object.values(trackMap);
+
+      const results = await Promise.all(
+        values.map((v) => checkTrackPlayCount(container, v.uri ?? ""))
+      );
+
+      const uniqueTracks = values.filter((_, i) => results[i] === 1);
+
+      return {
+        jsonBody: { topUsers, topTracks, topArtists, topAlbums, uniqueTracks, totalEvents: resources.length, periodStart: startMs },
+        headers: { 'Access-Control-Allow-Origin': '*' },
+      };
+    }
 
     context.log(`[stats] period=${period} events=${resources.length}`);
 
