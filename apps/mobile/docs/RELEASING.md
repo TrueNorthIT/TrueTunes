@@ -79,7 +79,13 @@ cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
 Download the APK from the release page (the repo is private, so you must be signed in to GitHub with access) and open
 it on the phone; allow "install unknown apps" for the browser or file manager when asked.
 
-**Development builds and release builds cannot update each other.** They share the package name
-`uk.co.truenorthit.truetunes` but are signed with different keys, so installing one over the other fails with
-`INSTALL_FAILED_UPDATE_INCOMPATIBLE`. Uninstall the other first (this clears the app's stored session, so you sign in
-to Sonos again).
+**Development and release builds install side by side.** A debug build is `uk.co.truenorthit.truetunes.dev`, labelled
+"True Tunes (dev)", and the release build is `uk.co.truenorthit.truetunes` ("True Tunes"). They are signed with different
+keys but have different package names, so neither can conflict with the other, and each keeps its own data: you sign in
+to Sonos separately in each. This comes from `plugins/withDevVariant.js`.
+
+Use the `.dev` package name in `adb` commands for debug builds (`adb shell monkey -p uk.co.truenorthit.truetunes.dev ...`).
+Both apps register the `truetunes://` link scheme, so Android may ask which app should open such a link.
+
+If you installed a debug build from before this change (package `uk.co.truenorthit.truetunes`, debug-signed), uninstall it
+once - it would otherwise block installing a release build.
