@@ -39,3 +39,11 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# local logs
+build.log
+metro.log
+.env
+prebuild.log
+coverage/
+junit.xml

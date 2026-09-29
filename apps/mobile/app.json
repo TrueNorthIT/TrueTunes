@@ -1,14 +1,11 @@
 {
   "expo": {
-    "name": "TrueTunes-Android",
-    "slug": "TrueTunes-Android",
+    "name": "True Tunes",
+    "slug": "truetunes-android",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "ios": {
-      "supportsTablet": true
-    },
+    "userInterfaceStyle": "dark",
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -16,10 +13,19 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "uk.co.truenorthit.truetunes"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
+    "plugins": [
+      "expo-secure-store",
+      "expo-build-properties",
+      "@preeternal/react-native-cookie-manager",
+      "expo-router",
+      "expo-image"
+    ],
+    "platforms": [
+      "android"
+    ],
+    "scheme": "truetunes"
   }
 }
