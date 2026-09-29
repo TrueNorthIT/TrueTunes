@@ -100,6 +100,8 @@ UI components (`src/ui`, `src/app`) have **no automated tests** — keep logic i
 - Buttons inside a `GestureDetector` must be `react-native-gesture-handler` `Pressable`s or the gesture eats taps.
 - Sonos hands out LAN `http://` art URLs on some setups; Android blocks cleartext by default (not needed so far).
 - Track details (`['track', id]` queries) are persisted for 7 days; bump `CACHE_BUSTER` if `TrackDetails` changes.
+- Debug builds are `uk.co.truenorthit.truetunes.dev` ("True Tunes (dev)"), release builds are `uk.co.truenorthit.truetunes`, so
+  they coexist. Use the `.dev` id for `adb ... -p`, `monkey`, `run-as`. See `docs/RELEASING.md`.
 - The debug spike screen is at `truetunes://spike`.
 
 ---
