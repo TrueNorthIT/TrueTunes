@@ -21,7 +21,8 @@
       "expo-build-properties",
       "@preeternal/react-native-cookie-manager",
       "expo-router",
-      "expo-image"
+      "expo-image",
+      "./plugins/withReleaseSigning"
     ],
     "platforms": ["android"],
     "scheme": "truetunes"

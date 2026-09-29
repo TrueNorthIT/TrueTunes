@@ -17,6 +17,7 @@ export default defineConfig({
             'src/sonos/**/__tests__/**/*.test.{ts,tsx}',
             'src/office/**/__tests__/**/*.test.{ts,tsx}',
             'src/core/**/__tests__/**/*.test.{ts,tsx}',
+            'plugins/**/__tests__/**/*.test.js',
           ],
         },
       },
