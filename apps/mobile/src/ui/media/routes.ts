@@ -12,13 +12,7 @@
 // `name` is only a header hint shown while loading. accountId has the "sn_" prefix already stripped
 // (see resolveAlbumParams). Sonos PLAYLIST items open as /album/[id] like desktop's useOpenItem.
 import type { NavigateFn } from '../../logic/hooks/useOpenItem';
-import {
-  getName,
-  isArtist,
-  isContainer,
-  resolveAlbumParams,
-  resolveArtistParams,
-} from '../../logic/lib/itemHelpers';
+import { getName, isArtist, isContainer, resolveAlbumParams, resolveArtistParams } from '../../logic/lib/itemHelpers';
 import type { SonosAlbum, SonosArtist, SonosItem, SonosItemId } from '../../logic/types/sonos';
 
 export type DetailKind = 'album' | 'artist' | 'container';
@@ -50,7 +44,13 @@ export function routeForItem(item: SonosItem): string | null {
   const hint = name === '(unknown)' ? undefined : name;
   if (isArtist(item)) {
     const p = resolveArtistParams(item);
-    return buildDetailRoute('artist', { id: p.artistId, serviceId: p.serviceId, accountId: p.accountId, defaults: p.defaults, name: hint });
+    return buildDetailRoute('artist', {
+      id: p.artistId,
+      serviceId: p.serviceId,
+      accountId: p.accountId,
+      defaults: p.defaults,
+      name: hint,
+    });
   }
   const p = resolveAlbumParams(item);
   return buildDetailRoute(isContainer(item) ? 'container' : 'album', {

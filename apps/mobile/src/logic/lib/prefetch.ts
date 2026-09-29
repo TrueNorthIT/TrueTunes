@@ -8,7 +8,7 @@ export interface QueueLikeItem {
 export function currentQueueIndex(
   items: QueueLikeItem[],
   currentObjectId: string | null,
-  queueItemId: string | null,
+  queueItemId: string | null
 ): number {
   if (currentObjectId) {
     const byId = items.findIndex((i) => i.track.id === currentObjectId);
@@ -24,7 +24,13 @@ export function currentQueueIndex(
  * and tap soonest), then the tracks just behind, then the top of the list they scroll from.
  * De-duplicated, clamped to the queue, and skipping items that lack the ids a lookup needs.
  */
-export function prefetchWindow<T extends QueueLikeItem>(items: T[], currentIndex: number, ahead = 8, behind = 2, head = 6): T[] {
+export function prefetchWindow<T extends QueueLikeItem>(
+  items: T[],
+  currentIndex: number,
+  ahead = 8,
+  behind = 2,
+  head = 6
+): T[] {
   const order: number[] = [];
   const seen = new Set<number>();
   const push = (i: number) => {
@@ -40,7 +46,11 @@ export function prefetchWindow<T extends QueueLikeItem>(items: T[], currentIndex
 }
 
 /** Run async tasks with a concurrency cap. Never rejects; a failing task is skipped. */
-export async function runLimited<T>(tasks: Array<() => Promise<T>>, concurrency: number, isCancelled: () => boolean = () => false): Promise<void> {
+export async function runLimited<T>(
+  tasks: Array<() => Promise<T>>,
+  concurrency: number,
+  isCancelled: () => boolean = () => false
+): Promise<void> {
   let next = 0;
   const worker = async () => {
     while (!isCancelled()) {

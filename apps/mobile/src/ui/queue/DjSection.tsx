@@ -27,9 +27,17 @@ export function DjSection() {
           <View key={t.uri} style={[styles.row, !enabled && { opacity: 0.5 }]}>
             <Art uri={t.imageUrl} size={44} />
             <View style={styles.text}>
-              <Text style={type.body} numberOfLines={1}>{t.trackName}</Text>
-              <Text style={type.secondary} numberOfLines={1}>{t.artist}</Text>
-              {!!t.because && <Text style={type.caption} numberOfLines={1}>{t.because}</Text>}
+              <Text style={type.body} numberOfLines={1}>
+                {t.trackName}
+              </Text>
+              <Text style={type.secondary} numberOfLines={1}>
+                {t.artist}
+              </Text>
+              {!!t.because && (
+                <Text style={type.caption} numberOfLines={1}>
+                  {t.because}
+                </Text>
+              )}
             </View>
           </View>
         ))
@@ -39,10 +47,22 @@ export function DjSection() {
 }
 
 const styles = StyleSheet.create({
-  break: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.md },
+  break: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
+  },
   line: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.border2 },
   label: { flexDirection: 'row', alignItems: 'center', gap: space.xs, padding: space.xs },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.sm },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.sm,
+  },
   text: { flex: 1, gap: 1 },
   empty: { textAlign: 'center', padding: space.md },
 });

@@ -30,8 +30,12 @@ describe('routes', () => {
     expect(routeForItem(album)).toBe('/album/alb%2F1?serviceId=s1&accountId=a1&name=Rebel%20Heart');
   });
   it('routes artists and containers', () => {
-    expect(routeForItem({ type: 'ARTIST', name: 'X', resource: { type: 'ARTIST', id: { objectId: 'a', serviceId: 's' } } })).toBe('/artist/a?serviceId=s&name=X');
-    expect(routeForItem({ type: 'ITEM_AUDIO', name: 'C', resource: { type: 'ITEM_AUDIO', id: { objectId: 'c' } } })).toMatch(/^\/container\/c/);
+    expect(
+      routeForItem({ type: 'ARTIST', name: 'X', resource: { type: 'ARTIST', id: { objectId: 'a', serviceId: 's' } } })
+    ).toBe('/artist/a?serviceId=s&name=X');
+    expect(
+      routeForItem({ type: 'ITEM_AUDIO', name: 'C', resource: { type: 'ITEM_AUDIO', id: { objectId: 'c' } } })
+    ).toMatch(/^\/container\/c/);
   });
   it('returns null without an id', () => {
     expect(routeForItem({ type: 'ALBUM', name: 'x' })).toBeNull();
@@ -52,15 +56,36 @@ describe('routes', () => {
 
 describe('itemLogic', () => {
   it('shapes search sections', () => {
-    const s = shapeSearchSections([album, track, { type: 'ARTIST', name: 'A' }, { type: 'PLAYLIST', name: 'P' }, { type: 'PODCAST', name: 'Q' }]);
-    expect([s.albums.length, s.tracks.length, s.artists.length, s.playlists.length, s.others.length]).toEqual([1, 1, 1, 1, 1]);
+    const s = shapeSearchSections([
+      album,
+      track,
+      { type: 'ARTIST', name: 'A' },
+      { type: 'PLAYLIST', name: 'P' },
+      { type: 'PODCAST', name: 'Q' },
+    ]);
+    expect([s.albums.length, s.tracks.length, s.artists.length, s.playlists.length, s.others.length]).toEqual([
+      1, 1, 1, 1, 1,
+    ]);
   });
   it('builds a playlist track', () => {
-    expect(toPlaylistTrack(track, 'me')).toMatchObject({ uri: 'trk1', trackName: 'Song', artist: 'Band', albumName: 'LP', addedBy: 'me' });
+    expect(toPlaylistTrack(track, 'me')).toMatchObject({
+      uri: 'trk1',
+      trackName: 'Song',
+      artist: 'Band',
+      albumName: 'LP',
+      addedBy: 'me',
+    });
   });
   it('picks actions per item kind', () => {
     const ctx = { hasAlbumRoute: true, hasArtistRoute: true, canPlaylist: true };
-    expect(actionsForItem(track, ctx)).toEqual(['playNext', 'addToQueue', 'goToAlbum', 'goToArtist', 'favourite', 'addToPlaylist']);
+    expect(actionsForItem(track, ctx)).toEqual([
+      'playNext',
+      'addToQueue',
+      'goToAlbum',
+      'goToArtist',
+      'favourite',
+      'addToPlaylist',
+    ]);
     expect(actionsForItem(album, ctx)).toEqual(['playNext', 'addToQueue', 'goToArtist']);
   });
 });
@@ -71,7 +96,9 @@ describe('useDebouncedValue', () => {
     const { result, rerender } = renderHook(({ v }) => useDebouncedValue(v, 300), { initialProps: { v: 'a' } });
     rerender({ v: 'ab' });
     expect(result.current).toBe('a');
-    act(() => { vi.advanceTimersByTime(300); });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
     expect(result.current).toBe('ab');
     vi.useRealTimers();
   });
@@ -83,14 +110,23 @@ describe('fetchYtmSections', () => {
     mockFetch.mockReset();
     (window as unknown as { sonos: unknown }).sonos = { fetch: mockFetch };
   });
-  const entry = (title: string, id: string): SonosItem => ({ title, resource: { type: 'CONTAINER', id: { objectId: id, serviceId: 's', accountId: 'a' } } });
+  const entry = (title: string, id: string): SonosItem => ({
+    title,
+    resource: { type: 'CONTAINER', id: { objectId: id, serviceId: 's', accountId: 'a' } },
+  });
 
   it('returns empty on root error', async () => {
     mockFetch.mockResolvedValueOnce({ error: 'boom' });
     expect(await fetchYtmSections()).toEqual({ forYou: [], newReleases: [], charts: [] });
   });
   it('browses Home/New releases/Charts and prepends Supermix', async () => {
-    const root = { sections: { items: [{ items: [entry('Home', 'h'), entry('New releases', 'n'), entry('Charts', 'c'), entry('My Supermix', 'm')] }] } };
+    const root = {
+      sections: {
+        items: [
+          { items: [entry('Home', 'h'), entry('New releases', 'n'), entry('Charts', 'c'), entry('My Supermix', 'm')] },
+        ],
+      },
+    };
     mockFetch.mockImplementation(async (req: { pathParams?: { containerId?: string } }) => {
       const id = req.pathParams?.containerId;
       if (id === 'root') return { data: root };
@@ -103,8 +139,15 @@ describe('fetchYtmSections', () => {
   });
 
   it('falls back to the shelves inside Home when the root has no New releases / Charts', async () => {
-    const root = { sections: { items: [{ items: [entry('Home', 'h'), entry('Library', 'l'), entry('My Supermix', 'm')] }] } };
-    const homeChildren = [entry('Quick picks', 'qp'), entry('New releases', 'nr'), entry('Top songs', 'ts'), entry('Top songs', 'ts2')];
+    const root = {
+      sections: { items: [{ items: [entry('Home', 'h'), entry('Library', 'l'), entry('My Supermix', 'm')] }] },
+    };
+    const homeChildren = [
+      entry('Quick picks', 'qp'),
+      entry('New releases', 'nr'),
+      entry('Top songs', 'ts'),
+      entry('Top songs', 'ts2'),
+    ];
     mockFetch.mockImplementation(async (req: { pathParams?: { containerId?: string } }) => {
       const id = req.pathParams?.containerId;
       if (id === 'root') return { data: root };
@@ -114,11 +157,19 @@ describe('fetchYtmSections', () => {
     const r = await fetchYtmSections();
     expect(r.newReleases.map((i) => i.title)).toEqual(['item-nr']);
     expect(r.charts.map((i) => i.title)).toEqual(['item-ts']); // the first 'Top songs' shelf
-    expect(r.forYou.map((i) => i.title)).toEqual(['My Supermix', 'Quick picks', 'New releases', 'Top songs', 'Top songs']);
+    expect(r.forYou.map((i) => i.title)).toEqual([
+      'My Supermix',
+      'Quick picks',
+      'New releases',
+      'Top songs',
+      'Top songs',
+    ]);
   });
 
   it('prefers the root entries when they exist', async () => {
-    const root = { sections: { items: [{ items: [entry('Home', 'h'), entry('New releases', 'rootnr'), entry('Charts', 'rootc')] }] } };
+    const root = {
+      sections: { items: [{ items: [entry('Home', 'h'), entry('New releases', 'rootnr'), entry('Charts', 'rootc')] }] },
+    };
     mockFetch.mockImplementation(async (req: { pathParams?: { containerId?: string } }) => {
       const id = req.pathParams?.containerId;
       if (id === 'root') return { data: root };

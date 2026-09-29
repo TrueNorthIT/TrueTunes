@@ -68,7 +68,11 @@ export function PillButton({
       ]}
     >
       {icon}
-      <Text style={[type.body, { fontWeight: '600' }, primary && { color: colors.bg }, danger && { color: colors.danger }]}>{label}</Text>
+      <Text
+        style={[type.body, { fontWeight: '600' }, primary && { color: colors.bg }, danger && { color: colors.danger }]}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -77,7 +81,13 @@ export function PillButton({
 export const tintBackground = (rgb: string | null, alpha = 0.35) => (rgb ? `rgba(${rgb}, ${alpha})` : 'transparent');
 
 const styles = StyleSheet.create({
-  bar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.sm, paddingBottom: space.xs, gap: space.xs },
+  bar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: space.sm,
+    paddingBottom: space.xs,
+    gap: space.xs,
+  },
   back: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   barTitle: { flex: 1 },
   right: { minWidth: 44, alignItems: 'flex-end' },

@@ -9,7 +9,7 @@ import type { SonosItem } from './types/sonos';
 export type AddToQueue = (
   item: SonosItem,
   position?: number,
-  opts?: { attribute?: boolean; djFiller?: boolean },
+  opts?: { attribute?: boolean; djFiller?: boolean }
 ) => Promise<void>;
 
 export const AddToQueueContext = createContext<AddToQueue>(async () => {

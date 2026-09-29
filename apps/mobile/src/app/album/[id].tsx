@@ -15,7 +15,13 @@ import type { SonosItem, SonosItemId } from '../../logic/types/sonos';
 import { Art } from '../../ui/Art';
 import { BrowseTrackRow } from '../../ui/detail/BrowseTrackRow';
 import { Centered, DetailTopBar, PillButton, tintBackground } from '../../ui/detail/DetailChrome';
-import { albumMetaLine, buildBrowseItem, parseDetailParams, totalSeconds, trackSheetItem } from '../../ui/detail/detailLogic';
+import {
+  albumMetaLine,
+  buildBrowseItem,
+  parseDetailParams,
+  totalSeconds,
+  trackSheetItem,
+} from '../../ui/detail/detailLogic';
 import { buildDetailRoute, makeNavigate, useItemActionSheet } from '../../ui/media';
 import { colors, space, type } from '../../ui/theme';
 
@@ -51,12 +57,16 @@ export default function AlbumScreen() {
   const queueItem = useMemo(
     () => buildBrowseItem(asPlaylist ? 'PLAYLIST' : 'ALBUM', p, { title }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [asPlaylist, p.id, p.serviceId, p.accountId, p.defaults, title],
+    [asPlaylist, p.id, p.serviceId, p.accountId, p.defaults, title]
   );
   const svc = tracks[0]?.id as SonosItemId | undefined;
   const ctx = useMemo(
-    () => ({ serviceId: svc?.serviceId ?? p.serviceId, accountId: svc?.accountId ?? p.accountId, includeAlbum: asPlaylist }),
-    [svc?.serviceId, svc?.accountId, p.serviceId, p.accountId, asPlaylist],
+    () => ({
+      serviceId: svc?.serviceId ?? p.serviceId,
+      accountId: svc?.accountId ?? p.accountId,
+      includeAlbum: asPlaylist,
+    }),
+    [svc?.serviceId, svc?.accountId, p.serviceId, p.accountId, asPlaylist]
   );
 
   const addAll = async (position: number) => {
@@ -103,7 +113,9 @@ export default function AlbumScreen() {
           ))}
         </Text>
       ) : null}
-      {tracks.length > 0 ? <Text style={type.caption}>{albumMetaLine(totalTracks, totalSeconds(tracks), year)}</Text> : null}
+      {tracks.length > 0 ? (
+        <Text style={type.caption}>{albumMetaLine(totalTracks, totalSeconds(tracks), year)}</Text>
+      ) : null}
       <View style={styles.actions}>
         <PillButton
           primary
@@ -135,14 +147,18 @@ export default function AlbumScreen() {
           data={tracks}
           keyExtractor={(t, i) => `${t.id.objectId ?? t.ordinal}-${i}`}
           ListHeaderComponent={header}
-          ListEmptyComponent={<Text style={[type.secondary, styles.msg]}>{failed ? 'Failed to load tracks.' : 'No tracks found.'}</Text>}
+          ListEmptyComponent={
+            <Text style={[type.secondary, styles.msg]}>{failed ? 'Failed to load tracks.' : 'No tracks found.'}</Text>
+          }
           contentContainerStyle={{ paddingBottom: space.xxl }}
           renderItem={({ item: t, index }) => (
             <BrowseTrackRow
               track={t}
               ordinal={asPlaylist ? index + 1 : t.ordinal || index + 1}
               fallbackArt={artUrl}
-              subtitle={asPlaylist ? [t.artists.join(', '), t.albumName].filter(Boolean).join(' • ') || undefined : undefined}
+              subtitle={
+                asPlaylist ? [t.artists.join(', '), t.albumName].filter(Boolean).join(' • ') || undefined : undefined
+              }
               onAdd={onAdd}
               onPress={() => show(trackSheetItem(t, ctx))}
               onLongPress={() => show(trackSheetItem(t, ctx))}
@@ -157,7 +173,13 @@ export default function AlbumScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  header: { alignItems: 'center', gap: space.sm, paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: space.lg },
+  header: {
+    alignItems: 'center',
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingTop: space.md,
+    paddingBottom: space.lg,
+  },
   art: { borderRadius: 12 },
   center: { textAlign: 'center' },
   actions: { flexDirection: 'row', gap: space.sm, marginTop: space.sm, flexWrap: 'wrap', justifyContent: 'center' },

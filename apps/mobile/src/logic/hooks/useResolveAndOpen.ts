@@ -51,8 +51,7 @@ export function useResolveAndOpen(navigate: NavigateFn) {
       // happily land on a same-named album/single by a different artist.
       let match: SonosItem | undefined;
       if (target === 'album' && hintArtists.length > 0) {
-        const matchesHint = (c: SonosItem) =>
-          itemArtistNames(c).some((n) => hintArtists.includes(n));
+        const matchesHint = (c: SonosItem) => itemArtistNames(c).some((n) => hintArtists.includes(n));
         match = nameMatches.find(matchesHint) ?? candidates.find(matchesHint);
       } else if (target === 'artist' && lowerName) {
         match = nameMatches[0] ?? candidates[0];

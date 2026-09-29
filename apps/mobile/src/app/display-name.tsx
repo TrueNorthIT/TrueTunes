@@ -40,9 +40,17 @@ export default function DisplayNameScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior="padding">
-      <Stack.Screen options={{ presentation: 'transparentModal', animation: 'fade', contentStyle: { backgroundColor: 'rgba(0,0,0,0.6)' } }} />
+      <Stack.Screen
+        options={{
+          presentation: 'transparentModal',
+          animation: 'fade',
+          contentStyle: { backgroundColor: 'rgba(0,0,0,0.6)' },
+        }}
+      />
       <View style={styles.card}>
-        <Text style={[type.title, { textAlign: 'center' }]}>{mode === 'pick' ? 'Who are you?' : "What should we call you?"}</Text>
+        <Text style={[type.title, { textAlign: 'center' }]}>
+          {mode === 'pick' ? 'Who are you?' : 'What should we call you?'}
+        </Text>
         <Text style={[type.secondary, { textAlign: 'center' }]}>
           {mode === 'pick'
             ? 'Pick your name. It shows on tracks you add to the shared queue.'
@@ -75,7 +83,16 @@ export default function DisplayNameScreen() {
           </>
         ) : (
           <>
-            <NewIdentityForm value={value} onChange={(t) => { setValue(t); setError(null); }} error={error} saving={saving} onSubmit={() => void save(value)} />
+            <NewIdentityForm
+              value={value}
+              onChange={(t) => {
+                setValue(t);
+                setError(null);
+              }}
+              error={error}
+              saving={saving}
+              onSubmit={() => void save(value)}
+            />
             <Text
               style={[type.caption, { textAlign: 'center' }]}
               onPress={() => {
@@ -87,7 +104,9 @@ export default function DisplayNameScreen() {
             </Text>
           </>
         )}
-        <Text style={[type.caption, { textAlign: 'center' }]} onPress={() => router.back()}>Not now</Text>
+        <Text style={[type.caption, { textAlign: 'center' }]} onPress={() => router.back()}>
+          Not now
+        </Text>
       </View>
     </KeyboardAvoidingView>
   );

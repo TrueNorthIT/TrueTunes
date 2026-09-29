@@ -170,7 +170,7 @@ export function createAzureApi(deps: AzureApiDeps) {
       playlistId: string,
       data: ArrayBuffer,
       mimeType: string,
-      userName: string,
+      userName: string
     ): Promise<unknown> {
       try {
         const res = await doFetch(`${playlistUrl(playlistId)}/image?userName=${encodeURIComponent(userName)}`, {
@@ -309,7 +309,7 @@ export function createAzureApi(deps: AzureApiDeps) {
 
     fetchMyScore(gameId: string, userName: string): Promise<unknown> {
       return getJson(
-        `${base}/api/my-score?gameId=${encodeURIComponent(gameId)}&userName=${encodeURIComponent(userName)}`,
+        `${base}/api/my-score?gameId=${encodeURIComponent(gameId)}&userName=${encodeURIComponent(userName)}`
       );
     },
 

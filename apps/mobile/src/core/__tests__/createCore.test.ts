@@ -54,7 +54,15 @@ const settle = async () => {
   for (let i = 0; i < 10; i++) await vi.advanceTimersByTimeAsync(0);
 };
 
-function build(opts: { storedToken?: string; tokenValid?: boolean; kv?: Record<string, string>; entra?: EntraProvider; version?: string } = {}) {
+function build(
+  opts: {
+    storedToken?: string;
+    tokenValid?: boolean;
+    kv?: Record<string, string>;
+    entra?: EntraProvider;
+    version?: string;
+  } = {}
+) {
   const kv = new Map<string, string>(Object.entries(opts.kv ?? {}));
   let token: string | null = opts.storedToken ?? null;
   const sonosSockets: FakeSocket[] = [];
@@ -66,13 +74,17 @@ function build(opts: { storedToken?: string; tokenValid?: boolean; kv?: Record<s
     const url = String(input);
     calls.push(`${init?.method ?? 'GET'} ${url}`);
     if (url.endsWith('/api/mfe')) {
-      return mfeStatus === 200 && (opts.tokenValid ?? true) ? json({ app: { wsTicket: TICKET } }) : new Response('no', { status: 401 });
+      return mfeStatus === 200 && (opts.tokenValid ?? true)
+        ? json({ app: { wsTicket: TICKET } })
+        : new Response('no', { status: 401 });
     }
     if (url.includes('/integrations/registrations')) return json([{ 'service-id': '72711', 'account-id': '13' }]);
-    if (url.includes('/queues/')) return contentStatus === 401 ? new Response('', { status: 401 }) : json({ resources: [] });
+    if (url.includes('/queues/'))
+      return contentStatus === 401 ? new Response('', { status: 401 }) : json({ resources: [] });
     if (url.includes('/api/profile/lookup')) return json({ displayName: 'Rich K' });
     if (url.includes('/api/connect')) return json({ webPubSubUrl: 'wss://pubsub.example/client' });
-    if (url.includes('/api/attribution')) return json({ 'sonos:track:1': { user: 'Sam', timestamp: 1, trackName: 'T', artist: 'A' } });
+    if (url.includes('/api/attribution'))
+      return json({ 'sonos:track:1': { user: 'Sam', timestamp: 1, trackName: 'T', artist: 'A' } });
     return json({});
   });
 
@@ -96,7 +108,7 @@ function build(opts: { storedToken?: string; tokenValid?: boolean; kv?: Record<s
       sonosSockets.push(s);
       return s;
     },
-    createPubSubSocket: (url) => new FakeSocket(url),
+    createPubSubSocket: (url) => new FakeSocket(url) as never,
     fetchImpl: fetchImpl as unknown as typeof fetch,
     appVersion: opts.version ?? '1.0.0',
     openExternal: async () => {},
@@ -261,7 +273,9 @@ describe('bridge', () => {
     const t = build({ storedToken: 'GOOD' });
     await boot(t);
     await t.core.bridge.removeFromQueue([1, 2]);
-    expect(t.calls.some((c) => c.startsWith('DELETE') && c.includes('/queues/RINCON_A/resources?items=1%2C2'))).toBe(true);
+    expect(t.calls.some((c) => c.startsWith('DELETE') && c.includes('/queues/RINCON_A/resources?items=1%2C2'))).toBe(
+      true
+    );
   });
 
   it('publishQueued surfaces the local user attribution event immediately', async () => {
@@ -269,7 +283,12 @@ describe('bridge', () => {
     await boot(t);
     const events: Array<{ user: string; trackName: string }> = [];
     t.core.bridge.onAttributionEvent((e) => events.push(e));
-    await t.core.bridge.publishQueued({ eventType: 'track', uri: 'sonos:track:9', trackName: 'Puss n Boots', artist: 'Adam Ant' });
+    await t.core.bridge.publishQueued({
+      eventType: 'track',
+      uri: 'sonos:track:9',
+      trackName: 'Puss n Boots',
+      artist: 'Adam Ant',
+    });
     expect(events).toEqual([expect.objectContaining({ user: 'Rich', trackName: 'Puss n Boots' })]);
   });
 

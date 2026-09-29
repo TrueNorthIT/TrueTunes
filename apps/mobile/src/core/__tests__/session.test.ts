@@ -37,8 +37,14 @@ describe('validateSessionToken', () => {
   });
 
   it('is false for a non-2xx response and for a network error', async () => {
-    expect(await validateSessionToken('T', (async () => new Response('', { status: 401 })) as unknown as typeof fetch)).toBe(false);
-    expect(await validateSessionToken('T', (async () => { throw new Error('offline'); }) as unknown as typeof fetch)).toBe(false);
+    expect(
+      await validateSessionToken('T', (async () => new Response('', { status: 401 })) as unknown as typeof fetch)
+    ).toBe(false);
+    expect(
+      await validateSessionToken('T', (async () => {
+        throw new Error('offline');
+      }) as unknown as typeof fetch)
+    ).toBe(false);
   });
 });
 

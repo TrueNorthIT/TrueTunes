@@ -18,7 +18,9 @@ export const expoImageResizer: ImageResizer = async (file) => {
   const actions: Parameters<typeof manipulateAsync>[1] = [];
   if (w > 0 && h > 0 && w !== h) {
     const side = Math.min(w, h);
-    actions.push({ crop: { originX: Math.floor((w - side) / 2), originY: Math.floor((h - side) / 2), width: side, height: side } });
+    actions.push({
+      crop: { originX: Math.floor((w - side) / 2), originY: Math.floor((h - side) / 2), width: side, height: side },
+    });
   }
   actions.push({ resize: { width: AVATAR_SIZE, height: AVATAR_SIZE } });
   const out = await manipulateAsync(f.uri, actions, { format: SaveFormat.WEBP, compress: 0.85 });

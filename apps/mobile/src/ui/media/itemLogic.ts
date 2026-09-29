@@ -49,7 +49,7 @@ export type ItemActionKey = 'playNext' | 'addToQueue' | 'goToAlbum' | 'goToArtis
 /** Which menu actions apply. Desktop: play next / add to queue / favourites / playlists (tracks only). */
 export function actionsForItem(
   item: SonosItem,
-  ctx: { hasAlbumRoute: boolean; hasArtistRoute: boolean; canPlaylist: boolean },
+  ctx: { hasAlbumRoute: boolean; hasArtistRoute: boolean; canPlaylist: boolean }
 ): ItemActionKey[] {
   const keys: ItemActionKey[] = ['playNext', 'addToQueue'];
   if (ctx.hasAlbumRoute && !isAlbum(item) && !isArtist(item)) keys.push('goToAlbum');

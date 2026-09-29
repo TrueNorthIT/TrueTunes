@@ -3,7 +3,17 @@ import { router, useLocalSearchParams } from 'expo-router';
 import type { Href } from 'expo-router';
 import { Camera } from 'lucide-react-native';
 import { useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useGameRankings } from '../../logic/hooks/useDailyGame';
 import { useMyPlaylists } from '../../logic/hooks/usePlaylists';
@@ -46,13 +56,25 @@ function CreatePlaylistModal({ owner, onClose }: { owner: string; onClose: () =>
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={styles.dialog} onPress={() => {}}>
           <Text style={type.heading}>New playlist</Text>
-          <TextInput style={inputStyle} value={name} onChangeText={setName} placeholder="Playlist name" placeholderTextColor={colors.text3} autoFocus maxLength={60} />
+          <TextInput
+            style={inputStyle}
+            value={name}
+            onChangeText={setName}
+            placeholder="Playlist name"
+            placeholderTextColor={colors.text3}
+            autoFocus
+            maxLength={60}
+          />
           <View style={styles.between}>
             <Text style={type.body}>Public</Text>
             <Switch value={isPublic} onValueChange={setIsPublic} />
           </View>
           {!!err && <Text style={{ color: colors.danger }}>{err}</Text>}
-          <Button label={busy ? 'Creating...' : 'Create'} onPress={() => void create()} disabled={!name.trim() || busy} />
+          <Button
+            label={busy ? 'Creating...' : 'Create'}
+            onPress={() => void create()}
+            disabled={!name.trim() || busy}
+          />
         </Pressable>
       </Pressable>
     </Modal>
@@ -89,7 +111,12 @@ export default function ProfileScreen() {
 
   const pickAvatar = async () => {
     try {
-      const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 1 });
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
       if (res.canceled || !res.assets[0]) return;
       const a = res.assets[0];
       setUploading(true);
@@ -132,21 +159,36 @@ export default function ProfileScreen() {
       <ScreenHeader title="Profile" />
       <ScrollView contentContainerStyle={styles.pad}>
         <View style={styles.head}>
-          <Pressable disabled={!isOwn || uploading} onPress={() => void pickAvatar()} accessibilityLabel={isOwn ? 'Change photo' : undefined}>
+          <Pressable
+            disabled={!isOwn || uploading}
+            onPress={() => void pickAvatar()}
+            accessibilityLabel={isOwn ? 'Change photo' : undefined}
+          >
             <UserAvatar name={userName} uri={profile?.imageUrl} size={88} />
             {isOwn && (
               <View style={styles.camera}>
-                {uploading ? <ActivityIndicator size="small" color={colors.text} /> : <Camera size={14} color={colors.text} />}
+                {uploading ? (
+                  <ActivityIndicator size="small" color={colors.text} />
+                ) : (
+                  <Camera size={14} color={colors.text} />
+                )}
               </View>
             )}
           </Pressable>
           <View style={{ flex: 1, gap: 4 }}>
-            <Text style={type.title} numberOfLines={1}>{userName}</Text>
+            <Text style={type.title} numberOfLines={1}>
+              {userName}
+            </Text>
             <Text style={type.secondary}>
               {stats.totalEvents > 0 ? `${stats.totalEvents.toLocaleString()} plays` : ' '}
             </Text>
             {isOwn && !renaming && (
-              <Pressable onPress={() => { setRenameValue(userName); setRenaming(true); }}>
+              <Pressable
+                onPress={() => {
+                  setRenameValue(userName);
+                  setRenaming(true);
+                }}
+              >
                 <Text style={{ color: colors.accent, fontSize: 13 }}>Change name</Text>
               </Pressable>
             )}
@@ -155,11 +197,33 @@ export default function ProfileScreen() {
 
         {renaming && (
           <View style={{ gap: space.sm, marginTop: space.md }}>
-            <TextInput style={inputStyle} value={renameValue} onChangeText={(t) => { setRenameValue(t); setRenameError(null); }} maxLength={32} autoFocus autoCorrect={false} />
+            <TextInput
+              style={inputStyle}
+              value={renameValue}
+              onChangeText={(t) => {
+                setRenameValue(t);
+                setRenameError(null);
+              }}
+              maxLength={32}
+              autoFocus
+              autoCorrect={false}
+            />
             {!!renameError && <Text style={{ color: colors.danger, fontSize: 13 }}>{renameError}</Text>}
             <View style={{ flexDirection: 'row', gap: space.sm }}>
-              <View style={{ flex: 1 }}><Button label={renameSaving ? '...' : 'Save'} onPress={() => void submitRename()} disabled={!renameValue.trim() || renameSaving} /></View>
-              <Pressable style={styles.cancel} onPress={() => { setRenaming(false); setRenameError(null); }}>
+              <View style={{ flex: 1 }}>
+                <Button
+                  label={renameSaving ? '...' : 'Save'}
+                  onPress={() => void submitRename()}
+                  disabled={!renameValue.trim() || renameSaving}
+                />
+              </View>
+              <Pressable
+                style={styles.cancel}
+                onPress={() => {
+                  setRenaming(false);
+                  setRenameError(null);
+                }}
+              >
                 <Text style={type.body}>Cancel</Text>
               </Pressable>
             </View>
@@ -189,8 +253,12 @@ export default function ProfileScreen() {
               <View key={i} style={styles.row}>
                 <Art uri={t.imageUrl} size={44} />
                 <View style={{ flex: 1 }}>
-                  <Text style={type.body} numberOfLines={1}>{t.trackName}</Text>
-                  <Text style={type.caption} numberOfLines={1}>{[t.artist, t.album].filter(Boolean).join(' · ')}</Text>
+                  <Text style={type.body} numberOfLines={1}>
+                    {t.trackName}
+                  </Text>
+                  <Text style={type.caption} numberOfLines={1}>
+                    {[t.artist, t.album].filter(Boolean).join(' · ')}
+                  </Text>
                 </View>
                 <Text style={type.secondary}>{t.count}x</Text>
               </View>
@@ -205,7 +273,9 @@ export default function ProfileScreen() {
               {stats.artistItems.map((a, i) => (
                 <View key={i} style={styles.card}>
                   <Art uri={a.imageUrl} size={96} round />
-                  <Text style={[type.secondary, { textAlign: 'center' }]} numberOfLines={2}>{a.name}</Text>
+                  <Text style={[type.secondary, { textAlign: 'center' }]} numberOfLines={2}>
+                    {a.name}
+                  </Text>
                 </View>
               ))}
             </ScrollView>
@@ -219,7 +289,9 @@ export default function ProfileScreen() {
               {stats.albumItems.map((a, i) => (
                 <View key={i} style={styles.card}>
                   <Art uri={a.imageUrl} size={96} />
-                  <Text style={[type.secondary, { textAlign: 'center' }]} numberOfLines={2}>{a.name}</Text>
+                  <Text style={[type.secondary, { textAlign: 'center' }]} numberOfLines={2}>
+                    {a.name}
+                  </Text>
                 </View>
               ))}
             </ScrollView>
@@ -240,15 +312,22 @@ export default function ProfileScreen() {
               <Pressable key={p.id} style={styles.row} onPress={() => router.push(`/playlist/${p.id}` as Href)}>
                 <Art uri={p.imageUrl} size={44} />
                 <View style={{ flex: 1 }}>
-                  <Text style={type.body} numberOfLines={1}>{p.isFavourites ? 'Favourites' : p.name}</Text>
-                  <Text style={type.caption}>{plural(p.trackCount, 'track')}{p.isPublic ? ' · Public' : ''}</Text>
+                  <Text style={type.body} numberOfLines={1}>
+                    {p.isFavourites ? 'Favourites' : p.name}
+                  </Text>
+                  <Text style={type.caption}>
+                    {plural(p.trackCount, 'track')}
+                    {p.isPublic ? ' · Public' : ''}
+                  </Text>
                 </View>
               </Pressable>
             ))}
           </>
         )}
       </ScrollView>
-      {createOpen && displayName ? <CreatePlaylistModal owner={displayName} onClose={() => setCreateOpen(false)} /> : null}
+      {createOpen && displayName ? (
+        <CreatePlaylistModal owner={displayName} onClose={() => setCreateOpen(false)} />
+      ) : null}
     </View>
   );
 }
@@ -257,8 +336,26 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   pad: { paddingHorizontal: space.lg, paddingBottom: space.xxl * 2 },
   head: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
-  camera: { position: 'absolute', right: 0, bottom: 0, width: 26, height: 26, borderRadius: 13, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
-  rank: { flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: colors.bg1, borderRadius: radius.lg, padding: space.md, marginTop: space.lg },
+  camera: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rank: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    backgroundColor: colors.bg1,
+    borderRadius: radius.lg,
+    padding: space.md,
+    marginTop: space.lg,
+  },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.sm },
   between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   card: { width: 100, alignItems: 'center', gap: space.xs },

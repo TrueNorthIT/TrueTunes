@@ -71,13 +71,27 @@ export type CoreEvents = {
 
 const noopUnsub = () => {};
 
+/**
+ * The Azure Functions, Genius and presence calls return parsed JSON. Desktop's preload types these as
+ * `unknown` and the renderer's globals.d.ts asserts the shapes; this is the equivalent single assertion,
+ * kept explicit per member so a renamed or removed member still fails to compile.
+ */
+const asBridge = <K extends keyof SonosPreload>(fn: unknown): SonosPreload[K] => fn as SonosPreload[K];
+
 export function createCore(platform: CorePlatform) {
   const log = platform.log ?? (() => {});
   const config: AppConfig = {};
   let isNewVersion = false;
 
   // Same early-event buffering as desktop's preload.ts.
-  const hub = new EventHub<CoreEvents>(['auth:ready', 'ws:ready', 'ws:groups', 'attribution:map', 'auth:entra-ready', 'ws:status']);
+  const hub = new EventHub<CoreEvents>([
+    'auth:ready',
+    'ws:ready',
+    'ws:groups',
+    'attribution:map',
+    'auth:entra-ready',
+    'ws:status',
+  ]);
 
   const persist = () => saveConfig(platform.kvStore, config);
 
@@ -306,46 +320,44 @@ export function createCore(platform: CorePlatform) {
         /* silent - pubsub not configured */
       }
     },
-    fetchStats: azure.fetchStats,
-    fetchDailyGame: azure.fetchDailyGame,
-    submitGameScore: azure.submitGameScore,
-    fetchGameLeaderboard: azure.fetchGameLeaderboard,
-    fetchGameDates: azure.fetchGameDates,
-    fetchMyScore: azure.fetchMyScore,
-    fetchGameStats: azure.fetchGameStats,
-    fetchRecentlyPlayed: azure.fetchRecentlyPlayed,
-    fetchDjSet: azure.fetchDjSet,
-    fetchOfficePresence: presence.fetchOfficePresence,
-    djAutoplay: azure.djAutoplay,
-    geniusDescription: genius.description,
-    geniusArtist: genius.artist,
-    geniusAlbumYear: genius.albumYear,
+    fetchStats: asBridge<'fetchStats'>(azure.fetchStats),
+    fetchDailyGame: asBridge<'fetchDailyGame'>(azure.fetchDailyGame),
+    submitGameScore: asBridge<'submitGameScore'>(azure.submitGameScore),
+    fetchGameLeaderboard: asBridge<'fetchGameLeaderboard'>(azure.fetchGameLeaderboard),
+    fetchGameDates: asBridge<'fetchGameDates'>(azure.fetchGameDates),
+    fetchMyScore: asBridge<'fetchMyScore'>(azure.fetchMyScore),
+    fetchGameStats: asBridge<'fetchGameStats'>(azure.fetchGameStats),
+    fetchRecentlyPlayed: asBridge<'fetchRecentlyPlayed'>(azure.fetchRecentlyPlayed),
+    fetchDjSet: asBridge<'fetchDjSet'>(azure.fetchDjSet),
+    fetchOfficePresence: asBridge<'fetchOfficePresence'>(presence.fetchOfficePresence),
+    djAutoplay: asBridge<'djAutoplay'>(azure.djAutoplay),
+    geniusDescription: asBridge<'geniusDescription'>(genius.description),
+    geniusArtist: asBridge<'geniusArtist'>(genius.artist),
+    geniusAlbumYear: asBridge<'geniusAlbumYear'>(genius.albumYear),
     trackEvent: (name: string, properties?: Record<string, string>) => {
       telemetry.event(name, properties);
       return ok();
     },
-    fetchPlaylists: azure.fetchPlaylists,
-    fetchPlaylist: azure.fetchPlaylist,
-    createPlaylist: azure.createPlaylist,
-    updatePlaylist: azure.updatePlaylist,
-    deletePlaylist: azure.deletePlaylist,
-    addTrackToPlaylist: azure.addTrackToPlaylist,
-    removeTrackFromPlaylist: azure.removeTrackFromPlaylist,
-    reorderPlaylistTracks: azure.reorderPlaylistTracks,
-    joinPlaylist: azure.joinPlaylist,
-    uploadPlaylistImage: azure.uploadPlaylistImage,
-    ensureFavourites: azure.ensureFavourites,
-    fetchUsers: azure.fetchUsers,
-    fetchUserProfile: azure.fetchUserProfile,
-    uploadProfileImage: azure.uploadProfileImage,
-    renameUser: azure.renameUser,
+    fetchPlaylists: asBridge<'fetchPlaylists'>(azure.fetchPlaylists),
+    fetchPlaylist: asBridge<'fetchPlaylist'>(azure.fetchPlaylist),
+    createPlaylist: asBridge<'createPlaylist'>(azure.createPlaylist),
+    updatePlaylist: asBridge<'updatePlaylist'>(azure.updatePlaylist),
+    deletePlaylist: asBridge<'deletePlaylist'>(azure.deletePlaylist),
+    addTrackToPlaylist: asBridge<'addTrackToPlaylist'>(azure.addTrackToPlaylist),
+    removeTrackFromPlaylist: asBridge<'removeTrackFromPlaylist'>(azure.removeTrackFromPlaylist),
+    reorderPlaylistTracks: asBridge<'reorderPlaylistTracks'>(azure.reorderPlaylistTracks),
+    joinPlaylist: asBridge<'joinPlaylist'>(azure.joinPlaylist),
+    uploadPlaylistImage: asBridge<'uploadPlaylistImage'>(azure.uploadPlaylistImage),
+    ensureFavourites: asBridge<'ensureFavourites'>(azure.ensureFavourites),
+    fetchUsers: asBridge<'fetchUsers'>(azure.fetchUsers),
+    fetchUserProfile: asBridge<'fetchUserProfile'>(azure.fetchUserProfile),
+    uploadProfileImage: asBridge<'uploadProfileImage'>(azure.uploadProfileImage),
+    renameUser: asBridge<'renameUser'>(azure.renameUser),
 
     // Entra
     getEntraUser: (): Promise<EntraUser | null> =>
       Promise.resolve(
-        config.entraOid
-          ? { oid: config.entraOid, name: config.entraName ?? '', email: config.entraEmail ?? '' }
-          : null,
+        config.entraOid ? { oid: config.entraOid, name: config.entraName ?? '', email: config.entraEmail ?? '' } : null
       ),
     entraSignOut: async () => {
       await platform.entra?.signOut();
@@ -374,8 +386,8 @@ export function createCore(platform: CorePlatform) {
     maximizeWindow: ok,
     closeWindow: ok,
     isWindowMaximized: () => Promise.resolve(false),
-    onWindowMaximized: () => noopUnsub,
-    onUpdateDownloaded: () => noopUnsub,
+    onWindowMaximized: (_cb: (maximized: boolean) => void) => noopUnsub,
+    onUpdateDownloaded: (_cb: (version: string) => void) => noopUnsub,
     installUpdate: ok,
   } satisfies SonosPreload;
 

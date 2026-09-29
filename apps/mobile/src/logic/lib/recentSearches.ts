@@ -56,7 +56,10 @@ export async function addRecent(store: KeyValueStore, query: string): Promise<st
 export async function removeRecent(store: KeyValueStore, query: string): Promise<string[]> {
   const key = clean(query).toLowerCase();
   const current = await loadRecent(store);
-  return save(store, current.filter((r) => r.toLowerCase() !== key));
+  return save(
+    store,
+    current.filter((r) => r.toLowerCase() !== key)
+  );
 }
 
 export async function clearRecent(store: KeyValueStore): Promise<string[]> {

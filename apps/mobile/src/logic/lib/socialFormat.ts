@@ -58,7 +58,12 @@ export function tierEmoji(key: string): string {
 export const FEEDBACK_REPO = 'TrueNorthIT/TrueTunes';
 
 /** Prefilled GitHub "new issue" URL (the desktop dialog posts with a PAT, which mobile must not ship). */
-export function feedbackIssueUrl(kind: 'bug' | 'feature', title: string, description: string, who?: string | null): string {
+export function feedbackIssueUrl(
+  kind: 'bug' | 'feature',
+  title: string,
+  description: string,
+  who?: string | null
+): string {
   const body = `${description.trim()}\n\n---\nSubmitted from True Tunes Android${who ? ` by ${who}` : ''}`;
   const p = new URLSearchParams({ title: title.trim(), body, labels: kind === 'bug' ? 'bug' : 'enhancement' });
   return `https://github.com/${FEEDBACK_REPO}/issues/new?${p.toString()}`;

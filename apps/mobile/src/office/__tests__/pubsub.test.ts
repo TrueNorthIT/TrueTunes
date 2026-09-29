@@ -10,7 +10,10 @@ class FakeSocket implements PubSubSocket {
   onmessage: ((e: { data: unknown }) => void) | null = null;
   onerror: ((e: { message?: string }) => void) | null = null;
   onclose: (() => void) | null = null;
-  constructor(public url: string, public protocol: string) {}
+  constructor(
+    public url: string,
+    public protocol: string
+  ) {}
   send(d: string) {
     this.sent.push(JSON.parse(d));
   }
@@ -174,7 +177,13 @@ describe('publishQueued', () => {
     await connected();
     await ps.publishQueued({ eventType: 'track', uri: 'u9', trackName: 'T', artist: 'A', album: 'Al' });
     expect(ps.getMap().u9).toEqual({ user: 'Rich', timestamp: 1_000_000, trackName: 'T', artist: 'A' });
-    const frame = sockets[0].sent[1] as { type: string; group: string; dataType: string; noEcho: boolean; data: AttributionEvent };
+    const frame = sockets[0].sent[1] as {
+      type: string;
+      group: string;
+      dataType: string;
+      noEcho: boolean;
+      data: AttributionEvent;
+    };
     expect(frame).toMatchObject({ type: 'sendToGroup', group: 'office', dataType: 'json', noEcho: true });
     expect(frame.data).toMatchObject({ user: 'Rich', uri: 'u9', eventType: 'track', album: 'Al' });
     const logCall = fetchMock.mock.calls.find((c) => String(c[0]).endsWith('/api/log-event'))!;

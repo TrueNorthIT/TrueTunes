@@ -206,7 +206,7 @@ export class WsSession {
     // 1 - households (confirms connection, gives live householdId)
     const householdsResp = await this.send(
       { command: 'getHouseholds', namespace: 'households' },
-      { connectedOnly: 'true' },
+      { connectedOnly: 'true' }
     );
     const households = (householdsResp as { households?: Array<{ id: string }> })?.households ?? [];
     const householdId = households[0]?.id ?? config.householdId;
@@ -258,8 +258,8 @@ export class WsSession {
       coordinatorGroupIds.map((groupId) =>
         this.send({ namespace: 'playbackExtended', groupId, command: 'subscribe' }, {})
           .then((resp) => ({ groupId, resp }))
-          .catch(() => null),
-      ),
+          .catch(() => null)
+      )
     );
 
     // 4 - groupVolume (capture responses to seed the initial volume) and player-level hardware
@@ -268,8 +268,8 @@ export class WsSession {
         coordinatorGroupIds.map((groupId) =>
           this.send({ namespace: 'groupVolume', groupId, command: 'subscribe' }, {})
             .then((resp) => ({ groupId, resp }))
-            .catch(() => null),
-        ),
+            .catch(() => null)
+        )
       ),
       ...playerIds.flatMap((playerId) => [
         this.send({ namespace: 'playerVolume', playerId, command: 'subscribe' }, {}),
@@ -337,7 +337,7 @@ export class WsSession {
     if (this.ws && this.ws.readyState <= WS_OPEN) return;
     this.setStatus('connecting');
 
-    let ticket: string | null = null;
+    let ticket: string | null;
     try {
       ticket = findTicket(await this.fetchMfeData());
     } catch (err) {
@@ -431,7 +431,11 @@ export class WsSession {
 
   // ─── Commands (mirror the ipcMain handlers) ────────────────────────────────
 
-  private command(namespace: string, command: string, payload: Record<string, unknown>): Promise<unknown> | NotConnected {
+  private command(
+    namespace: string,
+    command: string,
+    payload: Record<string, unknown>
+  ): Promise<unknown> | NotConnected {
     if (!this.isOpen) return NOT_CONNECTED;
     return this.send({ namespace, groupId: this.config.groupId, command }, payload);
   }
@@ -470,7 +474,9 @@ export class WsSession {
   /** Re-subscribing triggers Sonos to push the current playbackExtended state immediately. */
   refreshPlayback(): void {
     if (!this.isOpen) return;
-    this.send({ namespace: 'playbackExtended', groupId: this.config.groupId, command: 'subscribe' }, {}).catch(() => {});
+    this.send({ namespace: 'playbackExtended', groupId: this.config.groupId, command: 'subscribe' }, {}).catch(
+      () => {}
+    );
   }
 
   setGroup(groupId: string): { ok: true } | { error: string } {

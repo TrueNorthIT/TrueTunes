@@ -51,7 +51,11 @@ export function parsePendingTrack(p: Param): PlaylistTrack | null {
 // ─── Synthetic items (what desktop got from router state) ────────────────────
 
 /** Builds the SonosItem that addToQueue needs for an album/playlist opened by route params. */
-export function buildBrowseItem(kind: 'ALBUM' | 'PLAYLIST', p: DetailParams, extra: { title?: string } = {}): SonosItem | null {
+export function buildBrowseItem(
+  kind: 'ALBUM' | 'PLAYLIST',
+  p: DetailParams,
+  extra: { title?: string } = {}
+): SonosItem | null {
   if (!p.id) return null;
   return {
     type: kind,
@@ -95,7 +99,7 @@ export const durationLabel = (seconds: number): string => (seconds > 0 ? fmtDura
  */
 export function trackSheetItem(
   track: AlbumTrack,
-  ctx: { serviceId?: string; accountId?: string; includeAlbum?: boolean },
+  ctx: { serviceId?: string; accountId?: string; includeAlbum?: boolean }
 ): SonosItem {
   const rid = track.id as SonosItemId;
   const serviceId = rid.serviceId ?? ctx.serviceId;

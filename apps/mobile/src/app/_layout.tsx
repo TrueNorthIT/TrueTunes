@@ -36,7 +36,10 @@ export default function RootLayout() {
                 <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
                   <Stack.Screen name="(tabs)" />
                   <Stack.Screen name="player" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-                  <Stack.Screen name="rooms" options={{ presentation: 'formSheet', sheetAllowedDetents: [0.5, 0.9], sheetGrabberVisible: true }} />
+                  <Stack.Screen
+                    name="rooms"
+                    options={{ presentation: 'formSheet', sheetAllowedDetents: [0.5, 0.9], sheetGrabberVisible: true }}
+                  />
                 </Stack>
               </AddToQueueProvider>
             </AppGate>

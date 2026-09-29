@@ -93,7 +93,18 @@ export class OfficePubSub {
   }
 
   /** Publish a "track queued" event. Updates local map and broadcasts via WS. */
-  async publishQueued(item: { eventType: 'track' | 'album'; uri: string; trackName: string; artist: string; serviceId?: string; accountId?: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }): Promise<void> {
+  async publishQueued(item: {
+    eventType: 'track' | 'album';
+    uri: string;
+    trackName: string;
+    artist: string;
+    serviceId?: string;
+    accountId?: string;
+    artistId?: string;
+    album?: string;
+    albumId?: string;
+    imageUrl?: string;
+  }): Promise<void> {
     if (!item.uri) return;
 
     const event: AttributionEvent = {
@@ -215,7 +226,9 @@ export class OfficePubSub {
             this.eventCbs.forEach((cb) => cb(event));
           }
         }
-      } catch { /* ignore malformed messages */ }
+      } catch {
+        /* ignore malformed messages */
+      }
     };
 
     ws.onerror = (err) => {

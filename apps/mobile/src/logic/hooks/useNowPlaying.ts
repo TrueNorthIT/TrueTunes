@@ -8,28 +8,40 @@ import type { SonosItem } from '../types/sonos';
 
 export function useNowPlaying(playback: PlaybackState) {
   const {
-    artUrl, trackName, artistName, timeLabel,
-    progressPct, durationMs, isPlaying, isVisible,
-    shuffle, repeat, volume, isExplicit,
-    currentObjectId, currentServiceId, currentAccountId,
-    currentAlbumId, currentAlbumName,
+    artUrl,
+    trackName,
+    artistName,
+    timeLabel,
+    progressPct,
+    durationMs,
+    isPlaying,
+    isVisible,
+    shuffle,
+    repeat,
+    volume,
+    isExplicit,
+    currentObjectId,
+    currentServiceId,
+    currentAccountId,
+    currentAlbumId,
+    currentAlbumName,
   } = playback;
 
   const { data: td } = useTrackDetails(
     currentObjectId ?? undefined,
     currentServiceId ?? undefined,
-    currentAccountId ?? undefined,
+    currentAccountId ?? undefined
   );
 
-  const cachedArt     = useImage(td?.artUrl ?? artUrl);
+  const cachedArt = useImage(td?.artUrl ?? artUrl);
   const dominantColor = useDominantColor(cachedArt);
 
-  const displayTrack  = td?.trackName  ?? trackName;
-  const displayArtist = td?.artist     ?? artistName;
-  const albumName     = td?.albumName  ?? currentAlbumName;
-  const albumId       = td?.albumId    ?? currentAlbumId;
-  const svcId         = td?.serviceId  ?? currentServiceId  ?? undefined;
-  const accId         = td?.accountId  ?? currentAccountId  ?? undefined;
+  const displayTrack = td?.trackName ?? trackName;
+  const displayArtist = td?.artist ?? artistName;
+  const albumName = td?.albumName ?? currentAlbumName;
+  const albumId = td?.albumId ?? currentAlbumId;
+  const svcId = td?.serviceId ?? currentServiceId ?? undefined;
+  const accId = td?.accountId ?? currentAccountId ?? undefined;
 
   const [elapsedLabel = '', durationLabel = ''] = timeLabel ? timeLabel.split(' / ') : [];
 
@@ -40,27 +52,42 @@ export function useNowPlaying(playback: PlaybackState) {
     }
   };
 
-  const albumItem: SonosItem | null = albumId ? {
-    title: albumName ?? '',
-    type: 'ITEM_ALBUM',
-    resource: { type: 'ALBUM', id: { objectId: albumId, serviceId: svcId, accountId: accId } },
-  } as SonosItem : null;
+  const albumItem: SonosItem | null = albumId
+    ? ({
+        title: albumName ?? '',
+        type: 'ITEM_ALBUM',
+        resource: { type: 'ALBUM', id: { objectId: albumId, serviceId: svcId, accountId: accId } },
+      } as SonosItem)
+    : null;
 
   const artistId = td?.artistId;
-  const artistItem: SonosItem | null = artistId ? {
-    title: displayArtist ?? '',
-    type: 'ARTIST',
-    resource: { type: 'ARTIST', id: { objectId: artistId, serviceId: svcId, accountId: accId } },
-  } as SonosItem : null;
+  const artistItem: SonosItem | null = artistId
+    ? ({
+        title: displayArtist ?? '',
+        type: 'ARTIST',
+        resource: { type: 'ARTIST', id: { objectId: artistId, serviceId: svcId, accountId: accId } },
+      } as SonosItem)
+    : null;
 
   return {
     // Display values
-    displayTrack, displayArtist, albumName, albumId,
-    cachedArt, dominantColor,
-    elapsedLabel, durationLabel,
+    displayTrack,
+    displayArtist,
+    albumName,
+    albumId,
+    cachedArt,
+    dominantColor,
+    elapsedLabel,
+    durationLabel,
     // Passthrough from playback state
-    progressPct, durationMs, isPlaying, isVisible,
-    shuffle, repeat, volume, isExplicit,
+    progressPct,
+    durationMs,
+    isPlaying,
+    isVisible,
+    shuffle,
+    repeat,
+    volume,
+    isExplicit,
     // Current track identity (for favouriting etc.)
     currentObjectId: currentObjectId ?? null,
     currentServiceId: svcId ?? null,

@@ -3,7 +3,11 @@
 export function hexToRgb(hex: string | null | undefined): [number, number, number] | null {
   if (!hex) return null;
   let h = hex.trim().replace(/^#/, '');
-  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  if (h.length === 3)
+    h = h
+      .split('')
+      .map((c) => c + c)
+      .join('');
   if (h.length === 8) h = h.slice(0, 6); // drop alpha
   if (!/^[0-9a-fA-F]{6}$/.test(h)) return null;
   return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
@@ -28,7 +32,9 @@ export function hexToTintRgb(hex: string | null | undefined): string | null {
 }
 
 /** Picks vibrant, else dominant, else average from an Android image-colors result. */
-export function pickTintFromColors(c: { vibrant?: string; dominant?: string; average?: string } | null | undefined): string | null {
+export function pickTintFromColors(
+  c: { vibrant?: string; dominant?: string; average?: string } | null | undefined
+): string | null {
   if (!c) return null;
   for (const hex of [c.vibrant, c.dominant, c.average]) {
     const out = hexToTintRgb(hex);

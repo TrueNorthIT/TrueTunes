@@ -29,10 +29,9 @@ describe('useDominantColor', () => {
 
   it('returns a color from an injected sampler and resets on null src', async () => {
     setPixelSampler(async () => new Uint8ClampedArray([200, 50, 50, 255]));
-    const { result, rerender } = renderHook(
-      ({ src }: { src: string | null }) => useDominantColor(src),
-      { initialProps: { src: 'http://x/a.jpg' as string | null } },
-    );
+    const { result, rerender } = renderHook(({ src }: { src: string | null }) => useDominantColor(src), {
+      initialProps: { src: 'http://x/a.jpg' as string | null },
+    });
     expect(result.current).toBeNull();
     await waitFor(() => expect(result.current).toBe('200, 50, 50'));
     rerender({ src: null });

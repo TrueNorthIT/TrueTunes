@@ -25,8 +25,11 @@ export function pickDominantColor(data: Uint8ClampedArray | number[]): string {
   // Score every pixel
   const candidates: { r: number; g: number; b: number; score: number; sat: number; lum: number }[] = [];
   for (let i = 0; i < data.length; i += 4) {
-    const r = data[i] / 255, g = data[i + 1] / 255, b = data[i + 2] / 255;
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    const r = data[i] / 255,
+      g = data[i + 1] / 255,
+      b = data[i + 2] / 255;
+    const max = Math.max(r, g, b),
+      min = Math.min(r, g, b);
     const sat = max === 0 ? 0 : (max - min) / max;
     const lum = (max + min) / 2;
     const score = sat * (1 - Math.abs(lum - 0.45) * 1.8);
@@ -36,7 +39,7 @@ export function pickDominantColor(data: Uint8ClampedArray | number[]): string {
   // Sort best-first, then pick the first truly vibrant pixel.
   // Falls back to the raw top scorer if the whole image is dark/grey.
   candidates.sort((a, b) => b.score - a.score);
-  const vibrant = candidates.find(c => c.sat > 0.2 && c.lum > 0.18 && c.lum < 0.85);
+  const vibrant = candidates.find((c) => c.sat > 0.2 && c.lum > 0.18 && c.lum < 0.85);
   const pick = vibrant ?? candidates[0];
 
   return `${pick.r}, ${pick.g}, ${pick.b}`;
@@ -47,14 +50,21 @@ export function useDominantColor(src: string | null, { setGlobal = false } = {})
   const [color, setColor] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!src) { setColor(null); return; }
+    if (!src) {
+      setColor(null);
+      return;
+    }
     setColor(null); // clear stale color immediately while new image is analysed
     let cancelled = false;
     if (extractor) {
       extractor(src)
-        .then((c) => { if (!cancelled && c) setColor(c); })
+        .then((c) => {
+          if (!cancelled && c) setColor(c);
+        })
         .catch(() => {});
-      return () => { cancelled = true; };
+      return () => {
+        cancelled = true;
+      };
     }
     sampler(src)
       .then((data) => {
@@ -62,7 +72,9 @@ export function useDominantColor(src: string | null, { setGlobal = false } = {})
         setColor(pickDominantColor(data));
       })
       .catch(() => {});
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [src]);
 
   // TODO(rn-ui): `setGlobal` used to write the --panel-color CSS variable on

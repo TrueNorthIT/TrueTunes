@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { filterUsers, isCurrentIdentity, normaliseAvatarUrl, sortUsers } from '../../../ui/social/identity/identityHelpers';
+import {
+  filterUsers,
+  isCurrentIdentity,
+  normaliseAvatarUrl,
+  sortUsers,
+} from '../../../ui/social/identity/identityHelpers';
 
 const u = (userId: string) => ({ userId });
 
@@ -12,7 +17,11 @@ describe('identityHelpers', () => {
     expect(normaliseAvatarUrl(' https://cdn/x.png ')).toBe('https://cdn/x.png');
   });
   it('sorts case-insensitively, dedupes and drops blanks', () => {
-    expect(sortUsers([u('bob'), u('Alice'), u('BOB'), u(' '), u('carl')]).map((x) => x.userId)).toEqual(['Alice', 'bob', 'carl']);
+    expect(sortUsers([u('bob'), u('Alice'), u('BOB'), u(' '), u('carl')]).map((x) => x.userId)).toEqual([
+      'Alice',
+      'bob',
+      'carl',
+    ]);
   });
   it('filters by substring', () => {
     const list = [u('Alice'), u('Malice'), u('Bob')];

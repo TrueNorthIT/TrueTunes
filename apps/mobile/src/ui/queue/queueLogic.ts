@@ -6,7 +6,7 @@ import type { NormalizedQueueItem, NormalizedTrack } from '../../logic/types/pro
 /** Match attribution by objectId first, then title+artist content key (desktop resolveAttribution). */
 export function resolveAttribution(
   map: Record<string, { user: string }>,
-  track: Pick<NormalizedTrack, 'id' | 'title' | 'artist'>,
+  track: Pick<NormalizedTrack, 'id' | 'title' | 'artist'>
 ): { user: string } | undefined {
   const byId = map[track.id ?? ''];
   if (byId) return byId;
@@ -19,7 +19,7 @@ export function isPlayingRow(
   index: number,
   trackId: string,
   queueItemId: string | null,
-  currentObjectId: string | null,
+  currentObjectId: string | null
 ): boolean {
   if (queueItemId !== null) return Number(queueItemId) === index + 1;
   return !!currentObjectId && trackId === currentObjectId;
@@ -39,7 +39,7 @@ export function toggleSelected(selected: ReadonlySet<number>, index: number): Se
 /** Toggle a track in multi-select; deselecting the last one exits select mode. */
 export function toggleSelection(
   selected: ReadonlySet<number>,
-  index: number,
+  index: number
 ): { selected: Set<number>; selectMode: boolean } {
   const next = toggleSelected(selected, index);
   return { selected: next, selectMode: next.size > 0 };
@@ -95,7 +95,7 @@ export type PlayingPosition = 'none' | 'visible' | 'above' | 'below';
 export function findPlayingIndex(
   items: ReadonlyArray<{ track: { id: string } }>,
   queueItemId: string | null,
-  currentObjectId: string | null,
+  currentObjectId: string | null
 ): number {
   return items.findIndex((it, i) => isPlayingRow(i, it.track.id, queueItemId, currentObjectId));
 }
@@ -105,7 +105,7 @@ export function playingPosition(
   index: number,
   scrollY: number,
   viewHeight: number,
-  rowHeight: number = ROW_HEIGHT,
+  rowHeight: number = ROW_HEIGHT
 ): PlayingPosition {
   if (index < 0 || viewHeight <= 0) return 'none';
   const top = index * rowHeight;

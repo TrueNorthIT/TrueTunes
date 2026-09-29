@@ -10,7 +10,19 @@ import { useRequireDisplayName } from '../../ui/social/useRequireDisplayName';
 import { useShowToast } from '../../ui/Toast';
 import { colors, radius, space, type } from '../../ui/theme';
 
-function Row({ Icon, label, sub, onPress, danger }: { Icon: LucideIcon; label: string; sub?: string; onPress: () => void; danger?: boolean }) {
+function Row({
+  Icon,
+  label,
+  sub,
+  onPress,
+  danger,
+}: {
+  Icon: LucideIcon;
+  label: string;
+  sub?: string;
+  onPress: () => void;
+  danger?: boolean;
+}) {
   return (
     <Pressable style={styles.row} onPress={onPress} android_ripple={{ color: colors.bg2 }}>
       <Icon size={22} color={danger ? colors.danger : colors.text2} />
@@ -31,7 +43,10 @@ export default function MoreScreen() {
   useRequireDisplayName();
 
   useEffect(() => {
-    window.sonos.getVersion().then(setVersion).catch(() => setVersion(null));
+    window.sonos
+      .getVersion()
+      .then(setVersion)
+      .catch(() => setVersion(null));
   }, []);
 
   const openProfile = () => {
@@ -63,13 +78,26 @@ export default function MoreScreen() {
     ]);
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={{ paddingTop: insets.top + space.lg, paddingBottom: space.xxl }}>
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={{ paddingTop: insets.top + space.lg, paddingBottom: space.xxl }}
+    >
       <Text style={[type.title, styles.title]}>More</Text>
       <View style={styles.group}>
         <Row Icon={Trophy} label="Leaderboard" onPress={() => router.push('/leaderboard')} />
-        <Row Icon={Gamepad2} label="Queuedle" sub="Daily music guessing game" onPress={() => router.push('/queuedle')} />
+        <Row
+          Icon={Gamepad2}
+          label="Queuedle"
+          sub="Daily music guessing game"
+          onPress={() => router.push('/queuedle')}
+        />
         <Row Icon={User} label="My profile" sub={displayName ?? undefined} onPress={openProfile} />
-        <Row Icon={Users} label="Switch identity" sub={displayName ?? 'Not set'} onPress={() => router.push('/display-name')} />
+        <Row
+          Icon={Users}
+          label="Switch identity"
+          sub={displayName ?? 'Not set'}
+          onPress={() => router.push('/display-name')}
+        />
         <Row Icon={Speaker} label="Rooms" onPress={() => router.push('/rooms')} />
         <Row Icon={MessageSquare} label="Send feedback" onPress={() => router.push('/feedback')} />
       </View>
@@ -84,7 +112,19 @@ export default function MoreScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   title: { paddingHorizontal: space.lg, marginBottom: space.md },
-  group: { backgroundColor: colors.bg1, borderRadius: radius.lg, marginHorizontal: space.lg, marginBottom: space.lg, overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md + 2 },
+  group: {
+    backgroundColor: colors.bg1,
+    borderRadius: radius.lg,
+    marginHorizontal: space.lg,
+    marginBottom: space.lg,
+    overflow: 'hidden',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md + 2,
+  },
   footer: { textAlign: 'center', marginTop: space.md },
 });

@@ -74,7 +74,7 @@ describe('genius', () => {
                 twitter_name: null,
               },
             },
-          }),
+          })
         );
       expect(await g.artist('artist', 'Hint')).toEqual({
         description: 'd',

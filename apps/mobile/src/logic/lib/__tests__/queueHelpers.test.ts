@@ -54,7 +54,7 @@ describe('applyReorderLocally', () => {
   });
 
   it('sorts fromIndices before moving — order of fromIndices array should not matter', () => {
-    const forward  = applyReorderLocally(items, [0, 2], 4);
+    const forward = applyReorderLocally(items, [0, 2], 4);
     const reversed = applyReorderLocally(items, [2, 0], 4);
     expect(forward).toEqual(reversed);
     expect(forward).toEqual(['B', 'D', 'A', 'C', 'E']);

@@ -92,7 +92,7 @@ export function SpikeScreen() {
 
     const households = (await ws.send(
       { command: 'getHouseholds', namespace: 'households' },
-      { connectedOnly: 'true' },
+      { connectedOnly: 'true' }
     )) as { households?: Array<{ id: string }> };
     const householdId = households.households?.[0]?.id;
     if (!householdId) throw new Error('no household');
@@ -123,13 +123,20 @@ export function SpikeScreen() {
     const summarize = (label: string, r: { data?: unknown; error?: string }) => {
       if (r.error) return log(`  ${label}: ERROR ${r.error}`);
       const json = JSON.stringify(r.data) ?? 'null';
-      log(`  ${label}: ok, ${json.length} bytes, keys=${Object.keys((r.data as object) ?? {}).slice(0, 6).join(',')}`);
+      log(
+        `  ${label}: ok, ${json.length} bytes, keys=${Object.keys((r.data as object) ?? {})
+          .slice(0, 6)
+          .join(',')}`
+      );
     };
     summarize('getGroups', await client.fetch({ operationId: 'getGroups' }));
     await client.discoverServiceCredentials();
     log(`  discovered serviceId=${config.serviceId} accountId=${config.accountId}`);
     summarize('getQueueResources', await client.fetch({ operationId: 'getQueueResources', query: { count: '5' } }));
-    summarize('getFavoriteResources', await client.fetch({ operationId: 'getFavoriteResources', query: { count: '5' } }));
+    summarize(
+      'getFavoriteResources',
+      await client.fetch({ operationId: 'getFavoriteResources', query: { count: '5' } })
+    );
     summarize('searchHousehold', await client.fetch({ operationId: 'searchHousehold', query: { query: 'adam ant' } }));
   });
 
@@ -138,7 +145,7 @@ export function SpikeScreen() {
       if (!wsRef.current?.isOpen || !groupId.current) throw new Error('not connected');
       await wsRef.current.send(
         { namespace: 'playback', groupId: groupId.current, command },
-        { allowTvPauseRestore: true, deviceFeedback: 'NONE' },
+        { allowTvPauseRestore: true, deviceFeedback: 'NONE' }
       );
       log(`OK ${command} acknowledged`);
     });

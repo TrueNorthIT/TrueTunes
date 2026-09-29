@@ -18,7 +18,7 @@ export function buildUrl(
   operationPath: string,
   config: SonosConfig,
   pathParams: Record<string, string> = {},
-  query: Record<string, string | undefined> = {},
+  query: Record<string, string | undefined> = {}
 ): string {
   const defaults: Record<string, string> = {
     searchServiceId: SEARCH_SERVICE_ID,
@@ -187,7 +187,7 @@ export function createSonosClient(deps: SonosClientDeps): SonosClient {
     const isIdempotent = operation.method === 'GET';
 
     let response!: Response;
-    let bodyText = '';
+    let bodyText!: string;
     const resHeaders: Record<string, string> = {};
 
     for (let attempt = 0; ; attempt++) {

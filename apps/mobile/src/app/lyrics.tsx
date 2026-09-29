@@ -26,7 +26,12 @@ export default function LyricsScreen() {
   const { playback } = useRemoteContext();
   const track = playback.trackName;
   const artist = playback.artistName;
-  const { lines, isLoading, isInstrumental, notFound } = useLyrics(track, artist, playback.currentAlbumName, playback.durationMs);
+  const { lines, isLoading, isInstrumental, notFound } = useLyrics(
+    track,
+    artist,
+    playback.currentAlbumName,
+    playback.durationMs
+  );
   const { description } = useGeniusDescription(track, artist);
 
   // +250ms lead like desktop so the highlight lands as the line starts.
@@ -61,15 +66,21 @@ export default function LyricsScreen() {
       <View style={styles.meta}>
         <Art uri={playback.artUrl} size={56} />
         <View style={{ flex: 1 }}>
-          <Text style={type.heading} numberOfLines={1}>{track || 'Nothing playing'}</Text>
-          <Text style={type.secondary} numberOfLines={1}>{artist}</Text>
+          <Text style={type.heading} numberOfLines={1}>
+            {track || 'Nothing playing'}
+          </Text>
+          <Text style={type.secondary} numberOfLines={1}>
+            {artist}
+          </Text>
         </View>
       </View>
       <ScrollView
         ref={scroll}
         style={{ flex: 1 }}
         contentContainerStyle={styles.pad}
-        onLayout={(e: LayoutChangeEvent) => { viewH.current = e.nativeEvent.layout.height; }}
+        onLayout={(e: LayoutChangeEvent) => {
+          viewH.current = e.nativeEvent.layout.height;
+        }}
       >
         {isLoading && (
           <View style={styles.center}>
@@ -105,7 +116,13 @@ export default function LyricsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  meta: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingBottom: space.md },
+  meta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingHorizontal: space.lg,
+    paddingBottom: space.md,
+  },
   pad: { paddingHorizontal: space.xl, paddingVertical: space.xl, paddingBottom: 200 },
   center: { alignItems: 'center', paddingTop: space.xxl },
   status: { color: colors.text2, fontSize: 18, textAlign: 'center', marginTop: space.xxl },

@@ -201,7 +201,19 @@ const styles = StyleSheet.create({
   input: { flex: 1, color: colors.text, fontSize: 16, paddingVertical: space.sm },
   msg: { textAlign: 'center', marginTop: space.xl },
   sectionTitle: { paddingHorizontal: space.lg, marginBottom: space.sm },
-  recentHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: space.lg, marginBottom: space.xs },
-  recentRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md },
+  recentHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: space.lg,
+    marginBottom: space.xs,
+  },
+  recentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
+  },
   hrow: { paddingHorizontal: space.lg, gap: space.md },
 });

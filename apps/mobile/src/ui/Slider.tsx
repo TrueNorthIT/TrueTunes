@@ -55,7 +55,7 @@ export function Slider({
         setDragFraction(null);
       },
       onPanResponderTerminate: () => setDragFraction(null),
-    }),
+    })
   ).current;
 
   const fraction = dragFraction ?? (max > 0 ? clamp(value / max) : 0);
@@ -63,11 +63,16 @@ export function Slider({
   return (
     <View style={styles.hit} onLayout={(e) => setWidth(e.nativeEvent.layout.width)} {...pan.panHandlers}>
       <View style={[styles.track, { height, borderRadius: height / 2 }]}>
-        <View style={[styles.fill, { width: `${fraction * 100}%`, backgroundColor: color, borderRadius: height / 2 }]} />
+        <View
+          style={[styles.fill, { width: `${fraction * 100}%`, backgroundColor: color, borderRadius: height / 2 }]}
+        />
       </View>
       <View
         pointerEvents="none"
-        style={[styles.thumb, { left: `${fraction * 100}%`, backgroundColor: color, opacity: dragFraction === null ? 0 : 1 }]}
+        style={[
+          styles.thumb,
+          { left: `${fraction * 100}%`, backgroundColor: color, opacity: dragFraction === null ? 0 : 1 },
+        ]}
       />
     </View>
   );

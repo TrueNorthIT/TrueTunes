@@ -40,7 +40,14 @@ export function ActionSheet({
 }) {
   const insets = useSafeAreaInsets();
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent navigationBarTranslucent>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+      statusBarTranslucent
+      navigationBarTranslucent
+    >
       <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close menu" />
       <View style={[styles.sheet, { paddingBottom: insets.bottom + space.md }]}>
         <View style={styles.grabber} />
@@ -58,7 +65,11 @@ export function ActionSheet({
         ) : null}
         <ScrollView style={styles.list} bounces={false}>
           {actions.map((a) => (
-            <Pressable key={a.key} onPress={a.onPress} style={({ pressed }) => [styles.action, pressed && styles.pressed]}>
+            <Pressable
+              key={a.key}
+              onPress={a.onPress}
+              style={({ pressed }) => [styles.action, pressed && styles.pressed]}
+            >
               <View style={styles.icon}>{a.icon}</View>
               <Text style={type.body}>{a.label}</Text>
             </Pressable>
@@ -122,12 +133,55 @@ export function useItemActionSheet(displayName?: string | null) {
       canPlaylist: !!displayName,
     });
     const build: Record<ItemActionKey, SheetAction> = {
-      playNext: { key: 'playNext', label: 'Play next', icon: <ListStart {...ICON} />, onPress: () => { void addToQueue(item, 0); close(); } },
-      addToQueue: { key: 'addToQueue', label: 'Add to queue', icon: <ListEnd {...ICON} />, onPress: () => { void addToQueue(item, -1); close(); } },
-      goToAlbum: { key: 'goToAlbum', label: 'Go to album', icon: <ArrowRight {...ICON} />, onPress: () => { close(); if (albumHref) router.push(albumHref as never); } },
-      goToArtist: { key: 'goToArtist', label: 'Go to artist', icon: <ArrowRight {...ICON} />, onPress: () => { close(); if (artistHref) router.push(artistHref as never); } },
-      favourite: { key: 'favourite', label: 'Add to Favourites', icon: <Heart {...ICON} />, onPress: () => void addTrackTo({ id: favouritesId(displayName ?? ''), name: 'Favourites', owner: displayName ?? '' }) },
-      addToPlaylist: { key: 'addToPlaylist', label: 'Add to playlist…', icon: <ListPlus {...ICON} />, onPress: () => setMode('playlists') },
+      playNext: {
+        key: 'playNext',
+        label: 'Play next',
+        icon: <ListStart {...ICON} />,
+        onPress: () => {
+          void addToQueue(item, 0);
+          close();
+        },
+      },
+      addToQueue: {
+        key: 'addToQueue',
+        label: 'Add to queue',
+        icon: <ListEnd {...ICON} />,
+        onPress: () => {
+          void addToQueue(item, -1);
+          close();
+        },
+      },
+      goToAlbum: {
+        key: 'goToAlbum',
+        label: 'Go to album',
+        icon: <ArrowRight {...ICON} />,
+        onPress: () => {
+          close();
+          if (albumHref) router.push(albumHref as never);
+        },
+      },
+      goToArtist: {
+        key: 'goToArtist',
+        label: 'Go to artist',
+        icon: <ArrowRight {...ICON} />,
+        onPress: () => {
+          close();
+          if (artistHref) router.push(artistHref as never);
+        },
+      },
+      favourite: {
+        key: 'favourite',
+        label: 'Add to Favourites',
+        icon: <Heart {...ICON} />,
+        onPress: () =>
+          void addTrackTo({ id: favouritesId(displayName ?? ''), name: 'Favourites', owner: displayName ?? '' }),
+      },
+      addToPlaylist: {
+        key: 'addToPlaylist',
+        label: 'Add to playlist…',
+        icon: <ListPlus {...ICON} />,
+        onPress: () => setMode('playlists'),
+      },
     };
     actions = keys.map((k) => build[k]);
     if (mode === 'playlists') {
@@ -171,8 +225,20 @@ const styles = StyleSheet.create({
     maxHeight: '70%',
     paddingTop: space.sm,
   },
-  grabber: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border2, marginBottom: space.sm },
-  head: { paddingHorizontal: space.lg, paddingBottom: space.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  grabber: {
+    alignSelf: 'center',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.border2,
+    marginBottom: space.sm,
+  },
+  head: {
+    paddingHorizontal: space.lg,
+    paddingBottom: space.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
   list: { flexGrow: 0 },
   action: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg },
   pressed: { backgroundColor: colors.bg2 },

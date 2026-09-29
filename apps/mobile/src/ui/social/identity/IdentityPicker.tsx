@@ -31,7 +31,8 @@ export function IdentityList({ users, loading, error, onRetry, current, saving, 
       </View>
     );
   }
-  if (sorted.length === 0) return <Text style={[type.secondary, { textAlign: 'center', paddingVertical: space.lg }]}>No one here yet.</Text>;
+  if (sorted.length === 0)
+    return <Text style={[type.secondary, { textAlign: 'center', paddingVertical: space.lg }]}>No one here yet.</Text>;
 
   return (
     <View style={{ flexShrink: 1, gap: space.sm }}>
@@ -51,7 +52,9 @@ export function IdentityList({ users, loading, error, onRetry, current, saving, 
         keyExtractor={(u) => u.userId}
         keyboardShouldPersistTaps="handled"
         style={{ flexGrow: 0 }}
-        ListEmptyComponent={<Text style={[type.secondary, { textAlign: 'center', padding: space.lg }]}>No matches.</Text>}
+        ListEmptyComponent={
+          <Text style={[type.secondary, { textAlign: 'center', padding: space.lg }]}>No matches.</Text>
+        }
         renderItem={({ item }) => {
           const selected = isCurrentIdentity(item.userId, current);
           return (
@@ -110,5 +113,12 @@ export function NewIdentityForm({
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.sm, paddingHorizontal: space.xs, borderRadius: 10 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.xs,
+    borderRadius: 10,
+  },
 });

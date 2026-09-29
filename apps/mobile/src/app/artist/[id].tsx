@@ -40,7 +40,10 @@ export default function ArtistScreen() {
   const songs = data?.topSongs ?? [];
   const visibleSongs = showAll ? songs : songs.slice(0, 10);
   const latest = data?.albums[0] ?? null;
-  const ctx = useMemo(() => ({ serviceId: p.serviceId, accountId: p.accountId, includeAlbum: true }), [p.serviceId, p.accountId]);
+  const ctx = useMemo(
+    () => ({ serviceId: p.serviceId, accountId: p.accountId, includeAlbum: true }),
+    [p.serviceId, p.accountId]
+  );
   const onAdd = useCallback((item: SonosItem) => void addToQueue(item), [addToQueue]);
 
   return (
@@ -62,7 +65,15 @@ export default function ArtistScreen() {
           <Section
             title="Top Songs"
             onPress={songs.length > 10 ? () => setShowAll((s) => !s) : undefined}
-            icon={songs.length > 10 ? showAll ? <ChevronDown size={18} color={colors.text2} /> : <ChevronRight size={18} color={colors.text2} /> : undefined}
+            icon={
+              songs.length > 10 ? (
+                showAll ? (
+                  <ChevronDown size={18} color={colors.text2} />
+                ) : (
+                  <ChevronRight size={18} color={colors.text2} />
+                )
+              ) : undefined
+            }
           >
             {visibleSongs.map((t, i) => (
               <BrowseTrackRow
@@ -70,7 +81,11 @@ export default function ArtistScreen() {
                 track={t}
                 ordinal={i + 1}
                 fallbackArt={imageUrl}
-                subtitle={((t.raw as Record<string, unknown>)?.['subtitle'] as string | undefined) || t.artists.join(', ') || undefined}
+                subtitle={
+                  ((t.raw as Record<string, unknown>)?.['subtitle'] as string | undefined) ||
+                  t.artists.join(', ') ||
+                  undefined
+                }
                 isPlaying={!!playback.trackName && t.title === playback.trackName}
                 onAdd={onAdd}
                 onPress={() => show(trackSheetItem(t, ctx))}
@@ -111,13 +126,21 @@ export default function ArtistScreen() {
         {genius && (genius.instagram || genius.twitter) ? (
           <View style={[styles.social, styles.pad]}>
             {genius.instagram ? (
-              <Pressable style={styles.socialBtn} onPress={() => openUrl(`https://instagram.com/${genius.instagram}`)} accessibilityLabel="Instagram">
+              <Pressable
+                style={styles.socialBtn}
+                onPress={() => openUrl(`https://instagram.com/${genius.instagram}`)}
+                accessibilityLabel="Instagram"
+              >
                 <AtSign size={16} color={colors.text} />
                 <Text style={type.secondary}>Instagram</Text>
               </Pressable>
             ) : null}
             {genius.twitter ? (
-              <Pressable style={styles.socialBtn} onPress={() => openUrl(`https://twitter.com/${genius.twitter}`)} accessibilityLabel="X / Twitter">
+              <Pressable
+                style={styles.socialBtn}
+                onPress={() => openUrl(`https://twitter.com/${genius.twitter}`)}
+                accessibilityLabel="X / Twitter"
+              >
                 <AtSign size={16} color={colors.text} />
                 <Text style={type.secondary}>X</Text>
               </Pressable>
@@ -130,7 +153,17 @@ export default function ArtistScreen() {
   );
 }
 
-function Section({ title, children, onPress, icon }: { title: string; children: ReactNode; onPress?: () => void; icon?: ReactNode }) {
+function Section({
+  title,
+  children,
+  onPress,
+  icon,
+}: {
+  title: string;
+  children: ReactNode;
+  onPress?: () => void;
+  icon?: ReactNode;
+}) {
   return (
     <View style={{ marginTop: space.lg }}>
       <Pressable onPress={onPress} disabled={!onPress} style={styles.sectionHead}>
@@ -171,13 +204,51 @@ function ReleaseCard({ item, radio, onPress }: { item: SonosItem; radio?: boolea
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  header: { alignItems: 'center', gap: space.sm, paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: space.lg },
+  header: {
+    alignItems: 'center',
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingTop: space.md,
+    paddingBottom: space.lg,
+  },
   center: { textAlign: 'center' },
   msg: { textAlign: 'center', marginTop: space.xl },
   pad: { paddingHorizontal: space.lg },
-  sectionHead: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingHorizontal: space.lg, marginBottom: space.sm, minHeight: 32 },
-  release: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.xs, minHeight: 72 },
-  radioOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: radius.md },
+  sectionHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+    paddingHorizontal: space.lg,
+    marginBottom: space.sm,
+    minHeight: 32,
+  },
+  release: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.xs,
+    minHeight: 72,
+  },
+  radioOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    borderRadius: radius.md,
+  },
   social: { flexDirection: 'row', gap: space.sm, marginTop: space.lg },
-  socialBtn: { flexDirection: 'row', alignItems: 'center', gap: space.xs, minHeight: 44, paddingHorizontal: space.md, borderRadius: radius.pill, backgroundColor: colors.bg2 },
+  socialBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+    minHeight: 44,
+    paddingHorizontal: space.md,
+    borderRadius: radius.pill,
+    backgroundColor: colors.bg2,
+  },
 });

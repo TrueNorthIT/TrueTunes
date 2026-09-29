@@ -15,7 +15,12 @@ export interface RankSnapshot {
 
 /** Today's date (YYYY-MM-DD) in Europe/London, which is how game ids are keyed. */
 export function londonDateToday(now: Date = new Date()): string {
-  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now);
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now);
   const get = (t: string, d: string) => parts.find((p) => p.type === t)?.value ?? d;
   return `${get('year', '0000')}-${get('month', '01')}-${get('day', '01')}`;
 }
@@ -51,7 +56,12 @@ export function carryFromSide(questions: GameQuestion[], idx: number): Side | nu
 
 export type PipState = 'correct' | 'wrong' | 'current' | 'pending';
 
-export function pipStates(questions: GameQuestion[], currentIdx: number, revealed: boolean, guesses: Side[]): PipState[] {
+export function pipStates(
+  questions: GameQuestion[],
+  currentIdx: number,
+  revealed: boolean,
+  guesses: Side[]
+): PipState[] {
   return questions.map((q, i) => {
     if (i < currentIdx) return guesses[i] === q.winner ? 'correct' : 'wrong';
     if (i === currentIdx && revealed && guesses[i]) return guesses[i] === q.winner ? 'correct' : 'wrong';
@@ -73,7 +83,11 @@ export function snapshotFromRanking(r: GameRanking | null | undefined): RankSnap
 }
 
 /** Projected ranking after today's score is added to the user's prior totals. */
-export function projectRanking(before: GameRanking | null | undefined, todayScore: number, questionCount: number): RankSnapshot {
+export function projectRanking(
+  before: GameRanking | null | undefined,
+  todayScore: number,
+  questionCount: number
+): RankSnapshot {
   const totalScore = (before?.totalScore ?? 0) + todayScore;
   const possibleScore = (before?.possibleScore ?? 0) + questionCount * 2;
   const gamesPlayed = (before?.gamesPlayed ?? 0) + 1;

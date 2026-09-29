@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { activeLyricIndex, avatarColor, barPercent, feedbackIssueUrl, lyricOpacity, plural, statsFooter, tierEmoji } from '../socialFormat';
+import {
+  activeLyricIndex,
+  avatarColor,
+  barPercent,
+  feedbackIssueUrl,
+  lyricOpacity,
+  plural,
+  statsFooter,
+  tierEmoji,
+} from '../socialFormat';
 
 const lines = [
   { timeMs: 1000, text: 'a' },

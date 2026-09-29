@@ -17,7 +17,7 @@ class FakeSocket implements SocketLike {
   constructor(
     public url: string,
     public protocols: string[],
-    public headers: Record<string, string>,
+    public headers: Record<string, string>
   ) {}
 
   send(data: string) {
@@ -79,7 +79,9 @@ function setup(configOverride: Partial<WsConfig> = {}, fetchImpl?: typeof fetch)
   const onException = vi.fn();
   const onStatus = vi.fn();
   const discover = vi.fn(async () => {});
-  const mfeFetch = vi.fn(async () => new Response(JSON.stringify({ app: { auth: { wsTicket: TICKET } } }), { status: 200 }));
+  const mfeFetch = vi.fn(
+    async () => new Response(JSON.stringify({ app: { auth: { wsTicket: TICKET } } }), { status: 200 })
+  );
 
   const session = new WsSession({
     config,
@@ -98,7 +100,19 @@ function setup(configOverride: Partial<WsConfig> = {}, fetchImpl?: typeof fetch)
     onStatus,
     fetchImpl: fetchImpl ?? (mfeFetch as unknown as typeof fetch),
   });
-  return { session, config, sockets, broadcasts, onConfigChanged, onPlaybackState, onEvent, onException, onStatus, discover, mfeFetch };
+  return {
+    session,
+    config,
+    sockets,
+    broadcasts,
+    onConfigChanged,
+    onPlaybackState,
+    onEvent,
+    onException,
+    onStatus,
+    discover,
+    mfeFetch,
+  };
 }
 
 const settle = async () => {
@@ -152,7 +166,10 @@ describe('connect', () => {
   });
 
   it('emits ws_ticket_missing when the MFE response has no ticket', async () => {
-    const ctx = setup({}, vi.fn(async () => new Response('{"nothing":true}', { status: 200 })) as unknown as typeof fetch);
+    const ctx = setup(
+      {},
+      vi.fn(async () => new Response('{"nothing":true}', { status: 200 })) as unknown as typeof fetch
+    );
     await ctx.session.connect();
     expect(ctx.onEvent).toHaveBeenCalledWith('ws_ticket_missing');
     expect(ctx.sockets).toHaveLength(0);
@@ -179,15 +196,27 @@ describe('bootstrap', () => {
     // Command responses are forwarded as ws:message too (as on desktop), so only check ordering.
     const lifecycle = ctx.broadcasts.map((b) => b.channel).filter((c) => c !== 'ws:message');
     expect(lifecycle).toEqual(['ws:ready', 'ws:groups']);
-    const groupsMsg = ctx.broadcasts.find((b) => b.channel === 'ws:groups') as Extract<WsBroadcast, { channel: 'ws:groups' }>;
+    const groupsMsg = ctx.broadcasts.find((b) => b.channel === 'ws:groups') as Extract<
+      WsBroadcast,
+      { channel: 'ws:groups' }
+    >;
     expect(groupsMsg.groups.map((g) => g.name)).toEqual(['Office', 'Bathroom']);
     expect(groupsMsg.groups[0].playerIds).toEqual(['RINCON_A', 'RINCON_A2']);
 
     // Initial state for the active group only, re-broadcast as ordinary pushes.
-    const seeded = ctx.broadcasts.filter((b) => b.channel === 'ws:message') as Array<Extract<WsBroadcast, { channel: 'ws:message' }>>;
-    const pb = seeded.filter((m) => m.header['namespace'] === 'playbackExtended' && m.payload && JSON.stringify(m.payload).includes('INITIAL_RINCON_A:1'));
+    const seeded = ctx.broadcasts.filter((b) => b.channel === 'ws:message') as Array<
+      Extract<WsBroadcast, { channel: 'ws:message' }>
+    >;
+    const pb = seeded.filter(
+      (m) =>
+        m.header['namespace'] === 'playbackExtended' &&
+        m.payload &&
+        JSON.stringify(m.payload).includes('INITIAL_RINCON_A:1')
+    );
     expect(pb.length).toBeGreaterThan(0);
-    expect(seeded.some((m) => m.header['namespace'] === 'groupVolume' && (m.payload as { volume: number }).volume === 15)).toBe(true);
+    expect(
+      seeded.some((m) => m.header['namespace'] === 'groupVolume' && (m.payload as { volume: number }).volume === 15)
+    ).toBe(true);
     expect(ctx.onEvent).toHaveBeenCalledWith('ws_connected', expect.objectContaining({ groupCount: 2 }));
   });
 
@@ -231,11 +260,17 @@ describe('message routing', () => {
     const sock = await connected(ctx);
     ctx.broadcasts.length = 0;
 
-    sock.push({ namespace: 'playbackExtended', groupId: 'RINCON_B:2' }, { playback: { playbackState: 'PLAYBACK_STATE_PLAYING' } });
+    sock.push(
+      { namespace: 'playbackExtended', groupId: 'RINCON_B:2' },
+      { playback: { playbackState: 'PLAYBACK_STATE_PLAYING' } }
+    );
     sock.push({ namespace: 'groupVolume', groupId: 'RINCON_B:2' }, { volume: 1 });
     expect(ctx.broadcasts).toHaveLength(0);
 
-    sock.push({ namespace: 'playbackExtended', groupId: 'RINCON_A:1' }, { playback: { playbackState: 'PLAYBACK_STATE_PAUSED' } });
+    sock.push(
+      { namespace: 'playbackExtended', groupId: 'RINCON_A:1' },
+      { playback: { playbackState: 'PLAYBACK_STATE_PAUSED' } }
+    );
     sock.push({ namespace: 'groupVolume', groupId: 'RINCON_A:1' }, { volume: 22 });
     expect(ctx.broadcasts.map((b) => b.channel)).toEqual(['ws:message', 'ws:message']);
   });
@@ -251,9 +286,15 @@ describe('message routing', () => {
   it('reports play state from playbackExtended pushes', async () => {
     const ctx = setup();
     const sock = await connected(ctx);
-    sock.push({ namespace: 'playbackExtended', groupId: 'RINCON_A:1' }, { playback: { playbackState: 'PLAYBACK_STATE_PLAYING' } });
+    sock.push(
+      { namespace: 'playbackExtended', groupId: 'RINCON_A:1' },
+      { playback: { playbackState: 'PLAYBACK_STATE_PLAYING' } }
+    );
     expect(ctx.onPlaybackState).toHaveBeenLastCalledWith(true);
-    sock.push({ namespace: 'playbackExtended', groupId: 'RINCON_A:1' }, { playback: { playbackState: 'PLAYBACK_STATE_BUFFERING' } });
+    sock.push(
+      { namespace: 'playbackExtended', groupId: 'RINCON_A:1' },
+      { playback: { playbackState: 'PLAYBACK_STATE_BUFFERING' } }
+    );
     expect(ctx.onPlaybackState).toHaveBeenLastCalledWith(false);
   });
 

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createSeen, currentQueueIndex, prefetchWindow, runLimited } from '../prefetch';
 
-const item = (n: number, ids = true) => ({ track: { id: `t${n}`, serviceId: ids ? 's' : null, accountId: ids ? 'a' : null } });
+const item = (n: number, ids = true) => ({
+  track: { id: `t${n}`, serviceId: ids ? 's' : null, accountId: ids ? 'a' : null },
+});
 const queue = (n: number) => Array.from({ length: n }, (_, i) => item(i));
 
 describe('currentQueueIndex', () => {
@@ -49,13 +51,29 @@ describe('runLimited', () => {
   });
   it('carries on past a failing task', async () => {
     const ran: number[] = [];
-    await runLimited([async () => { ran.push(1); }, async () => { throw new Error('x'); }, async () => { ran.push(3); }], 1);
+    await runLimited(
+      [
+        async () => {
+          ran.push(1);
+        },
+        async () => {
+          throw new Error('x');
+        },
+        async () => {
+          ran.push(3);
+        },
+      ],
+      1
+    );
     expect(ran).toEqual([1, 3]);
   });
   it('stops starting new work once cancelled', async () => {
     let cancelled = false;
     const ran: number[] = [];
-    const tasks = Array.from({ length: 6 }, (_, i) => async () => { ran.push(i); if (i === 1) cancelled = true; });
+    const tasks = Array.from({ length: 6 }, (_, i) => async () => {
+      ran.push(i);
+      if (i === 1) cancelled = true;
+    });
     await runLimited(tasks, 1, () => cancelled);
     expect(ran).toEqual([0, 1]);
   });
@@ -73,7 +91,9 @@ describe('createSeen', () => {
   });
   it('evicts the oldest past the cap', () => {
     const s = createSeen(2);
-    s.add('a'); s.add('b'); s.add('c');
+    s.add('a');
+    s.add('b');
+    s.add('c');
     expect(s.size).toBe(2);
     expect(s.has('a')).toBe(false);
     expect(s.has('c')).toBe(true);

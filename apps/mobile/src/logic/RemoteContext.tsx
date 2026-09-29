@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import type { Remote } from './useRemote';
 import { useRemote } from './useRemote';
 
-export const RemoteContext =createContext<Remote | null>(null);
+export const RemoteContext = createContext<Remote | null>(null);
 
 /** Mount once, only while signed in - the hooks underneath talk to Sonos as soon as they mount. */
 export function RemoteProvider({ children }: { children: ReactNode }) {

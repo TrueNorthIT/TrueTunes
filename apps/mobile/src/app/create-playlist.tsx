@@ -34,7 +34,8 @@ export default function CreatePlaylistScreen() {
     setError('');
     try {
       const playlist = await window.sonos.createPlaylist(trimmed, isPublic);
-      if (pending && playlist.id) await window.sonos.addTrackToPlaylist(playlist.id, { ...pending, addedBy: displayName });
+      if (pending && playlist.id)
+        await window.sonos.addTrackToPlaylist(playlist.id, { ...pending, addedBy: displayName });
       queryClient.invalidateQueries({ queryKey: ['playlists', 'owned', displayName] });
       if (playlist.id) queryClient.invalidateQueries({ queryKey: ['playlist', playlist.id] });
       showToast(`Created ${trimmed}`, 'success');
@@ -46,7 +47,10 @@ export default function CreatePlaylistScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={[styles.root, { paddingTop: space.xl, paddingBottom: insets.bottom + space.lg }]} behavior="padding">
+    <KeyboardAvoidingView
+      style={[styles.root, { paddingTop: space.xl, paddingBottom: insets.bottom + space.lg }]}
+      behavior="padding"
+    >
       <Stack.Screen options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       <Text style={type.title}>New playlist</Text>
       {pending ? <Text style={type.secondary}>{`"${pending.trackName}" will be added.`}</Text> : null}
@@ -62,14 +66,28 @@ export default function CreatePlaylistScreen() {
         style={styles.input}
         selectionColor={colors.accent}
       />
-      <Pressable style={styles.switchRow} onPress={() => setIsPublic((v) => !v)} accessibilityRole="switch" accessibilityState={{ checked: isPublic }}>
+      <Pressable
+        style={styles.switchRow}
+        onPress={() => setIsPublic((v) => !v)}
+        accessibilityRole="switch"
+        accessibilityState={{ checked: isPublic }}
+      >
         <Text style={[type.secondary, { flex: 1 }]}>Public: anyone can join and add tracks</Text>
-        <Switch value={isPublic} onValueChange={setIsPublic} trackColor={{ true: colors.accent, false: colors.border2 }} />
+        <Switch
+          value={isPublic}
+          onValueChange={setIsPublic}
+          trackColor={{ true: colors.accent, false: colors.border2 }}
+        />
       </Pressable>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <View style={styles.buttons}>
         <PillButton label="Cancel" onPress={close} />
-        <PillButton primary label={busy ? 'Creating…' : 'Create'} disabled={!name.trim() || busy || !displayName} onPress={() => void create()} />
+        <PillButton
+          primary
+          label={busy ? 'Creating…' : 'Create'}
+          disabled={!name.trim() || busy || !displayName}
+          onPress={() => void create()}
+        />
       </View>
     </KeyboardAvoidingView>
   );
@@ -77,7 +95,14 @@ export default function CreatePlaylistScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg1, paddingHorizontal: space.lg, gap: space.lg },
-  input: { minHeight: 48, borderRadius: radius.md, backgroundColor: colors.bg2, color: colors.text, fontSize: 16, paddingHorizontal: space.md },
+  input: {
+    minHeight: 48,
+    borderRadius: radius.md,
+    backgroundColor: colors.bg2,
+    color: colors.text,
+    fontSize: 16,
+    paddingHorizontal: space.md,
+  },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 48 },
   error: { color: colors.danger, fontSize: 13 },
   buttons: { flexDirection: 'row', gap: space.sm, justifyContent: 'flex-end' },

@@ -28,8 +28,18 @@ interface Props {
 }
 
 function Action({
-  progress, side, label, bg, children,
-}: { progress: SharedValue<number>; side: 'left' | 'right'; label: string; bg: string; children: ReactNode }) {
+  progress,
+  side,
+  label,
+  bg,
+  children,
+}: {
+  progress: SharedValue<number>;
+  side: 'left' | 'right';
+  label: string;
+  bg: string;
+  children: ReactNode;
+}) {
   const anim = useAnimatedStyle(() => ({
     opacity: interpolate(progress.value, [0, 0.4, 1], [0, 0.6, 1], 'clamp'),
     transform: [{ scale: interpolate(progress.value, [0, 1], [0.6, 1], 'clamp') }],
@@ -47,13 +57,16 @@ function Action({
 function SwipeRowImpl({ children, onSwipeRight, onSwipeLeft, disabled, style }: Props) {
   const ref = useRef<SwipeableMethods>(null);
 
-  const onOpen = useCallback((direction: 'left' | 'right') => {
-    // 'right' = row dragged right (left actions revealed).
-    haptic.medium();
-    if (direction === 'right') onSwipeRight?.();
-    else onSwipeLeft?.();
-    ref.current?.close();
-  }, [onSwipeRight, onSwipeLeft]);
+  const onOpen = useCallback(
+    (direction: 'left' | 'right') => {
+      // 'right' = row dragged right (left actions revealed).
+      haptic.medium();
+      if (direction === 'right') onSwipeRight?.();
+      else onSwipeLeft?.();
+      ref.current?.close();
+    },
+    [onSwipeRight, onSwipeLeft]
+  );
 
   if (disabled || (!onSwipeRight && !onSwipeLeft)) return <View style={[styles.content, style]}>{children}</View>;
 
@@ -69,16 +82,24 @@ function SwipeRowImpl({ children, onSwipeRight, onSwipeLeft, disabled, style }: 
       dragOffsetFromLeftEdge={onSwipeRight ? ACTIVATE_OFFSET : NEVER}
       dragOffsetFromRightEdge={onSwipeLeft ? ACTIVATE_OFFSET : NEVER}
       onSwipeableOpen={onOpen}
-      renderLeftActions={onSwipeRight ? (p) => (
-        <Action progress={p} side="left" label="Add to queue" bg={colors.accent}>
-          <ListPlus size={22} color={colors.text} />
-        </Action>
-      ) : undefined}
-      renderRightActions={onSwipeLeft ? (p) => (
-        <Action progress={p} side="right" label="Remove" bg={colors.danger}>
-          <Trash2 size={22} color={colors.text} />
-        </Action>
-      ) : undefined}
+      renderLeftActions={
+        onSwipeRight
+          ? (p) => (
+              <Action progress={p} side="left" label="Add to queue" bg={colors.accent}>
+                <ListPlus size={22} color={colors.text} />
+              </Action>
+            )
+          : undefined
+      }
+      renderRightActions={
+        onSwipeLeft
+          ? (p) => (
+              <Action progress={p} side="right" label="Remove" bg={colors.danger}>
+                <Trash2 size={22} color={colors.text} />
+              </Action>
+            )
+          : undefined
+      }
     >
       <View style={styles.content}>{children}</View>
     </ReanimatedSwipeable>

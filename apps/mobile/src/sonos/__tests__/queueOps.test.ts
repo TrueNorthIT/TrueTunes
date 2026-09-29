@@ -59,7 +59,12 @@ describe('computeReorderBatches', () => {
   it('splits a non-contiguous selection into runs, one batch each', () => {
     const batches = computeReorderBatches([3, 4, 7], 0, 9);
     expect(batches).toHaveLength(2);
-    expect(applyBatches(Array.from({ length: 9 }, (_, i) => i), batches)).toEqual(expectedOrder(9, [3, 4, 7], 0));
+    expect(
+      applyBatches(
+        Array.from({ length: 9 }, (_, i) => i),
+        batches
+      )
+    ).toEqual(expectedOrder(9, [3, 4, 7], 0));
   });
 
   it('appends to the end when toIndex is past the last item', () => {
@@ -84,7 +89,10 @@ describe('computeReorderBatches', () => {
       const from = Array.from({ length: n }, (_, i) => i).filter((i) => mask & (1 << i));
       for (let toIndex = 0; toIndex <= n; toIndex++) {
         const batches = computeReorderBatches(from, toIndex, n);
-        const got = applyBatches(Array.from({ length: n }, (_, i) => i), batches);
+        const got = applyBatches(
+          Array.from({ length: n }, (_, i) => i),
+          batches
+        );
         expect(got, `from=[${from}] to=${toIndex}`).toEqual(expectedOrder(n, from, toIndex));
         checked++;
       }
@@ -101,7 +109,10 @@ describe('computeReorderBatches', () => {
       const k = 1 + Math.floor(rand() * Math.min(n, 8));
       const from = [...new Set(Array.from({ length: k }, () => Math.floor(rand() * n)))];
       const toIndex = Math.floor(rand() * (n + 1));
-      const got = applyBatches(Array.from({ length: n }, (_, i) => i), computeReorderBatches(from, toIndex, n));
+      const got = applyBatches(
+        Array.from({ length: n }, (_, i) => i),
+        computeReorderBatches(from, toIndex, n)
+      );
       expect(got, `n=${n} from=[${from}] to=${toIndex}`).toEqual(expectedOrder(n, from, toIndex));
     }
   });

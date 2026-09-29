@@ -17,7 +17,11 @@ export interface ReorderBatch {
   positions: number[];
 }
 
-export function computeReorderBatches(fromIndices: number[], insertBefore: number, queueLength: number): ReorderBatch[] {
+export function computeReorderBatches(
+  fromIndices: number[],
+  insertBefore: number,
+  queueLength: number
+): ReorderBatch[] {
   const sorted = [...fromIndices].sort((a, b) => a - b);
 
   // Group into contiguous runs (left-to-right)
@@ -84,8 +88,7 @@ export function computeReorderBatches(fromIndices: number[], insertBefore: numbe
   return batches;
 }
 
-const isIndexList = (v: unknown): v is number[] =>
-  Array.isArray(v) && v.every((i) => typeof i === 'number' && i >= 0);
+const isIndexList = (v: unknown): v is number[] => Array.isArray(v) && v.every((i) => typeof i === 'number' && i >= 0);
 
 export interface QueueOps {
   reorder(fromIndices: number[], toIndex: number, queueLength: number): Promise<FetchResponse | { ok: true }>;

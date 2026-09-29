@@ -29,7 +29,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {children}
         {toast && (
           <View pointerEvents="none" style={[styles.wrap, { bottom: insets.bottom + 96 }]}>
-            <View style={[styles.toast, toast.type === 'error' && styles.error, toast.type === 'success' && styles.success]}>
+            <View
+              style={[styles.toast, toast.type === 'error' && styles.error, toast.type === 'success' && styles.success]}
+            >
               <Text style={styles.text}>{toast.message}</Text>
             </View>
           </View>

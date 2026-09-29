@@ -21,7 +21,10 @@ export function useFavouriteTrack(displayName: string | null | undefined, track:
 
   const toggle = useCallback(async () => {
     const decision = decideFavourite(displayName, track.uri, isFavourited);
-    if (decision === 'prompt-name') { router.push('/display-name'); return; }
+    if (decision === 'prompt-name') {
+      router.push('/display-name');
+      return;
+    }
     if (decision === 'noop' || !favId || !displayName || !track.uri || pending) return;
 
     const key = ['playlist', favId];

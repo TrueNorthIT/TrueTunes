@@ -17,7 +17,8 @@ export const SEARCH_ACCOUNT_ID = '13';
 export const PLATFORM_SERVICE_ID = '16751367';
 export const PLATFORM_ACCOUNT_ID = '123209393';
 
-const QUEUE = '/api/content/v1/groups/:groupId/services/:platformServiceId/accounts/:platformAccountId/queues/:queueId/resources';
+const QUEUE =
+  '/api/content/v1/groups/:groupId/services/:platformServiceId/accounts/:platformAccountId/queues/:queueId/resources';
 const V2_ACCOUNT = '/api/content/v2/households/:householdId/services/:serviceId/accounts/:accountId';
 const V1_PLATFORM = '/api/content/v1/households/:householdId/services/:platformServiceId/accounts/:platformAccountId';
 

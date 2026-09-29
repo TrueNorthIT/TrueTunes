@@ -30,9 +30,15 @@ describe('config', () => {
       householdId: 'hh', // runtime-discovered: must not persist
     };
     await saveConfig(store, cfg);
-    expect(Object.keys(JSON.parse(store.data.config)).sort()).toEqual(
-      ['displayName', 'entraEmail', 'entraName', 'entraOid', 'lastSeenVersion', 'preferredCoordinatorId', 'queueDockedWidth'],
-    );
+    expect(Object.keys(JSON.parse(store.data.config)).sort()).toEqual([
+      'displayName',
+      'entraEmail',
+      'entraName',
+      'entraOid',
+      'lastSeenVersion',
+      'preferredCoordinatorId',
+      'queueDockedWidth',
+    ]);
     expect(store.data.config).not.toContain('householdId');
 
     const loaded: AppConfig = {};
@@ -50,7 +56,13 @@ describe('config', () => {
 
   it('type-checks each field on load and ignores unknown ones', async () => {
     const store = memStore({
-      config: JSON.stringify({ displayName: 5, entraOid: 'o', queueDockedWidth: '300', lastSeenVersion: null, householdId: 'x' }),
+      config: JSON.stringify({
+        displayName: 5,
+        entraOid: 'o',
+        queueDockedWidth: '300',
+        lastSeenVersion: null,
+        householdId: 'x',
+      }),
     });
     const cfg: AppConfig = {};
     await loadConfig(store, cfg);

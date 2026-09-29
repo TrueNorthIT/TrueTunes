@@ -22,7 +22,8 @@ async function browseContainer(item: SonosItem | undefined): Promise<SonosItem[]
     muse2: true,
   });
   if (r.error) {
-    if (typeof __DEV__ !== 'undefined' && __DEV__) console.warn('[ytm] container browse failed:', rid.objectId, r.error);
+    if (typeof __DEV__ !== 'undefined' && __DEV__)
+      console.warn('[ytm] container browse failed:', rid.objectId, r.error);
     return [];
   }
   return extractItems(r.data);
@@ -37,8 +38,7 @@ export async function fetchYtmSections(): Promise<YtmSections> {
 
   const d = rootR.data as Record<string, unknown>;
   const stack = ((d['sections'] as Record<string, unknown> | undefined)?.['items'] as unknown[] | undefined)?.[0] as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   const rootItems = (stack?.['items'] ?? []) as SonosItem[];
   const find = (title: string) => rootItems.find((i) => (i.title ?? i.name) === title);
 

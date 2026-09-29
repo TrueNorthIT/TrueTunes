@@ -1,11 +1,31 @@
 import { describe, expect, it } from 'vitest';
-import { bonusTarget, carryFromSide, distribution, londonDateToday, pipStates, projectRanking, scoreBonus, scoreMain, winningItems } from '../queuedleLogic';
+import {
+  bonusTarget,
+  carryFromSide,
+  distribution,
+  londonDateToday,
+  pipStates,
+  projectRanking,
+  scoreBonus,
+  scoreMain,
+  winningItems,
+} from '../queuedleLogic';
 
 const item = (id: string, topQueuer = 'Al'): GameItem => ({
-  category: 'track', id, name: id, subtitle: '', count: 1, topQueuer, queuerCandidates: ['Al', 'Bo'],
+  category: 'track',
+  id,
+  name: id,
+  subtitle: '',
+  count: 1,
+  topQueuer,
+  queuerCandidates: ['Al', 'Bo'],
 });
 const q = (l: string, r: string, winner: 'left' | 'right', extra: Partial<GameQuestion> = {}): GameQuestion => ({
-  index: 0, left: item(l, 'Al'), right: item(r, 'Bo'), winner, ...extra,
+  index: 0,
+  left: item(l, 'Al'),
+  right: item(r, 'Bo'),
+  winner,
+  ...extra,
 });
 
 describe('queuedleLogic', () => {

@@ -86,7 +86,7 @@ export default function PlaylistScreen() {
 
   const invalidateOwned = useCallback(
     (owner?: string) => queryClient.invalidateQueries({ queryKey: ['playlists', 'owned', owner ?? displayName] }),
-    [queryClient, displayName],
+    [queryClient, displayName]
   );
 
   async function playAll() {
@@ -129,7 +129,10 @@ export default function PlaylistScreen() {
     const uri = playlist.tracks[index]?.uri;
     if (!uri) return;
     const snapshot = playlist;
-    queryClient.setQueryData<PlaylistDoc>(['playlist', id], { ...playlist, tracks: playlist.tracks.filter((_, i) => i !== index) });
+    queryClient.setQueryData<PlaylistDoc>(['playlist', id], {
+      ...playlist,
+      tracks: playlist.tracks.filter((_, i) => i !== index),
+    });
     try {
       await window.sonos.removeTrackFromPlaylist(id, uri);
       invalidateOwned();
@@ -182,10 +185,14 @@ export default function PlaylistScreen() {
       if (picked.canceled || !picked.assets[0]) return;
       setUploading(true);
       const asset = picked.assets[0];
-      const out = await ImageManipulator.manipulateAsync(asset.uri, asset.width > 1000 ? [{ resize: { width: 1000 } }] : [], {
-        compress: 0.85,
-        format: ImageManipulator.SaveFormat.JPEG,
-      });
+      const out = await ImageManipulator.manipulateAsync(
+        asset.uri,
+        asset.width > 1000 ? [{ resize: { width: 1000 } }] : [],
+        {
+          compress: 0.85,
+          format: ImageManipulator.SaveFormat.JPEG,
+        }
+      );
       const buffer = await (await fetch(out.uri)).arrayBuffer();
       if (buffer.byteLength > MAX_IMAGE_BYTES) {
         showToast('Image must be under 5 MB', 'error');
@@ -207,35 +214,96 @@ export default function PlaylistScreen() {
     const item = playlistTrackToItem(menuTrack);
     const close = () => setMenuIndex(null);
     menuActions.push(
-      { key: 'next', label: 'Play next', icon: <ListStart {...ICON} />, onPress: () => { close(); void addToQueue(item, 0); } },
-      { key: 'queue', label: 'Add to queue', icon: <ListEnd {...ICON} />, onPress: () => { close(); void addToQueue(item, -1); } },
+      {
+        key: 'next',
+        label: 'Play next',
+        icon: <ListStart {...ICON} />,
+        onPress: () => {
+          close();
+          void addToQueue(item, 0);
+        },
+      },
+      {
+        key: 'queue',
+        label: 'Add to queue',
+        icon: <ListEnd {...ICON} />,
+        onPress: () => {
+          close();
+          void addToQueue(item, -1);
+        },
+      }
     );
     if (canReorder && canMoveUp(menuIndex)) {
-      menuActions.push({ key: 'up', label: 'Move up', icon: <ArrowUp {...ICON} />, onPress: () => { close(); void moveTrack(menuIndex, menuIndex - 1); } });
+      menuActions.push({
+        key: 'up',
+        label: 'Move up',
+        icon: <ArrowUp {...ICON} />,
+        onPress: () => {
+          close();
+          void moveTrack(menuIndex, menuIndex - 1);
+        },
+      });
     }
     if (canReorder && canMoveDown(menuIndex, tracks.length)) {
-      menuActions.push({ key: 'down', label: 'Move down', icon: <ArrowDown {...ICON} />, onPress: () => { close(); void moveTrack(menuIndex, menuIndex + 1); } });
+      menuActions.push({
+        key: 'down',
+        label: 'Move down',
+        icon: <ArrowDown {...ICON} />,
+        onPress: () => {
+          close();
+          void moveTrack(menuIndex, menuIndex + 1);
+        },
+      });
     }
     if (menuTrack.addedBy) {
-      menuActions.push({ key: 'by', label: `Added by ${menuTrack.addedBy}`, icon: <User {...ICON} />, onPress: () => { close(); router.push(routeForProfile(menuTrack.addedBy) as never); } });
+      menuActions.push({
+        key: 'by',
+        label: `Added by ${menuTrack.addedBy}`,
+        icon: <User {...ICON} />,
+        onPress: () => {
+          close();
+          router.push(routeForProfile(menuTrack.addedBy) as never);
+        },
+      });
     }
     if (isOwner) {
-      menuActions.push({ key: 'remove', label: 'Remove from playlist', icon: <Trash2 {...ICON} />, onPress: () => { close(); void removeTrack(menuIndex); } });
+      menuActions.push({
+        key: 'remove',
+        label: 'Remove from playlist',
+        icon: <Trash2 {...ICON} />,
+        onPress: () => {
+          close();
+          void removeTrack(menuIndex);
+        },
+      });
     }
   }
 
   const header = playlist ? (
     <View style={styles.header}>
-      <Pressable onPress={isOwner ? () => void changeCover() : undefined} disabled={!isOwner || uploading} accessibilityLabel={isOwner ? 'Change cover image' : undefined}>
+      <Pressable
+        onPress={isOwner ? () => void changeCover() : undefined}
+        disabled={!isOwner || uploading}
+        accessibilityLabel={isOwner ? 'Change cover image' : undefined}
+      >
         {playlist.imageUrl ? (
           <Art uri={playlist.imageUrl} size={180} />
         ) : (
-          <View style={[styles.tile, { backgroundColor: playlist.isFavourites ? 'hsl(340,60%,30%)' : flatPlaylistColour(playlist.name) }]}>
-            <Text style={styles.tileText}>{playlist.isFavourites ? '❤️' : (playlist.name[0] ?? '?').toUpperCase()}</Text>
+          <View
+            style={[
+              styles.tile,
+              { backgroundColor: playlist.isFavourites ? 'hsl(340,60%,30%)' : flatPlaylistColour(playlist.name) },
+            ]}
+          >
+            <Text style={styles.tileText}>
+              {playlist.isFavourites ? '❤️' : (playlist.name[0] ?? '?').toUpperCase()}
+            </Text>
           </View>
         )}
         {isOwner ? (
-          <View style={styles.camera}>{uploading ? <ActivityIndicator color={colors.text} /> : <Camera size={18} color={colors.text} />}</View>
+          <View style={styles.camera}>
+            {uploading ? <ActivityIndicator color={colors.text} /> : <Camera size={18} color={colors.text} />}
+          </View>
         ) : null}
       </Pressable>
       <Text style={type.caption}>{playlist.isFavourites ? 'FAVOURITES' : 'PLAYLIST'}</Text>
@@ -255,7 +323,14 @@ export default function PlaylistScreen() {
         <Text
           style={[type.title, styles.center]}
           numberOfLines={2}
-          onPress={isOwner ? () => { setRenameValue(playlist.name); setRenaming(true); } : undefined}
+          onPress={
+            isOwner
+              ? () => {
+                  setRenameValue(playlist.name);
+                  setRenaming(true);
+                }
+              : undefined
+          }
         >
           {playlist.name}
         </Text>
@@ -268,9 +343,14 @@ export default function PlaylistScreen() {
       </Text>
       <View style={styles.actions}>
         {tracks.length > 0 ? <PillButton primary label="Play all" onPress={() => void playAll()} /> : null}
-        {playlist.isPublic && !isOwner ? <PillButton label={isMember ? 'Leave' : 'Join'} onPress={() => void toggleMembership()} /> : null}
+        {playlist.isPublic && !isOwner ? (
+          <PillButton label={isMember ? 'Leave' : 'Join'} onPress={() => void toggleMembership()} />
+        ) : null}
         {isOwner && !playlist.isFavourites ? (
-          <PillButton label={playlist.isPublic ? 'Make private' : 'Make public'} onPress={() => void patch({ isPublic: !playlist.isPublic }, 'Failed to update visibility')} />
+          <PillButton
+            label={playlist.isPublic ? 'Make private' : 'Make public'}
+            onPress={() => void patch({ isPublic: !playlist.isPublic }, 'Failed to update visibility')}
+          />
         ) : null}
         {isOwner && !playlist.isFavourites ? <PillButton danger label="Delete" onPress={confirmDelete} /> : null}
       </View>
@@ -304,7 +384,11 @@ export default function PlaylistScreen() {
           keyExtractor={(t, i) => `${t.uri}-${t.addedAt}-${i}`}
           ListHeaderComponent={header}
           ListFooterComponent={footer}
-          ListEmptyComponent={<Text style={[type.secondary, styles.msg]}>No tracks yet. Long-press any song and choose "Add to playlist".</Text>}
+          ListEmptyComponent={
+            <Text style={[type.secondary, styles.msg]}>
+              No tracks yet. Long-press any song and choose "Add to playlist".
+            </Text>
+          }
           contentContainerStyle={{ paddingBottom: space.xxl }}
           renderItem={({ item: t, index }) => (
             <PlaylistTrackRow
@@ -318,24 +402,61 @@ export default function PlaylistScreen() {
           )}
         />
       )}
-      <ActionSheet visible={!!menuTrack} title={menuTrack?.trackName} subtitle={menuTrack?.artist} actions={menuActions} onClose={() => setMenuIndex(null)} />
+      <ActionSheet
+        visible={!!menuTrack}
+        title={menuTrack?.trackName}
+        subtitle={menuTrack?.artist}
+        actions={menuActions}
+        onClose={() => setMenuIndex(null)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  header: { alignItems: 'center', gap: space.sm, paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: space.lg },
+  header: {
+    alignItems: 'center',
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingTop: space.md,
+    paddingBottom: space.lg,
+  },
   tile: { width: 180, height: 180, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   tileText: { fontSize: 64, color: colors.text, fontWeight: '700' },
-  camera: { position: 'absolute', right: 8, bottom: 8, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' },
+  camera: {
+    position: 'absolute',
+    right: 8,
+    bottom: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   center: { textAlign: 'center' },
-  renameInput: { alignSelf: 'stretch', color: colors.text, fontSize: 22, fontWeight: '700', textAlign: 'center', borderBottomWidth: 1, borderBottomColor: colors.border2, paddingVertical: space.xs },
+  renameInput: {
+    alignSelf: 'stretch',
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '700',
+    textAlign: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border2,
+    paddingVertical: space.xs,
+  },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, justifyContent: 'center', marginTop: space.sm },
   ordinal: { width: 24, textAlign: 'right' },
   iconBtn: { width: 36, height: 44, alignItems: 'center', justifyContent: 'center' },
   msg: { textAlign: 'center', marginTop: space.xl, paddingHorizontal: space.lg },
   sectionTitle: { paddingHorizontal: space.lg, marginBottom: space.sm },
   members: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, paddingHorizontal: space.lg },
-  chip: { minHeight: 36, justifyContent: 'center', paddingHorizontal: space.md, borderRadius: radius.pill, backgroundColor: colors.bg2 },
+  chip: {
+    minHeight: 36,
+    justifyContent: 'center',
+    paddingHorizontal: space.md,
+    borderRadius: radius.pill,
+    backgroundColor: colors.bg2,
+  },
 });

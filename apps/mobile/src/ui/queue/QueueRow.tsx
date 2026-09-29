@@ -24,8 +24,18 @@ interface Props {
 }
 
 function QueueRowImpl({
-  item, index, isPlaying, isSelected, selectMode, isDragging, swipeEnabled, addedBy,
-  onPress, onLongPress, onRemove, onDragHandle,
+  item,
+  index,
+  isPlaying,
+  isSelected,
+  selectMode,
+  isDragging,
+  swipeEnabled,
+  addedBy,
+  onPress,
+  onLongPress,
+  onRemove,
+  onDragHandle,
 }: Props) {
   const t = item.track;
   // Queue resources carry only ids; art and artist come from track details, as on desktop.
@@ -59,13 +69,26 @@ function QueueRowImpl({
                 </View>
               )}
             </View>
-            {!!artist && <Text style={type.secondary} numberOfLines={1}>{artist}</Text>}
-            {!!addedBy && <Text style={type.caption} numberOfLines={1}>added by {addedBy}</Text>}
+            {!!artist && (
+              <Text style={type.secondary} numberOfLines={1}>
+                {artist}
+              </Text>
+            )}
+            {!!addedBy && (
+              <Text style={type.caption} numberOfLines={1}>
+                added by {addedBy}
+              </Text>
+            )}
           </View>
         </Pressable>
       </SwipeRow>
       {!selectMode && (
-        <Pressable onPressIn={onDragHandle} hitSlop={8} style={[styles.handle, ...bg]} accessibilityLabel="Drag to reorder">
+        <Pressable
+          onPressIn={onDragHandle}
+          hitSlop={8}
+          style={[styles.handle, ...bg]}
+          accessibilityLabel="Drag to reorder"
+        >
           <GripVertical size={20} color={colors.text3} />
         </Pressable>
       )}
@@ -96,8 +119,13 @@ const styles = StyleSheet.create({
   explicitText: { color: colors.bg, fontSize: 10, fontWeight: '700' },
   handle: { paddingHorizontal: space.lg, alignItems: 'center', justifyContent: 'center' },
   check: {
-    width: 22, height: 22, borderRadius: radius.pill, borderWidth: 2, borderColor: colors.border2,
-    alignItems: 'center', justifyContent: 'center',
+    width: 22,
+    height: 22,
+    borderRadius: radius.pill,
+    borderWidth: 2,
+    borderColor: colors.border2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   checkOn: { backgroundColor: colors.accent, borderColor: colors.accent },
 });

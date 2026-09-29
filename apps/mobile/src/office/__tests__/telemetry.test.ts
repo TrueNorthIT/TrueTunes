@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as telemetry from '../telemetry';
 
-const CS = 'InstrumentationKey=abc-123;IngestionEndpoint=https://uks.in.applicationinsights.azure.com/;LiveEndpoint=https://x';
+const CS =
+  'InstrumentationKey=abc-123;IngestionEndpoint=https://uks.in.applicationinsights.azure.com/;LiveEndpoint=https://x';
 
 let fetchMock: ReturnType<typeof vi.fn>;
 const opts = () => ({ fetchImpl: fetchMock as unknown as typeof fetch });
-const sentBatches = () => fetchMock.mock.calls.map((c) => JSON.parse((c[1] as RequestInit).body as string) as Array<Record<string, any>>);
+const sentBatches = () =>
+  fetchMock.mock.calls.map((c) => JSON.parse((c[1] as RequestInit).body as string) as Array<Record<string, any>>);
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -59,7 +61,9 @@ describe('telemetry', () => {
       n: '3',
       ok: 'true',
     });
-    expect(env.data.baseData.properties.sessionId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(env.data.baseData.properties.sessionId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+    );
     expect(env.data.baseData.properties).not.toHaveProperty('groupId');
   });
 

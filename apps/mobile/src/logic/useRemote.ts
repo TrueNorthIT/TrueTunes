@@ -32,7 +32,7 @@ export function useRemote() {
     (etag) => {
       queueVersionRef.current = etag;
     },
-    (msg) => showToast(`Queue refresh failed: ${msg}`, 'error'),
+    (msg) => showToast(`Queue refresh failed: ${msg}`, 'error')
   );
   usePrefetchNextLyrics(queueItems, playback.queueItemId);
 
@@ -56,9 +56,15 @@ export function useRemote() {
   const [displayName, setDisplayName] = useState<string | null | undefined>(undefined); // undefined = not yet loaded
   useEnsureFavourites(displayName);
   useEffect(() => {
-    window.sonos.getDisplayName().then(setDisplayName).catch(() => setDisplayName(null));
+    window.sonos
+      .getDisplayName()
+      .then(setDisplayName)
+      .catch(() => setDisplayName(null));
     return window.sonos.onEntraReady(() => {
-      window.sonos.getDisplayName().then(setDisplayName).catch(() => {});
+      window.sonos
+        .getDisplayName()
+        .then(setDisplayName)
+        .catch(() => {});
     });
   }, []);
 
@@ -82,7 +88,7 @@ export function useRemote() {
       window.sonos.refreshAttribution().catch(() => {});
       window.sonos.trackEvent('group_changed').catch(() => {});
     },
-    [applyGroupCache],
+    [applyGroupCache]
   );
 
   /** Desktop does this on window focus; mobile calls it when the app returns to the foreground. */

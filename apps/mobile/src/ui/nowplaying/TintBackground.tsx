@@ -24,12 +24,22 @@ export function TintBackground({ color }: { color: string | null }) {
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      {layers.prev ? <Animated.View style={[StyleSheet.absoluteFill, prevStyle]}><Gradient color={layers.prev} /></Animated.View> : null}
-      {layers.cur ? <Animated.View style={[StyleSheet.absoluteFill, curStyle]}><Gradient color={layers.cur} /></Animated.View> : null}
+      {layers.prev ? (
+        <Animated.View style={[StyleSheet.absoluteFill, prevStyle]}>
+          <Gradient color={layers.prev} />
+        </Animated.View>
+      ) : null}
+      {layers.cur ? (
+        <Animated.View style={[StyleSheet.absoluteFill, curStyle]}>
+          <Gradient color={layers.cur} />
+        </Animated.View>
+      ) : null}
     </View>
   );
 }
 
 function Gradient({ color }: { color: string }) {
-  return <LinearGradient colors={[rgba(color, 0.55), colors.bg]} locations={[0, 0.6]} style={StyleSheet.absoluteFill} />;
+  return (
+    <LinearGradient colors={[rgba(color, 0.55), colors.bg]} locations={[0, 0.6]} style={StyleSheet.absoluteFill} />
+  );
 }

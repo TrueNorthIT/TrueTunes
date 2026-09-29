@@ -1,8 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { applyFavourite, buildFavouriteTrack, decideFavourite, isTrackFavourited } from '../../../ui/nowplaying/favouriteTrack';
+import {
+  applyFavourite,
+  buildFavouriteTrack,
+  decideFavourite,
+  isTrackFavourited,
+} from '../../../ui/nowplaying/favouriteTrack';
 import { hexToRgb, hexToTintRgb, pickTintFromColors, rgba } from '../../../ui/nowplaying/colorMath';
 
-const t = (uri: string) => ({ uri, trackName: uri, artist: 'a', serviceId: 's', accountId: 'c', addedBy: 'me', addedAt: 1 }) as PlaylistTrack;
+const t = (uri: string) =>
+  ({ uri, trackName: uri, artist: 'a', serviceId: 's', accountId: 'c', addedBy: 'me', addedAt: 1 }) as PlaylistTrack;
 
 describe('favourite decisions', () => {
   it('noop while loading or without a uri', () => {
@@ -28,7 +34,11 @@ describe('favourite decisions', () => {
     expect(doc.tracks).toHaveLength(1);
   });
   it('builds a playlist track', () => {
-    const tr = buildFavouriteTrack({ uri: 'u', trackName: 'n', artist: undefined, serviceId: null, accountId: 'x' }, 'me', 5);
+    const tr = buildFavouriteTrack(
+      { uri: 'u', trackName: 'n', artist: undefined, serviceId: null, accountId: 'x' },
+      'me',
+      5
+    );
     expect(tr).toMatchObject({ uri: 'u', artist: '', serviceId: '', addedBy: 'me', addedAt: 5, imageUrl: null });
   });
 });

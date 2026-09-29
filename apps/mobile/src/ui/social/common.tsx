@@ -8,7 +8,17 @@ import { Art } from '../Art';
 import { colors, radius, space, type } from '../theme';
 
 /** Top bar with a back chevron, title, and optional right-side action. */
-export function ScreenHeader({ title, right, onBack, topInset = true }: { title: string; right?: ReactNode; onBack?: () => void; topInset?: boolean }) {
+export function ScreenHeader({
+  title,
+  right,
+  onBack,
+  topInset = true,
+}: {
+  title: string;
+  right?: ReactNode;
+  onBack?: () => void;
+  topInset?: boolean;
+}) {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.header, { paddingTop: (topInset ? insets.top : 0) + space.sm }]}>
@@ -36,8 +46,14 @@ export function Segmented<T extends string>({
   return (
     <View style={styles.seg}>
       {options.map((o) => (
-        <Pressable key={o.value} onPress={() => onChange(o.value)} style={[styles.segBtn, o.value === value && styles.segActive]}>
-          <Text style={[type.secondary, o.value === value && { color: colors.text, fontWeight: '600' }]}>{o.label}</Text>
+        <Pressable
+          key={o.value}
+          onPress={() => onChange(o.value)}
+          style={[styles.segBtn, o.value === value && styles.segActive]}
+        >
+          <Text style={[type.secondary, o.value === value && { color: colors.text, fontWeight: '600' }]}>
+            {o.label}
+          </Text>
         </Pressable>
       ))}
     </View>
@@ -48,8 +64,19 @@ export function Segmented<T extends string>({
 export function UserAvatar({ name, uri, size }: { name: string; uri?: string | null; size: number }) {
   if (uri) return <Art uri={uri} size={size} round />;
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: avatarColor(name), alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ color: colors.text, fontSize: size * 0.42, fontWeight: '700' }}>{(name[0] ?? '?').toUpperCase()}</Text>
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: avatarColor(name),
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Text style={{ color: colors.text, fontSize: size * 0.42, fontWeight: '700' }}>
+        {(name[0] ?? '?').toUpperCase()}
+      </Text>
     </View>
   );
 }
@@ -58,7 +85,17 @@ export function SectionTitle({ children }: { children: ReactNode }) {
   return <Text style={[type.heading, { marginTop: space.lg, marginBottom: space.sm }]}>{children}</Text>;
 }
 
-export function Button({ label, onPress, disabled, danger }: { label: string; onPress: () => void; disabled?: boolean; danger?: boolean }) {
+export function Button({
+  label,
+  onPress,
+  disabled,
+  danger,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+}) {
   return (
     <Pressable
       onPress={onPress}

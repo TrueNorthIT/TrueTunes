@@ -54,9 +54,6 @@ describe('useOpenItem', () => {
     const open = setup();
     const item: SonosItem = { type: 'ITEM_ALBUM' };
     open(item);
-    expect(mockNavigate).toHaveBeenCalledWith(
-      '/album/_',
-      expect.anything()
-    );
+    expect(mockNavigate).toHaveBeenCalledWith('/album/_', expect.anything());
   });
 });

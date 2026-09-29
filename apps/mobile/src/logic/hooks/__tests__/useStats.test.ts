@@ -29,7 +29,14 @@ describe('useStats', () => {
   });
 
   it('passes userId when provided', async () => {
-    mockFetchStats.mockResolvedValue({ topUsers: [], topTracks: [], topArtists: [], topAlbums: [], totalEvents: 0, periodStart: 0 });
+    mockFetchStats.mockResolvedValue({
+      topUsers: [],
+      topTracks: [],
+      topArtists: [],
+      topAlbums: [],
+      totalEvents: 0,
+      periodStart: 0,
+    });
     const { result } = renderHook(() => useStats('week', 'alice'), { wrapper });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(mockFetchStats).toHaveBeenCalledWith('week', 'alice');

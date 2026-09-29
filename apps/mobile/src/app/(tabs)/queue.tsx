@@ -1,7 +1,7 @@
 import { ArrowDown, ArrowUp, ListMusic, Trash2 } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, BackHandler, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import type { FlatList } from 'react-native';
+import type { FlatList } from 'react-native-gesture-handler';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import type { RenderItemParams } from 'react-native-draggable-flatlist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,7 +11,18 @@ import { useRemoteContext } from '../../logic/RemoteContext';
 import type { NormalizedQueueItem } from '../../logic/types/provider';
 import { QueueRow } from '../../ui/queue/QueueRow';
 import {
-  ROW_HEIGHT, buildKeys, findPlayingIndex, isPlayingRow, planSingleReorder, playingPosition, scrollOffsetForPlaying, shouldAutoFollow, removeIndices, resolveAttribution, toggleSelection, trackNumberForIndex,
+  ROW_HEIGHT,
+  buildKeys,
+  findPlayingIndex,
+  isPlayingRow,
+  planSingleReorder,
+  playingPosition,
+  scrollOffsetForPlaying,
+  shouldAutoFollow,
+  removeIndices,
+  resolveAttribution,
+  toggleSelection,
+  trackNumberForIndex,
 } from '../../ui/queue/queueLogic';
 import { DjSection } from '../../ui/queue/DjSection';
 import { SelectionBar } from '../../ui/queue/SelectionBar';
@@ -43,7 +54,7 @@ export default function QueueScreen() {
   const [position, setPosition] = useState<'none' | 'visible' | 'above' | 'below'>('none');
   const playingIndex = useMemo(
     () => findPlayingIndex(items, playback.queueItemId, playback.currentObjectId),
-    [items, playback.queueItemId, playback.currentObjectId],
+    [items, playback.queueItemId, playback.currentObjectId]
   );
 
   const refreshPosition = useCallback(() => {
@@ -57,7 +68,7 @@ export default function QueueScreen() {
       if (playingIndex < 0) return;
       listRef.current?.scrollToOffset({ offset: scrollOffsetForPlaying(playingIndex), animated });
     },
-    [playingIndex],
+    [playingIndex]
   );
 
   useEffect(() => {
@@ -81,20 +92,30 @@ export default function QueueScreen() {
   }, [scrollToPlaying]);
 
   // Desktop clears the selection whenever the list changes.
-  useEffect(() => { setSelected(new Set()); }, [items]);
+  useEffect(() => {
+    setSelected(new Set());
+  }, [items]);
 
-  const exitSelect = useCallback(() => { setSelectMode(false); setSelected(new Set()); }, []);
+  const exitSelect = useCallback(() => {
+    setSelectMode(false);
+    setSelected(new Set());
+  }, []);
   useEffect(() => {
     if (!selectMode) return;
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => { exitSelect(); return true; });
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      exitSelect();
+      return true;
+    });
     return () => sub.remove();
   }, [selectMode, exitSelect]);
-  useEffect(() => { if (items.length === 0) exitSelect(); }, [items.length, exitSelect]);
+  useEffect(() => {
+    if (items.length === 0) exitSelect();
+  }, [items.length, exitSelect]);
 
   const keys = useMemo(() => buildKeys(items), [items]);
   const keyOf = useCallback(
     (item: NormalizedQueueItem, i?: number) => keys[items.indexOf(item)] ?? String(i),
-    [keys, items],
+    [keys, items]
   );
 
   const onRefresh = useCallback(() => {
@@ -103,15 +124,20 @@ export default function QueueScreen() {
     setTimeout(() => setRefreshing(false), 1000);
   }, [reload]);
 
-  const onPress = useCallback((index: number) => {
-    if (selectMode) {
-      const next = toggleSelection(selected, index);
-      setSelected(next.selected);
-      if (!next.selectMode) setSelectMode(false);
-      return;
-    }
-    getActiveProvider().skipToTrack(trackNumberForIndex(index)).catch(() => showToast('Failed to skip to track', 'error'));
-  }, [selectMode, selected, showToast]);
+  const onPress = useCallback(
+    (index: number) => {
+      if (selectMode) {
+        const next = toggleSelection(selected, index);
+        setSelected(next.selected);
+        if (!next.selectMode) setSelectMode(false);
+        return;
+      }
+      getActiveProvider()
+        .skipToTrack(trackNumberForIndex(index))
+        .catch(() => showToast('Failed to skip to track', 'error'));
+    },
+    [selectMode, selected, showToast]
+  );
 
   const onLongPress = useCallback((index: number) => {
     haptic.medium();
@@ -133,15 +159,18 @@ export default function QueueScreen() {
     }
   }, [selected, setItems, reload, showToast]);
 
-  const removeOne = useCallback(async (index: number) => {
-    setItems((prev) => removeIndices(prev, new Set([index])));
-    try {
-      await window.sonos.removeFromQueue([index]);
-    } catch {
-      showToast('Failed to remove track', 'error');
-      reload();
-    }
-  }, [setItems, reload, showToast]);
+  const removeOne = useCallback(
+    async (index: number) => {
+      setItems((prev) => removeIndices(prev, new Set([index])));
+      try {
+        await window.sonos.removeFromQueue([index]);
+      } catch {
+        showToast('Failed to remove track', 'error');
+        reload();
+      }
+    },
+    [setItems, reload, showToast]
+  );
 
   const clearQueue = useCallback(() => {
     Alert.alert('Clear queue', `Clear all ${items.length} tracks?`, [
@@ -163,18 +192,21 @@ export default function QueueScreen() {
     ]);
   }, [items.length, setItems, exitSelect, reload, showToast]);
 
-  const onDragEnd = useCallback(async ({ from, to }: { from: number; to: number }) => {
-    setDragging(false);
-    if (from === to) return;
-    const plan = planSingleReorder(items, from, to);
-    setItems(plan.next);
-    try {
-      await window.sonos.reorderQueue(plan.fromIndices, plan.toIndex, plan.queueLength);
-    } catch {
-      showToast('Failed to reorder queue', 'error');
-      reload();
-    }
-  }, [items, setItems, reload, showToast]);
+  const onDragEnd = useCallback(
+    async ({ from, to }: { from: number; to: number }) => {
+      setDragging(false);
+      if (from === to) return;
+      const plan = planSingleReorder(items, from, to);
+      setItems(plan.next);
+      try {
+        await window.sonos.reorderQueue(plan.fromIndices, plan.toIndex, plan.queueLength);
+      } catch {
+        showToast('Failed to reorder queue', 'error');
+        reload();
+      }
+    },
+    [items, setItems, reload, showToast]
+  );
 
   const currentObjectId = playback.currentObjectId;
 
@@ -201,7 +233,17 @@ export default function QueueScreen() {
         />
       );
     },
-    [playback.queueItemId, currentObjectId, selected, selectMode, dragging, attribution, onPress, onLongPress, removeOne],
+    [
+      playback.queueItemId,
+      currentObjectId,
+      selected,
+      selectMode,
+      dragging,
+      attribution,
+      onPress,
+      onLongPress,
+      removeOne,
+    ]
   );
 
   const title = `Queue${activeGroup ? ` · ${activeGroup.name}` : ''}${items.length ? ` · ${items.length}` : ''}`;
@@ -210,7 +252,9 @@ export default function QueueScreen() {
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={[type.title, styles.headerText]} numberOfLines={1}>{title}</Text>
+        <Text style={[type.title, styles.headerText]} numberOfLines={1}>
+          {title}
+        </Text>
         {items.length > 0 && !selectMode && (
           <Pressable hitSlop={8} onPress={clearQueue} accessibilityLabel="Clear queue">
             <Trash2 size={20} color={colors.text2} />
@@ -218,53 +262,61 @@ export default function QueueScreen() {
         )}
       </View>
       {showSpinner ? (
-        <View style={styles.center}><ActivityIndicator color={colors.text2} /></View>
+        <View style={styles.center}>
+          <ActivityIndicator color={colors.text2} />
+        </View>
       ) : error && items.length === 0 ? (
         <View style={styles.center}>
           <Text style={type.secondary}>{error}</Text>
-          <Pressable onPress={onRefresh}><Text style={[type.body, { color: colors.accent }]}>Retry</Text></Pressable>
+          <Pressable onPress={onRefresh}>
+            <Text style={[type.body, { color: colors.accent }]}>Retry</Text>
+          </Pressable>
         </View>
       ) : (
         <View style={styles.listWrap} onLayout={(e) => setViewHeight(e.nativeEvent.layout.height)}>
-        <DraggableFlatList
-          ref={listRef}
-          onScrollOffsetChange={(y) => {
-            scrollY.current = y;
-            refreshPosition();
-          }}
-          onScrollBeginDrag={() => {
-            following.current = false;
-          }}
-          getItemLayout={(_, index) => ({ length: ROW_HEIGHT, offset: ROW_HEIGHT * index, index })}
-          data={items}
-          keyExtractor={keyOf}
-          renderItem={renderItem}
-          onDragBegin={() => setDragging(true)}
-          onRelease={() => setDragging(false)}
-          onDragEnd={onDragEnd}
-          activationDistance={12}
-          // Rows load their own track details when they mount, so a small render window means far-away
-          // rows are only fetched as you scroll toward them.
-          initialNumToRender={12}
-          maxToRenderPerBatch={8}
-          windowSize={7}
-          ListFooterComponent={items.length > 0 ? <DjSection /> : null}
-          extraData={[selected, selectMode, dragging, playback.queueItemId, attribution]}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text2} />}
-          ListEmptyComponent={
-            <View style={styles.center}>
-              <ListMusic size={40} color={colors.text3} />
-              <Text style={type.secondary}>{groups.length === 0 ? 'No speakers found.' : 'Queue is empty.'}</Text>
-            </View>
-          }
-          contentContainerStyle={items.length === 0 ? styles.emptyContent : undefined}
-        />
-        {!selectMode && (position === 'above' || position === 'below') && (
-          <Pressable style={styles.jump} onPress={jumpToPlaying} accessibilityLabel="Scroll to now playing">
-            {position === 'above' ? <ArrowUp size={16} color={colors.text} /> : <ArrowDown size={16} color={colors.text} />}
-            <Text style={type.secondary}>Now playing</Text>
-          </Pressable>
-        )}
+          <DraggableFlatList
+            ref={listRef}
+            onScrollOffsetChange={(y) => {
+              scrollY.current = y;
+              refreshPosition();
+            }}
+            onScrollBeginDrag={() => {
+              following.current = false;
+            }}
+            getItemLayout={(_, index) => ({ length: ROW_HEIGHT, offset: ROW_HEIGHT * index, index })}
+            data={items}
+            keyExtractor={keyOf}
+            renderItem={renderItem}
+            onDragBegin={() => setDragging(true)}
+            onRelease={() => setDragging(false)}
+            onDragEnd={onDragEnd}
+            activationDistance={12}
+            // Rows load their own track details when they mount, so a small render window means far-away
+            // rows are only fetched as you scroll toward them.
+            initialNumToRender={12}
+            maxToRenderPerBatch={8}
+            windowSize={7}
+            ListFooterComponent={items.length > 0 ? <DjSection /> : null}
+            extraData={[selected, selectMode, dragging, playback.queueItemId, attribution]}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text2} />}
+            ListEmptyComponent={
+              <View style={styles.center}>
+                <ListMusic size={40} color={colors.text3} />
+                <Text style={type.secondary}>{groups.length === 0 ? 'No speakers found.' : 'Queue is empty.'}</Text>
+              </View>
+            }
+            contentContainerStyle={items.length === 0 ? styles.emptyContent : undefined}
+          />
+          {!selectMode && (position === 'above' || position === 'below') && (
+            <Pressable style={styles.jump} onPress={jumpToPlaying} accessibilityLabel="Scroll to now playing">
+              {position === 'above' ? (
+                <ArrowUp size={16} color={colors.text} />
+              ) : (
+                <ArrowDown size={16} color={colors.text} />
+              )}
+              <Text style={type.secondary}>Now playing</Text>
+            </Pressable>
+          )}
         </View>
       )}
       {selectMode && (
@@ -292,7 +344,13 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     elevation: 6,
   },
-  header: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
+  },
   headerText: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.md, padding: space.xxl },
   emptyContent: { flexGrow: 1 },

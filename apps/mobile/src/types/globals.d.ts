@@ -441,9 +441,9 @@ interface SonosPreload {
   geniusAlbumYear: (albumName: string, artistName: string) => Promise<number | null>;
   /** Fire-and-forget telemetry event routed through the main process. No-op when App Insights is not configured. */
   trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
-  minimizeWindow:    () => Promise<void>;
-  maximizeWindow:    () => Promise<void>;
-  closeWindow:       () => Promise<void>;
+  minimizeWindow: () => Promise<void>;
+  maximizeWindow: () => Promise<void>;
+  closeWindow: () => Promise<void>;
   isWindowMaximized: () => Promise<boolean>;
   onWindowMaximized: (cb: (maximized: boolean) => void) => Unsubscribe;
   onUpdateDownloaded: (cb: (version: string) => void) => Unsubscribe;
@@ -458,10 +458,19 @@ interface SonosPreload {
   removeTrackFromPlaylist: (playlistId: string, uri: string) => Promise<PlaylistDoc>;
   reorderPlaylistTracks: (playlistId: string, fromIndex: number, toIndex: number) => Promise<PlaylistDoc>;
   joinPlaylist: (playlistId: string, action: 'join' | 'leave') => Promise<PlaylistMeta>;
-  uploadPlaylistImage: (playlistId: string, data: ArrayBuffer, mimeType: string, userName: string) => Promise<{ imageUrl: string } | { error: string }>;
+  uploadPlaylistImage: (
+    playlistId: string,
+    data: ArrayBuffer,
+    mimeType: string,
+    userName: string
+  ) => Promise<{ imageUrl: string } | { error: string }>;
   fetchUsers: (includeSelf?: boolean) => Promise<UserSummary[]>;
   fetchUserProfile: (userName: string) => Promise<UserProfile | null>;
-  uploadProfileImage: (userName: string, data: ArrayBuffer, mimeType: string) => Promise<{ imageUrl: string } | { error: string }>;
+  uploadProfileImage: (
+    userName: string,
+    data: ArrayBuffer,
+    mimeType: string
+  ) => Promise<{ imageUrl: string } | { error: string }>;
   getEntraUser: () => Promise<EntraUser | null>;
   entraSignOut: () => Promise<void>;
   entraReLogin: () => Promise<void>;

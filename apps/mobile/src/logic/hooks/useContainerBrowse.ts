@@ -5,9 +5,9 @@ import type { SonosItem } from '../types/sonos';
 
 export function useContainerBrowse(
   containerId: string | undefined,
-  serviceId:   string | undefined,
-  accountId:   string | undefined,
-  defaults?:   string,
+  serviceId: string | undefined,
+  accountId: string | undefined,
+  defaults?: string
 ) {
   return useQuery<SonosItem[]>({
     queryKey: ['container', containerId] as const,
@@ -18,6 +18,6 @@ export function useContainerBrowse(
     },
     enabled: !!(containerId && serviceId && accountId),
     staleTime: 5 * 60 * 1000,
-    gcTime:    60 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 }

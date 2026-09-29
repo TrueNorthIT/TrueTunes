@@ -123,13 +123,10 @@ export function useAutoplay({
     // Resolve the playing track's name identity from the queue, so the
     // coordinator can place the playhead even when the id has been re-keyed.
     const playing = items.find((i) => i.track.id === nowPlayingUri);
-    nowPlayingTitleRef.current = playing
-      ? trackKey(playing.track.title, playing.track.artist)
-      : null;
+    nowPlayingTitleRef.current = playing ? trackKey(playing.track.title, playing.track.artist) : null;
     // Sonos reports a 1-based queue position; the coordinator works in indexes.
     const reported = Number(nowPlayingQueueItemId);
-    nowPlayingIndexRef.current =
-      nowPlayingQueueItemId && Number.isFinite(reported) ? reported - 1 : null;
+    nowPlayingIndexRef.current = nowPlayingQueueItemId && Number.isFinite(reported) ? reported - 1 : null;
     usersRef.current = users;
     onEnqueueRef.current = onEnqueue;
   });
@@ -237,7 +234,7 @@ export function useAutoplay({
       pendingEnable.current = on;
       void poll();
     },
-    [poll],
+    [poll]
   );
 
   return { ...state, setEnabled };

@@ -8,7 +8,12 @@ import { ToastContext } from '../../context/ToastContext';
 import { useAddToQueueImpl } from '../../useAddToQueueImpl';
 import type { SonosItem } from '../../types/sonos';
 
-type Fetch = (req: { operationId: string; query?: Record<string, string>; body?: unknown; headers?: Record<string, string> }) => Promise<unknown>;
+type Fetch = (req: {
+  operationId: string;
+  query?: Record<string, string>;
+  body?: unknown;
+  headers?: Record<string, string>;
+}) => Promise<unknown>;
 
 const track = (): SonosItem =>
   ({
@@ -43,7 +48,7 @@ const program = (): SonosItem =>
 let setItems: ReturnType<typeof vi.fn>;
 let reload: ReturnType<typeof vi.fn>;
 let reloadRaw: ReturnType<typeof vi.fn>;
-let showToast: ReturnType<typeof vi.fn<(m: string, t?: "error" | "success" | "info") => void>>;
+let showToast: ReturnType<typeof vi.fn<(m: string, t?: 'error' | 'success' | 'info') => void>>;
 let queueVersionRef: { current: string | null };
 let queueItems: unknown[];
 let fetchMock: ReturnType<typeof vi.fn<Fetch>>;
@@ -73,12 +78,18 @@ beforeEach(() => {
   setItems = vi.fn();
   reload = vi.fn();
   reloadRaw = vi.fn(async () => {});
-  showToast = vi.fn<(m: string, t?: "error" | "success" | "info") => void>();
+  showToast = vi.fn<(m: string, t?: 'error' | 'success' | 'info') => void>();
   queueVersionRef = { current: 'etag-1' };
   queueItems = [];
-  fetchMock = vi.fn<Fetch>(async (req) => (req.operationId === 'addQueueResource' ? { data: {}, etag: 'etag-2' } : new Promise(() => {})));
-  vi.mocked(window.sonos.fetch).mockReset().mockImplementation(fetchMock as never);
-  vi.mocked(window.sonos.publishQueued).mockReset().mockResolvedValue(undefined as never);
+  fetchMock = vi.fn<Fetch>(async (req) =>
+    req.operationId === 'addQueueResource' ? { data: {}, etag: 'etag-2' } : new Promise(() => {})
+  );
+  vi.mocked(window.sonos.fetch)
+    .mockReset()
+    .mockImplementation(fetchMock as never);
+  vi.mocked(window.sonos.publishQueued)
+    .mockReset()
+    .mockResolvedValue(undefined as never);
   vi.mocked(window.sonos.trackEvent).mockClear();
   vi.mocked(window.sonos.loadContent).mockReset();
 });
@@ -105,7 +116,10 @@ describe('useAddToQueueImpl', () => {
     const { result } = renderHook(() => useAddToQueueImpl(), { wrapper });
     await act(() => result.current.addToQueue(track(), 1));
     const updater = setItems.mock.calls[0][0] as (p: { index: number; id?: string }[]) => { index: number }[];
-    const out = updater([{ index: 0, id: 'a' }, { index: 1, id: 'b' }]);
+    const out = updater([
+      { index: 0, id: 'a' },
+      { index: 1, id: 'b' },
+    ]);
     expect(out).toHaveLength(3);
     expect(out.map((i) => i.index)).toEqual([0, 1, 2]);
     expect(addCalls()[0].query).toEqual({ position: '1' });
@@ -133,7 +147,9 @@ describe('useAddToQueueImpl', () => {
   });
 
   it('toasts and skips attribution when the add fails', async () => {
-    fetchMock.mockImplementation(async (req) => (req.operationId === 'addQueueResource' ? { error: 'boom' } : new Promise(() => {})));
+    fetchMock.mockImplementation(async (req) =>
+      req.operationId === 'addQueueResource' ? { error: 'boom' } : new Promise(() => {})
+    );
     const { result } = renderHook(() => useAddToQueueImpl(), { wrapper });
     await act(() => result.current.addToQueue(track()));
 
@@ -147,7 +163,13 @@ describe('useAddToQueueImpl', () => {
     const { result } = renderHook(() => useAddToQueueImpl(), { wrapper });
     await act(() => result.current.addToQueue(track()));
     expect(published()).toHaveLength(1);
-    expect(published()[0]).toMatchObject({ eventType: 'track', uri: 't1', trackName: 'Loser', serviceId: '9', accountId: '42' });
+    expect(published()[0]).toMatchObject({
+      eventType: 'track',
+      uri: 't1',
+      trackName: 'Loser',
+      serviceId: '9',
+      accountId: '42',
+    });
   });
 
   it('publishes an album event for an album (and survives a failed browse)', async () => {
@@ -159,7 +181,13 @@ describe('useAddToQueueImpl', () => {
     await act(() => result.current.addToQueue(album()));
     expect(addCalls()[0].body).toMatchObject({ type: 'ALBUM' });
     expect(published()).toHaveLength(1);
-    expect(published()[0]).toMatchObject({ eventType: 'album', uri: 'a1', albumId: 'a1', accountId: '42', artist: 'Beck' });
+    expect(published()[0]).toMatchObject({
+      eventType: 'album',
+      uri: 'a1',
+      albumId: 'a1',
+      accountId: '42',
+      artist: 'Beck',
+    });
     expect(setItems).not.toHaveBeenCalled();
     expect(reload).toHaveBeenCalled();
   });
@@ -172,8 +200,16 @@ describe('useAddToQueueImpl', () => {
           data: {
             tracks: {
               items: [
-                { title: 'One', artists: [{ name: 'A' }], resource: { id: { objectId: 'x1', serviceId: '9', accountId: 'sn_7' } } },
-                { title: 'Two', artists: [{ name: 'B' }], resource: { id: { objectId: 'x2', serviceId: '9', accountId: 'sn_7' } } },
+                {
+                  title: 'One',
+                  artists: [{ name: 'A' }],
+                  resource: { id: { objectId: 'x1', serviceId: '9', accountId: 'sn_7' } },
+                },
+                {
+                  title: 'Two',
+                  artists: [{ name: 'B' }],
+                  resource: { id: { objectId: 'x2', serviceId: '9', accountId: 'sn_7' } },
+                },
               ],
             },
           },
@@ -201,7 +237,11 @@ describe('useAddToQueueImpl', () => {
     const { result } = renderHook(() => useAddToQueueImpl(), { wrapper });
     await act(() => result.current.addToQueue(program()));
     expect(window.sonos.loadContent).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'PROGRAM', queueAction: 'REPLACE', id: { objectId: 'r1', accountId: 'sn_42', serviceId: '9' } }),
+      expect.objectContaining({
+        type: 'PROGRAM',
+        queueAction: 'REPLACE',
+        id: { objectId: 'r1', accountId: 'sn_42', serviceId: '9' },
+      })
     );
     expect(addCalls()).toHaveLength(0);
     expect(reload).toHaveBeenCalled();
@@ -221,7 +261,11 @@ describe('useAddToQueueImpl', () => {
       { index: 1, track: { id: 'filler' } },
     ];
     vi.mocked(window.sonos.djAutoplay).mockResolvedValue({
-      enabled: true, leaseHeld: false, enqueue: null, upcoming: [], fillerUri: 'filler',
+      enabled: true,
+      leaseHeld: false,
+      enqueue: null,
+      upcoming: [],
+      fillerUri: 'filler',
     });
     const { result } = renderHook(() => useAddToQueueImpl(), { wrapper });
     await waitFor(() => expect(result.current.autoplay.fillerUri).toBe('filler'));

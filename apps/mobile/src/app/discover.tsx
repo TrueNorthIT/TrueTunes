@@ -22,7 +22,10 @@ function toSonosItem(track: DjTrack): SonosItem {
     type: 'ITEM_TRACK',
     subtitle: track.artist,
     imageUrl: track.imageUrl,
-    resource: { type: 'TRACK', id: { objectId: track.uri, serviceId: track.serviceId ?? '', accountId: track.accountId ?? '' } },
+    resource: {
+      type: 'TRACK',
+      id: { objectId: track.uri, serviceId: track.serviceId ?? '', accountId: track.accountId ?? '' },
+    },
   } as SonosItem;
 }
 
@@ -48,7 +51,10 @@ export default function DiscoverScreen() {
 
   // Stable primitive key: presence array identity changes every poll (see desktop comment).
   const roomKey = (presence?.inOffice ?? []).join(',');
-  const opts = useMemo(() => ({ users: selected.length ? selected : roomKey ? roomKey.split(',') : [], limit: 25 }), [selected, roomKey]);
+  const opts = useMemo(
+    () => ({ users: selected.length ? selected : roomKey ? roomKey.split(',') : [], limit: 25 }),
+    [selected, roomKey]
+  );
   const { data, isLoading, isFetching, refetch } = useDjSet(opts);
   const { discoveries, isLoading: loadingNew } = useDjDiscoveries(data?.artists, mode === 'discover');
 
@@ -62,7 +68,14 @@ export default function DiscoverScreen() {
           because: d.because,
           item: d.track.raw,
         }))
-      : (data?.tracks ?? []).map((t) => ({ uri: t.uri, trackName: t.trackName, artist: t.artist, imageUrl: t.imageUrl, because: t.because, item: toSonosItem(t) }));
+      : (data?.tracks ?? []).map((t) => ({
+          uri: t.uri,
+          trackName: t.trackName,
+          artist: t.artist,
+          imageUrl: t.imageUrl,
+          because: t.because,
+          item: toSonosItem(t),
+        }));
 
   const busy = isLoading || (mode === 'discover' && loadingNew);
   const toggle = (id: string) => setSelected((p) => (p.includes(id) ? p.filter((u) => u !== id) : [...p, id]));
@@ -71,7 +84,8 @@ export default function DiscoverScreen() {
   const header = (
     <View style={{ gap: space.md, paddingBottom: space.md }}>
       <Text style={[type.secondary, styles.pad]}>
-        Music for whoever is in the room, from what the office actually plays. Picks are scored so the least keen listener still gets a say.
+        Music for whoever is in the room, from what the office actually plays. Picks are scored so the least keen
+        listener still gets a say.
       </Text>
       <View style={[styles.actions, styles.pad]}>
         {(['discover', 'familiar'] as Mode[]).map((m) => (
@@ -92,11 +106,22 @@ export default function DiscoverScreen() {
         </Pressable>
       </View>
       <Text style={[type.caption, styles.pad]}>
-        Playing for{selected.length === 0 ? ` - ${inRoom.size ? `in the office (${inRoom.size})` : 'the whole office'}; tap names to narrow` : ''}
+        Playing for
+        {selected.length === 0
+          ? ` - ${inRoom.size ? `in the office (${inRoom.size})` : 'the whole office'}; tap names to narrow`
+          : ''}
       </Text>
       <View style={[styles.chips, styles.pad]}>
         {(users ?? []).map((u) => (
-          <Pressable key={u.userId} onPress={() => toggle(u.userId)} style={[styles.pill, selected.includes(u.userId) && styles.pillActive, selected.length === 0 && inRoom.has(u.userId) && styles.pillInferred]}>
+          <Pressable
+            key={u.userId}
+            onPress={() => toggle(u.userId)}
+            style={[
+              styles.pill,
+              selected.includes(u.userId) && styles.pillActive,
+              selected.length === 0 && inRoom.has(u.userId) && styles.pillInferred,
+            ]}
+          >
             <Text style={type.secondary}>
               {u.userId}
               {u.userId === displayName ? ' (you)' : ''}
@@ -124,7 +149,9 @@ export default function DiscoverScreen() {
           busy ? (
             <View style={styles.empty}>
               <ActivityIndicator color={colors.text3} />
-              <Text style={type.secondary}>{mode === 'discover' ? 'Digging for something new...' : 'Reading the room...'}</Text>
+              <Text style={type.secondary}>
+                {mode === 'discover' ? 'Digging for something new...' : 'Reading the room...'}
+              </Text>
             </View>
           ) : (
             <Text style={[type.secondary, styles.empty]}>
@@ -138,15 +165,21 @@ export default function DiscoverScreen() {
         }
         renderItem={({ item: p }) => (
           <SwipeRow onSwipeRight={() => void addToQueue(p.item, -1, { attribute: false })}>
-          <View style={styles.row}>
-            <Art uri={p.imageUrl} size={48} />
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={type.body} numberOfLines={1}>{p.trackName}</Text>
-              <Text style={type.secondary} numberOfLines={1}>{p.artist}</Text>
-              <Text style={type.caption} numberOfLines={1}>{p.because}</Text>
+            <View style={styles.row}>
+              <Art uri={p.imageUrl} size={48} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={type.body} numberOfLines={1}>
+                  {p.trackName}
+                </Text>
+                <Text style={type.secondary} numberOfLines={1}>
+                  {p.artist}
+                </Text>
+                <Text style={type.caption} numberOfLines={1}>
+                  {p.because}
+                </Text>
+              </View>
+              <AddButton onPress={() => void addToQueue(p.item, -1, { attribute: false })} />
             </View>
-            <AddButton onPress={() => void addToQueue(p.item, -1, { attribute: false })} />
-          </View>
           </SwipeRow>
         )}
       />
@@ -161,9 +194,24 @@ const styles = StyleSheet.create({
   back: { width: 44, height: 44, marginLeft: -space.md, alignItems: 'center', justifyContent: 'center' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  pill: { minHeight: 40, flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingHorizontal: space.md, borderRadius: radius.pill, backgroundColor: colors.bg2 },
+  pill: {
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+    paddingHorizontal: space.md,
+    borderRadius: radius.pill,
+    backgroundColor: colors.bg2,
+  },
   pillActive: { backgroundColor: colors.accent },
   pillInferred: { borderWidth: 1, borderColor: colors.accent },
-  row: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.xs },
+  row: {
+    minHeight: 64,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.xs,
+  },
   empty: { alignItems: 'center', gap: space.md, padding: space.xl, textAlign: 'center' },
 });

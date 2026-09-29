@@ -36,7 +36,7 @@ export default function ContainerScreen() {
       const href = routeForItem(child);
       if (href) router.push(href as never);
     },
-    [addToQueue],
+    [addToQueue]
   );
 
   return (

@@ -1,5 +1,19 @@
 import { router } from 'expo-router';
-import { ChevronDown, Heart, ListMusic, Mic2, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Speaker, Volume2 } from 'lucide-react-native';
+import {
+  ChevronDown,
+  Heart,
+  ListMusic,
+  Mic2,
+  Pause,
+  Play,
+  Repeat,
+  Repeat1,
+  Shuffle,
+  SkipBack,
+  SkipForward,
+  Speaker,
+  Volume2,
+} from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 // Buttons inside a GestureDetector must be gesture-handler Pressables, or the Pan gesture can swallow their taps.
@@ -68,32 +82,34 @@ export default function PlayerScreen() {
   const nextRepeat = { none: 'all', all: 'one', one: 'none' } as const;
 
   return (
-    <Animated.View style={[styles.root, { paddingTop: insets.top + space.sm, paddingBottom: insets.bottom + space.lg }, slideStyle]}>
+    <Animated.View
+      style={[styles.root, { paddingTop: insets.top + space.sm, paddingBottom: insets.bottom + space.lg }, slideStyle]}
+    >
       <TintBackground color={np.dominantColor} />
       <GestureDetector gesture={pan}>
-       <View collapsable={false} style={styles.dragZone}>
-      <View style={styles.top}>
-        <GHPressable hitSlop={12} onPress={() => router.back()} accessibilityLabel="Close">
-          <ChevronDown size={28} color={colors.text} />
-        </GHPressable>
-        <GHPressable style={styles.room} onPress={() => router.push('/rooms')} accessibilityLabel="Choose room">
-          <Speaker size={16} color={colors.text2} />
-          <Text style={type.secondary}>{activeGroup?.name ?? 'No room'}</Text>
-        </GHPressable>
-        <View style={styles.topActions}>
-          <GHPressable hitSlop={12} onPress={() => router.push('/lyrics')} accessibilityLabel="Lyrics">
-            <Mic2 size={24} color={colors.text} />
-          </GHPressable>
-          <GHPressable hitSlop={12} onPress={() => router.replace('/queue')} accessibilityLabel="Open queue">
-            <ListMusic size={24} color={colors.text} />
-          </GHPressable>
-        </View>
-      </View>
+        <View collapsable={false} style={styles.dragZone}>
+          <View style={styles.top}>
+            <GHPressable hitSlop={12} onPress={() => router.back()} accessibilityLabel="Close">
+              <ChevronDown size={28} color={colors.text} />
+            </GHPressable>
+            <GHPressable style={styles.room} onPress={() => router.push('/rooms')} accessibilityLabel="Choose room">
+              <Speaker size={16} color={colors.text2} />
+              <Text style={type.secondary}>{activeGroup?.name ?? 'No room'}</Text>
+            </GHPressable>
+            <View style={styles.topActions}>
+              <GHPressable hitSlop={12} onPress={() => router.push('/lyrics')} accessibilityLabel="Lyrics">
+                <Mic2 size={24} color={colors.text} />
+              </GHPressable>
+              <GHPressable hitSlop={12} onPress={() => router.replace('/queue')} accessibilityLabel="Open queue">
+                <ListMusic size={24} color={colors.text} />
+              </GHPressable>
+            </View>
+          </View>
 
-      <View style={styles.artWrap}>
-        <Art uri={np.artUrlRaw} size={300} style={styles.art} />
-      </View>
-       </View>
+          <View style={styles.artWrap}>
+            <Art uri={np.artUrlRaw} size={300} style={styles.art} />
+          </View>
+        </View>
       </GestureDetector>
 
       <View style={styles.meta}>
@@ -106,23 +122,39 @@ export default function PlayerScreen() {
             onPress={() => void toggleFavourite()}
             accessibilityLabel={isFavourited ? 'Remove from Favourites' : 'Add to Favourites'}
           >
-            <Heart size={24} color={isFavourited ? colors.danger : colors.text2} fill={isFavourited ? colors.danger : 'none'} />
+            <Heart
+              size={24}
+              color={isFavourited ? colors.danger : colors.text2}
+              fill={isFavourited ? colors.danger : 'none'}
+            />
           </Pressable>
         </View>
         {artistHref ? (
           <Pressable onPress={() => router.push(artistHref as never)} accessibilityRole="link">
-            <Text style={type.secondary} numberOfLines={1}>{np.displayArtist}</Text>
+            <Text style={type.secondary} numberOfLines={1}>
+              {np.displayArtist}
+            </Text>
           </Pressable>
         ) : (
-          <Text style={type.secondary} numberOfLines={1}>{np.displayArtist}</Text>
+          <Text style={type.secondary} numberOfLines={1}>
+            {np.displayArtist}
+          </Text>
         )}
         {np.albumName ? (
           albumHref ? (
-            <Pressable onPressIn={np.prefetchAlbum} onPress={() => router.push(albumHref as never)} accessibilityRole="link">
-              <Text style={type.caption} numberOfLines={1}>{np.albumName}</Text>
+            <Pressable
+              onPressIn={np.prefetchAlbum}
+              onPress={() => router.push(albumHref as never)}
+              accessibilityRole="link"
+            >
+              <Text style={type.caption} numberOfLines={1}>
+                {np.albumName}
+              </Text>
             </Pressable>
           ) : (
-            <Text style={type.caption} numberOfLines={1}>{np.albumName}</Text>
+            <Text style={type.caption} numberOfLines={1}>
+              {np.albumName}
+            </Text>
           )
         ) : null}
       </View>
@@ -144,7 +176,11 @@ export default function PlayerScreen() {
       </View>
 
       <View style={styles.controls}>
-        <Pressable hitSlop={12} onPress={() => void provider.setPlayModes({ shuffle: !playback.shuffle })} accessibilityLabel="Shuffle">
+        <Pressable
+          hitSlop={12}
+          onPress={() => void provider.setPlayModes({ shuffle: !playback.shuffle })}
+          accessibilityLabel="Shuffle"
+        >
           <Shuffle size={24} color={playback.shuffle ? colors.accent : colors.text2} />
         </Pressable>
         <Pressable hitSlop={12} onPress={() => void provider.skipPrev()} accessibilityLabel="Previous">
@@ -155,12 +191,20 @@ export default function PlayerScreen() {
           onPress={() => void (playback.isPlaying ? provider.pause() : provider.play())}
           accessibilityLabel={playback.isPlaying ? 'Pause' : 'Play'}
         >
-          {playback.isPlaying ? <Pause size={32} color={colors.bg} fill={colors.bg} /> : <Play size={32} color={colors.bg} fill={colors.bg} />}
+          {playback.isPlaying ? (
+            <Pause size={32} color={colors.bg} fill={colors.bg} />
+          ) : (
+            <Play size={32} color={colors.bg} fill={colors.bg} />
+          )}
         </Pressable>
         <Pressable hitSlop={12} onPress={() => void provider.skipNext()} accessibilityLabel="Next">
           <SkipForward size={32} color={colors.text} fill={colors.text} />
         </Pressable>
-        <Pressable hitSlop={12} onPress={() => void provider.setPlayModes({ repeat: nextRepeat[playback.repeat] })} accessibilityLabel="Repeat">
+        <Pressable
+          hitSlop={12}
+          onPress={() => void provider.setPlayModes({ repeat: nextRepeat[playback.repeat] })}
+          accessibilityLabel="Repeat"
+        >
           <RepeatIcon size={24} color={playback.repeat === 'none' ? colors.text2 : colors.accent} />
         </Pressable>
       </View>
@@ -187,14 +231,28 @@ const styles = StyleSheet.create({
   titleText: { flex: 1 },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   topActions: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
-  room: { flexDirection: 'row', alignItems: 'center', gap: space.xs, padding: space.sm, borderRadius: radius.pill, backgroundColor: colors.bg2 },
+  room: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+    padding: space.sm,
+    borderRadius: radius.pill,
+    backgroundColor: colors.bg2,
+  },
   artWrap: { alignItems: 'center', paddingVertical: space.md },
   art: { borderRadius: radius.lg },
   meta: { gap: space.xs },
   seek: { gap: 0 },
   times: { flexDirection: 'row', justifyContent: 'space-between' },
   controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  playBtn: { width: 68, height: 68, borderRadius: 34, backgroundColor: colors.text, alignItems: 'center', justifyContent: 'center' },
+  playBtn: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: colors.text,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   volume: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   volumeSlider: { flex: 1 },
   volumeLabel: { width: 28, textAlign: 'right' },

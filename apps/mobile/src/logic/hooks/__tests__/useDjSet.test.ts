@@ -37,9 +37,7 @@ describe('djSetQueryOptions', () => {
   });
 
   it('survives a null response', async () => {
-    vi.mocked(window.sonos.fetchDjSet).mockResolvedValueOnce(
-      null as unknown as DjSetResponse,
-    );
+    vi.mocked(window.sonos.fetchDjSet).mockResolvedValueOnce(null as unknown as DjSetResponse);
     const result = await djSetQueryOptions().queryFn();
     expect(result.listeners).toEqual([]);
     expect(result.tracks).toEqual([]);

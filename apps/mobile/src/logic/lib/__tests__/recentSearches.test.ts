@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import type { KeyValueStore } from '../../../office/config';
-import { addRecent, clearRecent, loadRecent, MAX_RECENT, normaliseRecent, RECENT_SEARCHES_KEY, removeRecent } from '../recentSearches';
+import {
+  addRecent,
+  clearRecent,
+  loadRecent,
+  MAX_RECENT,
+  normaliseRecent,
+  RECENT_SEARCHES_KEY,
+  removeRecent,
+} from '../recentSearches';
 
 function memStore(initial?: string): KeyValueStore & { data: Map<string, string> } {
   const data = new Map<string, string>();

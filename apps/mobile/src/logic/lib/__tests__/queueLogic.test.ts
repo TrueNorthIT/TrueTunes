@@ -1,6 +1,22 @@
 import { describe, it, expect } from 'vitest';
-import { buildKeys, djBreakLabel, insertBeforeIndex, isPlayingRow, planSingleReorder, removeIndices,
-  resolveAttribution, selectionLabel, toggleSelected, toggleSelection, trackNumberForIndex, findPlayingIndex, playingPosition, scrollOffsetForPlaying, shouldAutoFollow, ROW_HEIGHT } from '../../../ui/queue/queueLogic';
+import {
+  buildKeys,
+  djBreakLabel,
+  insertBeforeIndex,
+  isPlayingRow,
+  planSingleReorder,
+  removeIndices,
+  resolveAttribution,
+  selectionLabel,
+  toggleSelected,
+  toggleSelection,
+  trackNumberForIndex,
+  findPlayingIndex,
+  playingPosition,
+  scrollOffsetForPlaying,
+  shouldAutoFollow,
+  ROW_HEIGHT,
+} from '../../../ui/queue/queueLogic';
 import { attributionContentKey } from '../../hooks/useAttribution';
 
 const track = (id: string) => ({ index: 0, track: { id } as never });
@@ -49,7 +65,10 @@ describe('queueLogic', () => {
     expect(selectionLabel(1)).toBe('1 track selected');
     expect(selectionLabel(2)).toBe('2 tracks selected');
   });
-  it('labels DJ toggle', () => { expect(djBreakLabel(true)).toBe('DJ takes over'); expect(djBreakLabel(false)).toBe('DJ paused'); });
+  it('labels DJ toggle', () => {
+    expect(djBreakLabel(true)).toBe('DJ takes over');
+    expect(djBreakLabel(false)).toBe('DJ paused');
+  });
 });
 
 describe('scroll to now playing', () => {

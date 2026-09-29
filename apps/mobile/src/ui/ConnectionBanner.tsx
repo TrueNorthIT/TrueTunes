@@ -31,7 +31,9 @@ export function ConnectionBanner() {
       accessibilityLabel="Reconnecting to Sonos. Tap to retry"
     >
       <ActivityIndicator size="small" color={colors.text} />
-      <Text style={type.secondary}>{status === 'connecting' ? 'Connecting to Sonos…' : 'Sonos disconnected. Tap to retry'}</Text>
+      <Text style={type.secondary}>
+        {status === 'connecting' ? 'Connecting to Sonos…' : 'Sonos disconnected. Tap to retry'}
+      </Text>
     </Pressable>
   );
 }

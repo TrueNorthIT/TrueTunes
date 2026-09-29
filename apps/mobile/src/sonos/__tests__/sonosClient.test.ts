@@ -3,12 +3,11 @@ import { PLATFORM_ACCOUNT_ID, PLATFORM_SERVICE_ID } from '../operations';
 import { buildUrl, createSonosClient, parseIntegrationsCreds, timezoneOffset } from '../sonosClient';
 import type { SonosConfig } from '../types';
 
-const json = (body: unknown, init: ResponseInit = {}) =>
-  new Response(JSON.stringify(body), { status: 200, ...init });
+const json = (body: unknown, init: ResponseInit = {}) => new Response(JSON.stringify(body), { status: 200, ...init });
 
 function makeClient(
   responses: Array<Response | Error>,
-  overrides: Partial<Parameters<typeof createSonosClient>[0]> = {},
+  overrides: Partial<Parameters<typeof createSonosClient>[0]> = {}
 ) {
   const config: SonosConfig = { householdId: 'HH', serviceId: 'SVC', accountId: 'ACC', groupId: 'G:1', queueId: 'Q' };
   const queue = [...responses];
@@ -34,26 +33,34 @@ function makeClient(
 }
 
 describe('buildUrl', () => {
-  const config: SonosConfig = { householdId: 'HH', serviceId: 'SVC', accountId: 'ACC', groupId: 'RINCON_1:23', queueId: 'RINCON_1' };
+  const config: SonosConfig = {
+    householdId: 'HH',
+    serviceId: 'SVC',
+    accountId: 'ACC',
+    groupId: 'RINCON_1:23',
+    queueId: 'RINCON_1',
+  };
 
   it('fills config and platform defaults and URL-encodes values', () => {
     const url = buildUrl(
       '/api/content/v1/groups/:groupId/services/:platformServiceId/accounts/:platformAccountId/queues/:queueId/resources',
-      config,
+      config
     );
     expect(url).toBe(
-      `https://play.sonos.com/api/content/v1/groups/RINCON_1%3A23/services/${PLATFORM_SERVICE_ID}/accounts/${PLATFORM_ACCOUNT_ID}/queues/RINCON_1/resources`,
+      `https://play.sonos.com/api/content/v1/groups/RINCON_1%3A23/services/${PLATFORM_SERVICE_ID}/accounts/${PLATFORM_ACCOUNT_ID}/queues/RINCON_1/resources`
     );
   });
 
   it('lets explicit pathParams override config', () => {
     expect(buildUrl('/api/playback/v1/groups/:groupId', config, { groupId: 'OTHER' })).toBe(
-      'https://play.sonos.com/api/playback/v1/groups/OTHER',
+      'https://play.sonos.com/api/playback/v1/groups/OTHER'
     );
   });
 
   it('drops undefined query values and encodes the rest', () => {
-    expect(buildUrl('/x', config, {}, { a: 'b c', skip: undefined, n: '1' })).toBe('https://play.sonos.com/x?a=b%20c&n=1');
+    expect(buildUrl('/x', config, {}, { a: 'b c', skip: undefined, n: '1' })).toBe(
+      'https://play.sonos.com/x?a=b%20c&n=1'
+    );
   });
 
   it('throws on a missing path param', () => {
@@ -80,7 +87,7 @@ describe('parseIntegrationsCreds', () => {
         { 'service-id': 'only' },
         null,
         'nope',
-      ]),
+      ])
     ).toEqual([
       { serviceId: '72711', accountId: '13' },
       { serviceId: 'a', accountId: 'b' },
@@ -95,7 +102,9 @@ describe('parseIntegrationsCreds', () => {
 describe('sonosFetch', () => {
   it('returns an error without a session token, without calling fetch', async () => {
     const { client, fetchImpl } = makeClient([], { getSessionToken: () => null });
-    expect(await client.fetch({ operationId: 'getGroups' })).toEqual({ error: 'No session token — please log in first' });
+    expect(await client.fetch({ operationId: 'getGroups' })).toEqual({
+      error: 'No session token — please log in first',
+    });
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
@@ -174,7 +183,7 @@ describe('sonosFetch', () => {
       const res = await client.fetch({ operationId, body: {} });
       expect(fetchImpl).toHaveBeenCalledTimes(1);
       expect(res.error).toContain('503');
-    },
+    }
   );
 
   it('does not retry a 4xx', async () => {
@@ -210,8 +219,14 @@ describe('service discovery', () => {
   it('discovers serviceId on demand, persists it, and retries the original call once', async () => {
     const onConfigChanged = vi.fn();
     const { client, config, fetchImpl } = makeClient(
-      [json([{ 'service-id': 'S9', 'account-id': 'A9' }, { 'service-id': 'S2', 'account-id': 'A2' }]), json({ album: true })],
-      { onConfigChanged },
+      [
+        json([
+          { 'service-id': 'S9', 'account-id': 'A9' },
+          { 'service-id': 'S2', 'account-id': 'A2' },
+        ]),
+        json({ album: true }),
+      ],
+      { onConfigChanged }
     );
     delete config.serviceId;
     delete config.accountId;
@@ -277,6 +292,8 @@ describe('household discovery race', () => {
   it('fails fast with no awaitHousehold hook', async () => {
     const { client, config } = makeClient([]);
     delete config.householdId;
-    expect(await client.fetch({ operationId: 'searchHousehold' })).toEqual({ error: 'Missing path param: householdId' });
+    expect(await client.fetch({ operationId: 'searchHousehold' })).toEqual({
+      error: 'Missing path param: householdId',
+    });
   });
 });

@@ -80,7 +80,11 @@ describe('getName', () => {
   });
 
   it('falls back to resource.name', () => {
-    expect(getName({ resource: { name: 'Res', type: 'TRACK', id: { objectId: 'x', serviceId: 'y', accountId: 'z' } } } as SonosItem)).toBe('Res');
+    expect(
+      getName({
+        resource: { name: 'Res', type: 'TRACK', id: { objectId: 'x', serviceId: 'y', accountId: 'z' } },
+      } as SonosItem)
+    ).toBe('Res');
   });
 
   it('falls back to track.name', () => {
@@ -96,7 +100,9 @@ describe('getName', () => {
 
 describe('getItemArt', () => {
   it('returns tile1x1 from images object (browse shape)', () => {
-    expect(getItemArt({ images: { tile1x1: 'https://example.com/tile.jpg' } } as unknown as SonosItem)).toBe('https://example.com/tile.jpg');
+    expect(getItemArt({ images: { tile1x1: 'https://example.com/tile.jpg' } } as unknown as SonosItem)).toBe(
+      'https://example.com/tile.jpg'
+    );
   });
 
   it('returns imageUrl fallback', () => {
@@ -104,7 +110,9 @@ describe('getItemArt', () => {
   });
 
   it('returns track.imageUrl', () => {
-    expect(getItemArt({ track: { imageUrl: 'https://example.com/track.jpg' } } as SonosItem)).toBe('https://example.com/track.jpg');
+    expect(getItemArt({ track: { imageUrl: 'https://example.com/track.jpg' } } as SonosItem)).toBe(
+      'https://example.com/track.jpg'
+    );
   });
 
   it('returns null when no art', () => {
@@ -120,7 +128,9 @@ describe('isAlbum', () => {
   });
 
   it('identifies via resource.type', () => {
-    expect(isAlbum({ resource: { type: 'ALBUM', id: { objectId: '', serviceId: '', accountId: '' } } } as SonosItem)).toBe(true);
+    expect(
+      isAlbum({ resource: { type: 'ALBUM', id: { objectId: '', serviceId: '', accountId: '' } } } as SonosItem)
+    ).toBe(true);
   });
 
   it('is case-insensitive', () => {
@@ -207,9 +217,7 @@ describe('extractItems', () => {
 
   it('flattens .services into tagged items', () => {
     const data = {
-      services: [
-        { serviceId: 'gm', results: { tracks: [item1] } },
-      ],
+      services: [{ serviceId: 'gm', results: { tracks: [item1] } }],
     };
     const result = extractItems(data);
     expect(result).toHaveLength(1);
@@ -249,9 +257,7 @@ describe('parseServiceSearch', () => {
     const data: ServiceSearch = {
       resourceOrder: ['ARTISTS'],
       ARTISTS: {
-        resources: [
-          { name: 'Queen', id: { objectId: 'art1', serviceId: 'gm', accountId: 'acc1' } },
-        ],
+        resources: [{ name: 'Queen', id: { objectId: 'art1', serviceId: 'gm', accountId: 'acc1' } }],
       },
     } as unknown as ServiceSearch;
 
@@ -286,13 +292,15 @@ describe('parseServiceSearch', () => {
     const data = {
       resourceOrder: ['ALBUMS'],
       ALBUMS: {
-        resources: [{
-          name: 'A Night at the Opera',
-          id: { objectId: 'alb1', serviceId: 'gm', accountId: 'acc1' },
-          artists: [{ name: 'Queen', id: { objectId: 'art1', serviceId: 'gm', accountId: 'acc1' } }],
-          explicit: false,
-          summary: { content: 'Classic rock' },
-        }],
+        resources: [
+          {
+            name: 'A Night at the Opera',
+            id: { objectId: 'alb1', serviceId: 'gm', accountId: 'acc1' },
+            artists: [{ name: 'Queen', id: { objectId: 'art1', serviceId: 'gm', accountId: 'acc1' } }],
+            explicit: false,
+            summary: { content: 'Classic rock' },
+          },
+        ],
       },
     } as unknown as ServiceSearch;
 
@@ -307,13 +315,15 @@ describe('parseServiceSearch', () => {
     const data = {
       resourceOrder: ['TRACKS'],
       TRACKS: {
-        resources: [{
-          name: 'Bohemian Rhapsody',
-          id: { objectId: 'trk1', serviceId: 'gm', accountId: 'acc1' },
-          artists: [{ name: 'Queen', id: { objectId: 'art1', serviceId: 'gm', accountId: 'acc1' } }],
-          explicit: false,
-          durationMs: 354000,
-        }],
+        resources: [
+          {
+            name: 'Bohemian Rhapsody',
+            id: { objectId: 'trk1', serviceId: 'gm', accountId: 'acc1' },
+            artists: [{ name: 'Queen', id: { objectId: 'art1', serviceId: 'gm', accountId: 'acc1' } }],
+            explicit: false,
+            durationMs: 354000,
+          },
+        ],
       },
     } as unknown as ServiceSearch;
 
@@ -325,10 +335,12 @@ describe('parseServiceSearch', () => {
     const data = {
       resourceOrder: ['PLAYLISTS'],
       PLAYLISTS: {
-        resources: [{
-          name: 'My Playlist',
-          id: { objectId: 'pl1', serviceId: 'gm', accountId: 'acc1' },
-        }],
+        resources: [
+          {
+            name: 'My Playlist',
+            id: { objectId: 'pl1', serviceId: 'gm', accountId: 'acc1' },
+          },
+        ],
       },
     } as unknown as ServiceSearch;
 
@@ -342,10 +354,12 @@ describe('parseServiceSearch', () => {
     const data = {
       resourceOrder: ['PODCASTS'],
       PODCASTS: {
-        resources: [{
-          name: 'Tech Talk',
-          id: { objectId: 'pod1', serviceId: 'gm', accountId: 'acc1' },
-        }],
+        resources: [
+          {
+            name: 'Tech Talk',
+            id: { objectId: 'pod1', serviceId: 'gm', accountId: 'acc1' },
+          },
+        ],
       },
     } as unknown as ServiceSearch;
 
@@ -358,12 +372,12 @@ describe('parseServiceSearch', () => {
   it('uses default resourceOrder when not specified', () => {
     const data = {
       ARTISTS: { resources: [{ name: 'A', id: { objectId: 'a', serviceId: 's', accountId: 'c' } }] },
-      ALBUMS:  { resources: [{ name: 'B', id: { objectId: 'b', serviceId: 's', accountId: 'c' } }] },
-      TRACKS:  { resources: [{ name: 'C', id: { objectId: 'c', serviceId: 's', accountId: 'c' } }] },
+      ALBUMS: { resources: [{ name: 'B', id: { objectId: 'b', serviceId: 's', accountId: 'c' } }] },
+      TRACKS: { resources: [{ name: 'C', id: { objectId: 'c', serviceId: 's', accountId: 'c' } }] },
     } as unknown as ServiceSearch;
 
     const result = parseServiceSearch(data);
-    expect(result.map(r => r.type)).toEqual(['ARTIST', 'ALBUM', 'TRACK']);
+    expect(result.map((r) => r.type)).toEqual(['ARTIST', 'ALBUM', 'TRACK']);
   });
 });
 

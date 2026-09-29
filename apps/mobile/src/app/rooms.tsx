@@ -43,7 +43,14 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg, padding: space.lg },
   title: { marginBottom: space.lg },
   list: { gap: space.sm },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg, borderRadius: radius.md, backgroundColor: colors.bg1 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    padding: space.lg,
+    borderRadius: radius.md,
+    backgroundColor: colors.bg1,
+  },
   rowActive: { borderColor: colors.accent, borderWidth: 1 },
   name: { flex: 1 },
 });

@@ -23,9 +23,7 @@
       "expo-router",
       "expo-image"
     ],
-    "platforms": [
-      "android"
-    ],
+    "platforms": ["android"],
     "scheme": "truetunes"
   }
 }

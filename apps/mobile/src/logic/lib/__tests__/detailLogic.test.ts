@@ -29,7 +29,11 @@ describe('buildBrowseItem', () => {
   it('returns null without id, else a typed resource', () => {
     expect(buildBrowseItem('ALBUM', {})).toBeNull();
     const item = buildBrowseItem('PLAYLIST', { id: 'p', serviceId: 's', accountId: 'a', defaults: 'd', name: 'N' });
-    expect(item?.resource).toEqual({ type: 'PLAYLIST', id: { objectId: 'p', serviceId: 's', accountId: 'a' }, defaults: 'd' });
+    expect(item?.resource).toEqual({
+      type: 'PLAYLIST',
+      id: { objectId: 'p', serviceId: 's', accountId: 'a' },
+      defaults: 'd',
+    });
     expect(item?.type).toBe('PLAYLIST');
   });
 });
@@ -93,7 +97,16 @@ describe('geniusToBlocks', () => {
     const tree: GeniusDomNode = {
       tag: 'root',
       children: [
-        { tag: 'p', children: ['Hello ', { tag: 'strong', children: ['bold'] }, ' and ', { tag: 'a', attributes: { href: 'http://x' }, children: ['link'] }, '.'] },
+        {
+          tag: 'p',
+          children: [
+            'Hello ',
+            { tag: 'strong', children: ['bold'] },
+            ' and ',
+            { tag: 'a', attributes: { href: 'http://x' }, children: ['link'] },
+            '.',
+          ],
+        },
         { tag: 'p', children: ['Line1', { tag: 'br' }, 'Line2'] },
         { tag: 'ul', children: [{ tag: 'li', children: ['item'] }] },
         { tag: 'img' },

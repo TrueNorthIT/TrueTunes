@@ -49,7 +49,13 @@ export default function HomeScreen() {
   const { data: colleagues = [] } = useUsers(isAuthed);
 
   const [selectedUser, setSelectedUser] = useState<string | undefined>();
-  const { artistItems, albumItems, availableUsers, currentUserId, isLoading: recentLoading } = useRecentlyPlayed(selectedUser);
+  const {
+    artistItems,
+    albumItems,
+    availableUsers,
+    currentUserId,
+    isLoading: recentLoading,
+  } = useRecentlyPlayed(selectedUser);
   useEffect(() => {
     if (currentUserId && !selectedUser) setSelectedUser(currentUserId);
   }, [currentUserId, selectedUser]);
@@ -67,7 +73,7 @@ export default function HomeScreen() {
         if (!!b.isFavourites !== !!a.isFavourites) return b.isFavourites ? 1 : -1;
         return b.updatedAt - a.updatedAt;
       }),
-    [owned, joined],
+    [owned, joined]
   );
 
   const recentEmpty = !!selectedUser && !recentLoading && albumItems.length === 0 && artistItems.length === 0;
@@ -90,14 +96,24 @@ export default function HomeScreen() {
         ) : (
           <>
             <Section title="For You">
-              <CardRow items={ytm?.forYou ?? []} isLoading={ytmLoading} onOpen={open} onAdd={(i) => void addToQueue(i)} onLongPress={show} />
+              <CardRow
+                items={ytm?.forYou ?? []}
+                isLoading={ytmLoading}
+                onOpen={open}
+                onAdd={(i) => void addToQueue(i)}
+                onLongPress={show}
+              />
             </Section>
 
             {colleagues.length > 0 && (
               <Section title="People">
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hrow}>
                   {colleagues.map((u) => (
-                    <Pressable key={u.userId} style={styles.person} onPress={() => router.push(routeForProfile(u.userId) as never)}>
+                    <Pressable
+                      key={u.userId}
+                      style={styles.person}
+                      onPress={() => router.push(routeForProfile(u.userId) as never)}
+                    >
                       <Art uri={u.imageUrl} size={56} round />
                       <Text style={[type.secondary, { maxWidth: 72 }]} numberOfLines={1}>
                         {u.userId}
@@ -112,14 +128,28 @@ export default function HomeScreen() {
               <Section title="Playlists">
                 <Pressable
                   onPress={() => router.push('/create-playlist' as never)}
-                  style={{ alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center', marginHorizontal: space.lg, marginBottom: space.sm, paddingHorizontal: space.md, borderRadius: radius.pill, backgroundColor: colors.bg2 }}
+                  style={{
+                    alignSelf: 'flex-start',
+                    minHeight: 44,
+                    justifyContent: 'center',
+                    marginHorizontal: space.lg,
+                    marginBottom: space.sm,
+                    paddingHorizontal: space.md,
+                    borderRadius: radius.pill,
+                    backgroundColor: colors.bg2,
+                  }}
                   accessibilityLabel="New playlist"
                 >
                   <Text style={type.secondary}>+ New</Text>
                 </Pressable>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hrow}>
                   {playlists.map((pl) => (
-                    <PlaylistCard key={pl.id} pl={pl} displayName={displayName} onPress={() => router.push(routeForPlaylist(pl.id) as never)} />
+                    <PlaylistCard
+                      key={pl.id}
+                      pl={pl}
+                      displayName={displayName}
+                      onPress={() => router.push(routeForPlaylist(pl.id) as never)}
+                    />
                   ))}
                 </ScrollView>
               </Section>
@@ -127,24 +157,40 @@ export default function HomeScreen() {
 
             <Section title="Recently Played - Last 7 Days">
               {users.length > 1 && (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.hrow, { marginBottom: space.sm }]}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={[styles.hrow, { marginBottom: space.sm }]}
+                >
                   {users.map((u) => (
                     <Pressable
                       key={u}
                       disabled={pickerLocked && u !== currentUserId}
                       onPress={() => setSelectedUser(u)}
-                      style={[styles.chip, u === selectedUser && styles.chipActive, pickerLocked && u !== currentUserId && { opacity: 0.4 }]}
+                      style={[
+                        styles.chip,
+                        u === selectedUser && styles.chipActive,
+                        pickerLocked && u !== currentUserId && { opacity: 0.4 },
+                      ]}
                     >
                       <Text style={type.secondary}>{u}</Text>
                     </Pressable>
                   ))}
                 </ScrollView>
               )}
-              {pickerLocked && <Text style={[type.caption, styles.pad]}>Complete today's Queuedle to see your colleagues' recently played.</Text>}
+              {pickerLocked && (
+                <Text style={[type.caption, styles.pad]}>
+                  Complete today's Queuedle to see your colleagues' recently played.
+                </Text>
+              )}
               {recentLoading && <ActivityIndicator color={colors.text3} style={{ margin: space.lg }} />}
               {recentEmpty && <Text style={[type.secondary, styles.pad]}>Nothing queued in the last 7 days</Text>}
               {!recentLoading && artistItems.length > 0 && (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.hrow, { marginBottom: space.md }]}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={[styles.hrow, { marginBottom: space.md }]}
+                >
                   {artistItems.map((a, i) => (
                     <ArtistCircle key={i} artist={a} size={80} onPress={open} onLongPress={show} />
                   ))}
@@ -165,10 +211,22 @@ export default function HomeScreen() {
             </Section>
 
             <Section title="New Releases">
-              <CardRow items={ytm?.newReleases ?? []} isLoading={ytmLoading} onOpen={open} onAdd={(i) => void addToQueue(i)} onLongPress={show} />
+              <CardRow
+                items={ytm?.newReleases ?? []}
+                isLoading={ytmLoading}
+                onOpen={open}
+                onAdd={(i) => void addToQueue(i)}
+                onLongPress={show}
+              />
             </Section>
             <Section title="Charts">
-              <CardRow items={ytm?.charts ?? []} isLoading={ytmLoading} onOpen={open} onAdd={(i) => void addToQueue(i)} onLongPress={show} />
+              <CardRow
+                items={ytm?.charts ?? []}
+                isLoading={ytmLoading}
+                onOpen={open}
+                onAdd={(i) => void addToQueue(i)}
+                onLongPress={show}
+              />
             </Section>
           </>
         )}
@@ -204,6 +262,12 @@ const styles = StyleSheet.create({
   hrow: { paddingHorizontal: space.lg, gap: space.md },
   pad: { paddingHorizontal: space.lg },
   person: { alignItems: 'center', gap: space.xs, minWidth: 64 },
-  chip: { minHeight: 36, justifyContent: 'center', paddingHorizontal: space.md, borderRadius: radius.pill, backgroundColor: colors.bg2 },
+  chip: {
+    minHeight: 36,
+    justifyContent: 'center',
+    paddingHorizontal: space.md,
+    borderRadius: radius.pill,
+    backgroundColor: colors.bg2,
+  },
   chipActive: { backgroundColor: colors.accent },
 });

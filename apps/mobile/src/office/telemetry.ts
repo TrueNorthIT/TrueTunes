@@ -106,7 +106,9 @@ export function event(name: string, props?: AnyProps): void {
       name,
       properties: { ..._common, ..._ctx, ...strProps },
     });
-  } catch { /* ignore — telemetry must never crash the app */ }
+  } catch {
+    /* ignore — telemetry must never crash the app */
+  }
 }
 
 /** Track an exception. Pass any value; non-Error values are wrapped automatically. */
@@ -126,7 +128,9 @@ export function exception(err: unknown, props?: StringProps): void {
       ],
       properties: { ..._common, ..._ctx, ...props },
     });
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 async function send(): Promise<void> {
@@ -143,17 +147,28 @@ async function send(): Promise<void> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(batch),
     });
-  } catch { /* drop the batch — telemetry is best-effort */ }
+  } catch {
+    /* drop the batch — telemetry is best-effort */
+  }
 }
 
 /** Flush buffered telemetry. Resolves after the send completes or after 3s, whichever is first. */
 export function flush(): Promise<void> {
   return new Promise<void>((resolve) => {
-    if (!_fetch) { resolve(); return; }
+    if (!_fetch) {
+      resolve();
+      return;
+    }
     const timer = setTimeout(resolve, 3000);
     send().then(
-      () => { clearTimeout(timer); resolve(); },
-      () => { clearTimeout(timer); resolve(); },
+      () => {
+        clearTimeout(timer);
+        resolve();
+      },
+      () => {
+        clearTimeout(timer);
+        resolve();
+      }
     );
   });
 }

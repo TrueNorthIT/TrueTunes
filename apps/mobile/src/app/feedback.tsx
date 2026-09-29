@@ -30,9 +30,19 @@ export default function FeedbackScreen() {
         <Segmented
           value={kind}
           onChange={setKind}
-          options={[{ value: 'bug', label: 'Bug' }, { value: 'feature', label: 'Feature request' }]}
+          options={[
+            { value: 'bug', label: 'Bug' },
+            { value: 'feature', label: 'Feature request' },
+          ]}
         />
-        <TextInput style={inputStyle} placeholder="Title" placeholderTextColor={colors.text3} value={title} onChangeText={setTitle} maxLength={120} />
+        <TextInput
+          style={inputStyle}
+          placeholder="Title"
+          placeholderTextColor={colors.text3}
+          value={title}
+          onChangeText={setTitle}
+          maxLength={120}
+        />
         <TextInput
           style={[inputStyle, { minHeight: 140, textAlignVertical: 'top' }]}
           placeholder="What happened / what would you like?"

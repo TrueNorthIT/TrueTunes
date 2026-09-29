@@ -23,7 +23,7 @@ export function SonosLogin({ onToken }: { onToken: (token: string) => void }) {
         inFlight.current = false;
       }
     },
-    [onToken],
+    [onToken]
   );
 
   return (

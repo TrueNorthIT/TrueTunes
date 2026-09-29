@@ -39,7 +39,10 @@ export function useMyPlaylists(userName: string | null | undefined) {
     owned: owned.data ?? [],
     joined: joined.data ?? [],
     isLoading: owned.isLoading || joined.isLoading,
-    refetch: () => { owned.refetch(); joined.refetch(); },
+    refetch: () => {
+      owned.refetch();
+      joined.refetch();
+    },
   };
 }
 
@@ -73,7 +76,7 @@ export function useFavourite(displayName: string | null | undefined, track: FavT
 
   const { data: playlist } = usePlaylist(favId ?? undefined);
 
-  const isFavourited = !!(track?.uri && playlist?.tracks.some(t => t.uri === track.uri));
+  const isFavourited = !!(track?.uri && playlist?.tracks.some((t) => t.uri === track.uri));
 
   const toggle = useCallback(async () => {
     if (!favId || !track?.uri || !displayName) return;
@@ -82,7 +85,7 @@ export function useFavourite(displayName: string | null | undefined, track: FavT
       if (snapshot) {
         queryClient.setQueryData(['playlist', favId], {
           ...snapshot,
-          tracks: snapshot.tracks.filter(t => t.uri !== track.uri),
+          tracks: snapshot.tracks.filter((t) => t.uri !== track.uri),
         });
       }
       try {

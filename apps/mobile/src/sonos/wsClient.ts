@@ -7,7 +7,7 @@ type Frame = [Record<string, unknown>, unknown];
 const HeaderWebSocket = WebSocket as unknown as new (
   url: string,
   protocols: string[],
-  options: { headers: Record<string, string> },
+  options: { headers: Record<string, string> }
 ) => WebSocket;
 
 /** Minimal Sonos WS client: corrId request/response plus one-shot push waiters. */

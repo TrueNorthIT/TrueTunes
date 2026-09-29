@@ -35,10 +35,22 @@ export function useAddToQueueImpl(): { addToQueue: AddToQueue; autoplay: ReturnT
   const fillerUriRef = useRef<string | null>(null);
 
   const publishTrackAttribution = useCallback(
-    (trackId: string, serviceId: string, accountId: string, fallback: { trackName: string; artist?: string; imageUrl?: string }) => {
+    (
+      trackId: string,
+      serviceId: string,
+      accountId: string,
+      fallback: { trackName: string; artist?: string; imageUrl?: string }
+    ) => {
       // Cached metadata if available; otherwise publish immediately with the fallback.
       const cached = queryClient.getQueryData(trackQueryOptions(trackId, serviceId, accountId).queryKey) as
-        | { trackName?: string; artist?: string; artistId?: string; albumName?: string; albumId?: string; artUrl?: string }
+        | {
+            trackName?: string;
+            artist?: string;
+            artistId?: string;
+            albumName?: string;
+            albumId?: string;
+            artUrl?: string;
+          }
         | undefined;
       window.sonos
         .publishQueued({
@@ -55,7 +67,7 @@ export function useAddToQueueImpl(): { addToQueue: AddToQueue; autoplay: ReturnT
         })
         .catch(() => {});
     },
-    [queryClient],
+    [queryClient]
   );
 
   /** One 'track' event per track from already-fetched album/playlist data (O(1) Sonos lookups). */
@@ -70,7 +82,7 @@ export function useAddToQueueImpl(): { addToQueue: AddToQueue; autoplay: ReturnT
         artUrl?: string | null;
         serviceId?: string;
         accountId?: string;
-      },
+      }
     ) => {
       for (const t of tracks) {
         const tid = t.id;
@@ -89,7 +101,7 @@ export function useAddToQueueImpl(): { addToQueue: AddToQueue; autoplay: ReturnT
         });
       }
     },
-    [],
+    []
   );
 
   const addToQueue = useCallback<AddToQueue>(
@@ -128,7 +140,10 @@ export function useAddToQueueImpl(): { addToQueue: AddToQueue; autoplay: ReturnT
 
       if (isSingleTrack) {
         const insertIndex = position === -1 ? Infinity : position;
-        const normalizedQueueItem = sonosItemToNormalizedQueueItem(normalized, insertIndex === Infinity ? 0 : insertIndex);
+        const normalizedQueueItem = sonosItemToNormalizedQueueItem(
+          normalized,
+          insertIndex === Infinity ? 0 : insertIndex
+        );
         setQueueItems((prev) => {
           if (insertIndex === Infinity || insertIndex >= prev.length) {
             return [...prev, { ...normalizedQueueItem, index: prev.length }];
@@ -255,7 +270,7 @@ export function useAddToQueueImpl(): { addToQueue: AddToQueue; autoplay: ReturnT
       showToast,
       publishTrackAttribution,
       fanOutTrackAttribution,
-    ],
+    ]
   );
 
   // Autoplay: the coordinator picks, this client enqueues only when it holds the lease.
@@ -277,7 +292,7 @@ export function useAddToQueueImpl(): { addToQueue: AddToQueue; autoplay: ReturnT
           },
         } as SonosItem,
         -1,
-        { attribute: false, djFiller: true },
+        { attribute: false, djFiller: true }
       );
     },
   });

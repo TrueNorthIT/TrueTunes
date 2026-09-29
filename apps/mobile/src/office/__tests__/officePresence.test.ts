@@ -17,13 +17,23 @@ function setup(opts: { auth?: boolean; token?: string | null; fetchImpl?: Return
 describe('fetchOfficePresence', () => {
   it('reports not signed in', async () => {
     const { svc, fetchImpl } = setup({ auth: false });
-    expect(await svc.fetchOfficePresence()).toEqual({ inOffice: [], basis: 'none', detail: [], error: 'not signed in' });
+    expect(await svc.fetchOfficePresence()).toEqual({
+      inOffice: [],
+      basis: 'none',
+      detail: [],
+      error: 'not signed in',
+    });
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it('reports missing consent', async () => {
     const { svc } = setup({ token: null });
-    expect(await svc.fetchOfficePresence()).toEqual({ inOffice: [], basis: 'none', detail: [], error: 'no presence consent' });
+    expect(await svc.fetchOfficePresence()).toEqual({
+      inOffice: [],
+      basis: 'none',
+      detail: [],
+      error: 'no presence consent',
+    });
   });
 
   it('returns none when no users have an OID', async () => {
@@ -36,14 +46,19 @@ describe('fetchOfficePresence', () => {
   it('resolves the roster from Graph presences', async () => {
     const { svc, fetchImpl } = setup();
     fetchImpl
-      .mockResolvedValueOnce(json([{ userId: 'Alice', entraOid: 'o1' }, { userId: 'Bob', entraOid: 'o2' }]))
+      .mockResolvedValueOnce(
+        json([
+          { userId: 'Alice', entraOid: 'o1' },
+          { userId: 'Bob', entraOid: 'o2' },
+        ])
+      )
       .mockResolvedValueOnce(
         json({
           value: [
             { id: 'o1', availability: 'Available', workLocation: { workLocationType: 'office', source: 'automatic' } },
             { id: 'o2', availability: 'Available', workLocation: { workLocationType: 'remote', source: 'manual' } },
           ],
-        }),
+        })
       );
     const r = (await svc.fetchOfficePresence()) as { inOffice: string[]; basis: string; observed: number };
     expect(r.inOffice).toEqual(['Alice']);

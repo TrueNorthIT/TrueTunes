@@ -11,7 +11,14 @@ describe('shouldPersistQuery', () => {
     expect(shouldPersistQuery(q(['track', 'abc'], 'error'))).toBe(false);
   });
   it('drops everything that is not a track-detail query', () => {
-    for (const key of [['search', 'x'], ['ytm-sections'], ['playlist', 'fav-x'], ['track'], ['tracks', 'abc'], [['track', 'abc']]]) {
+    for (const key of [
+      ['search', 'x'],
+      ['ytm-sections'],
+      ['playlist', 'fav-x'],
+      ['track'],
+      ['tracks', 'abc'],
+      [['track', 'abc']],
+    ]) {
       expect(shouldPersistQuery(q(key as unknown[]))).toBe(false);
     }
   });

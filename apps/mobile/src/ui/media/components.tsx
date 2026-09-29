@@ -53,7 +53,19 @@ export interface MediaRowProps {
   onLongPress?: () => void;
 }
 
-export function MediaRow({ name, artUrl, explicit, isPlaying, subtitle, leading, trailing, onAdd, onSwipeAdd, onPress, onLongPress }: MediaRowProps) {
+export function MediaRow({
+  name,
+  artUrl,
+  explicit,
+  isPlaying,
+  subtitle,
+  leading,
+  trailing,
+  onAdd,
+  onSwipeAdd,
+  onPress,
+  onLongPress,
+}: MediaRowProps) {
   const row = (
     <Pressable
       onPress={onPress}
@@ -99,7 +111,18 @@ export interface MediaCardProps {
   artSlot?: ReactNode;
 }
 
-export function MediaCard({ name, sub, artUrl, circular, size = 140, explicit, onPress, onLongPress, onAdd, artSlot }: MediaCardProps) {
+export function MediaCard({
+  name,
+  sub,
+  artUrl,
+  circular,
+  size = 140,
+  explicit,
+  onPress,
+  onLongPress,
+  onAdd,
+  artSlot,
+}: MediaCardProps) {
   return (
     <Pressable
       onPress={onPress}
@@ -135,7 +158,12 @@ export function MediaCard({ name, sub, artUrl, circular, size = 140, explicit, o
 /** Artist items rarely carry an image, so (like desktop) fetch it from the artist endpoint. */
 function useItemArtistArt(item: SonosItem): string | null {
   const rid = (item.resource?.id ?? (typeof item.id === 'object' ? item.id : undefined)) as SonosItemId | undefined;
-  const { data } = useArtistImage(rid?.objectId, rid?.serviceId, rid?.accountId, item.resource?.defaults as string | undefined);
+  const { data } = useArtistImage(
+    rid?.objectId,
+    rid?.serviceId,
+    rid?.accountId,
+    item.resource?.defaults as string | undefined
+  );
   return data ?? getItemArt(item);
 }
 
@@ -182,10 +210,18 @@ export function PlaylistCard({
     `${pl.trackCount} track${pl.trackCount !== 1 ? 's' : ''}` +
     (displayName !== undefined && pl.owner !== displayName ? ` · ${pl.owner}` : '') +
     (!pl.isPublic ? ' · Private' : '');
-  const tile = pl.imageUrl ? undefined : (
-    <PlaylistTile pl={pl} size={size} />
+  const tile = pl.imageUrl ? undefined : <PlaylistTile pl={pl} size={size} />;
+  return (
+    <MediaCard
+      name={pl.name}
+      sub={meta}
+      artUrl={pl.imageUrl}
+      size={size}
+      artSlot={tile}
+      onPress={onPress}
+      onLongPress={onLongPress}
+    />
   );
-  return <MediaCard name={pl.name} sub={meta} artUrl={pl.imageUrl} size={size} artSlot={tile} onPress={onPress} onLongPress={onLongPress} />;
 }
 
 /** The desktop gradient tile: the CSS linear-gradient has no RN equivalent without a native dep,

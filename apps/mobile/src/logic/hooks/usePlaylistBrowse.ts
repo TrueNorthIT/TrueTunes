@@ -40,7 +40,7 @@ export function playlistQueryOptions(
   playlistId: string | undefined,
   serviceId: string | undefined,
   accountId: string | undefined,
-  defaults?: string,
+  defaults?: string
 ) {
   return {
     queryKey: ['playlist', playlistId] as const,

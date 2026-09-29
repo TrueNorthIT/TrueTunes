@@ -41,7 +41,11 @@ export function MiniPlayer() {
         }}
         accessibilityLabel={playback.isPlaying ? 'Pause' : 'Play'}
       >
-        {playback.isPlaying ? <Pause size={22} color={colors.text} fill={colors.text} /> : <Play size={22} color={colors.text} fill={colors.text} />}
+        {playback.isPlaying ? (
+          <Pause size={22} color={colors.text} fill={colors.text} />
+        ) : (
+          <Play size={22} color={colors.text} fill={colors.text} />
+        )}
       </Pressable>
     </Pressable>
   );
