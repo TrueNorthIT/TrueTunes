@@ -22,6 +22,43 @@ import { randomUUID } from 'crypto';
 import WebSocket from 'ws';
 import type { FetchRequest, FetchResponse } from './types';
 import * as telemetry from './telemetry';
+import * as smtc from './smtc';
+
+// Ensure the renderer's Media Session API (used to surface "now playing" to
+// Windows System Media Transport Controls / macOS Now Playing) is wired up.
+// Must be set before the app is ready.
+app.commandLine.appendSwitch('enable-features', 'HardwareMediaKeyHandling,MediaSessionService');
+// Our "now playing" audio element has no user gesture behind it (playback
+// actually happens on the Sonos speakers) — without this switch Chromium's
+// autoplay policy silently blocks the programmatic .play() call needed to
+// register a Media Session with the OS.
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+
+// Publish a native Windows SMTC ("Now Playing") session — this is the only
+// way an Electron app can register with GlobalSystemMediaTransportControlsSessionManager;
+// see native/smtc/src/smtc_addon.cpp for why. Must run before any
+// BrowserWindow is created (Windows only associates the explicit
+// AppUserModelID we set with sessions created before the first window).
+// Button presses mirror the existing Windows taskbar thumbar handlers (see
+// setThumbar) — both drive the same WS playback commands directly.
+smtc.init((action) => {
+  const groupId = config.groupId;
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  switch (action) {
+    case 'play':
+      wsSend({ namespace: 'playback', groupId, command: 'play' }, { allowTvPauseRestore: true, deviceFeedback: 'NONE' }).catch(() => {});
+      break;
+    case 'pause':
+      wsSend({ namespace: 'playback', groupId, command: 'pause' }, { allowTvPauseRestore: true, deviceFeedback: 'NONE' }).catch(() => {});
+      break;
+    case 'next':
+      wsSend({ namespace: 'playback', groupId, command: 'skipToNextTrack' }, {}).catch(() => {});
+      break;
+    case 'previous':
+      wsSend({ namespace: 'playback', groupId, command: 'skipBack' }, {}).catch(() => {});
+      break;
+  }
+}, { displayName: 'True Tunes', appPath: app.getAppPath(), isPackaged: app.isPackaged });
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -979,6 +1016,7 @@ function updateThumbar(isPlaying: boolean): void {
   thumbarIsPlaying = isPlaying;
   if (uiWin && !uiWin.isDestroyed()) setThumbar(uiWin, isPlaying);
   if (miniWin && !miniWin.isDestroyed()) setThumbar(miniWin, isPlaying);
+  smtc.setPlaybackStatus(isPlaying ? 'playing' : 'paused');
 }
 
 /** Send a channel/args pair to all live renderer windows (main + mini player). */
@@ -1354,6 +1392,15 @@ ipcMain.handle('playback:pause', (_event: IpcMainInvokeEvent) => {
     { namespace: 'playback', groupId, command: 'pause' },
     { allowTvPauseRestore: true, deviceFeedback: 'NONE' }
   );
+});
+
+ipcMain.handle('smtc:update', (_event: IpcMainInvokeEvent, data: { title?: string; artist?: string; album?: string; artworkUrl?: string }) => {
+  smtc.setMetadata({
+    title: data.title,
+    artist: data.artist,
+    album: data.album,
+    thumbnailUrl: data.artworkUrl,
+  });
 });
 
 ipcMain.handle('debug:openWsMonitor', () => openDebugWindow());
@@ -2330,6 +2377,7 @@ app.on('before-quit', () => {
   }
   ws?.terminate();
   officePubSub.disconnect();
+  smtc.shutdown();
   telemetry.event('app_quit');
   void telemetry.flush();
 });

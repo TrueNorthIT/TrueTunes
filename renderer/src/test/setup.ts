@@ -100,5 +100,6 @@ Object.defineProperty(window, 'sonos', {
     entraReLogin:         vi.fn(() => Promise.resolve()),
     onEntraReady:         vi.fn(noop),
     renameUser:           vi.fn(() => Promise.resolve({ ok: true })),
+    updateNowPlayingSmtc: vi.fn(() => Promise.resolve()),
   },
 });

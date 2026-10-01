@@ -145,6 +145,9 @@ vite.config.ts.timestamp-*
 
 release/
 
+# Native addon build output (node-gyp generated project files + binaries)
+native/smtc/build/
+
 # Claude Code per-user local settings — may hold session-generated allowlist
 # entries (incl. credential-reading commands); must never be committed.
 .claude/settings.local.json
