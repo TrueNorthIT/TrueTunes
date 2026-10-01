@@ -5,6 +5,7 @@ import { getActiveProvider } from './providers';
 import { useAuth } from './hooks/useAuth';
 import { useGroups } from './hooks/useGroups';
 import { usePlayback } from './hooks/usePlayback';
+import { useMediaSession } from './hooks/useMediaSession';
 import { useQueue } from './hooks/useQueue';
 import { trackQueryOptions } from './hooks/useTrackDetails';
 import { useEnsureFavourites } from './hooks/usePlaylists';
@@ -70,6 +71,7 @@ function MainApp() {
     toastTimer.current = setTimeout(() => setToastMsg(null), 4000);
   }, []);
   const { playback, applyGroupCache, queueIdRef, queueVersionRef } = usePlayback(activeGroupId);
+  useMediaSession(playback);
   const { items: queueItems, setItems: setQueueItems, isLoading: queueLoading, error: queueError, reload: reloadQueueRaw }
                                                   = useQueue(isAuthed, activeGroupId, playback.queueId,
                                                       (etag) => { queueVersionRef.current = etag; },

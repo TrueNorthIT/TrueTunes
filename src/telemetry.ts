@@ -61,7 +61,6 @@ export function event(name: string, props?: AnyProps): void {
   const strProps: StringProps = {};
   for (const [k, v] of Object.entries(props ?? {})) strProps[k] = String(v);
   try {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     _client.trackEvent({ name, properties: { ..._ctx, ...strProps } });
   } catch { /* ignore — telemetry must never crash the app */ }
 }
@@ -71,7 +70,6 @@ export function exception(err: unknown, props?: StringProps): void {
   if (!_client) return;
   const error = err instanceof Error ? err : new Error(String(err));
   try {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     _client.trackException({ exception: error, properties: { ..._ctx, ...props } });
   } catch { /* ignore */ }
 }
@@ -85,7 +83,6 @@ export function flush(): Promise<void> {
     if (!_client) { resolve(); return; }
     const timer = setTimeout(resolve, 3000);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       _client.flush({
         callback: () => { clearTimeout(timer); resolve(); },
       });
