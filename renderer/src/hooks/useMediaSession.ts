@@ -69,7 +69,6 @@ export function useMediaSession(playback: PlaybackState) {
       navigator.mediaSession.metadata = null;
       navigator.mediaSession.playbackState = "none";
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playback.isVisible]);
 
   // Metadata — title/artist/album/artwork

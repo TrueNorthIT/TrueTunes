@@ -41,7 +41,7 @@ let initialized = false;
 function load(): SmtcNative | null {
   if (process.platform !== 'win32') return null;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require('../native/smtc/build/Release/smtc.node') as SmtcNative;
   } catch (err) {
     console.warn('[smtc] native addon unavailable, SMTC integration disabled:', err);
