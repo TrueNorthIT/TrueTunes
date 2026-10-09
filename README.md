@@ -77,6 +77,7 @@ renderer/src/         Renderer process (React + Vite)
   test/setup.ts       Vitest global setup — mocks window.sonos
 
 apps/mobile/          React Native (Expo) Android/iOS app — see apps/mobile/CLAUDE.md
+packages/core/        @truetunes/core — platform-neutral Sonos/Azure/session modules (used by mobile)
 
 server/               Azure Functions (office presence backend)
   src/functions/
@@ -88,6 +89,7 @@ server/               Azure Functions (office presence backend)
 .github/workflows/
   desktop.yml         CI — validate (lint + typecheck + tests) → version bump → publish (desktop paths only)
   mobile-ci.yml       Mobile app CI (apps/mobile)
+  core.yml            packages/core lint, typecheck and tests
   mobile-release.yml  Signed APK release on an android-vX.Y.Z tag
 ```
 
@@ -98,18 +100,18 @@ server/               Azure Functions (office presence backend)
 Run these from `apps/desktop`. At the root, `npm run lint`, `npm run typecheck` and `npm run test:run` run every
 workspace (lint also covers `server/`).
 
-| Command | What it does |
-|---|---|
-| `npm run dev` | Start Electron app in dev mode |
-| `npm run build` | Build main process + renderer |
-| `npm test` | Run tests in watch mode |
-| `npm run test:run` | Run tests once (used in CI) |
-| `npm run typecheck` | Type-check both main and renderer |
-| `npm run lint` | ESLint |
-| `npm run format` | Prettier |
-| `npm run electron:build` | Package for current platform |
-| `npm run electron:build:win` | Package for Windows |
-| `npm run electron:build:mac` | Package for macOS |
+| Command                      | What it does                      |
+| ---------------------------- | --------------------------------- |
+| `npm run dev`                | Start Electron app in dev mode    |
+| `npm run build`              | Build main process + renderer     |
+| `npm test`                   | Run tests in watch mode           |
+| `npm run test:run`           | Run tests once (used in CI)       |
+| `npm run typecheck`          | Type-check both main and renderer |
+| `npm run lint`               | ESLint                            |
+| `npm run format`             | Prettier                          |
+| `npm run electron:build`     | Package for current platform      |
+| `npm run electron:build:win` | Package for Windows               |
+| `npm run electron:build:mac` | Package for macOS                 |
 
 ---
 
@@ -125,6 +127,7 @@ az deployment group create \
 ```
 
 Resources created:
+
 - **Azure Function App** — presence/attribution backend
 - **Azure Web PubSub** — real-time office presence events
 - **Cosmos DB** — stores queue event history
@@ -140,7 +143,7 @@ Every PR to `main` or `develop` runs lint, typecheck, and tests. Merging to `mai
 
 The publish job requires these GitHub Actions secrets:
 
-| Secret | Description |
-|---|---|
-| `GITHUB_TOKEN` | Auto-provided by Actions |
+| Secret                          | Description              |
+| ------------------------------- | ------------------------ |
+| `GITHUB_TOKEN`                  | Auto-provided by Actions |
 | `APPINSIGHTS_CONNECTION_STRING` | From ARM template output |

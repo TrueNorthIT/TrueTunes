@@ -13,9 +13,10 @@ the shell - see "Verify on device" below.
 
 ### Layout
 
-- `src/sonos/` - Sonos client, WebSocket session, queue reorder (ported from desktop `main.ts`, unit tested)
-- `src/office/` - Azure Functions client, pubsub, Genius, Graph presence, telemetry
-- `src/core/` - session/auth manager, event hub, `createCore` (composes everything into a `window.sonos` bridge)
+- `packages/core` (repo root, imported as `@truetunes/core/...`) - the platform-neutral modules:
+  - `src/sonos/` - Sonos client, WebSocket session, queue reorder (ported from desktop `main.ts`, unit tested)
+  - `src/office/` - Azure Functions client, pubsub, Genius, Graph presence, telemetry
+  - `src/core/` - session/auth manager, event hub, `createCore` (composes everything into a `window.sonos` bridge)
 - `src/platform/` - React Native adapters (SecureStore, sockets, cookies, login WebView) and the auth gate
 - `src/logic/` - hooks/lib/providers ported from the desktop renderer, plus `useRemote` and add-to-queue
 - `src/ui/` + `src/app/` - screens (expo-router) and shared components
@@ -24,7 +25,7 @@ the shell - see "Verify on device" below.
 ### Not done / needs input
 
 - **Entra sign-in**: needs an Android platform + redirect URI on the app registration, then an `EntraProvider`
-  (see `src/core/createCore.ts`). Until then: no display-name claim, no office presence, Home "Recently
+  (see `packages/core/src/core/createCore.ts`). Until then: no display-name claim, no office presence, Home "Recently
   Played" and playlists stay empty (they key off the display name).
 - **Genius** (lyrics text, artist bios, album year) and **App Insights**: set `EXPO_PUBLIC_*` in `.env`
   (see `.env.example`).
@@ -34,22 +35,23 @@ the shell - see "Verify on device" below.
 ### Verify on device
 
 Search, Now Playing (seek/volume gestures), room picker, queue drag-reorder and multi-select, add-to-queue
-+ attribution, lyrics, leaderboard, profile image upload, Queuedle, and every modal presentation.
+
+- attribution, lyrics, leaderboard, profile image upload, Queuedle, and every modal presentation.
 
 ### Spike results (Pixel 10 Pro XL, Android, 2026-09-29)
 
-| Check | Result |
-| --- | --- |
-| Sonos sign-in in an embedded WebView | PASS - normal Okta flow (login.sonos.com) works, not blocked |
-| Read HttpOnly `__Secure-next-auth.session-token` natively | PASS - visible via `@preeternal/react-native-cookie-manager`; cookie `expires` ~10 days out |
-| RN `fetch` `/api/mfe` with manual `Cookie` + spoofed UA | PASS - 200, ticket found |
-| WebSocket with custom `Origin` + `v1.api.smartspeaker.audio` | PASS - opened, subprotocol negotiated |
-| Desktop bootstrap (households -> devices -> playbackExtended) | PASS - groups discovered, live `PLAYBACK_STATE_*` pushes |
-| `pause` command | PASS - acknowledged |
-| `play` command | PASS - acknowledged; live state `BUFFERING -> PLAYING`, then `pause` -> `PAUSED` |
-| Token survives app restart (SecureStore) | PASS - after force-stop, restored token drove `/api/mfe` + full WS bootstrap (WebView cookie jar also still held the cookie, so this proves SecureStore holds a valid token, not that it is the only working source) |
-| Ported client (`src/sonos/sonosClient.ts`) vs real Sonos | PASS - `getQueueResources`, `getFavoriteResources`, on-demand service discovery (serviceId 72711). `getGroups` returns a non-JSON 200 but is unused on desktop (groups come from the WS). |
-| Session lifetime / silent refresh | open - watch whether the cookie slides or hard-expires at ~10 days |
+| Check                                                                  | Result                                                                                                                                                                                                               |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sonos sign-in in an embedded WebView                                   | PASS - normal Okta flow (login.sonos.com) works, not blocked                                                                                                                                                         |
+| Read HttpOnly `__Secure-next-auth.session-token` natively              | PASS - visible via `@preeternal/react-native-cookie-manager`; cookie `expires` ~10 days out                                                                                                                          |
+| RN `fetch` `/api/mfe` with manual `Cookie` + spoofed UA                | PASS - 200, ticket found                                                                                                                                                                                             |
+| WebSocket with custom `Origin` + `v1.api.smartspeaker.audio`           | PASS - opened, subprotocol negotiated                                                                                                                                                                                |
+| Desktop bootstrap (households -> devices -> playbackExtended)          | PASS - groups discovered, live `PLAYBACK_STATE_*` pushes                                                                                                                                                             |
+| `pause` command                                                        | PASS - acknowledged                                                                                                                                                                                                  |
+| `play` command                                                         | PASS - acknowledged; live state `BUFFERING -> PLAYING`, then `pause` -> `PAUSED`                                                                                                                                     |
+| Token survives app restart (SecureStore)                               | PASS - after force-stop, restored token drove `/api/mfe` + full WS bootstrap (WebView cookie jar also still held the cookie, so this proves SecureStore holds a valid token, not that it is the only working source) |
+| Ported client (`packages/core/src/sonos/sonosClient.ts`) vs real Sonos | PASS - `getQueueResources`, `getFavoriteResources`, on-demand service discovery (serviceId 72711). `getGroups` returns a non-JSON 200 but is unused on desktop (groups come from the WS).                            |
+| Session lifetime / silent refresh                                      | open - watch whether the cookie slides or hard-expires at ~10 days                                                                                                                                                   |
 
 ## Building locally (command-line tools only, no Android Studio)
 
@@ -78,5 +80,5 @@ We chose local builds over EAS so source and signing keys stay on our machines.
 
 - Expo SDK 57 / RN 0.86 is New Architecture only. `@react-native-cookies/cookies` is unmaintained and
   unsupported there, so this uses `@preeternal/react-native-cookie-manager`.
-- `src/sonos/` mirrors constants and helpers from `TrueTunes/src/main.ts`. It is meant to become the
-  shared `core` package once the spike passes.
+- `packages/core/src/sonos/` mirrors constants and helpers from the desktop `apps/desktop/src/main.ts`. The desktop
+  does not use `packages/core` yet.

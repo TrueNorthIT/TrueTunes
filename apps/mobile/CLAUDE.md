@@ -46,25 +46,32 @@ changes come through Metro.
 
 ## Architecture
 
-The desktop app's `src/main.ts` (Electron main process) is split into platform-neutral, injectable modules here, and
-composed into an object with the **same `window.sonos` surface the desktop preload exposes** — so the React Query
+The desktop app's `src/main.ts` (Electron main process) is split into platform-neutral, injectable modules in
+**`packages/core`** (`@truetunes/core`, at the repo root), and composed into an object with the **same `window.sonos` surface the desktop preload exposes** — so the React Query
 hooks ported from the desktop renderer run unchanged.
 
-| Folder          | What                                                                                                    |
-| --------------- | ------------------------------------------------------------------------------------------------------- |
-| `src/sonos/`    | Sonos HTTP client (`sonosClient`), WebSocket session (`wsSession`), queue reorder, protocol helpers     |
-| `src/office/`   | Azure Functions client, Web PubSub, Genius, Graph presence, telemetry                                   |
-| `src/core/`     | Session/auth manager, event hub, `createCore` (composition root → `bridge`)                             |
-| `src/platform/` | React Native adapters (SecureStore, sockets, cookies, login WebView, query persister) and the auth gate |
-| `src/logic/`    | Hooks/lib/providers ported from the desktop renderer, plus `useRemote` and add-to-queue                 |
-| `src/ui/`       | Shared components (theme tokens, Art, Slider, MiniPlayer, media rows, queue rows, …)                    |
-| `src/app/`      | **Routes only** (expo-router). Every file here is a screen — never put hooks/utils here                 |
+| Folder                      | What                                                                                                    |
+| --------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `packages/core/src/sonos/`  | Sonos HTTP client (`sonosClient`), WebSocket session (`wsSession`), queue reorder, protocol helpers     |
+| `packages/core/src/office/` | Azure Functions client, Web PubSub, Genius, Graph presence, telemetry                                   |
+| `packages/core/src/core/`   | Session/auth manager, event hub, `createCore` (composition root → `bridge`)                             |
+| `src/types/globals.d.ts`    | The ambient `window.sonos` contract (`SonosPreload`) that `createCore` satisfies                        |
+| `src/platform/`             | React Native adapters (SecureStore, sockets, cookies, login WebView, query persister) and the auth gate |
+| `src/logic/`                | Hooks/lib/providers ported from the desktop renderer, plus `useRemote` and add-to-queue                 |
+| `src/ui/`                   | Shared components (theme tokens, Art, Slider, MiniPlayer, media rows, queue rows, …)                    |
+| `src/app/`                  | **Routes only** (expo-router). Every file here is a screen — never put hooks/utils here                 |
 
-- Everything environmental (fetch, sockets, timers, storage) is **injected**, so `sonos/`, `office/` and `core/` run in
-  Node tests. `src/platform/core.ts` builds the real one and installs `window.sonos` before any hook mounts.
-- Add a new capability: implement it in `sonos/` or `office/`, expose it in `createCore`'s `bridge` (it is
-  `satisfies SonosPreload`, so the compiler tells you what is missing), add the type to `src/types/globals.d.ts`
-  (**keep it a pure ambient file — no `import`/`export`**), and add the mock to `src/logic/test/setup.ts`.
+- Import core by subpath: `@truetunes/core/sonos/<file>`, `@truetunes/core/office/<file>`,
+  `@truetunes/core/core/<file>` (TypeScript source, no build step; Metro, Vitest and `tsc` read it directly).
+- Everything environmental (fetch, sockets, timers, storage) is **injected**, so core runs in Node tests. Core must
+  never import `react-native`, `expo*` or `react-dom` — its ESLint config makes that an error. React Native adapters
+  live in `src/platform/`; `src/platform/core.ts` builds the real core and installs `window.sonos` before any hook
+  mounts.
+- Add a new capability: implement it in `packages/core/src/sonos/` or `office/` with a test there, expose it in
+  `createCore`'s `bridge` (it is `satisfies SonosPreload`, so the compiler tells you what is missing), add the type to
+  `src/types/globals.d.ts` here (**keep it a pure ambient file — no `import`/`export`**; core's `tsconfig.json` includes
+  it), and add the mock to `src/logic/test/setup.ts`. Run core's checks too: `npm run typecheck`, `lint` and
+  `test:run` in `packages/core`.
 - `src/logic/` intentionally tracks the desktop renderer. When you change something there that also exists on
   desktop, mirror it (see "Sharing code" below).
 
@@ -80,7 +87,9 @@ uniqueness claim).
 
 ## Tests
 
-Vitest. Two projects in `vitest.config.ts`: `node` (`src/sonos`, `src/office`, `src/core`) and `app` (jsdom, `src/logic`).
+Vitest. Two projects in `vitest.config.ts`: `node` (the config plugins in `plugins/`) and `app` (jsdom, `src/logic`).
+Core's tests run under `packages/core/vitest.config.ts` (node environment) — `npm run test:run` there, or at the repo
+root for every workspace.
 UI components (`src/ui`, `src/app`) have **no automated tests** — keep logic in plain functions/hooks under
 `src/logic` (or a tested pure module) and test that. Query-option factories are tested by calling `queryFn()` directly.
 
@@ -88,7 +97,8 @@ UI components (`src/ui`, `src/app`) have **no automated tests** — keep logic i
 
 ## Adding a feature — checklist
 
-1. Needs Sonos/Azure data? Add it to `sonos/`/`office/` with a test, expose it on the `bridge` (see above).
+1. Needs Sonos/Azure data? Add it to `packages/core` (`sonos/`/`office/`) with a test, expose it on the `bridge` (see
+   above).
 2. UI goes in `src/ui/` + a route in `src/app/`. Use the theme tokens in `src/ui/theme.ts`.
 3. A new **native** dependency needs `npx expo install`, a clean `npx expo-doctor`, and a rebuild.
 4. Run `npm run typecheck && npm run lint && npm run test:run` before committing.
@@ -116,9 +126,9 @@ UI components (`src/ui`, `src/app`) have **no automated tests** — keep logic i
 
 ## Sharing code with the desktop app
 
-`src/sonos`, `src/office`, `src/core` and `src/logic` are ported from the desktop app (`apps/desktop/src/` and
-`apps/desktop/renderer/src/`) and will drift unless mirrored. The intended end state is a monorepo with a shared `packages/core`; until then, mirror protocol fixes by hand.
-`OPERATIONS` in `src/sonos/operations.ts` must match the desktop table.
+`packages/core` and `src/logic` are ported from the desktop app (`apps/desktop/src/` and `apps/desktop/renderer/src/`).
+The desktop does **not** use `packages/core` yet, so the two still drift unless mirrored: mirror protocol fixes by hand.
+`OPERATIONS` in `packages/core/src/sonos/operations.ts` must match the desktop table.
 
 ## Infrastructure
 

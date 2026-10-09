@@ -4,11 +4,12 @@
 
 This repo is **public** and is an **npm-workspaces monorepo** (`apps/*`, `packages/*`):
 
-| Path           | What                                                                                                    |
-| -------------- | ------------------------------------------------------------------------------------------------------- |
-| `apps/desktop` | The desktop Electron app — the rest of this file. **Paths below are relative to `apps/desktop`**         |
-| `apps/mobile`  | The Android/iOS React Native app (moved in from `TrueNorthIT/TrueTunes-Android` with its history). Read `apps/mobile/CLAUDE.md` before touching it |
-| `server/`      | Azure Functions backend. **Not a workspace**: own `package.json` and lockfile, because its deploy uploads `server/node_modules` |
+| Path            | What                                                                                                                                               |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/desktop`  | The desktop Electron app — the rest of this file. **Paths below are relative to `apps/desktop`**                                                   |
+| `apps/mobile`   | The Android/iOS React Native app (moved in from `TrueNorthIT/TrueTunes-Android` with its history). Read `apps/mobile/CLAUDE.md` before touching it |
+| `packages/core` | `@truetunes/core`: platform-neutral Sonos/Azure/session modules (TypeScript source, no build). Used by mobile; **the desktop does not use it yet** |
+| `server/`       | Azure Functions backend. **Not a workspace**: own `package.json` and lockfile, because its deploy uploads `server/node_modules`                    |
 
 - One `npm install` at the root installs both apps; there is one root `package-lock.json`. Never add a lockfile under
   `apps/`.
@@ -22,11 +23,12 @@ This repo is **public** and is an **npm-workspaces monorepo** (`apps/*`, `packag
 
 Workflows (`.github/workflows/`):
 
-| File                 | What                                                                                                  |
-| -------------------- | ----------------------------------------------------------------------------------------------------- |
+| File                 | What                                                                                                   |
+| -------------------- | ------------------------------------------------------------------------------------------------------ |
 | `desktop.yml`        | Desktop PR validation; on push to `main`, bumps `apps/desktop`'s patch version and publishes a release |
-| `mobile-ci.yml`      | Mobile lint, typecheck, expo-doctor and tests, for changes under `apps/mobile`                        |
-| `mobile-release.yml` | On an `android-vX.Y.Z` tag, builds and signs the APK and creates a release with `--latest=false`      |
+| `mobile-ci.yml`      | Mobile lint, typecheck, expo-doctor and tests, for changes under `apps/mobile`                         |
+| `core.yml`           | `packages/core` lint (incl. the React Native/Expo import ban), typecheck and Node tests                |
+| `mobile-release.yml` | On an `android-vX.Y.Z` tag, builds and signs the APK and creates a release with `--latest=false`       |
 
 - `desktop.yml` only runs for `apps/desktop/**`, `packages/**` and the root package files (PRs also for `server/**`).
   **Keep it that way**: otherwise every mobile commit to `main` publishes a desktop release.
