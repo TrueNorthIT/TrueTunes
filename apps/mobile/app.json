@@ -22,9 +22,14 @@
       "expo-router",
       "expo-image",
       "./plugins/withReleaseSigning",
-      "./plugins/withDevVariant"
+      "./plugins/withDevVariant",
+      "./plugins/withIosSceneDelegate"
     ],
-    "platforms": ["android"],
+    "ios": {
+      "bundleIdentifier": "uk.co.truenorthit.truetunes",
+      "supportsTablet": false
+    },
+    "platforms": ["android", "ios"],
     "scheme": "truetunes"
   }
 }
