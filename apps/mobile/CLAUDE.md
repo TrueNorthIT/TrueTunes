@@ -106,9 +106,6 @@ UI components (`src/ui`, `src/app`) have **no automated tests** — keep logic i
 - **Releases are tagged `android-vX.Y.Z`**, never `vX.Y.Z` (that is a desktop release). CI is
   `.github/workflows/mobile-ci.yml` and `mobile-release.yml` at the repo root; the release is created with
   `--latest=false` so desktop auto-update keeps finding the desktop release. See `docs/RELEASING.md`.
-- **Releases are tagged `android-vX.Y.Z`**, never `vX.Y.Z` (that is a desktop release). CI is
-  `.github/workflows/mobile-ci.yml` and `mobile-release.yml` at the repo root; the release is created with
-  `--latest=false` so desktop auto-update keeps finding the desktop release. See `docs/RELEASING.md`.
 - The debug spike screen is at `truetunes://spike`.
 
 ---
