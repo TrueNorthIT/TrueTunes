@@ -1,0 +1,19 @@
+{
+  // Same module settings as the mobile app (expo/tsconfig.base) without depending on Expo.
+  "compilerOptions": {
+    "strict": true,
+    "target": "ESNext",
+    "lib": ["DOM", "ESNext"],
+    "module": "preserve",
+    "moduleDetection": "force",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["node"]
+  },
+  // createCore implements the window.sonos contract (SonosPreload), which is ambient in the mobile app.
+  // ponytail: core reads the app's contract file; move the contract into core when the desktop adopts core.
+  "include": ["src", "../../apps/mobile/src/types/globals.d.ts"]
+}

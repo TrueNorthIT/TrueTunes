@@ -1,0 +1,7 @@
+dist/
+renderer/dist/
+node_modules/
+src/*.html
+coverage/
+release/
+native/smtc/build/

@@ -1,0 +1,669 @@
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  useDailyGame,
+  useSubmitGameScore,
+  useGameLeaderboard,
+  useGameDates,
+  useGameRankings,
+  useMyScore,
+  useGameStats,
+  computeQueuedleRating,
+  getGameRankTier,
+} from '../../hooks/useDailyGame';
+import type { GameRanking } from '../../hooks/useDailyGame';
+import { QueuedleIntro } from './QueuedleIntro';
+import { QueuedleQuestionCard } from './QueuedleQuestionCard';
+import { QueuedleBonusScreen } from './QueuedleBonusScreen';
+import { QueuedleBonusResults } from './QueuedleBonusResults';
+import { QueuedleRankChange } from './QueuedleRankChange';
+import type { RankSnapshot } from './QueuedleRankChange';
+import { QueuedleSummary } from './QueuedleSummary';
+import { QueuedleCalendar } from './QueuedleCalendar';
+import { ScoreDistribution } from './ScoreDistribution';
+import { MyScores } from './MyScores';
+import { getGameRankIcon } from '../../lib/gameRankAssets';
+import styles from '../../styles/Queuedle.module.css';
+
+type Phase = 'intro' | 'main' | 'bonus' | 'bonus-results' | 'rank-change' | 'summary';
+type LeaderboardTab = 'today' | 'ranked';
+
+const MEDAL_CLASS = [styles.medalGold, styles.medalSilver, styles.medalBronze];
+
+// Top-3 get a metallic medal disc; everyone else gets their plain rank number.
+function RankBadge({ index }: { index: number }) {
+  if (index < 3) {
+    return <span className={`${styles.medal} ${MEDAL_CLASS[index]}`}>{index + 1}</span>;
+  }
+  return <>{index + 1}</>;
+}
+
+function londonDateToday(): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const y = parts.find((p) => p.type === 'year')?.value ?? '0000';
+  const m = parts.find((p) => p.type === 'month')?.value ?? '01';
+  const d = parts.find((p) => p.type === 'day')?.value ?? '01';
+  return `${y}-${m}-${d}`;
+}
+
+export function QueuedlePanel() {
+  const navigate = useNavigate();
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [leaderboardTab, setLeaderboardTab] = useState<LeaderboardTab>('today');
+  const todayId = useMemo(() => londonDateToday(), []);
+  const { data, isLoading, error } = useDailyGame(selectedDate ?? undefined);
+  const submit = useSubmitGameScore();
+  const [displayName, setDisplayName] = useState<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    window.sonos.getDisplayName().then(setDisplayName);
+  }, []);
+
+  const game = data && 'questions' in data ? (data as GameDoc) : null;
+  const gameId = game?.id ?? null;
+  const isPastDay = selectedDate !== null && selectedDate !== todayId;
+
+  const leaderboard = useGameLeaderboard(gameId ?? undefined);
+  const gameDates = useGameDates(displayName ?? undefined);
+  // Always fetch rankings (not just when "Ranked" tab is open) so the post-game
+  // rank-change screen has the user's prior totals available.
+  const rankings = useGameRankings(displayName ?? undefined, true);
+  const myScore = useMyScore(gameId, displayName);
+  const gameStats = useGameStats(gameId);
+  const alreadyPlayed = useMemo(() => {
+    if (!displayName || !leaderboard.data || !('scores' in leaderboard.data)) return null;
+    const existing = leaderboard.data.scores.find((s) => s.userName === displayName);
+    return existing ?? null;
+  }, [displayName, leaderboard.data]);
+
+  const localPlayed = useMemo<{
+    mainScore: number;
+    bonusScore: number;
+    guesses?: Array<'left' | 'right'>;
+  } | null>(() => {
+    if (!gameId) return null;
+    try {
+      const raw = localStorage.getItem(`queuedle-played:${gameId}`);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (typeof parsed?.mainScore === 'number' && typeof parsed?.bonusScore === 'number') {
+        return {
+          mainScore: parsed.mainScore,
+          bonusScore: parsed.bonusScore,
+          guesses: Array.isArray(parsed.guesses) ? parsed.guesses : undefined,
+        };
+      }
+    } catch {
+      // ignore corrupt entry
+    }
+    return null;
+  }, [gameId]);
+
+  const [phase, setPhase] = useState<Phase>('intro');
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [revealed, setRevealed] = useState(false);
+  const [pickedSide, setPickedSide] = useState<'left' | 'right' | null>(null);
+  const [mainGuesses, setMainGuesses] = useState<Array<'left' | 'right'>>([]);
+  const [bonusSelections, setBonusSelections] = useState<(string | null)[]>([]);
+  const [localScore, setLocalScore] = useState<{ main: number; bonus: number } | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [devReplay, setDevReplay] = useState(false);
+  // Snapshot of the user's prior ranking row, captured once before today's submission.
+  // undefined = not captured yet; null = captured, user has no prior games.
+  const [beforeRanking, setBeforeRanking] = useState<GameRanking | null | undefined>(undefined);
+
+  // Backfill localStorage from the cloud when the leaderboard shows the user has
+  // played but the local key is missing (fresh install, cleared cache, new machine).
+  useEffect(() => {
+    if (!gameId || !alreadyPlayed || localPlayed) return;
+    try {
+      localStorage.setItem(
+        `queuedle-played:${gameId}`,
+        JSON.stringify({
+          mainScore: alreadyPlayed.mainScore,
+          bonusScore: alreadyPlayed.bonusScore,
+        })
+      );
+    } catch {
+      // ignore quota / disabled storage
+    }
+  }, [gameId, alreadyPlayed, localPlayed]);
+
+  useEffect(() => {
+    if (!calendarOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setCalendarOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [calendarOpen]);
+
+  useEffect(() => {
+    if (game && bonusSelections.length !== game.questions.length) {
+      setBonusSelections(new Array(game.questions.length).fill(null));
+    }
+  }, [game, bonusSelections.length]);
+
+  // Capture the user's prior rankings row exactly once, before today's submission
+  // refetches the rankings query (which would include today's score and ruin the delta).
+  useEffect(() => {
+    if (!displayName) return;
+    if (beforeRanking !== undefined) return;
+    if (rankings.isLoading) return;
+    if (localScore !== null) return; // user already submitted; don't capture after the fact
+    const row = rankings.data?.find((r) => r.userName === displayName) ?? null;
+    setBeforeRanking(row);
+  }, [displayName, rankings.data, rankings.isLoading, beforeRanking, localScore]);
+
+  const afterRanking = useMemo<RankSnapshot | null>(() => {
+    if (!localScore || !game || beforeRanking === undefined) return null;
+    const todayScore = localScore.main + localScore.bonus;
+    const todayMax = game.questions.length * 2;
+    const totalScore = (beforeRanking?.totalScore ?? 0) + todayScore;
+    const possibleScore = (beforeRanking?.possibleScore ?? 0) + todayMax;
+    const gamesPlayed = (beforeRanking?.gamesPlayed ?? 0) + 1;
+    const averagePercent = possibleScore > 0 ? (totalScore / possibleScore) * 100 : 0;
+    const tier = getGameRankTier(averagePercent, gamesPlayed);
+    return {
+      rating: computeQueuedleRating(averagePercent),
+      averagePercent,
+      gamesPlayed,
+      tierKey: tier.key,
+      tierName: tier.name,
+      isProvisional: tier.isProvisional,
+    };
+  }, [localScore, game, beforeRanking]);
+
+  const beforeRankSnapshot = useMemo<RankSnapshot | null>(() => {
+    if (!beforeRanking) return null;
+    return {
+      rating: computeQueuedleRating(beforeRanking.averagePercent),
+      averagePercent: beforeRanking.averagePercent,
+      gamesPlayed: beforeRanking.gamesPlayed,
+      tierKey: beforeRanking.tierKey,
+      tierName: beforeRanking.tierName,
+      isProvisional: beforeRanking.isProvisional,
+    };
+  }, [beforeRanking]);
+
+  function resetGameState() {
+    setPhase('intro');
+    setCurrentIdx(0);
+    setRevealed(false);
+    setPickedSide(null);
+    setMainGuesses([]);
+    setBonusSelections([]);
+    setLocalScore(null);
+    setDevReplay(false);
+    setBeforeRanking(undefined);
+  }
+
+  function handleDevPlayAgain() {
+    setDevReplay(true);
+    setPhase('intro');
+    setCurrentIdx(0);
+    setRevealed(false);
+    setPickedSide(null);
+    setMainGuesses([]);
+    setBonusSelections([]);
+    setLocalScore(null);
+  }
+
+  function handleSelectDate(pickedGameId: string) {
+    setCalendarOpen(false);
+    const next = pickedGameId === todayId ? null : pickedGameId;
+    if (next === selectedDate) return;
+    setSelectedDate(next);
+    setLeaderboardTab('today');
+    resetGameState();
+  }
+
+  function handleBackToToday() {
+    if (selectedDate === null) return;
+    setSelectedDate(null);
+    setLeaderboardTab('today');
+    resetGameState();
+  }
+
+  if (isLoading) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.state}>Loading {isPastDay ? 'that' : "today's"} Queuedle…</div>
+      </div>
+    );
+  }
+
+  if (!data || (error && !('questions' in (data ?? {})))) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.state}>Failed to load Queuedle.</div>
+      </div>
+    );
+  }
+
+  if ('error' in data && data.error) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.state}>{data.error}</div>
+      </div>
+    );
+  }
+
+  if ('status' in data && data.status === 'pending') {
+    return (
+      <div className={styles.page}>
+        <div className={styles.state}>Today&apos;s Queuedle is still brewing. Try again in a minute.</div>
+      </div>
+    );
+  }
+
+  if (!game) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.state}>No Queuedle available.</div>
+      </div>
+    );
+  }
+
+  if (game.questions.length === 0) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.state}>
+          Not enough play history yet to build a Queuedle. Queue some tunes and check back tomorrow.
+        </div>
+      </div>
+    );
+  }
+
+  const justPlayed = localScore !== null;
+  const showAlreadyPlayed = !justPlayed && !devReplay && (localPlayed !== null || alreadyPlayed !== null);
+  const stillResolving =
+    !justPlayed && !showAlreadyPlayed && (displayName === undefined || leaderboard.isLoading === true);
+
+  const headerActions = (
+    <>
+      {selectedDate !== null && (
+        <button className={styles.backToToday} onClick={handleBackToToday}>
+          ← Today
+        </button>
+      )}
+    </>
+  );
+
+  function renderLeaderboardArea(
+    currentGame: GameDoc,
+    scoreForDistributions: { mainScore: number; bonusScore: number } | null,
+    showMyScores: boolean
+  ) {
+    const scores = leaderboard.data && 'scores' in leaderboard.data ? leaderboard.data.scores : [];
+    const rankedRows = rankings.data ?? [];
+    const todayTabClass = `${styles.leaderboardTab}${
+      leaderboardTab === 'today' ? ' ' + styles.leaderboardTabActive : ''
+    }`;
+    const rankedTabClass = `${styles.leaderboardTab}${
+      leaderboardTab === 'ranked' ? ' ' + styles.leaderboardTabActive : ''
+    }`;
+
+    return (
+      <div className={styles.leaderboardSection}>
+        {showMyScores && scoreForDistributions && (
+          <MyScores
+            mainScore={scoreForDistributions.mainScore}
+            bonusScore={scoreForDistributions.bonusScore}
+            maxMain={currentGame.questions.length}
+            maxBonus={currentGame.questions.length}
+          />
+        )}
+        <div className={styles.leaderboardTabs} role="tablist" aria-label="Queuedle leaderboard views">
+          <button
+            className={todayTabClass}
+            role="tab"
+            aria-selected={leaderboardTab === 'today'}
+            onClick={() => setLeaderboardTab('today')}
+          >
+            Today
+          </button>
+          <button
+            className={rankedTabClass}
+            role="tab"
+            aria-selected={leaderboardTab === 'ranked'}
+            onClick={() => setLeaderboardTab('ranked')}
+          >
+            Ranked
+          </button>
+        </div>
+        {leaderboardTab === 'today' && scores.length > 0 && (
+          <>
+            <h2 className={styles.leaderboardTitle}>
+              {selectedDate && selectedDate !== todayId ? `${selectedDate} Leaderboard` : "Today's Leaderboard"}
+            </h2>
+            {scores.slice(0, 10).map((s, i) => (
+              <div key={s.userName} className={styles.scoreRow}>
+                <span className={styles.scoreRank}>
+                  <RankBadge index={i} />
+                </span>
+                <button
+                  className={styles.scoreNameBtn}
+                  onClick={() => navigate(`/profile/${encodeURIComponent(s.userName)}`)}
+                >
+                  {s.userName}
+                </button>
+                <span className={styles.scoreBreakdown}>
+                  {s.mainScore}/{currentGame.questions.length} · {s.bonusScore}/{currentGame.questions.length}
+                </span>
+                <span className={styles.scoreTotal}>{s.total}</span>
+              </div>
+            ))}
+            <ScoreDistribution
+              scores={scores.map((s) => s.mainScore)}
+              maxScore={currentGame.questions.length}
+              playerScore={scoreForDistributions?.mainScore ?? -1}
+              title="Higher or Lower"
+            />
+            <ScoreDistribution
+              scores={scores.map((s) => s.bonusScore)}
+              maxScore={currentGame.questions.length}
+              playerScore={scoreForDistributions?.bonusScore ?? -1}
+              title="Top Queuer"
+            />
+          </>
+        )}
+        {leaderboardTab === 'ranked' && (
+          <>
+            <h2 className={styles.leaderboardTitle}>Ranked Leaderboard</h2>
+            {rankings.isLoading && <div className={styles.rankedState}>Loading rankings...</div>}
+            {!rankings.isLoading && rankedRows.length === 0 && (
+              <div className={styles.rankedState}>No ranked scores yet.</div>
+            )}
+            {!rankings.isLoading &&
+              rankedRows.slice(0, 10).map((ranked, i) => (
+                <div key={ranked.userName} className={styles.scoreRow}>
+                  <span className={styles.scoreRank}>
+                    <RankBadge index={i} />
+                  </span>
+                  <button
+                    className={styles.scoreNameBtn}
+                    onClick={() => navigate(`/profile/${encodeURIComponent(ranked.userName)}`)}
+                  >
+                    {ranked.userName}
+                  </button>
+                  <span className={styles.scoreBreakdown}>
+                    {ranked.gamesPlayed} {ranked.gamesPlayed === 1 ? 'game' : 'games'} ·{' '}
+                    <span className={styles.rankedTier}>
+                      {getGameRankIcon(ranked.tierKey) && (
+                        <img
+                          className={styles.rankedTierIcon}
+                          src={getGameRankIcon(ranked.tierKey)!}
+                          alt=""
+                          loading="lazy"
+                        />
+                      )}
+                      {ranked.tierName}
+                    </span>
+                  </span>
+                  <span className={styles.scoreTotal}>{ranked.averageTotal.toFixed(1)}</span>
+                </div>
+              ))}
+          </>
+        )}
+      </div>
+    );
+  }
+
+  if (showAlreadyPlayed) {
+    const cachedScore =
+      localPlayed ??
+      (alreadyPlayed ? { mainScore: alreadyPlayed.mainScore, bonusScore: alreadyPlayed.bonusScore } : null);
+    const calendarDates = gameDates.data?.dates ?? [];
+    return (
+      <div className={styles.page}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>Queuedle</h1>
+          <span className={styles.sub}>{game.id}</span>
+          <div className={styles.spacer} />
+          {selectedDate !== null && (
+            <button className={styles.backToToday} onClick={handleBackToToday}>
+              ← Today
+            </button>
+          )}
+          {calendarDates.length > 0 && (
+            <button className={styles.calendarBtn} onClick={() => setCalendarOpen(true)}>
+              📅 Calendar
+            </button>
+          )}
+        </div>
+        <div className={styles.body}>
+          <div className={styles.alreadyPlayedColumns}>
+            {cachedScore && (
+              <QueuedleSummary
+                mainScore={cachedScore.mainScore}
+                bonusScore={cachedScore.bonusScore}
+                maxMain={game.questions.length}
+                maxBonus={game.questions.length}
+                alreadySubmitted
+                hideScoreSummary
+                questions={game.questions}
+                mainGuesses={cachedScore.guesses ?? myScore.data?.score?.guesses?.main}
+                stats={gameStats.data}
+                onPlayAgain={handleDevPlayAgain}
+              />
+            )}
+            {renderLeaderboardArea(game, cachedScore, true)}
+          </div>
+        </div>
+        {calendarOpen && calendarDates.length > 0 && (
+          <div className={styles.calendarOverlay} onClick={() => setCalendarOpen(false)}>
+            <div className={styles.calendarModal} onClick={(e) => e.stopPropagation()}>
+              <button
+                className={styles.calendarClose}
+                onClick={() => setCalendarOpen(false)}
+                aria-label="Close calendar"
+              >
+                ✕
+              </button>
+              <QueuedleCalendar
+                dates={calendarDates}
+                selectedDate={gameId}
+                todayId={todayId}
+                onSelectDate={handleSelectDate}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (stillResolving) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.state}>Checking your score…</div>
+      </div>
+    );
+  }
+
+  const question = game.questions[currentIdx];
+  const total = game.questions.length;
+
+  // Carry-over slide direction: if the carry-over item appeared on the opposite
+  // side in the previous question, animate it sliding from there.
+  const carryFrom: 'left' | 'right' | null = (() => {
+    if (currentIdx === 0 || !question?.carryover) return null;
+    const carryItem = question.carryover === 'left' ? question.left : question.right;
+    const prev = game.questions[currentIdx - 1];
+    if (prev.left.id === carryItem.id && prev.left.category === carryItem.category) return 'left';
+    if (prev.right.id === carryItem.id && prev.right.category === carryItem.category) return 'right';
+    return null;
+  })();
+
+  // bonus targets: the 'bonusItem' side of each question (falls back to 'winner' for old games)
+  const winningItems = game.questions.map((q) => {
+    const side = q.bonusItem ?? q.winner;
+    return side === 'left' ? q.left : q.right;
+  });
+
+  function handlePick(side: 'left' | 'right') {
+    if (!question || pickedSide !== null) return;
+    setPickedSide(side);
+    setRevealed(true);
+    setMainGuesses((prev) => {
+      const next = prev.slice();
+      next[currentIdx] = side;
+      return next;
+    });
+  }
+
+  function handleNext() {
+    if (currentIdx + 1 < total) {
+      setCurrentIdx((i) => i + 1);
+      setRevealed(false);
+      setPickedSide(null);
+    } else {
+      setPhase('bonus');
+    }
+  }
+
+  function handleBonusSelect(index: number, name: string) {
+    setBonusSelections((prev) => {
+      const next = prev.slice();
+      next[index] = name;
+      return next;
+    });
+  }
+
+  async function handleSubmit() {
+    if (!game || !displayName) return;
+    const bonusGuesses = bonusSelections.map((s) => s ?? '');
+
+    const correctMain = mainGuesses.reduce((acc, g, i) => acc + (g === game.questions[i].winner ? 1 : 0), 0);
+    const correctBonus = bonusGuesses.reduce((acc, g, i) => {
+      const q = game.questions[i];
+      const bonusSide = q.bonusItem ?? q.winner;
+      const bonusTargetItem = bonusSide === 'left' ? q.left : q.right;
+      return acc + (g === bonusTargetItem.topQueuer ? 1 : 0);
+    }, 0);
+
+    if (devReplay) {
+      setLocalScore({ main: correctMain, bonus: correctBonus });
+      setPhase('bonus-results');
+      return;
+    }
+
+    const result = await submit.mutateAsync({
+      gameId: game.id,
+      userName: displayName,
+      guesses: { main: mainGuesses, bonus: bonusGuesses },
+    });
+    let scored: { main: number; bonus: number };
+    if (result.score) {
+      scored = { main: result.score.mainScore, bonus: result.score.bonusScore };
+    } else if (result.existing) {
+      scored = { main: result.existing.mainScore, bonus: result.existing.bonusScore };
+    } else {
+      scored = { main: correctMain, bonus: correctBonus };
+    }
+    setLocalScore(scored);
+    try {
+      localStorage.setItem(
+        `queuedle-played:${game.id}`,
+        JSON.stringify({ mainScore: scored.main, bonusScore: scored.bonus, guesses: mainGuesses })
+      );
+    } catch {
+      // ignore quota / disabled storage
+    }
+    setPhase('bonus-results');
+  }
+
+  const pips = game.questions.map((q, i) => {
+    if (i < currentIdx) {
+      return mainGuesses[i] === q.winner ? styles.pipCorrect : styles.pipWrong;
+    }
+    if (i === currentIdx && revealed && pickedSide) {
+      return mainGuesses[i] === q.winner ? styles.pipCorrect : styles.pipWrong;
+    }
+    if (i === currentIdx) return styles.pipCurrent;
+    return '';
+  });
+
+  const bonusGuesses = bonusSelections.map((s) => s ?? '');
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.header}>
+        <h1 className={styles.title}>Queuedle</h1>
+        <span className={styles.sub}>{game.id}</span>
+        <div className={styles.spacer} />
+        {headerActions}
+      </div>
+      <div className={styles.body}>
+        {phase !== 'intro' && phase !== 'summary' && phase !== 'bonus-results' && phase !== 'rank-change' && (
+          <div className={styles.progress}>
+            {pips.map((cls, i) => (
+              <div key={i} className={`${styles.pip}${cls ? ' ' + cls : ''}`} />
+            ))}
+          </div>
+        )}
+
+        {phase === 'intro' && <QueuedleIntro onStart={() => setPhase('main')} />}
+
+        {phase === 'main' && question && (
+          <QueuedleQuestionCard
+            question={question}
+            revealed={revealed}
+            pickedSide={pickedSide}
+            onPick={handlePick}
+            onNext={handleNext}
+            carryFrom={carryFrom}
+          />
+        )}
+
+        {phase === 'bonus' && (
+          <QueuedleBonusScreen
+            winningItems={winningItems}
+            selections={bonusSelections}
+            onSelect={handleBonusSelect}
+            onSubmit={handleSubmit}
+            submitting={submit.isPending}
+          />
+        )}
+
+        {phase === 'bonus-results' && (
+          <QueuedleBonusResults
+            winningItems={winningItems}
+            bonusGuesses={bonusGuesses}
+            onContinue={() => {
+              // Skip the rank-change beat for dev replays (no real submission) and
+              // when we couldn't compute an "after" snapshot (e.g. no displayName).
+              if (devReplay || !afterRanking) setPhase('summary');
+              else setPhase('rank-change');
+            }}
+          />
+        )}
+
+        {phase === 'rank-change' && afterRanking && (
+          <QueuedleRankChange before={beforeRankSnapshot} after={afterRanking} onContinue={() => setPhase('summary')} />
+        )}
+
+        {phase === 'summary' && localScore && (
+          <div className={styles.alreadyPlayedColumns}>
+            <QueuedleSummary
+              mainScore={localScore.main}
+              bonusScore={localScore.bonus}
+              maxMain={game.questions.length}
+              maxBonus={game.questions.length}
+              questions={game.questions}
+              mainGuesses={mainGuesses}
+              stats={gameStats.data}
+            />
+            {renderLeaderboardArea(game, { mainScore: localScore.main, bonusScore: localScore.bonus }, false)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

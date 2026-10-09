@@ -1,0 +1,164 @@
+name: Mobile Release
+
+# Publishes a signed APK as a GitHub Release when an Android version tag is pushed:
+#   git tag android-v1.2.3 && git push origin android-v1.2.3   (android-v1.2.3-rc.1 becomes a pre-release)
+# A manual run (workflow_dispatch) is a dry run: it builds and uploads the APK as a workflow artifact only.
+# Plain v* tags belong to the desktop app. The APK release is never marked "Latest": desktop auto-update
+# reads /releases/latest and must keep finding a desktop release there. See apps/mobile/docs/RELEASING.md.
+
+on:
+  push:
+    tags: ['android-v[0-9]+.[0-9]+.[0-9]+*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build, e.g. 1.2.3 (dry run: artifact only, no release)'
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  # The root npm ci installs the desktop workspace too; mobile never needs the Electron binary.
+  ELECTRON_SKIP_BINARY_DOWNLOAD: 1
+
+defaults:
+  run:
+    working-directory: apps/mobile
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: v
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then RAW="${GITHUB_REF_NAME#android-v}"; else RAW="${{ inputs.version }}"; fi
+          if ! echo "$RAW" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then
+            echo "::error::'$RAW' is not a version like 1.2.3 or 1.2.3-rc.1"; exit 1
+          fi
+          BASE="${RAW%%-*}"
+          IFS=. read -r MAJ MIN PAT <<< "$BASE"
+          # versionCode must only ever go up. 1.2.3 -> 1020399; a pre-release 1.2.3-rc.N -> 10203NN (below the final).
+          if [ "$RAW" = "$BASE" ]; then BUILD=99; PRERELEASE=false; else BUILD="$(echo "${RAW#*-}" | grep -Eo '[0-9]+$' | tail -1)"; BUILD="${BUILD:-0}"; PRERELEASE=true; fi
+          if [ "$BUILD" -gt 98 ] && [ "$PRERELEASE" = true ]; then echo "::error::pre-release number must be below 99"; exit 1; fi
+          CODE=$((MAJ * 1000000 + MIN * 10000 + PAT * 100 + BUILD))
+          echo "version=$RAW" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "Building $RAW (versionCode $CODE, prerelease=$PRERELEASE)"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - run: npm ci
+        working-directory: .
+
+      # Cheap checks first so a broken tag fails in minutes, not after the long native build.
+      - run: npm run typecheck
+
+      - run: npm run test:run
+
+      - name: Stamp version into app.json
+        run: |
+          node -e "
+            const fs = require('fs');
+            const a = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+            a.expo.version = '${{ steps.v.outputs.version }}';
+            a.expo.android = { ...a.expo.android, versionCode: ${{ steps.v.outputs.code }} };
+            fs.writeFileSync('app.json', JSON.stringify(a, null, 2) + '\n');
+          "
+
+      - name: Install Android SDK components
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0" "ndk;27.1.12297006" "cmake;3.22.1" > /dev/null
+
+      - name: Restore release keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          for v in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!v}" ]; then echo "::error::the ANDROID_$v secret is not set"; exit 1; fi
+          done
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          {
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks"
+            echo "ANDROID_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD"
+            echo "ANDROID_KEY_ALIAS=$KEY_ALIAS"
+            echo "ANDROID_KEY_PASSWORD=$KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Generate the native project
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Build release APK
+        working-directory: apps/mobile/android
+        env:
+          # Optional integrations, baked into the bundle. Empty (feature off) unless the secrets exist.
+          EXPO_PUBLIC_GENIUS_ACCESS_TOKEN: ${{ secrets.GENIUS_ACCESS_TOKEN }}
+          EXPO_PUBLIC_APPINSIGHTS_CONNECTION_STRING: ${{ secrets.APPINSIGHTS_CONNECTION_STRING }}
+        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
+
+      - name: Verify the APK is signed with the release key
+        run: |
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK" | tee certs.txt
+          GOT="$(grep -m1 'certificate SHA-256 digest' certs.txt | sed 's/.*: //' | tr -d ':' | tr 'A-F' 'a-f')"
+          WANT="$(echo '${{ vars.ANDROID_CERT_SHA256 }}' | tr -d ':' | tr 'A-F' 'a-f')"
+          if [ -z "$WANT" ]; then echo "::error::ANDROID_CERT_SHA256 repository variable is not set"; exit 1; fi
+          if [ "$GOT" != "$WANT" ]; then echo "::error::APK is signed with $GOT, expected $WANT"; exit 1; fi
+          echo "Signed with the expected release key ($GOT)"
+
+      - name: Name and checksum
+        run: |
+          NAME="TrueTunes-Android-v${{ steps.v.outputs.version }}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "$NAME"
+          sha256sum "$NAME" > "$NAME.sha256"
+          echo "APK_NAME=$NAME" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APK_NAME }}
+          path: |
+            apps/mobile/${{ env.APK_NAME }}
+            apps/mobile/${{ env.APK_NAME }}.sha256
+          retention-days: 14
+
+      - name: Create GitHub release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          FLAGS=""
+          if [ "${{ steps.v.outputs.prerelease }}" = "true" ]; then FLAGS="--prerelease"; fi
+          # Desktop releases share this repo, so start the notes at the previous Android tag, not the previous release.
+          PREV="$(git ls-remote --tags --refs origin 'android-v*' | sed 's#.*refs/tags/##' | grep -vx "$GITHUB_REF_NAME" | sort -V | tail -1 || true)"
+          if [ -n "$PREV" ]; then FLAGS="$FLAGS --notes-start-tag $PREV"; fi
+          # --latest=false: an APK release must never become "Latest", or desktop auto-update breaks.
+          gh release create "$GITHUB_REF_NAME" "$APK_NAME" "$APK_NAME.sha256" \
+            --title "True Tunes Android v${{ steps.v.outputs.version }}" \
+            --generate-notes --latest=false $FLAGS

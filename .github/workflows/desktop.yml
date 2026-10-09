@@ -1,0 +1,153 @@
+name: Desktop
+
+# Validates desktop PRs; on push to main, bumps the patch version and publishes a desktop release.
+# Only desktop paths trigger it: without the filter, every mobile commit to main would publish a desktop release.
+# PRs also run it for server/ changes, because the server is linted with the desktop ESLint config.
+on:
+  # Publishing is narrower than validation: the root lock and packages/ change with mobile work too, and each
+  # push here ships a release. Desktop dependency changes always touch apps/desktop/package.json. Add packages/**
+  # once the desktop imports @truetunes/core.
+  push:
+    branches: [main]
+    paths:
+      - 'apps/desktop/**'
+      - '.github/workflows/desktop.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'apps/desktop/**'
+      - 'packages/**'
+      - 'server/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/desktop.yml'
+
+permissions:
+  contents: write
+  checks: write
+  pull-requests: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+defaults:
+  run:
+    working-directory: apps/desktop
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - run: npm ci
+        working-directory: .
+
+      - run: npm run lint
+
+      - run: npm run lint:server
+        working-directory: .
+
+      - run: npm run typecheck
+
+      - name: Test with coverage
+        run: >
+          npm run test:run --
+          --reporter=default
+          --reporter=junit
+          --outputFile.junit=./junit.xml
+          --coverage
+
+      - name: Publish test results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Vitest Tests
+          path: apps/desktop/renderer/junit.xml
+          reporter: java-junit
+          fail-on-error: true
+
+      - name: Publish coverage report
+        uses: davelosert/vitest-coverage-report-action@v2
+        if: always()
+        with:
+          name: Desktop
+          json-summary-path: apps/desktop/renderer/coverage/coverage-summary.json
+          json-final-path: apps/desktop/renderer/coverage/coverage-final.json
+          vite-config-path: apps/desktop/renderer/vitest.config.ts
+
+  version:
+    needs: validate
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.bump.outputs.new_version }}
+      sha: ${{ steps.push.outputs.sha }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      # --package-lock-only: bump apps/desktop/package.json and its entry in the root lock without installing anything.
+      - name: Bump patch version
+        id: bump
+        working-directory: .
+        run: |
+          npm version patch -w apps/desktop --no-git-tag-version --package-lock-only
+          echo "new_version=$(node -p "require('./apps/desktop/package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Commit and push
+        id: push
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add apps/desktop/package.json package-lock.json
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.new_version }}"
+          git push
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+  publish:
+    needs: version
+    if: github.event_name == 'push'
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            script: electron:publish:win
+          - os: macos-latest
+            script: electron:publish:mac
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - run: npm ci
+        working-directory: .
+
+      # electron-builder runs from apps/desktop (output in apps/desktop/release) and finds the hoisted node_modules itself.
+      - run: npm run ${{ matrix.script }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPINSIGHTS_CONNECTION_STRING: ${{ secrets.APPINSIGHTS_CONNECTION_STRING }}
+          GENIUS_ACCESS_TOKEN: ${{ secrets.GENIUS_ACCESS_TOKEN }}
+          VITE_GITHUB_PAT: ${{ secrets.VITE_GITHUB_PAT }}
+          ENTRA_CLIENT_ID: ${{ secrets.ENTRA_CLIENT_ID }}
+          ENTRA_TENANT_ID: ${{ secrets.ENTRA_TENANT_ID }}

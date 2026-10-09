@@ -1,0 +1,112 @@
+:root {
+  --bg: #1c1c1e;
+  --bg-1: #252528;
+  --bg-2: rgba(255, 255, 255, 0.08);
+  --bg-glass: rgba(22, 22, 24, 0.88);
+  --border: rgba(255, 255, 255, 0.1);
+  --border-2: rgba(255, 255, 255, 0.2);
+  --text: #ffffff;
+  --text-2: rgba(255, 255, 255, 0.65);
+  --text-3: rgba(255, 255, 255, 0.5);
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --nav-h: 64px; /* 12px top gap + 44px pill + 8px clearance */
+  --player-h: 112px; /* 64px bar + 24px bottom margin + 24px clearance */
+  --queue-w: 300px;
+  --card-size: clamp(140px, 16vw, 320px);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+input[type='text'],
+input:not([type]),
+textarea {
+  user-select: text;
+}
+
+@font-face {
+  font-family: 'San Francisco';
+  font-weight: 400;
+  src: url('https://applesocial.s3.amazonaws.com/assets/styles/fonts/sanfrancisco/sanfranciscodisplay-regular-webfont.woff');
+  /* This webfont only ships Basic Latin glyphs and renders a visible box for
+     anything outside it (e.g. the æ/ó/ð in "Ágætis Byrjun" / "Sigur Rós").
+     A box counts as a glyph, so the browser won't fall back per-character.
+     Scoping the font to ASCII lets every other codepoint fall through to the
+     system fonts below, which have full multi-language coverage. */
+  unicode-range: U+0000-007F;
+}
+
+body {
+  font-family:
+    'San Francisco',
+    -apple-system,
+    BlinkMacSystemFont,
+    'SF Pro Text',
+    'Segoe UI',
+    sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Mini player window: strip all chrome, let the component paint itself ── */
+html[data-mini],
+html[data-mini] body {
+  background: transparent !important;
+  height: auto;
+  overflow: visible;
+}
+html[data-mini] #root {
+  height: auto;
+  overflow: visible;
+  background: transparent;
+  display: block;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+  background: transparent;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+  margin-top: 20px;
+  margin-bottom: 8px;
+}
+::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.22);
+}
+
+@keyframes skelPulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
