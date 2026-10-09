@@ -44,11 +44,7 @@ function DjRow({ track, onAdd }: { track: DjRowTrack; onAdd: () => void }) {
   const art = useImage(track.imageUrl ?? null);
   return (
     <div className={styles.row}>
-      {art ? (
-        <img className={styles.art} src={art} alt="" loading="lazy" />
-      ) : (
-        <div className={styles.artPlaceholder} />
-      )}
+      {art ? <img className={styles.art} src={art} alt="" loading="lazy" /> : <div className={styles.artPlaceholder} />}
       <div className={styles.rowText}>
         <div className={styles.trackName}>{track.trackName}</div>
         <div className={styles.artist}>{track.artist}</div>
@@ -83,16 +79,13 @@ export function DiscoverPanel({ onAddToQueue, displayName }: Props) {
       users: selected.length ? selected : roomKey ? roomKey.split(',') : [],
       limit: 25,
     }),
-    [selected, roomKey],
+    [selected, roomKey]
   );
   const { data, isLoading, isFetching, refetch } = useDjSet(opts);
 
   // Only browse the music service once the user actually asks for new material —
   // it costs one round trip per act.
-  const { discoveries, isLoading: loadingNew } = useDjDiscoveries(
-    data?.artists,
-    mode === 'discover',
-  );
+  const { discoveries, isLoading: loadingNew } = useDjDiscoveries(data?.artists, mode === 'discover');
 
   const tracks =
     mode === 'discover'
@@ -110,9 +103,7 @@ export function DiscoverPanel({ onAddToQueue, displayName }: Props) {
   const busy = isLoading || (mode === 'discover' && loadingNew);
 
   function toggle(userId: string) {
-    setSelected((prev) =>
-      prev.includes(userId) ? prev.filter((u) => u !== userId) : [...prev, userId],
-    );
+    setSelected((prev) => (prev.includes(userId) ? prev.filter((u) => u !== userId) : [...prev, userId]));
   }
 
   // Presence tells us who's actually in the building; anyone it can't vouch for
@@ -152,8 +143,8 @@ export function DiscoverPanel({ onAddToQueue, displayName }: Props) {
           <span className={styles.title}>Discover</span>
         </div>
         <p className={styles.blurb}>
-          Music for whoever&apos;s in the room, from what the office actually plays. Picks are
-          scored so the least keen listener still gets a say.
+          Music for whoever&apos;s in the room, from what the office actually plays. Picks are scored so the least keen
+          listener still gets a say.
         </p>
         <div className={styles.actions}>
           <div className={styles.modeTabs}>
@@ -172,12 +163,7 @@ export function DiscoverPanel({ onAddToQueue, displayName }: Props) {
               Favourites
             </button>
           </div>
-          <button
-            className={styles.ghostBtn}
-            onClick={() => refetch()}
-            disabled={isFetching}
-            title="Shuffle the set"
-          >
+          <button className={styles.ghostBtn} onClick={() => refetch()} disabled={isFetching} title="Shuffle the set">
             <RefreshCw size={14} className={isFetching ? styles.spinning : undefined} />
             Refresh
           </button>
@@ -198,36 +184,39 @@ export function DiscoverPanel({ onAddToQueue, displayName }: Props) {
 
         {/* Split by where people actually are. A single flat list gave no clue
             which names were driving the picks, so the set looked arbitrary. */}
-        {chipGroups.map((group) => (
-          group.users.length > 0 && (
-            <div className={styles.chipGroup} key={group.key}>
-              <span className={styles.chipGroupLabel}>{group.label}</span>
-              <div className={styles.chips}>
-                {group.users.map((u) => {
-                  const active = selected.includes(u.userId);
-                  const inRoom = selected.length === 0 && group.key === 'here';
-                  return (
-                    <button
-                      key={u.userId}
-                      className={[
-                        styles.chip,
-                        active ? styles.chipActive : '',
-                        inRoom ? styles.chipInferred : '',
-                        group.key === 'away' ? styles.chipAway : '',
-                      ].filter(Boolean).join(' ')}
-                      onClick={() => toggle(u.userId)}
-                      title={statusFor(u.userId)}
-                    >
-                      <UserAvatar name={u.userId} imageUrl={u.imageUrl} className={styles.chipAvatar} />
-                      {u.userId}
-                      {u.userId === displayName && <span className={styles.chipYou}>you</span>}
-                    </button>
-                  );
-                })}
+        {chipGroups.map(
+          (group) =>
+            group.users.length > 0 && (
+              <div className={styles.chipGroup} key={group.key}>
+                <span className={styles.chipGroupLabel}>{group.label}</span>
+                <div className={styles.chips}>
+                  {group.users.map((u) => {
+                    const active = selected.includes(u.userId);
+                    const inRoom = selected.length === 0 && group.key === 'here';
+                    return (
+                      <button
+                        key={u.userId}
+                        className={[
+                          styles.chip,
+                          active ? styles.chipActive : '',
+                          inRoom ? styles.chipInferred : '',
+                          group.key === 'away' ? styles.chipAway : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                        onClick={() => toggle(u.userId)}
+                        title={statusFor(u.userId)}
+                      >
+                        <UserAvatar name={u.userId} imageUrl={u.imageUrl} className={styles.chipAvatar} />
+                        {u.userId}
+                        {u.userId === displayName && <span className={styles.chipYou}>you</span>}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )
-        ))}
+            )
+        )}
         {selected.length === 0 && (
           <span className={styles.hint}>
             {presence?.basis === 'sensed'
@@ -245,13 +234,9 @@ export function DiscoverPanel({ onAddToQueue, displayName }: Props) {
 
       <div className={styles.list}>
         {busy && (
-          <div className={styles.empty}>
-            {mode === 'discover' ? 'Digging for something new…' : 'Reading the room…'}
-          </div>
+          <div className={styles.empty}>{mode === 'discover' ? 'Digging for something new…' : 'Reading the room…'}</div>
         )}
-        {!busy && data?.error && (
-          <div className={styles.empty}>Couldn&apos;t build a set: {data.error}</div>
-        )}
+        {!busy && data?.error && <div className={styles.empty}>Couldn&apos;t build a set: {data.error}</div>}
         {!busy && !data?.error && tracks.length === 0 && (
           <div className={styles.empty}>
             {mode === 'discover'
@@ -260,11 +245,7 @@ export function DiscoverPanel({ onAddToQueue, displayName }: Props) {
           </div>
         )}
         {tracks.map((track) => (
-          <DjRow
-            key={track.uri}
-            track={track}
-            onAdd={() => onAddToQueue(track.item, -1, { attribute: false })}
-          />
+          <DjRow key={track.uri} track={track} onAdd={() => onAddToQueue(track.item, -1, { attribute: false })} />
         ))}
       </div>
     </div>

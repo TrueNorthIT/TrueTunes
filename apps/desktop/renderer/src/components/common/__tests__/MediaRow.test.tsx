@@ -28,12 +28,7 @@ describe('MediaRow', () => {
     });
 
     it('renders JSX subtitle', () => {
-      render(
-        <MediaRow
-          name="Track"
-          subtitle={<button>Artist Name</button>}
-        />
-      );
+      render(<MediaRow name="Track" subtitle={<button>Artist Name</button>} />);
       expect(screen.getByRole('button', { name: 'Artist Name' })).toBeInTheDocument();
     });
 

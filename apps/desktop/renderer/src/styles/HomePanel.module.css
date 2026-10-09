@@ -27,7 +27,11 @@
   cursor: pointer;
   transition: all 0.12s;
 }
-.sectionAction:hover { color: var(--text); border-color: var(--border-2); background: rgba(255,255,255,0.05); }
+.sectionAction:hover {
+  color: var(--text);
+  border-color: var(--border-2);
+  background: rgba(255, 255, 255, 0.05);
+}
 
 .playlistRow {
   display: flex;
@@ -35,8 +39,13 @@
   overflow-x: auto;
   padding-bottom: 8px;
 }
-.playlistRow::-webkit-scrollbar { height: 6px; }
-.playlistRow::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+.playlistRow::-webkit-scrollbar {
+  height: 6px;
+}
+.playlistRow::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
 
 .usersRow {
   display: flex;
@@ -46,7 +55,9 @@
   padding: 6px 4px 10px;
   margin: -6px -4px -10px;
 }
-.usersRow::-webkit-scrollbar { height: 0; }
+.usersRow::-webkit-scrollbar {
+  height: 0;
+}
 
 .userChip {
   display: flex;
@@ -60,7 +71,10 @@
   flex-shrink: 0;
   font-family: inherit;
 }
-.userChip:hover .userAvatar { transform: scale(1.07); box-shadow: 0 0 0 2px rgba(255,255,255,0.3); }
+.userChip:hover .userAvatar {
+  transform: scale(1.07);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
 
 .userAvatar {
   width: 72px;
@@ -74,7 +88,9 @@
   font-weight: 700;
   color: var(--text);
   overflow: hidden;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
   flex-shrink: 0;
 }
 .userAvatar img {
@@ -210,9 +226,15 @@
   cursor: grab;
   transition: background 0.15s;
 }
-.albumRow:active { cursor: grabbing; }
-.albumRow:hover { background: rgba(255, 255, 255, 0.06); }
-.albumRow:hover .albumAddBtn { opacity: 1; }
+.albumRow:active {
+  cursor: grabbing;
+}
+.albumRow:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.albumRow:hover .albumAddBtn {
+  opacity: 1;
+}
 
 .albumAddBtn {
   margin-left: auto;
@@ -230,9 +252,13 @@
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.15s, background 0.15s;
+  transition:
+    opacity 0.15s,
+    background 0.15s;
 }
-.albumAddBtn:hover { background: rgba(255, 255, 255, 0.22); }
+.albumAddBtn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
 
 .albumArtWrap {
   width: 46px;
@@ -248,9 +274,14 @@
   object-fit: cover;
   display: block;
 }
-.albumArtPh { width: 100%; height: 100%; }
+.albumArtPh {
+  width: 100%;
+  height: 100%;
+}
 
-.albumInfo { overflow: hidden; }
+.albumInfo {
+  overflow: hidden;
+}
 .albumName {
   font-size: 13px;
   font-weight: 500;
@@ -428,10 +459,18 @@
   align-items: center;
   flex-shrink: 0;
   opacity: 0;
-  transition: opacity 0.12s, color 0.12s, background 0.12s;
+  transition:
+    opacity 0.12s,
+    color 0.12s,
+    background 0.12s;
 }
-.userDropdownLi:hover .profileLinkBtn { opacity: 1; }
-.profileLinkBtn:hover { color: var(--text); background: rgba(255, 255, 255, 0.07); }
+.userDropdownLi:hover .profileLinkBtn {
+  opacity: 1;
+}
+.profileLinkBtn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.07);
+}
 
 .userDropdownItem:hover {
   background: rgba(255, 255, 255, 0.07);

@@ -16,21 +16,65 @@ import { PlaylistCard } from './common/PlaylistCard';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/ProfilePanel.module.css';
 
-function TrackSubtitle({ t, openItem, linkClass }: { t: StatsTrack; openItem: (item: SonosItem) => void; linkClass: string }) {
+function TrackSubtitle({
+  t,
+  openItem,
+  linkClass,
+}: {
+  t: StatsTrack;
+  openItem: (item: SonosItem) => void;
+  linkClass: string;
+}) {
   const artistItem: SonosItem | null = t.artistId
-    ? { type: 'ARTIST', name: t.artist, resource: { type: 'ARTIST', id: { objectId: t.artistId, serviceId: t.serviceId, accountId: t.accountId } } }
+    ? {
+        type: 'ARTIST',
+        name: t.artist,
+        resource: { type: 'ARTIST', id: { objectId: t.artistId, serviceId: t.serviceId, accountId: t.accountId } },
+      }
     : null;
-  const albumItem: SonosItem | null = t.albumId && t.album
-    ? { type: 'ALBUM', name: t.album, resource: { type: 'ALBUM', id: { objectId: t.albumId, serviceId: t.serviceId, accountId: t.accountId } } }
-    : null;
+  const albumItem: SonosItem | null =
+    t.albumId && t.album
+      ? {
+          type: 'ALBUM',
+          name: t.album,
+          resource: { type: 'ALBUM', id: { objectId: t.albumId, serviceId: t.serviceId, accountId: t.accountId } },
+        }
+      : null;
   return (
     <>
-      {artistItem
-        ? <button className={linkClass} onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); openItem(artistItem); }}>{t.artist}</button>
-        : t.artist}
-      {t.album && <>{' · '}{albumItem
-        ? <button className={linkClass} onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); openItem(albumItem); }}>{t.album}</button>
-        : t.album}</>}
+      {artistItem ? (
+        <button
+          className={linkClass}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            openItem(artistItem);
+          }}
+        >
+          {t.artist}
+        </button>
+      ) : (
+        t.artist
+      )}
+      {t.album && (
+        <>
+          {' · '}
+          {albumItem ? (
+            <button
+              className={linkClass}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                openItem(albumItem);
+              }}
+            >
+              {t.album}
+            </button>
+          ) : (
+            t.album
+          )}
+        </>
+      )}
     </>
   );
 }
@@ -75,11 +119,16 @@ export function ProfilePanel({ onAddToQueue, displayName, onSignOut, onChangeNam
   const [renameError, setRenameError] = useState<string | null>(null);
   const [renameSaving, setRenameSaving] = useState(false);
 
-const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, isLoading: statsLoading } =
-    useUserStats(userName, 25);
+  const {
+    topTracks,
+    artistItems: topArtists,
+    albumItems: topAlbums,
+    totalEvents,
+    isLoading: statsLoading,
+  } = useUserStats(userName, 25);
 
   const { data: rankings } = useGameRankings(userName, !!userName);
-  const ranking = rankings?.find(r => r.userName === userName) ?? null;
+  const ranking = rankings?.find((r) => r.userName === userName) ?? null;
 
   const isOwnProfile = !!displayName && displayName === userName;
   const { data: profile } = useUserProfile(userName);
@@ -90,29 +139,52 @@ const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, 
   const [trackSelected, setTrackSelected] = useState<Set<number>>(new Set());
   const lastTrackSelected = useRef<number | null>(null);
 
-  const handleTrackClick = useCallback((idx: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (e.shiftKey && lastTrackSelected.current !== null) {
-      const lo = Math.min(lastTrackSelected.current, idx);
-      const hi = Math.max(lastTrackSelected.current, idx);
-      setTrackSelected(prev => { const next = new Set(prev); for (let j = lo; j <= hi; j++) next.add(j); return next; });
-    } else if (e.ctrlKey || e.metaKey) {
-      setTrackSelected(prev => { const next = new Set(prev); if (next.has(idx)) next.delete(idx); else next.add(idx); return next; });
-      lastTrackSelected.current = idx;
-    } else {
-      if (trackSelected.size === 1 && trackSelected.has(idx)) { setTrackSelected(new Set()); lastTrackSelected.current = null; }
-      else { setTrackSelected(new Set([idx])); lastTrackSelected.current = idx; }
-    }
-  }, [trackSelected]);
+  const handleTrackClick = useCallback(
+    (idx: number, e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (e.shiftKey && lastTrackSelected.current !== null) {
+        const lo = Math.min(lastTrackSelected.current, idx);
+        const hi = Math.max(lastTrackSelected.current, idx);
+        setTrackSelected((prev) => {
+          const next = new Set(prev);
+          for (let j = lo; j <= hi; j++) next.add(j);
+          return next;
+        });
+      } else if (e.ctrlKey || e.metaKey) {
+        setTrackSelected((prev) => {
+          const next = new Set(prev);
+          if (next.has(idx)) next.delete(idx);
+          else next.add(idx);
+          return next;
+        });
+        lastTrackSelected.current = idx;
+      } else {
+        if (trackSelected.size === 1 && trackSelected.has(idx)) {
+          setTrackSelected(new Set());
+          lastTrackSelected.current = null;
+        } else {
+          setTrackSelected(new Set([idx]));
+          lastTrackSelected.current = idx;
+        }
+      }
+    },
+    [trackSelected]
+  );
 
-  const handleTrackDragStart = useCallback((idx: number, e: React.DragEvent) => {
-    const indices = trackSelected.has(idx) ? [...trackSelected].sort((a, b) => a - b) : [idx];
-    if (!trackSelected.has(idx)) { setTrackSelected(new Set([idx])); lastTrackSelected.current = idx; }
-    const items = indices.map(i => statsTrackToSonosItem(topTracks[i]));
-    e.dataTransfer.effectAllowed = 'copy';
-    e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(items));
-    createDragGhost(items.length > 1 ? `${items.length} tracks` : topTracks[idx].trackName, e.dataTransfer);
-  }, [trackSelected, topTracks]);
+  const handleTrackDragStart = useCallback(
+    (idx: number, e: React.DragEvent) => {
+      const indices = trackSelected.has(idx) ? [...trackSelected].sort((a, b) => a - b) : [idx];
+      if (!trackSelected.has(idx)) {
+        setTrackSelected(new Set([idx]));
+        lastTrackSelected.current = idx;
+      }
+      const items = indices.map((i) => statsTrackToSonosItem(topTracks[i]));
+      e.dataTransfer.effectAllowed = 'copy';
+      e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(items));
+      createDragGhost(items.length > 1 ? `${items.length} tracks` : topTracks[idx].trackName, e.dataTransfer);
+    },
+    [trackSelected, topTracks]
+  );
 
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -147,7 +219,7 @@ const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, 
   const { owned: ownedPlaylists, joined: joinedPlaylists } = useMyPlaylists(userName);
   const allPlaylists = isOwnProfile
     ? [...ownedPlaylists, ...joinedPlaylists]
-    : ownedPlaylists.filter(p => p.isPublic);
+    : ownedPlaylists.filter((p) => p.isPublic);
   const visiblePlaylists = [...allPlaylists].sort((a, b) => {
     if (!!b.isFavourites !== !!a.isFavourites) return b.isFavourites ? 1 : -1;
     return b.updatedAt - a.updatedAt;
@@ -167,10 +239,7 @@ const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, 
           onClick={isOwnProfile ? () => fileInputRef.current?.click() : undefined}
           title={isOwnProfile ? 'Change photo' : undefined}
         >
-          {profileArt
-            ? <img src={profileArt} alt="" className={styles.avatarImg} />
-            : userName[0].toUpperCase()
-          }
+          {profileArt ? <img src={profileArt} alt="" className={styles.avatarImg} /> : userName[0].toUpperCase()}
           {isOwnProfile && (
             <div className={`${styles.avatarOverlay}${uploading ? ' ' + styles.avatarOverlayActive : ''}`}>
               {uploading ? '…' : '📷'}
@@ -191,7 +260,10 @@ const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, 
                 <input
                   className={styles.renameInput}
                   value={renameValue}
-                  onChange={e => { setRenameValue(e.target.value); setRenameError(null); }}
+                  onChange={(e) => {
+                    setRenameValue(e.target.value);
+                    setRenameError(null);
+                  }}
                   autoFocus
                   maxLength={32}
                   spellCheck={false}
@@ -199,7 +271,14 @@ const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, 
                 <button type="submit" className={styles.renameBtn} disabled={!renameValue.trim() || renameSaving}>
                   {renameSaving ? '…' : 'Save'}
                 </button>
-                <button type="button" className={styles.renameCancelBtn} onClick={() => { setRenaming(false); setRenameError(null); }}>
+                <button
+                  type="button"
+                  className={styles.renameCancelBtn}
+                  onClick={() => {
+                    setRenaming(false);
+                    setRenameError(null);
+                  }}
+                >
                   Cancel
                 </button>
                 {renameError && <span className={styles.renameError}>{renameError}</span>}
@@ -211,18 +290,30 @@ const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, 
           {(totalEvents > 0 || isOwnProfile) && (
             <span className={styles.statChip}>
               {totalEvents > 0 && (
-                <><span className={styles.statChipValue}>{totalEvents.toLocaleString()}</span> plays</>
+                <>
+                  <span className={styles.statChipValue}>{totalEvents.toLocaleString()}</span> plays
+                </>
               )}
               {isOwnProfile && onChangeName && !renaming && (
                 <>
                   {totalEvents > 0 && <span className={styles.statChipSep}>|</span>}
-                  <button className={styles.changeNameInline} onClick={() => { setRenameValue(userName ?? ''); setRenaming(true); }}>Change name</button>
+                  <button
+                    className={styles.changeNameInline}
+                    onClick={() => {
+                      setRenameValue(userName ?? '');
+                      setRenaming(true);
+                    }}
+                  >
+                    Change name
+                  </button>
                 </>
               )}
               {isOwnProfile && onSignOut && (
                 <>
                   <span className={styles.statChipSep}>|</span>
-                  <button className={styles.signOutInline} onClick={onSignOut}>Sign out</button>
+                  <button className={styles.signOutInline} onClick={onSignOut}>
+                    Sign out
+                  </button>
                 </>
               )}
             </span>
@@ -232,14 +323,19 @@ const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, 
           <div className={styles.rankHero}>
             {tierIcon && <img src={tierIcon} alt="" className={styles.rankHeroIcon} />}
             <div className={styles.rankHeroText}>
-              <span className={styles.rankHeroName}>
-                {ranking.isProvisional ? 'Provisional' : ranking.tierName}
-              </span>
+              <span className={styles.rankHeroName}>{ranking.isProvisional ? 'Provisional' : ranking.tierName}</span>
               <span className={styles.rankHeroPercent}>
-                {ranking.isProvisional
-                  ? <>{ranking.gamesPlayed} {ranking.gamesPlayed === 1 ? 'game' : 'games'} played</>
-                  : <>{ranking.averagePercent.toFixed(0)}% <span className={styles.sc}>avg</span> · <span className={styles.sc}>best</span> {ranking.bestTotal} · {ranking.gamesPlayed} <span className={styles.sc}>{ranking.gamesPlayed === 1 ? 'game' : 'games'}</span></>
-                }
+                {ranking.isProvisional ? (
+                  <>
+                    {ranking.gamesPlayed} {ranking.gamesPlayed === 1 ? 'game' : 'games'} played
+                  </>
+                ) : (
+                  <>
+                    {ranking.averagePercent.toFixed(0)}% <span className={styles.sc}>avg</span> ·{' '}
+                    <span className={styles.sc}>best</span> {ranking.bestTotal} · {ranking.gamesPlayed}{' '}
+                    <span className={styles.sc}>{ranking.gamesPlayed === 1 ? 'game' : 'games'}</span>
+                  </>
+                )}
               </span>
             </div>
           </div>
@@ -252,47 +348,60 @@ const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, 
           <h2 className={styles.sectionTitle}>Top Tracks</h2>
           <div
             className={styles.topTracksGrid}
-            onClick={() => { setTrackSelected(new Set()); lastTrackSelected.current = null; }}
+            onClick={() => {
+              setTrackSelected(new Set());
+              lastTrackSelected.current = null;
+            }}
           >
             <div className={styles.topTracksCol}>
               {statsLoading
                 ? Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className={styles.skelBlock} style={{ height: 52, marginBottom: 2, animationDelay: `${i * 60}ms` }} />
-                  ))
-                : topTracks.slice(0, 5).map((t, i) => (
-                    <MediaRow
+                    <div
                       key={i}
-                      name={t.trackName}
-                      subtitle={<TrackSubtitle t={t} openItem={openItem} linkClass={styles.trackLink} />}
-                      artUrl={t.imageUrl}
-                      trailing={<span className={styles.countBadge}>{t.count}×</span>}
-                      isSelected={trackSelected.has(i)}
-                      onClick={e => handleTrackClick(i, e)}
-                      draggable={!!t.uri}
-                      onDragStart={t.uri ? e => handleTrackDragStart(i, e) : undefined}
+                      className={styles.skelBlock}
+                      style={{ height: 52, marginBottom: 2, animationDelay: `${i * 60}ms` }}
                     />
                   ))
-              }
+                : topTracks
+                    .slice(0, 5)
+                    .map((t, i) => (
+                      <MediaRow
+                        key={i}
+                        name={t.trackName}
+                        subtitle={<TrackSubtitle t={t} openItem={openItem} linkClass={styles.trackLink} />}
+                        artUrl={t.imageUrl}
+                        trailing={<span className={styles.countBadge}>{t.count}×</span>}
+                        isSelected={trackSelected.has(i)}
+                        onClick={(e) => handleTrackClick(i, e)}
+                        draggable={!!t.uri}
+                        onDragStart={t.uri ? (e) => handleTrackDragStart(i, e) : undefined}
+                      />
+                    ))}
             </div>
             <div className={styles.topTracksCol}>
               {statsLoading
                 ? Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className={styles.skelBlock} style={{ height: 52, marginBottom: 2, animationDelay: `${(i + 5) * 60}ms` }} />
-                  ))
-                : topTracks.slice(5, 10).map((t, i) => (
-                    <MediaRow
-                      key={i + 5}
-                      name={t.trackName}
-                      subtitle={<TrackSubtitle t={t} openItem={openItem} linkClass={styles.trackLink} />}
-                      artUrl={t.imageUrl}
-                      trailing={<span className={styles.countBadge}>{t.count}×</span>}
-                      isSelected={trackSelected.has(i + 5)}
-                      onClick={e => handleTrackClick(i + 5, e)}
-                      draggable={!!t.uri}
-                      onDragStart={t.uri ? e => handleTrackDragStart(i + 5, e) : undefined}
+                    <div
+                      key={i}
+                      className={styles.skelBlock}
+                      style={{ height: 52, marginBottom: 2, animationDelay: `${(i + 5) * 60}ms` }}
                     />
                   ))
-              }
+                : topTracks
+                    .slice(5, 10)
+                    .map((t, i) => (
+                      <MediaRow
+                        key={i + 5}
+                        name={t.trackName}
+                        subtitle={<TrackSubtitle t={t} openItem={openItem} linkClass={styles.trackLink} />}
+                        artUrl={t.imageUrl}
+                        trailing={<span className={styles.countBadge}>{t.count}×</span>}
+                        isSelected={trackSelected.has(i + 5)}
+                        onClick={(e) => handleTrackClick(i + 5, e)}
+                        draggable={!!t.uri}
+                        onDragStart={t.uri ? (e) => handleTrackDragStart(i + 5, e) : undefined}
+                      />
+                    ))}
             </div>
           </div>
         </section>
@@ -302,7 +411,13 @@ const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, 
       {(statsLoading || topArtists.length > 0) && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Top Artists</h2>
-          <CardRow items={topArtists} isLoading={statsLoading} onAdd={onAddToQueue} onOpen={openItem} cardSize="110px" />
+          <CardRow
+            items={topArtists}
+            isLoading={statsLoading}
+            onAdd={onAddToQueue}
+            onOpen={openItem}
+            cardSize="110px"
+          />
         </section>
       )}
 
@@ -320,7 +435,9 @@ const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, 
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Playlists</h2>
             {isOwnProfile && (
-              <button className={styles.sectionAction} onClick={() => setCreatePlaylistOpen(true)}>+ New</button>
+              <button className={styles.sectionAction} onClick={() => setCreatePlaylistOpen(true)}>
+                + New
+              </button>
             )}
           </div>
           <div className={styles.playlistRow}>

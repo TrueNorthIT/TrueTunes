@@ -211,7 +211,12 @@ export function LeaderboardPanel() {
                   <span className={styles.rank}>
                     <RankBadge index={i} />
                   </span>
-                  <button className={styles.userNameBtn} onClick={() => navigate(`/profile/${encodeURIComponent(r.userName)}`)}>{r.userName}</button>
+                  <button
+                    className={styles.userNameBtn}
+                    onClick={() => navigate(`/profile/${encodeURIComponent(r.userName)}`)}
+                  >
+                    {r.userName}
+                  </button>
                   <div className={styles.barWrap}>
                     <div
                       className={styles.bar}
@@ -257,7 +262,15 @@ export function LeaderboardPanel() {
                     <span className={styles.rank}>
                       <RankBadge index={i} />
                     </span>
-                    <button className={styles.userNameBtn} onClick={e => { e.stopPropagation(); navigate(`/profile/${encodeURIComponent(u.userId)}`); }}>{u.userId}</button>
+                    <button
+                      className={styles.userNameBtn}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/profile/${encodeURIComponent(u.userId)}`);
+                      }}
+                    >
+                      {u.userId}
+                    </button>
                     <div className={styles.barWrap}>
                       <div className={styles.bar} style={{ width: `${Math.round((u.count / maxUserCount) * 100)}%` }} />
                     </div>
@@ -314,7 +327,9 @@ export function LeaderboardPanel() {
                                 },
                               })
                             }
-                            onResolveArtist={(name) => resolveAndOpen(name, 'artist', { serviceId: t.serviceId, accountId: t.accountId })}
+                            onResolveArtist={(name) =>
+                              resolveAndOpen(name, 'artist', { serviceId: t.serviceId, accountId: t.accountId })
+                            }
                           />
                         ) : null}
                         {t.artist && t.album ? ' · ' : null}
@@ -446,7 +461,9 @@ export function LeaderboardPanel() {
                                 },
                               })
                             }
-                            onResolveArtist={(name) => resolveAndOpen(name, 'artist', { serviceId: a.serviceId, accountId: a.accountId })}
+                            onResolveArtist={(name) =>
+                              resolveAndOpen(name, 'artist', { serviceId: a.serviceId, accountId: a.accountId })
+                            }
                           />
                         ) : null}
                       </span>
@@ -503,9 +520,7 @@ export function LeaderboardPanel() {
                 );
               })}
             </div>
-            <div className={styles.rankInfoFooter}>
-              Fewer than 3 played days = Provisional (no tier)
-            </div>
+            <div className={styles.rankInfoFooter}>Fewer than 3 played days = Provisional (no tier)</div>
           </div>
         </div>
       )}

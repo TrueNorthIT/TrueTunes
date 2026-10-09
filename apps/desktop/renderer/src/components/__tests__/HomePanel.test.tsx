@@ -46,7 +46,11 @@ vi.mock('../../hooks/useRecentlyPlayed', () => ({
 
 function makeWrapper() {
   return ({ children }: { children: React.ReactNode }) =>
-    createElement(QueryClientProvider, { client: new QueryClient({ defaultOptions: { queries: { retry: false } } }) }, children);
+    createElement(
+      QueryClientProvider,
+      { client: new QueryClient({ defaultOptions: { queries: { retry: false } } }) },
+      children
+    );
 }
 
 function makeRootData(rootItems: SonosItem[]) {
@@ -101,17 +105,17 @@ describe('fetchYtmSections', () => {
   });
 
   it('browses Home, New releases, Charts when items are present', async () => {
-    const homeItem    = makeRootItem('Home',         'home-id');
-    const nrItem      = makeRootItem('New releases', 'nr-id');
-    const chartsItem  = makeRootItem('Charts',       'charts-id');
+    const homeItem = makeRootItem('Home', 'home-id');
+    const nrItem = makeRootItem('New releases', 'nr-id');
+    const chartsItem = makeRootItem('Charts', 'charts-id');
     mockBrowseContainer
       .mockResolvedValueOnce({ error: null, data: makeRootData([homeItem, nrItem, chartsItem]) })
       .mockResolvedValue({ error: null, data: { items: [] } });
 
     await fetchYtmSections();
 
-    expect(mockBrowseContainer).toHaveBeenCalledWith('home-id',   expect.anything());
-    expect(mockBrowseContainer).toHaveBeenCalledWith('nr-id',     expect.anything());
+    expect(mockBrowseContainer).toHaveBeenCalledWith('home-id', expect.anything());
+    expect(mockBrowseContainer).toHaveBeenCalledWith('nr-id', expect.anything());
     expect(mockBrowseContainer).toHaveBeenCalledWith('charts-id', expect.anything());
   });
 
@@ -129,7 +133,7 @@ describe('fetchYtmSections', () => {
 
   it('prepends supermix item to forYou when present', async () => {
     const supermixItem = makeRootItem('My Supermix', 'sm-id');
-    const homeItem     = makeRootItem('Home',         'home-id');
+    const homeItem = makeRootItem('Home', 'home-id');
     const track: SonosItem = { name: 'Home Track', type: 'TRACK' } as SonosItem;
     mockBrowseContainer
       .mockResolvedValueOnce({ error: null, data: makeRootData([supermixItem, homeItem]) })

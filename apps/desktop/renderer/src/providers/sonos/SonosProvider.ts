@@ -1,7 +1,12 @@
 import { api } from '../../lib/sonosApi';
 import { extractItems } from '../../lib/itemHelpers';
 import type { AudioProvider } from '../AudioProvider';
-import type { NormalizedGroup, NormalizedPlaybackState, NormalizedQueueItem, NormalizedTrack } from '../../types/provider';
+import type {
+  NormalizedGroup,
+  NormalizedPlaybackState,
+  NormalizedQueueItem,
+  NormalizedTrack,
+} from '../../types/provider';
 import type { PlaybackPayload, SonosItem, SonosItemId, SonosTrack } from '../../types/sonos';
 
 function resolveArtistName(raw: SonosTrack['artist']): string {
@@ -11,10 +16,7 @@ function resolveArtistName(raw: SonosTrack['artist']): string {
 }
 
 function resolveImageUrl(track: SonosTrack): string | null {
-  const urls = [
-    ...(track.images?.map((i) => i.url) ?? []),
-    track.imageUrl,
-  ].filter((u): u is string => !!u);
+  const urls = [...(track.images?.map((i) => i.url) ?? []), track.imageUrl].filter((u): u is string => !!u);
   return urls.find((u) => u.startsWith('https://')) ?? null;
 }
 
@@ -40,9 +42,11 @@ export function normalizePlaybackPayload(payload: PlaybackPayload): NormalizedPl
   const stateVal = payload?.playback?.playbackState ?? '';
   const repeatOne = payload?.playback?.playModes?.repeatOne ?? false;
   const repeatAll = payload?.playback?.playModes?.repeat ?? false;
-  const status = stateVal.includes('PLAYING') ? 'playing' as const
-    : stateVal.includes('PAUSED') ? 'paused' as const
-    : 'idle' as const;
+  const status = stateVal.includes('PLAYING')
+    ? ('playing' as const)
+    : stateVal.includes('PAUSED')
+      ? ('paused' as const)
+      : ('idle' as const);
 
   return {
     status,
@@ -79,10 +83,7 @@ function normalizeSonosItemToQueueItem(item: SonosItem, index: number): Normaliz
       albumId: albumObj?.id?.objectId ?? null,
       imageUrl: rawArt ?? null,
       durationMs: track?.durationMillis ?? 0,
-      isExplicit: !!(
-        track?.explicit ??
-        (track as Record<string, unknown> | undefined)?.['isExplicit']
-      ),
+      isExplicit: !!(track?.explicit ?? (track as Record<string, unknown> | undefined)?.['isExplicit']),
       serviceId: id?.serviceId ?? null,
       accountId: id?.accountId ?? null,
     },
@@ -98,26 +99,45 @@ function throwOnIpcError(r: unknown): void {
 export class SonosProvider implements AudioProvider {
   readonly id = 'sonos' as const;
 
-  play()                { return window.sonos.play() as Promise<void>; }
-  pause()               { return window.sonos.pause() as Promise<void>; }
-  skipNext()            { return window.sonos.skipNext() as Promise<void>; }
-  skipPrev()            { return window.sonos.skipPrev() as Promise<void>; }
-  seek(ms: number)      { return window.sonos.seek(ms) as Promise<void>; }
-  loadContent(p: Record<string, unknown>) { return window.sonos.loadContent(p); }
-  skipToTrack(n: number)    { return window.sonos.skipToTrack(n) as Promise<void>; }
-  refreshPlayback()          { return window.sonos.refreshPlayback() as Promise<void>; }
+  play() {
+    return window.sonos.play() as Promise<void>;
+  }
+  pause() {
+    return window.sonos.pause() as Promise<void>;
+  }
+  skipNext() {
+    return window.sonos.skipNext() as Promise<void>;
+  }
+  skipPrev() {
+    return window.sonos.skipPrev() as Promise<void>;
+  }
+  seek(ms: number) {
+    return window.sonos.seek(ms) as Promise<void>;
+  }
+  loadContent(p: Record<string, unknown>) {
+    return window.sonos.loadContent(p);
+  }
+  skipToTrack(n: number) {
+    return window.sonos.skipToTrack(n) as Promise<void>;
+  }
+  refreshPlayback() {
+    return window.sonos.refreshPlayback() as Promise<void>;
+  }
 
   setPlayModes(modes: { shuffle?: boolean; repeat?: 'none' | 'one' | 'all' }) {
     const payload: { shuffle?: boolean; repeat?: boolean; repeatOne?: boolean } = {};
     if (modes.shuffle !== undefined) payload.shuffle = modes.shuffle;
     if (modes.repeat !== undefined) {
-      payload.repeat    = modes.repeat === 'all';
+      payload.repeat = modes.repeat === 'all';
       payload.repeatOne = modes.repeat === 'one';
     }
     return window.sonos.setPlayModes(payload) as Promise<void>;
   }
 
-  async getQueue(params?: { count?: number; offset?: number }): Promise<{ items: NormalizedQueueItem[]; etag?: string; error?: string }> {
+  async getQueue(params?: {
+    count?: number;
+    offset?: number;
+  }): Promise<{ items: NormalizedQueueItem[]; etag?: string; error?: string }> {
     const r = await api.queue.list({ count: params?.count, offset: params?.offset });
     if (r.error) return { items: [], error: r.error };
     const raw = extractItems(r.data) as SonosItem[];
@@ -138,13 +158,19 @@ export class SonosProvider implements AudioProvider {
     return window.sonos.reorderQueue(from, to, len).then(throwOnIpcError);
   }
 
-  getActiveGroup() { return window.sonos.getActiveGroup(); }
-  setGroup(groupId: string) { return window.sonos.setGroup(groupId).then(() => undefined); }
-  setVolume(volume: number) { return window.sonos.setGroupVolume(volume) as Promise<void>; }
+  getActiveGroup() {
+    return window.sonos.getActiveGroup();
+  }
+  setGroup(groupId: string) {
+    return window.sonos.setGroup(groupId).then(() => undefined);
+  }
+  setVolume(volume: number) {
+    return window.sonos.setGroupVolume(volume) as Promise<void>;
+  }
 
   subscribePlayback(
     onState: (groupId: string | undefined, state: NormalizedPlaybackState) => void,
-    onVolume: (volume: number) => void,
+    onVolume: (volume: number) => void
   ) {
     return window.sonos.onWsMessage((header, payload) => {
       const h = header as Record<string, unknown>;
@@ -172,7 +198,7 @@ export class SonosProvider implements AudioProvider {
   subscribeGroups(onGroups: (groups: NormalizedGroup[]) => void) {
     return window.sonos.onWsGroups((raw) => {
       const groups = (raw as Array<{ id: string; name: string; coordinatorId?: string }>).map(
-        (g): NormalizedGroup => ({ id: g.id, name: g.name, providerId: 'sonos', coordinatorId: g.coordinatorId }),
+        (g): NormalizedGroup => ({ id: g.id, name: g.name, providerId: 'sonos', coordinatorId: g.coordinatorId })
       );
       onGroups(groups);
     });

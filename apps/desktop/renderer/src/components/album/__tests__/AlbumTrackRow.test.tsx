@@ -80,36 +80,26 @@ describe('AlbumTrackRow', () => {
     const playlistProps = { ...baseProps, isPlaylistOrProgram: true };
 
     it('renders artist buttons with navigation', () => {
-      render(<AlbumTrackRow
-        track={makeTrack({ artistObjects: [{ name: 'John Lennon', objectId: 'art-j' }] })}
-        {...playlistProps}
-      />);
+      render(
+        <AlbumTrackRow
+          track={makeTrack({ artistObjects: [{ name: 'John Lennon', objectId: 'art-j' }] })}
+          {...playlistProps}
+        />
+      );
       const btn = screen.getByRole('button', { name: 'John Lennon' });
       fireEvent.click(btn);
-      expect(mockNavigate).toHaveBeenCalledWith(
-        expect.stringMatching(/^\/artist\//),
-        expect.anything()
-      );
+      expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/^\/artist\//), expect.anything());
     });
 
     it('renders album link with navigation when albumId and albumName are set', () => {
-      render(<AlbumTrackRow
-        track={makeTrack({ albumId: 'alb-1', albumName: 'Abbey Road' })}
-        {...playlistProps}
-      />);
+      render(<AlbumTrackRow track={makeTrack({ albumId: 'alb-1', albumName: 'Abbey Road' })} {...playlistProps} />);
       const btn = screen.getByRole('button', { name: 'Abbey Road' });
       fireEvent.click(btn);
-      expect(mockNavigate).toHaveBeenCalledWith(
-        expect.stringMatching(/^\/album\//),
-        expect.anything()
-      );
+      expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/^\/album\//), expect.anything());
     });
 
     it('renders albumName as plain text when no albumId', () => {
-      render(<AlbumTrackRow
-        track={makeTrack({ albumId: null, albumName: 'Unknown Album' })}
-        {...playlistProps}
-      />);
+      render(<AlbumTrackRow track={makeTrack({ albumId: null, albumName: 'Unknown Album' })} {...playlistProps} />);
       expect(screen.getByText('Unknown Album')).toBeInTheDocument();
     });
   });

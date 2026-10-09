@@ -12,21 +12,13 @@ function catLabel(c: GameItemCategory): string {
   return c === 'track' ? 'Track' : c === 'artist' ? 'Artist' : 'Album';
 }
 
-export function QueuedleBonusScreen({
-  winningItems,
-  selections,
-  onSelect,
-  onSubmit,
-  submitting,
-}: Props) {
+export function QueuedleBonusScreen({ winningItems, selections, onSelect, onSubmit, submitting }: Props) {
   const allAnswered = selections.every((s) => s !== null);
   return (
     <>
       <div className={styles.bonusIntro}>
         <h2 className={styles.bonusIntroTitle}>Bonus round — top queuer</h2>
-        <p className={styles.bonusIntroSub}>
-          For each winning entry, pick who&apos;s queued it the most.
-        </p>
+        <p className={styles.bonusIntroSub}>For each winning entry, pick who&apos;s queued it the most.</p>
       </div>
       <div className={styles.bonusList}>
         {winningItems.map((item, i) => (
@@ -46,16 +38,9 @@ export function QueuedleBonusScreen({
             <div className={styles.bonusOptions}>
               {item.queuerCandidates.map((name) => {
                 const active = selections[i] === name;
-                const cls = active
-                  ? `${styles.bonusOption} ${styles.bonusOptionActive}`
-                  : styles.bonusOption;
+                const cls = active ? `${styles.bonusOption} ${styles.bonusOptionActive}` : styles.bonusOption;
                 return (
-                  <button
-                    key={name}
-                    className={cls}
-                    onClick={() => onSelect(i, name)}
-                    disabled={submitting}
-                  >
+                  <button key={name} className={cls} onClick={() => onSelect(i, name)} disabled={submitting}>
                     {name}
                   </button>
                 );
@@ -65,11 +50,7 @@ export function QueuedleBonusScreen({
         ))}
       </div>
       <div className={styles.submitRow}>
-        <button
-          className={styles.submitBtn}
-          onClick={onSubmit}
-          disabled={!allAnswered || submitting}
-        >
+        <button className={styles.submitBtn} onClick={onSubmit} disabled={!allAnswered || submitting}>
           {submitting ? 'Submitting…' : 'Submit'}
         </button>
       </div>

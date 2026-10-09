@@ -20,7 +20,15 @@ export function ArtistAlbumCard({ album, onOpen, onAdd }: Props) {
       <div className={styles.albumArt}>
         {art ? <img src={art} alt="" /> : <div className={styles.albumArtPh}>♪</div>}
         <div className={styles.albumOverlay}>
-          <button className={styles.albumAddBtn} onClick={e => { e.stopPropagation(); onAdd(album); }}>+</button>
+          <button
+            className={styles.albumAddBtn}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAdd(album);
+            }}
+          >
+            +
+          </button>
         </div>
       </div>
       <div className={styles.albumTitle}>

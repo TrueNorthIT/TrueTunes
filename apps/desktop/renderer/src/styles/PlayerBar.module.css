@@ -291,7 +291,7 @@ button.trackArtist:hover {
 
 /* Invisible bridge so hover stays continuous between icon and popover */
 .volPopover::after {
-  content: "";
+  content: '';
   position: absolute;
   left: 0;
   right: 0;
@@ -356,7 +356,9 @@ button.trackArtist:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.12s, background 0.12s;
+  transition:
+    color 0.12s,
+    background 0.12s;
 }
 .volStep:hover:not(:disabled) {
   color: #fff;

@@ -11,7 +11,7 @@ interface AppContextValue {
 const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [isAuthed, setIsAuthed]         = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
   const [activeGroupId, setActiveGroupIdState] = useState<string | null>(null);
 
   const setActiveGroupId = useCallback((id: string) => {

@@ -24,8 +24,14 @@ interface Props {
 }
 
 export function AlbumTrackRow({
-  track, isPlaylistOrProgram, isSelected, serviceId, accountId,
-  onClick, onDragStart, onAdd,
+  track,
+  isPlaylistOrProgram,
+  isSelected,
+  serviceId,
+  accountId,
+  onClick,
+  onDragStart,
+  onAdd,
 }: Props) {
   const navigate = useNavigate();
   const { showTrackMenu } = useTrackContextMenu();
@@ -47,7 +53,7 @@ export function AlbumTrackRow({
       className={[styles.trackRow, isSelected ? styles.selected : ''].filter(Boolean).join(' ')}
       draggable
       onClick={onClick}
-      onContextMenu={e => showTrackMenu({ track: trackPayload }, e)}
+      onContextMenu={(e) => showTrackMenu({ track: trackPayload }, e)}
       onDragStart={onDragStart}
     >
       <span className={styles.ordinal}>{track.ordinal}</span>
@@ -76,8 +82,8 @@ export function AlbumTrackRow({
                   {ai > 0 && ', '}
                   <button
                     className={styles.artistBtn}
-                    onMouseDown={e => e.stopPropagation()}
-                    onClick={e => {
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
                       e.stopPropagation();
                       navigate(`/artist/${encodeURIComponent(a.objectId)}`, { state: { item: artistItem } });
                     }}
@@ -89,17 +95,17 @@ export function AlbumTrackRow({
             })
           : track.artists.join(', ')}
       </div>
-      {isPlaylistOrProgram && (() => {
-        const albumId = track.albumId;
-        const albumName = track.albumName;
-        return (
-          <div className={styles.trackAlbum}>
-            {albumId && albumName
-              ? (
+      {isPlaylistOrProgram &&
+        (() => {
+          const albumId = track.albumId;
+          const albumName = track.albumName;
+          return (
+            <div className={styles.trackAlbum}>
+              {albumId && albumName ? (
                 <button
                   className={styles.artistBtn}
-                  onMouseDown={e => e.stopPropagation()}
-                  onClick={e => {
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
                     e.stopPropagation();
                     navigate(`/album/${encodeURIComponent(albumId)}`, {
                       state: {
@@ -117,13 +123,22 @@ export function AlbumTrackRow({
                 >
                   {albumName}
                 </button>
-              )
-              : (albumName ?? '')}
-          </div>
-        );
-      })()}
+              ) : (
+                (albumName ?? '')
+              )}
+            </div>
+          );
+        })()}
       <span className={styles.duration}>{fmtDuration(track.durationSeconds)}</span>
-      <button className={styles.addBtn} onClick={e => { e.stopPropagation(); onAdd(); }}>+</button>
+      <button
+        className={styles.addBtn}
+        onClick={(e) => {
+          e.stopPropagation();
+          onAdd();
+        }}
+      >
+        +
+      </button>
     </div>
   );
 }

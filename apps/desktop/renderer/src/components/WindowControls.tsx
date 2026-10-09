@@ -7,7 +7,10 @@ export function WindowControls() {
   const [updateVersion, setUpdateVersion] = useState<string | null>(null);
 
   useEffect(() => {
-    window.sonos.isWindowMaximized().then(setIsMaximized).catch(() => {});
+    window.sonos
+      .isWindowMaximized()
+      .then(setIsMaximized)
+      .catch(() => {});
     return window.sonos.onWindowMaximized(setIsMaximized);
   }, []);
 

@@ -7,9 +7,7 @@ const mockOpenItem = vi.fn();
 vi.mock('../../../hooks/useOpenItem', () => ({ useOpenItem: () => mockOpenItem }));
 vi.mock('../../../hooks/useImage', () => ({ useImage: () => null }));
 vi.mock('../../artist/ArtistHero', () => ({
-  ArtistHero: ({ artist }: { artist: SonosItem }) => (
-    <div data-testid="artist-hero">{String(artist.name ?? '')}</div>
-  ),
+  ArtistHero: ({ artist }: { artist: SonosItem }) => <div data-testid="artist-hero">{String(artist.name ?? '')}</div>,
 }));
 vi.mock('../ArtistCircle', () => ({
   ArtistCircle: ({ artist }: { artist: SonosItem }) => (
@@ -192,9 +190,7 @@ describe('SearchResults — artist subtitles', () => {
     const btn = screen.getByRole('button', { name: 'My Artist' });
     expect(btn).toBeInTheDocument();
     fireEvent.click(btn);
-    expect(mockOpenItem).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'ARTIST' })
-    );
+    expect(mockOpenItem).toHaveBeenCalledWith(expect.objectContaining({ type: 'ARTIST' }));
   });
 
   it('renders artist name as plain text when artist has no id', () => {
@@ -268,10 +264,7 @@ describe('drag behaviour', () => {
     };
     fireEvent.dragStart(row, { dataTransfer: dt });
 
-    expect(dt.setData).toHaveBeenCalledWith(
-      'application/sonos-item-list',
-      expect.stringContaining('Drag Me')
-    );
+    expect(dt.setData).toHaveBeenCalledWith('application/sonos-item-list', expect.stringContaining('Drag Me'));
   });
 
   it('drag data is JSON-parseable array', () => {
@@ -279,7 +272,14 @@ describe('drag behaviour', () => {
     const row = getTrackRows(container)[0];
 
     let capturedData = '';
-    const dt = { effectAllowed: '', setData: vi.fn((_, v) => { capturedData = v; }), setDragImage: vi.fn(), types: [] as string[] };
+    const dt = {
+      effectAllowed: '',
+      setData: vi.fn((_, v) => {
+        capturedData = v;
+      }),
+      setDragImage: vi.fn(),
+      types: [] as string[],
+    };
     fireEvent.dragStart(row, { dataTransfer: dt });
 
     const parsed = JSON.parse(capturedData) as unknown[];

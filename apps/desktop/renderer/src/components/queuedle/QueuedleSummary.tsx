@@ -23,7 +23,11 @@ function ReviewRow({ question: q, guess, qStat }: ReviewRowProps) {
   return (
     <div className={styles.reviewItem}>
       <div className={styles.reviewRow} style={{ background: bg }}>
-        {leftArt ? <img src={leftArt} className={styles.reviewArt} alt={q.left.name} /> : <div className={styles.reviewArt} />}
+        {leftArt ? (
+          <img src={leftArt} className={styles.reviewArt} alt={q.left.name} />
+        ) : (
+          <div className={styles.reviewArt} />
+        )}
         <span className={`${styles.reviewSide} ${q.winner === 'left' ? styles.reviewSidePicked : ''}`}>
           <span className={styles.reviewName}>{q.left.name}</span>
           <span className={styles.reviewCount}>{q.left.count.toLocaleString()}</span>
@@ -39,13 +43,15 @@ function ReviewRow({ question: q, guess, qStat }: ReviewRowProps) {
           <span className={styles.reviewName}>{q.right.name}</span>
           <span className={styles.reviewCount}>{q.right.count.toLocaleString()}</span>
         </span>
-        {rightArt ? <img src={rightArt} className={styles.reviewArt} alt={q.right.name} /> : <div className={styles.reviewArt} />}
+        {rightArt ? (
+          <img src={rightArt} className={styles.reviewArt} alt={q.right.name} />
+        ) : (
+          <div className={styles.reviewArt} />
+        )}
       </div>
       {qStat && (
         <div className={styles.reviewMeta}>
-          {correctPct !== undefined && (
-            <span className={styles.reviewMetaCorrect}>{correctPct}% got this right</span>
-          )}
+          {correctPct !== undefined && <span className={styles.reviewMetaCorrect}>{correctPct}% got this right</span>}
           {qStat.bonusOptions.length > 0 && (
             <span className={styles.reviewMetaBonus}>
               {qStat.bonusOptions.map((o) => `${o.name} ${o.pct}%`).join(' · ')}
@@ -92,11 +98,15 @@ export function QueuedleSummary({
           <div className={styles.summaryTotal}>out of {maxTotal}</div>
           <div className={styles.summaryRows}>
             <div className={styles.summaryCell}>
-              <div className={styles.summaryCellValue}>{mainScore}/{maxMain}</div>
+              <div className={styles.summaryCellValue}>
+                {mainScore}/{maxMain}
+              </div>
               <div className={styles.summaryCellLabel}>Higher or lower</div>
             </div>
             <div className={styles.summaryCell}>
-              <div className={styles.summaryCellValue}>{bonusScore}/{maxBonus}</div>
+              <div className={styles.summaryCellValue}>
+                {bonusScore}/{maxBonus}
+              </div>
               <div className={styles.summaryCellLabel}>Top queuer</div>
             </div>
           </div>

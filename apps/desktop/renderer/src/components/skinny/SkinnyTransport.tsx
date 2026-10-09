@@ -16,10 +16,8 @@ interface Props {
  * prev / play-pause / next.
  */
 export function SkinnyTransport({ np, isAuthed }: Props) {
-  const {
-    displayTrack, displayArtist, cachedArt, progressPct, durationMs,
-    isPlaying, elapsedLabel, durationLabel,
-  } = np;
+  const { displayTrack, displayArtist, cachedArt, progressPct, durationMs, isPlaying, elapsedLabel, durationLabel } =
+    np;
 
   const refresh = () => getActiveProvider().refreshPlayback();
 
@@ -27,7 +25,9 @@ export function SkinnyTransport({ np, isAuthed }: Props) {
     if (!durationMs) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    getActiveProvider().seek(Math.floor(pct * durationMs)).then(refresh);
+    getActiveProvider()
+      .seek(Math.floor(pct * durationMs))
+      .then(refresh);
   };
 
   return (
@@ -39,12 +39,7 @@ export function SkinnyTransport({ np, isAuthed }: Props) {
       <div className={styles.info}>
         <div className={styles.title}>{displayTrack || '—'}</div>
         <div className={styles.artist}>{displayArtist || ''}</div>
-        <div
-          className={styles.progress}
-          onClick={handleSeek}
-          role="progressbar"
-          aria-valuenow={progressPct}
-        >
+        <div className={styles.progress} onClick={handleSeek} role="progressbar" aria-valuenow={progressPct}>
           <div className={styles.progressFill} style={{ width: `${progressPct}%` }} />
         </div>
         <div className={styles.timeRow}>

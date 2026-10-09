@@ -30,11 +30,7 @@ export function DjUpcomingRow({ track, idle }: Props) {
           rows above without implying these can be dragged. */}
       <div className={styles.dragHandle} aria-hidden="true" />
       <div className={styles.artWrap}>
-        {art ? (
-          <img className={styles.art} src={art} alt="" loading="lazy" />
-        ) : (
-          <div className={styles.artPh}>♪</div>
-        )}
+        {art ? <img className={styles.art} src={art} alt="" loading="lazy" /> : <div className={styles.artPh}>♪</div>}
       </div>
       <div className={styles.text}>
         <div className={styles.name}>{track.trackName}</div>

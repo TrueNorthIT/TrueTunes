@@ -47,7 +47,7 @@ function renderPanel() {
   return render(
     <QueryClientProvider client={client}>
       <DiscoverPanel onAddToQueue={onAddToQueue} />
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
 }
 
@@ -55,7 +55,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(window.sonos.fetchDjSet).mockResolvedValue(djSet);
   vi.mocked(window.sonos.fetchOfficePresence).mockResolvedValue({
-    inOffice: [], basis: 'none', observed: 0, detail: [],
+    inOffice: [],
+    basis: 'none',
+    observed: 0,
+    detail: [],
   });
   vi.mocked(window.sonos.fetchUsers).mockResolvedValue([
     { userId: 'Rich', lastQueued: 1, imageUrl: 'https://example.test/rich.png' },
@@ -85,11 +88,9 @@ describe('DiscoverPanel', () => {
     await userEvent.click(screen.getAllByTitle('Add to queue')[0]);
 
     expect(onAddToQueue).toHaveBeenCalledTimes(1);
-    expect(onAddToQueue).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Left Hand Free' }),
-      -1,
-      { attribute: false },
-    );
+    expect(onAddToQueue).toHaveBeenCalledWith(expect.objectContaining({ title: 'Left Hand Free' }), -1, {
+      attribute: false,
+    });
   });
 
   it('never attributes picks queued in bulk', async () => {
@@ -143,9 +144,7 @@ describe('DiscoverPanel', () => {
     renderPanel();
     // The tab is Discover — its default view should be the music the office
     // hasn't played, with favourites available as an aside.
-    expect(
-      await screen.findByText(/Nothing new found|Digging for something new/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Nothing new found|Digging for something new/)).toBeInTheDocument();
   });
 
   it('splits the room from everyone else', async () => {
@@ -170,13 +169,16 @@ describe('DiscoverPanel', () => {
 
   it('marks which of them is you', async () => {
     vi.mocked(window.sonos.fetchOfficePresence).mockResolvedValue({
-      inOffice: ['Rich'], basis: 'sensed', observed: 1, detail: [],
+      inOffice: ['Rich'],
+      basis: 'sensed',
+      observed: 1,
+      detail: [],
     });
 
     render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
         <DiscoverPanel onAddToQueue={onAddToQueue} displayName="Rich" />
-      </QueryClientProvider>,
+      </QueryClientProvider>
     );
 
     expect(await screen.findByText('you')).toBeInTheDocument();
@@ -184,7 +186,10 @@ describe('DiscoverPanel', () => {
 
   it('says so plainly when someone has no Teams presence at all', async () => {
     vi.mocked(window.sonos.fetchOfficePresence).mockResolvedValue({
-      inOffice: [], basis: 'none', observed: 0, detail: [],
+      inOffice: [],
+      basis: 'none',
+      observed: 0,
+      detail: [],
     });
 
     renderPanel();

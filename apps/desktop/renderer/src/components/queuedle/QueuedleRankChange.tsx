@@ -52,18 +52,11 @@ export function QueuedleRankChange({ before, after, onContinue }: Props) {
   const prevTierIcon = before ? getGameRankIcon(before.tierKey) : null;
 
   const deltaLabel = delta > 0 ? `+${delta}` : `${delta}`;
-  const deltaClass =
-    delta > 0
-      ? styles.rankDeltaUp
-      : delta < 0
-        ? styles.rankDeltaDown
-        : styles.rankDeltaFlat;
+  const deltaClass = delta > 0 ? styles.rankDeltaUp : delta < 0 ? styles.rankDeltaDown : styles.rankDeltaFlat;
 
   return (
     <div className={styles.rankChangeWrap}>
-      <h2 className={styles.rankChangeTitle}>
-        {before ? 'Rank update' : 'Welcome to the ranks'}
-      </h2>
+      <h2 className={styles.rankChangeTitle}>{before ? 'Rank update' : 'Welcome to the ranks'}</h2>
 
       <div className={styles.rankChangeBadgeRow}>
         {tierChanged && prevTierIcon && (
@@ -71,12 +64,8 @@ export function QueuedleRankChange({ before, after, onContinue }: Props) {
             <img src={prevTierIcon} alt="" className={styles.rankBadgeImg} />
           </div>
         )}
-        {tierChanged && prevTierIcon && (
-          <div className={styles.rankBadgeArrow}>→</div>
-        )}
-        <div
-          className={`${styles.rankBadgeCurrent}${tierChanged ? ' ' + styles.rankBadgePulse : ''}`}
-        >
+        {tierChanged && prevTierIcon && <div className={styles.rankBadgeArrow}>→</div>}
+        <div className={`${styles.rankBadgeCurrent}${tierChanged ? ' ' + styles.rankBadgePulse : ''}`}>
           {tierIcon ? (
             <img src={tierIcon} alt="" className={styles.rankBadgeImg} />
           ) : (

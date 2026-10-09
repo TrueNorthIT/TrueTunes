@@ -16,10 +16,7 @@ import styles from '../../styles/QueueSidebar.module.css';
 // Match attribution by the track's objectId first; fall back to a title+artist
 // content key so a lone track keeps its badge after Sonos re-keys it in the
 // queue (see issue #84 and attributionContentKey).
-function resolveAttribution(
-  map: AttributionMap,
-  track: NormalizedQueueItem['track'],
-): AttributionEntry | undefined {
+function resolveAttribution(map: AttributionMap, track: NormalizedQueueItem['track']): AttributionEntry | undefined {
   const byId = map[track.id ?? ''];
   if (byId) return byId;
   const ck = attributionContentKey(track.title, track.artist);
@@ -58,7 +55,7 @@ export interface QueueSidebarHandle {
 }
 
 const MIN_DOCKED_WIDTH = 280;
-const PLAYER_BAR_W = 800;   // matches .inner width in PlayerBar.module.css
+const PLAYER_BAR_W = 800; // matches .inner width in PlayerBar.module.css
 const PLAYER_BAR_PADDING = 64; // 32px breathing room each side
 
 export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function QueueSidebar(
@@ -87,19 +84,15 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
 
   const contentRef = useRef<HTMLDivElement>(null);
   const attributionMap = useAttribution(onRefresh);
-  const [selected, setSelected]           = useState<Set<number>>(new Set());
-  const [dragOverIndex, setDragOverIndex]  = useState<number | null>(null);
-  const [pendingClear, setPendingClear]    = useState(false);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [pendingClear, setPendingClear] = useState(false);
   const lastSelected = useRef<number | null>(null);
-  const draggingSet  = useRef<Set<number>>(new Set());
+  const draggingSet = useRef<Set<number>>(new Set());
 
   const trackDetailsResults = useQueries({
-    queries: items.map(item => ({
-      ...trackQueryOptions(
-        item.track.id || '',
-        item.track.serviceId ?? '',
-        item.track.accountId ?? '',
-      ),
+    queries: items.map((item) => ({
+      ...trackQueryOptions(item.track.id || '', item.track.serviceId ?? '', item.track.accountId ?? ''),
       enabled: !!(item.track.id && item.track.serviceId && item.track.accountId),
     })),
   });
@@ -114,11 +107,13 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
         const fromDetails = trackDetailsResults[i]?.data?.albumId;
         return (fromDetails ?? item.track.albumId) || null;
       }),
-    [items, trackDetailsResults],
+    [items, trackDetailsResults]
   );
 
   const [nowMs, setNowMs] = useState(0);
-  useEffect(() => { setNowMs(Date.now()); }, [positionMs]);
+  useEffect(() => {
+    setNowMs(Date.now());
+  }, [positionMs]);
 
   const timesToPlay = useMemo(() => {
     const result: (number | undefined)[] = new Array(items.length).fill(undefined);
@@ -139,16 +134,21 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     if (typeof dockedWidth === 'number') setLiveWidth(dockedWidth);
   }, [dockedWidth]);
   const liveWidthRef = useRef(liveWidth);
-  useEffect(() => { liveWidthRef.current = liveWidth; }, [liveWidth]);
+  useEffect(() => {
+    liveWidthRef.current = liveWidth;
+  }, [liveWidth]);
 
   function scrollToNowPlaying() {
-    contentRef.current?.querySelector<HTMLElement>('[data-playing="true"]')
+    contentRef.current
+      ?.querySelector<HTMLElement>('[data-playing="true"]')
       ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }
 
   useImperativeHandle(ref, () => ({ scrollToNowPlaying }), []);
 
-  useEffect(() => { setSelected(new Set()); }, [items]);
+  useEffect(() => {
+    setSelected(new Set());
+  }, [items]);
 
   useEffect(() => {
     if (!isActive) return;
@@ -177,9 +177,14 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
       if (selected.size === 0) return;
       e.preventDefault();
       const indices = [...selected];
-      setItems(prev => prev.filter((_, i) => !selected.has(i)));
+      setItems((prev) => prev.filter((_, i) => !selected.has(i)));
       setSelected(new Set());
-      await getActiveProvider().removeFromQueue(indices).catch(() => { onRefresh(); onError('Failed to remove track'); });
+      await getActiveProvider()
+        .removeFromQueue(indices)
+        .catch(() => {
+          onRefresh();
+          onError('Failed to remove track');
+        });
     }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
@@ -217,15 +222,16 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     if (e.shiftKey && lastSelected.current !== null) {
       const lo = Math.min(lastSelected.current, index);
       const hi = Math.max(lastSelected.current, index);
-      setSelected(prev => {
+      setSelected((prev) => {
         const next = new Set(prev);
         for (let i = lo; i <= hi; i++) next.add(i);
         return next;
       });
     } else if (e.ctrlKey || e.metaKey) {
-      setSelected(prev => {
+      setSelected((prev) => {
         const next = new Set(prev);
-        if (next.has(index)) next.delete(index); else next.add(index);
+        if (next.has(index)) next.delete(index);
+        else next.add(index);
         return next;
       });
       lastSelected.current = index;
@@ -242,7 +248,10 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
 
   function handleDragStart(index: number, e: React.DragEvent) {
     const toMove = selected.has(index) ? new Set(selected) : new Set([index]);
-    if (!selected.has(index)) { setSelected(toMove); lastSelected.current = index; }
+    if (!selected.has(index)) {
+      setSelected(toMove);
+      lastSelected.current = index;
+    }
     draggingSet.current = toMove;
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('application/queue-indices', JSON.stringify([...toMove]));
@@ -266,7 +275,11 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     if (listJson) {
       setDragOverIndex(null);
       let droppedItems: SonosItem[];
-      try { droppedItems = JSON.parse(listJson) as SonosItem[]; } catch { return; }
+      try {
+        droppedItems = JSON.parse(listJson) as SonosItem[];
+      } catch {
+        return;
+      }
       const pos = dragOverIndex >= items.length ? -1 : dragOverIndex;
       for (let idx = 0; idx < droppedItems.length; idx++) {
         await onAddToQueue(droppedItems[idx], pos === -1 ? -1 : pos + idx);
@@ -274,15 +287,28 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
       return;
     }
     const raw = e.dataTransfer.getData('application/queue-indices');
-    if (!raw) { setDragOverIndex(null); return; }
+    if (!raw) {
+      setDragOverIndex(null);
+      return;
+    }
     let fromIndices: number[];
-    try { fromIndices = JSON.parse(raw) as number[]; } catch { setDragOverIndex(null); return; }
+    try {
+      fromIndices = JSON.parse(raw) as number[];
+    } catch {
+      setDragOverIndex(null);
+      return;
+    }
     const currentLength = items.length;
     const targetIndex = dragOverIndex;
     setDragOverIndex(null);
     setSelected(new Set());
     setItems(applyReorderLocally(items, fromIndices, targetIndex));
-    await getActiveProvider().reorderQueue(fromIndices, targetIndex, currentLength).catch(() => { onRefresh(); onError('Failed to reorder queue'); });
+    await getActiveProvider()
+      .reorderQueue(fromIndices, targetIndex, currentLength)
+      .catch(() => {
+        onRefresh();
+        onError('Failed to reorder queue');
+      });
   }
 
   function handleDragEnd() {
@@ -306,7 +332,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
         <div
           className={styles.resizeHandle}
           onPointerDown={handleResizePointerDown}
-          onPointerMove={e => e.currentTarget.style.setProperty('--mouse-y', `${e.nativeEvent.offsetY}px`)}
+          onPointerMove={(e) => e.currentTarget.style.setProperty('--mouse-y', `${e.nativeEvent.offsetY}px`)}
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize queue"
@@ -319,25 +345,44 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
       </div>
       <div className={styles.header}>
         <span className={styles.title}>
-          Queue{groupName ? ` · ${groupName}` : ''}{items.length > 0 ? ` · ${items.length}` : ''}
+          Queue{groupName ? ` · ${groupName}` : ''}
+          {items.length > 0 ? ` · ${items.length}` : ''}
           {selCount > 0 && <span className={styles.selBadge}>{selCount} selected</span>}
         </span>
         {pendingClear ? (
           <div className={styles.clearConfirm}>
             <span>Clear all {items.length} tracks?</span>
-            <button className={styles.confirmYes} onClick={async () => {
-              setPendingClear(false);
-              setItems([]);
-              await getActiveProvider().clearQueue().catch(() => { onRefresh(); onError('Failed to clear queue'); });
-            }}>Clear</button>
-            <button className={styles.confirmNo} onClick={() => setPendingClear(false)}>Cancel</button>
+            <button
+              className={styles.confirmYes}
+              onClick={async () => {
+                setPendingClear(false);
+                setItems([]);
+                await getActiveProvider()
+                  .clearQueue()
+                  .catch(() => {
+                    onRefresh();
+                    onError('Failed to clear queue');
+                  });
+              }}
+            >
+              Clear
+            </button>
+            <button className={styles.confirmNo} onClick={() => setPendingClear(false)}>
+              Cancel
+            </button>
           </div>
         ) : (
           <div className={styles.headerActions}>
-            <button className={styles.iconBtn} onClick={onRefresh} title="Refresh">↺</button>
-            <button className={styles.iconBtn} onClick={scrollToNowPlaying} title="Jump to now playing">⊙</button>
+            <button className={styles.iconBtn} onClick={onRefresh} title="Refresh">
+              ↺
+            </button>
+            <button className={styles.iconBtn} onClick={scrollToNowPlaying} title="Jump to now playing">
+              ⊙
+            </button>
             {items.length > 0 && (
-              <button className={styles.iconBtn} title="Clear queue" onClick={() => setPendingClear(true)}>⊘</button>
+              <button className={styles.iconBtn} title="Clear queue" onClick={() => setPendingClear(true)}>
+                ⊘
+              </button>
             )}
           </div>
         )}
@@ -346,41 +391,45 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
       <div
         className={styles.content}
         ref={contentRef}
-onClick={handleContentClick}
-        onDragOver={e => {
+        onClick={handleContentClick}
+        onDragOver={(e) => {
           e.preventDefault();
           e.dataTransfer.dropEffect = e.dataTransfer.types.includes('application/sonos-item-list') ? 'copy' : 'move';
           setDragOverIndex(items.length);
         }}
-        onDragLeave={e => {
+        onDragLeave={(e) => {
           if (!contentRef.current?.contains(e.relatedTarget as Node)) setDragOverIndex(null);
         }}
         onDrop={handleDrop}
       >
-        {isLoading && <div className={styles.msg}><Loader2 size={18} className={styles.spinner} /></div>}
-        {error     && <div className={styles.msg}>{error}</div>}
-        {!isLoading && !error && items.length === 0 && (
-          <div className={styles.msg}>Queue is empty.</div>
+        {isLoading && (
+          <div className={styles.msg}>
+            <Loader2 size={18} className={styles.spinner} />
+          </div>
         )}
-        {!isLoading && !error && items.map((item, i) => (
-          <Fragment key={i}>
-            {dragOverIndex === i && <div className={styles.dropLine} />}
-            <DraggableQueueRow
-              item={item}
-              index={i}
-              currentObjectId={currentObjectId}
-              currentQueueItemId={currentQueueItemId}
-              attribution={resolveAttribution(attributionMap, item.track)}
-              isSelected={selected.has(i)}
-              timeToPlay={timesToPlay[i]}
-              onRowClick={handleRowClick}
-              onDragStart={handleDragStart}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              onDragEnd={handleDragEnd}
-            />
-          </Fragment>
-        ))}
+        {error && <div className={styles.msg}>{error}</div>}
+        {!isLoading && !error && items.length === 0 && <div className={styles.msg}>Queue is empty.</div>}
+        {!isLoading &&
+          !error &&
+          items.map((item, i) => (
+            <Fragment key={i}>
+              {dragOverIndex === i && <div className={styles.dropLine} />}
+              <DraggableQueueRow
+                item={item}
+                index={i}
+                currentObjectId={currentObjectId}
+                currentQueueItemId={currentQueueItemId}
+                attribution={resolveAttribution(attributionMap, item.track)}
+                isSelected={selected.has(i)}
+                timeToPlay={timesToPlay[i]}
+                onRowClick={handleRowClick}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onDragEnd={handleDragEnd}
+              />
+            </Fragment>
+          ))}
         {dragOverIndex === items.length && <div className={styles.dropLine} />}
 
         {/* Always rendered, even with nothing queued up yet: it's the room's
@@ -393,11 +442,7 @@ onClick={handleContentClick}
               <button
                 className={styles.djBreakLabel}
                 onClick={() => autoplay.setEnabled(!autoplay.enabled)}
-                title={
-                  autoplay.enabled
-                    ? 'Stop the DJ filling the queue'
-                    : 'Let the DJ keep the music going'
-                }
+                title={autoplay.enabled ? 'Stop the DJ filling the queue' : 'Let the DJ keep the music going'}
               >
                 <Disc3 size={11} className={autoplay.enabled ? styles.djSpin : undefined} />
                 {autoplay.enabled ? 'DJ takes over' : 'DJ paused'}
@@ -411,9 +456,7 @@ onClick={handleContentClick}
               // nothing, not that it's switched off.
               <div className={styles.djEmpty}>Nothing to suggest just yet.</div>
             ) : (
-              autoplay.upcoming.map((track) => (
-                <DjUpcomingRow key={track.uri} track={track} idle={!autoplay.enabled} />
-              ))
+              autoplay.upcoming.map((track) => <DjUpcomingRow key={track.uri} track={track} idle={!autoplay.enabled} />)
             )}
           </>
         )}
@@ -421,39 +464,49 @@ onClick={handleContentClick}
 
       {selCount > 0 && (
         <div className={styles.selBar}>
-          <span>{selCount} track{selCount !== 1 ? 's' : ''} selected</span>
+          <span>
+            {selCount} track{selCount !== 1 ? 's' : ''} selected
+          </span>
           <div className={styles.selActions}>
-            {selCount === 1 && (() => {
-              const anchor = [...selected][0];
-              const anchorTrack = items[anchor]?.track;
-              if (!anchorTrack) return null;
-              const block = expandToAlbumBlock(items.length, anchor, resolvedAlbumIds);
-              // Hide the button when there's nothing to expand to — keeps the bar
-              // from offering an action that would be a no-op (or that grabbed the
-              // whole queue back when this had an artist fallback).
-              if (block.size <= 1) return null;
-              const resolvedAlbumName =
-                trackDetailsResults[anchor]?.data?.albumName ?? anchorTrack.albumName;
-              const tooltip = `Expand to all ${block.size} tracks from ${resolvedAlbumName ?? 'this album'} in sequence`;
-              return (
-                <button
-                  className={styles.selExpandBtn}
-                  title={tooltip}
-                  onClick={() => {
-                    setSelected(block);
-                    lastSelected.current = anchor;
-                  }}
-                >
-                  Select album
-                </button>
-              );
-            })()}
-            <button className={styles.selDelBtn} onClick={async () => {
-              const indices = [...selected];
-              setItems(prev => prev.filter((_, i) => !selected.has(i)));
-              setSelected(new Set());
-              await getActiveProvider().removeFromQueue(indices).catch(() => { onRefresh(); onError('Failed to remove tracks'); });
-            }}>
+            {selCount === 1 &&
+              (() => {
+                const anchor = [...selected][0];
+                const anchorTrack = items[anchor]?.track;
+                if (!anchorTrack) return null;
+                const block = expandToAlbumBlock(items.length, anchor, resolvedAlbumIds);
+                // Hide the button when there's nothing to expand to — keeps the bar
+                // from offering an action that would be a no-op (or that grabbed the
+                // whole queue back when this had an artist fallback).
+                if (block.size <= 1) return null;
+                const resolvedAlbumName = trackDetailsResults[anchor]?.data?.albumName ?? anchorTrack.albumName;
+                const tooltip = `Expand to all ${block.size} tracks from ${resolvedAlbumName ?? 'this album'} in sequence`;
+                return (
+                  <button
+                    className={styles.selExpandBtn}
+                    title={tooltip}
+                    onClick={() => {
+                      setSelected(block);
+                      lastSelected.current = anchor;
+                    }}
+                  >
+                    Select album
+                  </button>
+                );
+              })()}
+            <button
+              className={styles.selDelBtn}
+              onClick={async () => {
+                const indices = [...selected];
+                setItems((prev) => prev.filter((_, i) => !selected.has(i)));
+                setSelected(new Set());
+                await getActiveProvider()
+                  .removeFromQueue(indices)
+                  .catch(() => {
+                    onRefresh();
+                    onError('Failed to remove tracks');
+                  });
+              }}
+            >
               Delete
             </button>
           </div>

@@ -19,10 +19,13 @@ export function MiniPlayerShell() {
   // same group the user has selected in the main window, not just groups[0].
   useEffect(() => {
     if (groups.length === 0 || activeGroupId) return;
-    getActiveProvider().getActiveGroup().then((savedCoordinatorId) => {
-      const match = savedCoordinatorId ? groups.find((g) => g.coordinatorId === savedCoordinatorId) : null;
-      setActiveGroupId(match ? match.id : groups[0].id);
-    }).catch(() => setActiveGroupId(groups[0].id));
+    getActiveProvider()
+      .getActiveGroup()
+      .then((savedCoordinatorId) => {
+        const match = savedCoordinatorId ? groups.find((g) => g.coordinatorId === savedCoordinatorId) : null;
+        setActiveGroupId(match ? match.id : groups[0].id);
+      })
+      .catch(() => setActiveGroupId(groups[0].id));
   }, [groups, activeGroupId]);
 
   const { playback } = usePlayback(activeGroupId);
@@ -39,7 +42,17 @@ function MiniPlayer({
   playback: ReturnType<typeof usePlayback>['playback'];
   isAuthed: boolean;
 }) {
-  const { displayTrack, displayArtist, cachedArt, progressPct, durationMs, isPlaying, dominantColor, elapsedLabel, durationLabel } = useNowPlaying(playback);
+  const {
+    displayTrack,
+    displayArtist,
+    cachedArt,
+    progressPct,
+    durationMs,
+    isPlaying,
+    dominantColor,
+    elapsedLabel,
+    durationLabel,
+  } = useNowPlaying(playback);
 
   const refresh = () => getActiveProvider().refreshPlayback();
 
@@ -47,7 +60,9 @@ function MiniPlayer({
     if (!durationMs) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    getActiveProvider().seek(Math.floor(pct * durationMs)).then(refresh);
+    getActiveProvider()
+      .seek(Math.floor(pct * durationMs))
+      .then(refresh);
   };
 
   const shellStyle: React.CSSProperties | undefined = dominantColor
@@ -69,12 +84,7 @@ function MiniPlayer({
         <div className={styles.info}>
           <div className={styles.title}>{displayTrack || '—'}</div>
           <div className={styles.artist}>{displayArtist || ''}</div>
-          <div
-            className={styles.progress}
-            onClick={handleSeek}
-            role="progressbar"
-            aria-valuenow={progressPct}
-          >
+          <div className={styles.progress} onClick={handleSeek} role="progressbar" aria-valuenow={progressPct}>
             <div className={styles.progressFill} style={{ width: `${progressPct}%` }} />
           </div>
           <div className={styles.timeRow}>
@@ -104,7 +114,9 @@ function MiniPlayer({
                 <rect x="2" y="1" width="4" height="12" rx="1" />
                 <rect x="8" y="1" width="4" height="12" rx="1" />
               </svg>
-            ) : <Play size={14} />}
+            ) : (
+              <Play size={14} />
+            )}
           </button>
           <button
             className={styles.btn}

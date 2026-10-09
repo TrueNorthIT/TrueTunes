@@ -10,7 +10,9 @@ const mockUseImage = vi.fn();
 vi.mock('../../../hooks/useImage', () => ({ useImage: (...a: unknown[]) => mockUseImage(...a) }));
 
 const mockUseDominantColor = vi.fn();
-vi.mock('../../../hooks/useDominantColor', () => ({ useDominantColor: (...a: unknown[]) => mockUseDominantColor(...a) }));
+vi.mock('../../../hooks/useDominantColor', () => ({
+  useDominantColor: (...a: unknown[]) => mockUseDominantColor(...a),
+}));
 
 const QUERY_KEY = ['artist-hero-test'];
 vi.mock('../../../hooks/useArtistBrowse', () => ({
@@ -34,13 +36,16 @@ vi.mock('../HeroTrackRow', () => ({
     onClick: (i: number, e: React.MouseEvent) => void;
     onAdd: () => void;
   }) => (
-    <div
-      data-testid={`track-${index}`}
-      data-selected={isSelected}
-      onClick={(e) => onClick(index, e)}
-    >
+    <div data-testid={`track-${index}`} data-selected={isSelected} onClick={(e) => onClick(index, e)}>
       {track.title}
-      <button onClick={(e) => { e.stopPropagation(); onAdd(); }}>Add</button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onAdd();
+        }}
+      >
+        Add
+      </button>
     </div>
   ),
 }));
@@ -85,36 +90,32 @@ describe('ArtistHero', () => {
   // ── basic rendering ──────────────────────────────────────────────────────────
 
   it('renders artist name', () => {
-    render(
-      <ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />,
-      { wrapper: makeWrapper(makeClient()) }
-    );
+    render(<ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />, {
+      wrapper: makeWrapper(makeClient()),
+    });
     expect(screen.getByText('The Beatles')).toBeInTheDocument();
   });
 
   it('shows 6 placeholder rows when no data is loaded', () => {
-    const { container } = render(
-      <ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />,
-      { wrapper: makeWrapper(makeClient()) }
-    );
+    const { container } = render(<ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />, {
+      wrapper: makeWrapper(makeClient()),
+    });
     expect(container.querySelectorAll('[class*="heroTrackPh"]').length).toBe(6);
   });
 
   it('shows art image when useImage returns a URL', () => {
     mockUseImage.mockReturnValue('http://img.com/art.jpg');
-    const { container } = render(
-      <ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />,
-      { wrapper: makeWrapper(makeClient()) }
-    );
+    const { container } = render(<ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />, {
+      wrapper: makeWrapper(makeClient()),
+    });
     expect(container.querySelector('img[src="http://img.com/art.jpg"]')).toBeTruthy();
   });
 
   it('applies gradient style when dominant color is set', () => {
     mockUseDominantColor.mockReturnValue('200, 100, 50');
-    const { container } = render(
-      <ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />,
-      { wrapper: makeWrapper(makeClient()) }
-    );
+    const { container } = render(<ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />, {
+      wrapper: makeWrapper(makeClient()),
+    });
     const hero = container.querySelector('[class*="artistHero"]') as HTMLElement;
     expect(hero?.style.background).toContain('200, 100, 50');
   });
@@ -124,10 +125,9 @@ describe('ArtistHero', () => {
   it('calls onOpen when header is clicked', async () => {
     const onOpen = vi.fn();
     const user = userEvent.setup();
-    render(
-      <ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={onOpen} />,
-      { wrapper: makeWrapper(makeClient()) }
-    );
+    render(<ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={onOpen} />, {
+      wrapper: makeWrapper(makeClient()),
+    });
     await user.click(screen.getByRole('button'));
     expect(onOpen).toHaveBeenCalledWith(artistItem);
   });
@@ -135,10 +135,9 @@ describe('ArtistHero', () => {
   it('calls onOpen when Enter is pressed on hero header', async () => {
     const onOpen = vi.fn();
     const user = userEvent.setup();
-    render(
-      <ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={onOpen} />,
-      { wrapper: makeWrapper(makeClient()) }
-    );
+    render(<ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={onOpen} />, {
+      wrapper: makeWrapper(makeClient()),
+    });
     screen.getByRole('button').focus();
     await user.keyboard('{Enter}');
     expect(onOpen).toHaveBeenCalled();
@@ -148,20 +147,18 @@ describe('ArtistHero', () => {
 
   it('renders tracks when data has topSongs', () => {
     const songs = [makeSong('Come Together', 0), makeSong('Let It Be', 1)];
-    render(
-      <ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />,
-      { wrapper: makeWrapper(makeClient(songs)) }
-    );
+    render(<ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />, {
+      wrapper: makeWrapper(makeClient(songs)),
+    });
     expect(screen.getByText('Come Together')).toBeInTheDocument();
     expect(screen.getByText('Let It Be')).toBeInTheDocument();
   });
 
   it('renders at most 6 tracks even when data has more', () => {
     const songs = Array.from({ length: 8 }, (_, i) => makeSong(`Song ${i + 1}`, i));
-    render(
-      <ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />,
-      { wrapper: makeWrapper(makeClient(songs)) }
-    );
+    render(<ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />, {
+      wrapper: makeWrapper(makeClient(songs)),
+    });
     expect(screen.queryByText('Song 7')).not.toBeInTheDocument();
     expect(screen.getByText('Song 6')).toBeInTheDocument();
   });
@@ -169,10 +166,9 @@ describe('ArtistHero', () => {
   it('calls onAddToQueue when Add button is clicked on a track', () => {
     const onAddToQueue = vi.fn();
     const songs = [makeSong('Come Together', 0)];
-    render(
-      <ArtistHero artist={artistItem} onAddToQueue={onAddToQueue} onOpen={vi.fn()} />,
-      { wrapper: makeWrapper(makeClient(songs)) }
-    );
+    render(<ArtistHero artist={artistItem} onAddToQueue={onAddToQueue} onOpen={vi.fn()} />, {
+      wrapper: makeWrapper(makeClient(songs)),
+    });
     fireEvent.click(screen.getByText('Add'));
     expect(onAddToQueue).toHaveBeenCalledWith(songs[0].raw);
   });
@@ -181,10 +177,9 @@ describe('ArtistHero', () => {
 
   it('single-clicking a track selects it', () => {
     const songs = [makeSong('Song A', 0), makeSong('Song B', 1)];
-    render(
-      <ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />,
-      { wrapper: makeWrapper(makeClient(songs)) }
-    );
+    render(<ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />, {
+      wrapper: makeWrapper(makeClient(songs)),
+    });
     fireEvent.click(screen.getByTestId('track-0'));
     expect(screen.getByTestId('track-0')).toHaveAttribute('data-selected', 'true');
     expect(screen.getByTestId('track-1')).toHaveAttribute('data-selected', 'false');
@@ -192,10 +187,9 @@ describe('ArtistHero', () => {
 
   it('clicking a selected track deselects it', () => {
     const songs = [makeSong('Song A', 0)];
-    render(
-      <ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />,
-      { wrapper: makeWrapper(makeClient(songs)) }
-    );
+    render(<ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />, {
+      wrapper: makeWrapper(makeClient(songs)),
+    });
     fireEvent.click(screen.getByTestId('track-0'));
     expect(screen.getByTestId('track-0')).toHaveAttribute('data-selected', 'true');
     fireEvent.click(screen.getByTestId('track-0'));
@@ -204,10 +198,9 @@ describe('ArtistHero', () => {
 
   it('ctrl+click toggles an additional track into selection', () => {
     const songs = [makeSong('Song A', 0), makeSong('Song B', 1)];
-    render(
-      <ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />,
-      { wrapper: makeWrapper(makeClient(songs)) }
-    );
+    render(<ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />, {
+      wrapper: makeWrapper(makeClient(songs)),
+    });
     fireEvent.click(screen.getByTestId('track-0'));
     fireEvent.click(screen.getByTestId('track-1'), { ctrlKey: true });
     expect(screen.getByTestId('track-0')).toHaveAttribute('data-selected', 'true');
@@ -216,10 +209,9 @@ describe('ArtistHero', () => {
 
   it('ctrl+click on a selected track deselects it', () => {
     const songs = [makeSong('Song A', 0), makeSong('Song B', 1)];
-    render(
-      <ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />,
-      { wrapper: makeWrapper(makeClient(songs)) }
-    );
+    render(<ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />, {
+      wrapper: makeWrapper(makeClient(songs)),
+    });
     fireEvent.click(screen.getByTestId('track-0'));
     fireEvent.click(screen.getByTestId('track-1'), { ctrlKey: true });
     fireEvent.click(screen.getByTestId('track-0'), { ctrlKey: true });
@@ -229,10 +221,9 @@ describe('ArtistHero', () => {
 
   it('shift+click range-selects from last clicked to target', () => {
     const songs = Array.from({ length: 5 }, (_, i) => makeSong(`Song ${i}`, i));
-    render(
-      <ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />,
-      { wrapper: makeWrapper(makeClient(songs)) }
-    );
+    render(<ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />, {
+      wrapper: makeWrapper(makeClient(songs)),
+    });
     fireEvent.click(screen.getByTestId('track-1'));
     fireEvent.click(screen.getByTestId('track-3'), { shiftKey: true });
     expect(screen.getByTestId('track-1')).toHaveAttribute('data-selected', 'true');
@@ -244,10 +235,9 @@ describe('ArtistHero', () => {
 
   it('clicking the outer div clears selection', () => {
     const songs = [makeSong('Song A', 0)];
-    const { container } = render(
-      <ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />,
-      { wrapper: makeWrapper(makeClient(songs)) }
-    );
+    const { container } = render(<ArtistHero artist={artistItem} onAddToQueue={vi.fn()} onOpen={vi.fn()} />, {
+      wrapper: makeWrapper(makeClient(songs)),
+    });
     fireEvent.click(screen.getByTestId('track-0'));
     expect(screen.getByTestId('track-0')).toHaveAttribute('data-selected', 'true');
     // Click the outer hero div (not the track or header)

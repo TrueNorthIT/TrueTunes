@@ -8,18 +8,23 @@ interface Props {
 const MIN_MS = 900;
 
 export function Splash({ ready }: Props) {
-  const [fading,  setFading]  = useState(false);
-  const [gone,    setGone]    = useState(false);
+  const [fading, setFading] = useState(false);
+  const [gone, setGone] = useState(false);
   const mountRef = useRef(0);
-  useLayoutEffect(() => { mountRef.current = Date.now(); }, []);
+  useLayoutEffect(() => {
+    mountRef.current = Date.now();
+  }, []);
 
   useEffect(() => {
     if (!ready) return;
-    const elapsed   = Date.now() - mountRef.current;
+    const elapsed = Date.now() - mountRef.current;
     const remaining = Math.max(0, MIN_MS - elapsed);
-    const t1 = setTimeout(() => setFading(true),  remaining);
-    const t2 = setTimeout(() => setGone(true),    remaining + 450);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    const t1 = setTimeout(() => setFading(true), remaining);
+    const t2 = setTimeout(() => setGone(true), remaining + 450);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, [ready]);
 
   if (gone) return null;
@@ -30,7 +35,9 @@ export function Splash({ ready }: Props) {
         <div className={styles.icon}>♫</div>
         <div className={styles.name}>True Tunes</div>
         <div className={styles.dots}>
-          <span /><span /><span />
+          <span />
+          <span />
+          <span />
         </div>
       </div>
     </div>

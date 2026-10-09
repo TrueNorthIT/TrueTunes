@@ -29,11 +29,7 @@ export function UserAvatar({
 }) {
   const art = useImage(imageUrl ?? null);
   return (
-    <div
-      className={className}
-      style={art ? undefined : { background: avatarGradient(name) }}
-      aria-hidden="true"
-    >
+    <div className={className} style={art ? undefined : { background: avatarGradient(name) }} aria-hidden="true">
       {art ? <img src={art} alt="" loading="lazy" /> : name.slice(0, 1).toUpperCase()}
     </div>
   );

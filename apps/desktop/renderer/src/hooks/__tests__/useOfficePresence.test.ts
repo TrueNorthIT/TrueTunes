@@ -39,9 +39,7 @@ describe('officePresenceQueryOptions', () => {
   });
 
   it('survives a malformed response without throwing', async () => {
-    vi.mocked(window.sonos.fetchOfficePresence).mockResolvedValueOnce(
-      {} as unknown as OfficePresence,
-    );
+    vi.mocked(window.sonos.fetchOfficePresence).mockResolvedValueOnce({} as unknown as OfficePresence);
     const result = await officePresenceQueryOptions().queryFn();
     expect(result.inOffice).toEqual([]);
     expect(result.detail).toEqual([]);

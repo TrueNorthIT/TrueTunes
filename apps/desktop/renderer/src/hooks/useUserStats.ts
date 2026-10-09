@@ -35,10 +35,10 @@ export function useUserStats(userName: string | undefined, count?: number) {
   });
 
   return {
-    topTracks:   data?.topTracks  ?? [],
+    topTracks: data?.topTracks ?? [],
     artistItems: (data?.topArtists ?? []).map(toArtistItem),
-    albumItems:  (data?.topAlbums  ?? []).map(toAlbumItem),
+    albumItems: (data?.topAlbums ?? []).map(toAlbumItem),
     totalEvents: data?.totalEvents ?? 0,
-    isLoading:   !!userName && isLoading,
+    isLoading: !!userName && isLoading,
   };
 }

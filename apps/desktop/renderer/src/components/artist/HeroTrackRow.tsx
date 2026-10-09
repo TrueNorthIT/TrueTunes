@@ -42,9 +42,9 @@ export function HeroTrackRow({ track, index, isSelected, onClick, onDragStart, o
     <div
       className={`${styles.heroTrackRow}${isSelected ? ' ' + styles.heroTrackSelected : ''}`}
       draggable
-      onClick={e => onClick(index, e)}
-      onContextMenu={e => showTrackMenu({ track: trackPayload }, e)}
-      onDragStart={e => onDragStart(index, e)}
+      onClick={(e) => onClick(index, e)}
+      onContextMenu={(e) => showTrackMenu({ track: trackPayload }, e)}
+      onDragStart={(e) => onDragStart(index, e)}
     >
       <div className={styles.heroTrackArt}>
         {art ? <img src={art} alt="" /> : <div className={styles.heroTrackArtPh} />}
@@ -52,11 +52,23 @@ export function HeroTrackRow({ track, index, isSelected, onClick, onDragStart, o
       <div className={styles.heroTrackInfo}>
         <span className={styles.heroTrackName}>
           {track.title}
-          {track.explicit && <span className={styles.heroTrackExplicit}><ExplicitBadge /></span>}
+          {track.explicit && (
+            <span className={styles.heroTrackExplicit}>
+              <ExplicitBadge />
+            </span>
+          )}
         </span>
       </div>
       <span className={styles.heroTrackDur}>{fmtDuration(track.durationSeconds)}</span>
-      <button className={styles.heroTrackAdd} onClick={e => { e.stopPropagation(); onAdd(); }}>+</button>
+      <button
+        className={styles.heroTrackAdd}
+        onClick={(e) => {
+          e.stopPropagation();
+          onAdd();
+        }}
+      >
+        +
+      </button>
     </div>
   );
 }

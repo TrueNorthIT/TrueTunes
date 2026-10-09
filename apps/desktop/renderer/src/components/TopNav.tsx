@@ -214,10 +214,21 @@ export function TopNav({
                     title="My profile"
                   >
                     <span className={styles.profileAvatar}>
-                      {profileArt
-                        ? <img src={profileArt} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', display: 'block' }} />
-                        : displayName[0].toUpperCase()
-                      }
+                      {profileArt ? (
+                        <img
+                          src={profileArt}
+                          alt=""
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            borderRadius: '50%',
+                            display: 'block',
+                          }}
+                        />
+                      ) : (
+                        displayName[0].toUpperCase()
+                      )}
                     </span>
                     <span className={styles.profileName}>{displayName}</span>
                   </button>
@@ -246,11 +257,7 @@ export function TopNav({
                           spellCheck={false}
                           autoFocus
                         />
-                        <button
-                          className={styles.nameSaveBtn}
-                          onClick={submitName}
-                          disabled={!nameValue.trim()}
-                        >
+                        <button className={styles.nameSaveBtn} onClick={submitName} disabled={!nameValue.trim()}>
                           Sign in
                         </button>
                         <div className={styles.versionRow}>
@@ -314,11 +321,9 @@ export function TopNav({
                 <SquareMousePointer size={15} />
               </button>
             )}
-
           </div>
         </nav>
       </div>
-
     </>
   );
 }

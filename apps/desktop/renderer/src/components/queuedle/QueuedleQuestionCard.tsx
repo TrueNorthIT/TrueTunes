@@ -42,8 +42,7 @@ function Side({
   pickedSide: 'left' | 'right' | null;
   onPick: (side: 'left' | 'right') => void;
 }) {
-  const pickLabel =
-    item.category === 'track' ? 'Pick song' : item.category === 'artist' ? 'Pick artist' : 'Pick album';
+  const pickLabel = item.category === 'track' ? 'Pick song' : item.category === 'artist' ? 'Pick artist' : 'Pick album';
 
   const isWrongPick = revealed && pickedSide === side && !isWinner;
   const isCorrectPick = revealed && pickedSide === side && isWinner;
@@ -78,11 +77,7 @@ function Side({
         <>
           {isCarryover && <CountDisplay count={item.count} />}
           <div className={styles.pickRow}>
-            <button
-              className={styles.pickBtn}
-              onClick={() => onPick(side)}
-              disabled={pickedSide !== null}
-            >
+            <button className={styles.pickBtn} onClick={() => onPick(side)} disabled={pickedSide !== null}>
               {pickLabel}
             </button>
           </div>

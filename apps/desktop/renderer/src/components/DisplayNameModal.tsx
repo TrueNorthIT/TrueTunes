@@ -38,7 +38,10 @@ export function DisplayNameModal({ onSave, defaultName }: Props) {
             type="text"
             placeholder="Your name"
             value={value}
-            onChange={(e) => { setValue(e.target.value); setError(null); }}
+            onChange={(e) => {
+              setValue(e.target.value);
+              setError(null);
+            }}
             autoFocus
             maxLength={32}
             spellCheck={false}

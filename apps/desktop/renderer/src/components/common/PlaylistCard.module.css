@@ -10,7 +10,9 @@
   width: 120px;
   text-align: left;
 }
-.playlistCard:hover .playlistCardArt { opacity: 0.85; }
+.playlistCard:hover .playlistCardArt {
+  opacity: 0.85;
+}
 
 .playlistCardArt {
   width: 120px;

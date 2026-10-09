@@ -17,18 +17,26 @@ export function MediaCard({ name, sub, artUrl, explicit, circular, onAdd, onOpen
   return (
     <div className={styles.card} onClick={onOpen}>
       <div className={circular ? styles.artWrapCircular : styles.artWrap}>
-        {cachedArt
-          ? <img className={styles.art} src={cachedArt} alt="" />
-          : <div className={styles.artPh}>♪</div>
-        }
+        {cachedArt ? <img className={styles.art} src={cachedArt} alt="" /> : <div className={styles.artPh}>♪</div>}
         {onAdd && (
           <div className={styles.overlay}>
-            <button className={styles.addBtn} onClick={e => { e.stopPropagation(); onAdd(); }}>+</button>
+            <button
+              className={styles.addBtn}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdd();
+              }}
+            >
+              +
+            </button>
           </div>
         )}
       </div>
       <div className={styles.info}>
-        <div className={styles.name}>{name}{explicit && <ExplicitBadge />}</div>
+        <div className={styles.name}>
+          {name}
+          {explicit && <ExplicitBadge />}
+        </div>
         {sub && <div className={styles.sub}>{sub}</div>}
       </div>
     </div>

@@ -8,8 +8,20 @@ const mockFetch = vi.fn();
 (globalThis as any).fetch = mockFetch;
 
 const releases = [
-  { tag_name: 'v1.2.0', name: 'Version 1.2.0', body: '## Changes\n- Feature A', published_at: '2024-03-01T00:00:00Z', html_url: 'https://github.com/releases/1' },
-  { tag_name: 'v1.1.0', name: 'Version 1.1.0', body: null, published_at: '2024-02-01T00:00:00Z', html_url: 'https://github.com/releases/2' },
+  {
+    tag_name: 'v1.2.0',
+    name: 'Version 1.2.0',
+    body: '## Changes\n- Feature A',
+    published_at: '2024-03-01T00:00:00Z',
+    html_url: 'https://github.com/releases/1',
+  },
+  {
+    tag_name: 'v1.1.0',
+    name: 'Version 1.1.0',
+    body: null,
+    published_at: '2024-02-01T00:00:00Z',
+    html_url: 'https://github.com/releases/2',
+  },
 ];
 
 beforeEach(() => {

@@ -19,11 +19,9 @@ function domToText(node: GeniusDomNode): string {
 function extractBio(description: GeniusDomNode | null): string {
   if (!description || typeof description === 'string') return '';
   const root = description as { tag: string; children?: GeniusDomNode[] };
-  const paras = (root.children ?? []).filter(
-    c => typeof c !== 'string' && (c as { tag: string }).tag === 'p',
-  );
+  const paras = (root.children ?? []).filter((c) => typeof c !== 'string' && (c as { tag: string }).tag === 'p');
   return paras
-    .map(p => domToText(p as GeniusDomNode).trim())
+    .map((p) => domToText(p as GeniusDomNode).trim())
     .filter(Boolean)
     .join('\n\n');
 }
@@ -39,25 +37,27 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
   const item = (state as { item?: SonosItem } | null)?.item;
   const openItem = useOpenItem();
 
-  const { artistId, serviceId, accountId, defaults, name: fallbackName } =
-    item
-      ? resolveArtistParams(item)
-      : { artistId: undefined, serviceId: undefined, accountId: undefined, defaults: undefined, name: undefined };
+  const {
+    artistId,
+    serviceId,
+    accountId,
+    defaults,
+    name: fallbackName,
+  } = item
+    ? resolveArtistParams(item)
+    : { artistId: undefined, serviceId: undefined, accountId: undefined, defaults: undefined, name: undefined };
 
   const { data, isLoading } = useArtistBrowse(
     artistId,
     serviceId,
     accountId,
     defaults,
-    fallbackName ?? (item?.title as string | undefined) ?? (item?.name as string | undefined),
+    fallbackName ?? (item?.title as string | undefined) ?? (item?.name as string | undefined)
   );
 
   const name = data?.name ?? fallbackName ?? item?.title ?? item?.name ?? '';
   const imageUrl =
-    data?.imageUrl ??
-    (item?.images as Record<string, string> | undefined)?.['tile1x1'] ??
-    item?.imageUrl ??
-    null;
+    data?.imageUrl ?? (item?.images as Record<string, string> | undefined)?.['tile1x1'] ?? item?.imageUrl ?? null;
 
   const [showAllSongs, setShowAllSongs] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -70,13 +70,13 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
     if (e.shiftKey && lastSelected.current !== null) {
       const lo = Math.min(lastSelected.current, index);
       const hi = Math.max(lastSelected.current, index);
-      setSelected(prev => {
+      setSelected((prev) => {
         const next = new Set(prev);
         for (let i = lo; i <= hi; i++) next.add(i);
         return next;
       });
     } else if (e.ctrlKey || e.metaKey) {
-      setSelected(prev => {
+      setSelected((prev) => {
         const next = new Set(prev);
         if (next.has(index)) next.delete(index);
         else next.add(index);
@@ -96,15 +96,26 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
 
   function handleDragStart(index: number, e: React.DragEvent) {
     const toMove = selected.has(index) ? [...selected].sort((a, b) => a - b) : [index];
-    if (!selected.has(index)) { setSelected(new Set([index])); lastSelected.current = index; }
+    if (!selected.has(index)) {
+      setSelected(new Set([index]));
+      lastSelected.current = index;
+    }
     e.dataTransfer.effectAllowed = 'copy';
-    e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(toMove.map(i => visibleSongs[i].raw)));
+    e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(toMove.map((i) => visibleSongs[i].raw)));
     const ghost = document.createElement('div');
     Object.assign(ghost.style, {
-      position: 'fixed', top: '-100px', left: '0',
-      background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
-      color: '#fff', padding: '5px 12px', borderRadius: '6px',
-      fontSize: '12px', fontWeight: '600', pointerEvents: 'none', whiteSpace: 'nowrap',
+      position: 'fixed',
+      top: '-100px',
+      left: '0',
+      background: 'rgba(255,255,255,0.15)',
+      backdropFilter: 'blur(8px)',
+      color: '#fff',
+      padding: '5px 12px',
+      borderRadius: '6px',
+      fontSize: '12px',
+      fontWeight: '600',
+      pointerEvents: 'none',
+      whiteSpace: 'nowrap',
     });
     ghost.textContent = toMove.length > 1 ? `${toMove.length} tracks` : visibleSongs[index].title;
     document.body.appendChild(ghost);
@@ -112,14 +123,14 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
     setTimeout(() => ghost.remove(), 0);
   }
 
-  const cachedArt     = useImage(imageUrl);
+  const cachedArt = useImage(imageUrl);
   const dominantColor = useDominantColor(cachedArt, { setGlobal: true });
 
   const latestAlbum = data?.albums[0] ?? null;
 
-  const genius          = data?.genius ?? null;
-  const blurb           = genius ? extractBio(genius.description) : '';
-  const altNames        = genius?.alternateNames?.filter(Boolean).slice(0, 4) ?? [];
+  const genius = data?.genius ?? null;
+  const blurb = genius ? extractBio(genius.description) : '';
+  const altNames = genius?.alternateNames?.filter(Boolean).slice(0, 4) ?? [];
   if (!item) return null;
 
   return (
@@ -129,21 +140,24 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
         className={styles.header}
         style={
           dominantColor
-            ? { background: `linear-gradient(180deg, rgba(${dominantColor},0.55) 0%, rgba(${dominantColor},0.2) 60%, transparent 100%)`, transition: 'background 0.8s ease' }
+            ? {
+                background: `linear-gradient(180deg, rgba(${dominantColor},0.55) 0%, rgba(${dominantColor},0.2) 60%, transparent 100%)`,
+                transition: 'background 0.8s ease',
+              }
             : undefined
         }
       >
         <div className={styles.headerRow}>
           <div className={styles.headerArtWrap}>
-            {cachedArt
-              ? <img className={styles.headerArt} src={cachedArt} alt="" />
-              : <div className={styles.headerArtPh} />}
+            {cachedArt ? (
+              <img className={styles.headerArt} src={cachedArt} alt="" />
+            ) : (
+              <div className={styles.headerArtPh} />
+            )}
           </div>
           <div className={styles.headerInfo}>
             <div className={styles.artistName}>{name}</div>
-            {altNames.length > 0 && (
-              <div className={styles.altNames}>{altNames.join(' · ')}</div>
-            )}
+            {altNames.length > 0 && <div className={styles.altNames}>{altNames.join(' · ')}</div>}
           </div>
         </div>
       </div>
@@ -152,7 +166,9 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
         {isLoading ? (
           <>
             <div className={styles.topSongsCol}>
-              {Array.from({ length: 6 }).map((_, i) => <div key={i} className={styles.skeletonRow} />)}
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className={styles.skeletonRow} />
+              ))}
             </div>
             <div className={styles.sideCol}>
               <div className={styles.skeletonCard} />
@@ -166,7 +182,10 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
                 <>
                   <button
                     className={styles.sectionTitleBtn}
-                    onClick={() => { setShowAllSongs(s => !s); setSelected(new Set()); }}
+                    onClick={() => {
+                      setShowAllSongs((s) => !s);
+                      setSelected(new Set());
+                    }}
                   >
                     Top Songs <span className={styles.sectionChevron}>{showAllSongs ? '∨' : '›'}</span>
                   </button>
@@ -192,7 +211,9 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
                 <div className={styles.aboutSection}>
                   <div className={styles.sectionTitle}>About</div>
                   {blurb.split('\n\n').map((para, i) => (
-                    <p key={i} className={styles.aboutText}>{para}</p>
+                    <p key={i} className={styles.aboutText}>
+                      {para}
+                    </p>
                   ))}
                 </div>
               )}
@@ -200,18 +221,35 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
                 <div className={styles.socialSection}>
                   <div className={styles.socialIcons}>
                     {genius.instagram && (
-                      <button className={styles.socialIconBtn} title={`@${genius.instagram}`} onClick={() => window.sonos.openExternal(`https://instagram.com/${genius.instagram}`)}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-                          <circle cx="12" cy="12" r="4"/>
-                          <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+                      <button
+                        className={styles.socialIconBtn}
+                        title={`@${genius.instagram}`}
+                        onClick={() => window.sonos.openExternal(`https://instagram.com/${genius.instagram}`)}
+                      >
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.75"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                          <circle cx="12" cy="12" r="4" />
+                          <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
                         </svg>
                       </button>
                     )}
                     {genius.twitter && (
-                      <button className={styles.socialIconBtn} title={`@${genius.twitter}`} onClick={() => window.sonos.openExternal(`https://twitter.com/${genius.twitter}`)}>
+                      <button
+                        className={styles.socialIconBtn}
+                        title={`@${genius.twitter}`}
+                        onClick={() => window.sonos.openExternal(`https://twitter.com/${genius.twitter}`)}
+                      >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.261 5.635 5.903-5.635zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.261 5.635 5.903-5.635zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                         </svg>
                       </button>
                     )}
@@ -228,7 +266,7 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
         <div className={styles.albumsSection}>
           <div className={styles.sectionTitle}>Albums</div>
           <div className={styles.albumsRow}>
-            {data.albums.map(album => (
+            {data.albums.map((album) => (
               <ArtistAlbumCard
                 key={(typeof album.id === 'string' ? album.id : album.id?.objectId) ?? album.title}
                 album={album}

@@ -15,15 +15,13 @@ export function QueuedleIntro({ onStart }: Props) {
         <div className={styles.introRule}>
           <h3 className={styles.introRuleTitle}>Round 1 — Higher or Lower</h3>
           <p className={styles.introRuleBody}>
-            Two tracks, artists, or albums face off. Pick the one that&apos;s been queued more times in the
-            office. The winner carries over and faces a new challenger in the next round.
+            Two tracks, artists, or albums face off. Pick the one that&apos;s been queued more times in the office. The
+            winner carries over and faces a new challenger in the next round.
           </p>
         </div>
         <div className={styles.introRule}>
           <h3 className={styles.introRuleTitle}>Round 2 — Top Queuer</h3>
-          <p className={styles.introRuleBody}>
-            For each winning item, guess which colleague has played it the most.
-          </p>
+          <p className={styles.introRuleBody}>For each winning item, guess which colleague has played it the most.</p>
         </div>
         <div className={styles.introRule}>
           <h3 className={styles.introRuleTitle}>Score</h3>

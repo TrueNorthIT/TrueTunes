@@ -344,8 +344,15 @@ export function QueuedlePanel() {
             </h2>
             {scores.slice(0, 10).map((s, i) => (
               <div key={s.userName} className={styles.scoreRow}>
-                <span className={styles.scoreRank}><RankBadge index={i} /></span>
-                <button className={styles.scoreNameBtn} onClick={() => navigate(`/profile/${encodeURIComponent(s.userName)}`)}>{s.userName}</button>
+                <span className={styles.scoreRank}>
+                  <RankBadge index={i} />
+                </span>
+                <button
+                  className={styles.scoreNameBtn}
+                  onClick={() => navigate(`/profile/${encodeURIComponent(s.userName)}`)}
+                >
+                  {s.userName}
+                </button>
                 <span className={styles.scoreBreakdown}>
                   {s.mainScore}/{currentGame.questions.length} · {s.bonusScore}/{currentGame.questions.length}
                 </span>
@@ -376,8 +383,15 @@ export function QueuedlePanel() {
             {!rankings.isLoading &&
               rankedRows.slice(0, 10).map((ranked, i) => (
                 <div key={ranked.userName} className={styles.scoreRow}>
-                  <span className={styles.scoreRank}><RankBadge index={i} /></span>
-                  <button className={styles.scoreNameBtn} onClick={() => navigate(`/profile/${encodeURIComponent(ranked.userName)}`)}>{ranked.userName}</button>
+                  <span className={styles.scoreRank}>
+                    <RankBadge index={i} />
+                  </span>
+                  <button
+                    className={styles.scoreNameBtn}
+                    onClick={() => navigate(`/profile/${encodeURIComponent(ranked.userName)}`)}
+                  >
+                    {ranked.userName}
+                  </button>
                   <span className={styles.scoreBreakdown}>
                     {ranked.gamesPlayed} {ranked.gamesPlayed === 1 ? 'game' : 'games'} ·{' '}
                     <span className={styles.rankedTier}>
@@ -632,11 +646,7 @@ export function QueuedlePanel() {
         )}
 
         {phase === 'rank-change' && afterRanking && (
-          <QueuedleRankChange
-            before={beforeRankSnapshot}
-            after={afterRanking}
-            onContinue={() => setPhase('summary')}
-          />
+          <QueuedleRankChange before={beforeRankSnapshot} after={afterRanking} onContinue={() => setPhase('summary')} />
         )}
 
         {phase === 'summary' && localScore && (

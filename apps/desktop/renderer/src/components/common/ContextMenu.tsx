@@ -81,16 +81,9 @@ function PlaylistSubmenu({
   const top = clamp(anchor.y, 8, window.innerHeight - 8);
 
   return createPortal(
-    <div
-      ref={ref}
-      className={styles.submenu}
-      style={{ left, top }}
-      onMouseDown={(e) => e.stopPropagation()}
-    >
+    <div ref={ref} className={styles.submenu} style={{ left, top }} onMouseDown={(e) => e.stopPropagation()}>
       {isLoading && <div className={styles.emptyHint}>Loading…</div>}
-      {!isLoading && allPlaylists.length === 0 && (
-        <div className={styles.emptyHint}>No playlists yet</div>
-      )}
+      {!isLoading && allPlaylists.length === 0 && <div className={styles.emptyHint}>No playlists yet</div>}
       {allPlaylists.map((pl) => (
         <div key={pl.id} className={styles.item} onClick={() => handleAdd(pl)}>
           <span className={styles.itemIcon}>♪</span>
@@ -101,13 +94,16 @@ function PlaylistSubmenu({
       {allPlaylists.length > 0 && <div className={styles.separator} />}
       <div
         className={styles.item}
-        onClick={() => { onClose(); onOpenCreate(); }}
+        onClick={() => {
+          onClose();
+          onOpenCreate();
+        }}
       >
         <span className={styles.itemIcon}>+</span>
         Create new playlist…
       </div>
     </div>,
-    document.body,
+    document.body
   );
 }
 
@@ -116,7 +112,12 @@ export function ContextMenuProvider({ children, displayName, onAddToQueue }: Pro
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [menuState, setMenuState] = useState<MenuState>({
-    open: false, x: 0, y: 0, payload: null, submenuOpen: false, submenuAnchor: null,
+    open: false,
+    x: 0,
+    y: 0,
+    payload: null,
+    submenuOpen: false,
+    submenuAnchor: null,
   });
   const [createOpen, setCreateOpen] = useState(false);
   const [pendingTrack, setPendingTrack] = useState<PlaylistTrack | null>(null);
@@ -205,49 +206,51 @@ export function ContextMenuProvider({ children, displayName, onAddToQueue }: Pro
   return (
     <ContextMenuContext.Provider value={{ showTrackMenu }}>
       {children}
-      {menuState.open && menuState.payload && createPortal(
-        <div
-          ref={menuRef}
-          className={styles.menu}
-          style={{ left: menuState.x, top: menuState.y }}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          {menuState.payload.sonosItem && (
-            <>
-              <div className={styles.item} onClick={handlePlayNext}>
-                <span className={styles.itemIcon}>▶</span>
-                Play next
+      {menuState.open &&
+        menuState.payload &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className={styles.menu}
+            style={{ left: menuState.x, top: menuState.y }}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            {menuState.payload.sonosItem && (
+              <>
+                <div className={styles.item} onClick={handlePlayNext}>
+                  <span className={styles.itemIcon}>▶</span>
+                  Play next
+                </div>
+                <div className={styles.item} onClick={handleAddToQueue}>
+                  <span className={styles.itemIcon}>+</span>
+                  Add to queue
+                </div>
+                <div className={styles.separator} />
+              </>
+            )}
+            {displayName && (
+              <div className={styles.item} onClick={handleAddToFavourites}>
+                <span className={styles.itemIcon}>❤️</span>
+                Add to Favourites
               </div>
-              <div className={styles.item} onClick={handleAddToQueue}>
-                <span className={styles.itemIcon}>+</span>
-                Add to queue
-              </div>
-              <div className={styles.separator} />
-            </>
-          )}
-          {displayName && (
-            <div className={styles.item} onClick={handleAddToFavourites}>
-              <span className={styles.itemIcon}>❤️</span>
-              Add to Favourites
+            )}
+            <div className={styles.item} onMouseEnter={handleOpenPlaylistSubmenu} onClick={handleOpenPlaylistSubmenu}>
+              <span className={styles.itemIcon}>♪</span>
+              Add to playlist
+              <span className={styles.itemArrow}>▶</span>
             </div>
-          )}
-          <div className={styles.item} onMouseEnter={handleOpenPlaylistSubmenu} onClick={handleOpenPlaylistSubmenu}>
-            <span className={styles.itemIcon}>♪</span>
-            Add to playlist
-            <span className={styles.itemArrow}>▶</span>
-          </div>
-          {menuState.payload.track.addedBy && (
-            <>
-              <div className={styles.separator} />
-              <div className={styles.item} onClick={handleOpenProfile}>
-                <span className={styles.itemIcon}>👤</span>
-                View {menuState.payload.track.addedBy}'s profile
-              </div>
-            </>
-          )}
-        </div>,
-        document.body,
-      )}
+            {menuState.payload.track.addedBy && (
+              <>
+                <div className={styles.separator} />
+                <div className={styles.item} onClick={handleOpenProfile}>
+                  <span className={styles.itemIcon}>👤</span>
+                  View {menuState.payload.track.addedBy}'s profile
+                </div>
+              </>
+            )}
+          </div>,
+          document.body
+        )}
       {menuState.open && menuState.submenuOpen && menuState.submenuAnchor && menuState.payload && (
         <PlaylistSubmenu
           anchor={menuState.submenuAnchor}
@@ -264,7 +267,10 @@ export function ContextMenuProvider({ children, displayName, onAddToQueue }: Pro
         <CreatePlaylistDialog
           displayName={displayName}
           pendingTrack={pendingTrack}
-          onClose={() => { setCreateOpen(false); setPendingTrack(null); }}
+          onClose={() => {
+            setCreateOpen(false);
+            setPendingTrack(null);
+          }}
         />
       )}
     </ContextMenuContext.Provider>
@@ -313,17 +319,27 @@ export function CreatePlaylistDialog({
   return createPortal(
     <div
       style={{
-        position: 'fixed', inset: 0, zIndex: 10001,
-        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        position: 'fixed',
+        inset: 0,
+        zIndex: 10001,
+        background: 'rgba(0,0,0,0.6)',
+        backdropFilter: 'blur(12px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
       onMouseDown={onClose}
     >
       <div
         style={{
-          background: 'var(--bg-1)', border: '1px solid var(--border)',
-          borderRadius: 14, padding: '24px 28px', minWidth: 300, display: 'flex',
-          flexDirection: 'column', gap: 16,
+          background: 'var(--bg-1)',
+          border: '1px solid var(--border)',
+          borderRadius: 14,
+          padding: '24px 28px',
+          minWidth: 300,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
         }}
         onMouseDown={(e) => e.stopPropagation()}
       >
@@ -332,15 +348,32 @@ export function CreatePlaylistDialog({
           ref={inputRef}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); if (e.key === 'Escape') onClose(); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleCreate();
+            if (e.key === 'Escape') onClose();
+          }}
           placeholder="Playlist name"
           style={{
-            background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 8,
-            padding: '8px 12px', color: 'var(--text)', fontSize: 14, outline: 'none',
+            background: 'var(--bg-2)',
+            border: '1px solid var(--border)',
+            borderRadius: 8,
+            padding: '8px 12px',
+            color: 'var(--text)',
+            fontSize: 14,
+            outline: 'none',
             fontFamily: 'inherit',
           }}
         />
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text-2)' }}>
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            cursor: 'pointer',
+            fontSize: 13,
+            color: 'var(--text-2)',
+          }}
+        >
           <input
             type="checkbox"
             checked={isPublic}
@@ -350,7 +383,15 @@ export function CreatePlaylistDialog({
           Public — anyone can join and add tracks
         </label>
         {errorMsg && (
-          <div style={{ fontSize: 12, color: '#f87171', background: 'rgba(248,113,113,0.1)', borderRadius: 6, padding: '6px 10px' }}>
+          <div
+            style={{
+              fontSize: 12,
+              color: '#f87171',
+              background: 'rgba(248,113,113,0.1)',
+              borderRadius: 6,
+              padding: '6px 10px',
+            }}
+          >
             {errorMsg}
           </div>
         )}
@@ -358,8 +399,13 @@ export function CreatePlaylistDialog({
           <button
             onClick={onClose}
             style={{
-              background: 'none', border: '1px solid var(--border)', borderRadius: 8,
-              padding: '7px 16px', color: 'var(--text-2)', fontSize: 13, cursor: 'pointer',
+              background: 'none',
+              border: '1px solid var(--border)',
+              borderRadius: 8,
+              padding: '7px 16px',
+              color: 'var(--text-2)',
+              fontSize: 13,
+              cursor: 'pointer',
               fontFamily: 'inherit',
             }}
           >
@@ -369,10 +415,16 @@ export function CreatePlaylistDialog({
             onClick={handleCreate}
             disabled={!name.trim() || busy}
             style={{
-              background: 'rgba(255,255,255,0.12)', border: '1px solid var(--border-2)',
-              borderRadius: 8, padding: '7px 16px', color: 'var(--text)', fontSize: 13,
-              fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-              opacity: (!name.trim() || busy) ? 0.4 : 1,
+              background: 'rgba(255,255,255,0.12)',
+              border: '1px solid var(--border-2)',
+              borderRadius: 8,
+              padding: '7px 16px',
+              color: 'var(--text)',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              opacity: !name.trim() || busy ? 0.4 : 1,
             }}
           >
             {busy ? 'Creating…' : 'Create'}
@@ -380,6 +432,6 @@ export function CreatePlaylistDialog({
         </div>
       </div>
     </div>,
-    document.body,
+    document.body
   );
 }

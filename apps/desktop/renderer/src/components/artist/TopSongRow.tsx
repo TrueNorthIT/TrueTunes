@@ -17,7 +17,16 @@ interface Props {
   onDragStart: (index: number, e: React.DragEvent) => void;
 }
 
-export function TopSongRow({ track, index, isSelected, isCurrentTrack, isPlaybackActive, onAdd, onClick, onDragStart }: Props) {
+export function TopSongRow({
+  track,
+  index,
+  isSelected,
+  isCurrentTrack,
+  isPlaybackActive,
+  onAdd,
+  onClick,
+  onDragStart,
+}: Props) {
   const art = useImage(track.artUrl);
   const { showTrackMenu } = useTrackContextMenu();
   const subtitle = (track.raw as Record<string, unknown>)?.['subtitle'] as string | undefined;
@@ -38,9 +47,9 @@ export function TopSongRow({ track, index, isSelected, isCurrentTrack, isPlaybac
     <div
       className={`${styles.topSongRow}${isSelected ? ' ' + styles.topSongSelected : ''}`}
       draggable
-      onClick={e => onClick(index, e)}
-      onContextMenu={e => showTrackMenu({ track: trackPayload }, e)}
-      onDragStart={e => onDragStart(index, e)}
+      onClick={(e) => onClick(index, e)}
+      onContextMenu={(e) => showTrackMenu({ track: trackPayload }, e)}
+      onDragStart={(e) => onDragStart(index, e)}
     >
       {isCurrentTrack ? (
         <div className={`${styles.waveform}${!isPlaybackActive ? ' ' + styles.waveformPaused : ''}`}>
@@ -62,7 +71,15 @@ export function TopSongRow({ track, index, isSelected, isCurrentTrack, isPlaybac
         {subtitle && <span className={styles.topSongSub}>{subtitle}</span>}
       </div>
       <span className={styles.topSongDur}>{fmtDuration(track.durationSeconds)}</span>
-      <button className={styles.addBtn} onClick={e => { e.stopPropagation(); onAdd(track.raw); }}>+</button>
+      <button
+        className={styles.addBtn}
+        onClick={(e) => {
+          e.stopPropagation();
+          onAdd(track.raw);
+        }}
+      >
+        +
+      </button>
     </div>
   );
 }

@@ -133,9 +133,7 @@ describe('YT Music fallback', () => {
   });
 
   it('returns null when both primary and YT fallback fail', async () => {
-    mockFetch
-      .mockResolvedValueOnce({ data: null, error: 'fail' })
-      .mockResolvedValueOnce({ data: null, error: 'fail' });
+    mockFetch.mockResolvedValueOnce({ data: null, error: 'fail' }).mockResolvedValueOnce({ data: null, error: 'fail' });
 
     const result = await trackQueryOptions('t', 'gm', 'a').queryFn();
     expect(result).toBeNull();

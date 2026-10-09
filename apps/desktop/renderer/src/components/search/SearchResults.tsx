@@ -10,15 +10,31 @@ import { useTrackContextMenu } from '../common/ContextMenu';
 import type { SonosItem, SonosArtist, SonosItemId } from '../../types/sonos';
 import styles from './SearchResults.module.css';
 
-function SearchAlbumCard({ album, onOpen, onAdd }: { album: SonosItem; onOpen: (item: SonosItem) => void; onAdd: () => void }) {
-  const art  = useImage(getItemArt(album));
+function SearchAlbumCard({
+  album,
+  onOpen,
+  onAdd,
+}: {
+  album: SonosItem;
+  onOpen: (item: SonosItem) => void;
+  onAdd: () => void;
+}) {
+  const art = useImage(getItemArt(album));
   const name = (album.title ?? album.name ?? '') as string;
-  const sub  = browseSub(album);
+  const sub = browseSub(album);
   return (
     <div className={styles.searchAlbumCard} onClick={() => onOpen(album)}>
       <div className={styles.searchAlbumArt}>
         {art ? <img src={art} alt="" /> : <div className={styles.searchAlbumArtPh}>♪</div>}
-        <button className={styles.searchAlbumAddBtn} onClick={e => { e.stopPropagation(); onAdd(); }}>+</button>
+        <button
+          className={styles.searchAlbumAddBtn}
+          onClick={(e) => {
+            e.stopPropagation();
+            onAdd();
+          }}
+        >
+          +
+        </button>
       </div>
       <div className={styles.searchAlbumTitle}>{name}</div>
       {sub && <div className={styles.searchAlbumSub}>{sub}</div>}
@@ -35,14 +51,15 @@ export function SearchResults({
 }) {
   const openItem = useOpenItem();
   const { showTrackMenu } = useTrackContextMenu();
-  const [selected, setSelected]   = useState<Set<number>>(new Set());
-  const lastSelected               = useRef<number | null>(null);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const lastSelected = useRef<number | null>(null);
 
   function buildTrackPayload(item: SonosItem): PlaylistTrack {
     const rid = (typeof item.id === 'object' ? item.id : item.resource?.id) as SonosItemId | undefined;
-    const artist = typeof item.artist === 'string' ? item.artist
-      : (item.artist as SonosArtist | undefined)?.name
-      ?? item.artists?.[0]?.name ?? '';
+    const artist =
+      typeof item.artist === 'string'
+        ? item.artist
+        : ((item.artist as SonosArtist | undefined)?.name ?? item.artists?.[0]?.name ?? '');
     const albumName = typeof item.album === 'string' ? item.album : item.album?.name;
     return {
       uri: rid?.objectId ?? item.objectId ?? '',
@@ -57,32 +74,49 @@ export function SearchResults({
     };
   }
 
-  const topArtist        = results.length > 0 && isArtist(results[0]) ? results[0] : null;
-  const artists          = results.filter(isArtist);
+  const topArtist = results.length > 0 && isArtist(results[0]) ? results[0] : null;
+  const artists = results.filter(isArtist);
   const remainingArtists = topArtist ? artists.slice(1) : artists;
-  const albums    = results.filter(isAlbum);
-  const tracks    = results.filter(isTrack);
-  const others    = results.filter(r => !isArtist(r) && !isAlbum(r) && !isTrack(r));
+  const albums = results.filter(isAlbum);
+  const tracks = results.filter(isTrack);
+  const others = results.filter((r) => !isArtist(r) && !isAlbum(r) && !isTrack(r));
 
   function handleTrackClick(i: number, e: React.MouseEvent) {
     if (e.shiftKey && lastSelected.current !== null) {
       const lo = Math.min(lastSelected.current, i);
       const hi = Math.max(lastSelected.current, i);
-      setSelected(prev => { const next = new Set(prev); for (let j = lo; j <= hi; j++) next.add(j); return next; });
+      setSelected((prev) => {
+        const next = new Set(prev);
+        for (let j = lo; j <= hi; j++) next.add(j);
+        return next;
+      });
     } else if (e.ctrlKey || e.metaKey) {
-      setSelected(prev => { const next = new Set(prev); if (next.has(i)) next.delete(i); else next.add(i); return next; });
+      setSelected((prev) => {
+        const next = new Set(prev);
+        if (next.has(i)) next.delete(i);
+        else next.add(i);
+        return next;
+      });
       lastSelected.current = i;
     } else {
-      if (selected.size === 1 && selected.has(i)) { setSelected(new Set()); lastSelected.current = null; }
-      else { setSelected(new Set([i])); lastSelected.current = i; }
+      if (selected.size === 1 && selected.has(i)) {
+        setSelected(new Set());
+        lastSelected.current = null;
+      } else {
+        setSelected(new Set([i]));
+        lastSelected.current = i;
+      }
     }
   }
 
   function handleDragStart(e: React.DragEvent, i: number) {
     const toMove = selected.has(i) ? [...selected].sort((a, b) => a - b) : [i];
-    if (!selected.has(i)) { setSelected(new Set([i])); lastSelected.current = i; }
+    if (!selected.has(i)) {
+      setSelected(new Set([i]));
+      lastSelected.current = i;
+    }
     e.dataTransfer.effectAllowed = 'copy';
-    e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(toMove.map(idx => tracks[idx])));
+    e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(toMove.map((idx) => tracks[idx])));
     createDragGhost(toMove.length > 1 ? `${toMove.length} tracks` : getName(tracks[i]), e.dataTransfer);
   }
 
@@ -90,9 +124,7 @@ export function SearchResults({
 
   return (
     <>
-      {topArtist && (
-        <ArtistHero artist={topArtist} onAddToQueue={onAddToQueue} onOpen={openItem} />
-      )}
+      {topArtist && <ArtistHero artist={topArtist} onAddToQueue={onAddToQueue} onOpen={openItem} />}
 
       {remainingArtists.length > 0 && (
         <section className={styles.searchSection}>
@@ -121,35 +153,49 @@ export function SearchResults({
           <h2 className={styles.searchSectionTitle}>Songs</h2>
           <div
             className={styles.tracksList}
-            onClick={() => { setSelected(new Set()); lastSelected.current = null; }}
+            onClick={() => {
+              setSelected(new Set());
+              lastSelected.current = null;
+            }}
           >
             {tracks.map((item, i) => {
               const artists = (item.artists ?? []) as SonosArtist[];
-              const subtitle = artists.length > 0 ? (
-                <>
-                  {artists.map((a, ai) => {
-                    const artistItem: SonosItem | null = a.id?.objectId ? {
-                      type: 'ARTIST',
-                      name: a.name,
-                      resource: { type: 'ARTIST', id: { objectId: a.id.objectId, serviceId: a.id.serviceId, accountId: a.id.accountId } },
-                    } : null;
-                    return (
-                      <span key={ai}>
-                        {ai > 0 && ', '}
-                        {artistItem ? (
-                          <button
-                            className={styles.artistBtn}
-                            onMouseDown={e => e.stopPropagation()}
-                            onClick={e => { e.stopPropagation(); openItem(artistItem); }}
-                          >
-                            {a.name}
-                          </button>
-                        ) : a.name}
-                      </span>
-                    );
-                  })}
-                </>
-              ) : undefined;
+              const subtitle =
+                artists.length > 0 ? (
+                  <>
+                    {artists.map((a, ai) => {
+                      const artistItem: SonosItem | null = a.id?.objectId
+                        ? {
+                            type: 'ARTIST',
+                            name: a.name,
+                            resource: {
+                              type: 'ARTIST',
+                              id: { objectId: a.id.objectId, serviceId: a.id.serviceId, accountId: a.id.accountId },
+                            },
+                          }
+                        : null;
+                      return (
+                        <span key={ai}>
+                          {ai > 0 && ', '}
+                          {artistItem ? (
+                            <button
+                              className={styles.artistBtn}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openItem(artistItem);
+                              }}
+                            >
+                              {a.name}
+                            </button>
+                          ) : (
+                            a.name
+                          )}
+                        </span>
+                      );
+                    })}
+                  </>
+                ) : undefined;
               return (
                 <MediaRow
                   key={i}
@@ -159,10 +205,13 @@ export function SearchResults({
                   isSelected={selected.has(i)}
                   subtitle={subtitle}
                   onAdd={() => onAddToQueue(item)}
-                  onClick={e => { e.stopPropagation(); handleTrackClick(i, e); }}
-                  onContextMenu={e => showTrackMenu({ track: buildTrackPayload(item) }, e)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleTrackClick(i, e);
+                  }}
+                  onContextMenu={(e) => showTrackMenu({ track: buildTrackPayload(item) }, e)}
                   draggable
-                  onDragStart={e => handleDragStart(e, i)}
+                  onDragStart={(e) => handleDragStart(e, i)}
                 />
               );
             })}

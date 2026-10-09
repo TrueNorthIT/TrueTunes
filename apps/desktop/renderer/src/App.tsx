@@ -59,12 +59,12 @@ import styles from './styles/App.module.css';
 // ── Main app ──────────────────────────────────────────────────────────────────
 
 function MainApp() {
-  const queryClient                               = useQueryClient();
-  const isAuthed                                  = useAuth();
-  const groups                                    = useGroups();
-  const [activeGroupId, setActiveGroupId]         = useState<string | null>(null);
-  const [toastMsg, setToastMsg]                   = useState<string | null>(null);
-  const toastTimer                                = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const queryClient = useQueryClient();
+  const isAuthed = useAuth();
+  const groups = useGroups();
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showToast = useCallback((msg: string) => {
     setToastMsg(msg);
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -72,10 +72,21 @@ function MainApp() {
   }, []);
   const { playback, applyGroupCache, queueIdRef, queueVersionRef } = usePlayback(activeGroupId);
   useMediaSession(playback);
-  const { items: queueItems, setItems: setQueueItems, isLoading: queueLoading, error: queueError, reload: reloadQueueRaw }
-                                                  = useQueue(isAuthed, activeGroupId, playback.queueId,
-                                                      (etag) => { queueVersionRef.current = etag; },
-                                                      (msg) => showToast(`Queue refresh failed: ${msg}`));
+  const {
+    items: queueItems,
+    setItems: setQueueItems,
+    isLoading: queueLoading,
+    error: queueError,
+    reload: reloadQueueRaw,
+  } = useQueue(
+    isAuthed,
+    activeGroupId,
+    playback.queueId,
+    (etag) => {
+      queueVersionRef.current = etag;
+    },
+    (msg) => showToast(`Queue refresh failed: ${msg}`)
+  );
   usePrefetchNextLyrics(queueItems, playback.queueItemId);
 
   const reloadQueue = useCallback(() => {
@@ -92,8 +103,8 @@ function MainApp() {
     reloadQueue();
   }, [playback.queueVersion, reloadQueue]);
 
-  const [feedbackOpen, setFeedbackOpen]     = useState(false);
-  const [changelogOpen, setChangelogOpen]   = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [changelogOpen, setChangelogOpen] = useState(false);
   const [displayName, setDisplayName] = useState<string | null | undefined>(undefined); // undefined = not yet loaded
   const [entraLoading, setEntraLoading] = useState(false);
   useEnsureFavourites(displayName);
@@ -110,11 +121,17 @@ function MainApp() {
     shellRef.current?.style.setProperty('--docked-queue-w', `${width}px`);
   }, []);
 
-useEffect(() => {
+  useEffect(() => {
     window.sonos.getDisplayName().then(setDisplayName);
-    window.sonos.getQueueDockedWidth().then(setQueueDockedWidth).catch(() => {});
+    window.sonos
+      .getQueueDockedWidth()
+      .then(setQueueDockedWidth)
+      .catch(() => {});
     return window.sonos.onEntraReady(() => {
-      window.sonos.getDisplayName().then(setDisplayName).catch(() => {});
+      window.sonos
+        .getDisplayName()
+        .then(setDisplayName)
+        .catch(() => {});
     });
   }, []);
 
@@ -196,7 +213,7 @@ useEffect(() => {
         } as SonosItem,
         -1,
         // djFiller: this one really does belong at the very end.
-        { attribute: false, djFiller: true },
+        { attribute: false, djFiller: true }
       );
     },
   });
@@ -209,33 +226,50 @@ useEffect(() => {
     fillerUriRef.current = autoplay.fillerUri;
   }, [autoplay.fillerUri]);
 
-  const handleGroupChange = useCallback((groupId: string) => {
-    setActiveGroupId(groupId);
-    getActiveProvider().setGroup(groupId);
-    applyGroupCache(groupId);
-    window.sonos.refreshAttribution().catch(() => {});
-    window.sonos.trackEvent('group_changed').catch(() => {});
-  }, [applyGroupCache]);
+  const handleGroupChange = useCallback(
+    (groupId: string) => {
+      setActiveGroupId(groupId);
+      getActiveProvider().setGroup(groupId);
+      applyGroupCache(groupId);
+      window.sonos.refreshAttribution().catch(() => {});
+      window.sonos.trackEvent('group_changed').catch(() => {});
+    },
+    [applyGroupCache]
+  );
 
   const publishTrackAttribution = useCallback(
-    (trackId: string, serviceId: string, accountId: string, fallback: { trackName: string; artist?: string; imageUrl?: string }) => {
+    (
+      trackId: string,
+      serviceId: string,
+      accountId: string,
+      fallback: { trackName: string; artist?: string; imageUrl?: string }
+    ) => {
       // Use cached metadata if available; publish immediately with fallback so attribution
       // is never lost because of a secondary metadata fetch failing.
-      const cached = queryClient.getQueryData(
-        trackQueryOptions(trackId, serviceId, accountId).queryKey
-      ) as { trackName?: string; artist?: string; artistId?: string; albumName?: string; albumId?: string; artUrl?: string } | undefined;
-      window.sonos.publishQueued({
-        eventType: 'track',
-        uri: trackId,
-        trackName: cached?.trackName ?? fallback.trackName,
-        artist: cached?.artist ?? fallback.artist ?? '',
-        serviceId,
-        accountId,
-        artistId: cached?.artistId,
-        album: cached?.albumName,
-        albumId: cached?.albumId,
-        imageUrl: cached?.artUrl ?? fallback.imageUrl,
-      }).catch(() => {});
+      const cached = queryClient.getQueryData(trackQueryOptions(trackId, serviceId, accountId).queryKey) as
+        | {
+            trackName?: string;
+            artist?: string;
+            artistId?: string;
+            albumName?: string;
+            albumId?: string;
+            artUrl?: string;
+          }
+        | undefined;
+      window.sonos
+        .publishQueued({
+          eventType: 'track',
+          uri: trackId,
+          trackName: cached?.trackName ?? fallback.trackName,
+          artist: cached?.artist ?? fallback.artist ?? '',
+          serviceId,
+          accountId,
+          artistId: cached?.artistId,
+          album: cached?.albumName,
+          albumId: cached?.albumId,
+          imageUrl: cached?.artUrl ?? fallback.imageUrl,
+        })
+        .catch(() => {});
     },
     [queryClient]
   );
@@ -285,9 +319,7 @@ useEffect(() => {
       // it — the filler only exists because nothing else was queued, so it must
       // never jump ahead of something someone actually chose.
       if (position === -1 && !opts?.djFiller && fillerUriRef.current) {
-        const fillerIndex = queueItemsRef.current.findIndex(
-          (q) => q.track.id === fillerUriRef.current,
-        );
+        const fillerIndex = queueItemsRef.current.findIndex((q) => q.track.id === fillerUriRef.current);
         if (fillerIndex >= 0) position = fillerIndex;
       }
       // DJ picks pass attribute:false. They're the algorithm's choice, not a
@@ -395,19 +427,19 @@ useEffect(() => {
         if (albumId && aSvc && aAcc) {
           // Publish album-level event immediately with card data as fallback so attribution
           // is captured even if the album browse fails. Fan-out track events follow async.
-          window.sonos.publishQueued({
-            eventType: 'album',
-            uri,
-            trackName: getName(item),
-            artist:
-              ((item as Record<string, unknown>)['subtitle'] as string) ||
-              (item.artists?.[0]?.name ?? ''),
-            serviceId: aSvc,
-            accountId: aAcc,
-            album: getName(item),
-            albumId: uri,
-            imageUrl: getItemArt(item) ?? undefined,
-          }).catch(() => {});
+          window.sonos
+            .publishQueued({
+              eventType: 'album',
+              uri,
+              trackName: getName(item),
+              artist: ((item as Record<string, unknown>)['subtitle'] as string) || (item.artists?.[0]?.name ?? ''),
+              serviceId: aSvc,
+              accountId: aAcc,
+              album: getName(item),
+              albumId: uri,
+              imageUrl: getItemArt(item) ?? undefined,
+            })
+            .catch(() => {});
           queryClient
             .fetchQuery(albumQueryOptions(albumId, aSvc, aAcc, defaults))
             .then((album) => {
@@ -422,7 +454,9 @@ useEffect(() => {
                 accountId: aAcc,
               });
             })
-            .catch(() => { /* silent — album event already published above */ });
+            .catch(() => {
+              /* silent — album event already published above */
+            });
         }
       } else if (attribute && isPlaylistItem) {
         // Playlists have no albumMap rollup — fan out per-track only. Each
@@ -490,116 +524,153 @@ useEffect(() => {
 
   return (
     <ToastProvider>
-    <ContextMenuProvider displayName={displayName} onAddToQueue={handleAddToQueue}>
-    <Splash ready={splashReady} />
-    {skinny ? (
-      <SkinnyShell
-        autoplay={autoplay}
-        isAuthed={isAuthed}
-        playback={playback}
-        queueItems={queueItems}
-        setQueueItems={setQueueItems}
-        queueLoading={queueLoading}
-        queueError={queueError}
-        reloadQueue={reloadQueue}
-        showToast={showToast}
-        groups={groups}
-        activeGroupId={activeGroupId}
-      />
-    ) : (
-    <div
-      ref={shellRef}
-      className={styles.shell}
-      style={{ '--docked-queue-w': `${queueDockedWidth}px` } as React.CSSProperties}
-    >
-      <TopNav
-        isAuthed={isAuthed}
-        groups={groups}
-        activeGroupId={activeGroupId}
-        onGroupChange={handleGroupChange}
-        onResync={() => window.sonos.resync()}
-        displayName={displayName}
-        onSaveName={(name) => {
-          const stored = name.trim();
-          void window.sonos.setDisplayName(stored).then((result) => {
-            if (!result?.error) setDisplayName(stored || null);
-          }).catch(() => {});
-        }}
-        onChangelogOpen={() => setChangelogOpen(true)}
-      />
-      <div className={styles.body}>
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <HomePanel
-                isAuthed={isAuthed}
-                onAddToQueue={handleAddToQueue}
-                ytm={ytm}
-                ytmLoading={ytmLoading}
-                displayName={displayName}
-              />
-            }
+      <ContextMenuProvider displayName={displayName} onAddToQueue={handleAddToQueue}>
+        <Splash ready={splashReady} />
+        {skinny ? (
+          <SkinnyShell
+            autoplay={autoplay}
+            isAuthed={isAuthed}
+            playback={playback}
+            queueItems={queueItems}
+            setQueueItems={setQueueItems}
+            queueLoading={queueLoading}
+            queueError={queueError}
+            reloadQueue={reloadQueue}
+            showToast={showToast}
+            groups={groups}
+            activeGroupId={activeGroupId}
           />
-          <Route
-            path="/search"
-            element={
-              <HomePanel
-                isAuthed={isAuthed}
+        ) : (
+          <div
+            ref={shellRef}
+            className={styles.shell}
+            style={{ '--docked-queue-w': `${queueDockedWidth}px` } as React.CSSProperties}
+          >
+            <TopNav
+              isAuthed={isAuthed}
+              groups={groups}
+              activeGroupId={activeGroupId}
+              onGroupChange={handleGroupChange}
+              onResync={() => window.sonos.resync()}
+              displayName={displayName}
+              onSaveName={(name) => {
+                const stored = name.trim();
+                void window.sonos
+                  .setDisplayName(stored)
+                  .then((result) => {
+                    if (!result?.error) setDisplayName(stored || null);
+                  })
+                  .catch(() => {});
+              }}
+              onChangelogOpen={() => setChangelogOpen(true)}
+            />
+            <div className={styles.body}>
+              <Routes>
+                <Route
+                  path="/"
+                  element={
+                    <HomePanel
+                      isAuthed={isAuthed}
+                      onAddToQueue={handleAddToQueue}
+                      ytm={ytm}
+                      ytmLoading={ytmLoading}
+                      displayName={displayName}
+                    />
+                  }
+                />
+                <Route
+                  path="/search"
+                  element={
+                    <HomePanel
+                      isAuthed={isAuthed}
+                      onAddToQueue={handleAddToQueue}
+                      ytm={ytm}
+                      ytmLoading={ytmLoading}
+                      displayName={displayName}
+                    />
+                  }
+                />
+                <Route
+                  path="/discover"
+                  element={<DiscoverPanel onAddToQueue={handleAddToQueue} displayName={displayName} />}
+                />
+                <Route path="/album/:id" element={<AlbumPanel onAddToQueue={handleAddToQueue} />} />
+                <Route
+                  path="/artist/:id"
+                  element={
+                    <ArtistPanel
+                      onAddToQueue={handleAddToQueue}
+                      currentTrackName={playback.trackName}
+                      isPlaybackActive={playback.isPlaying}
+                    />
+                  }
+                />
+                <Route path="/container/:id" element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
+                <Route path="/leaderboard" element={<LeaderboardPanel />} />
+                <Route path="/queuedle" element={<QueuedlePanel />} />
+                <Route path="/lyrics" element={<LyricsPanel playback={playback} />} />
+                <Route
+                  path="/profile/:userName"
+                  element={
+                    <ProfilePanel
+                      onAddToQueue={handleAddToQueue}
+                      displayName={displayName}
+                      onSignOut={async () => {
+                        setDisplayName(null);
+                        setEntraLoading(true);
+                        await window.sonos.entraSignOut().catch(() => {});
+                        await window.sonos.entraReLogin().catch(() => {});
+                        const name = await window.sonos.getDisplayName().catch(() => null);
+                        setDisplayName(name);
+                        setEntraLoading(false);
+                      }}
+                      onChangeName={async (name) => {
+                        const result = await window.sonos
+                          .renameUser(displayName ?? '', name)
+                          .catch(() => ({ error: 'network' }));
+                        if (!result?.error) setDisplayName(name);
+                        return result?.error ? { error: result.error } : null;
+                      }}
+                    />
+                  }
+                />
+                <Route
+                  path="/playlist/:id"
+                  element={<PlaylistPanel displayName={displayName} onAddToQueue={handleAddToQueue} />}
+                />
+              </Routes>
+              <QueueSidebar
+                ref={queueSidebarRef}
+                items={queueItems}
+                setItems={setQueueItems}
+                isLoading={queueLoading}
+                error={queueError}
+                currentObjectId={playback.currentObjectId}
+                currentQueueItemId={playback.queueItemId}
+                positionMs={playback.positionMs}
+                currentTrackDurationMs={playback.durationMs}
+                groupName={groups.find((g) => g.id === activeGroupId)?.name ?? null}
+                onRefresh={reloadQueue}
+                onError={showToast}
                 onAddToQueue={handleAddToQueue}
-                ytm={ytm}
-                ytmLoading={ytmLoading}
-                displayName={displayName}
+                dockedWidth={queueDockedWidth}
+                onResizeWidth={handleSetQueueDockedWidth}
+                onResizeWidthLive={handleResizeWidthLive}
+                autoplay={autoplay}
               />
-            }
-          />
-          <Route path="/discover" element={<DiscoverPanel onAddToQueue={handleAddToQueue} displayName={displayName} />} />
-          <Route path="/album/:id" element={<AlbumPanel onAddToQueue={handleAddToQueue} />} />
-          <Route path="/artist/:id" element={<ArtistPanel onAddToQueue={handleAddToQueue} currentTrackName={playback.trackName} isPlaybackActive={playback.isPlaying} />} />
-          <Route path="/container/:id" element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
-          <Route path="/leaderboard" element={<LeaderboardPanel />} />
-          <Route path="/queuedle" element={<QueuedlePanel />} />
-          <Route path="/lyrics" element={<LyricsPanel playback={playback} />} />
-          <Route path="/profile/:userName" element={<ProfilePanel onAddToQueue={handleAddToQueue} displayName={displayName} onSignOut={async () => { setDisplayName(null); setEntraLoading(true); await window.sonos.entraSignOut().catch(() => {}); await window.sonos.entraReLogin().catch(() => {}); const name = await window.sonos.getDisplayName().catch(() => null); setDisplayName(name); setEntraLoading(false); }} onChangeName={async (name) => { const result = await window.sonos.renameUser(displayName ?? '', name).catch(() => ({ error: 'network' })); if (!result?.error) setDisplayName(name); return result?.error ? { error: result.error } : null; }} />} />
-          <Route path="/playlist/:id" element={<PlaylistPanel displayName={displayName} onAddToQueue={handleAddToQueue} />} />
-        </Routes>
-        <QueueSidebar
-          ref={queueSidebarRef}
-          items={queueItems}
-          setItems={setQueueItems}
-          isLoading={queueLoading}
-          error={queueError}
-          currentObjectId={playback.currentObjectId}
-          currentQueueItemId={playback.queueItemId}
-          positionMs={playback.positionMs}
-          currentTrackDurationMs={playback.durationMs}
-          groupName={groups.find(g => g.id === activeGroupId)?.name ?? null}
-          onRefresh={reloadQueue}
-          onError={showToast}
-          onAddToQueue={handleAddToQueue}
-          dockedWidth={queueDockedWidth}
-          onResizeWidth={handleSetQueueDockedWidth}
-          onResizeWidthLive={handleResizeWidthLive}
-          autoplay={autoplay}
-        />
-      </div>
-      <PlayerBar
-        isAuthed={isAuthed}
-        playback={playback}
-        onShuffle={reloadQueue}
-        displayName={displayName}
-      />
-    </div>
-    )}
-    {toastMsg && <div className={styles.toast}>{toastMsg}</div>}
-    {entraLoading && (
-      <div className={styles.entraSigningIn}>
-        <span>Signing in with your organisation account…</span>
-      </div>
-    )}
-    {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
-    {changelogOpen && <ChangelogDialog onClose={() => setChangelogOpen(false)} />}
-    </ContextMenuProvider>
+            </div>
+            <PlayerBar isAuthed={isAuthed} playback={playback} onShuffle={reloadQueue} displayName={displayName} />
+          </div>
+        )}
+        {toastMsg && <div className={styles.toast}>{toastMsg}</div>}
+        {entraLoading && (
+          <div className={styles.entraSigningIn}>
+            <span>Signing in with your organisation account…</span>
+          </div>
+        )}
+        {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
+        {changelogOpen && <ChangelogDialog onClose={() => setChangelogOpen(false)} />}
+      </ContextMenuProvider>
     </ToastProvider>
   );
 }

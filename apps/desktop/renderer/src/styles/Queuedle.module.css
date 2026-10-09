@@ -1008,7 +1008,9 @@
   cursor: pointer;
   text-align: left;
 }
-.scoreNameBtn:hover { text-decoration: underline; }
+.scoreNameBtn:hover {
+  text-decoration: underline;
+}
 .scoreBreakdown {
   font-size: 11px;
   color: var(--text-3);

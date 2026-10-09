@@ -13,18 +13,20 @@ function makeArtistResponse(overrides: Record<string, unknown> = {}) {
     title: 'The Beatles',
     images: { tile1x1: 'https://art/beatles.jpg' },
     sections: {
-      items: [{
-        items: [
-          { type: 'ITEM_ALBUM', title: 'Abbey Road', resource: { id: { objectId: 'alb-1' } } },
-          { type: 'ITEM_ALBUM', title: 'Let It Be',  resource: { id: { objectId: 'alb-2' } } },
-          { type: 'ITEM_PLAYLIST', title: 'The Beatles Radio', resource: { id: { objectId: 'pl-radio' } } },
-          {
-            type: 'ITEM_PLAYLIST',
-            title: 'Top Songs',
-            resource: { id: { objectId: 'pl-top', serviceId: 'svc', accountId: 'acc' } },
-          },
-        ],
-      }],
+      items: [
+        {
+          items: [
+            { type: 'ITEM_ALBUM', title: 'Abbey Road', resource: { id: { objectId: 'alb-1' } } },
+            { type: 'ITEM_ALBUM', title: 'Let It Be', resource: { id: { objectId: 'alb-2' } } },
+            { type: 'ITEM_PLAYLIST', title: 'The Beatles Radio', resource: { id: { objectId: 'pl-radio' } } },
+            {
+              type: 'ITEM_PLAYLIST',
+              title: 'Top Songs',
+              resource: { id: { objectId: 'pl-top', serviceId: 'svc', accountId: 'acc' } },
+            },
+          ],
+        },
+      ],
     },
     ...overrides,
   };
@@ -70,11 +72,11 @@ describe('artistQueryOptions — basic parsing', () => {
   it('returns empty topSongs when no top songs playlist', async () => {
     const noTopSongs = makeArtistResponse({
       sections: {
-        items: [{
-          items: [
-            { type: 'ITEM_ALBUM', title: 'Abbey Road', resource: { id: { objectId: 'alb-1' } } },
-          ],
-        }],
+        items: [
+          {
+            items: [{ type: 'ITEM_ALBUM', title: 'Abbey Road', resource: { id: { objectId: 'alb-1' } } }],
+          },
+        ],
       },
     });
     mockFetch.mockResolvedValueOnce({ data: noTopSongs });
@@ -85,15 +87,15 @@ describe('artistQueryOptions — basic parsing', () => {
 
   it('throws when response has an error', async () => {
     mockFetch.mockResolvedValueOnce({ data: null, error: 'Not found' });
-    await expect(
-      artistQueryOptions('art-1', 'svc', 'acc', undefined).queryFn()
-    ).rejects.toThrow('Not found');
+    await expect(artistQueryOptions('art-1', 'svc', 'acc', undefined).queryFn()).rejects.toThrow('Not found');
   });
 
   it('returns null imageUrl when images are missing', async () => {
     const noImagesNoTopSongs = makeArtistResponse({
       images: undefined,
-      sections: { items: [{ items: [{ type: 'ITEM_ALBUM', title: 'Abbey Road', resource: { id: { objectId: 'alb-1' } } }] }] },
+      sections: {
+        items: [{ items: [{ type: 'ITEM_ALBUM', title: 'Abbey Road', resource: { id: { objectId: 'alb-1' } } }] }],
+      },
     });
     mockFetch.mockResolvedValueOnce({ data: noImagesNoTopSongs });
 

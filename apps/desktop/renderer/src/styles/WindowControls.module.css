@@ -8,7 +8,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.12s, background 0.12s;
+  transition:
+    color 0.12s,
+    background 0.12s;
   -webkit-app-region: no-drag;
 }
 .winBtn:hover {
@@ -24,7 +26,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  background: rgba(74, 222, 128, 0.10);
+  background: rgba(74, 222, 128, 0.1);
   border: 1px solid rgba(74, 222, 128, 0.45);
   color: #4ade80;
   cursor: pointer;
@@ -37,4 +39,6 @@
   transition: background 0.12s;
   -webkit-app-region: no-drag;
 }
-.titleBarUpdateBtn:hover { background: rgba(74, 222, 128, 0.20); }
+.titleBarUpdateBtn:hover {
+  background: rgba(74, 222, 128, 0.2);
+}

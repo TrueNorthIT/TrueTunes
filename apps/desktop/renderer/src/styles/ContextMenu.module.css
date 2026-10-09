@@ -7,14 +7,22 @@
   border-radius: var(--r-md);
   padding: 4px;
   min-width: 190px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.55),
+    0 2px 8px rgba(0, 0, 0, 0.3);
   animation: menuIn 0.1s ease-out;
   user-select: none;
 }
 
 @keyframes menuIn {
-  from { opacity: 0; transform: scale(0.97); }
-  to   { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .item {
@@ -28,7 +36,9 @@
   color: var(--text-2);
   position: relative;
   white-space: nowrap;
-  transition: background 0.08s, color 0.08s;
+  transition:
+    background 0.08s,
+    color 0.08s;
 }
 .item:hover {
   background: var(--bg-2);
@@ -76,9 +86,11 @@
   animation: menuIn 0.1s ease-out;
 }
 
-.submenu::-webkit-scrollbar { width: 6px; }
+.submenu::-webkit-scrollbar {
+  width: 6px;
+}
 .submenu::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 3px;
 }
 

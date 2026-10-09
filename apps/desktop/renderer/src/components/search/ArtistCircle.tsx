@@ -9,15 +9,11 @@ interface Props {
 }
 
 export function ArtistCircle({ artist, onOpen }: Props) {
-  const art  = useImage(getItemArt(artist));
+  const art = useImage(getItemArt(artist));
   const name = (artist.title ?? artist.name ?? '') as string;
   return (
     <div className={styles.circle} onClick={() => onOpen(artist)}>
-      <div className={styles.art}>
-        {art
-          ? <img src={art} alt="" />
-          : <div className={styles.artPh}>{name[0]}</div>}
-      </div>
+      <div className={styles.art}>{art ? <img src={art} alt="" /> : <div className={styles.artPh}>{name[0]}</div>}</div>
       <div className={styles.name}>{name}</div>
     </div>
   );

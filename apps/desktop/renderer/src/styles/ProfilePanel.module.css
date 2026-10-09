@@ -36,7 +36,9 @@
 .avatarEditable {
   cursor: pointer;
 }
-.avatarEditable:hover .avatarOverlay { opacity: 1; }
+.avatarEditable:hover .avatarOverlay {
+  opacity: 1;
+}
 
 .avatarImg {
   width: 100%;
@@ -60,7 +62,9 @@
   opacity: 0;
   transition: opacity 0.15s;
 }
-.avatarOverlayActive { opacity: 1 !important; }
+.avatarOverlayActive {
+  opacity: 1 !important;
+}
 
 .headerInfo {
   display: flex;
@@ -138,7 +142,9 @@
   cursor: pointer;
   transition: color 0.12s;
 }
-.signOutInline:hover { color: rgba(255, 80, 80, 1); }
+.signOutInline:hover {
+  color: rgba(255, 80, 80, 1);
+}
 
 .changeNameInline {
   background: none;
@@ -151,7 +157,9 @@
   cursor: pointer;
   transition: color 0.12s;
 }
-.changeNameInline:hover { color: var(--text-2); }
+.changeNameInline:hover {
+  color: var(--text-2);
+}
 
 .renameForm {
   display: flex;
@@ -173,10 +181,12 @@
   outline: none;
   width: 260px;
 }
-.renameInput:focus { border-color: rgba(255,255,255,0.35); }
+.renameInput:focus {
+  border-color: rgba(255, 255, 255, 0.35);
+}
 
 .renameBtn {
-  background: rgba(255,255,255,0.12);
+  background: rgba(255, 255, 255, 0.12);
   border: 1px solid var(--border-2);
   border-radius: var(--r-md);
   color: var(--text);
@@ -187,8 +197,13 @@
   cursor: pointer;
   transition: background 0.12s;
 }
-.renameBtn:hover:not(:disabled) { background: rgba(255,255,255,0.2); }
-.renameBtn:disabled { opacity: 0.4; cursor: default; }
+.renameBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+.renameBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 
 .renameCancelBtn {
   background: none;
@@ -199,7 +214,9 @@
   padding: 6px 8px;
   cursor: pointer;
 }
-.renameCancelBtn:hover { color: var(--text-2); }
+.renameCancelBtn:hover {
+  color: var(--text-2);
+}
 
 .renameError {
   width: 100%;
@@ -240,7 +257,11 @@
   cursor: pointer;
   transition: all 0.12s;
 }
-.sectionAction:hover { border-color: var(--border-2); color: var(--text); background: rgba(255,255,255,0.05); }
+.sectionAction:hover {
+  border-color: var(--border-2);
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
 
 .subSectionTitle {
   font-size: 13px;
@@ -288,7 +309,10 @@
   opacity: 0.75;
   transition: opacity 0.12s;
 }
-.trackLink:hover { opacity: 1; text-decoration: underline; }
+.trackLink:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
 
 .countBadge {
   font-size: 12px;
@@ -401,4 +425,3 @@
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 16px;
 }
-

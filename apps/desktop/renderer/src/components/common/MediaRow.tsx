@@ -21,16 +21,31 @@ interface Props {
 }
 
 export function MediaRow({
-  name, artUrl, explicit, isPlaying, isSelected, leading, subtitle, trailing,
-  onAdd, onClick, onDoubleClick, onHover, onContextMenu, draggable, onDragStart,
+  name,
+  artUrl,
+  explicit,
+  isPlaying,
+  isSelected,
+  leading,
+  subtitle,
+  trailing,
+  onAdd,
+  onClick,
+  onDoubleClick,
+  onHover,
+  onContextMenu,
+  draggable,
+  onDragStart,
 }: Props) {
   const cachedArt = useImage(artUrl);
   const classes = [
     styles.row,
-    isPlaying  ? styles.playing   : '',
-    isSelected ? styles.selected  : '',
-    draggable  ? styles.draggable : (onClick ? styles.clickable : ''),
-  ].filter(Boolean).join(' ');
+    isPlaying ? styles.playing : '',
+    isSelected ? styles.selected : '',
+    draggable ? styles.draggable : onClick ? styles.clickable : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div
@@ -45,19 +60,27 @@ export function MediaRow({
     >
       {leading !== undefined && <div className={styles.leading}>{leading}</div>}
       <div className={styles.artWrap}>
-        {cachedArt
-          ? <img className={styles.art} src={cachedArt} alt="" />
-          : <div className={styles.artPh}>♪</div>
-        }
+        {cachedArt ? <img className={styles.art} src={cachedArt} alt="" /> : <div className={styles.artPh}>♪</div>}
         <div className={styles.overlay}>▶</div>
       </div>
       <div className={styles.text}>
-        <div className={styles.name}>{name}{explicit && <ExplicitBadge />}</div>
+        <div className={styles.name}>
+          {name}
+          {explicit && <ExplicitBadge />}
+        </div>
         {subtitle !== undefined && <div className={styles.sub}>{subtitle}</div>}
       </div>
       {trailing !== undefined && <div className={styles.trailing}>{trailing}</div>}
       {onAdd && (
-        <button className={styles.addBtn} onClick={e => { e.stopPropagation(); onAdd(); }}>+</button>
+        <button
+          className={styles.addBtn}
+          onClick={(e) => {
+            e.stopPropagation();
+            onAdd();
+          }}
+        >
+          +
+        </button>
       )}
     </div>
   );

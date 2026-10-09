@@ -19,11 +19,15 @@ export function MyScores({ mainScore, bonusScore, maxMain, maxBonus }: Props) {
       </div>
       <div className={styles.myScoresCells}>
         <div className={styles.summaryCell}>
-          <div className={styles.summaryCellValue}>{mainScore}/{maxMain}</div>
+          <div className={styles.summaryCellValue}>
+            {mainScore}/{maxMain}
+          </div>
           <div className={styles.summaryCellLabel}>Higher or lower</div>
         </div>
         <div className={styles.summaryCell}>
-          <div className={styles.summaryCellValue}>{bonusScore}/{maxBonus}</div>
+          <div className={styles.summaryCellValue}>
+            {bonusScore}/{maxBonus}
+          </div>
           <div className={styles.summaryCellLabel}>Top queuer</div>
         </div>
       </div>

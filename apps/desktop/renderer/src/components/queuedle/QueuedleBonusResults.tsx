@@ -40,9 +40,7 @@ export function QueuedleBonusResults({ winningItems, bonusGuesses, onContinue }:
                 <span className={isCorrect ? styles.resultCorrect : styles.resultWrong}>
                   {isCorrect ? '✓' : '✗'} {guess || '—'}
                 </span>
-                {!isCorrect && (
-                  <span className={styles.bonusCorrectLabel}>{correct}</span>
-                )}
+                {!isCorrect && <span className={styles.bonusCorrectLabel}>{correct}</span>}
               </div>
             </div>
           );

@@ -25,7 +25,7 @@ export function AlbumPanel({ onAddToQueue }: Props) {
   const queryClient = useQueryClient();
   const { resolveAndOpen } = useResolveAndOpen();
 
-  const isPlaylistOrProgram = item ? (isPlaylist(item) || isProgram(item)) : false;
+  const isPlaylistOrProgram = item ? isPlaylist(item) || isProgram(item) : false;
   const { albumId, serviceId, accountId, defaults } = item
     ? resolveAlbumParams(item)
     : { albumId: undefined, serviceId: undefined, accountId: undefined, defaults: undefined };
@@ -33,14 +33,21 @@ export function AlbumPanel({ onAddToQueue }: Props) {
   const lastSelected = useRef<number | null>(null);
   const [adding, setAdding] = useState(false);
 
-  const albumResult    = useAlbumBrowse(isPlaylistOrProgram ? undefined : albumId, serviceId, accountId, defaults);
+  const albumResult = useAlbumBrowse(isPlaylistOrProgram ? undefined : albumId, serviceId, accountId, defaults);
   const playlistResult = usePlaylistBrowse(isPlaylistOrProgram ? albumId : undefined, serviceId, accountId, defaults);
 
   const isLoading = isPlaylistOrProgram ? playlistResult.isLoading : albumResult.isLoading;
-  const error     = isPlaylistOrProgram ? playlistResult.error     : albumResult.error;
+  const error = isPlaylistOrProgram ? playlistResult.error : albumResult.error;
   const data = isPlaylistOrProgram
     ? playlistResult.data
-      ? { title: null, artist: null, artUrl: null, tracks: playlistResult.data, totalTracks: playlistResult.data.length, artistItem: null }
+      ? {
+          title: null,
+          artist: null,
+          artUrl: null,
+          tracks: playlistResult.data,
+          totalTracks: playlistResult.data.length,
+          artistItem: null,
+        }
       : null
     : (albumResult.data ?? null);
 
@@ -51,15 +58,12 @@ export function AlbumPanel({ onAddToQueue }: Props) {
     queryClient.prefetchQuery(artistQueryOptions(rid.objectId, rid.serviceId, rid.accountId, undefined));
   }, [queryClient, data?.artistItem]);
 
-  const title  = data?.title  ?? item?.title  ?? item?.name  ?? '';
+  const title = data?.title ?? item?.title ?? item?.name ?? '';
   const artist = data?.artist ?? ((item as Record<string, unknown>)?.['subtitle'] as string) ?? '';
   const artUrl = data?.artUrl ?? (item ? getItemArt(item) : null);
-  const cachedArt     = useImage(artUrl);
+  const cachedArt = useImage(artUrl);
   const dominantColor = useDominantColor(cachedArt, { setGlobal: true });
-  const year = useGeniusAlbumYear(
-    isPlaylistOrProgram ? null : title,
-    isPlaylistOrProgram ? null : artist,
-  );
+  const year = useGeniusAlbumYear(isPlaylistOrProgram ? null : title, isPlaylistOrProgram ? null : artist);
 
   useEffect(() => {
     setSelected(new Set());
@@ -68,30 +72,47 @@ export function AlbumPanel({ onAddToQueue }: Props) {
 
   if (!item) return null;
 
-  const trackServiceId  = (data?.tracks[0]?.id as SonosItemId | undefined)?.serviceId  ?? serviceId ?? '';
-  const trackAccountId  = (data?.tracks[0]?.id as SonosItemId | undefined)?.accountId ?? accountId ?? '';
+  const trackServiceId = (data?.tracks[0]?.id as SonosItemId | undefined)?.serviceId ?? serviceId ?? '';
+  const trackAccountId = (data?.tracks[0]?.id as SonosItemId | undefined)?.accountId ?? accountId ?? '';
 
   function handleTrackClick(index: number, e: React.MouseEvent) {
     e.stopPropagation();
     if (e.shiftKey && lastSelected.current !== null) {
       const lo = Math.min(lastSelected.current, index);
       const hi = Math.max(lastSelected.current, index);
-      setSelected(prev => { const next = new Set(prev); for (let i = lo; i <= hi; i++) next.add(i); return next; });
+      setSelected((prev) => {
+        const next = new Set(prev);
+        for (let i = lo; i <= hi; i++) next.add(i);
+        return next;
+      });
     } else if (e.ctrlKey || e.metaKey) {
-      setSelected(prev => { const next = new Set(prev); if (next.has(index)) next.delete(index); else next.add(index); return next; });
+      setSelected((prev) => {
+        const next = new Set(prev);
+        if (next.has(index)) next.delete(index);
+        else next.add(index);
+        return next;
+      });
       lastSelected.current = index;
     } else {
-      if (selected.size === 1 && selected.has(index)) { setSelected(new Set()); lastSelected.current = null; }
-      else { setSelected(new Set([index])); lastSelected.current = index; }
+      if (selected.size === 1 && selected.has(index)) {
+        setSelected(new Set());
+        lastSelected.current = null;
+      } else {
+        setSelected(new Set([index]));
+        lastSelected.current = index;
+      }
     }
   }
 
   function handleTrackDragStart(index: number, e: React.DragEvent) {
     if (!data) return;
     const toMove = selected.has(index) ? [...selected].sort((a, b) => a - b) : [index];
-    if (!selected.has(index)) { setSelected(new Set([index])); lastSelected.current = index; }
+    if (!selected.has(index)) {
+      setSelected(new Set([index]));
+      lastSelected.current = index;
+    }
     e.dataTransfer.effectAllowed = 'copy';
-    e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(toMove.map(idx => data.tracks[idx].raw)));
+    e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(toMove.map((idx) => data.tracks[idx].raw)));
     createDragGhost(toMove.length > 1 ? `${toMove.length} tracks` : data.tracks[index].title, e.dataTransfer);
   }
 
@@ -99,7 +120,10 @@ export function AlbumPanel({ onAddToQueue }: Props) {
   const totalMins = Math.round(totalSecs / 60);
 
   const headerStyle = dominantColor
-    ? { background: `linear-gradient(180deg, rgba(${dominantColor}, 0.55) 0%, rgba(${dominantColor}, 0.2) 60%, transparent 100%)`, transition: 'background 0.8s ease' }
+    ? {
+        background: `linear-gradient(180deg, rgba(${dominantColor}, 0.55) 0%, rgba(${dominantColor}, 0.2) 60%, transparent 100%)`,
+        transition: 'background 0.8s ease',
+      }
     : undefined;
 
   function openArtist() {
@@ -145,7 +169,9 @@ export function AlbumPanel({ onAddToQueue }: Props) {
             )}
             {data && (
               <div className={styles.metaLine}>
-                {[data.totalTracks + ' songs', totalMins > 0 ? totalMins + ' min' : null, year].filter(Boolean).join(' \u2022 ')}
+                {[data.totalTracks + ' songs', totalMins > 0 ? totalMins + ' min' : null, year]
+                  .filter(Boolean)
+                  .join(' \u2022 ')}
               </div>
             )}
             <div className={styles.actions}>
@@ -155,8 +181,11 @@ export function AlbumPanel({ onAddToQueue }: Props) {
                 onClick={async () => {
                   if (!item || !data?.tracks?.length) return;
                   setAdding(true);
-                  try { await onAddToQueue(item); }
-                  finally { setAdding(false); }
+                  try {
+                    await onAddToQueue(item);
+                  } finally {
+                    setAdding(false);
+                  }
                 }}
               >
                 {adding ? 'Adding…' : '+ Add to Queue'}
@@ -168,8 +197,15 @@ export function AlbumPanel({ onAddToQueue }: Props) {
 
       <div
         className={styles.tracks}
-        style={{ '--track-cols': isPlaylistOrProgram ? '24px 42px 1fr 260px 260px 50px 28px' : '24px 1fr 160px 50px 28px' } as React.CSSProperties}
-        onClick={() => { setSelected(new Set()); lastSelected.current = null; }}
+        style={
+          {
+            '--track-cols': isPlaylistOrProgram ? '24px 42px 1fr 260px 260px 50px 28px' : '24px 1fr 160px 50px 28px',
+          } as React.CSSProperties
+        }
+        onClick={() => {
+          setSelected(new Set());
+          lastSelected.current = null;
+        }}
       >
         {data && (
           <div className={styles.tableHeader}>
@@ -185,14 +221,18 @@ export function AlbumPanel({ onAddToQueue }: Props) {
 
         {isLoading && (
           <>
-            <div className={styles.spinnerWrap}><div className={styles.spinner} /></div>
+            <div className={styles.spinnerWrap}>
+              <div className={styles.spinner} />
+            </div>
             {Array.from({ length: 10 }).map((_, i) => (
               <div key={i} className={styles.skeletonRow}>
                 <div className={styles.skeletonOrdinal} />
                 {isPlaylistOrProgram && <div className={styles.skeletonArt} />}
                 <div className={styles.skeletonTitle} style={{ width: `${55 + (i % 4) * 10}%` }} />
                 <div className={styles.skeletonSub} style={{ width: `${30 + (i % 3) * 10}%` }} />
-                {isPlaylistOrProgram && <div className={styles.skeletonSub} style={{ width: `${35 + (i % 2) * 15}%` }} />}
+                {isPlaylistOrProgram && (
+                  <div className={styles.skeletonSub} style={{ width: `${35 + (i % 2) * 15}%` }} />
+                )}
                 <div className={styles.skeletonDur} />
                 <div />
               </div>
@@ -209,8 +249,8 @@ export function AlbumPanel({ onAddToQueue }: Props) {
             isSelected={selected.has(i)}
             serviceId={trackServiceId}
             accountId={trackAccountId}
-            onClick={e => handleTrackClick(i, e)}
-            onDragStart={e => handleTrackDragStart(i, e)}
+            onClick={(e) => handleTrackClick(i, e)}
+            onDragStart={(e) => handleTrackDragStart(i, e)}
             onAdd={() => onAddToQueue(track.raw)}
           />
         ))}

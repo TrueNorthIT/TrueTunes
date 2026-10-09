@@ -9,16 +9,20 @@ export function useQueue(
   activeGroupId: string | null,
   queueId: string | null,
   onEtag?: (etag: string) => void,
-  onReloadError?: (msg: string) => void,
+  onReloadError?: (msg: string) => void
 ) {
-  const [items, setItems]       = useState<NormalizedQueueItem[]>([]);
+  const [items, setItems] = useState<NormalizedQueueItem[]>([]);
   const [isLoading, setLoading] = useState(false);
-  const [error, setError]       = useState<string | null>(null);
-  const hasLoaded                = useRef(false);
-  const onEtagRef                = useRef(onEtag);
-  const onReloadErrorRef         = useRef(onReloadError);
-  useEffect(() => { onEtagRef.current = onEtag; });
-  useEffect(() => { onReloadErrorRef.current = onReloadError; });
+  const [error, setError] = useState<string | null>(null);
+  const hasLoaded = useRef(false);
+  const onEtagRef = useRef(onEtag);
+  const onReloadErrorRef = useRef(onReloadError);
+  useEffect(() => {
+    onEtagRef.current = onEtag;
+  });
+  useEffect(() => {
+    onReloadErrorRef.current = onReloadError;
+  });
 
   const load = useCallback(async () => {
     if (!activeGroupId) return;

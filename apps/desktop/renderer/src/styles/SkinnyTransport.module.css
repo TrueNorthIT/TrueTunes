@@ -20,7 +20,7 @@
   overflow: hidden;
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.40);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 .art img {
   width: 100%;
@@ -78,11 +78,13 @@
   transform: translateY(-50%);
   height: 3px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.1);
   transition: height 0.15s;
   pointer-events: none;
 }
-.progress:hover::before { height: 5px; }
+.progress:hover::before {
+  height: 5px;
+}
 .progressFill {
   position: absolute;
   left: 0;
@@ -91,7 +93,10 @@
   height: 3px;
   border-radius: 2px;
   background: #fff;
-  transition: width 0.5s linear, height 0.15s, background 0.15s;
+  transition:
+    width 0.5s linear,
+    height 0.15s,
+    background 0.15s;
   pointer-events: none;
 }
 .progress:hover .progressFill {
@@ -121,16 +126,26 @@
   border-radius: 50%;
   border: none;
   background: none;
-  color: rgba(255, 255, 255, 0.70);
+  color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
-.btn:hover  { background: rgba(255, 255, 255, 0.12); color: #fff; }
-.btn:active { background: rgba(255, 255, 255, 0.20); }
-.btn:disabled { opacity: 0.4; cursor: default; }
+.btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+.btn:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 
 .playBtn {
   width: 36px;
@@ -138,4 +153,6 @@
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.16);
 }
-.playBtn:hover { background: rgba(255, 255, 255, 0.22); }
+.playBtn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}

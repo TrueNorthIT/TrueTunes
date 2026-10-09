@@ -34,41 +34,48 @@ interface Props {
 }
 
 export function ChangelogDialog({ onClose }: Props) {
-  const [releases, setReleases]     = useState<Release[]>([]);
+  const [releases, setReleases] = useState<Release[]>([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
-  const [status, setStatus]         = useState<'loading' | 'ready' | 'error'>('loading');
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [appVersion, setAppVersion] = useState<string | null>(null);
   const [versionLoaded, setVersionLoaded] = useState(false);
 
   useEffect(() => {
-    window.sonos.getVersion()
-      .then(v => { setAppVersion(v); setVersionLoaded(true); })
+    window.sonos
+      .getVersion()
+      .then((v) => {
+        setAppVersion(v);
+        setVersionLoaded(true);
+      })
       .catch(() => setVersionLoaded(true));
   }, []);
 
   useEffect(() => {
     fetchReleases()
-      .then(data => { setReleases(data); setStatus('ready'); })
+      .then((data) => {
+        setReleases(data);
+        setStatus('ready');
+      })
       .catch(() => setStatus('error'));
   }, []);
 
   useEffect(() => {
     if (!versionLoaded || status !== 'ready' || !appVersion || releases.length === 0) return;
-    const idx = releases.findIndex(r =>
-      r.tag_name === `v${appVersion}` || r.tag_name === appVersion
-    );
+    const idx = releases.findIndex((r) => r.tag_name === `v${appVersion}` || r.tag_name === appVersion);
     if (idx >= 0) setSelectedIdx(idx);
   }, [versionLoaded, status, appVersion, releases]);
 
   useEffect(() => {
-    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose(); }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
   const selected = releases[selectedIdx];
-  const isCurrent = selected && appVersion &&
-    (selected.tag_name === `v${appVersion}` || selected.tag_name === appVersion);
+  const isCurrent =
+    selected && appVersion && (selected.tag_name === `v${appVersion}` || selected.tag_name === appVersion);
 
   return (
     <div className={styles.overlay}>
@@ -76,27 +83,22 @@ export function ChangelogDialog({ onClose }: Props) {
         <div className={styles.header}>
           <span className={styles.heading}>What&apos;s New</span>
           {appVersion && <span className={styles.currentBadge}>v{appVersion}</span>}
-          <button className={styles.close} onClick={onClose} aria-label="Close">✕</button>
+          <button className={styles.close} onClick={onClose} aria-label="Close">
+            ✕
+          </button>
         </div>
 
-        {status === 'loading' && (
-          <div className={styles.placeholder}>Loading releases…</div>
-        )}
+        {status === 'loading' && <div className={styles.placeholder}>Loading releases…</div>}
 
-        {status === 'error' && (
-          <div className={styles.placeholder}>Could not load release notes.</div>
-        )}
+        {status === 'error' && <div className={styles.placeholder}>Could not load release notes.</div>}
 
-        {status === 'ready' && releases.length === 0 && (
-          <div className={styles.placeholder}>No releases found.</div>
-        )}
+        {status === 'ready' && releases.length === 0 && <div className={styles.placeholder}>No releases found.</div>}
 
         {status === 'ready' && releases.length > 0 && (
           <div className={styles.body}>
             <div className={styles.sidebar}>
               {releases.map((r, i) => {
-                const isCur = appVersion &&
-                  (r.tag_name === `v${appVersion}` || r.tag_name === appVersion);
+                const isCur = appVersion && (r.tag_name === `v${appVersion}` || r.tag_name === appVersion);
                 return (
                   <button
                     key={r.tag_name}
@@ -131,13 +133,16 @@ export function ChangelogDialog({ onClose }: Props) {
                     </button>
                   </div>
                   <div className={styles.notes}>
-                    {selected.body?.trim()
-                      ? <div
-                          className={styles.notesText}
-                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(selected.body.trim()) as string) }}
-                        />
-                      : <span className={styles.noNotes}>No release notes.</span>
-                    }
+                    {selected.body?.trim() ? (
+                      <div
+                        className={styles.notesText}
+                        dangerouslySetInnerHTML={{
+                          __html: DOMPurify.sanitize(marked.parse(selected.body.trim()) as string),
+                        }}
+                      />
+                    ) : (
+                      <span className={styles.noNotes}>No release notes.</span>
+                    )}
                   </div>
                 </>
               )}

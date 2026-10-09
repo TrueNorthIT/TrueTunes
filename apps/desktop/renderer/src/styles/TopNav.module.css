@@ -59,7 +59,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.12s, background 0.12s;
+  transition:
+    color 0.12s,
+    background 0.12s;
 }
 .historyBtn:hover:not(:disabled) {
   color: #fff;
@@ -83,7 +85,8 @@
 }
 
 /* ── Main nav pill ── */
-.nav {}
+.nav {
+}
 
 .inner {
   height: 100%;
@@ -104,7 +107,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.12s, background 0.12s;
+  transition:
+    color 0.12s,
+    background 0.12s;
   flex-shrink: 0;
 }
 .iconBtn:hover {
@@ -148,8 +153,12 @@
   outline: none;
   padding: 4px 0;
 }
-.searchInput::placeholder { color: rgba(255, 255, 255, 0.35); }
-.searchInput:disabled { opacity: 0.35; }
+.searchInput::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+.searchInput:disabled {
+  opacity: 0.35;
+}
 
 .clearBtn {
   background: none;
@@ -163,10 +172,14 @@
   transition: color 0.12s;
   flex-shrink: 0;
 }
-.clearBtn:hover { color: rgba(255, 255, 255, 0.8); }
+.clearBtn:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
 
 /* ── Group selector ── */
-.groupWrap { position: relative; }
+.groupWrap {
+  position: relative;
+}
 
 .groupPopover {
   position: absolute;
@@ -202,14 +215,24 @@
   padding: 7px 10px;
   border-radius: var(--r-sm);
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
   white-space: nowrap;
 }
-.groupOption:hover { background: var(--bg-2); color: var(--text); }
-.groupOptionActive { color: var(--text) !important; font-weight: 600; }
+.groupOption:hover {
+  background: var(--bg-2);
+  color: var(--text);
+}
+.groupOptionActive {
+  color: var(--text) !important;
+  font-weight: 600;
+}
 
 /* ── Profile chip + popover ── */
-.profileWrap { position: relative; }
+.profileWrap {
+  position: relative;
+}
 
 .profileChip {
   display: flex;
@@ -224,9 +247,15 @@
   flex-shrink: 0;
   max-width: 140px;
 }
-.profileChip:hover { background: rgba(255, 255, 255, 0.08); }
-.profileChipOpen  { background: rgba(255, 255, 255, 0.10); }
-.profileChipActive { background: rgba(255, 255, 255, 0.08); }
+.profileChip:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.profileChipOpen {
+  background: rgba(255, 255, 255, 0.1);
+}
+.profileChipActive {
+  background: rgba(255, 255, 255, 0.08);
+}
 
 .profileAvatar {
   width: 22px;
@@ -315,9 +344,14 @@
   padding: 7px 10px;
   cursor: pointer;
   text-align: left;
-  transition: background 0.12s, color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
-.profileViewBtn:hover { background: rgba(255, 255, 255, 0.12); color: var(--text); }
+.profileViewBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+}
 
 .profileDivider {
   height: 1px;
@@ -349,7 +383,9 @@
   text-align: left;
   transition: color 0.12s;
 }
-.profileSignOutBtn:hover { color: rgba(255, 80, 80, 1); }
+.profileSignOutBtn:hover {
+  color: rgba(255, 80, 80, 1);
+}
 
 /* ── Name input (shared by profile popover) ── */
 
@@ -364,7 +400,9 @@
   outline: none;
   transition: border-color 0.15s;
 }
-.nameInput:focus { border-color: var(--border-2); }
+.nameInput:focus {
+  border-color: var(--border-2);
+}
 
 .nameSaveBtn {
   background: rgba(255, 255, 255, 0.1);
@@ -378,8 +416,13 @@
   cursor: pointer;
   transition: background 0.12s;
 }
-.nameSaveBtn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.18); }
-.nameSaveBtn:disabled { opacity: 0.35; cursor: default; }
+.nameSaveBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.18);
+}
+.nameSaveBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
 
 .queueModeToggle {
   display: flex;
@@ -397,9 +440,14 @@
   font-family: inherit;
   padding: 6px 0;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s;
 }
-.queueModeBtn:hover { color: var(--text); }
+.queueModeBtn:hover {
+  color: var(--text);
+}
 .queueModeBtnActive {
   background: rgba(255, 255, 255, 0.12);
   border-color: var(--border-2);
@@ -434,4 +482,6 @@
   padding: 2px 6px;
   transition: background 0.12s;
 }
-.updateBtn:hover { background: rgba(74, 222, 128, 0.12); }
+.updateBtn:hover {
+  background: rgba(74, 222, 128, 0.12);
+}

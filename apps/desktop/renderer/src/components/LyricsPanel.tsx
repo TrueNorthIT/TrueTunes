@@ -16,13 +16,35 @@ function renderDom(node: GeniusDomNode, key: number | string): React.ReactNode {
   if (typeof node === 'string') return node;
   const children = node.children?.map((c, i) => renderDom(c, i)) ?? null;
   switch (node.tag) {
-    case 'root':   return <>{children}</>;
-    case 'p':      return <p key={key} className={styles.descPara}>{children}</p>;
-    case 'em':     return <em key={key}>{children}</em>;
-    case 'strong': return <strong key={key}>{children}</strong>;
-    case 'a':      return <span key={key} className={styles.descLink} onClick={() => { const href = node.attributes?.href; if (href) window.sonos.openExternal(href); }}>{children}</span>;
-    case 'br':     return <br key={key} />;
-    default:       return <span key={key}>{children}</span>;
+    case 'root':
+      return <>{children}</>;
+    case 'p':
+      return (
+        <p key={key} className={styles.descPara}>
+          {children}
+        </p>
+      );
+    case 'em':
+      return <em key={key}>{children}</em>;
+    case 'strong':
+      return <strong key={key}>{children}</strong>;
+    case 'a':
+      return (
+        <span
+          key={key}
+          className={styles.descLink}
+          onClick={() => {
+            const href = node.attributes?.href;
+            if (href) window.sonos.openExternal(href);
+          }}
+        >
+          {children}
+        </span>
+      );
+    case 'br':
+      return <br key={key} />;
+    default:
+      return <span key={key}>{children}</span>;
   }
 }
 
@@ -41,8 +63,12 @@ export function LyricsPanel({ playback }: Props) {
 
   const elapsedMs = Math.round((progressPct / 100) * durationMs) + 250;
 
-  const { lines, isLoading: lyricsLoading, isInstrumental, notFound } =
-    useLyrics(displayTrack, displayArtist, albumName, durationMs);
+  const {
+    lines,
+    isLoading: lyricsLoading,
+    isInstrumental,
+    notFound,
+  } = useLyrics(displayTrack, displayArtist, albumName, durationMs);
 
   const { description } = useGeniusDescription(displayTrack, displayArtist);
 
@@ -65,7 +91,9 @@ export function LyricsPanel({ playback }: Props) {
   }, [activeLine]);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
@@ -85,27 +113,29 @@ export function LyricsPanel({ playback }: Props) {
           {cachedArt ? (
             <img className={styles.bigArt} src={cachedArt} alt="" />
           ) : (
-            <div className={styles.bigArtPh}><Music2 size={48} /></div>
+            <div className={styles.bigArtPh}>
+              <Music2 size={48} />
+            </div>
           )}
           <div className={styles.meta}>
             <div className={styles.metaTrack}>{displayTrack || '—'}</div>
             <div className={styles.metaArtist}>{displayArtist || '—'}</div>
           </div>
-          {description && (
-            <div className={styles.geniusDesc}>
-              {renderDom(description, 0)}
-            </div>
-          )}
+          {description && <div className={styles.geniusDesc}>{renderDom(description, 0)}</div>}
         </div>
 
         {/* Right — scrolling lyrics */}
         <div ref={containerRef} className={styles.lyricsContainer}>
           {lyricsLoading && (
             <div className={styles.loadingWrap}>
-              <div className={styles.loadingIcon}><MicVocal size={36} /></div>
+              <div className={styles.loadingIcon}>
+                <MicVocal size={36} />
+              </div>
               <div className={styles.loadingLabel}>Loading</div>
               <div className={styles.dots}>
-                <span /><span /><span />
+                <span />
+                <span />
+                <span />
               </div>
             </div>
           )}
@@ -117,7 +147,9 @@ export function LyricsPanel({ playback }: Props) {
               return (
                 <div
                   key={i}
-                  ref={(el) => { lineRefs.current[i] = el; }}
+                  ref={(el) => {
+                    lineRefs.current[i] = el;
+                  }}
                   className={`${styles.line}${i === activeLine ? ' ' + styles.lineActive : ''}`}
                   style={activeLine >= 0 ? { opacity: Math.max(0.18, 1 - dist * 0.19) } : undefined}
                 >

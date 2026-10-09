@@ -85,7 +85,7 @@ describe('fetchImage', () => {
 
   it('deduplicates concurrent fetches for the same URL', async () => {
     let resolve!: () => void;
-    const pending = new Promise<Response>(res => {
+    const pending = new Promise<Response>((res) => {
       resolve = () => res(okResponse());
     });
     mockFetchGlobal.mockReturnValueOnce(pending);

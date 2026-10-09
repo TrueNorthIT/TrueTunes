@@ -19,9 +19,7 @@ describe('defined() param filtering', () => {
 
   it('includes defined pathParams', async () => {
     await api.playback.getState('g:abc');
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.objectContaining({ pathParams: { groupId: 'g:abc' } })
-    );
+    expect(mockFetch).toHaveBeenCalledWith(expect.objectContaining({ pathParams: { groupId: 'g:abc' } }));
   });
 });
 
@@ -55,16 +53,12 @@ describe('api.playback', () => {
 
   it('pause sends correct operationId', async () => {
     await api.playback.pause('g:1');
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.objectContaining({ operationId: 'pause' })
-    );
+    expect(mockFetch).toHaveBeenCalledWith(expect.objectContaining({ operationId: 'pause' }));
   });
 
   it('skipNext sends skipToNextTrack operationId', async () => {
     await api.playback.skipNext('g:1');
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.objectContaining({ operationId: 'skipToNextTrack' })
-    );
+    expect(mockFetch).toHaveBeenCalledWith(expect.objectContaining({ operationId: 'skipToNextTrack' }));
   });
 
   it('setPlayMode sends body with mode flags', async () => {
@@ -100,23 +94,17 @@ describe('api.queue', () => {
 
   it('add defaults position to -1 when not provided', async () => {
     await api.queue.add({});
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.objectContaining({ query: { position: '-1' } })
-    );
+    expect(mockFetch).toHaveBeenCalledWith(expect.objectContaining({ query: { position: '-1' } }));
   });
 
   it('add uses provided position', async () => {
     await api.queue.add({}, { position: 3 });
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.objectContaining({ query: { position: '3' } })
-    );
+    expect(mockFetch).toHaveBeenCalledWith(expect.objectContaining({ query: { position: '3' } }));
   });
 
   it('add includes If-Match header when ifMatch provided', async () => {
     await api.queue.add({}, { ifMatch: 'abc123' });
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.objectContaining({ headers: { 'If-Match': 'abc123' } })
-    );
+    expect(mockFetch).toHaveBeenCalledWith(expect.objectContaining({ headers: { 'If-Match': 'abc123' } }));
   });
 
   it('add does not include headers when ifMatch absent', async () => {
@@ -127,9 +115,7 @@ describe('api.queue', () => {
 
   it('remove joins item indices with commas', async () => {
     await api.queue.remove([0, 2, 5]);
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.objectContaining({ query: { items: '0,2,5' } })
-    );
+    expect(mockFetch).toHaveBeenCalledWith(expect.objectContaining({ query: { items: '0,2,5' } }));
   });
 
   it('reorder sends items and positions joined', async () => {
@@ -230,9 +216,7 @@ describe('api.playback — remaining', () => {
 
   it('skipPrev sends skipToPreviousTrack operationId', async () => {
     await api.playback.skipPrev('g:1');
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.objectContaining({ operationId: 'skipToPreviousTrack' })
-    );
+    expect(mockFetch).toHaveBeenCalledWith(expect.objectContaining({ operationId: 'skipToPreviousTrack' }));
   });
 });
 

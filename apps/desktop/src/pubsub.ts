@@ -19,8 +19,8 @@ import * as http from 'http';
 import { URL } from 'url';
 import type { AttributionMap, AttributionEvent } from './types';
 
-const HUB          = 'office';
-const SUBPROTOCOL  = 'json.webpubsub.azure.v1';
+const HUB = 'office';
+const SUBPROTOCOL = 'json.webpubsub.azure.v1';
 
 // ─── HTTP helpers (avoid depending on global fetch in main process) ───────────
 
@@ -29,7 +29,10 @@ function httpGet(rawUrl: string): Promise<Buffer> {
     const url = new URL(rawUrl);
     const mod = url.protocol === 'https:' ? https : http;
     const req = mod.get(rawUrl, (res) => {
-      if (res.statusCode === 404) { resolve(Buffer.alloc(0)); return; }
+      if (res.statusCode === 404) {
+        resolve(Buffer.alloc(0));
+        return;
+      }
       if ((res.statusCode ?? 0) >= 400) {
         reject(new Error(`GET ${rawUrl} → ${res.statusCode}`));
         return;
@@ -57,7 +60,7 @@ function httpPostJson(rawUrl: string, payload: unknown): Promise<void> {
         } else {
           resolve();
         }
-      },
+      }
     );
     req.on('error', reject);
     req.write(buf);
@@ -114,7 +117,18 @@ export class OfficePubSub {
   }
 
   /** Publish a "track queued" event. Updates local map and broadcasts via WS. */
-  async publishQueued(item: { eventType: 'track' | 'album'; uri: string; trackName: string; artist: string; serviceId?: string; accountId?: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }): Promise<void> {
+  async publishQueued(item: {
+    eventType: 'track' | 'album';
+    uri: string;
+    trackName: string;
+    artist: string;
+    serviceId?: string;
+    accountId?: string;
+    artistId?: string;
+    album?: string;
+    albumId?: string;
+    imageUrl?: string;
+  }): Promise<void> {
     if (!item.uri) return;
 
     const event: AttributionEvent = {
@@ -228,7 +242,9 @@ export class OfficePubSub {
             this.eventCbs.forEach((cb) => cb(event));
           }
         }
-      } catch { /* ignore malformed messages */ }
+      } catch {
+        /* ignore malformed messages */
+      }
     });
 
     this.ws.on('error', (err) => {

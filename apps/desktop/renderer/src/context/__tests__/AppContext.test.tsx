@@ -16,24 +16,44 @@ function Consumer() {
 
 describe('AppContext', () => {
   it('provides default isAuthed=false', () => {
-    render(<AppProvider><Consumer /></AppProvider>);
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
     expect(screen.getByTestId('authed').textContent).toBe('false');
   });
 
   it('provides default activeGroupId=null', () => {
-    render(<AppProvider><Consumer /></AppProvider>);
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
     expect(screen.getByTestId('group').textContent).toBe('null');
   });
 
   it('setIsAuthed updates the value', () => {
-    render(<AppProvider><Consumer /></AppProvider>);
-    act(() => { screen.getByRole('button', { name: 'auth' }).click(); });
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+    act(() => {
+      screen.getByRole('button', { name: 'auth' }).click();
+    });
     expect(screen.getByTestId('authed').textContent).toBe('true');
   });
 
   it('setActiveGroupId updates the value', () => {
-    render(<AppProvider><Consumer /></AppProvider>);
-    act(() => { screen.getByRole('button', { name: 'group' }).click(); });
+    render(
+      <AppProvider>
+        <Consumer />
+      </AppProvider>
+    );
+    act(() => {
+      screen.getByRole('button', { name: 'group' }).click();
+    });
     expect(screen.getByTestId('group').textContent).toBe('g-1');
   });
 

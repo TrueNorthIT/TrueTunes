@@ -70,8 +70,8 @@ function renderPanel(qc: QueryClient) {
       createElement(PlaylistPanel, {
         displayName: OWNER,
         onAddToQueue: vi.fn() as (item: SonosItem, position?: number) => void,
-      }),
-    ),
+      })
+    )
   );
 }
 
@@ -95,10 +95,7 @@ describe('handleRemoveTrack', () => {
     fireEvent.click(removeBtn);
 
     await waitFor(() => {
-      expect(vi.mocked(window.sonos.removeTrackFromPlaylist)).toHaveBeenCalledWith(
-        PLAYLIST_ID,
-        TRACK_URI,
-      );
+      expect(vi.mocked(window.sonos.removeTrackFromPlaylist)).toHaveBeenCalledWith(PLAYLIST_ID, TRACK_URI);
     });
 
     const updated = qc.getQueryData<PlaylistDoc>(['playlist', PLAYLIST_ID]);

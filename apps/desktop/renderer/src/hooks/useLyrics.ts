@@ -25,7 +25,7 @@ export function lyricsQueryOptions(
   trackName: string | null | undefined,
   artistName: string | null | undefined,
   albumName: string | null | undefined,
-  durationMs: number,
+  durationMs: number
 ) {
   return {
     queryKey: ['lyrics', trackName, artistName, albumName] as const,
@@ -48,7 +48,7 @@ export function useLyrics(
   trackName: string | null | undefined,
   artistName: string | null | undefined,
   albumName: string | null | undefined,
-  durationMs: number,
+  durationMs: number
 ) {
   const { data, isLoading } = useQuery(lyricsQueryOptions(trackName, artistName, albumName, durationMs));
 

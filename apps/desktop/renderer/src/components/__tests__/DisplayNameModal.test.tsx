@@ -6,10 +6,10 @@ import { DisplayNameModal } from '../DisplayNameModal';
 describe('DisplayNameModal', () => {
   it('renders the heading', () => {
     render(<DisplayNameModal onSave={vi.fn()} />);
-    expect(screen.getByText("What should we call you?")).toBeInTheDocument();
+    expect(screen.getByText('What should we call you?')).toBeInTheDocument();
   });
 
-  it("submit button is disabled when input is empty", () => {
+  it('submit button is disabled when input is empty', () => {
     render(<DisplayNameModal onSave={vi.fn()} />);
     expect(screen.getByRole('button', { name: "Let's go" })).toBeDisabled();
   });

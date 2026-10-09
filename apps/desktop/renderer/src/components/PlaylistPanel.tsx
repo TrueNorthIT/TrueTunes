@@ -72,10 +72,7 @@ function TrackRow({
         <span className={styles.ordinal}>{index + 1}</span>
       </div>
       <div className={styles.trackArtWrap}>
-        {art
-          ? <img className={styles.trackArt} src={art} alt="" />
-          : <div className={styles.trackArtPh} />
-        }
+        {art ? <img className={styles.trackArt} src={art} alt="" /> : <div className={styles.trackArtPh} />}
       </div>
       <div className={styles.trackMain}>
         <div className={styles.trackName}>{trackName}</div>
@@ -85,16 +82,37 @@ function TrackRow({
         {track.addedBy && (
           <button
             className={styles.addedByLink}
-            onClick={e => { e.stopPropagation(); navigate(`/profile/${encodeURIComponent(track.addedBy)}`); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/profile/${encodeURIComponent(track.addedBy)}`);
+            }}
           >
             {track.addedBy}
           </button>
         )}
       </div>
       <div className={styles.trackControls}>
-        <button className={styles.addBtn} onClick={e => { e.stopPropagation(); onAdd(); }} title="Add to queue">+</button>
+        <button
+          className={styles.addBtn}
+          onClick={(e) => {
+            e.stopPropagation();
+            onAdd();
+          }}
+          title="Add to queue"
+        >
+          +
+        </button>
         {isOwner && (
-          <button className={styles.removeBtn} onClick={e => { e.stopPropagation(); onRemove(); }} title="Remove">×</button>
+          <button
+            className={styles.removeBtn}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
+            title="Remove"
+          >
+            ×
+          </button>
         )}
       </div>
     </div>
@@ -132,27 +150,30 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
     if (index !== dragSrcIndex.current) setDragOverIndex(index);
   }, []);
 
-  const handleDrop = useCallback(async (index: number, e: React.DragEvent) => {
-    e.preventDefault();
-    const raw = e.dataTransfer.getData('application/playlist-track-index');
-    setDragOverIndex(null);
-    if (!raw || !playlist || !id) return;
-    const from = parseInt(raw, 10);
-    if (from === index) return;
-    const snapshot = playlist;
-    const newTracks = [...playlist.tracks];
-    const [moved] = newTracks.splice(from, 1);
-    newTracks.splice(index, 0, moved);
-    queryClient.setQueryData(['playlist', id], { ...playlist, tracks: newTracks });
-    try {
-      await window.sonos.reorderPlaylistTracks(id, from, index);
-      queryClient.invalidateQueries({ queryKey: ['playlist', id] });
-      queryClient.invalidateQueries({ queryKey: ['playlists', 'owned', displayName] });
-    } catch {
-      queryClient.setQueryData(['playlist', id], snapshot);
-      showToast('Failed to reorder tracks');
-    }
-  }, [playlist, id, queryClient, displayName]);
+  const handleDrop = useCallback(
+    async (index: number, e: React.DragEvent) => {
+      e.preventDefault();
+      const raw = e.dataTransfer.getData('application/playlist-track-index');
+      setDragOverIndex(null);
+      if (!raw || !playlist || !id) return;
+      const from = parseInt(raw, 10);
+      if (from === index) return;
+      const snapshot = playlist;
+      const newTracks = [...playlist.tracks];
+      const [moved] = newTracks.splice(from, 1);
+      newTracks.splice(index, 0, moved);
+      queryClient.setQueryData(['playlist', id], { ...playlist, tracks: newTracks });
+      try {
+        await window.sonos.reorderPlaylistTracks(id, from, index);
+        queryClient.invalidateQueries({ queryKey: ['playlist', id] });
+        queryClient.invalidateQueries({ queryKey: ['playlists', 'owned', displayName] });
+      } catch {
+        queryClient.setQueryData(['playlist', id], snapshot);
+        showToast('Failed to reorder tracks');
+      }
+    },
+    [playlist, id, queryClient, displayName]
+  );
 
   const handleDragEnd = useCallback(() => {
     setDragOverIndex(null);
@@ -186,7 +207,10 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !id) return;
-    if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5 MB'); return; }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image must be under 5 MB');
+      return;
+    }
     setUploading(true);
     try {
       const buffer = await file.arrayBuffer();
@@ -226,7 +250,10 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
 
   async function commitRename() {
     const trimmed = renameValue.trim();
-    if (!trimmed || !id || !playlist || trimmed === playlist.name) { setRenaming(false); return; }
+    if (!trimmed || !id || !playlist || trimmed === playlist.name) {
+      setRenaming(false);
+      return;
+    }
     setRenaming(false);
     const snapshot = playlist;
     queryClient.setQueryData(['playlist', id], { ...playlist, name: trimmed });
@@ -260,14 +287,19 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
         <div className={styles.headerContent}>
           <div
             className={`${styles.coverArt}${isOwner ? ' ' + styles.coverArtOwner : ''}`}
-            style={!coverArtSrc ? { background: playlist ? getPlaylistColor(playlist.name) : 'var(--bg-1)' } : undefined}
+            style={
+              !coverArtSrc ? { background: playlist ? getPlaylistColor(playlist.name) : 'var(--bg-1)' } : undefined
+            }
             onClick={() => isOwner && fileInputRef.current?.click()}
             title={isOwner ? 'Change image' : undefined}
           >
-            {coverArtSrc
-              ? <img src={coverArtSrc} alt="" className={styles.coverArtImg} />
-              : (!isLoading && playlist ? playlist.name[0].toUpperCase() : '')
-            }
+            {coverArtSrc ? (
+              <img src={coverArtSrc} alt="" className={styles.coverArtImg} />
+            ) : !isLoading && playlist ? (
+              playlist.name[0].toUpperCase()
+            ) : (
+              ''
+            )}
             {isOwner && (
               <div className={`${styles.coverArtOverlay}${uploading ? ' ' + styles.coverArtUploading : ''}`}>
                 {uploading ? '…' : '📷'}
@@ -292,9 +324,21 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
                     ref={renameInputRef}
                     className={styles.renameInput}
                     value={renameValue}
-                    onChange={e => setRenameValue(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') { cancelRename.current = true; setRenaming(false); } }}
-                    onBlur={() => { if (cancelRename.current) { cancelRename.current = false; return; } commitRename(); }}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') commitRename();
+                      if (e.key === 'Escape') {
+                        cancelRename.current = true;
+                        setRenaming(false);
+                      }
+                    }}
+                    onBlur={() => {
+                      if (cancelRename.current) {
+                        cancelRename.current = false;
+                        return;
+                      }
+                      commitRename();
+                    }}
                     autoFocus
                   />
                 ) : (
@@ -318,11 +362,15 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
                   {playlist.isPublic && (
                     <>
                       <span className={styles.metaDot}>·</span>
-                      <span className={styles.badge}>{playlist.members.length} member{playlist.members.length !== 1 ? 's' : ''}</span>
+                      <span className={styles.badge}>
+                        {playlist.members.length} member{playlist.members.length !== 1 ? 's' : ''}
+                      </span>
                     </>
                   )}
                   <span className={styles.metaDot}>·</span>
-                  <span className={styles.badge}>{playlist.tracks.length} track{playlist.tracks.length !== 1 ? 's' : ''}</span>
+                  <span className={styles.badge}>
+                    {playlist.tracks.length} track{playlist.tracks.length !== 1 ? 's' : ''}
+                  </span>
                   {playlist.createdAt && (
                     <>
                       <span className={styles.metaDot}>·</span>
@@ -332,26 +380,31 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
                 </div>
                 <div className={styles.headerActions}>
                   {playlist.tracks.length > 0 && (
-                    <button className={styles.playAllBtn} onClick={handlePlayAll}>▶ Play all</button>
+                    <button className={styles.playAllBtn} onClick={handlePlayAll}>
+                      ▶ Play all
+                    </button>
                   )}
                   {playlist.isPublic && !isOwner && (
-                    <button
-                      className={`${styles.joinBtn}${isMember ? ' ' + styles.joined : ''}`}
-                      onClick={handleJoin}
-                    >
+                    <button className={`${styles.joinBtn}${isMember ? ' ' + styles.joined : ''}`} onClick={handleJoin}>
                       {isMember ? 'Leave' : 'Join'}
                     </button>
                   )}
-                  {isOwner && !playlist.isFavourites && (
-                    confirmDelete ? (
+                  {isOwner &&
+                    !playlist.isFavourites &&
+                    (confirmDelete ? (
                       <>
-                        <button className={styles.deleteConfirmBtn} onClick={handleDelete}>Delete forever</button>
-                        <button className={styles.cancelBtn} onClick={() => setConfirmDelete(false)}>Cancel</button>
+                        <button className={styles.deleteConfirmBtn} onClick={handleDelete}>
+                          Delete forever
+                        </button>
+                        <button className={styles.cancelBtn} onClick={() => setConfirmDelete(false)}>
+                          Cancel
+                        </button>
                       </>
                     ) : (
-                      <button className={styles.deleteBtn} onClick={() => setConfirmDelete(true)}>Delete</button>
-                    )
-                  )}
+                      <button className={styles.deleteBtn} onClick={() => setConfirmDelete(true)}>
+                        Delete
+                      </button>
+                    ))}
                 </div>
               </>
             ) : (
@@ -366,7 +419,11 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
         {isLoading ? (
           <>
             <div className={styles.tableHeader}>
-              <span>#</span><span /><span>Title</span><span>Added by</span><span />
+              <span>#</span>
+              <span />
+              <span>Title</span>
+              <span>Added by</span>
+              <span />
             </div>
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className={styles.trackRow} style={{ opacity: 1 - i * 0.12 }}>
@@ -400,10 +457,10 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
                     canReorder={canReorder}
                     onAdd={() => onAddToQueue(trackToSonosItem(t), -1)}
                     onRemove={() => handleRemoveTrack(t.uri, i)}
-                    onContextMenu={e => showTrackMenu({ track: t, sonosItem: trackToSonosItem(t) }, e)}
-                    onDragStart={e => handleDragStart(i, e)}
-                    onDragOver={e => handleDragOver(i, e)}
-                    onDrop={e => handleDrop(i, e)}
+                    onContextMenu={(e) => showTrackMenu({ track: t, sonosItem: trackToSonosItem(t) }, e)}
+                    onDragStart={(e) => handleDragStart(i, e)}
+                    onDragOver={(e) => handleDragOver(i, e)}
+                    onDrop={(e) => handleDrop(i, e)}
                     onDragEnd={handleDragEnd}
                   />
                 </div>
