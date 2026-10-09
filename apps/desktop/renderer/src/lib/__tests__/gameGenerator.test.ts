@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { aggregateEvents, RawEvent } from '../../../../server/src/shared/aggregate';
-import { generateGame, mulberry32 } from '../../../../server/src/shared/gameGenerator';
+import { aggregateEvents, RawEvent } from '../../../../../../server/src/shared/aggregate';
+import { generateGame, mulberry32 } from '../../../../../../server/src/shared/gameGenerator';
 
 function ev(overrides: Partial<RawEvent> & { userId: string; trackName: string; artist: string }): RawEvent {
   return {

@@ -6,7 +6,7 @@ import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
   // Ignore build output and generated files
-  { ignores: ['dist/**', 'renderer/dist/**', 'node_modules/**', 'apps/**'] },
+  { ignores: ['dist/**', 'renderer/dist/**', 'node_modules/**'] },
 
   // ── All TypeScript (main process + renderer) ─────────────────────────────────
   {
