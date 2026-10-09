@@ -1,14 +1,26 @@
 name: Desktop
 
 # Validates desktop PRs; on push to main, bumps the patch version and publishes a desktop release.
-# The mobile app has its own workflows; without paths-ignore every mobile commit to main would publish a desktop release.
+# Only desktop paths trigger it: without the filter, every mobile commit to main would publish a desktop release.
+# PRs also run it for server/ changes, because the server is linted with the desktop ESLint config.
 on:
   push:
     branches: [main]
-    paths-ignore: ['apps/mobile/**', '.github/workflows/mobile-*.yml']
+    paths:
+      - 'apps/desktop/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/desktop.yml'
   pull_request:
     branches: [main, develop]
-    paths-ignore: ['apps/mobile/**', '.github/workflows/mobile-*.yml']
+    paths:
+      - 'apps/desktop/**'
+      - 'packages/**'
+      - 'server/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/desktop.yml'
 
 permissions:
   contents: write
@@ -17,6 +29,10 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+defaults:
+  run:
+    working-directory: apps/desktop
 
 jobs:
   validate:
@@ -31,8 +47,12 @@ jobs:
           cache: 'npm'
 
       - run: npm ci
+        working-directory: .
 
       - run: npm run lint
+
+      - run: npm run lint:server
+        working-directory: .
 
       - run: npm run typecheck
 
@@ -49,7 +69,7 @@ jobs:
         if: always()
         with:
           name: Vitest Tests
-          path: renderer/junit.xml
+          path: apps/desktop/renderer/junit.xml
           reporter: java-junit
           fail-on-error: true
 
@@ -57,9 +77,10 @@ jobs:
         uses: davelosert/vitest-coverage-report-action@v2
         if: always()
         with:
-          json-summary-path: renderer/coverage/coverage-summary.json
-          json-final-path: renderer/coverage/coverage-final.json
-          vite-config-path: renderer/vitest.config.ts
+          name: Desktop
+          json-summary-path: apps/desktop/renderer/coverage/coverage-summary.json
+          json-final-path: apps/desktop/renderer/coverage/coverage-final.json
+          vite-config-path: apps/desktop/renderer/vitest.config.ts
 
   version:
     needs: validate
@@ -76,18 +97,21 @@ jobs:
         with:
           node-version-file: '.nvmrc'
 
+      # --package-lock-only: bump apps/desktop/package.json and its entry in the root lock without installing anything.
       - name: Bump patch version
         id: bump
+        working-directory: .
         run: |
-          npm version patch --no-git-tag-version
-          echo "new_version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+          npm version patch -w apps/desktop --no-git-tag-version --package-lock-only
+          echo "new_version=$(node -p "require('./apps/desktop/package.json').version")" >> $GITHUB_OUTPUT
 
       - name: Commit and push
         id: push
+        working-directory: .
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json
+          git add apps/desktop/package.json package-lock.json
           git commit -m "chore: bump version to ${{ steps.bump.outputs.new_version }}"
           git push
           echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
@@ -116,7 +140,9 @@ jobs:
           cache: 'npm'
 
       - run: npm ci
+        working-directory: .
 
+      # electron-builder runs from apps/desktop (output in apps/desktop/release) and finds the hoisted node_modules itself.
       - run: npm run ${{ matrix.script }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

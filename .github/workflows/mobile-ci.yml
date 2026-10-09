@@ -3,10 +3,20 @@ name: Mobile CI
 on:
   push:
     branches: [main]
-    paths: ['apps/mobile/**', '.github/workflows/mobile-ci.yml']
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/mobile-ci.yml'
   pull_request:
     branches: [main, develop]
-    paths: ['apps/mobile/**', '.github/workflows/mobile-ci.yml']
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/mobile-ci.yml'
 
 permissions:
   contents: read
@@ -15,6 +25,8 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  # The root npm ci installs the desktop workspace too; mobile never needs the Electron binary.
+  ELECTRON_SKIP_BINARY_DOWNLOAD: 1
 
 defaults:
   run:
@@ -31,9 +43,10 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-          cache-dependency-path: apps/mobile/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - run: npm ci
+        working-directory: .
 
       - run: npm run lint
 

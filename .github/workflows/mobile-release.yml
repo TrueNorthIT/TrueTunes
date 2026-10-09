@@ -24,6 +24,8 @@ concurrency:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  # The root npm ci installs the desktop workspace too; mobile never needs the Electron binary.
+  ELECTRON_SKIP_BINARY_DOWNLOAD: 1
 
 defaults:
   run:
@@ -59,7 +61,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-          cache-dependency-path: apps/mobile/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - uses: actions/setup-java@v4
         with:
@@ -67,6 +69,7 @@ jobs:
           java-version: '17'
 
       - run: npm ci
+        working-directory: .
 
       # Cheap checks first so a broken tag fails in minutes, not after the long native build.
       - run: npm run typecheck
