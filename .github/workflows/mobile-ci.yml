@@ -1,10 +1,12 @@
-name: CI
+name: Mobile CI
 
 on:
   push:
     branches: [main]
+    paths: ['apps/mobile/**', '.github/workflows/mobile-ci.yml']
   pull_request:
     branches: [main, develop]
+    paths: ['apps/mobile/**', '.github/workflows/mobile-ci.yml']
 
 permissions:
   contents: read
@@ -13,6 +15,10 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+defaults:
+  run:
+    working-directory: apps/mobile
 
 jobs:
   validate:
@@ -25,6 +31,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
+          cache-dependency-path: apps/mobile/package-lock.json
 
       - run: npm ci
 
@@ -47,8 +54,8 @@ jobs:
         uses: dorny/test-reporter@v1
         if: always()
         with:
-          name: Vitest Tests
-          path: junit.xml
+          name: Mobile Vitest Tests
+          path: apps/mobile/junit.xml
           reporter: java-junit
           fail-on-error: true
 
@@ -56,6 +63,7 @@ jobs:
         uses: davelosert/vitest-coverage-report-action@v2
         if: always()
         with:
-          json-summary-path: coverage/coverage-summary.json
-          json-final-path: coverage/coverage-final.json
-          vite-config-path: vitest.config.ts
+          name: Mobile
+          json-summary-path: apps/mobile/coverage/coverage-summary.json
+          json-final-path: apps/mobile/coverage/coverage-final.json
+          vite-config-path: apps/mobile/vitest.config.ts

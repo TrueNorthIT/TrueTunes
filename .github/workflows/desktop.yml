@@ -1,10 +1,14 @@
-name: Publish
+name: Desktop
 
+# Validates desktop PRs; on push to main, bumps the patch version and publishes a desktop release.
+# The mobile app has its own workflows; without paths-ignore every mobile commit to main would publish a desktop release.
 on:
   push:
     branches: [main]
+    paths-ignore: ['apps/mobile/**', '.github/workflows/mobile-*.yml']
   pull_request:
     branches: [main, develop]
+    paths-ignore: ['apps/mobile/**', '.github/workflows/mobile-*.yml']
 
 permissions:
   contents: write

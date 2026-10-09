@@ -1,13 +1,14 @@
-name: Release
+name: Mobile Release
 
-# Publishes a signed APK as a GitHub Release when a version tag is pushed:
-#   git tag v1.2.3 && git push origin v1.2.3        (v1.2.3-rc.1 becomes a pre-release)
+# Publishes a signed APK as a GitHub Release when an Android version tag is pushed:
+#   git tag android-v1.2.3 && git push origin android-v1.2.3   (android-v1.2.3-rc.1 becomes a pre-release)
 # A manual run (workflow_dispatch) is a dry run: it builds and uploads the APK as a workflow artifact only.
-# See docs/RELEASING.md.
+# Plain v* tags belong to the desktop app. The APK release is never marked "Latest": desktop auto-update
+# reads /releases/latest and must keep finding a desktop release there. See apps/mobile/docs/RELEASING.md.
 
 on:
   push:
-    tags: ['v[0-9]+.[0-9]+.[0-9]+*']
+    tags: ['android-v[0-9]+.[0-9]+.[0-9]+*']
   workflow_dispatch:
     inputs:
       version:
@@ -24,6 +25,10 @@ concurrency:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+defaults:
+  run:
+    working-directory: apps/mobile
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -35,7 +40,7 @@ jobs:
       - name: Resolve version
         id: v
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then RAW="${GITHUB_REF_NAME#v}"; else RAW="${{ inputs.version }}"; fi
+          if [ "${{ github.event_name }}" = "push" ]; then RAW="${GITHUB_REF_NAME#android-v}"; else RAW="${{ inputs.version }}"; fi
           if ! echo "$RAW" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then
             echo "::error::'$RAW' is not a version like 1.2.3 or 1.2.3-rc.1"; exit 1
           fi
@@ -54,6 +59,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
+          cache-dependency-path: apps/mobile/package-lock.json
 
       - uses: actions/setup-java@v4
         with:
@@ -107,7 +113,7 @@ jobs:
         run: npx expo prebuild --platform android --no-install
 
       - name: Build release APK
-        working-directory: android
+        working-directory: apps/mobile/android
         env:
           # Optional integrations, baked into the bundle. Empty (feature off) unless the secrets exist.
           EXPO_PUBLIC_GENIUS_ACCESS_TOKEN: ${{ secrets.GENIUS_ACCESS_TOKEN }}
@@ -135,8 +141,8 @@ jobs:
         with:
           name: ${{ env.APK_NAME }}
           path: |
-            ${{ env.APK_NAME }}
-            ${{ env.APK_NAME }}.sha256
+            apps/mobile/${{ env.APK_NAME }}
+            apps/mobile/${{ env.APK_NAME }}.sha256
           retention-days: 14
 
       - name: Create GitHub release
@@ -146,6 +152,10 @@ jobs:
         run: |
           FLAGS=""
           if [ "${{ steps.v.outputs.prerelease }}" = "true" ]; then FLAGS="--prerelease"; fi
+          # Desktop releases share this repo, so start the notes at the previous Android tag, not the previous release.
+          PREV="$(git ls-remote --tags --refs origin 'android-v*' | sed 's#.*refs/tags/##' | grep -vx "$GITHUB_REF_NAME" | sort -V | tail -1 || true)"
+          if [ -n "$PREV" ]; then FLAGS="$FLAGS --notes-start-tag $PREV"; fi
+          # --latest=false: an APK release must never become "Latest", or desktop auto-update breaks.
           gh release create "$GITHUB_REF_NAME" "$APK_NAME" "$APK_NAME.sha256" \
             --title "True Tunes Android v${{ steps.v.outputs.version }}" \
-            --generate-notes $FLAGS
+            --generate-notes --latest=false $FLAGS
