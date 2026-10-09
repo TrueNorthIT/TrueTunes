@@ -152,3 +152,4 @@ apps/desktop/native/smtc/build/
 # entries (incl. credential-reading commands); must never be committed.
 .claude/settings.local.json
 server/dist-test/
+junit.xml

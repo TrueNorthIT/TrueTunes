@@ -1,0 +1,28 @@
+{
+  "name": "@truetunes/core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Platform-neutral Sonos, Azure and session modules shared by the True Tunes apps. TypeScript source, no build step.",
+  "exports": {
+    "./sonos/*": "./src/sonos/*.ts",
+    "./office/*": "./src/office/*.ts",
+    "./core/*": "./src/core/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.6.0",
+    "@vitest/coverage-v8": "^5.0.2",
+    "eslint": "^10.11.0",
+    "eslint-config-prettier": "^10.1.8",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.0",
+    "vitest": "^5.0.2"
+  }
+}

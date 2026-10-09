@@ -1,7 +1,7 @@
 // Process-wide core singleton. Importing this module installs `window.sonos` (the same surface the
 // desktop preload exposes) BEFORE any ported hook mounts, so the hooks run unchanged.
 
-import { createCore } from '../core/createCore';
+import { createCore } from '@truetunes/core/core/createCore';
 import { createPlatform } from './createPlatform';
 
 // React Native aliases `window` to the global object; make that explicit for safety.

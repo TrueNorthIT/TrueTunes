@@ -1,0 +1,78 @@
+name: Core
+
+# packages/core (@truetunes/core): typecheck, lint (including the platform-neutral import ban) and Node tests.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/core/**'
+      - 'apps/mobile/src/types/globals.d.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/core.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'packages/core/**'
+      - 'apps/mobile/src/types/globals.d.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/core.yml'
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  ELECTRON_SKIP_BINARY_DOWNLOAD: 1
+
+defaults:
+  run:
+    working-directory: packages/core
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - run: npm ci
+        working-directory: .
+
+      - run: npm run lint
+
+      - run: npm run typecheck
+
+      - name: Test with coverage
+        run: >
+          npm run test:run --
+          --reporter=default
+          --reporter=junit
+          --outputFile.junit=./junit.xml
+          --coverage
+
+      - name: Publish test results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Core Vitest Tests
+          path: packages/core/junit.xml
+          reporter: java-junit
+          fail-on-error: true
+
+      - name: Publish coverage report
+        uses: davelosert/vitest-coverage-report-action@v2
+        if: always()
+        with:
+          name: Core
+          json-summary-path: packages/core/coverage/coverage-summary.json
+          json-final-path: packages/core/coverage/coverage-final.json
+          vite-config-path: packages/core/vitest.config.ts

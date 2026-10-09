@@ -2,7 +2,7 @@
 // safeStorage (session token) and the plaintext config.json in userData.
 
 import * as SecureStore from 'expo-secure-store';
-import type { TokenStore } from '../core/session';
+import type { TokenStore } from '@truetunes/core/core/session';
 
 const TOKEN_KEY = 'sonos.sessionToken';
 

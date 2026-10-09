@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@truetunes/core": "*",
     "@preeternal/react-native-cookie-manager": "^7.0.0",
     "@shopify/flash-list": "2.0.2",
     "@tanstack/query-async-storage-persister": "^5.104.0",

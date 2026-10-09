@@ -1,5 +1,5 @@
 // Recent search queries as pure logic over an injected KeyValueStore.
-import type { KeyValueStore } from '../../office/config';
+import type { KeyValueStore } from '@truetunes/core/office/config';
 
 export const RECENT_SEARCHES_KEY = 'recent.searches';
 export const MAX_RECENT = 10;

@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { WebView } from 'react-native-webview';
-import { BASE_URL, SPOOF_UA } from '../sonos/constants';
-import { looksSignedIn } from '../core/loginUrl';
+import { BASE_URL, SPOOF_UA } from '@truetunes/core/sonos/constants';
+import { looksSignedIn } from '@truetunes/core/core/loginUrl';
 import { readSonosSessionToken } from './sonosCookie';
 
 /**

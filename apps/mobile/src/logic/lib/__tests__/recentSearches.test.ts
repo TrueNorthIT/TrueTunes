@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { KeyValueStore } from '../../../office/config';
+import type { KeyValueStore } from '@truetunes/core/office/config';
 import {
   addRecent,
   clearRecent,

@@ -2,8 +2,8 @@
 // argument carrying request headers, which the Sonos endpoint needs (Origin, User-Agent).
 // Verified on a Pixel 10 Pro XL in the Phase 0 spike.
 
-import type { PubSubSocket } from '../office/pubsub';
-import type { SocketFactory, SocketLike } from '../sonos/wsSession';
+import type { PubSubSocket } from '@truetunes/core/office/pubsub';
+import type { SocketFactory, SocketLike } from '@truetunes/core/sonos/wsSession';
 
 type HeaderWebSocketCtor = new (
   url: string,

@@ -13,12 +13,8 @@ export default defineConfig({
         test: {
           name: 'node',
           environment: 'node',
-          include: [
-            'src/sonos/**/__tests__/**/*.test.{ts,tsx}',
-            'src/office/**/__tests__/**/*.test.{ts,tsx}',
-            'src/core/**/__tests__/**/*.test.{ts,tsx}',
-            'plugins/**/__tests__/**/*.test.js',
-          ],
+          // src/sonos, src/office and src/core now live in packages/core, which runs its own tests.
+          include: ['plugins/**/__tests__/**/*.test.js'],
         },
       },
       {

@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import { Linking } from 'react-native';
-import type { CorePlatform } from '../core/createCore';
+import type { CorePlatform } from '@truetunes/core/core/createCore';
 import { createPubSubSocket, createSonosSocket } from './sockets';
 import { secureKeyValueStore, secureTokenStore } from './secureStore';
 

@@ -3,11 +3,11 @@ import * as SecureStore from 'expo-secure-store';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { BASE_URL, SESSION_COOKIE, SPOOF_UA } from '../sonos/constants';
-import { extractGroups, findTicket } from '../sonos/protocol';
-import { createSonosClient } from '../sonos/sonosClient';
-import type { SonosConfig } from '../sonos/types';
-import { SonosWs } from '../sonos/wsClient';
+import { BASE_URL, SESSION_COOKIE, SPOOF_UA } from '@truetunes/core/sonos/constants';
+import { extractGroups, findTicket } from '@truetunes/core/sonos/protocol';
+import { createSonosClient } from '@truetunes/core/sonos/sonosClient';
+import type { SonosConfig } from '@truetunes/core/sonos/types';
+import { SonosWs } from '@truetunes/core/sonos/wsClient';
 
 const TOKEN_KEY = 'sonos.sessionToken';
 const mask = (t: string) => `${t.slice(0, 8)}...(${t.length} chars)`;
