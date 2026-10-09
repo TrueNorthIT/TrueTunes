@@ -404,8 +404,8 @@ async function sonosFetch(request: FetchRequest): Promise<FetchResponse> {
   const RETRY_DELAYS_MS = [250, 750];
 
   let response!: Response;
-  let bodyText = '';
-  let resHeaders: Record<string, string> = {};
+  let bodyText: string;
+  let resHeaders: Record<string, string>;
 
   for (let attempt = 0; ; attempt++) {
     const reqId = randomUUID();
@@ -899,7 +899,7 @@ async function connectWebSocket(): Promise<void> {
   if (ws && ws.readyState <= WebSocket.OPEN) return;
 
   // Fetch a fresh ticket from /api/mfe
-  let ticket: string | null = null;
+  let ticket: string | null;
   try {
     ticket = findTicket(await fetchMfeData());
   } catch (err) {
