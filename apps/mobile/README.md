@@ -1,8 +1,8 @@
 # True Tunes — Android
 
-Sideloaded Android client for True Tunes (a Sonos web-player client). Sibling of the desktop
-app in `R:\TrueTunes`; see `R:\TrueTunes\docs\android-plan.md` (branch `plan/android-react-native`)
-for the full plan. **Distribution is sideload-only (APK), never the Play Store.**
+Sideloaded Android client for True Tunes (a Sonos web-player client). It lives in `apps/mobile` of the
+`TrueNorthIT/TrueTunes` monorepo, beside the desktop app; see `docs/android-plan.md` on that repo's
+`plan/android-react-native` branch for the original plan. **Distribution is sideload-only (APK), never the Play Store.**
 
 ## Status
 

@@ -1,5 +1,27 @@
 # Claude Notes — True Tunes 2
 
+## Repository layout
+
+This repo is **public** and holds two apps:
+
+- The **desktop** Electron app (everything at the root except `apps/` — described below).
+- The **Android/iOS** React Native app in `apps/mobile` (moved in from `TrueNorthIT/TrueTunes-Android` with its
+  history). It has its own `package.json`, lockfile, lint and tests; read `apps/mobile/CLAUDE.md` before touching it.
+  The root ESLint and Prettier configs ignore `apps/`.
+
+Workflows (`.github/workflows/`):
+
+| File                 | What                                                                                                  |
+| -------------------- | ----------------------------------------------------------------------------------------------------- |
+| `desktop.yml`        | Desktop PR validation; on push to `main`, bumps the patch version and publishes a desktop release      |
+| `mobile-ci.yml`      | Mobile lint, typecheck, expo-doctor and tests, for changes under `apps/mobile`                        |
+| `mobile-release.yml` | On an `android-vX.Y.Z` tag, builds and signs the APK and creates a release with `--latest=false`      |
+
+- `desktop.yml` ignores `apps/mobile/**` and the mobile workflows. **Keep it that way**: otherwise every mobile commit to
+  `main` publishes a desktop release.
+- Tags: `vX.Y.Z` is desktop, `android-vX.Y.Z` is mobile. Desktop auto-update (electron-updater, GitHub provider) reads
+  `/releases/latest`, so a mobile release must never be marked Latest.
+
 ## What this is
 
 Electron desktop Sonos client. Three distinct environments that compile and run separately:

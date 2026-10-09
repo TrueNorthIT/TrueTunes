@@ -80,7 +80,11 @@ server/               Azure Functions (office presence backend)
   azuredeploy.json    ARM template — deploys all Azure infrastructure
 
 .github/workflows/
-  publish.yml         CI — validate (lint + typecheck + tests) → version bump → publish
+  desktop.yml         CI — validate (lint + typecheck + tests) → version bump → publish (ignores apps/mobile)
+  mobile-ci.yml       Mobile app CI (apps/mobile)
+  mobile-release.yml  Signed APK release on an android-vX.Y.Z tag
+
+apps/mobile/          React Native (Expo) Android/iOS app — see apps/mobile/CLAUDE.md
 ```
 
 ---

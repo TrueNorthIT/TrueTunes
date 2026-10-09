@@ -3,8 +3,9 @@
 ## What this is
 
 Sideloaded Android client for True Tunes, the Sonos web-player client. Expo SDK 57 / React Native 0.86
-(**New Architecture only**), TypeScript, expo-router. It is the mobile sibling of the desktop Electron app
-(`TrueNorthIT/TrueTunes`); the Azure Functions backend in that repo's `server/` is shared and unchanged.
+(**New Architecture only**), TypeScript, expo-router. It lives in `apps/mobile` of the public `TrueNorthIT/TrueTunes`
+monorepo, beside the desktop Electron app (repo root); the Azure Functions backend in the root `server/` is shared and
+unchanged. Run every command below from `apps/mobile`.
 **Distribution is sideload only (APK) — never the Play Store.** The Sonos "API" is the reverse-engineered
 play.sonos.com BFF, exactly as on desktop.
 
@@ -102,16 +103,22 @@ UI components (`src/ui`, `src/app`) have **no automated tests** — keep logic i
 - Track details (`['track', id]` queries) are persisted for 7 days; bump `CACHE_BUSTER` if `TrackDetails` changes.
 - Debug builds are `uk.co.truenorthit.truetunes.dev` ("True Tunes (dev)"), release builds are `uk.co.truenorthit.truetunes`, so
   they coexist. Use the `.dev` id for `adb ... -p`, `monkey`, `run-as`. See `docs/RELEASING.md`.
+- **Releases are tagged `android-vX.Y.Z`**, never `vX.Y.Z` (that is a desktop release). CI is
+  `.github/workflows/mobile-ci.yml` and `mobile-release.yml` at the repo root; the release is created with
+  `--latest=false` so desktop auto-update keeps finding the desktop release. See `docs/RELEASING.md`.
+- **Releases are tagged `android-vX.Y.Z`**, never `vX.Y.Z` (that is a desktop release). CI is
+  `.github/workflows/mobile-ci.yml` and `mobile-release.yml` at the repo root; the release is created with
+  `--latest=false` so desktop auto-update keeps finding the desktop release. See `docs/RELEASING.md`.
 - The debug spike screen is at `truetunes://spike`.
 
 ---
 
 ## Sharing code with the desktop app
 
-`src/sonos`, `src/office`, `src/core` and `src/logic` are ported from `TrueNorthIT/TrueTunes` and will drift unless
-mirrored. The intended end state is a monorepo with a shared `packages/core`; until then, mirror protocol fixes by hand.
+`src/sonos`, `src/office`, `src/core` and `src/logic` are ported from the desktop app (repo root `src/` and
+`renderer/src/`) and will drift unless mirrored. The intended end state is a monorepo with a shared `packages/core`; until then, mirror protocol fixes by hand.
 `OPERATIONS` in `src/sonos/operations.ts` must match the desktop table.
 
 ## Infrastructure
 
-Shared with the desktop repo — see its `CLAUDE.md` (resource group `truetunes-rg`, Function App `truetunes-fn`).
+Shared with the desktop app — see the root `CLAUDE.md` (resource group `truetunes-rg`, Function App `truetunes-fn`).
