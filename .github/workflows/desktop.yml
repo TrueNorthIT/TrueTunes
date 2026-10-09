@@ -4,13 +4,13 @@ name: Desktop
 # Only desktop paths trigger it: without the filter, every mobile commit to main would publish a desktop release.
 # PRs also run it for server/ changes, because the server is linted with the desktop ESLint config.
 on:
+  # Publishing is narrower than validation: the root lock and packages/ change with mobile work too, and each
+  # push here ships a release. Desktop dependency changes always touch apps/desktop/package.json. Add packages/**
+  # once the desktop imports @truetunes/core.
   push:
     branches: [main]
     paths:
       - 'apps/desktop/**'
-      - 'packages/**'
-      - 'package.json'
-      - 'package-lock.json'
       - '.github/workflows/desktop.yml'
   pull_request:
     branches: [main, develop]
