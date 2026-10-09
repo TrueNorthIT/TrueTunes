@@ -4,8 +4,12 @@
 
 Sideloaded Android client for True Tunes, the Sonos web-player client. Expo SDK 57 / React Native 0.86
 (**New Architecture only**), TypeScript, expo-router. It lives in `apps/mobile` of the public `TrueNorthIT/TrueTunes`
-monorepo, beside the desktop Electron app (repo root); the Azure Functions backend in the root `server/` is shared and
-unchanged. Run every command below from `apps/mobile`.
+npm-workspaces monorepo, beside the desktop Electron app (`apps/desktop`); the Azure Functions backend in the root
+`server/` is shared and unchanged. Run every command below from `apps/mobile`, except `npm install`/`npm ci`, which run
+once at the repo root: there is a single root `package-lock.json` and dependencies are hoisted to the root
+`node_modules`. Expo configures Metro for the monorepo itself — do not add `watchFolders` or
+`disableHierarchicalLookup`. The root `overrides` pin `react`/`react-dom` (to the SDK's version), `@tanstack/react-query`
+and `@types/react`; change them when the SDK moves.
 **Distribution is sideload only (APK) — never the Play Store.** The Sonos "API" is the reverse-engineered
 play.sonos.com BFF, exactly as on desktop.
 
@@ -112,8 +116,8 @@ UI components (`src/ui`, `src/app`) have **no automated tests** — keep logic i
 
 ## Sharing code with the desktop app
 
-`src/sonos`, `src/office`, `src/core` and `src/logic` are ported from the desktop app (repo root `src/` and
-`renderer/src/`) and will drift unless mirrored. The intended end state is a monorepo with a shared `packages/core`; until then, mirror protocol fixes by hand.
+`src/sonos`, `src/office`, `src/core` and `src/logic` are ported from the desktop app (`apps/desktop/src/` and
+`apps/desktop/renderer/src/`) and will drift unless mirrored. The intended end state is a monorepo with a shared `packages/core`; until then, mirror protocol fixes by hand.
 `OPERATIONS` in `src/sonos/operations.ts` must match the desktop table.
 
 ## Infrastructure

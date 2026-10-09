@@ -2,23 +2,34 @@
 
 ## Repository layout
 
-This repo is **public** and holds two apps:
+This repo is **public** and is an **npm-workspaces monorepo** (`apps/*`, `packages/*`):
 
-- The **desktop** Electron app (everything at the root except `apps/` — described below).
-- The **Android/iOS** React Native app in `apps/mobile` (moved in from `TrueNorthIT/TrueTunes-Android` with its
-  history). It has its own `package.json`, lockfile, lint and tests; read `apps/mobile/CLAUDE.md` before touching it.
-  The root ESLint and Prettier configs ignore `apps/`.
+| Path           | What                                                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------------------- |
+| `apps/desktop` | The desktop Electron app — the rest of this file. **Paths below are relative to `apps/desktop`**         |
+| `apps/mobile`  | The Android/iOS React Native app (moved in from `TrueNorthIT/TrueTunes-Android` with its history). Read `apps/mobile/CLAUDE.md` before touching it |
+| `server/`      | Azure Functions backend. **Not a workspace**: own `package.json` and lockfile, because its deploy uploads `server/node_modules` |
+
+- One `npm install` at the root installs both apps; there is one root `package-lock.json`. Never add a lockfile under
+  `apps/`.
+- The root `overrides` pin `react`/`react-dom` to the version Expo SDK 57 requires, plus `@tanstack/react-query` and
+  `@types/react`, so each has exactly one copy. Change them together with the Expo SDK.
+- Each app has its own ESLint config and scripts. At the root, `npm run lint` / `typecheck` / `test:run` run every
+  workspace; `npm run lint:server` lints `server/` with the desktop ESLint config.
+- `electron` is pinned to an exact version in `apps/desktop/package.json`: electron-builder cannot see the hoisted
+  `electron` package and falls back to the declared version. Bump it deliberately.
+- The `.env` stays at the repo root (the server deploy reads it); the desktop `build:main` reads it from there.
 
 Workflows (`.github/workflows/`):
 
 | File                 | What                                                                                                  |
 | -------------------- | ----------------------------------------------------------------------------------------------------- |
-| `desktop.yml`        | Desktop PR validation; on push to `main`, bumps the patch version and publishes a desktop release      |
+| `desktop.yml`        | Desktop PR validation; on push to `main`, bumps `apps/desktop`'s patch version and publishes a release |
 | `mobile-ci.yml`      | Mobile lint, typecheck, expo-doctor and tests, for changes under `apps/mobile`                        |
 | `mobile-release.yml` | On an `android-vX.Y.Z` tag, builds and signs the APK and creates a release with `--latest=false`      |
 
-- `desktop.yml` ignores `apps/mobile/**` and the mobile workflows. **Keep it that way**: otherwise every mobile commit to
-  `main` publishes a desktop release.
+- `desktop.yml` only runs for `apps/desktop/**`, `packages/**` and the root package files (PRs also for `server/**`).
+  **Keep it that way**: otherwise every mobile commit to `main` publishes a desktop release.
 - Tags: `vX.Y.Z` is desktop, `android-vX.Y.Z` is mobile. Desktop auto-update (electron-updater, GitHub provider) reads
   `/releases/latest`, so a mobile release must never be marked Latest.
 
@@ -35,6 +46,8 @@ The renderer never imports from `src/` and vice versa. Communication is strictly
 ---
 
 ## Running and building
+
+Run these from `apps/desktop` (or add `-w apps/desktop` at the root):
 
 ```bash
 npm run dev          # build main + start Vite + Electron concurrently
@@ -84,7 +97,7 @@ After making UI changes:
 
 ### Sonos API
 
-All Sonos HTTP calls go through `src/main.ts` → `sonosFetch()` → play.sonos.com BFF. The renderer calls `window.sonos.fetch({ operationId, pathParams, query, body })` — operationIds are defined in `SonosWebPlayerAPI.yaml` at the repo root.
+All Sonos HTTP calls go through `src/main.ts` → `sonosFetch()` → play.sonos.com BFF. The renderer calls `window.sonos.fetch({ operationId, pathParams, query, body })` — operationIds are defined in `SonosWebPlayerAPI.yaml` in `apps/desktop`.
 
 `renderer/src/lib/sonosApi.ts` is the typed wrapper around `window.sonos.fetch` — add new API calls here.
 
@@ -167,7 +180,7 @@ Main process (`src/`), IPC handlers, WebSocket bootstrap, auth flow, and most ho
 ## Gotchas
 
 - **`globals.d.ts` must stay ambient** — no `export {}`, no `import`. Adding either makes it a module and breaks global type resolution silently in the renderer.
-- **Renderer typecheck is separate** — `tsc` at the root only checks `src/`. Always run `npm run typecheck` (which checks both) not just `tsc`.
+- **Renderer typecheck is separate** — `tsc` in `apps/desktop` only checks `src/`. Always run `npm run typecheck` (which checks both) not just `tsc`.
 - **`applyReorderLocally` index math** — `insertAt` is the count of non-selected items whose _original_ index is less than `toIndex`, not `toIndex` itself. See `queueHelpers.ts` for comments.
 - **Image cache is a singleton module** — tests that import `imageCache` must use `vi.resetModules()` and dynamic `import()` in `beforeEach` to avoid state leaking between tests.
 - **Sandbox mode** — both `uiWin` and `miniWin` have `sandbox: true`. The preload script runs in the sandboxed context; do not use Node.js APIs directly in `preload.ts`.
