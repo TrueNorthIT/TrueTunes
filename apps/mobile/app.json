@@ -24,7 +24,11 @@
       "./plugins/withReleaseSigning",
       "./plugins/withDevVariant"
     ],
-    "platforms": ["android"],
+    "ios": {
+      "bundleIdentifier": "uk.co.truenorthit.truetunes",
+      "supportsTablet": false
+    },
+    "platforms": ["android", "ios"],
     "scheme": "truetunes"
   }
 }
