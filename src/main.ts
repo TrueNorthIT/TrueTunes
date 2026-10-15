@@ -23,7 +23,6 @@ import WebSocket from 'ws';
 import type { FetchRequest, FetchResponse } from './types';
 import * as telemetry from './telemetry';
 import * as smtc from './smtc';
-import { isMicInUse } from './mic-in-use';
 
 // Ensure the renderer's Media Session API (used to surface "now playing" to
 // Windows System Media Transport Controls / macOS Now Playing) is wired up.
@@ -50,7 +49,13 @@ smtc.init((action) => {
       wsSend({ namespace: 'playback', groupId, command: 'play' }, { allowTvPauseRestore: true, deviceFeedback: 'NONE' }).catch(() => {});
       break;
     case 'pause':
-      void handleSmtcPause();
+      // Deliberately ignored. Windows sends pause for more than the user
+      // pressing pause: Teams pauses every media session on joining a call,
+      // and Bluetooth headsets send pause when they connect, switch to call
+      // mode or come off. Any of those would stop the shared office speakers
+      // for everyone, so pausing is left to the app's own controls.
+      console.log('[smtc] ignoring pause command from Windows');
+      telemetry.event('SmtcPauseIgnored');
       break;
     case 'next':
       wsSend({ namespace: 'playback', groupId, command: 'skipToNextTrack' }, {}).catch(() => {});
@@ -60,39 +65,6 @@ smtc.init((action) => {
       break;
   }
 }, { displayName: 'True Tunes', appPath: app.getAppPath(), isPackaged: app.isPackaged });
-
-/** How long after an SMTC pause we keep watching for a call starting. */
-const CALL_PAUSE_GRACE_MS = 4000;
-const CALL_PAUSE_POLL_MS = 500;
-
-/**
- * Teams (and other call apps) pause every SMTC media session when you join a
- * call. That's right for local audio, but here it would pause the office
- * speakers for everyone. The pause event doesn't say who sent it, so we use
- * "another app has the mic open" as the call signal: if it already is, the
- * pause is ignored; if it opens within a few seconds of us pausing, we resume.
- */
-async function handleSmtcPause(): Promise<void> {
-  if (await isMicInUse()) {
-    console.log('[smtc] ignoring pause: microphone in use (call in progress)');
-    telemetry.event('SmtcPauseIgnored', { reason: 'mic-in-use' });
-    return;
-  }
-  const sendPlayback = (command: 'play' | 'pause') => {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    wsSend({ namespace: 'playback', groupId: config.groupId, command }, { allowTvPauseRestore: true, deviceFeedback: 'NONE' }).catch(() => {});
-  };
-  sendPlayback('pause');
-  for (let waited = 0; waited < CALL_PAUSE_GRACE_MS; waited += CALL_PAUSE_POLL_MS) {
-    await new Promise((r) => setTimeout(r, CALL_PAUSE_POLL_MS));
-    if (await isMicInUse()) {
-      console.log('[smtc] call started right after pause, resuming playback');
-      telemetry.event('SmtcPauseIgnored', { reason: 'mic-opened-after' });
-      sendPlayback('play');
-      return;
-    }
-  }
-}
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
