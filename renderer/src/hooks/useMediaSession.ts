@@ -123,7 +123,15 @@ export function useMediaSession(playback: PlaybackState) {
 
     const provider = () => getActiveProvider();
     navigator.mediaSession.setActionHandler("play", () => { provider().play().catch(() => {}); });
-    navigator.mediaSession.setActionHandler("pause", () => { provider().pause().catch(() => {}); });
+    // On Windows, OS pause commands come from Teams joining a call and from
+    // Bluetooth headsets as well as the user, and would stop the shared
+    // speakers for everyone — so they're swallowed (a no-op handler, not null,
+    // which would let Chromium apply its default). See the SMTC handler in main.ts.
+    const ignoreOsPause = navigator.userAgent.includes("Windows");
+    navigator.mediaSession.setActionHandler("pause", () => {
+      if (ignoreOsPause) return;
+      provider().pause().catch(() => {});
+    });
     navigator.mediaSession.setActionHandler("previoustrack", () => { provider().skipPrev().catch(() => {}); });
     navigator.mediaSession.setActionHandler("nexttrack", () => { provider().skipNext().catch(() => {}); });
     navigator.mediaSession.setActionHandler("seekto", (details) => {
