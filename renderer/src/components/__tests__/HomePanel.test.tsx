@@ -115,6 +115,27 @@ describe('fetchYtmSections', () => {
     expect(mockBrowseContainer).toHaveBeenCalledWith('charts-id', expect.anything());
   });
 
+  it('falls back to the shelves inside Home when the root has no New releases or Charts', async () => {
+    const homeItem     = makeRootItem('Home',            'home-id');
+    const libraryItem  = makeRootItem('Library',         'lib-id');
+    const supermixItem = makeRootItem('My Supermix',     'sm-id');
+    const freshShelf   = makeRootItem('Fresh new music', 'fresh-id');
+    const topShelf     = makeRootItem('Top songs',       'top-id');
+    const newTrack: SonosItem = { name: 'New Track', type: 'TRACK' } as SonosItem;
+    const chartTrack: SonosItem = { name: 'Chart Track', type: 'TRACK' } as SonosItem;
+    mockBrowseContainer.mockImplementation(async (id: string) => {
+      if (id === 'root') return { error: null, data: makeRootData([homeItem, libraryItem, supermixItem]) };
+      if (id === 'home-id') return { error: null, data: { items: [freshShelf, topShelf] } };
+      if (id === 'fresh-id') return { error: null, data: { items: [newTrack] } };
+      if (id === 'top-id') return { error: null, data: { items: [chartTrack] } };
+      return { error: null, data: { items: [] } };
+    });
+
+    const result = await fetchYtmSections();
+    expect(result.newReleases.map((i) => i.name)).toEqual(['New Track']);
+    expect(result.charts.map((i) => i.name)).toEqual(['Chart Track']);
+  });
+
   it('returns browse items in the correct section', async () => {
     const homeItem = makeRootItem('Home', 'home-id');
     const track: SonosItem = { name: 'Track A', type: 'TRACK' } as SonosItem;

@@ -108,8 +108,6 @@ export async function fetchYtmSections(): Promise<YtmSections> {
 
   const find = (title: string) => rootItems.find((i) => (i.title ?? i.name) === title);
   const homeItem = find('Home');
-  const newReleasesItem = find('New releases');
-  const chartsItem = find('Charts');
   const supermixItem = find('My Supermix');
 
   const browseContainer = async (item: SonosItem | undefined): Promise<SonosItem[]> => {
@@ -126,10 +124,20 @@ export async function fetchYtmSections(): Promise<YtmSections> {
     return r.error ? [] : extractItems(r.data);
   };
 
-  const [homeItems, newItems, chartItems] = await Promise.all([
-    browseContainer(homeItem),
-    browseContainer(newReleasesItem),
-    browseContainer(chartsItem),
+  const homeItems = await browseContainer(homeItem);
+  const findShelf = (...titles: string[]) => {
+    for (const t of titles) {
+      const hit = homeItems.find((i) => (i.title ?? i.name) === t);
+      if (hit) return hit;
+    }
+    return undefined;
+  };
+
+  // Some accounts only expose Home / Library / My Supermix at the root, with the
+  // New releases and Charts shelves inside Home instead, so fall back to those.
+  const [newItems, chartItems] = await Promise.all([
+    browseContainer(find('New releases') ?? findShelf('New releases', 'Fresh new music')),
+    browseContainer(find('Charts') ?? findShelf('Top songs', 'Trending songs for you')),
   ]);
 
   return {
