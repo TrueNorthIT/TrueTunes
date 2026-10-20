@@ -1773,7 +1773,50 @@ ipcMain.handle(
   },
 );
 
-ipcMain.handle('game:leaderboard', async (_: IpcMainInvokeEvent, date?: string) => {
+// Weekly anonymous poll. Never throws; never logs or tracks request bodies (an answer is only
+// ever { pollId, choice } and is not tied to the user in any way).
+async function pollRequest(method: string, path: string, body?: unknown): Promise<unknown> {
+  try {
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/${path}`, {
+      method,
+      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const json = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) return { error: json.error ?? `HTTP ${res.status}` };
+    return json;
+  } catch (err) {
+    return { error: String(err) };
+  }
+}
+
+ipcMain.handle('polls:fetch', () => pollRequest('GET', 'polls'));
+
+ipcMain.handle('polls:answer', (_: IpcMainInvokeEvent, input: { pollId: string; choice: number }) =>
+  pollRequest('POST', 'polls/answer', { pollId: input?.pollId, choice: input?.choice }),
+);
+
+ipcMain.handle('polls:admin-list', () => pollRequest('GET', 'polls-admin'));
+
+ipcMain.handle('polls:admin-create', (_: IpcMainInvokeEvent, input: { question: string; choices: string[] }) =>
+  pollRequest('POST', 'polls-admin', { question: input?.question, choices: input?.choices }),
+);
+
+ipcMain.handle(
+  'polls:admin-update',
+  (_: IpcMainInvokeEvent, id: string, input: { question: string; choices: string[] }) =>
+    pollRequest('PUT', `polls-admin/${encodeURIComponent(id)}`, { question: input?.question, choices: input?.choices }),
+);
+
+ipcMain.handle('polls:admin-delete', (_: IpcMainInvokeEvent, id: string) =>
+  pollRequest('DELETE', `polls-admin/${encodeURIComponent(id)}`),
+);
+
+ipcMain.handle('polls:admin-reorder', (_: IpcMainInvokeEvent, orderedIds: string[]) =>
+  pollRequest('POST', 'polls-admin/reorder', { orderedIds }),
+);
+
+ipcMain.handle('game:leaderboard',async (_: IpcMainInvokeEvent, date?: string) => {
   try {
     const d = date && date.length ? date : 'today';
     const url = `${PUBSUB_FUNCTION_URL}/api/game-leaderboard?date=${encodeURIComponent(d)}`;

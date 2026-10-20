@@ -38,3 +38,41 @@
   -webkit-app-region: no-drag;
 }
 .titleBarUpdateBtn:hover { background: rgba(74, 222, 128, 0.20); }
+
+.titleBarPollBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(251, 146, 60, 0.10);
+  border: 1px solid rgba(251, 146, 60, 0.45);
+  color: #fb923c;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  margin-right: 6px;
+  border-radius: 8px;
+  transition: background 0.12s;
+  -webkit-app-region: no-drag;
+}
+.titleBarPollBtn:hover { background: rgba(251, 146, 60, 0.20); }
+
+/* Shakes briefly every few seconds to catch the eye, then rests. */
+.pollIcon {
+  animation: pollShake 6s ease-in-out infinite;
+  transform-origin: 50% 80%;
+}
+
+@keyframes pollShake {
+  0%, 12%, 100% { transform: rotate(0); }
+  2% { transform: rotate(-14deg); }
+  4% { transform: rotate(12deg); }
+  6% { transform: rotate(-10deg); }
+  8% { transform: rotate(8deg); }
+  10% { transform: rotate(-4deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pollIcon { animation: none; }
+}

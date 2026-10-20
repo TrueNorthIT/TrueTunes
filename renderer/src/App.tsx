@@ -41,6 +41,7 @@ import { SkinnyShell } from './components/skinny/SkinnyShell';
 import { useSkinnyMode } from './hooks/useSkinnyMode';
 import { MiniPlayerShell } from './components/MiniPlayer';
 import { FeedbackDialog } from './components/FeedbackDialog';
+import { PollAdminLauncher } from './components/polls/PollAdminLauncher';
 import { ChangelogDialog } from './components/ChangelogDialog';
 import { LyricsPanel } from './components/LyricsPanel';
 import { ProfilePanel } from './components/ProfilePanel';
@@ -598,6 +599,7 @@ useEffect(() => {
       </div>
     )}
     {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
+    <PollAdminLauncher />
     {changelogOpen && <ChangelogDialog onClose={() => setChangelogOpen(false)} />}
     </ContextMenuProvider>
     </ToastProvider>
