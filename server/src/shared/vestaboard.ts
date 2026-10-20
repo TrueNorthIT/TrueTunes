@@ -26,12 +26,12 @@ const CHAR_MAP: Record<string, number> = (() => {
   return m;
 })();
 
-function emptyBoard(): number[][] {
+export function emptyBoard(): number[][] {
   return Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => 0));
 }
 
 // Replace any unsupported characters with spaces; truncate to maxLen.
-function sanitize(text: string, maxLen: number): string {
+export function sanitize(text: string, maxLen: number): string {
   const upper = text.toUpperCase();
   let out = '';
   for (const ch of upper) {
@@ -41,7 +41,7 @@ function sanitize(text: string, maxLen: number): string {
   return out;
 }
 
-function writeRow(board: number[][], row: number, text: string, align: 'left' | 'center' | 'right' = 'left'): void {
+export function writeRow(board: number[][], row: number, text: string, align: 'left' | 'center' | 'right' = 'left'): void {
   if (row < 0 || row >= ROWS) return;
   const sanitized = sanitize(text, COLS);
   let start = 0;
@@ -107,5 +107,12 @@ export async function sendLeaderboard(
     const name = top[i].userName.toUpperCase().slice(0, nameLen).padEnd(nameLen, ' ');
     writeRow(board, i + 1, `${rankPart}${name}${scorePart}`, 'left');
   }
+  await postBoard(board, log);
+}
+
+export async function sendPollAnnouncement(
+  board: number[][],
+  log: (msg: string, ...args: unknown[]) => void = console.log,
+): Promise<void> {
   await postBoard(board, log);
 }

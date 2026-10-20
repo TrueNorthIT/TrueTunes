@@ -182,6 +182,31 @@ interface GameQuestionStat {
   bonusOptions: { name: string; pct: number }[];
 }
 
+// Weekly anonymous poll (server: /api/polls*, see server/src/shared/pollService.ts)
+interface PollLive {
+  id: string;
+  question: string;
+  choices: string[];
+  /** London Monday, YYYY-MM-DD. */
+  liveFrom: string;
+}
+
+/** Admin view: also says whether the poll is already live (locked). Never carries counts. */
+interface PollAdminItem extends PollLive {
+  live: boolean;
+}
+
+interface PollInputPayload {
+  question: string;
+  choices: string[];
+}
+
+type PollsFetchResult = { polls: PollLive[] } | { error: string };
+type PollAnswerResult = { ok: true } | { error: string };
+type PollAdminListResult = { polls: PollAdminItem[] } | { error: string };
+type PollAdminSaveResult = { poll: PollAdminItem } | { error: string };
+type PollAdminOkResult = { ok: true } | { error: string };
+
 interface GameStatsResult {
   gameId?: string;
   totalPlayers: number;
@@ -433,6 +458,15 @@ interface SonosPreload {
   fetchGameDates: (userName: string) => Promise<GameDatesResult>;
   fetchMyScore: (gameId: string, userName: string) => Promise<GameMyScoreResult>;
   fetchGameStats: (date?: string) => Promise<GameStatsResult>;
+  /** Live, current-year polls (server already filters; client hides the ones answered locally). */
+  fetchPolls: () => Promise<PollsFetchResult>;
+  /** Anonymous: the payload is exactly { pollId, choice }, nothing else. */
+  answerPoll: (input: { pollId: string; choice: number }) => Promise<PollAnswerResult>;
+  pollAdminList: () => Promise<PollAdminListResult>;
+  pollAdminCreate: (input: PollInputPayload) => Promise<PollAdminSaveResult>;
+  pollAdminUpdate: (id: string, input: PollInputPayload) => Promise<PollAdminSaveResult>;
+  pollAdminDelete: (id: string) => Promise<PollAdminOkResult>;
+  pollAdminReorder: (orderedIds: string[]) => Promise<PollAdminListResult>;
   refreshAttribution: () => Promise<void>;
   onAttributionMap: (cb: (map: AttributionMap) => void) => Unsubscribe;
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;

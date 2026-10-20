@@ -13,6 +13,7 @@
  * lands behind all of them, and "play this next" would stop meaning anything.
  */
 
+import { splitArtists } from './aggregate';
 import type { DjTrack } from './dj';
 
 /**
@@ -100,6 +101,12 @@ export interface AutoplayRequest {
   nowPlayingIndex?: number | null;
   /** Fresh DJ candidates, best first — already filtered against the queue. */
   candidates: DjTrack[];
+  /**
+   * `trackKey()` of every song already used today — hand-queued by anyone, or
+   * reserved by the DJ. A stored preview entry whose key is here is dropped, so a
+   * pick that was fine when previewed cannot be enqueued after someone queues it.
+   */
+  usedKeys?: Iterable<string>;
   /** Set to change the group's autoplay setting; omit to leave it alone. */
   setEnabled?: boolean;
 }
@@ -118,6 +125,18 @@ export interface AutoplayDecision {
    */
   fillerUri: string | null;
 }
+
+/**
+ * The act behind a name or a `trackKey()`, for the "not the same artist twice in
+ * a row" preference. Uses the first credited name, so a collab filed as
+ * "Gorillaz, De La Soul" still counts as Gorillaz.
+ */
+function leadArtist(artist: string): string {
+  return (splitArtists(artist)[0] ?? artist).trim().toLowerCase();
+}
+
+const artistOfKey = (key: string | null | undefined): string =>
+  key ? leadArtist(key.split('||')[1] ?? '') : '';
 
 export function emptySession(id: string): DjSession {
   return {
@@ -221,10 +240,17 @@ export function decideAutoplay(
     // Otherwise it's parked and still waiting its turn. Leave it be.
   }
 
-  // Anything a user has queued in the meantime shouldn't also be suggested.
-  next.upcoming = next.upcoming.filter(
-    (t) => t.uri === next.enqueuedUri || (!inQueue.has(t.uri) && t.uri !== req.nowPlayingUri),
-  );
+  // Anything a user has queued in the meantime shouldn't also be suggested —
+  // by uri, or by name when the same song sits in the queue under another uri.
+  const used = new Set(req.usedKeys ?? []);
+  const queuedKeys = new Set([...keys, ...(req.nowPlayingKey ? [req.nowPlayingKey] : [])]);
+  next.upcoming = next.upcoming.filter((t) => {
+    if (t.uri === next.enqueuedUri) return true;
+    const key = trackKey(t.trackName, t.artist);
+    return (
+      !inQueue.has(t.uri) && t.uri !== req.nowPlayingUri && !queuedKeys.has(key) && !used.has(key)
+    );
+  });
 
   // Top up, skipping anything already queued, previewed, or playing right now —
   // re-suggesting the track currently coming out of the speaker looks broken.
@@ -238,12 +264,23 @@ export function decideAutoplay(
   // Same guard by name, so a re-keyed queue entry isn't offered as if it were
   // a track the office hasn't just heard.
   const seenKeys = new Set([...keys, ...(req.nowPlayingKey ? [req.nowPlayingKey] : [])]);
+
+  // A soft preference, never a rule: whatever is added next lands behind the last
+  // track in the queue, so offer other acts first and only fall back to the same
+  // act when nothing else is left. An empty queue has no tail to avoid.
+  const tailArtist = artistOfKey(keys[keys.length - 1] ?? req.nowPlayingKey);
+  const eligible: DjTrack[] = [];
   for (const candidate of req.candidates) {
-    if (next.upcoming.length >= UPCOMING_SIZE) break;
     if (!candidate.uri || seen.has(candidate.uri)) continue;
-    if (seenKeys.has(trackKey(candidate.trackName, candidate.artist))) continue;
-    next.upcoming.push(candidate);
+    const key = trackKey(candidate.trackName, candidate.artist);
+    if (seenKeys.has(key) || used.has(key)) continue;
+    eligible.push(candidate);
     seen.add(candidate.uri);
+  }
+  const sameAct = (t: DjTrack) => tailArtist !== '' && leadArtist(t.artist) === tailArtist;
+  for (const candidate of [...eligible.filter((t) => !sameAct(t)), ...eligible.filter(sameAct)]) {
+    if (next.upcoming.length >= UPCOMING_SIZE) break;
+    next.upcoming.push(candidate);
   }
 
   let enqueue: DjTrack | null = null;
@@ -255,9 +292,16 @@ export function decideAutoplay(
     const waitingAfterPlayhead =
       nowIndex >= 0 ? req.queueUris.length - 1 - nowIndex : req.queueUris.length;
     if (head && waitingAfterPlayhead === 0) {
-      enqueue = head;
-      next.enqueuedUri = head.uri;
-      next.enqueuedKey = trackKey(head.trackName, head.artist);
+      // A preview entry stored before the queue changed can now share an act with
+      // the track it would follow; bring forward one that doesn't.
+      if (sameAct(head)) {
+        const better = next.upcoming.findIndex((t) => !sameAct(t));
+        if (better > 0) next.upcoming.unshift(...next.upcoming.splice(better, 1));
+      }
+      const pick = next.upcoming[0];
+      enqueue = pick;
+      next.enqueuedUri = pick.uri;
+      next.enqueuedKey = trackKey(pick.trackName, pick.artist);
       next.enqueuedAt = now;
       next.enqueuedSeen = false;
     }

@@ -233,9 +233,19 @@ export function useGameStats(gameId: string | null) {
 export function useMyScore(gameId: string | null, userName: string | null | undefined) {
   return useQuery<GameMyScoreResult>({
     queryKey: ['queuedle-my-score', gameId ?? '', userName ?? ''],
-    queryFn: () => window.sonos.fetchMyScore(gameId!, userName!),
+    queryFn: async () => {
+      const result = await window.sonos.fetchMyScore(gameId!, userName!);
+      // The IPC returns { error } rather than throwing. Throw so the failure is
+      // retried and never cached as if it were an answer.
+      if (result?.error) throw new Error(result.error);
+      return result;
+    },
     enabled: !!gameId && !!userName,
-    staleTime: Infinity,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
+    // A score with its guesses never changes, so keep it. Anything else (no score
+    // yet, or a score without guesses) is re-checked on the next mount.
+    staleTime: (query) => (query.state.data?.score?.guesses?.main?.length ? Infinity : 0),
   });
 }
 
@@ -257,6 +267,8 @@ export function useSubmitGameScore() {
       qc.invalidateQueries({ queryKey: ['queuedle', 'today'] });
       qc.invalidateQueries({ queryKey: ['queuedle-dates'] });
       qc.invalidateQueries({ queryKey: ['queuedle-rankings'] });
+      qc.invalidateQueries({ queryKey: ['queuedle-my-score', variables.gameId] });
+      qc.invalidateQueries({ queryKey: ['queuedle-stats', variables.gameId] });
     },
   });
 }

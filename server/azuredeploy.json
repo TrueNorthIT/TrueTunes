@@ -271,7 +271,26 @@
             ],
             "kind": "Hash"
           },
-          "defaultTtl": 604800
+          "defaultTtl": -1
+        }
+      }
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+      "apiVersion": "2024-02-15-preview",
+      "name": "[concat(variables('cosmosName'), '/truetunes/polls')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosName'), 'truetunes')]"
+      ],
+      "properties": {
+        "resource": {
+          "id": "polls",
+          "partitionKey": {
+            "paths": [
+              "/id"
+            ],
+            "kind": "Hash"
+          }
         }
       }
     },
@@ -360,6 +379,10 @@
             {
               "name": "COSMOS_SCORES_CONTAINER",
               "value": "scores"
+            },
+            {
+              "name": "COSMOS_POLLS_CONTAINER",
+              "value": "polls"
             },
             {
               "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",

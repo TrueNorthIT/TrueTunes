@@ -1,184 +1,87 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
-import { CosmosClient, Container } from '@azure/cosmos';
-import { buildDjSet } from '../shared/dj';
-import { decideAutoplay, emptySession, type DjSession } from '../shared/autoplay';
-import type { RawEvent } from '../shared/aggregate';
+import { CosmosClient } from '@azure/cosmos';
+import {
+  containerDocStore,
+  eventsSinceQuery,
+  historyQuery,
+} from '../shared/cosmosAdapters';
+import {
+  createDjAutoplayService,
+  type AutoplayBody,
+  type DjAutoplayService,
+  type TimedEvent,
+} from '../shared/djAutoplayService';
 
-const WINDOW_DAYS = 90;
-const ACTIVE_HOURS = 4;
-/** Enough candidates that the preview can still fill after exclusions. */
-const CANDIDATE_POOL = 40;
-
-interface TimedEvent extends RawEvent {
-  timestamp?: number;
-}
-
-interface AutoplayBody {
-  groupId?: string;
-  clientId?: string;
-  queueUris?: string[];
-  /** Name-based identity per queue entry, for when Sonos re-keys objectIds. */
-  queueKeys?: string[];
-  nowPlayingUri?: string | null;
-  nowPlayingKey?: string | null;
-  nowPlayingIndex?: number | null;
-  users?: string[];
-  setEnabled?: boolean;
-}
+let service: DjAutoplayService | undefined;
 
 /**
- * Read-modify-write the session under optimistic concurrency.
- *
- * The ETag is what makes the lease safe: two clients polling at the same instant
- * both read `leaseOwner: null` and both try to claim it. Cosmos fails the second
- * write with 412, and the retry re-reads a session that already has an owner, so
- * only one client is ever told to enqueue.
+ * The one service for this function host. It must outlive a single request: its
+ * all-time history cache is what stops every poll from rescanning the events
+ * container. Everything durable lives in Cosmos, so a host restart loses nothing.
  */
-async function updateSession(
-  container: Container,
-  id: string,
-  apply: (session: DjSession) => DjSession,
-  maxRetries = 4,
-): Promise<DjSession> {
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    let current: DjSession | undefined;
+export function getDjAutoplayService(connStr: string): DjAutoplayService {
+  if (!service) {
+    const db = new CosmosClient(connStr).database(process.env['COSMOS_DATABASE'] ?? 'truetunes');
+    const events = db.container(process.env['COSMOS_CONTAINER'] ?? 'events');
+    // The day ledger shares the sessions container (partition /id): one document
+    // per London day beside the per-group sessions, so no new infrastructure.
+    const sessions = containerDocStore(
+      db.container(process.env['COSMOS_SESSIONS_CONTAINER'] ?? 'sessions'),
+    );
+    service = createDjAutoplayService({
+      fetchHistory: async () =>
+        (await events.items.query<TimedEvent>(historyQuery()).fetchAll()).resources,
+      fetchEventsSince: async (sinceMs) =>
+        (await events.items.query<TimedEvent>(eventsSinceQuery(sinceMs)).fetchAll()).resources,
+      sessions,
+      ledger: sessions,
+      now: () => Date.now(),
+    });
+  }
+  return service;
+}
+
+export function createDjAutoplayHandler(resolveService: (connStr: string) => DjAutoplayService) {
+  return async function djAutoplayHandler(
+    request: HttpRequest,
+    context: InvocationContext,
+  ): Promise<HttpResponseInit> {
+    const headers = { 'Access-Control-Allow-Origin': '*' };
+    const connStr = process.env['COSMOS_CONNECTION_STRING'];
+
+    if (!connStr) return { status: 500, jsonBody: { error: 'Cosmos not configured' }, headers };
+
+    let body: AutoplayBody;
     try {
-      const read = await container.item(id, id).read<DjSession>();
-      current = read.resource;
+      body = (await request.json()) as AutoplayBody;
     } catch {
-      current = undefined;
+      return { status: 400, jsonBody: { error: 'Invalid JSON body' }, headers };
     }
 
-    const base = current ?? emptySession(id);
-    const updated = apply(base);
+    const groupId = body.groupId?.trim();
+    const clientId = body.clientId?.trim();
+    if (!groupId || !clientId) {
+      return { status: 400, jsonBody: { error: 'groupId and clientId are required' }, headers };
+    }
 
     try {
-      if (current?._etag) {
-        await container
-          .item(id, id)
-          .replace(updated, { accessCondition: { type: 'IfMatch', condition: current._etag } });
-      } else {
-        // No document yet. `create` fails with 409 if another client won the
-        // race, which the retry then reads and builds on.
-        await container.items.create(updated);
+      const result = await resolveService(connStr).handle({ ...body, groupId, clientId });
+
+      if (result.enqueue) {
+        context.log(
+          `[dj-autoplay] group=${groupId} client=${clientId} enqueue=${result.enqueue.artist} — ${result.enqueue.trackName}`,
+        );
       }
-      return updated;
+
+      return { status: 200, jsonBody: result, headers };
     } catch (err) {
-      const code = (err as { code?: number; statusCode?: number }).statusCode
-        ?? (err as { code?: number }).code;
-      if ((code === 412 || code === 409) && attempt < maxRetries - 1) continue;
-      throw err;
+      context.error('[dj-autoplay] failed:', err);
+      return { status: 500, jsonBody: { error: String(err) }, headers };
     }
-  }
-  throw new Error('autoplay session contention — max retries exceeded');
+  };
 }
 
-export async function djAutoplayHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
-  const headers = { 'Access-Control-Allow-Origin': '*' };
-  const connStr = process.env['COSMOS_CONNECTION_STRING'];
-  const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
-  const eventsCtr = process.env['COSMOS_CONTAINER'] ?? 'events';
-  const sessionsCtr = process.env['COSMOS_SESSIONS_CONTAINER'] ?? 'sessions';
-
-  if (!connStr) return { status: 500, jsonBody: { error: 'Cosmos not configured' }, headers };
-
-  let body: AutoplayBody;
-  try {
-    body = (await request.json()) as AutoplayBody;
-  } catch {
-    return { status: 400, jsonBody: { error: 'Invalid JSON body' }, headers };
-  }
-
-  const groupId = body.groupId?.trim();
-  const clientId = body.clientId?.trim();
-  if (!groupId || !clientId) {
-    return { status: 400, jsonBody: { error: 'groupId and clientId are required' }, headers };
-  }
-
-  // Both arrays must stay index-aligned: the coordinator compares positions to
-  // decide whether the playhead has passed the filler. Dropping empty entries
-  // from one and not the other would shift every index after the gap.
-  const queueUris = Array.isArray(body.queueUris) ? body.queueUris : [];
-  const queueKeys = Array.isArray(body.queueKeys) ? body.queueKeys : [];
-  const nowPlayingUri = body.nowPlayingUri ?? null;
-  const nowPlayingKey = body.nowPlayingKey ?? null;
-  const nowPlayingIndex =
-    typeof body.nowPlayingIndex === 'number' ? body.nowPlayingIndex : null;
-
-  try {
-    const client = new CosmosClient(connStr);
-    const db = client.database(dbName);
-
-    const startMs = Date.now() - WINDOW_DAYS * 24 * 60 * 60 * 1000;
-    const { resources: events } = await db
-      .container(eventsCtr)
-      .items.query<TimedEvent>({
-        query:
-          'SELECT c.userId, c.eventType, c.trackName, c.artist, c.artistId, c.album, c.albumId, c.imageUrl, c.uri, c.serviceId, c.accountId, c.timestamp FROM c WHERE c.timestamp >= @start',
-        parameters: [{ name: '@start', value: startMs }],
-      })
-      .fetchAll();
-
-    // Same room inference the DJ panel uses when the caller doesn't say who's in.
-    let users = body.users?.filter(Boolean) ?? [];
-    if (users.length === 0) {
-      const activeSince = Date.now() - ACTIVE_HOURS * 60 * 60 * 1000;
-      users = [
-        ...new Set(
-          events.filter((e) => (e.timestamp ?? 0) >= activeSince && e.userId).map((e) => e.userId),
-        ),
-      ];
-    }
-
-    const { tracks: candidates } = buildDjSet(events, {
-      users,
-      limit: CANDIDATE_POOL,
-      excludeUris: queueUris,
-      // One per artist: the preview shows three in a row, and three tracks by
-      // the same act reads as a broken shuffle rather than a DJ set.
-      perArtistMax: 1,
-    });
-
-    let decision!: ReturnType<typeof decideAutoplay>;
-    await updateSession(db.container(sessionsCtr), groupId, (session) => {
-      decision = decideAutoplay(session, {
-        clientId,
-        queueUris,
-        queueKeys,
-        nowPlayingUri,
-        nowPlayingKey,
-        nowPlayingIndex,
-        candidates,
-        ...(body.setEnabled !== undefined ? { setEnabled: body.setEnabled } : {}),
-      });
-      return decision.session;
-    });
-
-    if (decision.enqueue) {
-      context.log(
-        `[dj-autoplay] group=${groupId} client=${clientId} enqueue=${decision.enqueue.artist} — ${decision.enqueue.trackName}`,
-      );
-    }
-
-    return {
-      status: 200,
-      jsonBody: {
-        enabled: decision.session.enabled,
-        leaseHeld: decision.leaseHeld,
-        enqueue: decision.enqueue,
-        upcoming: decision.upcoming,
-        fillerUri: decision.fillerUri,
-      },
-      headers,
-    };
-  } catch (err) {
-    context.error('[dj-autoplay] failed:', err);
-    return { status: 500, jsonBody: { error: String(err) }, headers };
-  }
-}
+export const djAutoplayHandler = createDjAutoplayHandler(getDjAutoplayService);
 
 app.http('dj-autoplay', {
   route: 'dj/autoplay',

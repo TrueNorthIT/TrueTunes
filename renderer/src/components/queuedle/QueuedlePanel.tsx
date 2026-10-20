@@ -104,6 +104,19 @@ export function QueuedlePanel() {
     return null;
   }, [gameId]);
 
+  // Prefer the server's guesses; use the local copy only when it covers every
+  // question (an empty or short local array must not block the server's).
+  const questionCount = game?.questions.length ?? 0;
+  const serverGuesses = myScore.data?.score?.guesses;
+  const reviewGuesses = useMemo<Array<'left' | 'right'> | undefined>(() => {
+    const complete = (g: unknown): g is Array<'left' | 'right'> =>
+      Array.isArray(g) && questionCount > 0 && g.length >= questionCount;
+    if (complete(serverGuesses?.main)) return serverGuesses.main;
+    if (complete(localPlayed?.guesses)) return localPlayed?.guesses;
+    return undefined;
+  }, [serverGuesses, localPlayed, questionCount]);
+  const reviewBonusGuesses = Array.isArray(serverGuesses?.bonus) ? serverGuesses.bonus : undefined;
+
   const [phase, setPhase] = useState<Phase>('intro');
   const [currentIdx, setCurrentIdx] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -133,6 +146,22 @@ export function QueuedlePanel() {
       // ignore quota / disabled storage
     }
   }, [gameId, alreadyPlayed, localPlayed]);
+
+  // Upgrade a local entry that lacks (complete) guesses once the server's arrive.
+  const serverMain = serverGuesses?.main;
+  useEffect(() => {
+    if (!gameId || !localPlayed || !serverMain || questionCount === 0) return;
+    if (serverMain.length < questionCount) return;
+    if ((localPlayed.guesses?.length ?? 0) >= questionCount) return;
+    try {
+      localStorage.setItem(
+        `queuedle-played:${gameId}`,
+        JSON.stringify({ mainScore: localPlayed.mainScore, bonusScore: localPlayed.bonusScore, guesses: serverMain })
+      );
+    } catch {
+      // ignore quota / disabled storage
+    }
+  }, [gameId, localPlayed, serverMain, questionCount]);
 
   useEffect(() => {
     if (!calendarOpen) return;
@@ -434,7 +463,8 @@ export function QueuedlePanel() {
                 alreadySubmitted
                 hideScoreSummary
                 questions={game.questions}
-                mainGuesses={cachedScore.guesses ?? myScore.data?.score?.guesses?.main}
+                mainGuesses={reviewGuesses}
+                bonusGuesses={reviewBonusGuesses}
                 stats={gameStats.data}
                 onPlayAgain={handleDevPlayAgain}
               />

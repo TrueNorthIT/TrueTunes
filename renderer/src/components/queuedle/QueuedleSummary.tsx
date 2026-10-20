@@ -4,10 +4,12 @@ import styles from '../../styles/Queuedle.module.css';
 interface ReviewRowProps {
   question: GameQuestion;
   guess: 'left' | 'right';
+  /** The user's bonus (top queuer) pick, if known. */
+  bonusGuess?: string;
   qStat?: GameQuestionStat;
 }
 
-function ReviewRow({ question: q, guess, qStat }: ReviewRowProps) {
+function ReviewRow({ question: q, guess, bonusGuess, qStat }: ReviewRowProps) {
   const correct = guess === q.winner;
   const leftArt = useImage(q.left.imageUrl);
   const rightArt = useImage(q.right.imageUrl);
@@ -17,6 +19,10 @@ function ReviewRow({ question: q, guess, qStat }: ReviewRowProps) {
     guess === 'left'
       ? `linear-gradient(90deg, rgba(${color}, 0.18) 0%, rgba(${color}, 0.06) 75%, transparent 85%)`
       : `linear-gradient(270deg, rgba(${color}, 0.18) 0%, rgba(${color}, 0.06) 75%, transparent 85%)`;
+
+  // The bonus question is about the winning item (bonusItem, else the winner).
+  const bonusTarget = (q.bonusItem ?? q.winner) === 'left' ? q.left : q.right;
+  const bonusCorrect = !!bonusGuess && bonusGuess === bonusTarget.topQueuer;
 
   const correctPct = q.winner === 'left' ? qStat?.leftPct : qStat?.rightPct;
 
@@ -41,12 +47,17 @@ function ReviewRow({ question: q, guess, qStat }: ReviewRowProps) {
         </span>
         {rightArt ? <img src={rightArt} className={styles.reviewArt} alt={q.right.name} /> : <div className={styles.reviewArt} />}
       </div>
-      {qStat && (
+      {(qStat || bonusGuess) && (
         <div className={styles.reviewMeta}>
-          {correctPct !== undefined && (
+          {bonusGuess && (
+            <span className={bonusCorrect ? styles.reviewMetaCorrect : styles.reviewMetaBonus}>
+              Your top queuer pick: {bonusCorrect ? '✓' : '✗'} {bonusGuess}
+            </span>
+          )}
+          {qStat && correctPct !== undefined && (
             <span className={styles.reviewMetaCorrect}>{correctPct}% got this right</span>
           )}
-          {qStat.bonusOptions.length > 0 && (
+          {qStat && qStat.bonusOptions.length > 0 && (
             <span className={styles.reviewMetaBonus}>
               {qStat.bonusOptions.map((o) => `${o.name} ${o.pct}%`).join(' · ')}
             </span>
@@ -66,6 +77,7 @@ interface Props {
   hideScoreSummary?: boolean;
   questions?: GameQuestion[];
   mainGuesses?: Array<'left' | 'right'>;
+  bonusGuesses?: string[];
   stats?: GameStatsResult;
   onPlayAgain?: () => void;
 }
@@ -79,6 +91,7 @@ export function QueuedleSummary({
   hideScoreSummary,
   questions,
   mainGuesses,
+  bonusGuesses,
   stats,
   onPlayAgain,
 }: Props) {
@@ -107,7 +120,7 @@ export function QueuedleSummary({
         <div className={styles.reviewList}>
           <h2 className={styles.leaderboardTitle}>Question Breakdown</h2>
           {questions.map((q, i) => (
-            <ReviewRow key={i} question={q} guess={mainGuesses[i]} qStat={stats?.questions?.[i]} />
+            <ReviewRow key={i} question={q} guess={mainGuesses[i]} bonusGuess={bonusGuesses?.[i] || undefined} qStat={stats?.questions?.[i]} />
           ))}
         </div>
       )}

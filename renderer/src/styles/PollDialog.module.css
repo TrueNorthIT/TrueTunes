@@ -1,0 +1,144 @@
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.choice {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.choice:hover:not(:disabled) {
+  background: rgba(251, 146, 60, 0.14);
+  border-color: rgba(251, 146, 60, 0.5);
+}
+.choice:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Admin dialog */
+div.modalWide {
+  width: 560px;
+  max-width: 92vw;
+  max-height: 86vh;
+  overflow-y: auto;
+}
+
+.rows {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 8px 10px;
+}
+
+.rowText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.question {
+  font-size: 13px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.date {
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.liveBadge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #4ade80;
+}
+
+.rowActions {
+  display: flex;
+  gap: 4px;
+}
+
+.iconBtn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  padding: 3px 7px;
+}
+.iconBtn:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--border-2);
+}
+.iconBtn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.choiceRow {
+  display: flex;
+  gap: 6px;
+}
+.choiceRow > input {
+  flex: 1;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+.actions > button {
+  flex: 1;
+}
+
+.preview {
+  background: #111;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #f5f5f5;
+}
+
+.previewRow {
+  min-height: 1.4em;
+  text-align: center;
+  white-space: pre;
+}
+
+.warning {
+  font-size: 12px;
+  color: #fbbf24;
+  margin: 0;
+}

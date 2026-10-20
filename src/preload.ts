@@ -58,6 +58,13 @@ export interface SonosAPI {
   fetchGameDates: (userName: string) => Promise<unknown>;
   fetchMyScore: (gameId: string, userName: string) => Promise<unknown>;
   fetchGameStats: (date?: string) => Promise<unknown>;
+  fetchPolls: () => Promise<unknown>;
+  answerPoll: (input: { pollId: string; choice: number }) => Promise<unknown>;
+  pollAdminList: () => Promise<unknown>;
+  pollAdminCreate: (input: { question: string; choices: string[] }) => Promise<unknown>;
+  pollAdminUpdate: (id: string, input: { question: string; choices: string[] }) => Promise<unknown>;
+  pollAdminDelete: (id: string) => Promise<unknown>;
+  pollAdminReorder: (orderedIds: string[]) => Promise<unknown>;
   fetchRecentlyPlayed: (userId: string) => Promise<unknown>;
   fetchDjSet: (opts?: { users?: string[]; limit?: number; excludeUris?: string[] }) => Promise<unknown>;
   fetchOfficePresence: () => Promise<unknown>;
@@ -198,6 +205,13 @@ contextBridge.exposeInMainWorld('sonos', {
   fetchGameDates: (userName: string) => ipcRenderer.invoke('game:dates', userName),
   fetchMyScore: (gameId: string, userName: string) => ipcRenderer.invoke('game:my-score', gameId, userName),
   fetchGameStats: (date?: string) => ipcRenderer.invoke('game:stats', date),
+  fetchPolls: () => ipcRenderer.invoke('polls:fetch'),
+  answerPoll: (input) => ipcRenderer.invoke('polls:answer', input),
+  pollAdminList: () => ipcRenderer.invoke('polls:admin-list'),
+  pollAdminCreate: (input) => ipcRenderer.invoke('polls:admin-create', input),
+  pollAdminUpdate: (id, input) => ipcRenderer.invoke('polls:admin-update', id, input),
+  pollAdminDelete: (id) => ipcRenderer.invoke('polls:admin-delete', id),
+  pollAdminReorder: (orderedIds) => ipcRenderer.invoke('polls:admin-reorder', orderedIds),
   onAttributionEvent: (cb: (event: AttributionEvent) => void): Unsubscribe => {
     const listener = (_e: unknown, event: AttributionEvent) => cb(event);
     ipcRenderer.on('attribution:event', listener);

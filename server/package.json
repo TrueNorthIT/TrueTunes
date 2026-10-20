@@ -9,7 +9,9 @@
     "start": "npm run build && func start",
     "prestart": "npm run build",
     "deploy": "node scripts/deploy.mjs",
-    "test": "tsc -p tsconfig.test.json && node --test dist-test/shared/*.test.js"
+    "test": "tsc -p tsconfig.test.json && node --test dist-test/shared/*.test.js",
+    "sim:queuedle": "tsc -p tsconfig.sim.json && node dist-test/sim/scripts/sim-queuedle.js",
+    "sim:dj": "tsc -p tsconfig.test.json && node scripts/sim-dj.mjs"
   },
   "dependencies": {
     "@azure/cosmos": "^4.1.0",

@@ -2,6 +2,15 @@ import { useQuery, useQueries } from '@tanstack/react-query';
 import { api } from '../lib/sonosApi';
 import type { SonosItem } from '../types/sonos';
 import type { ArtistResponse } from '../types/ArtistResponse';
+import type { ServiceSearch } from '../types/ServiceSearch';
+import { findArtistByName, getItemArt, parseServiceSearch, resolveArtistParams } from '../lib/itemHelpers';
+
+interface ResolvedArtist {
+  artistId?: string;
+  serviceId?: string;
+  accountId?: string;
+  imageUrl?: string;
+}
 
 function relativeDate(ts: number): string {
   const diffMs = Date.now() - ts;
@@ -13,15 +22,19 @@ function relativeDate(ts: number): string {
   return `${Math.floor(days / 7)} weeks ago`;
 }
 
-function toArtistItem(a: RecentArtist, imageUrl?: string | null): SonosItem {
+function toArtistItem(a: RecentArtist, resolved?: ResolvedArtist | null): SonosItem {
   return {
     type: 'ARTIST',
     title: a.artist,
     name: a.artist,
-    imageUrl: imageUrl ?? a.imageUrl,
+    imageUrl: resolved?.imageUrl ?? a.imageUrl,
     resource: {
       type: 'ARTIST',
-      id: { objectId: a.artistId, serviceId: a.serviceId, accountId: a.accountId },
+      id: {
+        objectId: a.artistId ?? resolved?.artistId,
+        serviceId: a.serviceId ?? resolved?.serviceId,
+        accountId: a.accountId ?? resolved?.accountId,
+      },
     },
   };
 }
@@ -59,29 +72,46 @@ export function useRecentlyPlayed(selectedUserId?: string) {
 
   const rawArtists = data?.artists ?? [];
 
+  // Tiles with an artistId just need their photo. Tiles without one (featured
+  // artists, or old events) are resolved by name via search to get the real id
+  // and photo; if nothing matches exactly the tile stays id-less and the click
+  // handler falls back to resolveAndOpen.
   const artistImageQueries = useQueries({
     queries: rawArtists.slice(0, 9).map((a) => ({
-      queryKey: ['artist-image', a.artistId],
-      queryFn: async (): Promise<string | null> => {
-        if (!a.artistId || !a.serviceId || !a.accountId) return null;
-        const r = await api.browse.artist(a.artistId, {
+      queryKey: ['recent-artist', a.artistId ?? null, a.artist.toLowerCase(), a.serviceId ?? null, a.accountId ?? null],
+      queryFn: async (): Promise<ResolvedArtist | null> => {
+        if (a.artistId) {
+          if (!a.serviceId || !a.accountId) return null;
+          const r = await api.browse.artist(a.artistId, {
+            serviceId: a.serviceId,
+            accountId: a.accountId,
+            muse2: true,
+          });
+          if (r.error) return null;
+          const imageUrl = (r.data as ArtistResponse).images?.tile1x1;
+          return imageUrl ? { imageUrl } : null;
+        }
+        const r = await api.search.serviceQuery(a.artist, {
+          count: 20,
           serviceId: a.serviceId,
           accountId: a.accountId,
-          muse2: true,
         });
         if (r.error) return null;
-        return (r.data as ArtistResponse).images?.tile1x1 ?? null;
+        const match = findArtistByName(parseServiceSearch(r.data as ServiceSearch), a.artist);
+        if (!match) return null;
+        const { artistId, serviceId, accountId } = resolveArtistParams(match);
+        if (!artistId) return null;
+        return { artistId, serviceId, accountId, imageUrl: getItemArt(match) ?? undefined };
       },
       staleTime: Infinity,
       gcTime: 60 * 60 * 1000,
-      enabled: !!a.artistId && !!a.serviceId && !!a.accountId,
     })),
   });
 
   return {
     artistItems: rawArtists.slice(0, 9).map((a, i) => {
       const q = artistImageQueries[i];
-      return toArtistItem(a, q?.isSuccess ? (q.data ?? undefined) : undefined);
+      return toArtistItem(a, q?.isSuccess ? q.data : undefined);
     }),
     albumItems:  (data?.albums ?? []).map(toAlbumItem),
     availableUsers: data?.availableUsers ?? [],

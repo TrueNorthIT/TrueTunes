@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "outDir": "dist-test/sim", "rootDir": "." },
+  "include": ["src/shared/aggregate.ts", "src/shared/gameGenerator.ts", "scripts/**/*.ts"],
+  "exclude": ["node_modules", "dist", "dist-test"]
+}

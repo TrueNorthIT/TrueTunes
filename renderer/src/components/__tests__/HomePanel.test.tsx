@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createElement } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { HomePanel, fetchYtmSections } from '../HomePanel';
 import type { SonosItem } from '../../types/sonos';
 
@@ -17,7 +17,8 @@ vi.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
 }));
 
-vi.mock('../../hooks/useOpenItem', () => ({ useOpenItem: () => vi.fn() }));
+const mockOpenItem = vi.fn();
+vi.mock('../../hooks/useOpenItem', () => ({ useOpenItem: () => mockOpenItem }));
 
 const mockAlbumQueryOptions = vi.fn(() => ({ queryKey: ['album-test'], queryFn: async () => null }));
 const mockArtistQueryOptions = vi.fn(() => ({ queryKey: ['artist-test'], queryFn: async () => null }));
@@ -113,6 +114,65 @@ describe('fetchYtmSections', () => {
     expect(mockBrowseContainer).toHaveBeenCalledWith('home-id',   expect.anything());
     expect(mockBrowseContainer).toHaveBeenCalledWith('nr-id',     expect.anything());
     expect(mockBrowseContainer).toHaveBeenCalledWith('charts-id', expect.anything());
+  });
+
+  it('falls back to the shelves inside Home when the root has no New releases or Charts', async () => {
+    const homeItem     = makeRootItem('Home',            'home-id');
+    const libraryItem  = makeRootItem('Library',         'lib-id');
+    const supermixItem = makeRootItem('My Supermix',     'sm-id');
+    const freshShelf   = makeRootItem('Fresh new music', 'fresh-id');
+    const topShelf     = makeRootItem('Top songs',       'top-id');
+    const newTrack: SonosItem = { name: 'New Track', type: 'TRACK' } as SonosItem;
+    const chartTrack: SonosItem = { name: 'Chart Track', type: 'TRACK' } as SonosItem;
+    mockBrowseContainer.mockImplementation(async (id: string) => {
+      if (id === 'root') return { error: null, data: makeRootData([homeItem, libraryItem, supermixItem]) };
+      if (id === 'home-id') return { error: null, data: { items: [freshShelf, topShelf] } };
+      if (id === 'fresh-id') return { error: null, data: { items: [newTrack] } };
+      if (id === 'top-id') return { error: null, data: { items: [chartTrack] } };
+      return { error: null, data: { items: [] } };
+    });
+
+    const result = await fetchYtmSections();
+    expect(result.newReleases.map((i) => i.name)).toEqual(['New Track']);
+    expect(result.charts.map((i) => i.name)).toEqual(['Chart Track']);
+  });
+
+  it('removes podcasts and episodes from For You, New releases and Charts but keeps tracks and albums', async () => {
+    const homeItem     = makeRootItem('Home',            'home-id');
+    const supermixItem = makeRootItem('My Supermix',     'sm-id');
+    const nrItem       = makeRootItem('New releases',    'nr-id');
+    const chartsItem   = makeRootItem('Charts',          'charts-id');
+    const podShelf     = makeRootItem('Top podcasts',    'pod-id');
+    const mk = (name: string, type: string) => ({ name, type }) as SonosItem;
+    mockBrowseContainer.mockImplementation(async (id: string) => {
+      if (id === 'root') return { error: null, data: makeRootData([homeItem, supermixItem, nrItem, chartsItem]) };
+      if (id === 'home-id') {
+        return { error: null, data: { items: [
+          mk('Home Track', 'TRACK'), mk('Home Pod', 'PODCAST'), mk('Home Ep', 'EPISODE'), podShelf,
+          { name: 'Wrapped', type: 'x', resource: { type: 'PODCAST_EPISODE' } } as unknown as SonosItem,
+        ] } };
+      }
+      if (id === 'nr-id') return { error: null, data: { items: [mk('New Album', 'ALBUM'), mk('New Pod', 'PODCAST')] } };
+      if (id === 'charts-id') return { error: null, data: { items: [mk('Chart Track', 'TRACK'), mk('Chart Ep', 'EPISODE'), mk('Mix', 'PROGRAM')] } };
+      return { error: null, data: { items: [] } };
+    });
+
+    const result = await fetchYtmSections();
+    expect(result.forYou.map((i) => i.name ?? i.title)).toEqual(['My Supermix', 'Home Track']);
+    expect(result.newReleases.map((i) => i.name)).toEqual(['New Album']);
+    expect(result.charts.map((i) => i.name)).toEqual(['Chart Track', 'Mix']);
+  });
+
+  it('drops a Home shelf titled as podcasts so it is never browsed as a fallback source', async () => {
+    const homeItem  = makeRootItem('Home',         'home-id');
+    const podShelf  = makeRootItem('New podcasts', 'pod-id');
+    mockBrowseContainer.mockImplementation(async (id: string) => {
+      if (id === 'root') return { error: null, data: makeRootData([homeItem]) };
+      if (id === 'home-id') return { error: null, data: { items: [podShelf] } };
+      return { error: null, data: { items: [] } };
+    });
+    const result = await fetchYtmSections();
+    expect(result.forYou).toEqual([]);
   });
 
   it('returns browse items in the correct section', async () => {
@@ -241,5 +301,60 @@ describe('HomePanel', () => {
     mockUseSearchParams.mockReturnValue([new URLSearchParams()]);
     render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
     expect(screen.getByText('Search results (0)')).toBeInTheDocument();
+  });
+});
+
+// ── Recently played artist tiles ────────────────────────────────────────────
+
+describe('HomePanel artist tiles', () => {
+  const idlessArtist = {
+    type: 'ARTIST',
+    title: 'Inéz',
+    name: 'Inéz',
+    resource: { type: 'ARTIST', id: { objectId: undefined, serviceId: 'svc', accountId: 'acc' } },
+  } as unknown as SonosItem;
+  const knownArtist = {
+    type: 'ARTIST',
+    title: 'Sub Focus',
+    name: 'Sub Focus',
+    resource: { type: 'ARTIST', id: { objectId: 'sf', serviceId: 'svc', accountId: 'acc' } },
+  } as unknown as SonosItem;
+
+  it('opens a tile that has an id directly', () => {
+    mockUseRecentlyPlayed.mockReturnValue({ ...defaultRecent, artistItems: [knownArtist] });
+    render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
+    fireEvent.click(screen.getByText('Sub Focus'));
+    expect(mockOpenItem).toHaveBeenCalledWith(knownArtist);
+  });
+
+  it('never opens an id-less tile (which would go to /artist/_); resolves it by name first', async () => {
+    mockServiceQuery.mockResolvedValue({
+      error: null,
+      data: {
+        resourceOrder: ['ARTISTS'],
+        ARTISTS: { resources: [{ name: 'Inéz', id: { objectId: 'inez-id', serviceId: 'svc', accountId: 'acc' }, images: [] }] },
+      },
+    });
+    mockUseRecentlyPlayed.mockReturnValue({ ...defaultRecent, artistItems: [idlessArtist] });
+    render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
+
+    fireEvent.click(screen.getByText('Inéz'));
+
+    await waitFor(() => expect(mockOpenItem).toHaveBeenCalledTimes(1));
+    expect(mockServiceQuery).toHaveBeenCalledWith('Inéz', expect.objectContaining({ serviceId: 'svc', accountId: 'acc' }));
+    expect(mockOpenItem).not.toHaveBeenCalledWith(idlessArtist);
+    expect(mockOpenItem.mock.calls[0][0].resource.id.objectId).toBe('inez-id');
+  });
+
+  it('does not navigate anywhere when an id-less tile cannot be resolved', async () => {
+    mockServiceQuery.mockResolvedValue({ error: null, data: { resourceOrder: ['ARTISTS'], ARTISTS: { resources: [] } } });
+    mockUseRecentlyPlayed.mockReturnValue({ ...defaultRecent, artistItems: [idlessArtist] });
+    render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
+
+    fireEvent.click(screen.getByText('Inéz'));
+
+    await waitFor(() => expect(mockServiceQuery).toHaveBeenCalled());
+    expect(mockOpenItem).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 });

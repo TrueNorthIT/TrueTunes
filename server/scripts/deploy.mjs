@@ -18,6 +18,9 @@ const envPath = resolve(repoRoot, '.env');
 const templatePath = resolve(serverDir, 'azuredeploy.json');
 const resourceGroup = process.env.TRUETUNES_RG ?? 'truetunes-rg';
 const functionAppName = process.env.TRUETUNES_FN_APP ?? 'truetunes-fn';
+// Optional: target a subscription other than the az CLI default, without changing that default.
+const subscription = process.env.TRUETUNES_SUBSCRIPTION;
+const subscriptionArgs = subscription ? ['--subscription', subscription] : [];
 
 function readEnvFile(path) {
   if (!existsSync(path)) return {};
@@ -70,6 +73,7 @@ async function main() {
     '--template-file', templatePath,
     '--mode', 'Incremental',
     '--parameters', `vestaboardApiKey=${vestaboardKey}`,
+    ...subscriptionArgs,
   ];
 
   const printableArgs = azArgs.map((a) =>
@@ -87,7 +91,7 @@ async function main() {
   // Functions Core Tools ships as func.exe on Windows; with shell:true the bare name resolves correctly.
   const funcCommand = 'func';
   // Project compiles TypeScript → dist/ via `tsc`, so we publish the JS output.
-  const funcArgs = ['azure', 'functionapp', 'publish', functionAppName, '--javascript'];
+  const funcArgs = ['azure', 'functionapp', 'publish', functionAppName, '--javascript', ...subscriptionArgs];
   console.log(`[deploy] (cwd=${serverDir}) func ${funcArgs.join(' ')}`);
   await runChild('func publish', funcCommand, funcArgs, { cwd: serverDir });
 
