@@ -3,8 +3,6 @@ import { CosmosClient } from '@azure/cosmos';
 import { aggregateEvents, RawEvent } from '../shared/aggregate';
 import { generateGame } from '../shared/gameGenerator';
 
-const WINDOW_DAYS = 90;
-
 export function londonDate(now: Date = new Date()): string {
   const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Europe/London',
@@ -37,15 +35,13 @@ async function runGenerate(
   const events = client.database(dbName).container(eventsCtrName);
   const games = client.database(dbName).container(gamesCtrName);
 
-  const startMs = Date.now() - WINDOW_DAYS * 24 * 60 * 60 * 1000;
   const query = {
     query:
-      'SELECT c.userId, c.eventType, c.trackName, c.artist, c.artistId, c.album, c.albumId, c.imageUrl, c.uri FROM c WHERE c.timestamp >= @start',
-    parameters: [{ name: '@start', value: startMs }],
+      'SELECT c.userId, c.eventType, c.trackName, c.artist, c.artistId, c.album, c.albumId, c.imageUrl, c.uri FROM c',
   };
 
   const { resources } = await events.items.query<RawEvent>(query).fetchAll();
-  context.log(`[generate-game] events=${resources.length} window=${WINDOW_DAYS}d gameId=${gameId}`);
+  context.log(`[generate-game] events=${resources.length} window=all-time gameId=${gameId}`);
 
   const agg = aggregateEvents(resources);
   const { questions, lowData } = generateGame(agg, gameId);
