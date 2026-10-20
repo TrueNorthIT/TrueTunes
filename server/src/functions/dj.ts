@@ -1,10 +1,8 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { CosmosClient } from '@azure/cosmos';
 import { buildDjSet } from '../shared/dj';
+import { historyQuery } from '../shared/cosmosAdapters';
 import type { RawEvent } from '../shared/aggregate';
-
-/** Same window the daily game uses — long enough for taste, short enough to stay current. */
-const WINDOW_DAYS = 90;
 
 /** Who counts as "in the office" when the caller doesn't say. */
 const ACTIVE_HOURS = 4;
@@ -38,15 +36,9 @@ export async function djHandler(
 
   try {
     const container = new CosmosClient(connStr).database(dbName).container(ctrName);
-    const startMs = Date.now() - WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
-    const { resources } = await container.items
-      .query<TimedEvent>({
-        query:
-          'SELECT c.userId, c.eventType, c.trackName, c.artist, c.artistId, c.album, c.albumId, c.imageUrl, c.uri, c.serviceId, c.accountId, c.timestamp FROM c WHERE c.timestamp >= @start',
-        parameters: [{ name: '@start', value: startMs }],
-      })
-      .fetchAll();
+    // All-time history, same as the auto-queue: the DJ learns from everything.
+    const { resources } = await container.items.query<TimedEvent>(historyQuery()).fetchAll();
 
     // No explicit listener list — infer the room from who has queued recently.
     // Falls back to everyone so an empty office still gets a set.

@@ -31,6 +31,7 @@
  */
 
 import { aggregateEvents, splitArtists, itemKey, type RawEvent } from './aggregate';
+import { trackKey } from './autoplay';
 
 export interface DjTrack {
   uri: string;
@@ -53,6 +54,12 @@ export interface DjOptions {
   limit?: number;
   /** Track URIs to skip — current queue, recently played. */
   excludeUris?: Iterable<string>;
+  /**
+   * `trackKey()` strings to skip — songs already used today. Compared on name
+   * rather than uri because Sonos re-keys objectIds (issue #84), so the same song
+   * can come back under a different uri.
+   */
+  excludeTrackKeys?: Iterable<string>;
   /** Cap per artist so one act can't take the whole set. */
   perArtistMax?: number;
   /** How many ranked acts to hand back for the caller to browse. */
@@ -238,6 +245,7 @@ export function buildDjSet(events: RawEvent[], options: DjOptions = {}): DjResul
   const artistLimit = options.artistLimit ?? 12;
   const minArtistCount = options.minArtistCount ?? 2;
   const exclude = new Set(options.excludeUris ?? []);
+  const excludeKeys = new Set(options.excludeTrackKeys ?? []);
 
   const agg = aggregateEvents(events);
 
@@ -351,7 +359,7 @@ export function buildDjSet(events: RawEvent[], options: DjOptions = {}): DjResul
   const pools = ranked.map((entry) => ({
     entry,
     tracks: (tracksByArtist[entry.artist] ?? []).filter(
-      (t) => t.uri && !exclude.has(t.uri),
+      (t) => t.uri && !exclude.has(t.uri) && !excludeKeys.has(trackKey(t.trackName, t.artist)),
     ),
     // Cursor, not the round index: a track credited to two artists ("Wet Leg,
     // The Dare") sits in both pools, and whichever pool loses the race must
