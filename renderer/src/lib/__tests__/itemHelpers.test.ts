@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
+  isPodcast,
+  findArtistByName,
   fmtDuration,
   fmtTime,
   getName,
@@ -509,5 +511,42 @@ describe('decodeDefaults', () => {
 
   it('returns null for invalid base64', () => {
     expect(decodeDefaults('!!!not-base64!!!')).toBeNull();
+  });
+});
+
+describe('isPodcast', () => {
+  it('is true for podcast and episode types, on resource.type or type', () => {
+    expect(isPodcast({ type: 'PODCAST' } as SonosItem)).toBe(true);
+    expect(isPodcast({ type: 'ITEM_PODCAST' } as SonosItem)).toBe(true);
+    expect(isPodcast({ type: 'EPISODE' } as SonosItem)).toBe(true);
+    expect(isPodcast({ type: 'x', resource: { type: 'PODCAST_EPISODE' } } as unknown as SonosItem)).toBe(true);
+    expect(isPodcast({ type: 'podcast' } as SonosItem)).toBe(true);
+  });
+
+  it('is false for tracks, albums, artists, playlists and PROGRAM (radio/mixes)', () => {
+    for (const type of ['TRACK', 'ALBUM', 'ITEM_ALBUM', 'ARTIST', 'PLAYLIST', 'PROGRAM', 'CONTAINER']) {
+      expect(isPodcast({ type } as SonosItem)).toBe(false);
+    }
+    expect(isPodcast({} as SonosItem)).toBe(false);
+  });
+
+  it('prefers resource.type over type', () => {
+    expect(isPodcast({ type: 'PODCAST', resource: { type: 'TRACK' } } as unknown as SonosItem)).toBe(false);
+  });
+});
+
+describe('findArtistByName', () => {
+  const items = [
+    { type: 'ALBUM', name: 'Inez' },
+    { type: 'ARTIST', name: 'Inez Band' },
+    { type: 'ARTIST', name: 'INÉZ' },
+  ] as unknown as SonosItem[];
+
+  it('matches artists exactly, case-insensitively', () => {
+    expect(findArtistByName(items, 'Inéz')?.name).toBe('INÉZ');
+  });
+
+  it('ignores non-artists and partial matches', () => {
+    expect(findArtistByName(items, 'Inez')).toBeUndefined();
   });
 });

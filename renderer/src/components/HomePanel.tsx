@@ -12,8 +12,10 @@ import {
   isArtist,
   getName,
   browseSub,
+  isPodcast,
 } from '../lib/itemHelpers';
 import { useOpenItem } from '../hooks/useOpenItem';
+import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
 import { useRecentlyPlayed } from '../hooks/useRecentlyPlayed';
 import { useMyPlaylists } from '../hooks/usePlaylists';
 import { useUsers } from '../hooks/useUsers';
@@ -65,6 +67,17 @@ function AlbumListItem({ item, onOpen, onAdd }: { item: SonosItem; onOpen: () =>
       >+</button>
     </div>
   );
+}
+
+/** Open an artist tile; one without an id is resolved by name rather than opening /artist/_. */
+function openArtistTile(
+  item: SonosItem,
+  openItem: (i: SonosItem) => void,
+  resolveAndOpen: ReturnType<typeof useResolveAndOpen>['resolveAndOpen'],
+) {
+  const { artistId, serviceId, accountId } = resolveArtistParams(item);
+  if (artistId) openItem(item);
+  else void resolveAndOpen(getName(item), 'artist', { serviceId, accountId });
 }
 
 function ArtistGridCell({ item, onOpen }: { item: SonosItem; onOpen: () => void }) {
@@ -124,7 +137,13 @@ export async function fetchYtmSections(): Promise<YtmSections> {
     return r.error ? [] : extractItems(r.data);
   };
 
-  const homeItems = await browseContainer(homeItem);
+  // Podcasts are filtered from the Home, New releases and Charts shelves only
+  // (search, artist pages and the queue still show them).
+  const withoutPodcasts = (items: SonosItem[]) => items.filter((i) => !isPodcast(i));
+
+  const homeItems = withoutPodcasts(await browseContainer(homeItem)).filter(
+    (i) => !/podcast/i.test(String(i.title ?? i.name ?? '')),
+  );
   const findShelf = (...titles: string[]) => {
     for (const t of titles) {
       const hit = homeItems.find((i) => (i.title ?? i.name) === t);
@@ -136,8 +155,8 @@ export async function fetchYtmSections(): Promise<YtmSections> {
   // Some accounts only expose Home / Library / My Supermix at the root, with the
   // New releases and Charts shelves inside Home instead, so fall back to those.
   const [newItems, chartItems] = await Promise.all([
-    browseContainer(find('New releases') ?? findShelf('New releases', 'Fresh new music')),
-    browseContainer(find('Charts') ?? findShelf('Top songs', 'Trending songs for you')),
+    browseContainer(find('New releases') ?? findShelf('New releases', 'Fresh new music')).then(withoutPodcasts),
+    browseContainer(find('Charts') ?? findShelf('Top songs', 'Trending songs for you')).then(withoutPodcasts),
   ]);
 
   return {
@@ -155,6 +174,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const openItem = useOpenItem();
+  const { resolveAndOpen } = useResolveAndOpen();
 
   const view = location.pathname === '/search' ? 'search' : 'home';
   const activeSearch = searchParams.get('q') ?? '';
@@ -406,7 +426,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                           } as React.CSSProperties}
                         >
                           {artistItems.map((item, i) => (
-                            <ArtistGridCell key={i} item={item} onOpen={() => openItem(item)} />
+                            <ArtistGridCell key={i} item={item} onOpen={() => openArtistTile(item, openItem, resolveAndOpen)} />
                           ))}
                         </div>
                       </div>

@@ -1,5 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { CosmosClient } from '@azure/cosmos';
+import { buildRecentArtists } from '../shared/recentArtists';
 
 interface RawEvent {
   eventType?: 'track' | 'album' | null;
@@ -25,15 +26,6 @@ interface RecentTrack {
   albumId?: string;
   imageUrl?: string;
   uri?: string;
-  lastPlayed: number;
-}
-
-interface RecentArtist {
-  artist: string;
-  serviceId?: string;
-  accountId?: string;
-  artistId?: string;
-  imageUrl?: string;
   lastPlayed: number;
 }
 
@@ -97,7 +89,6 @@ export async function recentlyPlayedHandler(
     resources.sort((a, b) => b.timestamp - a.timestamp);
 
     const trackMap  = new Map<string, RecentTrack>();
-    const artistMap = new Map<string, RecentArtist>();
     const albumMap  = new Map<string, RecentAlbum>();
 
     for (const e of resources) {
@@ -120,20 +111,6 @@ export async function recentlyPlayedHandler(
             lastPlayed: e.timestamp,
           });
         }
-
-        if (e.artist) {
-          const aKey = e.artist;
-          if (!artistMap.has(aKey)) {
-            artistMap.set(aKey, {
-              artist:    e.artist,
-              serviceId: e.serviceId  ?? undefined,
-              accountId: e.accountId  ?? undefined,
-              artistId:  e.artistId   ?? undefined,
-              imageUrl:  e.imageUrl   ?? undefined,
-              lastPlayed: e.timestamp,
-            });
-          }
-        }
       }
 
       if (isAlbumEvt && e.album) {
@@ -154,7 +131,7 @@ export async function recentlyPlayedHandler(
     }
 
     const tracks  = [...trackMap.values()].slice(0, 20);
-    const artists = [...artistMap.values()].slice(0, 10);
+    const artists = buildRecentArtists(resources, 10);
     const albums  = [...albumMap.values()].slice(0, 10);
 
     context.log(`[recently-played] userId=${userId} tracks=${tracks.length} artists=${artists.length} albums=${albums.length} users=${availableUsers.length}`);

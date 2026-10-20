@@ -150,6 +150,18 @@ export function isArtist(item: SonosItem): boolean {
   return type.toUpperCase().includes('ARTIST');
 }
 
+/** Exact (case-insensitive) name match among artist items; undefined if none. */
+export function findArtistByName(items: SonosItem[], name: string): SonosItem | undefined {
+  const lower = name.trim().toLowerCase();
+  return items.find((i) => isArtist(i) && getName(i).trim().toLowerCase() === lower);
+}
+
+/** Podcast shows and episodes. Deliberately excludes PROGRAM, which also covers radio and mixes. */
+export function isPodcast(item: SonosItem): boolean {
+  const type = (item.resource?.type ?? item.type ?? '') as string;
+  return /PODCAST|EPISODE/i.test(type);
+}
+
 export function isTrack(item: SonosItem): boolean {
   const type = (item.resource?.type ?? item.type ?? '') as string;
   return type.toUpperCase().includes('TRACK');

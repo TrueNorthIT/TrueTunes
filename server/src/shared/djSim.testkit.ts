@@ -355,7 +355,7 @@ export async function runOfficeDay(opts: SimOptions): Promise<SimReport> {
   let callMs = 0;
   let djPicksSeen = 0;
   const heardTwice = new Map<string, number>();
-  let handQueuedCount = new Map<string, number>();
+  const handQueuedCount = new Map<string, number>();
   let currentUpcoming: AutoplayResponse['upcoming'] = [];
 
   let t = startMs;
