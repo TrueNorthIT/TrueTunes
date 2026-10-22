@@ -73,6 +73,14 @@ describe('DraggableQueueRow', () => {
     expect(screen.getByText('Come Together')).toBeInTheDocument();
   });
 
+  it('marks an estimated play time with ~ and leaves an exact one plain', () => {
+    const at = new Date(2026, 9, 22, 16, 58).getTime();
+    const { rerender } = render(<DraggableQueueRow {...baseProps} timeToPlay={at} />);
+    expect(screen.getByText('4:58 PM')).toBeTruthy();
+    rerender(<DraggableQueueRow {...baseProps} timeToPlay={at} timeEstimated />);
+    expect(screen.getByText('~4:58 PM')).toBeTruthy();
+  });
+
   it('renders artist name', () => {
     render(<DraggableQueueRow {...baseProps} />);
     expect(screen.getByText('The Beatles')).toBeInTheDocument();
