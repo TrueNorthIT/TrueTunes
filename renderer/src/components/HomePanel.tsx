@@ -28,6 +28,7 @@ import type { ServiceSearch } from '../types/ServiceSearch';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
 import { artistQueryOptions } from '../hooks/useArtistBrowse';
 import { CardRow } from './CardRow';
+import { Carousel } from './common/Carousel';
 import { SearchResults } from './search/SearchResults';
 import { CreatePlaylistDialog } from './common/ContextMenu';
 import type { SonosItem } from '../types/sonos';
@@ -260,16 +261,12 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
       ) : (
         <>
           <section className={styles.section}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>For You</h2>
-            </div>
-            <CardRow items={ytm?.forYou ?? []} isLoading={ytmLoading} onAdd={onAddToQueue} onOpen={openItem} />
+            <CardRow title="For You" items={ytm?.forYou ?? []} isLoading={ytmLoading} onAdd={onAddToQueue} onOpen={openItem} />
           </section>
 
           {(colleaguesLoading || colleagues.length > 0) && (
             <section className={styles.section}>
-              <h2 className={styles.sectionTitle} style={{ marginBottom: 16 }}>People</h2>
-              <div className={styles.usersRow}>
+              <Carousel title="People" gap="20px">
                 {colleaguesLoading
                   ? Array.from({ length: 5 }).map((_, i) => (
                       <div key={i} className={styles.userAvatarSkel} style={{ animationDelay: `${i * 80}ms` }} />
@@ -282,17 +279,17 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                       />
                     ))
                 }
-              </div>
+              </Carousel>
             </section>
           )}
 
           {displayName && (ownedPlaylists.length > 0 || joinedPlaylists.length > 0) && (
             <section className={styles.section}>
-              <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>Playlists</h2>
-                <button className={styles.sectionAction} onClick={() => setCreatePlaylistOpen(true)}>+ New</button>
-              </div>
-              <div className={styles.playlistRow}>
+              <Carousel
+                title="Playlists"
+                gap="12px"
+                actions={<button className={styles.sectionAction} onClick={() => setCreatePlaylistOpen(true)}>+ New</button>}
+              >
                 {[...ownedPlaylists, ...joinedPlaylists]
                   .sort((a, b) => {
                     if (!!b.isFavourites !== !!a.isFavourites) return b.isFavourites ? 1 : -1;
@@ -306,7 +303,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                     onClick={() => navigate(`/playlist/${pl.id}`)}
                   />
                 ))}
-              </div>
+              </Carousel>
             </section>
           )}
 
@@ -438,17 +435,11 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
           )}
 
           <section className={styles.section}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>New Releases</h2>
-            </div>
-            <CardRow items={ytm?.newReleases ?? []} isLoading={ytmLoading} onAdd={onAddToQueue} onOpen={openItem} />
+            <CardRow title="New Releases" items={ytm?.newReleases ?? []} isLoading={ytmLoading} onAdd={onAddToQueue} onOpen={openItem} />
           </section>
 
           <section className={styles.section}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Charts</h2>
-            </div>
-            <CardRow items={ytm?.charts ?? []} isLoading={ytmLoading} onAdd={onAddToQueue} onOpen={openItem} />
+            <CardRow title="Charts" items={ytm?.charts ?? []} isLoading={ytmLoading} onAdd={onAddToQueue} onOpen={openItem} />
           </section>
         </>
       )}

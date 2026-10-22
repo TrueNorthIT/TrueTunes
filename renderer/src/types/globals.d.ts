@@ -473,6 +473,8 @@ interface SonosPreload {
   geniusDescription: (trackName: string, artistName: string) => Promise<GeniusDomNode | null>;
   geniusArtist: (artistName: string, trackHint?: string) => Promise<GeniusArtistInfo | null>;
   geniusAlbumYear: (albumName: string, artistName: string) => Promise<number | null>;
+  /** Every album/single Genius lists for the artist, with its release year. [] on any failure. */
+  geniusArtistAlbums: (artistName: string) => Promise<Array<{ name: string; year: number | null }>>;
   /** Fire-and-forget telemetry event routed through the main process. No-op when App Insights is not configured. */
   trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
   minimizeWindow:    () => Promise<void>;

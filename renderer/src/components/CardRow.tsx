@@ -1,6 +1,8 @@
 import { getName, browseSub, getItemArt, isAlbum, isArtist, isPlaylist, isContainer, isProgram } from '../lib/itemHelpers';
 import { useArtistImage } from '../hooks/useArtistBrowse';
 import { MediaCard } from './common/MediaCard';
+import { Carousel } from './common/Carousel';
+import type { ReactNode } from 'react';
 import type { SonosItem, SonosItemId } from '../types/sonos';
 import styles from '../styles/CardRow.module.css';
 
@@ -40,26 +42,30 @@ export function CardRow({
   onAdd,
   onOpen,
   cardSize,
+  title,
+  actions,
 }: {
   items: SonosItem[];
   isLoading: boolean;
   onAdd: (item: SonosItem) => void;
   onOpen: (item: SonosItem) => void;
   cardSize?: string;
+  title?: ReactNode;
+  actions?: ReactNode;
 }) {
   const sizeStyle = cardSize ? { '--card-size': cardSize } as React.CSSProperties : undefined;
   if (isLoading) {
     return (
-      <div className={styles.cardRow} style={sizeStyle}>
+      <Carousel title={title} actions={actions} rowStyle={sizeStyle}>
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className={styles.placeholder} />
         ))}
-      </div>
+      </Carousel>
     );
   }
-  if (!items.length) return null;
+  if (!items.length && !title) return null;
   return (
-    <div className={styles.cardRow} style={sizeStyle}>
+    <Carousel title={title} actions={actions} rowStyle={sizeStyle}>
       {items.map((item, i) =>
         isArtist(item) ? (
           <ArtistMediaCard key={i} item={item} onOpen={onOpen} />
@@ -75,6 +81,6 @@ export function CardRow({
           />
         ),
       )}
-    </div>
+    </Carousel>
   );
 }

@@ -33,8 +33,12 @@ vi.mock('../../lib/sonosApi', () => ({
 }));
 
 vi.mock('../CardRow', () => ({
-  CardRow: ({ isLoading, items }: { isLoading: boolean; items: SonosItem[] }) =>
-    isLoading ? <div>Loading cards</div> : <div>Card row ({items.length})</div>,
+  CardRow: ({ isLoading, items, title }: { isLoading: boolean; items: SonosItem[]; title?: string }) => (
+    <>
+      {title && <h2>{title}</h2>}
+      {isLoading ? <div>Loading cards</div> : <div>Card row ({items.length})</div>}
+    </>
+  ),
 }));
 vi.mock('../search/SearchResults', () => ({
   SearchResults: ({ results }: { results: SonosItem[] }) => <div>Search results ({results.length})</div>,

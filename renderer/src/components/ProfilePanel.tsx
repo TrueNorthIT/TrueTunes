@@ -301,16 +301,14 @@ const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, 
       {/* ── Top Artists ───────────────────────────────────────────────────── */}
       {(statsLoading || topArtists.length > 0) && (
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Top Artists</h2>
-          <CardRow items={topArtists} isLoading={statsLoading} onAdd={onAddToQueue} onOpen={openItem} cardSize="110px" />
+          <CardRow title="Top Artists" items={topArtists} isLoading={statsLoading} onAdd={onAddToQueue} onOpen={openItem} cardSize="110px" />
         </section>
       )}
 
       {/* ── Top Albums ────────────────────────────────────────────────────── */}
       {(statsLoading || topAlbums.length > 0) && (
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Top Albums</h2>
-          <CardRow items={topAlbums} isLoading={statsLoading} onAdd={onAddToQueue} onOpen={openItem} cardSize="110px" />
+          <CardRow title="Top Albums" items={topAlbums} isLoading={statsLoading} onAdd={onAddToQueue} onOpen={openItem} cardSize="110px" />
         </section>
       )}
 

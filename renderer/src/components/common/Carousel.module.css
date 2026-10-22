@@ -1,0 +1,90 @@
+.header {
+  position: relative; /* paint above the row's overlapping top padding so arrows stay clickable */
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.4px;
+}
+.search {
+  margin-left: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.searchBox {
+  display: flex;
+  align-items: center;
+  width: 200px;
+  height: 26px;
+  box-sizing: border-box;
+  padding: 0 4px 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.searchBox:focus-within { border-color: var(--border-2); }
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  padding: 0;
+}
+.searchInput::placeholder { color: rgba(255, 255, 255, 0.35); }
+.searchClear {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+  padding: 4px;
+  border-radius: 50%;
+}
+.searchClear:hover { color: rgba(255, 255, 255, 0.8); }
+.searchStatus { font-size: 11px; color: var(--text-3); white-space: nowrap; }
+.controls {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.arrows { display: flex; gap: 4px; }
+.arrow {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-3);
+  font-size: 18px;
+  line-height: 1;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.arrow:hover:not(:disabled) { color: var(--text); border-color: var(--border-2); background: rgba(255,255,255,0.05); }
+.arrow:focus-visible { outline: 2px solid var(--text-3); outline-offset: 2px; }
+.arrow:disabled { opacity: 0.3; cursor: default; }
+
+.row {
+  display: flex;
+  overflow-x: auto;
+  /* padding absorbs hover scale + ring shadow without clipping; negative margin keeps layout unchanged */
+  /* 25px top room lets an expanded group's header sit above the cards without growing the row
+     (see .groupBox in ArtistPanel.module.css); the matching negative margin keeps layout unchanged. */
+  padding: 25px 4px 10px;
+  margin: -25px -4px -10px;
+}
+.row::-webkit-scrollbar { height: 0; }

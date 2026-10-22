@@ -1,14 +1,3 @@
-.cardRow {
-  display: flex;
-  gap: 14px;
-  overflow-x: auto;
-  padding: 16px 2px 4px;
-  margin-top: -10px;
-}
-.cardRow::-webkit-scrollbar {
-  height: 6px;
-}
-
 .placeholder {
   width: var(--card-size);
   height: var(--card-size);

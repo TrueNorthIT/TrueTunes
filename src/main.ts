@@ -2304,6 +2304,44 @@ ipcMain.handle('genius:albumYear', async (_: IpcMainInvokeEvent, albumName: stri
   }
 });
 
+// ponytail: genius.com/api is Genius's unofficial web API (no token); it may change or vanish without notice.
+ipcMain.handle('genius:artistAlbums', async (_: IpcMainInvokeEvent, artistName: string) => {
+  const debugReq = (id: string, url: string, ts: number) =>
+    httpDebugWin?.webContents.send('http:req', { id, ts, operationId: 'genius:artistAlbums', method: 'GET', url, headers: {} });
+  const debugRes = (id: string, status: number, body: string, ts: number) =>
+    httpDebugWin?.webContents.send('http:res', { id, status, statusText: String(status), headers: {}, body, durationMs: Date.now() - ts });
+  const get = async (url: string): Promise<unknown> => {
+    const id = randomUUID(); const ts = Date.now();
+    debugReq(id, url, ts);
+    const res = await fetch(url);
+    const body = await res.text();
+    debugRes(id, res.status, body, ts);
+    if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+    return JSON.parse(body);
+  };
+
+  try {
+    type Search = { response: { sections: { hits: { result: { id: number; name: string } }[] }[] } };
+    const search = await get(`https://genius.com/api/search/artist?q=${encodeURIComponent(artistName)}`) as Search;
+    const hits = search.response?.sections?.[0]?.hits ?? [];
+    const lower = artistName.toLowerCase();
+    const artist = (hits.find((h) => h.result.name?.toLowerCase() === lower) ?? hits[0])?.result;
+    if (!artist) return [];
+
+    type Albums = { response: { albums: { name: string; release_date_components: { year: number | null } | null }[]; next_page: number | null } };
+    const out: { name: string; year: number | null }[] = [];
+    for (let page: number | null = 1, n = 0; page && n < 4; n++) {
+      const data = await get(`https://genius.com/api/artists/${artist.id}/albums?per_page=50&page=${page}`) as Albums;
+      for (const a of data.response?.albums ?? []) out.push({ name: a.name, year: a.release_date_components?.year ?? null });
+      page = data.response?.next_page ?? null;
+    }
+    return out;
+  } catch (err) {
+    log(`[genius] artistAlbums error: ${err}`);
+    return [];
+  }
+});
+
 // ─── Application menu ────────────────────────────────────────────────────────
 
 function buildMenu(): void {

@@ -80,6 +80,7 @@ Object.defineProperty(window, 'sonos', {
     geniusDescription:  vi.fn(() => Promise.resolve(null)),
     geniusArtist:       vi.fn(() => Promise.resolve(null)),
     geniusAlbumYear:    vi.fn(() => Promise.resolve(null)),
+    geniusArtistAlbums: vi.fn(() => Promise.resolve([])),
     trackEvent:         vi.fn(() => Promise.resolve()),
     minimizeWindow:     vi.fn(() => Promise.resolve()),
     maximizeWindow:     vi.fn(() => Promise.resolve()),

@@ -8,8 +8,20 @@ import { resolveArtistParams } from '../../lib/itemHelpers';
 import { TopSongRow } from './TopSongRow';
 import { LatestReleaseCard } from './LatestReleaseCard';
 import { ArtistAlbumCard } from './ArtistAlbumCard';
+import { ArtistAlbumStack, ArtistAlbumGroup } from './ArtistAlbumStack';
+import { Carousel } from '../common/Carousel';
+import { useReleaseTrackCounts } from '../../hooks/useReleaseTrackCounts';
+import { useReleaseYears } from '../../hooks/useReleaseYears';
+import { useReleaseTracklists } from '../../hooks/useReleaseTracklists';
+import { filterShelves } from '../../lib/shelfSearch';
+import { groupReleases, releaseKey, sortShelvesByYear, type ReleaseGroup } from '../../lib/releaseShelves';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/ArtistPanel.module.css';
+
+// "Man Alive (Deluxe)" -> "Man Alive"
+function baseName(title = ''): string {
+  return title.replace(/\s*[([][^)\]]*[)\]]\s*$/, '').replace(/ - .*$/, '').trim() || title;
+}
 
 function domToText(node: GeniusDomNode): string {
   if (typeof node === 'string') return node;
@@ -116,6 +128,72 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
   const dominantColor = useDominantColor(cachedArt, { setGlobal: true });
 
   const latestAlbum = data?.albums[0] ?? null;
+
+  const releases = data?.albums ?? [];
+  const { counts, isLoading: countsLoading } = useReleaseTrackCounts(releases);
+  const { years } = useReleaseYears(releases, name);
+  const sortedShelves = sortShelvesByYear(groupReleases(releases, counts), years);
+  const [query, setQuery] = useState('');
+  const [tracksEnabled, setTracksEnabled] = useState(false); // on from the box's first focus, for the page's life
+  const { tracksByRelease, isLoading: tracksLoading } = useReleaseTracklists(releases, tracksEnabled);
+  const { shelves, trackHits } = filterShelves(sortedShelves, query, tracksByRelease);
+  const searching = query.trim() !== '';
+  // expanded state is keyed by the unfiltered group's primary, so filtering never collapses a group
+  const groupKeyOf = new Map<string, string>();
+  [...sortedShelves.albums, ...sortedShelves.singles, ...sortedShelves.other].forEach(g =>
+    g.versions.forEach(v => groupKeyOf.set(releaseKey(v), releaseKey(g.primary))),
+  );
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const toggleGroup = (key: string) =>
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  function renderGroup(group: ReleaseGroup) {
+    const primaryKey = releaseKey(group.primary);
+    const key = groupKeyOf.get(primaryKey) ?? primaryKey;
+    if (group.versions.length === 1) {
+      return (
+        <ArtistAlbumCard
+          key={key}
+          album={group.primary}
+          onOpen={openItem}
+          onAdd={onAddToQueue}
+          year={years.get(primaryKey)}
+          trackHits={trackHits.get(primaryKey)}
+          searching={searching}
+        />
+      );
+    }
+    if (!expanded.has(key)) {
+      return (
+        <ArtistAlbumStack
+          key={key}
+          group={group}
+          onExpand={() => toggleGroup(key)}
+          year={years.get(primaryKey)}
+          trackHits={trackHits.get(primaryKey)}
+          searching={searching}
+        />
+      );
+    }
+    return (
+      <ArtistAlbumGroup
+        key={key}
+        group={group}
+        title={baseName(group.primary.title)}
+        onCollapse={() => toggleGroup(key)}
+        onOpen={openItem}
+        onAdd={onAddToQueue}
+        years={years}
+        trackHits={trackHits}
+        searching={searching}
+      />
+    );
+  }
 
   const genius          = data?.genius ?? null;
   const blurb           = genius ? extractBio(genius.description) : '';
@@ -226,17 +304,47 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
 
       {data && data.albums.length > 1 && (
         <div className={styles.albumsSection}>
-          <div className={styles.sectionTitle}>Albums</div>
-          <div className={styles.albumsRow}>
-            {data.albums.map(album => (
-              <ArtistAlbumCard
-                key={(typeof album.id === 'string' ? album.id : album.id?.objectId) ?? album.title}
-                album={album}
-                onOpen={openItem}
-                onAdd={onAddToQueue}
-              />
-            ))}
-          </div>
+          {countsLoading ? (
+            <div className={styles.shelfSkeleton}>
+              {Array.from({ length: 6 }).map((_, i) => <div key={i} className={styles.skeletonCard} />)}
+            </div>
+          ) : (
+            <>
+              {(() => {
+                const defs = [
+                  ['Albums', 'albums'],
+                  ['Singles & EPs', 'singles'],
+                  ['Other versions', 'other'],
+                ] as const;
+                // the search box lives on the first shelf that has releases before filtering, so it never disappears
+                const boxShelf = defs.find(([, k]) => sortedShelves[k].length > 0)?.[1];
+                return defs.map(([title, k]) => {
+                  const groups = shelves[k];
+                  const hasBox = k === boxShelf;
+                  if (groups.length === 0 && !hasBox) return null;
+                  return (
+                    <Carousel
+                      key={title}
+                      title={title}
+                      className={styles.shelf}
+                      search={hasBox ? {
+                        value: query,
+                        onChange: setQuery,
+                        placeholder: 'Search releases and tracks',
+                        onFocus: () => setTracksEnabled(true),
+                        status: searching && tracksLoading ? 'searching tracks…' : undefined,
+                      } : undefined}
+                    >
+                      {groups.map(renderGroup)}
+                    </Carousel>
+                  );
+                });
+              })()}
+              {searching && !shelves.albums.length && !shelves.singles.length && !shelves.other.length && (
+                <div className={styles.noMatch}>No releases match “{query.trim()}”</div>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>

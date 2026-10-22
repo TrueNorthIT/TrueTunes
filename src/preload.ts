@@ -72,6 +72,7 @@ export interface SonosAPI {
   geniusDescription: (trackName: string, artistName: string) => Promise<string | null>;
   geniusArtist: (artistName: string, trackHint?: string) => Promise<unknown>;
   geniusAlbumYear: (albumName: string, artistName: string) => Promise<number | null>;
+  geniusArtistAlbums: (artistName: string) => Promise<Array<{ name: string; year: number | null }>>;
   trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
   fetchPlaylists: (filter: { owner?: string; member?: string }) => Promise<unknown>;
   fetchPlaylist: (id: string) => Promise<unknown>;
@@ -229,6 +230,8 @@ contextBridge.exposeInMainWorld('sonos', {
     ipcRenderer.invoke('genius:artist', artistName, trackHint),
   geniusAlbumYear: (albumName: string, artistName: string) =>
     ipcRenderer.invoke('genius:albumYear', albumName, artistName),
+  geniusArtistAlbums: (artistName: string) =>
+    ipcRenderer.invoke('genius:artistAlbums', artistName),
   trackEvent: (name: string, properties?: Record<string, string>) =>
     ipcRenderer.invoke('telemetry:event', name, properties),
   minimizeWindow:    () => ipcRenderer.invoke('win:minimize'),
