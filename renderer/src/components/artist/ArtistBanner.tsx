@@ -1,57 +1,75 @@
 import type { CSSProperties } from 'react';
-import { useImage } from '../../hooks/useImage';
-import { useDominantColor } from '../../hooks/useDominantColor';
-import { withArtworkSize } from '../../lib/artworkUrl';
-import { usePageArt } from '../../lib/pageArt';
-import { useIsPlaceholderPhoto } from '../../lib/photoPlaceholder';
+import { Radio, Shuffle } from 'lucide-react';
+import { PillButton } from '../common/PillButton';
+import { OfficeChip } from '../common/OfficeChip';
+import type { HeroPortrait } from '../../lib/artistHero';
+import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/ArtistPanel.module.css';
+
+/** Past this many characters (a shared credit, usually) the name steps down from the display size. */
+const LONG_NAME = 28;
 
 interface Props {
   name: string;
   altNames: string[];
-  /** Artist photo URL (any size). Without one the banner is a colour wash with the name on it. */
-  imageUrl: string | null;
-  /** Artwork whose colour the wash takes when there is no photo, e.g. the latest release cover. */
-  fallbackArtUrl?: string | null;
-  /** "Played here 27 times": what the office has done with this artist. Hidden when absent. */
-  officeLine?: string | null;
+  /** What the portrait slot shows; null while the photo is being checked. The slot keeps its size either way. */
+  portrait: HeroPortrait | null;
+  /** The portrait's loaded (cached) image. */
+  portraitSrc: string | null;
+  /** `r, g, b` of the portrait's dominant colour. Without one there is no wash. */
+  wash: string | null;
+  /** All-time queue count for the artist. Hidden when absent. */
+  officeCount?: number;
+  /** The artist's radio and shuffle playlists. They open the playlist page; nothing is queued from here. */
+  radio?: SonosItem;
+  shuffle?: SonosItem;
+  onOpen: (item: SonosItem) => void;
 }
 
-/** Full-bleed artist photo with the name over its bottom-left, fading into the page. */
-export function ArtistBanner({ name, altNames, imageUrl, fallbackArtUrl, officeLine }: Props) {
-  const photo = useImage(imageUrl ? withArtworkSize(imageUrl) : null);
-  // A generic silhouette from the service counts as no photo.
-  const isPlaceholder = useIsPlaceholderPhoto(photo);
-  const noPhoto = !imageUrl || isPlaceholder;
-  const cover = useImage(noPhoto && fallbackArtUrl ? withArtworkSize(fallbackArtUrl, 600) : null);
-  const art = noPhoto ? cover : photo;
-  const dominant = useDominantColor(art, { setGlobal: true });
-  usePageArt(art);
-  const title = (
-    <>
-      <h1 className={styles.artistName}>{name}</h1>
-      {altNames.length > 0 && <div className={styles.altNames}>{altNames.join(' · ')}</div>}
-      {officeLine && <div className={styles.officeLine}>{officeLine}</div>}
-    </>
-  );
-
-  if (noPhoto) {
-    return (
-      <div className={styles.washHeader} style={dominant ? ({ '--wash': dominant } as CSSProperties) : undefined}>
-        {title}
-      </div>
-    );
-  }
+/**
+ * One hero for every artist, the same shape in every state. A real photo runs full-bleed behind the nav with the
+ * name over a scrim; without one the cover hangs as a print on the right over its colour. Either way the hero
+ * fades into the page with no edge. While the photo is being checked, the hero shows neither.
+ */
+export function ArtistBanner({ name, altNames, portrait, portraitSrc, wash, officeCount, radio, shuffle, onOpen }: Props) {
+  const isPhoto = portrait?.kind === 'photo';
   return (
-    <div className={styles.hero}>
-      {/* same cached URL twice: a blurred full-width backdrop, and the sharp photo blended in on the right */}
-      {art && <img className={styles.heroBackdrop} src={art} alt="" aria-hidden="true" />}
-      {art && <img className={styles.heroImg} src={art} alt="" />}
-      <div
-        className={styles.heroFade}
-        style={dominant ? { background: `linear-gradient(180deg, transparent 35%, rgba(${dominant},0.3) 70%, var(--bg) 100%)` } : undefined}
-      />
-      <div className={styles.heroText}>{title}</div>
-    </div>
+    <header className={styles.hero} style={wash ? ({ '--wash': wash } as CSSProperties) : undefined}>
+      {isPhoto ? (
+        portraitSrc && (
+          <div className={styles.heroMedia} aria-hidden="true">
+            <img className={styles.heroImg} src={portraitSrc} alt="" />
+          </div>
+        )
+      ) : (
+        <>
+          {wash && <div className={styles.heroWash} aria-hidden="true" />}
+          <div className={styles.print} aria-hidden="true">
+            {portrait && portraitSrc && <img className={styles.printImg} src={portraitSrc} alt="" />}
+          </div>
+        </>
+      )}
+      <div className={styles.heroText}>
+        <h1 className={`${styles.artistName}${name.length > LONG_NAME ? ' ' + styles.artistNameLong : ''}`}>{name}</h1>
+        {altNames.length > 0 && <div className={styles.altNames}>{altNames.join(' · ')}</div>}
+        <OfficeChip count={officeCount} className={styles.heroChip} />
+        {(radio || shuffle) && (
+          <div className={styles.heroActions}>
+            {radio && (
+              <PillButton variant="primary" onClick={() => onOpen(radio)}>
+                <Radio size={16} aria-hidden="true" />
+                Artist radio
+              </PillButton>
+            )}
+            {shuffle && (
+              <PillButton onClick={() => onOpen(shuffle)}>
+                <Shuffle size={16} aria-hidden="true" />
+                Shuffle
+              </PillButton>
+            )}
+          </div>
+        )}
+      </div>
+    </header>
   );
 }

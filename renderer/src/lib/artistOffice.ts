@@ -4,18 +4,17 @@ function norm(name: string): string {
 }
 
 /**
- * "Played here 27 times": the office's all-time count for this artist, matched by id then by normalised name.
- * undefined when the artist is not in the list. Who queued them most is not in the stats, so it is not claimed.
+ * How many times the office has queued this artist (all time), matched by id then by normalised name.
+ * undefined when the artist is not in the list. The stats have no per-user split, so who queued them is not claimed.
  */
-export function officeLineFor(
+export function officeCountFor(
   topArtists: StatsArtist[] | undefined,
   artistId: string | undefined,
   name: string,
-): string | undefined {
+): number | undefined {
   const n = norm(name);
   const hit =
     (artistId ? topArtists?.find(a => a.artistId === artistId) : undefined) ??
     (n ? topArtists?.find(a => norm(a.artist) === n) : undefined);
-  if (!hit || hit.count < 1) return undefined;
-  return `Played here ${hit.count === 1 ? 'once' : `${hit.count} times`}`;
+  return hit && hit.count >= 1 ? hit.count : undefined;
 }

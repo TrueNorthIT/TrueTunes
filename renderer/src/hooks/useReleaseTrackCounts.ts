@@ -8,7 +8,10 @@ import type { SonosItem } from '../types/sonos';
  * Album/Single/EP. Uses the full album query so the ['album', id] cache is shared with the album page.
  */
 export function useReleaseTrackCounts(releases: SonosItem[]) {
-  const unlabelled = releases.filter((r) => releaseLabel(r) === 'unknown' && r.resource?.id?.objectId);
+  // one query per id: the same key twice in useQueries trips its "Duplicate Queries found" warning
+  const unlabelled = [...new Map(
+    releases.filter((r) => releaseLabel(r) === 'unknown' && r.resource?.id?.objectId).map((r) => [r.resource?.id?.objectId, r]),
+  ).values()];
   // ponytail: all requests fire at once; cap concurrency if the BFF rate-limits.
   const results = useQueries({
     queries: unlabelled.map((r) => {

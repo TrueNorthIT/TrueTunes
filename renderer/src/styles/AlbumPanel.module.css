@@ -29,16 +29,6 @@
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
 }
-/* Office layer: a quiet tonal chip, only when the room has queued this before. */
-.office {
-  align-self: flex-start;
-  font-size: max(13px, 0.86em);
-  font-weight: 500;
-  color: var(--text-2);
-  background: rgba(var(--tint), 0.16);
-  padding: 0.2em 0.8em;
-  border-radius: 2em;
-}
 .actions { display: flex; gap: 0.6em; margin-top: 0.4em; flex-wrap: wrap; }
 
 /* Text links (artist, album): no chrome, take their colour from the line. */
@@ -56,6 +46,9 @@
 .link:focus-visible { color: var(--on-art); text-decoration: underline; }
 
 /* ── Tracks ── */
+/* ponytail: capped (68em: full width at 1280, ~1090px from 1730) so the duration stays near the title; a per-track "queued here" column
+   would use the width instead, once the stats function can return per-track counts. */
+.trackCard { max-width: 68em; }
 .tracks { min-width: 0; }
 .list { list-style: none; margin: 0; padding: 0; }
 
@@ -64,6 +57,10 @@
   font-size: 1em;
   text-align: center;
   padding: 3em 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1em;
 }
 
 .skeletonRow {

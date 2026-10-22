@@ -66,7 +66,7 @@
 }
 
 /* ── People ── */
-.people { display: flex; align-items: center; gap: 1em; flex-wrap: wrap; }
+.people { display: flex; align-items: center; gap: 0.3em 0.5em; flex-wrap: wrap; }
 .avatar {
   width: 1.9em;
   height: 1.9em;
@@ -82,7 +82,7 @@
   line-height: 1;
 }
 .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.owner {
+.face {
   display: inline-flex;
   align-items: center;
   gap: 0.5em;
@@ -97,20 +97,11 @@
   cursor: pointer;
   transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast);
 }
-.owner:hover { background: var(--row-hover); color: var(--text); }
-.collabs { display: flex; align-items: center; list-style: none; }
-.collabs li + li { margin-left: -0.4em; }
-.collab {
-  padding: 0;
-  border: 2px solid var(--bg);
-  border-radius: 50%;
-  background: none;
-  cursor: pointer;
-  line-height: 0;
-  transition: transform var(--dur-fast) var(--ease-fast);
-}
-.collab:hover { transform: translateY(-2px); }
-.more { margin-left: 0.5em; font-size: max(13px, 0.86em); color: var(--text-3); }
+.face:hover,
+.face:focus-visible { background: var(--row-hover); color: var(--text); }
+.with { font-size: 1.05em; color: var(--text-3); }
+.collabs { display: flex; align-items: center; flex-wrap: wrap; gap: 0.3em 0.5em; list-style: none; margin: 0; padding: 0; }
+.more { font-size: max(13px, 0.93em); color: var(--text-3); }
 
 .metaLine {
   display: flex;
@@ -125,6 +116,8 @@
 .actions { display: flex; align-items: center; gap: 0.6em; margin-top: 0.4em; flex-wrap: wrap; }
 
 /* ── Tracks ── */
+/* ponytail: capped so the duration stays near the title on wide windows; see AlbumPanel.module.css. */
+.trackCard { max-width: 68em; }
 .list { list-style: none; margin: 0; padding: 0; }
 .dropLine {
   height: 2px;
@@ -145,7 +138,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   .coverEdit,
-  .owner,
-  .collab { transition: none; }
-  .collab:hover { transform: none; }
+  .face { transition: none; }
 }

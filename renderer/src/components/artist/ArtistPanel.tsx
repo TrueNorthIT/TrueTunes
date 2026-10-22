@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Search } from 'lucide-react';
 import { useArtistBrowse } from '../../hooks/useArtistBrowse';
 import { useAlbumBrowse } from '../../hooks/useAlbumBrowse';
 import { useOpenItem } from '../../hooks/useOpenItem';
@@ -8,18 +9,20 @@ import { useStats } from '../../hooks/useStats';
 import { useImage } from '../../hooks/useImage';
 import { useDominantColor } from '../../hooks/useDominantColor';
 import { withArtworkSize } from '../../lib/artworkUrl';
-import { useIsPlaceholderPhoto } from '../../lib/photoPlaceholder';
-import { officeLineFor } from '../../lib/artistOffice';
+import { usePhotoState } from '../../lib/photoPlaceholder';
+import { usePageArt } from '../../lib/pageArt';
+import { heroPortrait, creditNames } from '../../lib/artistHero';
+import { officeCountFor } from '../../lib/artistOffice';
 import { resolveArtistParams, getItemArt } from '../../lib/itemHelpers';
 import { TopSongRow } from './TopSongRow';
 import { LatestReleaseCard } from './LatestReleaseCard';
 import { ArtistBanner } from './ArtistBanner';
 import { ArtistAbout } from './ArtistAbout';
-import { RadioCard } from './RadioCard';
 import { ArtistAlbumCard } from './ArtistAlbumCard';
 import { ArtistAlbumStack, ArtistAlbumGroup } from './ArtistAlbumStack';
 import { Carousel } from '../common/Carousel';
 import { SectionCard } from '../common/SectionCard';
+import { PillButton } from '../common/PillButton';
 import { useReleaseTrackCounts } from '../../hooks/useReleaseTrackCounts';
 import { useReleaseYears } from '../../hooks/useReleaseYears';
 import { useReleaseTracklists } from '../../hooks/useReleaseTracklists';
@@ -51,6 +54,9 @@ function extractBio(description: GeniusDomNode | null): string {
     .join('\n\n');
 }
 
+// Top songs page by whole columns, so a scroll never stops on a column showing only its ranks.
+const SNAP_ROW = { scrollSnapType: 'x mandatory', scrollPaddingInline: '4px' } as const;
+
 interface Props {
   onAddToQueue: (item: SonosItem) => void;
   currentTrackName: string;
@@ -61,6 +67,7 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
   const { state } = useLocation();
   const item = (state as { item?: SonosItem } | null)?.item;
   const openItem = useOpenItem();
+  const navigate = useNavigate();
   const { resolveAndOpen } = useResolveAndOpen();
 
   const { artistId, serviceId, accountId, defaults, name: fallbackName } =
@@ -140,16 +147,26 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
   const { data: latestData } = useAlbumBrowse(latestId?.objectId, latestId?.serviceId, latestId?.accountId, latestAlbum?.resource?.defaults);
 
   const { data: stats } = useStats('alltime', undefined, 100);
-  const officeLine = officeLineFor(stats?.topArtists, artistId, name);
+  const officeCount = officeCountFor(stats?.topArtists, artistId, name);
 
-  // The artwork colour for the page: the photo's, or the latest cover's when the artist has no photo.
-  const latestArt = (latestAlbum?.images as Record<string, string> | undefined)?.['tile1x1'] ?? null;
-  const photoSrc = useImage(imageUrl ? withArtworkSize(imageUrl) : null);
-  const isPlaceholder = useIsPlaceholderPhoto(photoSrc);
-  const noPhoto = !imageUrl || isPlaceholder;
-  const coverSrc = useImage(noPhoto && latestArt ? withArtworkSize(latestArt, 600) : null);
-  const wash = useDominantColor(noPhoto ? coverSrc : photoSrc);
-  const panelStyle = wash ? ({ '--wash': wash } as CSSProperties) : undefined;
+  // The hero's portrait, and with it the page's colour: the photo once it is known to be real, else the latest
+  // cover, else a top song's art. Checked once, here; while unknown the hero keeps its shape and shows nothing.
+  const photoUrl = imageUrl ? withArtworkSize(imageUrl) : null;
+  const { state: photoState, src: photoSrc } = usePhotoState(photoUrl);
+  const latestArt = latestAlbum ? getItemArt(latestAlbum) : null;
+  const portrait = heroPortrait(
+    photoState,
+    photoUrl,
+    latestArt && withArtworkSize(latestArt, 600),
+    visibleSongs.map(s => s.artUrl && withArtworkSize(s.artUrl, 600)),
+  );
+  const printSrc = useImage(portrait?.kind === 'print' ? portrait.url : null);
+  const portraitSrc = portrait?.kind === 'photo' ? photoSrc : printSrc;
+  const wash = useDominantColor(portraitSrc, { setGlobal: true });
+  usePageArt(portraitSrc);
+  // These open the playlist pages: navigation only, nothing is queued from the hero.
+  const radio = data?.playlists.find(p => /radio/i.test(p.title ?? ''));
+  const shuffle = data?.playlists.find(p => /shuffle/i.test(p.title ?? ''));
 
   function openTrackAlbum(track: AlbumTrack) {
     const { albumId, albumName, id } = track;
@@ -257,118 +274,134 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
   const altNames        = genius?.alternateNames?.filter(Boolean).slice(0, 4) ?? [];
   if (!item) return null;
 
+  const isEmpty = !isLoading && visibleSongs.length === 0 && releases.length === 0;
+  const credits = creditNames(name);
+
   return (
-    <div className={`page-scale ${styles.panel}`} style={panelStyle}>
-      <ArtistBanner key={artistId} name={name} altNames={altNames} imageUrl={imageUrl} fallbackArtUrl={latestArt} officeLine={officeLine} />
+    <div className={`page-scale ${styles.panel}`}>
+      <ArtistBanner
+        name={name}
+        altNames={altNames}
+        portrait={portrait}
+        portraitSrc={portraitSrc}
+        wash={wash}
+        officeCount={officeCount}
+        radio={radio}
+        shuffle={shuffle}
+        onOpen={openItem}
+      />
 
-      <div className={`${styles.band} ${styles.topBand}`}>
-        {isLoading ? (
-          <>
-            <div className={`skeleton ${styles.skeletonTile}`} />
-            <div className={styles.songsSkeleton}>
-              {Array.from({ length: 6 }).map((_, i) => <div key={i} className={`skeleton ${styles.skeletonRow}`} />)}
-            </div>
-          </>
-        ) : (
-          <>
-            {latestAlbum && (
-              <LatestReleaseCard
-                album={latestAlbum}
-                onOpen={openItem}
-                onAdd={onAddToQueue}
-                artistName={name}
-                year={years.get(releaseKey(latestAlbum))}
-                songCount={latestData?.totalTracks}
-                className={styles.latest}
-              />
-            )}
-            {visibleSongs.length > 0 && (
-              <SectionCard featured wash={wash} className={styles.topSongs}>
-                <Carousel title="Top Songs">
-                <ol className={styles.songsList}>
-                  {visibleSongs.map((track, i) => (
-                    <TopSongRow
-                      key={track.id.objectId ?? i}
-                      track={track}
-                      index={i}
-                      isSelected={selected.has(i)}
-                      isCurrentTrack={track.title === currentTrackName}
-                      isPlaybackActive={isPlaybackActive}
-                      onAdd={onAddToQueue}
-                      onClick={handleTrackClick}
-                      onDragStart={handleDragStart}
-                      onOpenAlbum={openTrackAlbum}
-                      onOpenArtist={openArtistByName}
-                      artistName={name}
-                    />
-                  ))}
-                </ol>
-                </Carousel>
-              </SectionCard>
-            )}
-          </>
-        )}
-      </div>
-
-      {data && (data.albums.length > 1 || data.playlists.length > 0) && (
-        <>
-          {data.albums.length > 1 && (<>
-          {countsLoading ? (
-            <SectionCard className={styles.band}>
-              <div className={styles.shelfSkeleton}>
-                {Array.from({ length: 6 }).map((_, i) => <div key={i} className={`skeleton ${styles.skeletonCard}`} />)}
+      {isEmpty ? (
+        <div className={`${styles.band} ${styles.empty}`}>
+          <p className={styles.emptyText}>
+            {credits.length > 1
+              ? 'A shared credit, with nothing filed under it on its own. Each artist has a page:'
+              : 'Nothing is filed under this name yet.'}
+          </p>
+          <div className={styles.emptyActions}>
+            {credits.length > 1
+              ? credits.slice(0, 6).map(n => <PillButton key={n} onClick={() => openArtistByName(n)}>{n}</PillButton>)
+              : (
+                <PillButton onClick={() => navigate(`/search?q=${encodeURIComponent(name)}`)}>
+                  <Search size={16} aria-hidden="true" />
+                  Search for {name}
+                </PillButton>
+              )}
+          </div>
+        </div>
+      ) : (
+        <div className={`${styles.band} ${styles.topBand}`}>
+          {isLoading ? (
+            <>
+              <div className={`skeleton ${styles.skeletonTile}`} />
+              <div className={styles.songsSkeleton}>
+                {Array.from({ length: 5 }).map((_, i) => <div key={i} className={`skeleton ${styles.skeletonRow}`} />)}
               </div>
-            </SectionCard>
+            </>
           ) : (
             <>
-              {(() => {
-                const defs = [
-                  ['Albums', 'albums'],
-                  ['Singles & EPs', 'singles'],
-                  ['Other versions', 'other'],
-                ] as const;
-                // the search box lives on the first shelf that has releases before filtering, so it never disappears
-                const boxShelf = defs.find(([, k]) => sortedShelves[k].length > 0)?.[1];
-                return defs.map(([title, k]) => {
-                  const groups = shelves[k];
-                  const hasBox = k === boxShelf;
-                  if (groups.length === 0 && !hasBox) return null;
-                  return (
-                    <SectionCard key={title} className={styles.band}>
-                    <Carousel
-                      title={title}
-                      className={styles.shelf}
-                      search={hasBox ? {
-                        value: query,
-                        onChange: setQuery,
-                        placeholder: 'Search releases and tracks',
-                        onFocus: () => setTracksEnabled(true),
-                        status: searching && tracksLoading ? 'searching tracks…' : undefined,
-                      } : undefined}
-                    >
-                      {groups.map(renderGroup)}
-                    </Carousel>
-                    </SectionCard>
-                  );
-                });
-              })()}
-              {searching && !shelves.albums.length && !shelves.singles.length && !shelves.other.length && (
-                <div className={`${styles.band} ${styles.noMatch}`}>{tracksLoading ? 'Still searching tracks…' : <>No releases match “{query.trim()}”</>}</div>
+              {latestAlbum && (
+                <LatestReleaseCard
+                  album={latestAlbum}
+                  onOpen={openItem}
+                  onAdd={onAddToQueue}
+                  artistName={name}
+                  year={years.get(releaseKey(latestAlbum))}
+                  songCount={latestData?.totalTracks}
+                  className={styles.latest}
+                />
+              )}
+              {visibleSongs.length > 0 && (
+                <SectionCard featured wash={wash} className={styles.topSongs}>
+                  <Carousel title="Top songs" rowStyle={SNAP_ROW}>
+                    <ol className={`${styles.songsList}${visibleSongs.length <= 5 ? ' ' + styles.songsFew : ''}`}>
+                      {visibleSongs.map((track, i) => (
+                        <TopSongRow
+                          key={track.id.objectId ?? i}
+                          track={track}
+                          index={i}
+                          isSelected={selected.has(i)}
+                          isCurrentTrack={track.title === currentTrackName}
+                          isPlaybackActive={isPlaybackActive}
+                          onAdd={onAddToQueue}
+                          onClick={handleTrackClick}
+                          onDragStart={handleDragStart}
+                          onOpenAlbum={openTrackAlbum}
+                          onOpenArtist={openArtistByName}
+                          artistName={name}
+                        />
+                      ))}
+                    </ol>
+                  </Carousel>
+                </SectionCard>
               )}
             </>
           )}
-          </>)}
-          {data.playlists.length > 0 && (
-            <SectionCard className={styles.band}>
-              <Carousel title="Radio" className={styles.shelf}>
-                {data.playlists.map((p, i) => (
-                  <RadioCard key={releaseKey(p) || i} item={p} artUrl={getItemArt(p) ?? imageUrl} onOpen={openItem} />
-                ))}
-              </Carousel>
-            </SectionCard>
+        </div>
+      )}
+
+      {/* Shelves sit on the page (Carousel rows on the 28px gutter), not in cards. */}
+      {releases.length > 1 && (countsLoading ? (
+        <div className={`${styles.band} ${styles.shelfSkeleton}`}>
+          {Array.from({ length: 6 }).map((_, i) => <div key={i} className={`skeleton ${styles.skeletonCard}`} />)}
+        </div>
+      ) : (
+        <>
+          {(() => {
+            const defs = [
+              ['Albums', 'albums'],
+              ['Singles & EPs', 'singles'],
+              ['Other versions', 'other'],
+            ] as const;
+            // the search box lives on the first shelf that has releases before filtering, so it never disappears
+            const boxShelf = defs.find(([, k]) => sortedShelves[k].length > 0)?.[1];
+            return defs.map(([title, k]) => {
+              const groups = shelves[k];
+              const hasBox = k === boxShelf;
+              if (groups.length === 0 && !hasBox) return null;
+              return (
+                <Carousel
+                  key={title}
+                  title={title}
+                  className={`${styles.band} ${styles.shelf}`}
+                  search={hasBox ? {
+                    value: query,
+                    onChange: setQuery,
+                    placeholder: 'Search releases and tracks',
+                    onFocus: () => setTracksEnabled(true),
+                    status: searching && tracksLoading ? 'searching tracks…' : undefined,
+                  } : undefined}
+                >
+                  {groups.map(renderGroup)}
+                </Carousel>
+              );
+            });
+          })()}
+          {searching && !shelves.albums.length && !shelves.singles.length && !shelves.other.length && (
+            <div className={`${styles.band} ${styles.noMatch}`}>{tracksLoading ? 'Still searching tracks…' : <>No releases match “{query.trim()}”</>}</div>
           )}
         </>
-      )}
+      ))}
 
       <ArtistAbout name={name} blurb={blurb} instagram={genius?.instagram} twitter={genius?.twitter} />
     </div>

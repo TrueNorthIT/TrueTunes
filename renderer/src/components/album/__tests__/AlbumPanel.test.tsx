@@ -144,10 +144,13 @@ describe('AlbumPanel', () => {
     expect(container.querySelectorAll('[class*="skeletonRow"]').length).toBeGreaterThan(0);
   });
 
-  it('shows error message when fetch fails', () => {
-    mockUseAlbumBrowse.mockReturnValue({ data: undefined, isLoading: false, error: new Error('fail') });
+  it('shows error message when fetch fails, with a retry', () => {
+    const refetch = vi.fn();
+    mockUseAlbumBrowse.mockReturnValue({ data: undefined, isLoading: false, error: new Error('fail'), refetch });
     render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
     expect(screen.getByText('Failed to load tracks.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(refetch).toHaveBeenCalled();
   });
 
   it('shows no tracks message when empty', () => {

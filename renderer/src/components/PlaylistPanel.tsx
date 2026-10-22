@@ -166,7 +166,7 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
   const isMember = playlist?.members.includes(displayName ?? '') ?? false;
   const canReorder = isOwner || isMember;
 
-  async function handlePlayAll() {
+  async function handleAddAll() {
     if (!playlist?.tracks.length) return;
     for (const t of playlist.tracks) {
       onAddToQueue(trackToSonosItem(t), -1);
@@ -325,7 +325,7 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
               <div className={styles.people}>
                 <button
                   type="button"
-                  className={styles.owner}
+                  className={styles.face}
                   onClick={() => navigate(`/profile/${encodeURIComponent(playlist.owner)}`)}
                   aria-label={`${playlist.owner}, owner, open profile`}
                 >
@@ -333,22 +333,29 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
                   {playlist.owner}
                 </button>
                 {collaborators.length > 0 && (
-                  <ul className={styles.collabs} aria-label="Collaborators">
-                    {collaborators.slice(0, 6).map(m => (
-                      <li key={m}>
-                        <button
-                          type="button"
-                          className={styles.collab}
-                          title={m}
-                          aria-label={`${m}, collaborator, open profile`}
-                          onClick={() => navigate(`/profile/${encodeURIComponent(m)}`)}
-                        >
-                          <UserAvatar name={m} imageUrl={imageByUser.get(m)} className={styles.avatar} />
-                        </button>
-                      </li>
-                    ))}
-                    {collaborators.length > 6 && <li className={styles.more}>+{collaborators.length - 6}</li>}
-                  </ul>
+                  <>
+                    <span className={styles.with}>with</span>
+                    <ul className={styles.collabs} aria-label="Collaborators">
+                      {collaborators.slice(0, 4).map(m => (
+                        <li key={m}>
+                          <button
+                            type="button"
+                            className={styles.face}
+                            aria-label={`${m}, collaborator, open profile`}
+                            onClick={() => navigate(`/profile/${encodeURIComponent(m)}`)}
+                          >
+                            <UserAvatar name={m} imageUrl={imageByUser.get(m)} className={styles.avatar} />
+                            {m}
+                          </button>
+                        </li>
+                      ))}
+                      {collaborators.length > 4 && (
+                        <li className={styles.more} title={collaborators.slice(4).join(', ')}>
+                          and {collaborators.length - 4} more
+                        </li>
+                      )}
+                    </ul>
+                  </>
                 )}
               </div>
               <div className={styles.metaLine}>
@@ -367,9 +374,9 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
               </div>
               <div className={styles.actions}>
                 {playlist.tracks.length > 0 && (
-                  <PillButton variant="primary" onClick={handlePlayAll}>
+                  <PillButton variant="primary" onClick={handleAddAll}>
                     <ListPlus size={16} aria-hidden="true" />
-                    Play all
+                    Add all to queue
                   </PillButton>
                 )}
                 {playlist.isPublic && !isOwner && (
@@ -390,7 +397,7 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
           )}
         </HeroBand>
 
-        <SectionCard className={styles.section}>
+        <SectionCard className={`${styles.section} ${styles.trackCard}`}>
           {isLoading ? (
             <div aria-busy="true">
               {Array.from({ length: 6 }).map((_, i) => (

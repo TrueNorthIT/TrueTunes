@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { looksLikePlaceholder } from '../photoPlaceholder';
+import { describe, it, expect, vi } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
+import { looksLikePlaceholder, photoStateOf } from '../photoPlaceholder';
 
 const px = (n: number, f: (i: number) => [number, number, number]) =>
   Uint8ClampedArray.from(Array.from({ length: n }, (_, i) => [...f(i), 255]).flat());
@@ -16,5 +17,30 @@ describe('looksLikePlaceholder', () => {
   });
   it('does not flag an empty image', () => {
     expect(looksLikePlaceholder(new Uint8ClampedArray(0))).toBe(false);
+  });
+});
+
+describe('photoStateOf', () => {
+  it('settles at once when there is no photo URL', () => {
+    expect(photoStateOf(false, null)).toBe('placeholder');
+  });
+  it('stays unknown while the image loads or is being checked, so the hero never commits early', () => {
+    expect(photoStateOf(true, null)).toBe('unknown');
+  });
+  it('is photo or placeholder once checked', () => {
+    expect(photoStateOf(true, false)).toBe('photo');
+    expect(photoStateOf(true, true)).toBe('placeholder');
+  });
+});
+
+describe('usePhotoState', () => {
+  it('falls back to the no-photo treatment when the photo never loads', async () => {
+    vi.resetModules();
+    vi.doMock('../imageCache', () => ({ fetchImage: () => Promise.resolve(null) }));
+    const { usePhotoState } = await import('../photoPlaceholder');
+    const { result } = renderHook(() => usePhotoState('https://lh3.example/a=w2000-h2000'));
+    expect(result.current.state).toBe('unknown');
+    await waitFor(() => expect(result.current).toEqual({ state: 'placeholder', src: null }));
+    vi.doUnmock('../imageCache');
   });
 });

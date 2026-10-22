@@ -5,12 +5,17 @@ import { ArtistPanel } from '../ArtistPanel';
 import type { SonosItem } from '../../../types/sonos';
 
 const mockUseLocation = vi.fn();
-vi.mock('react-router-dom', () => ({ useLocation: () => mockUseLocation() }));
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', () => ({ useLocation: () => mockUseLocation(), useNavigate: () => mockNavigate }));
+const mockPhotoState = vi.fn();
+vi.mock('../../../lib/photoPlaceholder', () => ({ usePhotoState: (...args: unknown[]) => mockPhotoState(...args) }));
+const mockOpenItem = vi.fn();
+const mockResolveAndOpen = vi.fn();
 const mockUseImage = vi.fn();
 vi.mock('../../../hooks/useImage', () => ({ useImage: (...args: unknown[]) => mockUseImage(...args) }));
 vi.mock('../../../hooks/useAlbumBrowse', () => ({ useAlbumBrowse: () => ({ data: { totalTracks: 12 } }) }));
 vi.mock('../../../hooks/useDominantColor', () => ({ useDominantColor: () => null }));
-vi.mock('../../../hooks/useOpenItem', () => ({ useOpenItem: () => vi.fn() }));
+vi.mock('../../../hooks/useOpenItem', () => ({ useOpenItem: () => mockOpenItem }));
 
 const mockUseArtistBrowse = vi.fn();
 vi.mock('../../../hooks/useArtistBrowse', () => ({
@@ -19,7 +24,7 @@ vi.mock('../../../hooks/useArtistBrowse', () => ({
 
 const mockStats = vi.fn();
 vi.mock('../../../hooks/useStats', () => ({ useStats: () => mockStats() }));
-vi.mock('../../../hooks/useResolveAndOpen', () => ({ useResolveAndOpen: () => ({ resolveAndOpen: vi.fn(), pending: null }) }));
+vi.mock('../../../hooks/useResolveAndOpen', () => ({ useResolveAndOpen: () => ({ resolveAndOpen: mockResolveAndOpen, pending: null }) }));
 
 const mockYears = vi.fn();
 vi.mock('../../../hooks/useReleaseYears', () => ({
@@ -41,9 +46,6 @@ vi.mock('../TopSongRow', () => ({
 }));
 vi.mock('../LatestReleaseCard', () => ({
   LatestReleaseCard: ({ album }: { album: { title: string } }) => <div>{album.title}</div>,
-}));
-vi.mock('../RadioCard', () => ({
-  RadioCard: ({ item }: { item: { title: string } }) => <div>{item.title}</div>,
 }));
 vi.mock('../ArtistAlbumCard', () => ({
   ArtistAlbumCard: ({ album, trackHits }: { album: { title: string }; trackHits?: string[] }) => (
@@ -79,6 +81,7 @@ const defaultProps = { onAddToQueue: vi.fn(), currentTrackName: '', isPlaybackAc
 beforeEach(() => {
   vi.clearAllMocks();
   mockUseImage.mockReturnValue(null);
+  mockPhotoState.mockReturnValue({ state: 'placeholder', src: null });
   mockStats.mockReturnValue({ data: undefined });
   mockUseLocation.mockReturnValue({ state: { item: artistItem } });
   mockUseArtistBrowse.mockReturnValue({ data: makeData(), isLoading: false });
@@ -123,47 +126,117 @@ describe('ArtistPanel', () => {
     }));
     mockUseArtistBrowse.mockReturnValue({ data: makeData({ topSongs }), isLoading: false });
     render(<ArtistPanel {...defaultProps} />);
-    expect(screen.getByRole('heading', { name: 'Top Songs' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Top songs' })).toBeInTheDocument();
     expect(screen.getByText('Song 12')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Show all|Show less/ })).not.toBeInTheDocument();
   });
 
   describe('hero', () => {
-    it('renders the full-bleed photo at the large size when the artist has an image', () => {
-      mockUseImage.mockImplementation((u: string | null) => u);
-      mockUseArtistBrowse.mockReturnValue({
-        data: makeData({ imageUrl: 'https://lh3.example/a=w544-h544-l90-rj' }),
-        isLoading: false,
-      });
+    const withPhoto = () => mockUseArtistBrowse.mockReturnValue({
+      data: makeData({ imageUrl: 'https://lh3.example/a=w544-h544-l90-rj' }),
+      isLoading: false,
+    });
+
+    it('loads the photo at the large size and runs it full-bleed once it is known to be real', () => {
+      mockPhotoState.mockImplementation((u: string | null) => ({ state: 'photo', src: u }));
+      withPhoto();
       const { container } = render(<ArtistPanel {...defaultProps} />);
-      const img = container.querySelector('[class*="heroImg"]');
-      expect(img).toHaveAttribute('src', 'https://lh3.example/a=w2000-h2000-l90-rj');
+      expect(mockPhotoState).toHaveBeenCalledWith('https://lh3.example/a=w2000-h2000-l90-rj');
+      expect(container.querySelector('[class*="heroMedia"] img')).toHaveAttribute('src', 'https://lh3.example/a=w2000-h2000-l90-rj');
+      expect(container.querySelector('[class*="printImg"]')).toBeNull();
       expect(screen.getByRole('heading', { name: 'The Beatles' })).toBeInTheDocument();
     });
 
-    it('falls back to the colour-wash header when there is no artist image', () => {
+    it('keeps the same hero but shows no portrait while the photo is still being checked', () => {
+      mockUseImage.mockImplementation((u: string | null) => u);
+      mockPhotoState.mockReturnValue({ state: 'unknown', src: null });
+      withPhoto();
       const { container } = render(<ArtistPanel {...defaultProps} />);
-      expect(container.querySelector('[class*="hero"]')).toBeNull();
-      expect(container.querySelector('[class*="washHeader"]')).not.toBeNull();
-      expect(screen.getByRole('heading', { name: 'The Beatles' })).toBeInTheDocument();
+      expect(container.querySelector('[class*="hero"]')).not.toBeNull();
+      expect(container.querySelector('header img')).toBeNull();
+    });
+
+    it('hangs the latest cover as a print when the photo is a placeholder', () => {
+      mockUseImage.mockImplementation((u: string | null) => u);
+      withPhoto();
+      mockUseArtistBrowse.mockReturnValue({
+        data: makeData({
+          imageUrl: 'https://lh3.example/a=w544-h544-l90-rj',
+          albums: [{ title: 'Abbey Road', id: { objectId: 'alb-1' }, images: { tile1x1: 'https://lh3.example/c=w226-h226' } }],
+        }),
+        isLoading: false,
+      });
+      const { container } = render(<ArtistPanel {...defaultProps} />);
+      expect(container.querySelector('[class*="heroMedia"]')).toBeNull();
+      expect(container.querySelector('[class*="printImg"]')).toHaveAttribute('src', 'https://lh3.example/c=w600-h600');
+    });
+
+    it('falls back to the top song art when there is no release', () => {
+      mockUseImage.mockImplementation((u: string | null) => u);
+      const topSongs = [{ name: 'Come Together', artUrl: 'https://lh3.example/s=w120-h120', id: { objectId: 'trk-1' } }];
+      mockUseArtistBrowse.mockReturnValue({ data: makeData({ topSongs }), isLoading: false });
+      const { container } = render(<ArtistPanel {...defaultProps} />);
+      expect(container.querySelector('[class*="printImg"]')).toHaveAttribute('src', 'https://lh3.example/s=w600-h600');
+    });
+
+    it('opens the artist radio and shuffle from pills, without queueing anything', async () => {
+      const playlists = [{ title: 'Artist Shuffle', id: { objectId: 'p1' } }, { title: 'Artist Radio', id: { objectId: 'p2' } }];
+      mockUseArtistBrowse.mockReturnValue({ data: makeData({ playlists }), isLoading: false });
+      const user = userEvent.setup();
+      render(<ArtistPanel {...defaultProps} />);
+      await user.click(screen.getByRole('button', { name: 'Artist radio' }));
+      expect(mockOpenItem).toHaveBeenLastCalledWith(playlists[1]);
+      await user.click(screen.getByRole('button', { name: 'Shuffle' }));
+      expect(mockOpenItem).toHaveBeenLastCalledWith(playlists[0]);
+      expect(defaultProps.onAddToQueue).not.toHaveBeenCalled();
+      expect(screen.queryByRole('heading', { name: 'Radio' })).not.toBeInTheDocument();
+    });
+
+    it('omits the pills when the artist has no radio or shuffle', () => {
+      render(<ArtistPanel {...defaultProps} />);
+      expect(screen.queryByRole('button', { name: 'Artist radio' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Shuffle' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('empty state', () => {
+    it('offers each artist of a shared credit', async () => {
+      mockUseArtistBrowse.mockReturnValue({ data: makeData({ name: 'Sacha Baron Cohen, Johnny Depp' }), isLoading: false });
+      const user = userEvent.setup();
+      render(<ArtistPanel {...defaultProps} />);
+      await user.click(screen.getByRole('button', { name: 'Johnny Depp' }));
+      expect(mockResolveAndOpen).toHaveBeenCalledWith('Johnny Depp', 'artist');
+    });
+
+    it('offers a search for a single name', async () => {
+      const user = userEvent.setup();
+      render(<ArtistPanel {...defaultProps} />);
+      await user.click(screen.getByRole('button', { name: 'Search for The Beatles' }));
+      expect(mockNavigate).toHaveBeenCalledWith('/search?q=The%20Beatles');
+    });
+
+    it('is not shown while loading', () => {
+      mockUseArtistBrowse.mockReturnValue({ data: undefined, isLoading: true });
+      render(<ArtistPanel {...defaultProps} />);
+      expect(screen.queryByText(/Nothing is filed/)).not.toBeInTheDocument();
     });
   });
 
   describe('office line', () => {
-    it('shows how often the office has played the artist, matched by name when the id is absent', () => {
+    it('shows how often the office has queued the artist, matched by name when the id is absent', () => {
       mockStats.mockReturnValue({ data: { topArtists: [{ artist: 'Beatles', count: 27 }] } });
       render(<ArtistPanel {...defaultProps} />);
-      expect(screen.getByText('Played here 27 times')).toBeInTheDocument();
+      expect(screen.getByText('Queued here 27 times')).toBeInTheDocument();
     });
 
     it('is hidden when there is no data for the artist', () => {
       mockStats.mockReturnValue({ data: { topArtists: [{ artist: 'Wiley', count: 3 }] } });
       render(<ArtistPanel {...defaultProps} />);
-      expect(screen.queryByText(/Played here/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Queued here/)).not.toBeInTheDocument();
     });
   });
 
-  describe('About and Radio', () => {
+  describe('About', () => {
     const long = 'Sentence about the band. '.repeat(20);
     const withGenius = (blurb: string) => ({
       genius: {
@@ -191,18 +264,6 @@ describe('ArtistPanel', () => {
       mockUseArtistBrowse.mockReturnValue({ data: makeData(withGenius('Short.')), isLoading: false });
       render(<ArtistPanel {...defaultProps} />);
       expect(screen.queryByRole('button', { name: 'More' })).not.toBeInTheDocument();
-    });
-
-    it('renders a Radio shelf for the artist playlists, and hides it when there are none', () => {
-      const playlists = [{ title: 'Artist Shuffle', id: { objectId: 'p1' } }, { title: 'Artist Radio', id: { objectId: 'p2' } }];
-      mockUseArtistBrowse.mockReturnValue({ data: makeData({ playlists }), isLoading: false });
-      const { unmount } = render(<ArtistPanel {...defaultProps} />);
-      expect(screen.getByRole('heading', { name: 'Radio' })).toBeInTheDocument();
-      expect(screen.getByText('Artist Shuffle')).toBeInTheDocument();
-      unmount();
-      mockUseArtistBrowse.mockReturnValue({ data: makeData(), isLoading: false });
-      render(<ArtistPanel {...defaultProps} />);
-      expect(screen.queryByRole('heading', { name: 'Radio' })).not.toBeInTheDocument();
     });
   });
 

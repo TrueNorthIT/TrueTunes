@@ -86,16 +86,20 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   const lastSelected = useRef<number | null>(null);
   const draggingSet  = useRef<Set<number>>(new Set());
 
-  const trackDetailsResults = useQueries({
-    queries: items.map(item => ({
-      ...trackQueryOptions(
-        item.track.id || '',
-        item.track.serviceId ?? '',
-        item.track.accountId ?? '',
-      ),
-      enabled: !!(item.track.id && item.track.serviceId && item.track.accountId),
+  // One query per track id: a track queued twice would put the same ['track', id] key in useQueries twice,
+  // which it warns about ("Duplicate Queries found") on every render. Results are mapped back per item.
+  const uniqueTracks = [...new Map(items.map(item => [item.track.id || '', item.track])).values()];
+  const uniqueTrackResults = useQueries({
+    queries: uniqueTracks.map(track => ({
+      ...trackQueryOptions(track.id || '', track.serviceId ?? '', track.accountId ?? ''),
+      enabled: !!(track.id && track.serviceId && track.accountId),
     })),
   });
+  const trackDetailsResults = useMemo(() => {
+    const ids = [...new Set(items.map(item => item.track.id || ''))]; // same order as uniqueTracks
+    const byId = new Map(ids.map((id, i) => [id, uniqueTrackResults[i]]));
+    return items.map(item => byId.get(item.track.id || ''));
+  }, [items, uniqueTrackResults]);
 
   // Album ids per item, resolved from useTrackDetails (the same data the queue row
   // uses to render the album link) with the raw NormalizedTrack value as fallback.

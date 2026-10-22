@@ -126,6 +126,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Same fix as .chartTitle: an inline-block link is clipped whole, with no ellipsis, unless it can ellipsise itself. */
+.chartArtist button {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
 .plays {
   text-align: right;
   color: var(--text-2);

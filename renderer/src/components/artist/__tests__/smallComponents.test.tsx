@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { RadioCard } from '../RadioCard';
 import { TopSongRow } from '../TopSongRow';
 import { HeroTrackRow } from '../HeroTrackRow';
 import { ArtistAlbumCard } from '../ArtistAlbumCard';
@@ -9,35 +8,6 @@ import type { SonosItem } from '../../../types/sonos';
 import type { AlbumTrack } from '../../../hooks/useAlbumBrowse';
 
 vi.mock('../../../hooks/useImage', () => ({ useImage: () => null }));
-
-// ─── RadioCard ────────────────────────────────────────────────────────────────
-
-describe('RadioCard', () => {
-  const item: SonosItem = { title: 'Beatles Radio', type: 'ITEM_PLAYLIST' };
-
-  it('renders item title', () => {
-    render(<RadioCard item={item} artUrl={null} onOpen={vi.fn()} />);
-    expect(screen.getByText('Beatles Radio')).toBeInTheDocument();
-  });
-
-  it('calls onOpen when clicked', () => {
-    const onOpen = vi.fn();
-    render(<RadioCard item={item} artUrl={null} onOpen={onOpen} />);
-    fireEvent.click(screen.getByText('Beatles Radio'));
-    expect(onOpen).toHaveBeenCalledWith(item);
-  });
-
-  it('renders subtitle when present', () => {
-    const withSub = { ...item, subtitle: 'Radio based on The Beatles' };
-    render(<RadioCard item={withSub} artUrl={null} onOpen={vi.fn()} />);
-    expect(screen.getByText('Radio based on The Beatles')).toBeInTheDocument();
-  });
-
-  it('renders art image when artUrl is set', () => {
-    const { container } = render(<RadioCard item={item} artUrl="https://art.jpg" onOpen={vi.fn()} />);
-    expect(container.querySelector('img')).toHaveAttribute('src', 'https://art.jpg');
-  });
-});
 
 // ─── TopSongRow ───────────────────────────────────────────────────────────────
 

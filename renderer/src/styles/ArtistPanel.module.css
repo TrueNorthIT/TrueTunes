@@ -15,73 +15,98 @@
 /* Every band after the hero: the 28px gutter; the one 1.4em rhythm comes from .panel's gap. */
 .band { margin: 0 28px; }
 
-/* ── Hero: full-bleed artist photo ── */
+/* ── Hero: one shape for every artist ──
+   Sized from the page container, not the viewport, and the same height in every state so nothing jumps. It runs
+   up behind the floating nav. Everything in it fades to transparent at the foot: no edge where it meets the page. */
 .hero {
-  --hero-h: clamp(320px, 45vh, 560px);
+  --hero-h: clamp(340px, 42cqw, 580px);
+  --print: calc(var(--hero-h) - var(--nav-h) - 2.4em);
   position: relative;
   height: var(--hero-h);
   overflow: hidden;
 }
-/* the photo is square, so on wide windows it is not stretched across the band: a blurred copy fills the
-   width and the sharp photo sits on the right, its left edge blended into the backdrop */
-.heroBackdrop {
+
+/* A real photo: full-bleed, cropped wide from a square source, with faces kept in the upper third. The photo and
+   its scrim fade out together, so the scrim never leaves a dark band at the foot. */
+.heroMedia {
   position: absolute;
   inset: 0;
+  -webkit-mask-image: linear-gradient(180deg, #000 58%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 58%, transparent 100%);
+}
+.heroImg {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 20%;
-  filter: blur(40px) saturate(1.2) brightness(0.55);
-  transform: scale(1.15); /* hides the blur's soft edges */
-  /* fade to transparent (not to a colour) so the hero melts into whatever tint the page has */
-  -webkit-mask-image: linear-gradient(180deg, #000 45%, transparent 100%);
-  mask-image: linear-gradient(180deg, #000 45%, transparent 100%);
+  object-position: center 25%;
   display: block;
+  transform: scale(1.02); /* trims the thin light border some sources carry, so no edge reads as a rectangle */
 }
-.heroImg {
-  position: absolute;
-  top: 0;
-  right: 0;
-  height: 100%;
-  width: min(100%, calc(var(--hero-h) * 1.5));
-  object-fit: cover;
-  object-position: center 20%;
-  /* left edge blends into the backdrop; bottom fades out with it */
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 30%), linear-gradient(180deg, #000 45%, transparent 100%);
-  -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(to right, transparent, #000 30%), linear-gradient(180deg, #000 45%, transparent 100%);
-  mask-composite: intersect;
-  display: block;
-}
-/* scrim for the name and the lines under it; the fade itself is done by the masks */
-.heroFade {
+/* Legibility: the image-card scrim, a light one under the nav and the deep one up from the bottom. */
+.heroMedia::after {
+  content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.42) 100%);
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 24%),
+    var(--scrim-deep);
 }
+
+/* No photo: the portrait's colour, out from behind the print and gone by the foot. The two layers together peak
+   at 0.3, the Quiet Wall ceiling. */
+.heroWash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(90% 120% at 88% 30%, rgba(var(--wash), 0.24), transparent 65%),
+    linear-gradient(180deg, rgba(var(--wash), 0.08), transparent 85%);
+  -webkit-mask-image: linear-gradient(180deg, #000 50%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 50%, transparent 100%);
+}
+/* ...and the cover hung as a print on the right, below the nav, with the hero-art shadow and the art keyline. */
+.print {
+  position: absolute;
+  top: calc(var(--nav-h) + 0.6em);
+  right: 28px;
+  width: var(--print);
+  height: var(--print);
+  border-radius: 0.9em;
+  overflow: hidden;
+  background: var(--bg-1);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+.print:empty { background: none; box-shadow: none; }
+.print::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--art-keyline);
+  pointer-events: none;
+}
+.printImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Bottom-left in every state, clear of where a print would hang, so the name never reflows when the state settles. */
 .heroText {
   position: absolute;
   left: 28px;
-  right: 28px;
+  right: calc(var(--print) + 56px);
   bottom: 1.6em;
-}
-
-/* No photo: the artwork colour (the latest cover's) washes in from the top, with the name on it. */
-.washHeader {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  min-height: clamp(240px, 32vh, 340px);
-  padding: calc(var(--nav-h) + 24px) 28px 1.6em;
-  background:
-    radial-gradient(120% 130% at 12% 0%, rgba(var(--wash, var(--tint)), 0.5), transparent 70%),
-    linear-gradient(180deg, rgba(var(--wash, var(--tint)), 0.14), transparent);
-  transition: background var(--dur) var(--ease);
+  align-items: flex-start;
+  min-width: 0;
 }
 
 .artistName {
   margin: 0;
-  font-size: clamp(48px, 6vw, 96px);
+  font-size: clamp(44px, 6cqw, 96px);
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--text);
@@ -90,6 +115,19 @@
   overflow-wrap: anywhere;
   max-width: 100%;
   text-shadow: 0 2px 24px rgba(0, 0, 0, 0.45);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  /* the clamp clips at the padding box: room for descenders */
+  padding-bottom: 0.1em;
+  margin-bottom: -0.1em;
+}
+/* A shared credit ("A, B, C") steps down so it stays a name, not a wall of display type. */
+.artistNameLong {
+  font-size: clamp(30px, 3.4cqw, 56px);
+  letter-spacing: -0.02em;
 }
 
 .altNames {
@@ -100,27 +138,50 @@
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.5);
 }
 
-/* What the office has done with this artist. */
-.officeLine {
-  font-size: max(13px, 1.07em);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  color: var(--on-art);
-  margin-top: 0.4em;
-  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.5);
+/* The office line (OfficeChip) and the deciding actions under the name. */
+.heroChip { margin-top: 0.9em; }
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em;
+  margin-top: 1.1em;
 }
-.altNames + .officeLine { margin-top: 0.15em; }
 
-/* ── Top band: Latest release card | Top Songs chart ── */
-.topBand {
-  display: grid;
-  grid-template-columns: minmax(16em, 24em) minmax(0, 1fr);
-  gap: 1.4em;
-  align-items: stretch;
+/* ── Empty: nothing filed under this name ── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.1em;
+  padding: 0.4em 0 1em;
 }
-.topBand:empty { display: none; }
-.latest { min-width: 0; }
-.topSongs { min-width: 0; }
+.emptyText {
+  margin: 0;
+  font-size: 1.07em;
+  color: var(--text-2);
+  max-width: 60ch;
+}
+.emptyActions { display: flex; flex-wrap: wrap; gap: 0.6em; }
+
+/* ── Top band: Latest release card | Top songs chart ──
+   The cover stays square. Its side matches the chart card holding five rows (head, 5 × 4.3em rows, padding),
+   so the two cards line up. */
+.topBand {
+  --latest-w: 29.6em;
+  display: grid;
+  grid-template-columns: var(--latest-w) minmax(0, 1fr);
+  gap: 1.4em;
+  align-items: start;
+}
+.topBand .latest { min-width: 0; min-height: 0; aspect-ratio: 1; }
+/* The card is the songs' container: one visible column fills it (two once there is room), so a peeking
+   column never shows only its ranks. */
+.topSongs {
+  min-width: 0;
+  align-self: stretch;
+  container-type: inline-size;
+  --song-cols: 1;
+}
 /* no latest release: the chart takes the whole band */
 .topSongs:first-child { grid-column: 1 / -1; }
 /* five rows, filling column by column; the Carousel scrolls the columns (the list can run to dozens of songs) */
@@ -132,12 +193,22 @@
   display: grid;
   grid-auto-flow: column;
   grid-template-rows: repeat(5, min-content);
-  grid-auto-columns: min(34em, 80cqw);
+  grid-auto-columns: calc((100cqw - (var(--song-cols) - 1) * 1.4em) / var(--song-cols));
   column-gap: 1.4em;
+}
+/* Five songs or fewer: one column across the card. */
+.songsFew { flex: 1 1 auto; grid-auto-columns: minmax(0, 1fr); }
+/* Titles get the room: the album or collaborator column and the duration give way. */
+.songsList > li {
+  grid-template-columns: 2.4em minmax(0, 2.4fr) minmax(0, 1fr) 3em 2.2em;
+  scroll-snap-align: start;
+}
+@container (min-width: 1500px) {
+  .topSongs { --song-cols: 2; }
 }
 @container (max-width: 900px) {
   .topBand { grid-template-columns: minmax(0, 1fr); }
-  .latest { min-height: 0; aspect-ratio: 16 / 9; }
+  .topBand .latest { aspect-ratio: 16 / 9; }
 }
 
 /* ── Now-playing waveform: sits in the rank cell ── */
@@ -168,7 +239,7 @@
 
 /* ── Loading: sized like the content they replace; colour and pulse are the global .skeleton ── */
 .skeletonTile {
-  min-height: 23em;
+  aspect-ratio: 1;
   border-radius: 1em;
 }
 .songsSkeleton { min-width: 0; }
@@ -288,26 +359,6 @@
 /* Carousel header: 4px more than its default 18px so an expanded group's header clears the title */
 .shelf > :first-child { margin-bottom: 22px; }
 
-/* Radio cards: Artist Shuffle / Artist Radio */
-.radioArt { background: var(--bg-1); color: var(--text-3); }
-.radioBg { filter: brightness(0.6) saturate(1.1); }
-/* the artwork colour over a dark ground, under the icon */
-.radioArt::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(var(--wash, var(--tint)), 0.5), rgba(0, 0, 0, 0.55));
-}
-.radioIcon {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--on-art);
-}
-
 /* ── Stacks (offsets scale with the card) ── */
 .stackWrap { position: relative; margin-bottom: 0.6em; }
 .stackWrap .albumArt { margin-bottom: 0; }
@@ -383,7 +434,7 @@
   line-height: 1.55;
   color: var(--text-2);
   margin: 0 0 0.6em;
-  max-width: 100ch;
+  max-width: 70ch;
   white-space: pre-line;
 }
 .aboutClamped {
@@ -430,7 +481,6 @@
 @media (prefers-reduced-motion: reduce) {
   .albumCard,
   .albumAdd,
-  .washHeader,
   .socialIconBtn { transition: none; }
   .waveformBar { animation: none; transform: scaleY(0.6); }
 }

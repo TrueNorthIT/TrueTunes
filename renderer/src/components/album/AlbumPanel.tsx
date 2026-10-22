@@ -12,15 +12,20 @@ import { artistQueryOptions } from '../../hooks/useArtistBrowse';
 import { useResolveAndOpen } from '../../hooks/useResolveAndOpen';
 import { useOpenItem } from '../../hooks/useOpenItem';
 import { useStats } from '../../hooks/useStats';
+import { useReleaseTrackCounts } from '../../hooks/useReleaseTrackCounts';
+import { useReleaseYears } from '../../hooks/useReleaseYears';
 import type { PlaybackState } from '../../hooks/usePlayback';
 import {
-  resolveAlbumParams, isPlaylist, isProgram, getItemArt, getName, browseSub, splitArtists,
+  resolveAlbumParams, isPlaylist, isProgram, getItemArt, getName, splitArtists,
 } from '../../lib/itemHelpers';
 import { withArtworkSize } from '../../lib/artworkUrl';
+import { cardSubtitle } from '../../lib/artistSubtitle';
+import { moreByReleases } from '../../lib/moreBy';
 import { createDragGhost } from '../../lib/dragHelpers';
 import { ExplicitBadge } from '../common/ExplicitBadge';
 import { HeroBand } from '../common/HeroBand';
 import { ImageTile } from '../common/ImageTile';
+import { OfficeChip } from '../common/OfficeChip';
 import { PillButton } from '../common/PillButton';
 import { SectionCard } from '../common/SectionCard';
 import { AlbumTrackRow } from './AlbumTrackRow';
@@ -54,6 +59,7 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
 
   const isLoading = isPlaylistOrProgram ? playlistResult.isLoading : albumResult.isLoading;
   const error     = isPlaylistOrProgram ? playlistResult.error     : albumResult.error;
+  const refetch   = isPlaylistOrProgram ? playlistResult.refetch   : albumResult.refetch;
   const data = isPlaylistOrProgram
     ? playlistResult.data
       ? { title: null, artist: null, artUrl: null, tracks: playlistResult.data, totalTracks: playlistResult.data.length, artistItem: null }
@@ -68,6 +74,10 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
     ...artistQueryOptions(artistRid?.objectId, artistRid?.serviceId, artistRid?.accountId, undefined),
     enabled: artistReady && !isPlaylistOrProgram,
   });
+  // Same grouping, years and track counts as the artist page (and the same caches).
+  const releases = artistData?.albums ?? [];
+  const { counts: releaseCounts } = useReleaseTrackCounts(releases);
+  const { years: releaseYears } = useReleaseYears(releases, artistData?.name);
 
   const title  = data?.title  ?? item?.title  ?? item?.name  ?? '';
   const artist = data?.artist ?? ((item as Record<string, unknown>)?.['subtitle'] as string) ?? '';
@@ -138,13 +148,13 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
   // can use the cached artistItem for direct navigation.
   const artistParts = splitArtists(artist);
 
-  // More by this artist: their other albums, from the cached artist browse.
-  const moreAlbums = (artistData?.albums ?? [])
-    .filter(a => {
-      const p = resolveAlbumParams(a);
-      return p.albumId ? p.albumId !== albumId : getName(a).trim().toLowerCase() !== title.trim().toLowerCase();
-    })
-    .slice(0, 12);
+  // More by this artist: their other releases, without this album's own versions or its singles.
+  const moreAlbums = moreByReleases(
+    releases,
+    { albumId, title, trackTitles: data?.tracks.map(t => t.title) ?? [] },
+    releaseCounts,
+    releaseYears,
+  );
   const artistName = artistData?.name || artistParts[0] || '';
 
   const meta = data
@@ -182,11 +192,7 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
               </div>
             )}
             {data && <div className={styles.metaLine}>{meta}</div>}
-            {queuedHere > 0 && (
-              <div className={styles.office}>
-                {queuedHere === 1 ? 'Queued here once' : `Queued here ${queuedHere} times`}
-              </div>
-            )}
+            <OfficeChip count={queuedHere} />
             <div className={styles.actions}>
               <PillButton
                 variant="primary"
@@ -204,7 +210,7 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
             </div>
         </HeroBand>
 
-        <SectionCard className={styles.section}>
+        <SectionCard className={`${styles.section} ${styles.trackCard}`}>
           <div
             className={styles.tracks}
             onClick={() => { setSelected(new Set()); lastSelected.current = null; }}
@@ -219,7 +225,12 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
                 ))}
               </div>
             )}
-            {error && <div className={styles.msg}>Failed to load tracks.</div>}
+            {error && (
+              <div className={styles.msg}>
+                Failed to load tracks.
+                <PillButton onClick={() => void refetch()}>Try again</PillButton>
+              </div>
+            )}
             {!error && data && data.tracks.length === 0 && <div className={styles.msg}>No tracks found.</div>}
             {data && data.tracks.length > 0 && (
               <ul className={styles.list}>
@@ -246,14 +257,13 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
         {moreAlbums.length > 0 && (
           <SectionCard className={styles.section} title={`More by ${artistName}`}>
             <div className={styles.shelf}>
-              {moreAlbums.map((a, i) => {
+              {moreAlbums.map(({ item: a, year: y }, i) => {
                 const p = resolveAlbumParams(a);
-                const sub = browseSub(a).replace(/^Album\s•\s/, '');
                 return (
                   <ImageTile
                     key={p.albumId ?? i}
                     title={getName(a)}
-                    sub={sub && !sub.toLowerCase().includes(artistName.toLowerCase()) ? sub : null}
+                    sub={cardSubtitle(y, (a as Record<string, unknown>)['subtitle'] as string | undefined, artistName)}
                     imageUrl={getItemArt(a)}
                     onOpen={() => openItem(a)}
                     onHover={() => {
