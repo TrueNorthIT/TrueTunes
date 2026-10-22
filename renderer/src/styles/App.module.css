@@ -24,8 +24,9 @@
   position: relative;
   background: linear-gradient(
     180deg,
-    rgba(var(--panel-color, 28, 28, 30), 0.55) 0%,
-    rgba(var(--panel-color, 28, 28, 30), 0.2) 20%,
+    /* Quiet Wall: washes peak at 0.3 */
+    rgba(var(--panel-color, 28, 28, 30), 0.3) 0%,
+    rgba(var(--panel-color, 28, 28, 30), 0.12) 20%,
     transparent 40%
   );
   transition: background 0.8s ease;

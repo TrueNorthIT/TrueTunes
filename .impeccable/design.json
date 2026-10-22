@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-22T12:00:00Z",
+  "generatedAt": "2026-10-23T12:00:00Z",
   "title": "Design System: True Tunes",
   "extensions": {
     "colorMeta": {
@@ -103,11 +103,8 @@
       },
       "label-tertiary": {
         "role": "neutral",
-        "displayName": "Tertiary Label (--text-3)"
-      },
-      "label-disabled": {
-        "role": "neutral",
-        "displayName": "Disabled Label (--label-3, not for content)"
+        "displayName": "Tertiary Label (--text-3)",
+        "canonical": "rgba(224, 228, 252, 0.64)"
       },
       "title-rest": {
         "role": "neutral",
@@ -124,12 +121,17 @@
       "caption-scrim": {
         "role": "neutral",
         "displayName": "Caption Scrim"
+      },
+      "danger": {
+        "role": "neutral",
+        "displayName": "Danger (--danger, tonal only)",
+        "canonical": "rgb(248, 113, 113)"
       }
     },
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "Artist name over the hero photo only."
+        "purpose": "The name a hero is about: the artist name (steps down past 28 characters) and the Profile name."
       },
       "headline": {
         "displayName": "Headline",
@@ -137,7 +139,7 @@
       },
       "title-feature": {
         "displayName": "Feature Title",
-        "purpose": "Now Playing track title, 2-line clamp."
+        "purpose": "Now Playing and HeroBand titles (2 lines), Top result title (3 lines)."
       },
       "title": {
         "displayName": "Title",
@@ -157,7 +159,7 @@
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Chips, small buttons, secondary lines. Smallest step that holds 13px at the 14px base."
+        "purpose": "Chips, small buttons, secondary lines. Smaller steps are written max(13px, Xem)."
       }
     },
     "shadows": [
@@ -169,24 +171,29 @@
       {
         "name": "art-lifted",
         "value": "0 8px 18px rgba(0, 0, 0, 0.4)",
-        "purpose": "Home album and jump tiles on hover or focus, with a 2px rise."
+        "purpose": "Album and jump tiles on hover or focus, with a 2px rise (--art-lift-shadow)."
       },
       {
         "name": "art-hero",
         "value": "0 10px 28px rgba(0, 0, 0, 0.35)",
-        "purpose": "Now Playing artwork; hover 0 14px 34px rgba(0,0,0,0.45)."
+        "purpose": "Now Playing and HeroBand art, the artist hero print, the Profile face; hover 0 14px 34px rgba(0,0,0,0.45)."
       },
       {
-        "name": "shell-float",
+        "name": "floating",
         "value": "0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06)",
-        "purpose": "Frosted nav pills, player bar and their dropdowns."
+        "purpose": "Frosted nav pills, player bar, dropdowns, context menu, toasts and the Dialog (backdrop rgba(0,0,0,0.55))."
       }
     ],
     "motion": [
       {
-        "name": "state",
-        "value": "0.15s ease",
-        "purpose": "Default for hover and focus: background, colour, opacity, transform, filter."
+        "name": "dur-fast",
+        "value": "0.15s ease (--dur-fast, --ease-fast)",
+        "purpose": "Hover and focus feedback: background, colour, opacity, transform, filter."
+      },
+      {
+        "name": "dur",
+        "value": "0.25s cubic-bezier(0.22, 1, 0.36, 1) (--dur, --ease)",
+        "purpose": "State changes that need room: dialog in, hero photo fade, print in."
       },
       {
         "name": "lift",
@@ -211,7 +218,7 @@
       {
         "name": "skeleton-pulse",
         "value": "opacity 0.45 to 1, 1.4s ease-in-out infinite",
-        "purpose": "Home skeletons; disabled under prefers-reduced-motion."
+        "purpose": "Global .skeleton (tint 0.18); held at 0.7 under prefers-reduced-motion."
       }
     ],
     "breakpoints": [
@@ -226,6 +233,10 @@
       {
         "name": "page-max",
         "value": "2400px"
+      },
+      {
+        "name": "skinny-row",
+        "value": "@container skinny (min-width: 640px)"
       }
     ]
   },
@@ -244,7 +255,7 @@
       "refersTo": "button-add-quiet",
       "description": "Borderless circular add, revealed by its row.",
       "html": "<button class=\"ds-add\" aria-label=\"Add to queue\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg></button>",
-      "css": ".ds-add { width: 2.2em; height: 2.2em; display: grid; place-items: center; border: none; border-radius: 50%; background: none; color: rgba(222, 226, 250, 0.52); cursor: pointer; transition: background 0.15s, color 0.15s; } .ds-add:hover { background: rgba(150, 158, 255, 0.09); color: rgba(246, 247, 255, 0.93); } .ds-add:focus-visible { outline: 2px solid rgba(222, 226, 250, 0.62); outline-offset: 2px; }"
+      "css": ".ds-add { width: 2.2em; height: 2.2em; display: grid; place-items: center; border: none; border-radius: 50%; background: none; color: rgba(224, 228, 252, 0.64); cursor: pointer; transition: background 0.15s, color 0.15s; } .ds-add:hover { background: rgba(150, 158, 255, 0.09); color: rgba(246, 247, 255, 0.93); } .ds-add:focus-visible { outline: 2px solid rgba(222, 226, 250, 0.62); outline-offset: 2px; }"
     },
     {
       "name": "Section Card",
@@ -252,7 +263,7 @@
       "refersTo": "card-section",
       "description": "Borderless tonal Wall card holding a section.",
       "html": "<section class=\"ds-card\"><h2 class=\"ds-card-title\">Jump back in</h2><p class=\"ds-card-body\">Tonal step only: no border, no shadow.</p></section>",
-      "css": ".ds-card { border-radius: 1.2em; padding: 1.5em; background: rgba(150, 158, 255, 0.06); font-family: 'Manrope Variable', sans-serif; } .ds-card-title { margin: 0 0 1.1em; font-size: 1.6em; font-weight: 600; line-height: 1.2; letter-spacing: -0.015em; color: rgba(246, 247, 255, 0.93); } .ds-card-body { margin: 0; font-size: 0.95em; color: rgba(222, 226, 250, 0.52); }"
+      "css": ".ds-card { border-radius: 1.2em; padding: 1.5em; background: rgba(150, 158, 255, 0.06); font-family: 'Manrope Variable', sans-serif; } .ds-card-title { margin: 0 0 1.1em; font-size: 1.6em; font-weight: 600; line-height: 1.2; letter-spacing: -0.015em; color: rgba(246, 247, 255, 0.93); } .ds-card-body { margin: 0; font-size: 0.95em; color: rgba(224, 228, 252, 0.64); }"
     },
     {
       "name": "Featured Card with Wash",
@@ -276,7 +287,7 @@
       "refersTo": "track-row",
       "description": "Borderless row; hover fills with tint, brightens the title, reveals add.",
       "html": "<div class=\"ds-row\" tabindex=\"0\"><div class=\"ds-row-art\"></div><div class=\"ds-row-text\"><span class=\"ds-row-title\">Kerala</span> <span class=\"ds-row-artist\">Bonobo</span></div><button class=\"ds-row-add\" aria-label=\"Add\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg></button></div>",
-      "css": ".ds-row { display: flex; align-items: center; gap: 0.9em; padding: 0.45em 0.6em; border-radius: 0.65em; font-family: 'Manrope Variable', sans-serif; transition: background 0.15s; } .ds-row:hover, .ds-row:focus-within { background: rgba(150, 158, 255, 0.09); } .ds-row-art { width: 3.2em; height: 3.2em; border-radius: 0.6em; flex-shrink: 0; background: linear-gradient(135deg, #2c4a5e, #8f6a4a); } .ds-row-text { flex: 1; min-width: 0; font-size: 1.07em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-row-title { font-weight: 500; color: rgba(255,255,255,0.84); transition: color 0.15s; } .ds-row:hover .ds-row-title, .ds-row:focus-within .ds-row-title { color: #fff; } .ds-row-artist { color: rgba(222, 226, 250, 0.52); } .ds-row-add { width: 2.2em; height: 2.2em; display: grid; place-items: center; border: none; border-radius: 50%; background: none; color: rgba(222, 226, 250, 0.52); cursor: pointer; opacity: 0; transition: opacity 0.15s, background 0.15s, color 0.15s; } .ds-row:hover .ds-row-add, .ds-row:focus-within .ds-row-add { opacity: 1; } .ds-row-add:hover { background: rgba(150, 158, 255, 0.09); color: rgba(246, 247, 255, 0.93); } .ds-row:focus-visible, .ds-row-add:focus-visible { outline: 2px solid rgba(222, 226, 250, 0.62); outline-offset: 2px; }"
+      "css": ".ds-row { display: flex; align-items: center; gap: 0.9em; padding: 0.45em 0.6em; border-radius: 0.65em; font-family: 'Manrope Variable', sans-serif; transition: background 0.15s; } .ds-row:hover, .ds-row:focus-within { background: rgba(150, 158, 255, 0.09); } .ds-row-art { width: 3.2em; height: 3.2em; border-radius: 0.6em; flex-shrink: 0; background: linear-gradient(135deg, #2c4a5e, #8f6a4a); } .ds-row-text { flex: 1; min-width: 0; font-size: 1.07em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-row-title { font-weight: 500; color: rgba(255,255,255,0.84); transition: color 0.15s; } .ds-row:hover .ds-row-title, .ds-row:focus-within .ds-row-title { color: #fff; } .ds-row-artist { color: rgba(224, 228, 252, 0.64); } .ds-row-add { width: 2.2em; height: 2.2em; display: grid; place-items: center; border: none; border-radius: 50%; background: none; color: rgba(224, 228, 252, 0.64); cursor: pointer; opacity: 0; transition: opacity 0.15s, background 0.15s, color 0.15s; } .ds-row:hover .ds-row-add, .ds-row:focus-within .ds-row-add { opacity: 1; } .ds-row-add:hover { background: rgba(150, 158, 255, 0.09); color: rgba(246, 247, 255, 0.93); } .ds-row:focus-visible, .ds-row-add:focus-visible { outline: 2px solid rgba(222, 226, 250, 0.62); outline-offset: 2px; }"
     },
     {
       "name": "Queued-by Chip",
@@ -291,7 +302,7 @@
       "kind": "card",
       "description": "Square art over a two-line caption; hover rises 2px and the art casts the lifted shadow.",
       "html": "<button class=\"ds-tile\"><span class=\"ds-tile-art\"></span><span class=\"ds-tile-title\">In Rainbows</span><span class=\"ds-tile-sub\">Radiohead</span></button>",
-      "css": ".ds-tile { display: flex; flex-direction: column; gap: 0.15em; width: 10em; border: none; padding: 0; background: none; text-align: left; font-family: 'Manrope Variable', sans-serif; font-size: 1em; cursor: pointer; border-radius: 0.7em; transition: transform 0.15s; } .ds-tile:hover, .ds-tile:focus-visible { transform: translateY(-2px); } .ds-tile-art { display: block; width: 100%; aspect-ratio: 1; border-radius: 0.7em; margin-bottom: 0.4em; background: linear-gradient(135deg, #5e2c3a, #d8a05a); transition: box-shadow 0.15s; } .ds-tile:hover .ds-tile-art, .ds-tile:focus-visible .ds-tile-art { box-shadow: 0 8px 18px rgba(0,0,0,0.4); } .ds-tile-title { font-size: 0.93em; font-weight: 500; color: rgba(255,255,255,0.84); } .ds-tile:hover .ds-tile-title { color: #fff; } .ds-tile-sub { font-size: 0.93em; color: rgba(222, 226, 250, 0.52); } .ds-tile:focus-visible { outline: 2px solid rgba(222, 226, 250, 0.62); outline-offset: 2px; }"
+      "css": ".ds-tile { display: flex; flex-direction: column; gap: 0.15em; width: 10em; border: none; padding: 0; background: none; text-align: left; font-family: 'Manrope Variable', sans-serif; font-size: 1em; cursor: pointer; border-radius: 0.7em; transition: transform 0.15s; } .ds-tile:hover, .ds-tile:focus-visible { transform: translateY(-2px); } .ds-tile-art { display: block; width: 100%; aspect-ratio: 1; border-radius: 0.7em; margin-bottom: 0.4em; background: linear-gradient(135deg, #5e2c3a, #d8a05a); transition: box-shadow 0.15s; } .ds-tile:hover .ds-tile-art, .ds-tile:focus-visible .ds-tile-art { box-shadow: 0 8px 18px rgba(0,0,0,0.4); } .ds-tile-title { font-size: 0.93em; font-weight: 500; color: rgba(255,255,255,0.84); } .ds-tile:hover .ds-tile-title { color: #fff; } .ds-tile-sub { font-size: 0.93em; color: rgba(224, 228, 252, 0.64); } .ds-tile:focus-visible { outline: 2px solid rgba(222, 226, 250, 0.62); outline-offset: 2px; }"
     },
     {
       "name": "Frosted Nav Pill",
@@ -300,11 +311,35 @@
       "description": "Floating shell material: frosted navy, separator edge, floating shadow.",
       "html": "<nav class=\"ds-nav\"><button class=\"ds-nav-btn ds-nav-active\">Home</button><button class=\"ds-nav-btn\">Search</button><button class=\"ds-nav-btn\">Office</button></nav>",
       "css": ".ds-nav { display: inline-flex; align-items: center; gap: 2px; height: 44px; padding: 0 6px; border-radius: 22px; background: rgba(22, 23, 38, 0.62); -webkit-backdrop-filter: blur(30px) saturate(1.8); backdrop-filter: blur(30px) saturate(1.8); border: 1px solid rgba(150, 158, 255, 0.1); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06); font-family: 'Manrope Variable', sans-serif; } .ds-nav-btn { border: none; background: none; color: rgba(255,255,255,0.6); font: inherit; font-size: 14px; font-weight: 500; padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: color 0.12s, background 0.12s; } .ds-nav-btn:hover, .ds-nav-active { color: #fff; background: rgba(255,255,255,0.08); } .ds-nav-btn:focus-visible { outline: 2px solid rgba(222, 226, 250, 0.62); outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Pill Button",
+      "kind": "button",
+      "refersTo": "button-pill-ghost",
+      "description": "Tonal pill for secondary actions.",
+      "html": "<button class=\"ds-pill-ghost\">Shuffle</button>",
+      "css": ".ds-pill-ghost { display: inline-flex; align-items: center; gap: 0.45em; border: none; border-radius: 2em; background: rgba(150, 158, 255, 0.12); color: rgba(246, 247, 255, 0.93); font-family: 'Manrope Variable', sans-serif; font-size: 0.92em; font-weight: 600; padding: 0.55em 1.1em; cursor: pointer; transition: background 0.15s; } .ds-pill-ghost:hover { background: rgba(150, 158, 255, 0.22); } .ds-pill-ghost:focus-visible { outline: 2px solid rgba(222, 226, 250, 0.62); outline-offset: 2px; }"
+    },
+    {
+      "name": "Office Chip",
+      "kind": "chip",
+      "refersTo": "chip-office",
+      "description": "\"Queued here N times\": shown only when the room has queued this before.",
+      "html": "<div class=\"ds-office\">Queued here 27 times</div>",
+      "css": ".ds-office { display: inline-flex; align-items: center; font-family: 'Manrope Variable', sans-serif; font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; color: rgba(222, 226, 250, 0.62); background: rgba(150, 158, 255, 0.16); padding: 0.2em 0.8em; border-radius: 2em; }"
+    },
+    {
+      "name": "Dialog",
+      "kind": "custom",
+      "refersTo": "dialog",
+      "description": "The one modal: native dialog, sentence-case title, actions right-aligned with the primary last.",
+      "html": "<div class=\"ds-dialog\"><div class=\"ds-dialog-head\"><h2 class=\"ds-dialog-title\">New playlist</h2></div><div class=\"ds-dialog-body\"><input class=\"ds-dialog-input\" placeholder=\"Name\"></div><div class=\"ds-dialog-actions\"><button class=\"ds-dialog-ghost\">Cancel</button><button class=\"ds-dialog-primary\">Create</button></div></div>",
+      "css": ".ds-dialog { width: 26em; border-radius: 1.2em; background: #1b1d2e; color: rgba(246, 247, 255, 0.93); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06); font-family: 'Manrope Variable', sans-serif; } .ds-dialog-head { padding: 1.2em 1.1em 0 1.5em; } .ds-dialog-title { margin: 0; font-size: 1.3em; font-weight: 600; letter-spacing: -0.01em; } .ds-dialog-body { padding: 0.9em 1.5em 1.5em; } .ds-dialog-input { width: 100%; box-sizing: border-box; font: inherit; color: inherit; background: rgba(150, 158, 255, 0.09); border: none; border-radius: 0.65em; padding: 0.65em 0.85em; outline: none; transition: background 0.15s; } .ds-dialog-input:hover { background: rgba(150, 158, 255, 0.12); } .ds-dialog-input:focus-visible { outline: 2px solid rgba(222, 226, 250, 0.62); outline-offset: 2px; } .ds-dialog-actions { display: flex; justify-content: flex-end; gap: 0.6em; padding: 0 1.5em 1.5em; } .ds-dialog-ghost, .ds-dialog-primary { border: none; border-radius: 2em; font: inherit; font-size: 0.92em; font-weight: 600; padding: 0.55em 1.1em; cursor: pointer; } .ds-dialog-ghost { background: rgba(150, 158, 255, 0.12); color: inherit; } .ds-dialog-ghost:hover { background: rgba(150, 158, 255, 0.22); } .ds-dialog-primary { background: rgba(246, 247, 255, 0.93); color: #12131f; } .ds-dialog-primary:hover { opacity: 0.78; }"
     }
   ],
   "narrative": {
     "northStar": "After-Hours Gallery",
-    "overview": "True Tunes is a gallery after closing time: dark, quiet walls with album art and artist portraits hung like prints, each with its own caption. The walls are a deep, desaturated navy. Content sits on soft tonal panels a few percent lighter than the ground, never framed or outlined. Colour comes from the work on the walls. The current artwork is blurred into an ambient layer behind the whole app, and the dominant colour of a hero image washes into the card that holds it. The shell (nav pill, player bar, queue sidebar) is frosted glass floating over that layer, so the room takes on the colour of what's playing.\n\nThe benchmark is the Apple Music macOS app played straight: no themed or novelty worlds, and the office character lives in people and attribution (who queued what), not in decoration. Type is one family, Manrope, set in sentence case with tight negative tracking on large sizes. Home sizes everything in em from one fluid base, so the whole page scales from a 1280px laptop to a 3440px ultrawide without breakpoints jumping. Density is relaxed: generous rows, large artwork, nothing cramped.\n\nThis document records the Home and artist page language as the system. Older surfaces (Leaderboard, Queuedle, Profile, the dialogs, Discover) predate it and haven't been migrated yet. When you touch one, bring it into this language rather than copying its local styles. The shared primitives in components/common/ (Carousel, MediaCard, MediaRow) also still carry the older px-based scale and bordered buttons; see Components.",
+    "overview": "True Tunes is a gallery after closing time: dark, quiet walls with album art and artist portraits hung like prints, each with its own caption. The walls are a deep, desaturated navy. Content sits on soft tonal panels a few percent lighter than the ground, never framed or outlined. Colour comes from the work on the walls. The current artwork is blurred into an ambient layer behind the whole app, and the dominant colour of a hero image washes into the card that holds it. The shell (nav pill, player bar, queue sidebar) is frosted glass floating over that layer, so the room takes on the colour of what's playing.\n\nThe benchmark is the Apple Music macOS app played straight: no themed or novelty worlds, and the office character lives in people and attribution (who queued what, how often the room has queued it), not in decoration. Type is one family, Manrope, set in sentence case with tight negative tracking on large sizes. Pages size everything in `em` from one fluid base, so the whole page scales from a 1280px laptop to a 3440px ultrawide without breakpoints jumping. Density is relaxed: generous rows, large artwork, nothing cramped.\n\nEvery surface now speaks this language: Home, Artist, Album, Playlist, Search, Discover, Leaderboard, Profile, Queuedle, Lyrics, Container, the mini player, skinny mode and the dialogs. The shared primitives live in `components/common/` (see its README) and are the way in: build new surfaces from them rather than from one page's local styles.",
     "keyCharacteristics": [
       "One navy tint. Every tonal surface, fill and hairline is `--tint` at a low alpha.",
       "Borderless tonal cards on a tinted ground; artwork is the only thing that casts a shadow inside the content area.",
@@ -321,22 +356,27 @@
       },
       {
         "name": "The Artwork Carries Colour Rule",
-        "body": "Saturated colour enters only from artwork: the ambient backdrop, the `--wash` radial on featured cards, the person-header gradient, the player-bar tint. Chrome stays navy and white.",
+        "body": "Saturated colour enters only from artwork: the ambient backdrop, the `--wash` radial on featured cards and heroes, the person-header gradient, the player-bar tint. Chrome stays navy and white. Danger and Queuedle's mint are status, not decoration, and are always tonal.",
         "section": "colors"
       },
       {
         "name": "The Quiet Wall Rule",
-        "body": "Tint stays subtle and desaturated. Surfaces sit 6–9% tint over the ground, and washes peak at about 0.3 alpha and fade to transparent by about 65%. No purple, no neon, no glow.",
+        "body": "Tint stays subtle and desaturated. Surfaces sit 6–9% tint over the ground. A wash peaks at 0.3 alpha, with stacked layers counted together (the artist hero's 0.24 radial plus its 0.08 fall-off), and fades to transparent by about 65%. No purple, no neon, no glow.",
+        "section": "colors"
+      },
+      {
+        "name": "The No Violet Rule",
+        "body": "Generated colours (avatars, playlist art) never land on 250–330°. Fold the hue past that band rather than clamping to its edge.",
         "section": "colors"
       },
       {
         "name": "The Sentence Case Rule",
-        "body": "Titles, captions and buttons are sentence case. Hierarchy comes from size, weight 600 and negative tracking, not from capitals or a second face.",
+        "body": "Titles, captions, buttons and chips are sentence case. Hierarchy comes from size, weight 600 and negative tracking, not from capitals or a second face. Server strings in title case (tier names) are sentence-cased in CSS.",
         "section": "typography"
       },
       {
         "name": "The 13px Floor Rule",
-        "body": "No content text renders below 13px at any window width. In `em` terms that means nothing below 0.93em of the Home base. Tabular numerals (`font-variant-numeric: tabular-nums`) are used for ranks, play counts and times.",
+        "body": "No content text renders below 13px at any window width. 0.93em is the smallest plain `em` step that holds 13px at the 14px base; anything smaller is written `max(13px, Xem)`. Tabular numerals (`font-variant-numeric: tabular-nums`) are used for ranks, play counts, facts and times.",
         "section": "typography"
       },
       {
@@ -346,32 +386,49 @@
       },
       {
         "name": "The Frosted Shell Rule",
-        "body": "Nav, player and queue sidebar use the material tokens (`--material-bg` + `--material-filter: blur(30px) saturate(1.8)`). Under `prefers-reduced-transparency` they fall back to solid Raised Navy and the ambient layer is hidden. Don't hand-roll a second glass recipe.",
+        "body": "Nav, player, queue sidebar, context menu and toasts use the material tokens (`--material-bg` + `--material-filter: blur(30px) saturate(1.8)`). Under `prefers-reduced-transparency` they fall back to solid Raised Navy and the ambient layer is hidden. Don't hand-roll a second glass recipe. The mini player is the one opaque shell, because its window is transparent and frost has nothing to sample: Lit Wall over navy with the wash, and an inset edge only.",
         "section": "elevation"
       },
       {
         "name": "The No-Outline Rule",
-        "body": "Content cards, rows, chips and tiles have no border. Separation comes from a tonal step (Wall on navy), not from a line. The only 1px strokes are the frosted shell's separator edge, the artwork's inner keyline, and input or control strokes.",
+        "body": "Content cards, rows, chips, tiles and fields have no border. Separation comes from a tonal step (Wall on navy), not from a line. The only 1px strokes are the frosted shell's separator edge, the artwork's inner keyline, and the shelf search box.",
         "section": "shapes"
+      },
+      {
+        "name": "The Shared Queue Rule",
+        "body": "Nothing can replace the shared queue. Every control adds to it; no button, menu item or one-click + sends a replace.",
+        "section": "components"
+      },
+      {
+        "name": "The Stations Open Rule",
+        "body": "Stations open, never add. A station opens as its track list, where songs are added one at a time; it never carries a +.",
+        "section": "components"
+      },
+      {
+        "name": "The Not By Colour Alone Rule",
+        "body": "Status colour is always paired with a mark or a word: right and wrong carry a tick or cross, and played days a tick.",
+        "section": "components"
       }
     ],
     "dos": [
       "**Do** derive every chrome colour from `--tint` at low alpha (Wall 0.06, Lit Wall 0.085, Tint Fill 0.09, Tint Chip 0.16).",
-      "**Do** let artwork bring the colour: pass the dominant colour in as `--wash` and fade it to transparent by about 65%.",
-      "**Do** size new Home-language surfaces in `em` from the fluid page base and respond with `@container` queries.",
-      "**Do** caption imagery with white text over the two-part bottom scrim, never on bare artwork.",
-      "**Do** reveal secondary actions (add buttons) on hover or `:focus-within` and give every interactive element the 2px `--text-2` focus outline.",
+      "**Do** let artwork bring the colour: pass the dominant colour in as `--wash`, cap it at 0.3 and fade it to transparent by about 65%.",
+      "**Do** size new surfaces in `em` from the fluid page base and respond with `@container` queries.",
+      "**Do** caption imagery with white text over a scrim, never on bare artwork.",
+      "**Do** reveal secondary actions (add buttons) on hover or `:focus-within`, and let every interactive element take the global focus ring.",
       "**Do** use the material tokens for anything floating over content, and keep the reduced-transparency fallback.",
-      "**Do** honour `prefers-reduced-motion`: stop skeleton pulses and image or lyric transitions."
+      "**Do** use the shared Dialog for every modal, with the primary or destructive action last.",
+      "**Do** honour `prefers-reduced-motion`: stop skeleton pulses and image, hero or lyric transitions."
     ],
     "donts": [
-      "**Don't** use purple, neon or glow. The old purple radial gradients were removed on purpose, and the navy tint stays subtle and desaturated.",
+      "**Don't** use purple, neon or glow, and keep generated hues off 250–330°.",
       "**Don't** set text below 13px or build cramped, dense rows. No sub-13px metadata.",
-      "**Don't** outline cards, rows or tiles. Separate with a tonal step.",
-      "**Don't** put shadows on content cards. Only artwork and the floating shell cast them.",
-      "**Don't** introduce a fixed brand accent or a second chrome hue.",
+      "**Don't** outline cards, rows, tiles or fields. Separate with a tonal step.",
+      "**Don't** put shadows on content cards. Only artwork and floating surfaces cast them.",
+      "**Don't** introduce a fixed brand accent or a second chrome hue. Queuedle's mint stays in Queuedle.",
       "**Don't** use uppercase tracked eyebrows above titles. Hierarchy comes from size and weight.",
-      "**Don't** copy the older surfaces' local styles (Leaderboard, Queuedle, Profile, dialogs, Discover) into new work."
+      "**Don't** use raster badges with text baked in. A tier is a tonal chip.",
+      "**Don't** put a + on a station, or build any control that replaces the shared queue."
     ]
   }
 }

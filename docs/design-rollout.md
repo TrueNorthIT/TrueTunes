@@ -128,3 +128,11 @@ The critique rated every surface Good: Lyrics 28, Container 28, mini player 26, 
 - **Credits.** The comma in a credit now stays with the name before it, so a line can't start with ", Snoop Dogg".
 - **Sign-in popover.** Its bordered input is replaced by the shared dialog input and PillButton, and about 150 lines of dead TopNav CSS are removed.
 - **Deleted, after an import-graph scan:** CardRow, MediaCard, MediaRow, AppContext, useUserStats, gameRankAssets (the PNGs are kept), and the stale `.impeccable/surfaces/`.
+
+## DESIGN.md refresh (unattended)
+- **DESIGN.md and `.impeccable/design.json`** now describe what was built: the new components (TopResultCard, OfficeChip, QueuerChip, the tier chip, Dialog, the context menu, the heroes, the mini player and the skinny card), the 0.3 wash cap and No Violet rules, and the new behaviour rules (Shared Queue, Stations Open, Not By Colour Alone).
+- **Shell wash.** The `--panel-color` wash on the shell body (`styles/App.module.css`) was 0.55, which breaks the Quiet Wall rule. It's now capped at 0.3.
+- **Left open for Joe:**
+  - Small labels above headings ("Now playing", "Top result", HeroBand's type line). The craft floor discourages these, but they're kept.
+  - Queuedle draws ✓ and ✗ as text characters.
+  - The Profile name is set at weight 800.
