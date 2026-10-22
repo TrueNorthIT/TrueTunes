@@ -1,0 +1,377 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-22T12:00:00Z",
+  "title": "Design System: True Tunes",
+  "extensions": {
+    "colorMeta": {
+      "label": {
+        "role": "primary",
+        "displayName": "Gallery Light",
+        "canonical": "rgba(246, 247, 255, 0.93)",
+        "tonalRamp": [
+          "oklch(25% 0.012 280)",
+          "oklch(36% 0.012 280)",
+          "oklch(48% 0.012 280)",
+          "oklch(60% 0.012 280)",
+          "oklch(72% 0.012 280)",
+          "oklch(82% 0.012 280)",
+          "oklch(90% 0.012 280)",
+          "oklch(97% 0.012 280)"
+        ]
+      },
+      "tint": {
+        "role": "neutral",
+        "displayName": "Periwinkle Tint (source triplet, --tint)",
+        "canonical": "rgb(150, 158, 255)",
+        "tonalRamp": [
+          "rgba(150, 158, 255, 0.06)",
+          "rgba(150, 158, 255, 0.085)",
+          "rgba(150, 158, 255, 0.09)",
+          "rgba(150, 158, 255, 0.1)",
+          "rgba(150, 158, 255, 0.13)",
+          "rgba(150, 158, 255, 0.16)",
+          "rgba(150, 158, 255, 0.24)",
+          "rgb(150, 158, 255)"
+        ]
+      },
+      "after-hours-navy": {
+        "role": "neutral",
+        "displayName": "After-Hours Navy",
+        "canonical": "#12131f",
+        "tonalRamp": [
+          "oklch(15% 0.03 280)",
+          "oklch(19.5% 0.03 280)",
+          "oklch(24% 0.035 280)",
+          "oklch(35% 0.04 280)",
+          "oklch(50% 0.04 280)",
+          "oklch(65% 0.035 280)",
+          "oklch(80% 0.025 280)",
+          "oklch(95% 0.01 280)"
+        ]
+      },
+      "raised-navy": {
+        "role": "neutral",
+        "displayName": "Raised Navy",
+        "canonical": "#1b1d2e",
+        "tonalRamp": [
+          "oklch(15% 0.03 280)",
+          "oklch(19.5% 0.03 280)",
+          "oklch(24% 0.035 280)",
+          "oklch(35% 0.04 280)",
+          "oklch(50% 0.04 280)",
+          "oklch(65% 0.035 280)",
+          "oklch(80% 0.025 280)",
+          "oklch(95% 0.01 280)"
+        ]
+      },
+      "wall": {
+        "role": "neutral",
+        "displayName": "Wall (--surface)"
+      },
+      "wall-lit": {
+        "role": "neutral",
+        "displayName": "Lit Wall (--surface-hi)"
+      },
+      "tint-fill": {
+        "role": "neutral",
+        "displayName": "Tint Fill (--bg-2, --row-hover)"
+      },
+      "tint-chip": {
+        "role": "neutral",
+        "displayName": "Tint Chip"
+      },
+      "separator": {
+        "role": "neutral",
+        "displayName": "Separator (shell edge only)"
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Border (controls, inputs)"
+      },
+      "border-strong": {
+        "role": "neutral",
+        "displayName": "Strong Border (control hover and focus)"
+      },
+      "frosted-navy": {
+        "role": "neutral",
+        "displayName": "Frosted Navy (--material-bg)",
+        "canonical": "rgba(22, 23, 38, 0.62)"
+      },
+      "label-secondary": {
+        "role": "neutral",
+        "displayName": "Secondary Label (--text-2)"
+      },
+      "label-tertiary": {
+        "role": "neutral",
+        "displayName": "Tertiary Label (--text-3)"
+      },
+      "label-disabled": {
+        "role": "neutral",
+        "displayName": "Disabled Label (--label-3, not for content)"
+      },
+      "title-rest": {
+        "role": "neutral",
+        "displayName": "Title at Rest"
+      },
+      "on-art": {
+        "role": "neutral",
+        "displayName": "On-Art White"
+      },
+      "on-art-secondary": {
+        "role": "neutral",
+        "displayName": "On-Art Secondary"
+      },
+      "caption-scrim": {
+        "role": "neutral",
+        "displayName": "Caption Scrim"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Artist name over the hero photo only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Home greeting."
+      },
+      "title-feature": {
+        "displayName": "Feature Title",
+        "purpose": "Now Playing track title, 2-line clamp."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section and shelf titles."
+      },
+      "title-caption": {
+        "displayName": "Caption Title",
+        "purpose": "Title line under an image-card scrim; 1.15em on medium cards."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Track and chart rows: 500 title, 400 artist on one line."
+      },
+      "body-prose": {
+        "displayName": "Prose",
+        "purpose": "Genius about text, max 100ch, 4-line clamp."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Chips, small buttons, secondary lines. Smallest step that holds 13px at the 14px base."
+      }
+    },
+    "shadows": [
+      {
+        "name": "art-rest",
+        "value": "0 2px 8px rgba(0, 0, 0, 0.35)",
+        "purpose": "Shelf artwork at rest (--art-shadow), with --art-keyline inset 0 0 0 1px rgba(255,255,255,0.06) on ::after."
+      },
+      {
+        "name": "art-lifted",
+        "value": "0 8px 18px rgba(0, 0, 0, 0.4)",
+        "purpose": "Home album and jump tiles on hover or focus, with a 2px rise."
+      },
+      {
+        "name": "art-hero",
+        "value": "0 10px 28px rgba(0, 0, 0, 0.35)",
+        "purpose": "Now Playing artwork; hover 0 14px 34px rgba(0,0,0,0.45)."
+      },
+      {
+        "name": "shell-float",
+        "value": "0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06)",
+        "purpose": "Frosted nav pills, player bar and their dropdowns."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state",
+        "value": "0.15s ease",
+        "purpose": "Default for hover and focus: background, colour, opacity, transform, filter."
+      },
+      {
+        "name": "lift",
+        "value": "transform: translateY(-2px) / scale(1.02-1.03), 0.15s",
+        "purpose": "Tiles rise, image cards and hero art zoom on hover."
+      },
+      {
+        "name": "ambient-crossfade",
+        "value": "1s ease",
+        "purpose": "Ambient artwork layer swap."
+      },
+      {
+        "name": "panel-color",
+        "value": "background 0.8s ease",
+        "purpose": "Shell body wash follows the page colour."
+      },
+      {
+        "name": "lyric-step",
+        "value": "opacity, font-size, color 0.3s",
+        "purpose": "Active lyric line growth."
+      },
+      {
+        "name": "skeleton-pulse",
+        "value": "opacity 0.45 to 1, 1.4s ease-in-out infinite",
+        "purpose": "Home skeletons; disabled under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "container-narrow",
+        "value": "@container (max-width: 1100px)"
+      },
+      {
+        "name": "container-stack",
+        "value": "@container (max-width: 700px)"
+      },
+      {
+        "name": "page-max",
+        "value": "2400px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Pill Button",
+      "kind": "button",
+      "refersTo": "button-pill",
+      "description": "Primary action; the room inverted.",
+      "html": "<button class=\"ds-pill\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M8 5v14l11-7z\"/></svg>Play today's</button>",
+      "css": ".ds-pill { display: inline-flex; align-items: center; gap: 0.45em; border: none; border-radius: 2em; background: rgba(246, 247, 255, 0.93); color: #12131f; font-family: 'Manrope Variable', sans-serif; font-size: 0.92em; font-weight: 600; padding: 0.55em 1.1em; cursor: pointer; transition: opacity 0.15s; } .ds-pill:hover { opacity: 0.78; } .ds-pill:focus-visible { outline: 2px solid rgba(222, 226, 250, 0.62); outline-offset: 2px; }"
+    },
+    {
+      "name": "Quiet Add Button",
+      "kind": "button",
+      "refersTo": "button-add-quiet",
+      "description": "Borderless circular add, revealed by its row.",
+      "html": "<button class=\"ds-add\" aria-label=\"Add to queue\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg></button>",
+      "css": ".ds-add { width: 2.2em; height: 2.2em; display: grid; place-items: center; border: none; border-radius: 50%; background: none; color: rgba(222, 226, 250, 0.52); cursor: pointer; transition: background 0.15s, color 0.15s; } .ds-add:hover { background: rgba(150, 158, 255, 0.09); color: rgba(246, 247, 255, 0.93); } .ds-add:focus-visible { outline: 2px solid rgba(222, 226, 250, 0.62); outline-offset: 2px; }"
+    },
+    {
+      "name": "Section Card",
+      "kind": "card",
+      "refersTo": "card-section",
+      "description": "Borderless tonal Wall card holding a section.",
+      "html": "<section class=\"ds-card\"><h2 class=\"ds-card-title\">Jump back in</h2><p class=\"ds-card-body\">Tonal step only: no border, no shadow.</p></section>",
+      "css": ".ds-card { border-radius: 1.2em; padding: 1.5em; background: rgba(150, 158, 255, 0.06); font-family: 'Manrope Variable', sans-serif; } .ds-card-title { margin: 0 0 1.1em; font-size: 1.6em; font-weight: 600; line-height: 1.2; letter-spacing: -0.015em; color: rgba(246, 247, 255, 0.93); } .ds-card-body { margin: 0; font-size: 0.95em; color: rgba(222, 226, 250, 0.52); }"
+    },
+    {
+      "name": "Featured Card with Wash",
+      "kind": "card",
+      "refersTo": "card-featured",
+      "description": "Lit Wall with the hero artwork's dominant colour washed in from the top left.",
+      "html": "<section class=\"ds-featured\" style=\"--wash: 214, 120, 72\"><h2 class=\"ds-featured-title\">Picks for the office</h2></section>",
+      "css": ".ds-featured { border-radius: 1.2em; padding: 1.7em; min-height: 8em; background: radial-gradient(120% 110% at 15% 0%, rgba(var(--wash, 150, 158, 255), 0.26), transparent 62%), rgba(150, 158, 255, 0.085); font-family: 'Manrope Variable', sans-serif; } .ds-featured-title { margin: 0; font-size: 1.6em; font-weight: 600; letter-spacing: -0.015em; color: rgba(246, 247, 255, 0.93); }"
+    },
+    {
+      "name": "Image Card",
+      "kind": "custom",
+      "refersTo": "card-art",
+      "description": "A print with its label: full-bleed art, two-part scrim, white caption.",
+      "html": "<div class=\"ds-art\" tabindex=\"0\"><div class=\"ds-art-fill\"></div><span class=\"ds-art-label\">Because Sam queued Bonobo</span><div class=\"ds-art-cap\"><div class=\"ds-art-title\">Migration</div><div class=\"ds-art-sub\">Bonobo</div></div></div>",
+      "css": ".ds-art { position: relative; overflow: hidden; width: 20em; aspect-ratio: 4 / 3; border-radius: 1em; background: #1b1d2e; font-family: 'Manrope Variable', sans-serif; } .ds-art-fill { position: absolute; inset: 0; background: linear-gradient(135deg, #3b5a6e, #c9825a); transition: transform 0.15s, filter 0.15s; } .ds-art:hover .ds-art-fill, .ds-art:focus-within .ds-art-fill { transform: scale(1.03); filter: brightness(0.88); } .ds-art::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 22%), linear-gradient(to top, rgba(0,0,0,0.74) 0%, rgba(0,0,0,0.26) 42%, rgba(0,0,0,0) 70%); } .ds-art-label { position: absolute; top: 1.1em; left: 1.2em; z-index: 1; font-size: 0.95em; font-weight: 500; color: #fff; text-shadow: 0 1px 6px rgba(0,0,0,0.5); } .ds-art-cap { position: absolute; left: 1.2em; right: 4em; bottom: 1em; z-index: 1; } .ds-art-title { font-size: 1.15em; font-weight: 600; letter-spacing: -0.01em; color: #fff; } .ds-art-sub { font-size: 0.95em; color: rgba(255,255,255,0.75); } .ds-art:focus-visible { outline: 2px solid rgba(222, 226, 250, 0.62); outline-offset: 2px; }"
+    },
+    {
+      "name": "Track Row",
+      "kind": "custom",
+      "refersTo": "track-row",
+      "description": "Borderless row; hover fills with tint, brightens the title, reveals add.",
+      "html": "<div class=\"ds-row\" tabindex=\"0\"><div class=\"ds-row-art\"></div><div class=\"ds-row-text\"><span class=\"ds-row-title\">Kerala</span> <span class=\"ds-row-artist\">Bonobo</span></div><button class=\"ds-row-add\" aria-label=\"Add\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg></button></div>",
+      "css": ".ds-row { display: flex; align-items: center; gap: 0.9em; padding: 0.45em 0.6em; border-radius: 0.65em; font-family: 'Manrope Variable', sans-serif; transition: background 0.15s; } .ds-row:hover, .ds-row:focus-within { background: rgba(150, 158, 255, 0.09); } .ds-row-art { width: 3.2em; height: 3.2em; border-radius: 0.6em; flex-shrink: 0; background: linear-gradient(135deg, #2c4a5e, #8f6a4a); } .ds-row-text { flex: 1; min-width: 0; font-size: 1.07em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-row-title { font-weight: 500; color: rgba(255,255,255,0.84); transition: color 0.15s; } .ds-row:hover .ds-row-title, .ds-row:focus-within .ds-row-title { color: #fff; } .ds-row-artist { color: rgba(222, 226, 250, 0.52); } .ds-row-add { width: 2.2em; height: 2.2em; display: grid; place-items: center; border: none; border-radius: 50%; background: none; color: rgba(222, 226, 250, 0.52); cursor: pointer; opacity: 0; transition: opacity 0.15s, background 0.15s, color 0.15s; } .ds-row:hover .ds-row-add, .ds-row:focus-within .ds-row-add { opacity: 1; } .ds-row-add:hover { background: rgba(150, 158, 255, 0.09); color: rgba(246, 247, 255, 0.93); } .ds-row:focus-visible, .ds-row-add:focus-visible { outline: 2px solid rgba(222, 226, 250, 0.62); outline-offset: 2px; }"
+    },
+    {
+      "name": "Queued-by Chip",
+      "kind": "chip",
+      "refersTo": "chip-queued-by",
+      "description": "Attribution: avatar plus name, on Tint Chip with a light blur.",
+      "html": "<button class=\"ds-chip\"><span class=\"ds-chip-av\">SK</span>Sam K</button>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 0.5em; padding: 0.2em 0.7em 0.2em 0.2em; border: none; border-radius: 2em; background: rgba(150, 158, 255, 0.16); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: rgba(222, 226, 250, 0.62); font-family: 'Manrope Variable', sans-serif; font-size: 0.93em; cursor: pointer; transition: background 0.15s, color 0.15s; } .ds-chip:hover, .ds-chip:focus-visible { background: rgba(150, 158, 255, 0.09); color: #fff; } .ds-chip:focus-visible { outline: 2px solid rgba(222, 226, 250, 0.62); outline-offset: 2px; } .ds-chip-av { width: 1.9em; height: 1.9em; border-radius: 50%; display: grid; place-items: center; background: #3b6e5a; color: #fff; font-size: 0.8em; font-weight: 700; }"
+    },
+    {
+      "name": "Album Tile",
+      "kind": "card",
+      "description": "Square art over a two-line caption; hover rises 2px and the art casts the lifted shadow.",
+      "html": "<button class=\"ds-tile\"><span class=\"ds-tile-art\"></span><span class=\"ds-tile-title\">In Rainbows</span><span class=\"ds-tile-sub\">Radiohead</span></button>",
+      "css": ".ds-tile { display: flex; flex-direction: column; gap: 0.15em; width: 10em; border: none; padding: 0; background: none; text-align: left; font-family: 'Manrope Variable', sans-serif; font-size: 1em; cursor: pointer; border-radius: 0.7em; transition: transform 0.15s; } .ds-tile:hover, .ds-tile:focus-visible { transform: translateY(-2px); } .ds-tile-art { display: block; width: 100%; aspect-ratio: 1; border-radius: 0.7em; margin-bottom: 0.4em; background: linear-gradient(135deg, #5e2c3a, #d8a05a); transition: box-shadow 0.15s; } .ds-tile:hover .ds-tile-art, .ds-tile:focus-visible .ds-tile-art { box-shadow: 0 8px 18px rgba(0,0,0,0.4); } .ds-tile-title { font-size: 0.93em; font-weight: 500; color: rgba(255,255,255,0.84); } .ds-tile:hover .ds-tile-title { color: #fff; } .ds-tile-sub { font-size: 0.93em; color: rgba(222, 226, 250, 0.52); } .ds-tile:focus-visible { outline: 2px solid rgba(222, 226, 250, 0.62); outline-offset: 2px; }"
+    },
+    {
+      "name": "Frosted Nav Pill",
+      "kind": "nav",
+      "refersTo": "nav-pill",
+      "description": "Floating shell material: frosted navy, separator edge, floating shadow.",
+      "html": "<nav class=\"ds-nav\"><button class=\"ds-nav-btn ds-nav-active\">Home</button><button class=\"ds-nav-btn\">Search</button><button class=\"ds-nav-btn\">Office</button></nav>",
+      "css": ".ds-nav { display: inline-flex; align-items: center; gap: 2px; height: 44px; padding: 0 6px; border-radius: 22px; background: rgba(22, 23, 38, 0.62); -webkit-backdrop-filter: blur(30px) saturate(1.8); backdrop-filter: blur(30px) saturate(1.8); border: 1px solid rgba(150, 158, 255, 0.1); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06); font-family: 'Manrope Variable', sans-serif; } .ds-nav-btn { border: none; background: none; color: rgba(255,255,255,0.6); font: inherit; font-size: 14px; font-weight: 500; padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: color 0.12s, background 0.12s; } .ds-nav-btn:hover, .ds-nav-active { color: #fff; background: rgba(255,255,255,0.08); } .ds-nav-btn:focus-visible { outline: 2px solid rgba(222, 226, 250, 0.62); outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "After-Hours Gallery",
+    "overview": "True Tunes is a gallery after closing time: dark, quiet walls with album art and artist portraits hung like prints, each with its own caption. The walls are a deep, desaturated navy. Content sits on soft tonal panels a few percent lighter than the ground, never framed or outlined. Colour comes from the work on the walls. The current artwork is blurred into an ambient layer behind the whole app, and the dominant colour of a hero image washes into the card that holds it. The shell (nav pill, player bar, queue sidebar) is frosted glass floating over that layer, so the room takes on the colour of what's playing.\n\nThe benchmark is the Apple Music macOS app played straight: no themed or novelty worlds, and the office character lives in people and attribution (who queued what), not in decoration. Type is one family, Manrope, set in sentence case with tight negative tracking on large sizes. Home sizes everything in em from one fluid base, so the whole page scales from a 1280px laptop to a 3440px ultrawide without breakpoints jumping. Density is relaxed: generous rows, large artwork, nothing cramped.\n\nThis document records the Home and artist page language as the system. Older surfaces (Leaderboard, Queuedle, Profile, the dialogs, Discover) predate it and haven't been migrated yet. When you touch one, bring it into this language rather than copying its local styles. The shared primitives in components/common/ (Carousel, MediaCard, MediaRow) also still carry the older px-based scale and bordered buttons; see Components.",
+    "keyCharacteristics": [
+      "One navy tint. Every tonal surface, fill and hairline is `--tint` at a low alpha.",
+      "Borderless tonal cards on a tinted ground; artwork is the only thing that casts a shadow inside the content area.",
+      "Full-bleed image cards with a bottom scrim and a white caption, like a print and its label.",
+      "Accent colour is sampled from the artwork at runtime, never fixed.",
+      "Frosted shell materials over a blurred ambient copy of the current art, with solid fallbacks under reduced transparency.",
+      "Fluid `em` scaling from one base size; Manrope throughout."
+    ],
+    "rules": [
+      {
+        "name": "The One Tint Rule",
+        "body": "Every tonal surface, fill, separator and border is `rgba(var(--tint), α)`. To retune the room, change `--tint`; never introduce a second hue for chrome.",
+        "section": "colors"
+      },
+      {
+        "name": "The Artwork Carries Colour Rule",
+        "body": "Saturated colour enters only from artwork: the ambient backdrop, the `--wash` radial on featured cards, the person-header gradient, the player-bar tint. Chrome stays navy and white.",
+        "section": "colors"
+      },
+      {
+        "name": "The Quiet Wall Rule",
+        "body": "Tint stays subtle and desaturated. Surfaces sit 6–9% tint over the ground, and washes peak at about 0.3 alpha and fade to transparent by about 65%. No purple, no neon, no glow.",
+        "section": "colors"
+      },
+      {
+        "name": "The Sentence Case Rule",
+        "body": "Titles, captions and buttons are sentence case. Hierarchy comes from size, weight 600 and negative tracking, not from capitals or a second face.",
+        "section": "typography"
+      },
+      {
+        "name": "The 13px Floor Rule",
+        "body": "No content text renders below 13px at any window width. In `em` terms that means nothing below 0.93em of the Home base. Tabular numerals (`font-variant-numeric: tabular-nums`) are used for ranks, play counts and times.",
+        "section": "typography"
+      },
+      {
+        "name": "The Shadows Belong to Prints Rule",
+        "body": "Inside the content area only artwork casts a shadow. Cards, rows and chips are flat tonal fills.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Frosted Shell Rule",
+        "body": "Nav, player and queue sidebar use the material tokens (`--material-bg` + `--material-filter: blur(30px) saturate(1.8)`). Under `prefers-reduced-transparency` they fall back to solid Raised Navy and the ambient layer is hidden. Don't hand-roll a second glass recipe.",
+        "section": "elevation"
+      },
+      {
+        "name": "The No-Outline Rule",
+        "body": "Content cards, rows, chips and tiles have no border. Separation comes from a tonal step (Wall on navy), not from a line. The only 1px strokes are the frosted shell's separator edge, the artwork's inner keyline, and input or control strokes.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "**Do** derive every chrome colour from `--tint` at low alpha (Wall 0.06, Lit Wall 0.085, Tint Fill 0.09, Tint Chip 0.16).",
+      "**Do** let artwork bring the colour: pass the dominant colour in as `--wash` and fade it to transparent by about 65%.",
+      "**Do** size new Home-language surfaces in `em` from the fluid page base and respond with `@container` queries.",
+      "**Do** caption imagery with white text over the two-part bottom scrim, never on bare artwork.",
+      "**Do** reveal secondary actions (add buttons) on hover or `:focus-within` and give every interactive element the 2px `--text-2` focus outline.",
+      "**Do** use the material tokens for anything floating over content, and keep the reduced-transparency fallback.",
+      "**Do** honour `prefers-reduced-motion`: stop skeleton pulses and image or lyric transitions."
+    ],
+    "donts": [
+      "**Don't** use purple, neon or glow. The old purple radial gradients were removed on purpose, and the navy tint stays subtle and desaturated.",
+      "**Don't** set text below 13px or build cramped, dense rows. No sub-13px metadata.",
+      "**Don't** outline cards, rows or tiles. Separate with a tonal step.",
+      "**Don't** put shadows on content cards. Only artwork and the floating shell cast them.",
+      "**Don't** introduce a fixed brand accent or a second chrome hue.",
+      "**Don't** use uppercase tracked eyebrows above titles. Hierarchy comes from size and weight.",
+      "**Don't** copy the older surfaces' local styles (Leaderboard, Queuedle, Profile, dialogs, Discover) into new work."
+    ]
+  }
+}
