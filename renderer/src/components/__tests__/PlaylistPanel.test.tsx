@@ -17,6 +17,7 @@ vi.mock('../../hooks/useImage', () => ({
 
 vi.mock('../../hooks/useTrackDetails', () => ({
   useTrackDetails: () => ({ data: null }),
+  trackQueryOptions: (id: string) => ({ queryKey: ['track', id], queryFn: async () => null }),
 }));
 
 const mockShowTrackMenu = vi.fn();

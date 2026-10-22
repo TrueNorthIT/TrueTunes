@@ -560,7 +560,7 @@ useEffect(() => {
             }
           />
           <Route path="/discover" element={<DiscoverPanel onAddToQueue={handleAddToQueue} displayName={displayName} />} />
-          <Route path="/album/:id" element={<AlbumPanel onAddToQueue={handleAddToQueue} />} />
+          <Route path="/album/:id" element={<AlbumPanel onAddToQueue={handleAddToQueue} playback={playback} />} />
           <Route path="/artist/:id" element={<ArtistPanel onAddToQueue={handleAddToQueue} currentTrackName={playback.trackName} isPlaybackActive={playback.isPlaying} />} />
           <Route path="/container/:id" element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/leaderboard" element={<LeaderboardPanel />} />

@@ -6,6 +6,7 @@ import { autoUpdater } from 'electron-updater';
 import { officePubSub } from './pubsub';
 import { EntraAuth, PRESENCE_SCOPE } from './auth-entra';
 import { fetchPresences, resolveRoster } from './graph-presence';
+import { pickArtistHit } from './genius-match';
 import type { EntraUser } from './auth-entra';
 import * as path from 'path';
 import * as fs from 'fs/promises';
@@ -2258,9 +2259,8 @@ ipcMain.handle('genius:artist', async (_: IpcMainInvokeEvent, artistName: string
     type SearchHit = { result: { primary_artist: { id: number; name: string } } };
     const searchData = JSON.parse(searchBody) as { response: { hits: SearchHit[] } };
     const hits = searchData.response?.hits ?? [];
-    const artistNameLower = artistName.toLowerCase();
-    const hit = hits.find((h) => h.result.primary_artist.name.toLowerCase().includes(artistNameLower)) ?? hits[0];
-    const artistId = hit?.result?.primary_artist?.id;
+    // A near miss is worse than nothing: Genius once handed back Wiley's names and bio for another artist.
+    const artistId = pickArtistHit(hits, artistName)?.result.primary_artist.id;
     if (!artistId) return null;
 
     const artistUrl = `https://api.genius.com/artists/${artistId}`;

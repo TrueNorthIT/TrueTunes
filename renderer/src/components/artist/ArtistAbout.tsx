@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SectionCard } from '../common/SectionCard';
 import styles from '../../styles/ArtistPanel.module.css';
 
 interface Props {
@@ -16,8 +17,7 @@ export function ArtistAbout({ name, blurb, instagram, twitter }: Props) {
   const [open, setOpen] = useState(false);
   if (!blurb && !instagram && !twitter) return null;
   return (
-    <section className={styles.aboutCard} aria-label={`About ${name}`}>
-      <h2 className={styles.sectionTitle}>About {name}</h2>
+    <SectionCard className={styles.band} title={`About ${name}`}>
       {blurb && (
         <>
           <p className={`${styles.aboutText}${open ? '' : ' ' + styles.aboutClamped}`}>{blurb}</p>
@@ -48,6 +48,6 @@ export function ArtistAbout({ name, blurb, instagram, twitter }: Props) {
           )}
         </div>
       )}
-    </section>
+    </SectionCard>
   );
 }

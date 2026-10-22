@@ -1,8 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useArtistBrowse } from '../../hooks/useArtistBrowse';
 import { useAlbumBrowse } from '../../hooks/useAlbumBrowse';
 import { useOpenItem } from '../../hooks/useOpenItem';
+import { useResolveAndOpen } from '../../hooks/useResolveAndOpen';
+import { useStats } from '../../hooks/useStats';
+import { useImage } from '../../hooks/useImage';
+import { useDominantColor } from '../../hooks/useDominantColor';
+import { withArtworkSize } from '../../lib/artworkUrl';
+import { useIsPlaceholderPhoto } from '../../lib/photoPlaceholder';
+import { officeLineFor } from '../../lib/artistOffice';
 import { resolveArtistParams, getItemArt } from '../../lib/itemHelpers';
 import { TopSongRow } from './TopSongRow';
 import { LatestReleaseCard } from './LatestReleaseCard';
@@ -12,11 +19,13 @@ import { RadioCard } from './RadioCard';
 import { ArtistAlbumCard } from './ArtistAlbumCard';
 import { ArtistAlbumStack, ArtistAlbumGroup } from './ArtistAlbumStack';
 import { Carousel } from '../common/Carousel';
+import { SectionCard } from '../common/SectionCard';
 import { useReleaseTrackCounts } from '../../hooks/useReleaseTrackCounts';
 import { useReleaseYears } from '../../hooks/useReleaseYears';
 import { useReleaseTracklists } from '../../hooks/useReleaseTracklists';
 import { filterShelves } from '../../lib/shelfSearch';
 import { groupReleases, releaseKey, sortShelvesByYear, type ReleaseGroup } from '../../lib/releaseShelves';
+import type { AlbumTrack } from '../../hooks/useAlbumBrowse';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/ArtistPanel.module.css';
 
@@ -52,6 +61,7 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
   const { state } = useLocation();
   const item = (state as { item?: SonosItem } | null)?.item;
   const openItem = useOpenItem();
+  const { resolveAndOpen } = useResolveAndOpen();
 
   const { artistId, serviceId, accountId, defaults, name: fallbackName } =
     item
@@ -128,6 +138,32 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
   const latestAlbum = data?.albums[0] ?? null;
   const latestId = latestAlbum?.resource?.id;
   const { data: latestData } = useAlbumBrowse(latestId?.objectId, latestId?.serviceId, latestId?.accountId, latestAlbum?.resource?.defaults);
+
+  const { data: stats } = useStats('alltime', undefined, 100);
+  const officeLine = officeLineFor(stats?.topArtists, artistId, name);
+
+  // The artwork colour for the page: the photo's, or the latest cover's when the artist has no photo.
+  const latestArt = (latestAlbum?.images as Record<string, string> | undefined)?.['tile1x1'] ?? null;
+  const photoSrc = useImage(imageUrl ? withArtworkSize(imageUrl) : null);
+  const isPlaceholder = useIsPlaceholderPhoto(photoSrc);
+  const noPhoto = !imageUrl || isPlaceholder;
+  const coverSrc = useImage(noPhoto && latestArt ? withArtworkSize(latestArt, 600) : null);
+  const wash = useDominantColor(noPhoto ? coverSrc : photoSrc);
+  const panelStyle = wash ? ({ '--wash': wash } as CSSProperties) : undefined;
+
+  function openTrackAlbum(track: AlbumTrack) {
+    const { albumId, albumName, id } = track;
+    if (albumId) {
+      openItem({
+        title: albumName ?? track.title,
+        type: 'ITEM_ALBUM',
+        resource: { type: 'ALBUM', id: { objectId: albumId, serviceId: id.serviceId ?? '', accountId: id.accountId ?? '' } },
+      } as SonosItem);
+    } else {
+      void resolveAndOpen(albumName || track.title, 'album', { artist: name, serviceId: id.serviceId, accountId: id.accountId });
+    }
+  }
+  const openArtistByName = (artist: string) => void resolveAndOpen(artist, 'artist');
 
   const releases = data?.albums ?? [];
   const { counts, isLoading: countsLoading } = useReleaseTrackCounts(releases);
@@ -222,15 +258,15 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
   if (!item) return null;
 
   return (
-    <div className={styles.panel}>
-      <ArtistBanner key={artistId} name={name} altNames={altNames} imageUrl={imageUrl} />
+    <div className={`page-scale ${styles.panel}`} style={panelStyle}>
+      <ArtistBanner key={artistId} name={name} altNames={altNames} imageUrl={imageUrl} fallbackArtUrl={latestArt} officeLine={officeLine} />
 
-      <div className={styles.topBand}>
+      <div className={`${styles.band} ${styles.topBand}`}>
         {isLoading ? (
           <>
-            <div className={styles.skeletonTile} />
+            <div className={`skeleton ${styles.skeletonTile}`} />
             <div className={styles.songsSkeleton}>
-              {Array.from({ length: 6 }).map((_, i) => <div key={i} className={styles.skeletonRow} />)}
+              {Array.from({ length: 6 }).map((_, i) => <div key={i} className={`skeleton ${styles.skeletonRow}`} />)}
             </div>
           </>
         ) : (
@@ -239,14 +275,17 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
               <LatestReleaseCard
                 album={latestAlbum}
                 onOpen={openItem}
+                onAdd={onAddToQueue}
                 artistName={name}
                 year={years.get(releaseKey(latestAlbum))}
                 songCount={latestData?.totalTracks}
+                className={styles.latest}
               />
             )}
             {visibleSongs.length > 0 && (
-              <Carousel title="Top Songs" className={styles.topSongsCarousel}>
-                <div className={styles.songsGrid}>
+              <SectionCard featured wash={wash} className={styles.topSongs}>
+                <Carousel title="Top Songs">
+                <ol className={styles.songsList}>
                   {visibleSongs.map((track, i) => (
                     <TopSongRow
                       key={track.id.objectId ?? i}
@@ -258,23 +297,28 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
                       onAdd={onAddToQueue}
                       onClick={handleTrackClick}
                       onDragStart={handleDragStart}
+                      onOpenAlbum={openTrackAlbum}
+                      onOpenArtist={openArtistByName}
                       artistName={name}
                     />
                   ))}
-                </div>
-              </Carousel>
+                </ol>
+                </Carousel>
+              </SectionCard>
             )}
           </>
         )}
       </div>
 
       {data && (data.albums.length > 1 || data.playlists.length > 0) && (
-        <div className={styles.albumsSection}>
+        <>
           {data.albums.length > 1 && (<>
           {countsLoading ? (
-            <div className={styles.shelfSkeleton}>
-              {Array.from({ length: 6 }).map((_, i) => <div key={i} className={styles.skeletonCard} />)}
-            </div>
+            <SectionCard className={styles.band}>
+              <div className={styles.shelfSkeleton}>
+                {Array.from({ length: 6 }).map((_, i) => <div key={i} className={`skeleton ${styles.skeletonCard}`} />)}
+              </div>
+            </SectionCard>
           ) : (
             <>
               {(() => {
@@ -290,8 +334,8 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
                   const hasBox = k === boxShelf;
                   if (groups.length === 0 && !hasBox) return null;
                   return (
+                    <SectionCard key={title} className={styles.band}>
                     <Carousel
-                      key={title}
                       title={title}
                       className={styles.shelf}
                       search={hasBox ? {
@@ -304,23 +348,26 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
                     >
                       {groups.map(renderGroup)}
                     </Carousel>
+                    </SectionCard>
                   );
                 });
               })()}
               {searching && !shelves.albums.length && !shelves.singles.length && !shelves.other.length && (
-                <div className={styles.noMatch}>{tracksLoading ? 'Still searching tracks…' : <>No releases match “{query.trim()}”</>}</div>
+                <div className={`${styles.band} ${styles.noMatch}`}>{tracksLoading ? 'Still searching tracks…' : <>No releases match “{query.trim()}”</>}</div>
               )}
             </>
           )}
           </>)}
           {data.playlists.length > 0 && (
-            <Carousel title="Radio" className={styles.shelf}>
-              {data.playlists.map((p, i) => (
-                <RadioCard key={releaseKey(p) || i} item={p} artUrl={getItemArt(p) ?? imageUrl} onOpen={openItem} />
-              ))}
-            </Carousel>
+            <SectionCard className={styles.band}>
+              <Carousel title="Radio" className={styles.shelf}>
+                {data.playlists.map((p, i) => (
+                  <RadioCard key={releaseKey(p) || i} item={p} artUrl={getItemArt(p) ?? imageUrl} onOpen={openItem} />
+                ))}
+              </Carousel>
+            </SectionCard>
           )}
-        </div>
+        </>
       )}
 
       <ArtistAbout name={name} blurb={blurb} instagram={genius?.instagram} twitter={genius?.twitter} />

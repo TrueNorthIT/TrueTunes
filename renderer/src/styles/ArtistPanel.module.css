@@ -1,11 +1,19 @@
+/* The page root is also .page-scale: everything below is em from the fluid page base, with the 13px floor
+   on small text. It is the container for the @container rules here and in the shared cards. */
 .panel {
-  /* red accent, scoped to the artist page: focus rings and the track-hit line only */
-  --artist-accent: #fa2d48;
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   padding-bottom: calc(var(--player-h) + 24px);
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4em;
 }
+.panel > * { flex-shrink: 0; }
+
+/* Every band after the hero: the 28px gutter; the one 1.4em rhythm comes from .panel's gap. */
+.band { margin: 0 28px; }
 
 /* ── Hero: full-bleed artist photo ── */
 .hero {
@@ -45,22 +53,30 @@
   mask-composite: intersect;
   display: block;
 }
-/* light scrim for name legibility only; the fade itself is done by the masks */
+/* scrim for the name and the lines under it; the fade itself is done by the masks */
 .heroFade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 50%, rgba(0, 0, 0, 0.25) 100%);
+  background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.42) 100%);
 }
 .heroText {
   position: absolute;
   left: 28px;
   right: 28px;
-  bottom: 28px;
+  bottom: 1.6em;
 }
 
-/* No artist image: the colour wash with the name on it */
+/* No photo: the artwork colour (the latest cover's) washes in from the top, with the name on it. */
 .washHeader {
-  padding: calc(var(--nav-h) + 24px) 28px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: clamp(240px, 32vh, 340px);
+  padding: calc(var(--nav-h) + 24px) 28px 1.6em;
+  background:
+    radial-gradient(120% 130% at 12% 0%, rgba(var(--wash, var(--tint)), 0.5), transparent 70%),
+    linear-gradient(180deg, rgba(var(--wash, var(--tint)), 0.14), transparent);
+  transition: background var(--dur) var(--ease);
 }
 
 .artistName {
@@ -69,299 +85,130 @@
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--text);
-  line-height: 1;
+  line-height: 1.04;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  max-width: 100%;
   text-shadow: 0 2px 24px rgba(0, 0, 0, 0.45);
 }
 
 .altNames {
-  font-size: 11.5px;
+  font-size: max(13px, 1.07em);
   font-weight: 500;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7);
-  margin-top: 10px;
+  color: var(--on-art-2);
+  margin-top: 0.6em;
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.5);
 }
 
-/* Same scale as the Carousel shelf titles so every section shares one hierarchy */
-.sectionTitle {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text);
-  margin: 0 0 18px;
-  letter-spacing: -0.4px;
+/* What the office has done with this artist. */
+.officeLine {
+  font-size: max(13px, 1.07em);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--on-art);
+  margin-top: 0.4em;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.5);
 }
+.altNames + .officeLine { margin-top: 0.15em; }
 
-/* ── Top band: Latest Release tile + Top Songs carousel ── */
+/* ── Top band: Latest release card | Top Songs chart ── */
 .topBand {
-  display: flex;
-  gap: 32px;
-  align-items: flex-start;
-  padding: 8px 28px 8px;
+  display: grid;
+  grid-template-columns: minmax(16em, 24em) minmax(0, 1fr);
+  gap: 1.4em;
+  align-items: stretch;
 }
-.topSongsCarousel {
-  flex: 1;
-  min-width: 0;
-}
-/* four rows, filling column by column, scrolled by the Carousel */
-.songsGrid {
+.topBand:empty { display: none; }
+.latest { min-width: 0; }
+.topSongs { min-width: 0; }
+/* no latest release: the chart takes the whole band */
+.topSongs:first-child { grid-column: 1 / -1; }
+/* five rows, filling column by column; the Carousel scrolls the columns (the list can run to dozens of songs) */
+.songsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 auto;
   display: grid;
   grid-auto-flow: column;
-  grid-template-rows: repeat(4, min-content);
-  grid-auto-columns: 320px;
-  column-gap: 16px;
+  grid-template-rows: repeat(5, min-content);
+  grid-auto-columns: min(34em, 80cqw);
+  column-gap: 1.4em;
+}
+@container (max-width: 900px) {
+  .topBand { grid-template-columns: minmax(0, 1fr); }
+  .latest { min-height: 0; aspect-ratio: 16 / 9; }
 }
 
-.topSongRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 5px 6px;
-  border-radius: var(--r-sm);
-  transition: background 0.12s;
-  cursor: grab;
-}
-.topSongRow:active { cursor: grabbing; }
-.topSongRow:hover { background: var(--bg-2); }
-.topSongSelected { background: rgba(255,255,255,0.08); }
-.topSongSelected:hover { background: rgba(255,255,255,0.12); }
-
-.topSongNum {
-  width: 18px;
-  text-align: right;
-  flex-shrink: 0;
-  font-size: 12px;
-  color: var(--text-3);
-}
-
-/* ── Now-playing waveform ── */
+/* ── Now-playing waveform: sits in the rank cell ── */
 .waveform {
-  width: 18px;
-  flex-shrink: 0;
   display: flex;
   align-items: flex-end;
-  justify-content: flex-end;
-  gap: 2px;
-  height: 14px;
+  gap: 0.15em;
+  height: 1em;
 }
-
-@keyframes waveformBounce {
+@keyframes waveformLevel {
   0%   { transform: scaleY(0.2); }
   100% { transform: scaleY(1); }
 }
-
 .waveformBar {
-  width: 3px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.8);
+  width: 0.2em;
+  border-radius: 0.1em;
+  background: var(--on-art);
   transform-origin: bottom;
-  animation: waveformBounce 0.9s ease-in-out infinite alternate;
+  animation: waveformLevel 0.9s ease-in-out infinite alternate;
 }
 .waveformBar:nth-child(1) { height: 55%; animation-delay: 0s; }
 .waveformBar:nth-child(2) { height: 100%; animation-delay: -0.35s; }
 .waveformBar:nth-child(3) { height: 70%; animation-delay: -0.18s; }
-
 .waveformPaused .waveformBar {
   animation-play-state: paused;
   transform: scaleY(0.5);
 }
 
-.topSongNameActive {
-  color: rgba(255, 255, 255, 0.95);
-}
-
-.topSongArt {
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-  border-radius: 4px;
-  overflow: hidden;
-  background: var(--bg-1);
-}
-.topSongArt img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.topSongArtPh {
-  width: 100%;
-  height: 100%;
-  background: var(--bg-2);
-}
-
-.topSongInfo {
-  flex: 1;
-  min-width: 0;
-}
-.topSongName {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.topSongSub {
-  font-size: 11px;
-  color: var(--text-3);
-  display: block;
-  margin-top: 1px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.topSongDur {
-  font-size: 12px;
-  color: var(--text-3);
-  flex-shrink: 0;
-}
-
-.addBtn {
-  width: 24px;
-  height: 24px;
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  color: var(--text-3);
-  cursor: pointer;
-  font-size: 15px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: all 0.15s;
-  opacity: 0;
-}
-.topSongRow:hover .addBtn,
-.topSongRow:focus-within .addBtn,
-.addBtn:focus-visible {
-  opacity: 1;
-}
-.addBtn:focus-visible { outline: 2px solid var(--artist-accent); outline-offset: 2px; }
-.addBtn:hover {
-  border-color: var(--border-2);
-  color: var(--text-2);
-  background: var(--bg-2);
-}
-
-/* ── Latest Release tile ── */
-.latestRelease {
-  flex: 0 0 220px;
-  width: 220px;
-}
-.latestCard {
-  cursor: pointer;
-  border-radius: var(--r-md);
-}
-.latestArt {
-  width: 220px;
-  height: 220px;
-  border-radius: 6px;
-  overflow: hidden;
-  background: var(--bg-1);
-  position: relative;
-  box-shadow: var(--art-shadow);
-}
-.latestArt img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.latestArtPh {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  color: var(--text-3);
-}
-.latestTitle {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
-  margin-top: 10px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.latestSub {
-  font-size: 12px;
-  color: var(--text-3);
-  margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* ── Loading skeletons ── */
-
+/* ── Loading: sized like the content they replace; colour and pulse are the global .skeleton ── */
 .skeletonTile {
-  flex: 0 0 220px;
-  height: 220px;
-  border-radius: 6px;
-  background: var(--bg-2);
-  animation: skeleton-pulse 1.4s ease-in-out infinite;
+  min-height: 23em;
+  border-radius: 1em;
 }
-.songsSkeleton {
-  flex: 1;
-  min-width: 0;
-  max-width: 656px;
-}
+.songsSkeleton { min-width: 0; }
 .skeletonRow {
-  height: 46px;
-  border-radius: var(--r-sm);
-  background: var(--bg-2);
-  margin-bottom: 2px;
-  animation: skeleton-pulse 1.4s ease-in-out infinite;
+  height: 4.3em;
+  border-radius: 0.65em;
+  margin-bottom: 0.2em;
 }
-
 .skeletonCard {
-  height: 182px;
-  border-radius: var(--r-md);
-  background: var(--bg-2);
-  animation: skeleton-pulse 1.4s ease-in-out infinite;
+  height: 15em;
+  border-radius: 0.9em;
 }
+.shelfSkeleton { display: flex; gap: 14px; }
+.shelfSkeleton .skeletonCard { flex: 0 0 13.6em; }
 
 /* ── Shelves ── */
-.albumsSection {
-  padding: 20px 28px 8px;
-}
-
 .albumCard {
-  flex: 0 0 190px;
-  width: 190px;
+  flex: 0 0 13.6em;
+  width: 13.6em;
   min-width: 0;
   box-sizing: border-box;
   cursor: pointer;
-  border-radius: var(--r-md);
-  padding: 8px;
-  transition: background 0.15s;
+  border-radius: 0.9em;
+  padding: 0.6em;
+  transition: background var(--dur-fast) var(--ease-fast);
 }
-.albumCard:hover {
-  background: var(--bg-2);
-}
+.albumCard:hover { background: var(--row-hover); }
 
 .albumArt {
   width: 100%;
   aspect-ratio: 1;
   height: auto;
-  border-radius: 6px;
+  border-radius: 0.7em;
   overflow: hidden;
   background: var(--bg-1);
   box-shadow: var(--art-shadow);
-  margin-bottom: 8px;
+  margin-bottom: 0.6em;
   position: relative;
 }
-.albumArt::after,
-.latestArt::after {
+.albumArt::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -377,59 +224,37 @@
   object-fit: cover;
   display: block;
 }
-
-.albumOverlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.3);
-  opacity: 0;
-  transition: opacity 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.albumCard:hover .albumOverlay,
-.albumCard:focus-within .albumOverlay { opacity: 1; }
-.albumCard:focus-visible,
-.latestCard:focus-visible { outline: 2px solid var(--artist-accent); outline-offset: 2px; }
-.albumAddBtn:focus-visible { outline: 2px solid var(--artist-accent); outline-offset: 2px; }
-
-.albumAddBtn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
-  border: none;
-  cursor: pointer;
-  color: #000;
-  font-size: 22px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-  transition: transform 0.15s;
-}
-.albumAddBtn:hover { transform: scale(1.1); }
 .albumArtPh {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
+  font-size: 2em;
   color: var(--text-3);
 }
+
+/* + on the art's corner, revealed on hover or focus */
+.albumAdd {
+  position: absolute;
+  right: 0.5em;
+  bottom: 0.5em;
+  z-index: 1;
+  opacity: 0;
+}
+.albumCard:hover .albumAdd,
+.albumCard:focus-within .albumAdd,
+.albumAdd:focus-visible { opacity: 1; }
 
 .albumTitle {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 13px;
+  gap: 0.3em;
+  font-size: 1em;
   font-weight: 600;
-  color: var(--text);
+  color: var(--title-rest);
 }
-
+.albumCard:hover .albumTitle { color: var(--on-art); }
 .albumTitleText {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -438,144 +263,128 @@
   flex: 1;
 }
 .albumSub {
-  font-size: 12px;
+  font-size: max(13px, 0.93em);
   color: var(--text-3);
-  margin-top: 2px;
+  margin-top: 0.15em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .albumHit {
-  font-size: 12px;
-  color: var(--artist-accent);
-  margin-top: 2px;
+  font-size: max(13px, 0.93em);
+  color: var(--text-2);
+  margin-top: 0.15em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .noMatch {
-  font-size: 13px;
+  font-size: max(13px, 0.93em);
   color: var(--text-3);
-  padding: 8px 0;
+  text-align: center;
+  padding: 1em 0;
 }
 
-.shelf { margin-bottom: 24px; }
-/* Carousel header: 4px more than its default 18px so an expanded group's box clears the title */
+/* Carousel header: 4px more than its default 18px so an expanded group's header clears the title */
 .shelf > :first-child { margin-bottom: 22px; }
-.shelfSkeleton { display: flex; gap: 14px; }
-.shelfSkeleton .skeletonCard { flex: 0 0 190px; height: 190px; }
 
 /* Radio cards: Artist Shuffle / Artist Radio */
-.radioArt { background: var(--bg-2); color: var(--text-3); }
-.radioBg {
-  filter: brightness(0.6) saturate(1.1);
-}
-/* dark overlay tinted with the page accent, under the icon */
+.radioArt { background: var(--bg-1); color: var(--text-3); }
+.radioBg { filter: brightness(0.6) saturate(1.1); }
+/* the artwork colour over a dark ground, under the icon */
 .radioArt::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--artist-accent) 55%, transparent), rgba(0, 0, 0, 0.55));
+  background: linear-gradient(135deg, rgba(var(--wash, var(--tint)), 0.5), rgba(0, 0, 0, 0.55));
 }
-.radioIcon { z-index: 1; }
 .radioIcon {
   position: absolute;
   inset: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--on-art);
 }
 
-/* ── Stacks (offsets scale with the 190px card) ── */
-.stackWrap { position: relative; margin-bottom: 8px; }
+/* ── Stacks (offsets scale with the card) ── */
+.stackWrap { position: relative; margin-bottom: 0.6em; }
 .stackWrap .albumArt { margin-bottom: 0; }
 .stackLayer {
   position: absolute;
   inset: 0;
-  border-radius: 6px;
-  background: var(--bg-2) center / cover;
+  border-radius: 0.7em;
+  background: var(--bg-1) center / cover;
   filter: brightness(0.55);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-sizing: border-box;
 }
-.stackLayer1 { transform: translate(7px, -7px); }
-.stackLayer2 { transform: translate(14px, -14px); filter: brightness(0.35); }
+.stackLayer1 { transform: translate(0.5em, -0.5em); }
+.stackLayer2 { transform: translate(1em, -1em); filter: brightness(0.35); }
 .stackPill {
   position: absolute;
-  right: 6px;
-  bottom: 6px;
+  right: 0.5em;
+  bottom: 0.5em;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 2px 6px 2px 8px;
-  border-radius: 10px;
+  gap: 0.3em;
+  padding: 0.15em 0.55em 0.15em 0.7em;
+  border-radius: 2em;
   background: rgba(0, 0, 0, 0.7);
-  color: #fff;
-  font-size: 11px;
+  color: var(--on-art);
+  font-size: max(13px, 0.93em);
   font-weight: 600;
-  line-height: 14px;
   white-space: nowrap;
   pointer-events: none;
 }
 
+/* The expanded group is a tonal box, not an outlined one. Its header (20px) rises into the Carousel row's
+   top padding, kept under the 22px title gap so it never touches the shelf title, and the bottom
+   padding (4px) into its bottom padding, so expanding never changes row height. */
 .groupBox {
   flex: 0 0 auto;
   align-self: flex-start;
   display: flex;
   flex-direction: column;
   padding: 0 4px 4px;
-  /* header (16) + border (1) rises into the Carousel row's top padding — kept under the 18px
-     title gap so it never touches the shelf title — and the bottom padding (4) + border (1) into
-     its bottom padding, so expanding never changes row height */
-  margin: -17px 0 -5px;
-  border-radius: var(--r-md);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--border);
+  margin: -20px 0 -4px;
+  border-radius: 0.9em;
+  background: var(--bg-2);
 }
+.groupBox .albumCard:hover { background: rgba(var(--tint), 0.14); }
 .groupHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 16px;
-  padding: 0 2px 0 4px;
-  font-size: 11px;
+  height: 20px;
+  padding: 0 2px 0 8px;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--text-3);
+  color: var(--text-2);
 }
 .groupTitle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .groupClose {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   line-height: 1;
   padding: 0;
   border: none;
   border-radius: 50%;
   background: none;
   color: var(--text-3);
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
 }
-.groupClose:hover { color: var(--text); background: rgba(255, 255, 255, 0.1); }
-.groupClose:focus-visible { outline: 2px solid var(--artist-accent); outline-offset: 1px; }
+.groupClose:hover { color: var(--text); background: rgba(var(--tint), 0.16); }
 .groupCards { display: flex; gap: 4px; }
 
 /* ── About ── */
-.aboutCard {
-  margin: 8px 28px 0;
-  padding: 24px 28px 20px;
-  border-radius: var(--r-lg);
-  background: rgba(255, 255, 255, 0.05);
-}
 .aboutText {
-  font-size: 14.5px;
-  line-height: 1.75;
-  color: rgba(255, 255, 255, 0.68);
-  margin: 0 0 8px;
-  max-width: 70ch;
+  font-size: 0.95em;
+  line-height: 1.55;
+  color: var(--text-2);
+  margin: 0 0 0.6em;
+  max-width: 100ch;
   white-space: pre-line;
-  letter-spacing: 0.1px;
 }
 .aboutClamped {
   display: -webkit-box;
@@ -587,34 +396,41 @@
 .moreBtn {
   background: none;
   border: none;
-  padding: 2px 0;
-  margin-bottom: 12px;
-  font-family: inherit;
-  font-size: 13px;
+  padding: 0.15em 0;
+  margin-bottom: 0.8em;
+  font: inherit;
+  font-size: max(13px, 0.93em);
   font-weight: 600;
   color: var(--text-2);
   cursor: pointer;
 }
-.moreBtn:hover { color: var(--text); }
-.moreBtn:focus-visible,
-.socialIconBtn:focus-visible { outline: 2px solid var(--artist-accent); outline-offset: 2px; border-radius: 2px; }
+.moreBtn:hover { color: var(--text); text-decoration: underline; }
 
 .socialIcons {
   display: flex;
-  gap: 14px;
-  padding-top: 4px;
+  gap: 0.4em;
+  padding-top: 0.3em;
 }
 .socialIconBtn {
-  background: none;
+  width: 2.4em;
+  height: 2.4em;
   border: none;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: 50%;
+  background: none;
+  display: grid;
+  place-items: center;
   color: var(--text-3);
   cursor: pointer;
-  transition: color 0.15s;
+  transition:
+    background var(--dur-fast) var(--ease-fast),
+    color var(--dur-fast) var(--ease-fast);
 }
-.socialIconBtn:hover {
-  color: var(--text);
+.socialIconBtn:hover { color: var(--text); background: var(--bg-2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .albumCard,
+  .albumAdd,
+  .washHeader,
+  .socialIconBtn { transition: none; }
+  .waveformBar { animation: none; transform: scaleY(0.6); }
 }

@@ -9,11 +9,22 @@ interface Props {
   title: string;
   artists: ReactNode;
   imageUrl?: string | null;
-  count: number;
+  /** The right-aligned figure. Optional when `meta` is given. */
+  count?: number;
+  /** Replaces the count in the right-aligned cell (e.g. a duration). Skips the count tooltip. */
+  meta?: ReactNode;
   /** Tooltip on the count. */
   countLabel?: string;
+  /** Replaces the zero-padded rank in the first cell (e.g. a now-playing indicator). */
+  rankSlot?: ReactNode;
+  selected?: boolean;
+  /** Titles take the on-art colour, as on hover. */
+  playing?: boolean;
   /** Opens the album: title, thumbnail. */
   onOpen: () => void;
+  onClick?: (e: React.MouseEvent) => void;
+  /** Makes the row draggable. */
+  onDragStart?: (e: React.DragEvent) => void;
   /** Without it the + column keeps its width, so the columns stay aligned. */
   onAdd?: () => void;
   addLabel?: string;
@@ -23,17 +34,32 @@ interface Props {
 
 /** Ranked row: zero-padded rank, art, title, artists, a right-aligned count and a + on hover. Render inside an ol. */
 export function ChartRow({
-  rank, title, artists, imageUrl, count, countLabel, onOpen, onAdd, addLabel, onContextMenu, onMouseEnter,
+  rank, title, artists, imageUrl, count, meta, countLabel, rankSlot, selected, playing,
+  onOpen, onClick, onDragStart, onAdd, addLabel, onContextMenu, onMouseEnter,
 }: Props) {
   return (
-    <li className={`${styles.row} ${styles.chart}`} onContextMenu={onContextMenu} onMouseEnter={onMouseEnter}>
-      <span className={styles.rank}>{String(rank).padStart(2, '0')}</span>
+    <li
+      className={[
+        styles.row, styles.chart,
+        selected ? styles.selected : '',
+        playing ? styles.playing : '',
+        onDragStart ? styles.draggable : '',
+      ].filter(Boolean).join(' ')}
+      draggable={onDragStart ? true : undefined}
+      onClick={onClick}
+      onDragStart={onDragStart}
+      onContextMenu={onContextMenu}
+      onMouseEnter={onMouseEnter}
+    >
+      <span className={styles.rank}>{rankSlot ?? String(rank).padStart(2, '0')}</span>
       <span className={styles.titleCell}>
         <RowThumb imageUrl={imageUrl} onOpen={onOpen} />
         <span className={styles.chartTitle}><TitleButton title={title} onOpen={onOpen} /></span>
       </span>
       <span className={styles.chartArtist}>{artists}</span>
-      <span className={styles.plays} title={countLabel ?? `${count} times queued`}>{count}</span>
+      <span className={styles.plays} title={meta !== undefined ? undefined : (countLabel ?? `${count ?? 0} times queued`)}>
+        {meta !== undefined ? meta : count}
+      </span>
       {onAdd ? (
         <AddButton className={styles.add} label={addLabel ?? `Add ${title} to queue`} onClick={onAdd} />
       ) : (

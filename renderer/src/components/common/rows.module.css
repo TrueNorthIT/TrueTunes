@@ -7,6 +7,11 @@
 }
 .row:hover,
 .row:focus-within { background: var(--row-hover); }
+/* Selected (multi-select) keeps its fill on hover; playing lights the title; draggable rows show the grab cursor. */
+.row.selected,
+.row.selected:hover { background: rgba(var(--tint), 0.16); }
+.draggable { cursor: grab; }
+.draggable:active { cursor: grabbing; }
 
 .track {
   display: flex;
@@ -102,8 +107,18 @@
   text-overflow: ellipsis;
   transition: color var(--dur-fast) var(--ease-fast);
 }
+/* The title button is inline-block by default, which stops the ellipsis on its parent. */
+.chartTitle button {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .row:hover .chartTitle,
-.row:focus-within .chartTitle { color: var(--on-art); }
+.row:focus-within .chartTitle,
+.row.playing .chartTitle,
+.row.playing .title { color: var(--on-art); }
 .chartArtist {
   min-width: 0;
   color: var(--text-3);
@@ -116,6 +131,92 @@
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
 }
+
+/* ── TrackRow extras: number, handle, aside, who, duration, remove ── */
+.row { position: relative; }
+.track.withHandle { padding-left: 1.5em; }
+.handle {
+  position: absolute;
+  left: 0.3em;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  opacity: 0;
+  cursor: grab;
+  line-height: 1;
+  transition: opacity var(--dur-fast) var(--ease-fast);
+}
+.row:hover .handle,
+.row.selected .handle { opacity: 1; }
+
+.lead {
+  flex: none;
+  width: 2em;
+  text-align: right;
+  font-size: max(13px, 0.93em);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.aside {
+  flex: 0 1 28%;
+  min-width: 0;
+  font-size: max(13px, 0.93em);
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trailing {
+  flex: none;
+  min-width: 3em;
+  text-align: right;
+  font-size: max(13px, 0.93em);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Who added it: a small avatar. The name is the accessible name and the tooltip. */
+.who {
+  flex: none;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  cursor: pointer;
+  line-height: 0;
+  transition: box-shadow var(--dur-fast) var(--ease-fast);
+}
+.who:hover { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55); }
+.whoAvatar {
+  width: 1.9em;
+  height: 1.9em;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: max(13px, 0.8em);
+  font-weight: 700;
+  color: var(--on-art);
+  overflow: hidden;
+  line-height: 1;
+}
+.whoAvatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* × : same family as the + (quiet circle), revealed with it. */
+.remove {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2.2em;
+  height: 2.2em;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast), opacity var(--dur-fast) var(--ease-fast);
+}
+.remove:hover { background: rgba(var(--danger), 0.16); color: rgb(var(--danger)); }
 
 /* Narrow page: the artist drops under the title. */
 @container (max-width: 1100px) {

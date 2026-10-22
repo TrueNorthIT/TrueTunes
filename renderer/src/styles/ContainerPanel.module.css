@@ -2,17 +2,15 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: var(--nav-h) 28px calc(var(--player-h) + 24px);
+  padding: calc(var(--nav-h) + 16px) 28px calc(var(--player-h) + 24px);
 }
 
 /* ── Header ── */
 .header {
   display: flex;
   align-items: center;
-  gap: 20px;
-  margin-bottom: 28px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--border);
+  gap: 1.4em;
+  margin-bottom: 1.8em;
 }
 
 .artWrap {
@@ -40,15 +38,16 @@
 }
 
 .title {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 1.6em;
+  font-weight: 600;
+  line-height: 1.2;
   color: var(--text);
-  letter-spacing: -0.4px;
+  letter-spacing: -0.015em;
 }
 .sub {
-  font-size: 13px;
+  font-size: max(13px, 0.93em);
   color: var(--text-3);
-  margin-top: 4px;
+  margin-top: 0.3em;
 }
 
 /* ── Grid ── */
@@ -61,8 +60,8 @@
 /* ── States ── */
 .msg {
   color: var(--text-3);
-  font-size: 14px;
-  padding: 48px 0;
+  font-size: 1em;
+  padding: 3em 0;
   text-align: center;
 }
 

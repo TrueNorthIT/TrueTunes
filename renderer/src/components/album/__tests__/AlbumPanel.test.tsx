@@ -24,6 +24,7 @@ vi.mock('../../../hooks/useArtistBrowse', () => ({ artistQueryOptions: vi.fn(() 
 const mockUseAlbumBrowse = vi.fn();
 vi.mock('../../../hooks/useAlbumBrowse', () => ({
   useAlbumBrowse: (...args: unknown[]) => mockUseAlbumBrowse(...args),
+  albumQueryOptions: vi.fn(() => ({ queryKey: [], queryFn: async () => null })),
 }));
 const mockUsePlaylistBrowse = vi.fn();
 vi.mock('../../../hooks/usePlaylistBrowse', () => ({
@@ -190,7 +191,7 @@ describe('AlbumPanel', () => {
     const onAdd = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
     render(<AlbumPanel onAddToQueue={onAdd} />, { wrapper });
-    await user.click(screen.getByText('+ Add to Queue'));
+    await user.click(screen.getByRole('button', { name: 'Add to queue' }));
     await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(1));
     expect(onAdd).toHaveBeenCalledWith(albumItem);
   });

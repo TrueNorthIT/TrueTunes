@@ -23,7 +23,7 @@ export function RadioCard({ item, artUrl, onOpen }: Props) {
       <div className={`${styles.albumArt} ${styles.radioArt}`}>
         {artUrl && <img src={artUrl} alt="" className={styles.radioBg} />}
         <div className={styles.radioIcon}>
-          {/shuffle/i.test(item.title ?? '') ? <Shuffle size={36} /> : <Radio size={36} />}
+          {/shuffle/i.test(item.title ?? '') ? <Shuffle size={36} aria-hidden="true" /> : <Radio size={36} aria-hidden="true" />}
         </div>
       </div>
       <div className={styles.albumTitle}><span className={styles.albumTitleText} title={item.title}>{item.title}</span></div>

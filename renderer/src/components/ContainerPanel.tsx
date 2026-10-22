@@ -47,7 +47,7 @@ export function ContainerPanel({ onAddToQueue }: Props) {
   if (!item) return null;
 
   return (
-    <div className={styles.panel}>
+    <div className={`page-scale ${styles.panel}`}>
       <div className={styles.header}>
         <div className={styles.artWrap}>
           {cachedArt ? <img src={cachedArt} alt="" /> : <div className={styles.artPh}>♪</div>}

@@ -17,6 +17,10 @@ vi.mock('../../../hooks/useArtistBrowse', () => ({
   useArtistBrowse: (...args: unknown[]) => mockUseArtistBrowse(...args),
 }));
 
+const mockStats = vi.fn();
+vi.mock('../../../hooks/useStats', () => ({ useStats: () => mockStats() }));
+vi.mock('../../../hooks/useResolveAndOpen', () => ({ useResolveAndOpen: () => ({ resolveAndOpen: vi.fn(), pending: null }) }));
+
 const mockYears = vi.fn();
 vi.mock('../../../hooks/useReleaseYears', () => ({
   useReleaseYears: () => mockYears(),
@@ -75,6 +79,7 @@ const defaultProps = { onAddToQueue: vi.fn(), currentTrackName: '', isPlaybackAc
 beforeEach(() => {
   vi.clearAllMocks();
   mockUseImage.mockReturnValue(null);
+  mockStats.mockReturnValue({ data: undefined });
   mockUseLocation.mockReturnValue({ state: { item: artistItem } });
   mockUseArtistBrowse.mockReturnValue({ data: makeData(), isLoading: false });
   mockCounts.mockReturnValue({ counts: new Map(), isLoading: false });
@@ -141,6 +146,20 @@ describe('ArtistPanel', () => {
       expect(container.querySelector('[class*="hero"]')).toBeNull();
       expect(container.querySelector('[class*="washHeader"]')).not.toBeNull();
       expect(screen.getByRole('heading', { name: 'The Beatles' })).toBeInTheDocument();
+    });
+  });
+
+  describe('office line', () => {
+    it('shows how often the office has played the artist, matched by name when the id is absent', () => {
+      mockStats.mockReturnValue({ data: { topArtists: [{ artist: 'Beatles', count: 27 }] } });
+      render(<ArtistPanel {...defaultProps} />);
+      expect(screen.getByText('Played here 27 times')).toBeInTheDocument();
+    });
+
+    it('is hidden when there is no data for the artist', () => {
+      mockStats.mockReturnValue({ data: { topArtists: [{ artist: 'Wiley', count: 3 }] } });
+      render(<ArtistPanel {...defaultProps} />);
+      expect(screen.queryByText(/Played here/)).not.toBeInTheDocument();
     });
   });
 
