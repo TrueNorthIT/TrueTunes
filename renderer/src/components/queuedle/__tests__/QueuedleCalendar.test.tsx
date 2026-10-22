@@ -24,7 +24,7 @@ describe('QueuedleCalendar', () => {
   it('makes playable dates clickable and calls onSelectDate', () => {
     const onSelect = vi.fn();
     render(<QueuedleCalendar dates={dates} selectedDate={null} todayId="2025-03-15" onSelectDate={onSelect} />);
-    const playable = screen.getByLabelText(/2025-03-12 \(play\)/);
+    const playable = screen.getByLabelText('Wednesday 12 March 2025, available');
     fireEvent.click(playable);
     expect(onSelect).toHaveBeenCalledWith('2025-03-12');
   });
@@ -32,8 +32,9 @@ describe('QueuedleCalendar', () => {
   it('allows clicking already-played dates to view the summary', () => {
     const onSelect = vi.fn();
     render(<QueuedleCalendar dates={dates} selectedDate={null} todayId="2025-03-15" onSelectDate={onSelect} />);
-    const played = screen.getByLabelText(/2025-03-10 \(played\)/);
+    const played = screen.getByLabelText('Monday 10 March 2025, played');
     expect(played).not.toBeDisabled();
+    expect(played).toHaveTextContent('10✓');
     fireEvent.click(played);
     expect(onSelect).toHaveBeenCalledWith('2025-03-10');
   });
@@ -41,9 +42,9 @@ describe('QueuedleCalendar', () => {
   it('disables dates without a game entry and dates in the future', () => {
     render(<QueuedleCalendar dates={dates} selectedDate={null} todayId="2025-03-15" onSelectDate={() => {}} />);
     // 2025-03-20 has no entry → not available
-    expect(screen.getByLabelText(/2025-03-20 \(not available\)/)).toBeDisabled();
+    expect(screen.getByLabelText('Thursday 20 March 2025, not available')).toBeDisabled();
     // Future date
-    expect(screen.getByLabelText(/2025-03-25 \(not available\)/)).toBeDisabled();
+    expect(screen.getByLabelText('Tuesday 25 March 2025, not available')).toBeDisabled();
   });
 
   it('disables the next button when viewing the current month', () => {

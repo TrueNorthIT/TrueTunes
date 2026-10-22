@@ -84,6 +84,8 @@
   align-items: start;
   margin-bottom: 1.4em;
 }
+/* Top albums hidden (every album queued once): the tracks take the row. */
+.split > :only-child { grid-column: 1 / -1; }
 
 /* Same face as SectionCard's title, for the people band that sits on the page itself. */
 .bandTitle {
@@ -105,7 +107,7 @@
 
 .people {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22em), 1fr));
   gap: 1.1em;
   align-items: start;
 }
@@ -163,6 +165,17 @@
   padding: 0 0.3em 0.2em;
 }
 .skelCircle { aspect-ratio: 1; border-radius: 50%; margin-bottom: 2.6em; }
+/* Page skeleton: a band title, PersonCard-sized cards, then a chart card. */
+.skelTitle { width: 9em; height: 1.6em; border-radius: 0.5em; margin-bottom: 0.7em; }
+.skelCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9em;
+  padding: 0.9em;
+  border-radius: 1em;
+  background: var(--surface);
+}
+.skelHead { height: 3.8em; border-radius: 0.8em; }
 
 /* Loading rows at a chart row's pitch, so the cards don't jump when the tracks arrive. */
 .skelRows { display: flex; flex-direction: column; }
@@ -192,8 +205,9 @@
 }
 
 .standing {
+  position: relative;
   display: grid;
-  grid-template-columns: 2.4em minmax(0, 1.4fr) minmax(0, 1.2fr) 6em 3.5em;
+  grid-template-columns: 2.4em minmax(0, 1.4fr) minmax(0, 1.2fr) 6em 5.5em;
   align-items: center;
   column-gap: 0.9em;
   padding: 0.45em 0.6em;
@@ -243,24 +257,47 @@
 }
 .standingWho:hover .standingName,
 .standingWho:focus-visible .standingName { color: var(--on-art); text-decoration: underline; }
-.tier {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5em;
-  min-width: 0;
-  font-size: max(13px, 0.93em);
-  color: var(--text-2);
-  white-space: nowrap;
+.tierChip {
+  display: inline-block; /* ::first-letter needs a block container, not flex */
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
+  vertical-align: middle;
+  font-size: max(13px, 0.86em);
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--text-2);
+  background: rgba(var(--tint), 0.16);
+  padding: 0.2em 0.8em;
+  border-radius: 2em;
+  white-space: nowrap;
+  /* Sentence case from the server's title-case tier names; the DOM text is unchanged. */
+  text-transform: lowercase;
 }
-.tierIcon { width: 1.9em; height: 1.9em; object-fit: contain; flex-shrink: 0; }
-.provisional { color: var(--text-3); }
+.tierChip::first-letter { text-transform: uppercase; }
+.tierChip.provisional { color: var(--text-3); background: rgba(var(--tint), 0.06); }
 .games {
   font-size: max(13px, 0.93em);
   color: var(--text-3);
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+/* Column labels over the standings: same grid, decorative (the cells carry the meaning). */
+.standingHead {
+  padding-top: 0;
+  padding-bottom: 0.4em;
+  font-size: max(13px, 0.86em);
+  color: var(--text-3);
+}
+.standingHead:hover { background: none; }
+.averageHead { text-align: right; white-space: nowrap; }
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 .average {
   font-size: 1.07em;
@@ -272,51 +309,8 @@
 
 /* ── Rank tiers dialog ───────────────────────────────────────────────────── */
 
-.overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: grid;
-  place-items: center;
-  padding: 28px;
-  background: rgba(0, 0, 0, 0.55);
-}
-.dialog {
-  width: min(100%, 60em);
-  max-height: 100%;
-  overflow-y: auto;
-  padding: 1.7em;
-  border-radius: 1.2em;
-  background: var(--bg-1);
-  box-shadow: var(--shell-shadow, 0 8px 32px rgba(0, 0, 0, 0.5));
-}
-.dialogHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1em;
-}
-.dialogTitle {
-  font-size: 1.6em;
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  color: var(--text);
-}
-.close {
-  display: grid;
-  place-items: center;
-  width: 2.2em;
-  height: 2.2em;
-  border: none;
-  border-radius: 50%;
-  background: none;
-  color: var(--text-2);
-  cursor: pointer;
-  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast);
-}
-.close:hover { background: var(--row-hover); color: var(--text); }
 .dialogText {
-  margin: 0.6em 0 1.4em;
+  margin: 0 0 1.4em;
   max-width: 46em;
   font-size: 0.95em;
   line-height: 1.55;
@@ -324,7 +318,8 @@
 }
 .tiers {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  /* Portalled out of the page container, so it wraps by width rather than by @container. */
+  grid-template-columns: repeat(auto-fit, minmax(9em, 1fr));
   gap: 1em;
   list-style: none;
   margin: 0;
@@ -334,13 +329,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 0.4em;
-  padding: 1.1em 0.8em 1em;
+  padding: 1.4em 0.8em;
   border-radius: 1em;
   background: var(--surface);
   text-align: center;
 }
-.tierImage { width: 80%; aspect-ratio: 1; object-fit: contain; margin-bottom: 0.4em; }
 .tierName { font-size: 1em; font-weight: 600; color: var(--text); line-height: 1.3; }
 .tierRange { font-size: max(13px, 0.93em); color: var(--text-3); font-variant-numeric: tabular-nums; }
 
@@ -359,8 +354,7 @@
   .people { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .artistGrid,
   .albumGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .tiers { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .standing { grid-template-columns: 2.4em minmax(0, 1fr) minmax(0, 1fr) 3.5em; }
+  .standing { grid-template-columns: 2.4em minmax(0, 1fr) minmax(0, 1fr) 5.5em; }
   .games { display: none; }
 }
 @container (max-width: 480px) {
@@ -373,6 +367,5 @@
   .segment,
   .face,
   .standing,
-  .standingName,
-  .close { transition: none; }
+  .standingName { transition: none; }
 }

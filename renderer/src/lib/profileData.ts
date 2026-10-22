@@ -14,13 +14,27 @@ export function officeRank(topUsers: StatsUser[] | undefined, userName: string):
   return i < 0 ? null : i + 1;
 }
 
-/** The line under a profile's name: plays, plays this week, place in the office. Zeroes and unknowns are left out. */
-export function profileFacts({ plays, weekPlays, rank }: { plays: number; weekPlays: number; rank: number | null }): string[] {
+/**
+ * How many tracks someone has queued, from a stats result: their topUsers count, which leaves out album-add events
+ * (the Leaderboard's number). Falls back to totalEvents when they aren't listed, e.g. an older server.
+ */
+export function queuedCount(stats: StatsResult | undefined, userName: string): number {
+  return stats?.topUsers?.find((u) => u.userId === userName)?.count ?? stats?.totalEvents ?? 0;
+}
+
+/**
+ * The line under a profile's name: queued all time, in the past 7 days, place in the office, and (when nothing is
+ * recent) when they last queued. Zeroes and unknowns are left out.
+ */
+export function profileFacts({ queued, recentQueued, rank, lastQueued, now = Date.now() }: {
+  queued: number; recentQueued: number; rank: number | null; lastQueued?: number | null; now?: number;
+}): string[] {
   const facts: string[] = [];
-  if (plays > 0) facts.push(`${plays.toLocaleString('en-GB')} ${plays === 1 ? 'play' : 'plays'}`);
-  if (weekPlays > 0) facts.push(`${weekPlays.toLocaleString('en-GB')} this week`);
+  if (queued > 0) facts.push(`${queued.toLocaleString('en-GB')} queued`);
+  if (recentQueued > 0) facts.push(`${recentQueued.toLocaleString('en-GB')} in the past 7 days`);
   if (rank === 1) facts.push('Most active in the office');
   else if (rank) facts.push(`${ordinal(rank)} most active in the office`);
+  if (lastQueued) facts.push(`Last queued ${relativeDay(lastQueued, now).toLowerCase()}`);
   return facts;
 }
 

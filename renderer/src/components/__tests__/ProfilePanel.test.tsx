@@ -33,8 +33,9 @@ describe('ProfilePanel', () => {
     vi.mocked(window.sonos.fetchStats).mockReset();
     vi.mocked(window.sonos.fetchStats).mockImplementation(async (period, userId) => {
       if (!userId) return stats({ topUsers: [{ userId: 'Alex', count: 90 }, { userId: 'Rich', count: 50 }], totalEvents: 140 });
-      if (period === 'week') return stats({ totalEvents: 7 });
-      return stats({ topTracks: [track('Hysteria', 9), track('Time Is Running Out', 4)], totalEvents: 1035 });
+      if (period === 'week') return stats({ topUsers: [{ userId: userId, count: 7 }], totalEvents: 9 });
+      // totalEvents counts album-add events too; the queued count is the topUsers one, as on the Leaderboard.
+      return stats({ topUsers: [{ userId: userId, count: 967 }], topTracks: [track('Hysteria', 9), track('Time Is Running Out', 4)], totalEvents: 1035 });
     });
     vi.mocked(window.sonos.fetchRecentlyPlayed).mockResolvedValue({
       tracks: [{ trackName: 'Starlight', artist: 'Muse', lastPlayed: Date.now() }],
@@ -46,7 +47,9 @@ describe('ProfilePanel', () => {
   it('leads with the name and their place in the office', async () => {
     renderProfile('Rich');
     expect(screen.getByRole('heading', { level: 1, name: 'Rich' })).toBeInTheDocument();
-    expect(await screen.findByText('1,035 plays · 7 this week · 2nd most active in the office')).toBeInTheDocument();
+    expect(await screen.findByText('2nd most active in the office')).toBeInTheDocument();
+    expect(await screen.findByText('967 queued')).toBeInTheDocument();
+    expect(screen.getByText('7 in the past 7 days')).toBeInTheDocument();
   });
 
   it('ranks the top tracks and lists what they queued lately', async () => {
@@ -71,11 +74,13 @@ describe('ProfilePanel', () => {
     expect(screen.getByRole('button', { name: 'Change your photo' })).toBeInTheDocument();
   });
 
-  it('says when they last queued if nothing is from the last week', async () => {
+  it('moves "last queued" into the facts and drops Lately when nothing is from the past week', async () => {
     vi.mocked(window.sonos.fetchRecentlyPlayed).mockResolvedValue({ tracks: [], artists: [], albums: [] });
     vi.mocked(window.sonos.fetchUsers).mockResolvedValue([{ userId: 'Rich', lastQueued: Date.now() - 21 * 86_400_000 }]);
     renderProfile('Rich');
-    expect(await screen.findByText('Nothing in the last seven days. Last queued 3 weeks ago.')).toBeInTheDocument();
+    expect(await screen.findByText('Last queued 3 weeks ago')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Lately' })).toBeNull();
+    expect(screen.getByRole('region', { name: 'Top tracks' })).toBeInTheDocument();
   });
 
   it('says so when someone has queued nothing', async () => {

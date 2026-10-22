@@ -13,6 +13,10 @@ import { vi } from 'vitest';
 // Use the app's real default window width so tests exercise the full layout.
 window.innerWidth = 1280;
 
+// jsdom has no showModal()/close(); common/Dialog only needs the open attribute toggled.
+HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.setAttribute('open', ''); };
+HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) { this.removeAttribute('open'); };
+
 const noop = () => () => {};
 const pending = () => new Promise<never>(() => {});
 

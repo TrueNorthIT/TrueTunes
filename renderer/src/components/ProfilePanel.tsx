@@ -14,12 +14,11 @@ import { useOpenItem } from '../hooks/useOpenItem';
 import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
 import { useArtistImage } from '../hooks/useArtistBrowse';
-import { getGameRankIcon } from '../lib/gameRankAssets';
 import { createDragGhost } from '../lib/dragHelpers';
 import { normalizeAvatar } from '../lib/avatarImage';
-import { primaryArtistName, relativeDay, statsAlbumToItem, statsArtistToItem, statsTrackToItem } from '../lib/homeData';
+import { primaryArtistName, statsAlbumToItem, statsArtistToItem, statsTrackToItem } from '../lib/homeData';
 import { resolveAlbumParams } from '../lib/itemHelpers';
-import { groupByDay, officeRank, profileFacts } from '../lib/profileData';
+import { groupByDay, officeRank, profileFacts, queuedCount } from '../lib/profileData';
 import { Carousel } from './common/Carousel';
 import { ChartHead, ChartRow } from './common/ChartRow';
 import { CreatePlaylistDialog, useTrackContextMenu } from './common/ContextMenu';
@@ -54,7 +53,7 @@ function ArtistTile({ a, onOpen }: { a: StatsArtist; onOpen: () => void }) {
   const { data: photo } = useArtistImage(a.artistId, a.serviceId, a.accountId);
   return (
     <div className={styles.shelfTile}>
-      <ImageTile circular title={a.artist} sub={`${a.count} ${a.count === 1 ? 'play' : 'plays'}`} imageUrl={photo ?? a.imageUrl} onOpen={onOpen} />
+      <ImageTile circular title={a.artist} sub={`${a.count} queued`} imageUrl={photo ?? a.imageUrl} onOpen={onOpen} />
     </div>
   );
 }
@@ -85,12 +84,19 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
   const topTracks = stats?.topTracks ?? [];
   const topArtists = stats?.topArtists ?? [];
   const topAlbums = stats?.topAlbums ?? [];
-  const plays = stats?.totalEvents ?? 0;
+  const queued = queuedCount(stats, userName);
   const lately = (recent?.tracks ?? []).slice(0, 10);
   const { data: users } = useUsers(true, true);
   const lastQueued = users?.find((u) => u.userId === userName)?.lastQueued;
   const chart = topTracks.slice(0, 10);
-  const facts = profileFacts({ plays, weekPlays: week?.totalEvents ?? 0, rank: officeRank(office?.topUsers, userName) });
+  // With nothing from the past week, the Lately card goes and "Last queued ..." joins the facts instead.
+  const showLately = recentLoading || lately.length > 0;
+  const facts = profileFacts({
+    queued,
+    recentQueued: queuedCount(week, userName),
+    rank: officeRank(office?.topUsers, userName),
+    lastQueued: showLately ? null : lastQueued,
+  });
 
   // The face leads; its colour washes the hero. Without a photo, the person's most played album lends its colour.
   const { data: profile } = useUserProfile(userName);
@@ -222,8 +228,7 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
     return b.updatedAt - a.updatedAt;
   });
 
-  const tierIcon = ranking ? getGameRankIcon(ranking.tierKey) : null;
-  const nothingYet = !statsLoading && plays === 0;
+  const nothingYet = !statsLoading && queued === 0;
 
   return (
     <div className={`page-scale ${styles.panel}`}>
@@ -261,9 +266,31 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
           ) : (
             <h1 className={styles.name}>{userName}</h1>
           )}
-          {facts.length > 0 && <p className={styles.facts}>{facts.join(' · ')}</p>}
+          {/* Each fact is unbreakable, so the line only wraps between facts: no widowed "office". */}
+          {facts.length > 0 && (
+            <p className={styles.facts}>
+              {facts.map((f, i) => <span key={f}>{i > 0 && ' · '}<span className={styles.fact}>{f}</span></span>)}
+            </p>
+          )}
           {nothingYet && <p className={styles.facts}>Nothing queued yet</p>}
-          {inOffice && <span className={styles.chip}>In the office today</span>}
+          {(inOffice || ranking) && (
+            <div className={styles.chips}>
+              {inOffice && <span className={styles.chip}>In the office today</span>}
+              {/* The tier as its name in a tonal chip, as on the Leaderboard and Queuedle: no raster tier art. */}
+              {ranking && (
+                <>
+                  <span className={`${styles.tierChip}${ranking.isProvisional ? ' ' + styles.provisional : ''}`}>
+                    {ranking.isProvisional ? 'Provisional' : ranking.tierName}
+                  </span>
+                  <span className={styles.rankDetail}>
+                    {ranking.isProvisional
+                      ? `Queuedle · ${ranking.gamesPlayed} ${ranking.gamesPlayed === 1 ? 'game' : 'games'} played`
+                      : `Queuedle · ${ranking.averagePercent.toFixed(0)}% average · best ${ranking.bestTotal} · ${ranking.gamesPlayed} ${ranking.gamesPlayed === 1 ? 'game' : 'games'}`}
+                  </span>
+                </>
+              )}
+            </div>
+          )}
           {isOwnProfile && !renaming && (onChangeName || onSignOut) && (
             <div className={styles.heroActions}>
               {onChangeName && <PillButton onClick={() => { setRenameValue(userName); setRenaming(true); }}>Change name</PillButton>}
@@ -272,19 +299,6 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
           )}
         </div>
 
-        {ranking && (
-          <div className={styles.rank}>
-            {tierIcon && <img src={tierIcon} alt="" className={styles.rankIcon} />}
-            <div className={styles.rankText}>
-              <span className={styles.rankName}>{ranking.isProvisional ? 'Provisional rank' : ranking.tierName}</span>
-              <span className={styles.rankDetail}>
-                {ranking.isProvisional
-                  ? `Queuedle · ${ranking.gamesPlayed} ${ranking.gamesPlayed === 1 ? 'game' : 'games'} played`
-                  : `Queuedle · ${ranking.averagePercent.toFixed(0)}% average · best ${ranking.bestTotal} · ${ranking.gamesPlayed} ${ranking.gamesPlayed === 1 ? 'game' : 'games'}`}
-              </span>
-            </div>
-          </div>
-        )}
       </header>
 
       {nothingYet && (
@@ -293,14 +307,14 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
         </p>
       )}
 
-      {(statsLoading || chart.length > 0 || lately.length > 0) && (
-        <div className={`${styles.band} ${styles.split}`}>
+      {(statsLoading || chart.length > 0) && (
+        <div className={`${styles.band} ${styles.split}${showLately ? '' : ' ' + styles.splitSolo}`}>
           <SectionCard title="Top tracks">
             {statsLoading ? (
               <div aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <div key={i} className={`skeleton ${styles.rowSkel}`} />)}</div>
             ) : (
               <>
-                <ChartHead />
+                <ChartHead labels={['#', 'Title', 'Artist', 'Queued']} />
                 <ol className={styles.list} onClick={() => { setSelected(new Set()); lastSelected.current = null; }}>
                   {chart.map((t, i) => (
                     <ChartRow
@@ -325,35 +339,33 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
             )}
           </SectionCard>
 
-          <SectionCard title="Lately">
-            {recentLoading ? (
-              <div aria-hidden="true">{Array.from({ length: 8 }, (_, i) => <div key={i} className={`skeleton ${styles.rowSkel}`} />)}</div>
-            ) : lately.length === 0 ? (
-              <p className={styles.empty}>
-                Nothing in the last seven days.{lastQueued ? ` Last queued ${relativeDay(lastQueued).toLowerCase()}.` : ''}
-              </p>
-            ) : (
-              groupByDay(lately).map((g) => (
-                <div key={g.day} className={styles.day}>
-                  <h3 className={styles.dayTitle}>{g.day}</h3>
-                  <ul className={styles.list}>
-                    {g.items.map((t, i) => (
-                      <TrackRow
-                        key={`${t.uri ?? t.trackName}-${i}`}
-                        title={t.trackName}
-                        artists={artistLinks(t)}
-                        imageUrl={t.imageUrl}
-                        onOpen={() => openAlbum(t)}
-                        onAdd={addTrack(t)}
-                        onContextMenu={(e) => menu(t, e)}
-                        onMouseEnter={() => prefetchAlbum(t)}
-                      />
-                    ))}
-                  </ul>
-                </div>
-              ))
-            )}
-          </SectionCard>
+          {showLately && (
+            <SectionCard title="Lately">
+              {recentLoading ? (
+                <div aria-hidden="true">{Array.from({ length: 8 }, (_, i) => <div key={i} className={`skeleton ${styles.rowSkel}`} />)}</div>
+              ) : (
+                groupByDay(lately).map((g) => (
+                  <div key={g.day} className={styles.day}>
+                    <h3 className={styles.dayTitle}>{g.day}</h3>
+                    <ul className={styles.list}>
+                      {g.items.map((t, i) => (
+                        <TrackRow
+                          key={`${t.uri ?? t.trackName}-${i}`}
+                          title={t.trackName}
+                          artists={artistLinks(t)}
+                          imageUrl={t.imageUrl}
+                          onOpen={() => openAlbum(t)}
+                          onAdd={addTrack(t)}
+                          onContextMenu={(e) => menu(t, e)}
+                          onMouseEnter={() => prefetchAlbum(t)}
+                        />
+                      ))}
+                    </ul>
+                  </div>
+                ))
+              )}
+            </SectionCard>
+          )}
         </div>
       )}
 
@@ -374,7 +386,7 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
                 <ImageTile
                   title={a.album}
                   sub={a.artist}
-                  meta={`${a.count} ${a.count === 1 ? 'play' : 'plays'}`}
+                  meta={`${a.count} queued`}
                   imageUrl={a.imageUrl}
                   onOpen={() => (a.albumId ? openItem(item) : void resolveAndOpen(a.album, 'album', { artist: primaryArtistName(a.artist) }))}
                 />

@@ -131,10 +131,11 @@ beforeEach(() => {
 
 describe('LeaderboardPanel', () => {
   describe('states', () => {
-    it('shows a loading message while fetching', () => {
+    it('shows skeleton cards, not a loading message, while fetching', () => {
       mockUseStats.mockReturnValue({ data: undefined, isLoading: true, error: null } as unknown as ReturnType<typeof useStats>);
-      renderPanel();
-      expect(screen.getByText('Loading…')).toBeInTheDocument();
+      const { container } = renderPanel();
+      expect(container.querySelectorAll('.skeleton').length).toBeGreaterThan(6);
+      expect(screen.queryByText(/Loading/)).toBeNull();
     });
 
     it('shows an error message on fetch failure', () => {
@@ -159,10 +160,16 @@ describe('LeaderboardPanel', () => {
   });
 
   describe('header and period', () => {
-    it('shows the title and how much was queued', () => {
+    it('counts what was queued from the people, not from totalEvents (which includes album adds)', () => {
       renderPanel();
       expect(screen.getByRole('heading', { level: 1, name: 'Leaderboard' })).toBeInTheDocument();
-      expect(screen.getByText('25 tracks queued in the past 7 days')).toBeInTheDocument();
+      expect(screen.getByText('17 tracks queued in the past 7 days')).toBeInTheDocument();
+    });
+
+    it('says "At least" when the server cut the people off at ten', () => {
+      mockLoaded({ ...mockData, topUsers: Array.from({ length: 10 }, (_, i) => ({ userId: `u${i}`, count: 100 })) });
+      renderPanel();
+      expect(screen.getByText('At least 1,000 tracks queued in the past 7 days')).toBeInTheDocument();
     });
 
     it('defaults to the past 7 days, sharing the 50-item stats with Home', () => {
@@ -178,7 +185,7 @@ describe('LeaderboardPanel', () => {
       expect(screen.getByRole('button', { name: 'Today' })).toHaveAttribute('aria-pressed', 'true');
       fireEvent.click(screen.getByRole('button', { name: 'All time' }));
       expect(mockUseStats).toHaveBeenLastCalledWith('alltime', undefined, 50);
-      expect(screen.getByText('25 tracks queued in all')).toBeInTheDocument();
+      expect(screen.getByText('17 tracks queued in all')).toBeInTheDocument();
     });
 
     it('has no Queuedle period tab: Queuedle is its own card', () => {
@@ -248,10 +255,32 @@ describe('LeaderboardPanel', () => {
       expect(screen.queryByRole('button', { name: /to queue$/ })).toBeNull();
     });
 
+    it('merges artists whose names differ only in case', () => {
+      mockLoaded({
+        ...mockData,
+        topArtists: [
+          { artist: 'Fontaines D.C.', count: 13 },
+          { artist: 'FONTAINES D.C.', count: 11 },
+        ],
+      });
+      renderPanel();
+      const artists = screen.getByRole('region', { name: 'Top artists' });
+      expect(within(artists).getByText('Fontaines D.C.')).toBeInTheDocument();
+      expect(within(artists).getByText('24 queued')).toBeInTheDocument();
+      expect(within(artists).queryByText('FONTAINES D.C.')).toBeNull();
+    });
+
+    it('hides Top albums when every album was queued once, since the order would be arbitrary', () => {
+      mockLoaded({ ...mockData, topAlbums: [{ album: 'Once', artist: 'Band', count: 1 }, { album: 'Also once', artist: 'Band', count: 1 }] });
+      renderPanel();
+      expect(screen.queryByText('Top albums')).toBeNull();
+      expect(screen.getByText('Top tracks')).toBeInTheDocument();
+    });
+
     it('shows art when an album has an imageUrl', () => {
       mockLoaded({
         ...mockData,
-        topAlbums: [{ album: 'Pictured', artist: 'Band', albumId: 'alb2', count: 1, imageUrl: 'http://img.com/art.jpg' }],
+        topAlbums: [{ album: 'Pictured', artist: 'Band', albumId: 'alb2', count: 2, imageUrl: 'http://img.com/art.jpg' }],
       });
       const { container } = renderPanel();
       expect(container.querySelector('img[src="http://img.com/art.jpg"]')).toBeTruthy();
@@ -341,10 +370,24 @@ describe('LeaderboardPanel', () => {
       expect(mockUseGameRankings).toHaveBeenLastCalledWith(null, true);
       expect(screen.getByText('queuedle-player')).toBeInTheDocument();
       expect(screen.getAllByText('3 games')).toHaveLength(5);
+      // The tier is a text chip: no raster tier art.
       expect(screen.getAllByText('Algorithm Whisperer')).toHaveLength(5);
-      expect(screen.getAllByText('4.7')).toHaveLength(5);
+      expect(container.querySelector('img[class*="tier"]')).toBeNull();
+      // The score is labelled: a column head, and in the cell for screen readers.
+      expect(screen.getByText('Avg score')).toBeInTheDocument();
+      expect([...container.querySelectorAll('li [class*="average"]')].map((e) => e.textContent)).toEqual(Array(5).fill('4.7 average score'));
       expect(screen.queryByText('f')).toBeNull();
-      expect(container.querySelector('img[class*="tierIcon"]')).toBeTruthy();
+    });
+
+    it('gives equal averages a shared place (1, 1, 3)', () => {
+      mockUseGameRankings.mockReturnValue({
+        data: [ranking({ userName: 'a', averageTotal: 16 }), ranking({ userName: 'b', averageTotal: 16 }), ranking({ userName: 'c', averageTotal: 15 })],
+        isLoading: false,
+        error: null,
+      });
+      const { container } = renderPanel();
+      const places = [...container.querySelectorAll('li[class*="standing"] > span:first-child')].map((e) => e.textContent);
+      expect(places).toEqual(['01', '01', '03']);
     });
 
     it('shows a provisional player as provisional', () => {
@@ -371,15 +414,19 @@ describe('LeaderboardPanel', () => {
 
     it('explains the rank tiers in a dialog that closes with the button or Escape', () => {
       mockUseGameRankings.mockReturnValue({ data: [ranking()], isLoading: false, error: null });
-      const { container } = renderPanel();
-      fireEvent.click(screen.getByRole('button', { name: 'How ranks work' }));
+      renderPanel();
+      const opener = screen.getByRole('button', { name: 'How ranks work' });
+      opener.focus();
+      fireEvent.click(opener);
       const dialog = screen.getByRole('dialog', { name: 'Queuedle rank tiers' });
       expect(within(dialog).getByText(/total points earned divided by total possible points/i)).toBeInTheDocument();
-      expect(within(dialog).getByText('Skip Button Survivor')).toBeInTheDocument();
+      expect(within(dialog).getByText('Skip button survivor')).toBeInTheDocument();
       expect(within(dialog).getByText('85% and up')).toBeInTheDocument();
-      expect(container.ownerDocument.querySelectorAll('img[class*="tierImage"]')).toHaveLength(5);
+      expect(dialog.querySelector('img')).toBeNull();
       fireEvent.click(screen.getByRole('button', { name: 'Close rank info' }));
       expect(screen.queryByRole('dialog')).toBeNull();
+      // Focus goes back to the link that opened it.
+      expect(document.activeElement).toBe(opener);
 
       fireEvent.click(screen.getByRole('button', { name: 'How ranks work' }));
       fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });

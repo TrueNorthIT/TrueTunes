@@ -25,7 +25,8 @@ import { QueuedleLeaderboard, type LeaderboardTab } from './QueuedleLeaderboard'
 import { formatGameDate, standingLine } from './format';
 import { useUsers } from '../../hooks/useUsers';
 import { PillButton } from '../common/PillButton';
-import { ArrowLeft, CalendarDays, X } from 'lucide-react';
+import { ArrowLeft, CalendarDays } from 'lucide-react';
+import { Dialog } from '../common/Dialog';
 import styles from '../../styles/Queuedle.module.css';
 
 type Phase = 'intro' | 'main' | 'bonus' | 'bonus-results' | 'rank-change' | 'summary';
@@ -158,15 +159,6 @@ export function QueuedlePanel() {
   }, [gameId, localPlayed, serverMain, questionCount]);
 
   useEffect(() => {
-    if (!calendarOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setCalendarOpen(false);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [calendarOpen]);
-
-  useEffect(() => {
     if (game && bonusSelections.length !== game.questions.length) {
       setBonusSelections(new Array(game.questions.length).fill(null));
     }
@@ -264,7 +256,21 @@ export function QueuedlePanel() {
   );
   const message = (text: ReactNode) => shell(<p className={styles.state}>{text}</p>);
 
-  if (isLoading) return message(`Loading ${isPastDay ? 'that' : "today's"} Queuedle…`);
+  if (isLoading) {
+    // Skeletons at the size of the header and the hero card, so nothing jumps when the game arrives.
+    return shell(
+      <>
+        <p className={styles.srOnly} role="status">Loading {isPastDay ? 'that' : "today's"} Queuedle…</p>
+        <div className={styles.hero} aria-hidden="true">
+          <div>
+            <h1 className={styles.title}>Queuedle</h1>
+            <span className={`skeleton ${styles.premiseSkel}`} />
+          </div>
+        </div>
+        <div className={`skeleton ${styles.heroSkel}`} aria-hidden="true" />
+      </>
+    );
+  }
   if (!data || (error && !('questions' in (data ?? {})))) return message('Failed to load Queuedle.');
   if ('error' in data && data.error) return message(data.error);
   if ('status' in data && data.status === 'pending') {
@@ -303,30 +309,11 @@ export function QueuedlePanel() {
     </header>
   );
 
+  // The shared modal: focus moves into the grid, Tab stays inside, Esc closes, focus returns to "Past games".
   const calendar = calendarOpen && calendarDates.length > 0 && (
-    <div className={styles.overlay} onClick={() => setCalendarOpen(false)}>
-      <div
-        className={`page-scale ${styles.dialog}`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="queuedle-calendar-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className={styles.dialogHead}>
-          <h2 id="queuedle-calendar-title" className={styles.dialogTitle}>Past games</h2>
-          <button
-            type="button"
-            className={styles.dialogClose}
-            onClick={() => setCalendarOpen(false)}
-            aria-label="Close calendar"
-            autoFocus
-          >
-            <X size={18} aria-hidden="true" />
-          </button>
-        </div>
-        <QueuedleCalendar dates={calendarDates} selectedDate={gameId} todayId={todayId} onSelectDate={handleSelectDate} />
-      </div>
-    </div>
+    <Dialog title="Past games" size="sm" closeLabel="Close calendar" onClose={() => setCalendarOpen(false)}>
+      <QueuedleCalendar dates={calendarDates} selectedDate={gameId} todayId={todayId} onSelectDate={handleSelectDate} />
+    </Dialog>
   );
 
   const page = (content: ReactNode) =>
@@ -374,7 +361,6 @@ export function QueuedlePanel() {
             onTab={setLeaderboardTab}
             gameId={isPastDay ? currentGame.id : null}
             scores={room}
-            maxPerRound={max}
             rankings={rankings.data ?? []}
             rankingsLoading={rankings.isLoading}
             me={displayName ?? null}

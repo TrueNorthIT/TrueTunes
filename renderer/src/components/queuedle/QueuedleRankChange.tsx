@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { getGameRankIcon } from '../../lib/gameRankAssets';
 import type { GameRankTierKey } from '../../hooks/useDailyGame';
 import { ArrowRight } from 'lucide-react';
 import { PillButton } from '../common/PillButton';
@@ -52,31 +51,22 @@ export function QueuedleRankChange({ before, after, onContinue }: Props) {
   const display = useTween(fromRating, after.rating, reduceMotion ? 0 : ANIM_MS);
   const delta = before ? after.rating - before.rating : 0;
   const tierChanged = !!before && before.tierKey !== after.tierKey;
-  const tierIcon = getGameRankIcon(after.tierKey);
-  const prevTierIcon = before ? getGameRankIcon(before.tierKey) : null;
   const showDelta = !!before && !after.isProvisional && !before.isProvisional && delta !== 0;
   const gamesLeft = Math.max(0, 3 - after.gamesPlayed);
+  const chip = (r: RankSnapshot) => `${styles.tierChip} ${styles.rankChip}${r.isProvisional ? ' ' + styles.provisional : ''}`;
 
   return (
-    <SectionCard featured className={styles.rankCard}>
+    <SectionCard className={styles.rankCard}>
       <h2 className={styles.rankTitle}>{before ? 'Rank update' : 'Welcome to the ranks'}</h2>
 
-      <div className={styles.rankBadges}>
-        {tierChanged && prevTierIcon && (
+      <p className={styles.rankTier}>
+        {tierChanged && before && (
           <>
-            <span className={`${styles.rankBadge} ${styles.rankBadgePrev}`}>
-              <img src={prevTierIcon} alt="" />
-            </span>
-            <ArrowRight className={styles.rankArrow} size={22} aria-hidden="true" />
+            <span className={chip(before)}>{before.tierName}</span>
+            <ArrowRight className={styles.rankArrow} size={20} role="img" aria-label="to" />
           </>
         )}
-        <span className={`${styles.rankBadge}${tierChanged ? ' ' + styles.rankBadgeIn : ''}`}>
-          {tierIcon ? <img src={tierIcon} alt="" /> : <span className={styles.rankBadgeEmpty} />}
-        </span>
-      </div>
-
-      <p className={styles.rankTier}>
-        {tierChanged && before ? `${before.tierName} to ${after.tierName}` : after.tierName}
+        <span className={`${chip(after)}${tierChanged ? ' ' + styles.rankChipIn : ''}`}>{after.tierName}</span>
       </p>
 
       <p className={styles.rankRating}>

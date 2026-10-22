@@ -65,7 +65,9 @@ describe('QueuedleRankChange', () => {
     );
     expect(screen.getByRole('heading', { name: 'Rank update' })).toBeInTheDocument();
     expect(screen.getByText('+350')).toBeInTheDocument();
-    expect(screen.getByText('Aux Cable Apprentice to Algorithm Whisperer')).toBeInTheDocument();
+    expect(screen.getByText('Aux Cable Apprentice')).toBeInTheDocument();
+    expect(screen.getByText('Algorithm Whisperer')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'to' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     expect(onContinue).toHaveBeenCalled();
   });
@@ -74,7 +76,6 @@ describe('QueuedleRankChange', () => {
 const lbProps = {
   onTab: () => {},
   gameId: null,
-  maxPerRound: 10,
   rankings: [] as GameRanking[],
   rankingsLoading: false,
   imageByUser: new Map<string, string | null>(),
@@ -112,7 +113,7 @@ describe('QueuedleLeaderboard', () => {
   it('labels a past game by its date', () => {
     render(<QueuedleLeaderboard {...lbProps} tab="today" gameId="2026-10-20" scores={scores} me={null} />);
     expect(screen.getByRole('heading', { name: 'Leaderboard for 20 Oct' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: '20 Oct' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '20 Oct', pressed: true })).toBeInTheDocument();
   });
 
   it('says when nobody has played', () => {

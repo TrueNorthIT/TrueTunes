@@ -1,4 +1,5 @@
 // Pure display helpers for Queuedle. Game ids are London calendar dates (YYYY-MM-DD).
+import { ordinal } from '../../lib/profileData';
 
 // Weekday kept apart: some ICU builds put a comma after it ("Monday, 1 January").
 const WEEKDAY = new Intl.DateTimeFormat('en-GB', { weekday: 'long', timeZone: 'UTC' });
@@ -20,12 +21,6 @@ export function formatGameDate(gameId: string): string {
 export function formatGameDateShort(gameId: string): string {
   const d = toDate(gameId);
   return d ? SHORT.format(d) : gameId;
-}
-
-export function ordinal(n: number): string {
-  const tens = n % 100;
-  if (tens >= 11 && tens <= 13) return `${n}th`;
-  return `${n}${['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
 }
 
 /** Standard competition ranking (1, 1, 3): equal totals share a place, whatever order they arrive in. */

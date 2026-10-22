@@ -119,16 +119,27 @@
   font-weight: 500;
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
+  text-wrap: pretty;
 }
+/* A fact never breaks inside itself; the line wraps only at the separators. */
+.fact { white-space: nowrap; }
 
-.chip {
+/* Office presence and the Queuedle tier: tonal chips under the facts, the tier's detail beside it. */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5em 0.6em;
   margin-top: 0.9em;
+}
+.chip {
   font-size: max(13px, 0.86em);
   font-weight: 500;
   color: var(--text-2);
   background: rgba(var(--tint), 0.16);
   padding: 0.2em 0.8em;
   border-radius: 2em;
+  line-height: 1.5;
 }
 
 .heroActions {
@@ -165,31 +176,21 @@
   color: rgb(var(--danger));
 }
 
-/* Queuedle standing: a caption beside the name, not a second card competing with it. */
-.rank {
-  display: flex;
-  align-items: center;
-  gap: 0.9em;
-  padding-bottom: 0.4em;
+/* The Leaderboard's tier chip: the server's tierName set in sentence case by CSS, no raster tier art. */
+.tierChip {
+  display: inline-block; /* ::first-letter needs a block container, not flex */
+  font-size: max(13px, 0.86em);
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--text-2);
+  background: rgba(var(--tint), 0.16);
+  padding: 0.2em 0.8em;
+  border-radius: 2em;
+  white-space: nowrap;
+  text-transform: lowercase;
 }
-.rankIcon {
-  width: 4.6em;
-  height: 4.6em;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-.rankText {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2em;
-  min-width: 0;
-}
-.rankName {
-  font-size: 1.3em;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--text);
-}
+.tierChip::first-letter { text-transform: uppercase; }
+.tierChip.provisional { color: var(--text-3); background: rgba(var(--tint), 0.06); }
 .rankDetail {
   font-size: max(13px, 0.93em);
   color: var(--text-3);
@@ -229,6 +230,9 @@
   border-radius: 0.65em;
   margin-bottom: 0.5em;
 }
+
+/* Nothing from the past week: Top tracks takes the band on its own. */
+.splitSolo { grid-template-columns: minmax(0, 1fr); }
 
 /* ── Shelves ── */
 .shelfTile { flex: 0 0 9.6em; min-width: 0; }

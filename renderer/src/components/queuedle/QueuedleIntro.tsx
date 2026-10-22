@@ -16,7 +16,7 @@ interface Props {
 export function QueuedleIntro({ onStart, rounds, isPastDay, players = [] }: Props) {
   return (
     <div className={styles.intro}>
-      <SectionCard featured className={styles.introLead}>
+      <SectionCard className={styles.introLead}>
         <h2 className={styles.introTitle}>{rounds} rounds on what the office has queued</h2>
         <p className={styles.introSub}>Guess which got queued more, then who queued it most. It takes a couple of minutes.</p>
         <div className={styles.introStart}>

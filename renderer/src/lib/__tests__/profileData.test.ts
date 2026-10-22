@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { groupByDay, ordinal, officeRank, profileFacts } from '../profileData';
+import { groupByDay, ordinal, officeRank, profileFacts, queuedCount } from '../profileData';
 
 describe('ordinal', () => {
   it('handles the teens and the st/nd/rd endings', () => {
@@ -20,15 +20,33 @@ describe('officeRank', () => {
   });
 });
 
+describe('queuedCount', () => {
+  const stats = (topUsers: StatsUser[], totalEvents: number) =>
+    ({ topUsers, topTracks: [], topArtists: [], topAlbums: [], totalEvents, periodStart: 0 }) as StatsResult;
+  it('is their topUsers count, which leaves out album-add events', () => {
+    expect(queuedCount(stats([{ userId: 'Joe', count: 967 }], 1035), 'Joe')).toBe(967);
+  });
+  it('falls back to totalEvents when they are not listed, and 0 with no stats', () => {
+    expect(queuedCount(stats([], 12), 'Joe')).toBe(12);
+    expect(queuedCount(undefined, 'Joe')).toBe(0);
+  });
+});
+
 describe('profileFacts', () => {
-  it('lists plays, this week and place in the office', () => {
-    expect(profileFacts({ plays: 1035, weekPlays: 72, rank: 5 })).toEqual([
-      '1,035 plays', '72 this week', '5th most active in the office',
+  const now = new Date('2026-10-22T15:00:00').getTime();
+  it('lists queued, the past 7 days and place in the office', () => {
+    expect(profileFacts({ queued: 967, recentQueued: 72, rank: 5, now })).toEqual([
+      '967 queued', '72 in the past 7 days', '5th most active in the office',
     ]);
   });
-  it('says "most active" for first, singular for one play, and drops zeroes and unknowns', () => {
-    expect(profileFacts({ plays: 1, weekPlays: 0, rank: 1 })).toEqual(['1 play', 'Most active in the office']);
-    expect(profileFacts({ plays: 0, weekPlays: 0, rank: null })).toEqual([]);
+  it('says "most active" for first, and drops zeroes and unknowns', () => {
+    expect(profileFacts({ queued: 1035, recentQueued: 0, rank: 1, now })).toEqual(['1,035 queued', 'Most active in the office']);
+    expect(profileFacts({ queued: 0, recentQueued: 0, rank: null, now })).toEqual([]);
+  });
+  it('adds when they last queued, if given', () => {
+    expect(profileFacts({ queued: 238, recentQueued: 0, rank: 10, lastQueued: now - 49 * 86_400_000, now })).toEqual([
+      '238 queued', '10th most active in the office', 'Last queued 7 weeks ago',
+    ]);
   });
 });
 

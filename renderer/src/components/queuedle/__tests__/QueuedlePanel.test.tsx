@@ -317,7 +317,7 @@ describe('QueuedlePanel', () => {
     await user.click(screen.getByText('See Score'));
     await user.click(screen.getByText('Continue Rank'));
     expect(screen.getByText('Score: 2')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Ranked' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ranked', pressed: false })).toBeInTheDocument();
   });
 
   it('uses result.existing score when no result.score', async () => {
@@ -430,7 +430,7 @@ describe('QueuedlePanel', () => {
   it('shows ranked tab after the user has played', async () => {
     localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
     render(<QueuedlePanel />);
-    await waitFor(() => expect(screen.getByRole('tab', { name: 'Ranked' })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Ranked', pressed: false })).toBeInTheDocument());
     // Rankings are now always enabled so the post-game rank-change screen has the
     // user's prior totals available without a tab switch.
     await waitFor(() => expect(mockUseGameRankings).toHaveBeenLastCalledWith('TestUser', true));
@@ -457,7 +457,7 @@ describe('QueuedlePanel', () => {
     });
     const user = userEvent.setup();
     render(<QueuedlePanel />);
-    await user.click(await screen.findByRole('tab', { name: 'Ranked' }));
+    await user.click(await screen.findByRole('button', { name: 'Ranked' }));
     expect(screen.getByText('Ranked leaderboard')).toBeInTheDocument();
     expect(screen.getByText('alice')).toBeInTheDocument();
     expect(screen.getByText('Provisional')).toBeInTheDocument();
@@ -495,9 +495,9 @@ describe('QueuedlePanel', () => {
     });
     const user = userEvent.setup();
     render(<QueuedlePanel />);
-    await user.click(await screen.findByRole('tab', { name: 'Ranked' }));
+    await user.click(await screen.findByRole('button', { name: 'Ranked' }));
     expect(screen.getByText('ranked-player')).toBeInTheDocument();
-    await user.click(screen.getByRole('tab', { name: 'Today' }));
+    await user.click(screen.getByRole('button', { name: 'Today' }));
     expect(screen.getByText("Today's leaderboard")).toBeInTheDocument();
     expect(screen.getByText('daily-player')).toBeInTheDocument();
     expect(screen.queryByText('ranked-player')).not.toBeInTheDocument();
@@ -533,6 +533,22 @@ describe('QueuedlePanel', () => {
     await user.click(screen.getByText('Past games'));
     expect(screen.getByText('cal-2023-12-31')).toBeInTheDocument();
     expect(screen.getByText('cal-2024-01-01-played')).toBeInTheDocument();
+  });
+
+  it('opens Past games as a modal dialog and gives focus back to its button on close', async () => {
+    localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
+    mockUseGameDates.mockReturnValue({
+      data: { dates: [{ gameId: '2023-12-31', status: 'ready', userPlayed: false }] },
+      isLoading: false,
+    });
+    const user = userEvent.setup();
+    render(<QueuedlePanel />);
+    const opener = await screen.findByRole('button', { name: 'Past games' });
+    await user.click(opener);
+    expect(screen.getByRole('dialog', { name: 'Past games' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Close calendar' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(opener).toHaveFocus();
   });
 
   it('hides the calendar button when there are no game-dates entries', async () => {

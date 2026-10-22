@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
-import { X } from 'lucide-react';
 import type { GameRankTierKey } from '../hooks/useDailyGame';
 import { useStats, statsQueryOptions, type StatsPeriod } from '../hooks/useStats';
 import { useGameRankings } from '../hooks/useDailyGame';
@@ -10,10 +9,12 @@ import { useArtistImage } from '../hooks/useArtistBrowse';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
 import { useOpenItem } from '../hooks/useOpenItem';
 import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
-import { getGameRankIcon, getGameRankInfoImage } from '../lib/gameRankAssets';
+import { mergeArtists, queuedSummary } from '../lib/leaderboard';
 import { ordinal } from '../lib/profileData';
 import { primaryArtistName, statsAlbumToItem, statsArtistToItem, statsTrackToItem } from '../lib/homeData';
 import { useTrackContextMenu } from './common/ContextMenu';
+import { Dialog } from './common/Dialog';
+import { competitionRanks } from './queuedle/format';
 import { ChartHead, ChartRow } from './common/ChartRow';
 import { ImageTile } from './common/ImageTile';
 import { PersonCard } from './common/PersonCard';
@@ -31,11 +32,11 @@ const PERIODS: { value: StatsPeriod; label: string; phrase: string }[] = [
 ];
 
 const QUEUEDLE_RANK_INFO: Array<{ key: Exclude<GameRankTierKey, 'provisional'>; name: string; range: string }> = [
-  { key: 'skip-button-survivor', name: 'Skip Button Survivor', range: 'Under 40%' },
-  { key: 'background-bopper', name: 'Background Bopper', range: '40% to 54.9%' },
-  { key: 'aux-cable-apprentice', name: 'Aux Cable Apprentice', range: '55% to 69.9%' },
-  { key: 'algorithm-whisperer', name: 'Algorithm Whisperer', range: '70% to 84.9%' },
-  { key: 'playlist-prophet', name: 'Playlist Prophet', range: '85% and up' },
+  { key: 'skip-button-survivor', name: 'Skip button survivor', range: 'Under 40%' },
+  { key: 'background-bopper', name: 'Background bopper', range: '40% to 54.9%' },
+  { key: 'aux-cable-apprentice', name: 'Aux cable apprentice', range: '55% to 69.9%' },
+  { key: 'algorithm-whisperer', name: 'Algorithm whisperer', range: '70% to 84.9%' },
+  { key: 'playlist-prophet', name: 'Playlist prophet', range: '85% and up' },
 ];
 
 /** People with a card of their own; the rest of the top 10 sit on one line under them. */
@@ -148,42 +149,38 @@ function RowSkeleton() {
 
 function RankInfoDialog({ onClose }: { onClose: () => void }) {
   return (
-    <div
-      className={styles.overlay}
-      onClick={onClose}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') onClose();
-      }}
-    >
-      <div
-        className={`page-scale ${styles.dialog}`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="rank-info-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className={styles.dialogHead}>
-          <h2 id="rank-info-title" className={styles.dialogTitle}>Queuedle rank tiers</h2>
-          <button type="button" className={styles.close} onClick={onClose} aria-label="Close rank info" autoFocus>
-            <X size={18} />
-          </button>
-        </div>
-        <p className={styles.dialogText}>
-          Rank tiers use your all-time Queuedle percentage: total points earned divided by total possible points
-          across games played. You need 3 played days before a tier unlocks; until then you're provisional.
-        </p>
-        <ul className={styles.tiers}>
-          {QUEUEDLE_RANK_INFO.map((tier) => {
-            const image = getGameRankInfoImage(tier.key);
-            return (
-              <li key={tier.key} className={styles.tierCard}>
-                {image && <img className={styles.tierImage} src={image} alt="" loading="lazy" />}
-                <span className={styles.tierName}>{tier.name}</span>
-                <span className={styles.tierRange}>{tier.range}</span>
-              </li>
-            );
-          })}
-        </ul>
+    <Dialog title="Queuedle rank tiers" onClose={onClose} size="lg" closeLabel="Close rank info">
+      <p className={styles.dialogText}>
+        Rank tiers use your all-time Queuedle percentage: total points earned divided by total possible points
+        across games played. You need 3 played days before a tier unlocks; until then you're provisional.
+      </p>
+      <ul className={styles.tiers}>
+        {QUEUEDLE_RANK_INFO.map((tier) => (
+          <li key={tier.key} className={styles.tierCard}>
+            <span className={styles.tierName}>{tier.name}</span>
+            <span className={styles.tierRange}>{tier.range}</span>
+          </li>
+        ))}
+      </ul>
+    </Dialog>
+  );
+}
+
+/** The page's first paint while stats load: person cards and a chart at their real size. */
+function PageSkeleton() {
+  return (
+    <div aria-hidden="true">
+      <div className={`skeleton ${styles.skelTitle}`} />
+      <div className={`${styles.people} ${styles.section}`}>
+        {Array.from({ length: CARD_PEOPLE }, (_, i) => (
+          <div key={i} className={styles.skelCard}>
+            <div className={`skeleton ${styles.skelHead}`} />
+            <TileSkeleton />
+          </div>
+        ))}
+      </div>
+      <div className={styles.skelCard}>
+        <RowSkeleton />
       </div>
     </div>
   );
@@ -215,9 +212,15 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
   const phrase = PERIODS.find((p) => p.value === period)?.phrase ?? '';
   const loaded = data && !data.error && !isLoading;
   const tracks = data?.topTracks.slice(0, 10) ?? [];
-  const artists = data?.topArtists.slice(0, 12) ?? [];
-  const albums = data?.topAlbums.slice(0, 12) ?? [];
-  const standings = (rankings.data ?? []).slice(0, 5);
+  const artists = mergeArtists(data?.topArtists ?? []).slice(0, 12);
+  // When every album was queued once, the order is arbitrary: no chart.
+  const topAlbums = data?.topAlbums ?? [];
+  const albums = (topAlbums[0]?.count ?? 0) > 1 ? topAlbums.slice(0, 12) : [];
+  const summary = loaded ? queuedSummary(data.topUsers, phrase) : null;
+  const allRankings = rankings.data ?? [];
+  // Equal averages share a place (1, 1, 3), as on the Queuedle page.
+  const places = competitionRanks(allRankings.map((r) => r.averageTotal));
+  const standings = allRankings.slice(0, 5);
 
   return (
     <div className={styles.panel}>
@@ -226,9 +229,7 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
           <div>
             <h1 className={styles.title}>Leaderboard</h1>
             <p className={styles.premise}>
-              {loaded
-                ? `${data.totalEvents.toLocaleString()} ${data.totalEvents === 1 ? 'track' : 'tracks'} queued ${phrase}`
-                : 'Who has been queuing what'}
+              {summary ?? 'Who has been queuing what'}
             </p>
           </div>
           <div className={styles.segments} role="group" aria-label="Period">
@@ -246,7 +247,7 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
           </div>
         </header>
 
-        {isLoading && <div className={styles.msg}>Loading…</div>}
+        {isLoading && <PageSkeleton />}
         {!isLoading && (error || data?.error) && <div className={styles.msg}>{data?.error ?? 'Failed to load stats'}</div>}
 
         {loaded && data.totalEvents === 0 && (
@@ -262,7 +263,7 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
               {carded.map((u, i) => {
                 const q = personStats[i];
                 // Per person a week's tracks are mostly queued once each; their artists carry the taste.
-                const theirs = q?.data?.topArtists.slice(0, 3) ?? [];
+                const theirs = mergeArtists(q?.data?.topArtists ?? []).slice(0, 3);
                 return (
                   <PersonCard
                     key={u.userId}
@@ -381,30 +382,36 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
             {rankings.isLoading ? (
               <RowSkeleton />
             ) : (
-              <ol className={styles.list}>
-                {standings.map((r, i) => {
-                  const icon = getGameRankIcon(r.tierKey);
-                  return (
+              <>
+                <div className={`${styles.standing} ${styles.standingHead}`} aria-hidden="true">
+                  <span>#</span>
+                  <span>Player</span>
+                  <span>Tier</span>
+                  <span className={styles.games}>Games</span>
+                  <span className={styles.averageHead}>Avg score</span>
+                </div>
+                <ol className={styles.list}>
+                  {standings.map((r, i) => (
                     <li key={r.userName} className={styles.standing}>
-                      <span className={styles.standingRank}>{String(i + 1).padStart(2, '0')}</span>
+                      <span className={styles.standingRank}>{String(places[i]).padStart(2, '0')}</span>
                       <button type="button" className={styles.standingWho} onClick={() => profile(r.userName)} aria-label={`${r.userName}, open profile`}>
                         <UserAvatar name={r.userName} imageUrl={imageByUser.get(r.userName)} className={styles.standingAvatar} />
                         <span className={styles.standingName}>{r.userName}</span>
                       </button>
-                      <span className={`${styles.tier}${r.isProvisional ? ' ' + styles.provisional : ''}`}>
-                        {icon && <img className={styles.tierIcon} src={icon} alt="" loading="lazy" />}
-                        {r.tierName}
+                      <span>
+                        <span className={`${styles.tierChip}${r.isProvisional ? ' ' + styles.provisional : ''}`}>{r.tierName}</span>
                       </span>
                       <span className={styles.games}>
                         {r.gamesPlayed} {r.gamesPlayed === 1 ? 'game' : 'games'}
                       </span>
                       <span className={styles.average} title={`${r.averagePercent.toFixed(0)}% of possible points`}>
                         {r.averageTotal.toFixed(1)}
+                        <span className={styles.srOnly}> average score</span>
                       </span>
                     </li>
-                  );
-                })}
-              </ol>
+                  ))}
+                </ol>
+              </>
             )}
           </SectionCard>
         )}

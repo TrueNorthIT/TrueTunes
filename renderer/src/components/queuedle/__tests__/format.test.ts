@@ -1,17 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { competitionRanks, formatGameDate, formatGameDateShort, itemSubLine, ordinal, playedLine, standingLine } from '../format';
+import { competitionRanks, formatGameDate, formatGameDateShort, itemSubLine, playedLine, standingLine } from '../format';
 
 describe('Queuedle format helpers', () => {
   it('formats a game id as a long and a short date', () => {
     expect(formatGameDate('2026-10-22')).toBe('Thursday 22 October 2026');
     expect(formatGameDateShort('2026-10-22')).toBe('22 Oct');
     expect(formatGameDate('not-a-date')).toBe('not-a-date');
-  });
-
-  it('writes ordinals, including the teens', () => {
-    expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 101, 111].map(ordinal)).toEqual([
-      '1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd', '101st', '111th',
-    ]);
   });
 
   it('gives equal totals the same place', () => {

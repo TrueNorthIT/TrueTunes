@@ -20,7 +20,7 @@ interface Props {
 /** The results hero: your total and place, beside how the room scored in each round. */
 export function MyScores({ mainScore, bonusScore, maxMain, maxBonus, standing, mainScores, bonusScores, note }: Props) {
   return (
-    <SectionCard featured className={styles.scoreHero}>
+    <SectionCard className={styles.scoreHero}>
       <div className={styles.scoreMain}>
         <h2 className={styles.scoreLabel}>Your score</h2>
         <p className={styles.scoreLine}>

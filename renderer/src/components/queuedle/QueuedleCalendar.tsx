@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { formatGameDate } from './format';
 import styles from '../../styles/Queuedle.module.css';
 
 interface Props {
@@ -142,9 +143,12 @@ export function QueuedleCalendar({ dates, selectedDate, todayId, onSelectDate }:
               className={cls}
               disabled={!playable && !played}
               onClick={() => { if ((playable || played) && c.gameId) onSelectDate(c.gameId); }}
-              aria-label={`${c.gameId}${played ? ' (played)' : playable ? ' (play)' : ' (not available)'}`}
+              aria-label={`${formatGameDate(c.gameId)}, ${played ? 'played' : playable ? 'available' : 'not available'}`}
+              aria-current={c.isToday ? 'date' : undefined}
+              data-autofocus={isSelected || undefined}
             >
               {c.day}
+              {played && <span className={styles.calendarTick} aria-hidden="true">✓</span>}
             </button>
           );
         })}
@@ -152,7 +156,7 @@ export function QueuedleCalendar({ dates, selectedDate, todayId, onSelectDate }:
       <div className={styles.calendarLegend}>
         <span className={`${styles.calendarLegendSwatch} ${styles.calendarCellPlayable}`} />
         <span className={styles.calendarLegendLabel}>Available</span>
-        <span className={`${styles.calendarLegendSwatch} ${styles.calendarCellPlayed}`} />
+        <span className={`${styles.calendarLegendSwatch} ${styles.calendarCellPlayed}`}>✓</span>
         <span className={styles.calendarLegendLabel}>Played</span>
       </div>
     </div>
