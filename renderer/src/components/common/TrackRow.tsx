@@ -90,11 +90,11 @@ export function TrackRow({
       {showArt && <RowThumb imageUrl={imageUrl} onOpen={onOpen} />}
       <div className={styles.text}>
         <div className={styles.line}>
-          <span className={styles.title}>
+          <span className={styles.title} title={title}>
             {onOpen ? <TitleButton title={title} onOpen={onOpen} /> : title}
             {explicit && <ExplicitBadge />}
           </span>
-          {artists != null && <span className={styles.artist}><span className={styles.dash}> — </span>{artists}</span>}
+          {artists != null && <span className={styles.artist}><span className={styles.dash} aria-hidden="true"> — </span>{artists}</span>}
         </div>
         {reason && <div className={styles.reason}>{reason}</div>}
       </div>

@@ -7,7 +7,7 @@ import { useQueuer } from '../hooks/useQueuer';
 import { useImage } from '../hooks/useImage';
 import { useOpenItem } from '../hooks/useOpenItem';
 import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
-import { primaryArtistName } from '../lib/homeData';
+import { geniusFirstParagraph, primaryArtistName } from '../lib/homeData';
 import { withArtworkSize } from '../lib/artworkUrl';
 import { QueuerChip } from './common/QueuerChip';
 import type { PlaybackState } from '../hooks/usePlayback';
@@ -63,7 +63,9 @@ export function LyricsPanel({ playback }: Props) {
   // The active line sits a little above the middle: more of what's coming than what's gone.
   const { boxRef, lineRefs } = useFollowActiveLine(activeLine, 0.42);
 
-  const { description } = useGeniusDescription(np.displayTrack, np.displayArtist);
+  const { description: genius } = useGeniusDescription(np.displayTrack, np.displayArtist);
+  // Genius's "?" placeholder (nobody has written about the song) counts as no description.
+  const description = geniusFirstParagraph(genius) ? genius : null;
 
   const queuer = useQueuer({ id: np.currentObjectId, title: np.displayTrack, artist: np.displayArtist });
 
@@ -99,7 +101,8 @@ export function LyricsPanel({ playback }: Props) {
 
   return (
     <div className={styles.panel}>
-      <div className={`page-scale ${styles.page}`}>
+      {/* No lyrics to show: Now playing leads on its own instead of beside an empty card. */}
+      <div className={`page-scale ${styles.page} ${status ? styles.pageStatus : ''}`}>
         <section
           className={styles.nowCard}
           aria-label="Now playing"
@@ -141,53 +144,52 @@ export function LyricsPanel({ playback }: Props) {
                 onOpen={() => navigate(`/profile/${encodeURIComponent(queuer.user)}`)}
               />
             )}
+            {status && <p className={styles.note}>{status}</p>}
           </div>
           {description && (
-            <div className={styles.about} aria-label="About this track" tabIndex={0}>
+            <div className={styles.about} aria-label="About this song" tabIndex={0}>
               <h2 className={styles.label}>About this song</h2>
               <div className={styles.aboutText}>{renderDom(description, 0)}</div>
             </div>
           )}
         </section>
 
+        {!status && (
         <section className={styles.lyricsCard} aria-label="Lyrics" aria-busy={lyr.pending}>
-          {status ? (
-            <p className={styles.status}>{status}</p>
-          ) : (
-            <div
-              ref={boxRef}
-              className={`${styles.scroll} ${lyr.lines.length ? '' : styles.scrollFree}`}
-              tabIndex={lyr.lines.length ? undefined : 0}
-            >
-              {lyr.pending ? (
-                <div className={styles.pad} aria-hidden="true">
-                  {SKELETON_WIDTHS.map((w, i) => (
-                    <span key={i} className={`skeleton ${styles.lineSkel}`} style={{ width: w, animationDelay: `${i * 0.1}s` }} />
-                  ))}
-                </div>
-              ) : lyr.lines.length > 0 ? (
-                <div className={styles.pad}>
-                  {lyr.lines.map((line, i) => (
-                    <div
-                      key={i}
-                      ref={(el) => { lineRefs.current[i] = el; }}
-                      className={`${styles.line}${i === activeLine ? ' ' + styles.lineActive : ''}`}
-                      style={activeLine >= 0 ? { opacity: Math.max(0.22, 1 - Math.abs(i - activeLine) * 0.17) } : undefined}
-                      aria-current={i === activeLine ? 'true' : undefined}
-                    >
-                      {line.text}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className={`${styles.pad} ${styles.padPlain}`}>
-                  <p className={styles.label}>Not synced to the song</p>
-                  {lyr.plain.map((l, i) => <div key={i} className={`${styles.line} ${styles.linePlain}`}>{l}</div>)}
-                </div>
-              )}
-            </div>
-          )}
+          <div
+            ref={boxRef}
+            className={`${styles.scroll} ${lyr.lines.length ? '' : styles.scrollFree}`}
+            tabIndex={lyr.lines.length ? undefined : 0}
+          >
+            {lyr.pending ? (
+              <div className={styles.pad} aria-hidden="true">
+                {SKELETON_WIDTHS.map((w, i) => (
+                  <span key={i} className={`skeleton ${styles.lineSkel}`} style={{ width: w, animationDelay: `${i * 0.1}s` }} />
+                ))}
+              </div>
+            ) : lyr.lines.length > 0 ? (
+              <div className={styles.pad}>
+                {lyr.lines.map((line, i) => (
+                  <div
+                    key={i}
+                    ref={(el) => { lineRefs.current[i] = el; }}
+                    className={`${styles.line}${i === activeLine ? ' ' + styles.lineActive : ''}`}
+                    style={activeLine >= 0 ? { opacity: Math.max(0.22, 1 - Math.abs(i - activeLine) * 0.17) } : undefined}
+                    aria-current={i === activeLine ? 'true' : undefined}
+                  >
+                    {line.text}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className={`${styles.pad} ${styles.padPlain}`}>
+                <p className={styles.label}>Not synced to the song</p>
+                {lyr.plain.map((l, i) => <div key={i} className={`${styles.line} ${styles.linePlain}`}>{l}</div>)}
+              </div>
+            )}
+          </div>
         </section>
+        )}
       </div>
     </div>
   );

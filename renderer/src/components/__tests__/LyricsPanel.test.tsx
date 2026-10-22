@@ -7,7 +7,8 @@ vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
 vi.mock('../../hooks/useImage', () => ({ useImage: () => null }));
 vi.mock('../../hooks/useOpenItem', () => ({ useOpenItem: () => vi.fn() }));
 vi.mock('../../hooks/useResolveAndOpen', () => ({ useResolveAndOpen: () => ({ resolveAndOpen: vi.fn() }) }));
-vi.mock('../../hooks/useGeniusDescription', () => ({ useGeniusDescription: () => ({ description: null }) }));
+const mockGenius = vi.fn();
+vi.mock('../../hooks/useGeniusDescription', () => ({ useGeniusDescription: () => mockGenius() }));
 
 const mockQueuer = vi.fn();
 vi.mock('../../hooks/useQueuer', () => ({ useQueuer: () => mockQueuer() }));
@@ -43,6 +44,7 @@ beforeEach(() => {
   mockNowPlaying.mockReturnValue(playing);
   mockQueuer.mockReturnValue(null);
   mockUseLyrics.mockReturnValue(noLyrics);
+  mockGenius.mockReturnValue({ description: null });
 });
 
 describe('LyricsPanel', () => {
@@ -80,6 +82,12 @@ describe('LyricsPanel', () => {
     expect(screen.getByText('Instrumental, no lyrics to follow.')).toBeInTheDocument();
   });
 
+  it('drops the empty lyrics card when there is nothing to follow, so Now playing leads alone', () => {
+    render(<LyricsPanel playback={playback} />);
+    expect(screen.queryByRole('region', { name: 'Lyrics' })).toBeNull();
+    expect(screen.getByRole('region', { name: 'Now playing' })).toHaveTextContent('No lyrics found for this song.');
+  });
+
   it('credits who queued it', () => {
     mockQueuer.mockReturnValue({ user: 'Aidan', imageUrl: null });
     render(<LyricsPanel playback={playback} />);
@@ -90,5 +98,14 @@ describe('LyricsPanel', () => {
     mockNowPlaying.mockReturnValue({ ...playing, displayTrack: '' });
     render(<LyricsPanel playback={playback} />);
     expect(screen.getByRole('heading', { name: 'Nothing is playing' })).toBeInTheDocument();
+  });
+
+  it('shows the Genius description, but not its "?" placeholder', () => {
+    mockGenius.mockReturnValue({ description: { tag: 'root', children: [{ tag: 'p', children: ['?'] }] } });
+    const { rerender } = render(<LyricsPanel playback={playback} />);
+    expect(screen.queryByText('About this song')).toBeNull();
+    mockGenius.mockReturnValue({ description: { tag: 'root', children: [{ tag: 'p', children: ['A song about aliens.'] }] } });
+    rerender(<LyricsPanel playback={playback} />);
+    expect(screen.getByLabelText('About this song')).toHaveTextContent('A song about aliens.');
   });
 });

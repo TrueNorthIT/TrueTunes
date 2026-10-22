@@ -43,8 +43,8 @@ export function MiniPlayerShell() {
 
 /**
  * A print and its label, always on top: the art fills the left edge, the title leads, then the
- * artist, who queued it and the time left. The transport sits over the art on hover or focus,
- * so the label keeps the full width for the glance.
+ * artist, who queued it and the time left. The transport sits over the art while the pointer is
+ * on the window or focus is in it, so the label keeps the full width for the glance.
  */
 function MiniPlayer({
   playback,
@@ -87,7 +87,7 @@ function MiniPlayer({
             title="Previous"
             aria-label="Previous"
           >
-            <SkipBack size={16} fill="currentColor" />
+            <SkipBack size={15} fill="currentColor" />
           </button>
           <button
             className={`${styles.btn} ${styles.playBtn}`}
@@ -110,7 +110,7 @@ function MiniPlayer({
             title="Next"
             aria-label="Next"
           >
-            <SkipForward size={16} fill="currentColor" />
+            <SkipForward size={15} fill="currentColor" />
           </button>
         </div>
       </div>
@@ -121,30 +121,35 @@ function MiniPlayer({
           {displayArtist && <div className={styles.artist}>{displayArtist}</div>}
         </div>
 
+        {/* With a queuer, the time left shares their row; without one (the DJ's picks) it moves
+            beside the progress line, so no half-empty row is left in the middle. */}
         <div className={styles.foot}>
-          <div className={styles.meta}>
-            {queuer ? (
+          {queuer && (
+            <div className={styles.meta}>
               <span className={styles.queuer} title={`Queued by ${queuer.user}`}>
                 <UserAvatar name={queuer.user} imageUrl={queuer.imageUrl} className={styles.queuerAvatar} />
                 <span className={styles.queuerName}>{queuer.user}</span>
               </span>
-            ) : <span />}
-            {remaining && <span className={styles.time} aria-hidden="true">{remaining}</span>}
-          </div>
-          <div
-            className={styles.progress}
-            onClick={handleSeek}
-            role="progressbar"
-            aria-label="Track progress"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(pct)}
-            aria-valuetext={elapsedLabel && durationLabel ? `${elapsedLabel} of ${durationLabel}` : undefined}
-            title={elapsedLabel && durationLabel ? `${elapsedLabel} / ${durationLabel}` : undefined}
-          >
-            <div className={styles.progressTrack}>
-              <div className={styles.progressFill} style={{ transform: `scaleX(${pct / 100})` }} />
+              {remaining && <span className={styles.time} aria-hidden="true">{remaining}</span>}
             </div>
+          )}
+          <div className={styles.progressRow}>
+            <div
+              className={styles.progress}
+              onClick={handleSeek}
+              role="progressbar"
+              aria-label="Track progress"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(pct)}
+              aria-valuetext={elapsedLabel && durationLabel ? `${elapsedLabel} of ${durationLabel}` : undefined}
+              title={elapsedLabel && durationLabel ? `${elapsedLabel} / ${durationLabel}` : undefined}
+            >
+              <div className={styles.progressTrack}>
+                <div className={styles.progressFill} style={{ transform: `scaleX(${pct / 100})` }} />
+              </div>
+            </div>
+            {!queuer && remaining && <span className={styles.time} aria-hidden="true">{remaining}</span>}
           </div>
         </div>
       </div>

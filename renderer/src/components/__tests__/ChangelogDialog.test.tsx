@@ -54,8 +54,8 @@ describe('ChangelogDialog', () => {
 
   it('renders release names in sidebar', async () => {
     render(<ChangelogDialog onClose={vi.fn()} />);
-    await waitFor(() => expect(screen.getAllByText('v1.2.0').length).toBeGreaterThan(0));
-    expect(screen.getByText('v1.1.0')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText('1.2.0').length).toBeGreaterThan(0));
+    expect(screen.getByText('1.1.0')).toBeInTheDocument();
   });
 
   it('shows first release content by default', async () => {
@@ -67,14 +67,14 @@ describe('ChangelogDialog', () => {
     render(<ChangelogDialog onClose={vi.fn()} />);
     await waitFor(() => screen.getByText('Version 1.2.0'));
     const user = userEvent.setup();
-    await user.click(screen.getByText('v1.1.0'));
+    await user.click(screen.getByText('1.1.0'));
     expect(screen.getByText('No release notes.')).toBeInTheDocument();
   });
 
   it('marks the installed release in the list in words, not only colour', async () => {
     render(<ChangelogDialog onClose={vi.fn()} />);
     await waitFor(() => screen.getByText('Version 1.2.0'));
-    expect(screen.getByRole('button', { name: /v1\.2\.0\s*Installed/ })).toHaveAttribute('aria-current', 'true');
+    expect(screen.getByRole('button', { name: /^1\.2\.0\s*Installed$/ })).toHaveAttribute('aria-current', 'true');
   });
 
   it('opens links in the notes in the browser instead of the app window', async () => {
@@ -88,8 +88,8 @@ describe('ChangelogDialog', () => {
   it('clicking a sidebar item switches content', async () => {
     const user = userEvent.setup();
     render(<ChangelogDialog onClose={vi.fn()} />);
-    await waitFor(() => screen.getByText('v1.1.0'));
-    await user.click(screen.getByText('v1.1.0'));
+    await waitFor(() => screen.getByText('1.1.0'));
+    await user.click(screen.getByText('1.1.0'));
     expect(screen.getByText('Version 1.1.0')).toBeInTheDocument();
   });
 
@@ -120,5 +120,27 @@ describe('ChangelogDialog', () => {
     render(<ChangelogDialog onClose={vi.fn()} />);
     await waitFor(() => expect(screen.getByText('Version 1.2.0')).toBeInTheDocument());
     expect(screen.getByText(/the version you have/)).toBeInTheDocument();
+  });
+
+  it('labels versions without the v, in the rail and the heading alike', async () => {
+    mockFetch.mockResolvedValue({ ok: true, json: async () => [{ ...releases[0], name: '' }] });
+    render(<ChangelogDialog onClose={vi.fn()} />);
+    expect(await screen.findByRole('heading', { name: '1.2.0' })).toBeInTheDocument();
+    expect(screen.queryByText(/^v1/)).toBeNull();
+  });
+
+  it('lists the 8 newest releases plus the installed one, and links to the rest', async () => {
+    const many = Array.from({ length: 12 }, (_, i) => ({ ...releases[1], tag_name: `v1.0.${20 - i}`, name: `1.0.${20 - i}` }));
+    vi.mocked(window.sonos.getVersion).mockResolvedValue('1.0.10');
+    mockFetch.mockResolvedValue({ ok: true, json: async () => many });
+    const user = userEvent.setup();
+    render(<ChangelogDialog onClose={vi.fn()} />);
+    const rail = await screen.findByRole('navigation', { name: 'Releases' });
+    await waitFor(() => expect(screen.getByRole('heading', { name: '1.0.10' })).toBeInTheDocument());
+    const tags = [...rail.querySelectorAll('[aria-current], button')].map((b) => b.textContent);
+    expect(tags.filter((t) => /^1\.0\.\d+/.test(t ?? ''))).toHaveLength(9);
+    expect(tags).toContain('1.0.10Installed');
+    await user.click(screen.getByRole('button', { name: 'Older releases on GitHub' }));
+    expect(window.sonos.openExternal).toHaveBeenCalledWith('https://github.com/TrueNorthIT/TrueTunes/releases');
   });
 });

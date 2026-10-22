@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -43,13 +43,16 @@ interface ProviderProps {
   onAddToQueue: (item: SonosItem, position?: number) => void;
 }
 
+interface SubmenuAnchor { x: number; flipX: number; y: number }
+
 interface MenuState {
   open: boolean;
   x: number;
   y: number;
   payload: TrackMenuPayload | null;
   submenuOpen: boolean;
-  submenuAnchor: { x: number; y: number } | null;
+  /** x: right of the item (open rightwards); flipX: left of the menu (open leftwards); y: the item's top. */
+  submenuAnchor: SubmenuAnchor | null;
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -63,7 +66,7 @@ function PlaylistSubmenu({
   onClose,
   onOpenCreate,
 }: {
-  anchor: { x: number; y: number };
+  anchor: SubmenuAnchor;
   displayName: string | null | undefined;
   track: PlaylistTrack;
   onClose: () => void;
@@ -94,16 +97,22 @@ function PlaylistSubmenu({
     onClose();
   }
 
-  // Position submenu to right; flip left if near edge
-  const menuW = 200;
-  const left = anchor.x + menuW > window.innerWidth - 8 ? anchor.x - menuW : anchor.x;
-  const top = clamp(anchor.y, 8, window.innerHeight - 8);
+  // Placed after layout, once its real size is known (the list grows when playlists load): beside the item,
+  // flipped to the left when it would run off the right, and lifted so the whole list stays on screen.
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const left = anchor.x + r.width > window.innerWidth - 8 ? anchor.flipX - r.width : anchor.x;
+    el.style.left = `${Math.max(8, left)}px`;
+    el.style.top = `${Math.max(8, Math.min(anchor.y, window.innerHeight - r.height - 8))}px`;
+  }, [anchor, allPlaylists.length, isLoading]);
 
   return createPortal(
     <div
       ref={ref}
       className={`page-scale ${styles.submenu}`}
-      style={{ left, top }}
+      style={{ left: anchor.x, top: anchor.y }}
       role="menu"
       aria-label="Add to playlist"
       onMouseDown={(e) => e.stopPropagation()}
@@ -224,7 +233,7 @@ export function ContextMenuProvider({ children, displayName, onAddToQueue }: Pro
     setMenuState((s) => ({
       ...s,
       submenuOpen: open ?? !s.submenuOpen,
-      submenuAnchor: { x: rect.right + 4, y: rect.top - 4 },
+      submenuAnchor: { x: rect.right + 4, flipX: (menuRef.current?.getBoundingClientRect().left ?? rect.left) - 4, y: rect.top - 4 },
     }));
   }
 

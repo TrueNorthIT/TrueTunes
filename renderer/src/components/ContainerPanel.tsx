@@ -80,7 +80,7 @@ export function ContainerPanel({ onAddToQueue }: Props) {
     // A station opens as its track list, where songs can be added one at a time. No + here: starting a
     // station replaces the whole shared queue, which a one-click + must never do.
     if (kind === 'stations') {
-      return <ImageTile key={key} title={name} imageUrl={getItemArt(child)} onOpen={() => openItem(child)} />;
+      return <ImageTile key={key} title={name} sub={getSub(child) || 'Radio'} imageUrl={getItemArt(child)} onOpen={() => openItem(child)} />;
     }
     return (
       <ImageTile
@@ -125,7 +125,7 @@ export function ContainerPanel({ onAddToQueue }: Props) {
             {groups.map((g) => (
               <SectionCard key={g.kind} title={groups.length > 1 ? KIND_COPY[g.kind].title : undefined}>
                 {g.kind === 'songs' ? (
-                  <ul className={styles.songs} data-rows-wrap="">{g.items.map(songRow)}</ul>
+                  <ul className={styles.songs}>{g.items.map(songRow)}</ul>
                 ) : (
                   <div className={styles.grid}>{g.items.map((c, i) => tile(c, g.kind, i))}</div>
                 )}

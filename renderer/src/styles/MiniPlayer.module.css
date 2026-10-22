@@ -1,7 +1,8 @@
 /*
  * The mini player: a print and its label in a 340 x 116 always-on-top window (src/main.ts).
  * The art fills the left edge; the label carries title, artist, who queued it and time left.
- * The transport sits over the art, shown on hover or focus and whenever playback is paused.
+ * The transport sits over the art, shown while the pointer is anywhere on the window, on keyboard
+ * focus, and whenever playback is paused.
  * Opaque on purpose: the Electron window is transparent, so a frosted material has nothing to
  * sample. The artwork's colour washes in from the art side, as on Home's Now playing card.
  */
@@ -62,20 +63,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  /* 24 + 36 + 24 with 8px gaps: even 12px spacing between the glyphs and to the art's edges */
+  gap: 8px;
   background: rgba(0, 0, 0, 0.5);
   opacity: 0;
   transition: opacity var(--dur-fast) var(--ease-fast);
 }
-.art:hover .transport,
-.art:focus-within .transport,
+.shell:hover .transport,
+.shell:focus-within .transport,
 .paused .transport {
   opacity: 1;
 }
 
 .btn {
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   flex: none;
   border: none;
   border-radius: 50%;
@@ -93,8 +95,8 @@
 .btn:disabled { opacity: 0.4; cursor: default; }
 /* The player bar's play button: the room inverted. */
 .playBtn {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   background: var(--on-art);
   color: var(--bg);
 }
@@ -106,8 +108,10 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  padding: 12px 14px 10px;
+  /* Centred as one block, so a track with no queuer (the DJ's) leaves no hole in the middle. */
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 14px 10px;
 }
 .head {
   min-width: 0;
@@ -135,7 +139,11 @@
   text-overflow: ellipsis;
 }
 
-.foot { min-width: 0; }
+.foot {
+  min-width: 0;
+  /* Not a drag region, so the pointer over it counts as hovering the window (see .art). */
+  -webkit-app-region: no-drag;
+}
 .meta {
   display: flex;
   align-items: center;
@@ -178,10 +186,20 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* The progress line, plus the time left when there's no queuer row to carry it. */
+.progressRow {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 20px;
+}
 /* A 3px line in a 10px hit area, so seeking doesn't mean pixel-hunting. */
 .progress {
+  flex: 1;
+  min-width: 0;
   height: 10px;
-  margin-top: 4px;
   display: flex;
   align-items: center;
   cursor: pointer;

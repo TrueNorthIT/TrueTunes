@@ -42,6 +42,9 @@
   column-gap: 1.4em;
   row-gap: 0.15em;
 }
+/* Each row is its own container, so the shared row puts the artist under the title (its narrow layout)
+   at every width: two even lines per row, each ellipsised, instead of a title wrapping onto three. */
+.songs > li { container-type: inline-size; }
 
 /* Albums, playlists, stations: tiles at the Jump back in size. */
 .grid {

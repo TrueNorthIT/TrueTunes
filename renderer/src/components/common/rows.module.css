@@ -66,18 +66,22 @@
   text-overflow: ellipsis;
 }
 .title {
+  /* A flex wrapper so a long title ellipsises inside the button and the explicit badge stays on the line. */
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-width: 0;
+  vertical-align: bottom;
   font-weight: 500;
   color: var(--title-rest);
   transition: color var(--dur-fast) var(--ease-fast);
 }
-/* A long title ellipsises instead of the whole button clipping at the edge. */
 .title button {
-  display: inline-block;
-  max-width: 100%;
+  flex: 0 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  vertical-align: bottom;
 }
 .row:hover .title,
 .row:focus-within .title { color: var(--on-art); }
@@ -246,6 +250,7 @@
   -webkit-line-clamp: 2;
   white-space: normal;
 }
+[data-rows-wrap] .title { display: inline; }
 [data-rows-wrap] .title button { display: inline; white-space: normal; }
 
 /* Narrow page: the artist drops under the title. */
@@ -254,11 +259,19 @@
   .line > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .dash { display: none; }
   [data-rows-wrap] .line { display: flex; }
+  /* The clamp sits on the button, so the explicit badge stays beside a two-line title instead of on a third line. */
   [data-rows-wrap] .line > .title {
+    display: flex;
+    align-items: flex-start;
+    white-space: normal;
+  }
+  [data-rows-wrap] .line > .title button {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+    overflow: hidden;
     white-space: normal;
+    text-align: left;
   }
 }
 

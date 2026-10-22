@@ -83,13 +83,22 @@
   gap: 0.7em;
   cursor: pointer;
 }
+/* Drawn, not native: Chromium's unchecked box is a bright white square on the navy card. */
 .check > input {
+  appearance: none;
   flex-shrink: 0;
-  width: 1.1em;
-  height: 1.1em;
+  width: 1.15em;
+  height: 1.15em;
   margin-top: 0.15em;
-  accent-color: var(--text);
+  border-radius: 0.3em;
+  background: rgba(var(--tint), 0.2) center / 75% no-repeat;
   cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-fast);
+}
+.check:hover > input:not(:checked) { background-color: rgba(var(--tint), 0.3); }
+.check > input:checked {
+  background-color: var(--text);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2312131f' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
 }
 .check > span { display: flex; flex-direction: column; gap: 0.1em; }
 .checkTitle {
@@ -105,5 +114,6 @@
 @media (prefers-reduced-motion: reduce) {
   .menu,
   .submenu { animation: none; }
-  .item { transition: none; }
+  .item,
+  .check > input { transition: none; }
 }

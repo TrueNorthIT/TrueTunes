@@ -28,6 +28,12 @@ async function fetchReleases(): Promise<Release[]> {
   return res.json() as Promise<Release[]>;
 }
 
+/** Versions read the same everywhere: "1.0.50", never "v1.0.50" in one place and "1.0.50" in another. */
+const version = (r: Release) => r.tag_name.replace(/^v/, '');
+
+/** The rail lists this many recent releases (plus the installed one if older), so it never needs its own scroll. */
+const RAIL_COUNT = 8;
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
 }
@@ -66,6 +72,7 @@ export function ChangelogDialog({ onClose }: Props) {
 
   const isInstalled = (r: Release) => !!appVersion && (r.tag_name === `v${appVersion}` || r.tag_name === appVersion);
   const selected = releases[selectedIdx];
+  const rail = releases.map((r, i) => ({ r, i })).filter(({ r, i }) => i < RAIL_COUNT || i === selectedIdx || isInstalled(r));
 
   return (
     <Dialog title="What's new" onClose={onClose} size="lg" className={styles.reader}>
@@ -83,7 +90,7 @@ export function ChangelogDialog({ onClose }: Props) {
       {status === 'ready' && releases.length > 0 && (
         <div className={styles.split}>
           <nav className={styles.list} aria-label="Releases">
-            {releases.map((r, i) => (
+            {rail.map(({ r, i }) => (
               <button
                 key={r.tag_name}
                 type="button"
@@ -91,16 +98,21 @@ export function ChangelogDialog({ onClose }: Props) {
                 aria-current={i === selectedIdx ? 'true' : undefined}
                 onClick={() => setSelectedIdx(i)}
               >
-                <span className={styles.tag}>{r.tag_name}</span>
+                <span className={styles.tag}>{version(r)}</span>
                 <span className={styles.date}>{isInstalled(r) ? 'Installed' : formatDate(r.published_at)}</span>
               </button>
             ))}
+            {releases.length > rail.length && (
+              <button type="button" className={styles.allLink} onClick={() => window.sonos.openExternal(`https://github.com/${REPO}/releases`)}>
+                Older releases on GitHub <ExternalLink size={14} aria-hidden="true" />
+              </button>
+            )}
           </nav>
 
           {selected && (
             <article className={styles.article} aria-labelledby="release-title">
               <header className={styles.articleHead}>
-                <h3 id="release-title" className={styles.articleTitle}>{selected.name || selected.tag_name}</h3>
+                <h3 id="release-title" className={styles.articleTitle}>{selected.name || version(selected)}</h3>
                 <p className={styles.meta}>
                   {formatDate(selected.published_at)}
                   {isInstalled(selected) && ' · the version you have'}
