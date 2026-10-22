@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { RefreshCw, ListPlus } from 'lucide-react';
-import { useDjSet } from '../hooks/useDjSet';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Shuffle, ListPlus } from 'lucide-react';
+import { djSetQueryOptions } from '../hooks/useDjSet';
 import { useDjDiscoveries, type DjActDiscoveries } from '../hooks/useDjDiscoveries';
 import { useUsers } from '../hooks/useUsers';
 import { useOfficePresence } from '../hooks/useOfficePresence';
 import { useOpenItem } from '../hooks/useOpenItem';
 import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
 import { albumQueryOptions, type AlbumTrack } from '../hooks/useAlbumBrowse';
-import { actDrivers, splitRoom } from '../lib/discover';
+import { actDrivers, interleave, splitRoom } from '../lib/discover';
 import { indicesToUndo } from '../lib/homeData';
 import { getActiveProvider } from '../providers';
 import { useToast } from './common/Toast';
@@ -31,6 +31,7 @@ interface Props {
 
 // DJ picks are the algorithm's, not the clicker's: never attribute them (leaderboard, Queuedle, the recommender).
 const UNATTRIBUTED = { attribute: false };
+const MAX_FACES = 8;
 
 /** The album, unless it's the single itself (the "Get Lucky (Radio Edit)" single of "Get Lucky"), which would only repeat the title. */
 const albumLine = (t: AlbumTrack) =>
@@ -142,6 +143,8 @@ export function DiscoverPanel({ onAddToQueue, displayName, queueItems = [] }: Pr
   // Empty selection means "let presence, or the server, work out who's in the room".
   const [selected, setSelected] = useState<string[]>([]);
   const [showAll, setShowAll] = useState(false);
+  // Shuffle steps every act to its next unheard songs. The set itself is deterministic, so refetching it changes nothing.
+  const [round, setRound] = useState(0);
 
   const { data: presence } = useOfficePresence();
 
@@ -150,9 +153,20 @@ export function DiscoverPanel({ onAddToQueue, displayName, queueItems = [] }: Pr
   const roomKey = (presence?.inOffice ?? []).join(',');
   const inOffice = useMemo(() => (roomKey ? roomKey.split(',') : []), [roomKey]);
   const opts = useMemo(() => ({ users: selected.length ? selected : inOffice, limit: 25 }), [selected, inOffice]);
-  const { data, isLoading, isFetching, refetch } = useDjSet(opts);
-  const { discoveries, groups, isLoading: loadingNew } = useDjDiscoveries(data?.artists);
-  const busy = isLoading || loadingNew;
+  // Keep the current cards (dimmed) while a new room's set loads, rather than flashing back to a skeleton.
+  const { data, isLoading, isError, isPlaceholderData, refetch } = useQuery({ ...djSetQueryOptions(opts), placeholderData: keepPreviousData });
+  const queued = useMemo(() => queueItems.map((q) => ({ title: q.track.title, artist: q.track.artist })), [queueItems]);
+  const { groups: fresh, isLoading: browsing } = useDjDiscoveries(data?.artists, true, { queued, round });
+  // A new room's acts may all be unbrowsed at first: hold the last settled cards until some arrive.
+  const sig = fresh.map((g) => g.act.artist + ':' + g.tracks.map((t) => t.id.objectId).join()).join('|');
+  const [held, setHeld] = useState<{ sig: string; groups: DjActDiscoveries[] }>({ sig: '', groups: [] });
+  if (!browsing && fresh.length > 0 && held.sig !== sig) setHeld({ sig, groups: fresh });
+  const groups = fresh.length === 0 && browsing ? held.groups : fresh;
+  // Exactly what's on the page, one act at a time so a bulk add doesn't play three Muse tracks back to back.
+  const shown = interleave(groups, Infinity);
+  const loading = groups.length === 0 && (isLoading || browsing);
+  const stale = groups.length > 0 && (isPlaceholderData || browsing);
+  const failed = !isPlaceholderData && (isError || !!data?.error);
 
   const room = splitRoom(users, {
     selected,
@@ -197,10 +211,10 @@ export function DiscoverPanel({ onAddToQueue, displayName, queueItems = [] }: Pr
     queueRef.current = queueItems;
   }, [queueItems]);
 
-  // Interleaved by act, so a bulk add doesn't play three Muse tracks back to back. Undo matches Home's.
+  // Undo matches Home's.
   function queueAll() {
-    const added = discoveries.map((d) => ({ id: d.track.id.objectId ?? '', title: d.track.title, artist: d.artist }));
-    discoveries.forEach((d) => onAddToQueue(d.track.raw, -1, UNATTRIBUTED));
+    const added = shown.map(({ act, track }) => ({ id: track.id.objectId ?? '', title: track.title, artist: act.artist }));
+    shown.forEach(({ track }) => onAddToQueue(track.raw, -1, UNATTRIBUTED));
     showToast(`Queued ${added.length} track${added.length === 1 ? '' : 's'}`, 'info', {
       durationMs: 6000,
       action: {
@@ -231,8 +245,12 @@ export function DiscoverPanel({ onAddToQueue, displayName, queueItems = [] }: Pr
       </button>
     </li>
   );
-  const visible = room.basis === 'everyone' ? [] : room.present;
-  const hidden = room.basis === 'everyone' ? room.present : room.away;
+  // About one row of faces at 1280; the rest of the set and everyone else wait behind +N.
+  const inSet = room.basis === 'everyone' ? [] : room.present;
+  const visible = inSet.slice(0, MAX_FACES);
+  const hiddenIn = inSet.slice(MAX_FACES);
+  const hiddenOut = room.basis === 'everyone' ? room.present : room.away;
+  const hiddenCount = hiddenIn.length + hiddenOut.length;
 
   return (
     <div className={styles.panel}>
@@ -243,11 +261,11 @@ export function DiscoverPanel({ onAddToQueue, displayName, queueItems = [] }: Pr
             <p className={styles.premise}>Tracks the office has never played, by acts the room already likes.</p>
           </div>
           <div className={styles.actions}>
-            <PillButton onClick={() => refetch()} disabled={isFetching} title="Shuffle the set">
-              <RefreshCw size={14} className={isFetching ? styles.spinning : undefined} aria-hidden="true" /> Refresh
+            <PillButton onClick={() => setRound((r) => r + 1)} disabled={groups.length === 0} title="Show other unheard songs by these acts">
+              <Shuffle size={14} aria-hidden="true" /> Shuffle
             </PillButton>
-            <PillButton onClick={queueAll} disabled={busy || discoveries.length === 0} title="Add every pick to the queue">
-              <ListPlus size={14} aria-hidden="true" /> Queue all
+            <PillButton onClick={queueAll} disabled={stale || shown.length === 0} title="Add every pick to the queue">
+              <ListPlus size={14} aria-hidden="true" /> Queue all{shown.length > 0 && ` (${shown.length})`}
             </PillButton>
           </div>
         </header>
@@ -258,8 +276,9 @@ export function DiscoverPanel({ onAddToQueue, displayName, queueItems = [] }: Pr
             {room.basis === 'everyone' && <span className={styles.everyone}>everyone</span>}
             <ul className={styles.faces}>
               {visible.map((u) => face(u, true))}
-              {showAll && hidden.map((u) => face(u, false))}
-              {hidden.length > 0 && (
+              {showAll && hiddenIn.map((u) => face(u, true))}
+              {showAll && hiddenOut.map((u) => face(u, false))}
+              {hiddenCount > 0 && (
                 <li>
                   <button
                     type="button"
@@ -267,7 +286,7 @@ export function DiscoverPanel({ onAddToQueue, displayName, queueItems = [] }: Pr
                     aria-expanded={showAll}
                     onClick={() => setShowAll((v) => !v)}
                   >
-                    {showAll ? 'Show fewer' : `+${hidden.length}`}
+                    {showAll ? 'Show fewer' : `+${hiddenCount}`}
                   </button>
                 </li>
               )}
@@ -283,10 +302,14 @@ export function DiscoverPanel({ onAddToQueue, displayName, queueItems = [] }: Pr
           {note && <p className={styles.note}>{note}</p>}
         </section>
 
-        {busy ? (
+        {loading ? (
           <SkeletonGrid />
-        ) : data?.error ? (
-          <p className={styles.empty}>Couldn&apos;t build a set: {data.error}</p>
+        ) : failed && groups.length === 0 ? (
+          <div className={styles.empty} role="alert">
+            <p className={styles.emptyTitle}>Couldn&apos;t load picks right now</p>
+            <p>The office history or the music service didn&apos;t answer. It&apos;s usually brief.</p>
+            <PillButton className={styles.retry} onClick={() => refetch()}>Try again</PillButton>
+          </div>
         ) : groups.length === 0 ? (
           <div className={styles.empty}>
             <p className={styles.emptyTitle}>
@@ -294,12 +317,12 @@ export function DiscoverPanel({ onAddToQueue, displayName, queueItems = [] }: Pr
             </p>
             <p>
               {data?.artists.length
-                ? 'The office has already played the top songs of every act this room likes. Try different people, or refresh.'
+                ? 'The top songs of every act this room likes have already been played or queued. Try different people.'
                 : 'Queue a few more tracks and come back: picks come from what the office plays.'}
             </p>
           </div>
         ) : (
-          <div className={styles.grid}>
+          <div className={`${styles.grid}${stale ? ' ' + styles.stale : ''}`} aria-busy={stale}>
             {groups.map((g) => (
               <ActCard
                 key={g.act.artist}

@@ -1,7 +1,7 @@
 import { useQueries } from '@tanstack/react-query';
 import { artistQueryOptions } from './useArtistBrowse';
 import type { AlbumTrack } from './useAlbumBrowse';
-import { groupUnheard, interleave } from '../lib/discover';
+import { groupUnheard, interleave, type UnheardOptions } from '../lib/discover';
 
 export interface DjDiscovery {
   track: AlbumTrack;
@@ -34,13 +34,21 @@ const MAX_PER_ARTIST = 3;
  * already contains.
  *
  * `groups` keeps each act's tracks together (Discover's act cards); `discoveries`
- * is the same tracks interleaved one per act per round (Home's picks).
+ * is the same tracks interleaved one per act per round (Home's picks), capped at 30.
+ * Pass `queued` (the live queue) so nothing already waiting to play is offered, and
+ * `round` to step through each act's other unheard songs.
+ *
+ * `isLoading` is true while any act is still being browsed; `groups` fills in as they land.
  *
  * Runs one browse per act, which is why the server caps how many it returns.
  * They're ordinary React Query calls, so the cache is shared with the artist
  * pages and a second visit costs nothing.
  */
-export function useDjDiscoveries(artists: DjArtist[] | undefined, enabled = true) {
+export function useDjDiscoveries(
+  artists: DjArtist[] | undefined,
+  enabled = true,
+  { queued, round }: Pick<UnheardOptions, 'queued' | 'round'> = {},
+) {
   const acts = (artists ?? []).filter((a) => a.artistId && a.serviceId && a.accountId);
 
   const results = useQueries({
@@ -53,7 +61,11 @@ export function useDjDiscoveries(artists: DjArtist[] | undefined, enabled = true
 
   const isLoading = enabled && results.some((r) => r.isLoading);
 
-  const groups: DjActDiscoveries[] = groupUnheard(acts, results.map((r) => r.data?.topSongs), MAX_PER_ARTIST).map((g) => ({
+  const groups: DjActDiscoveries[] = groupUnheard(acts, results.map((r) => r.data?.topSongs), {
+    perAct: MAX_PER_ARTIST,
+    queued,
+    round,
+  }).map((g) => ({
     ...g,
     imageUrl: results[acts.indexOf(g.act)]?.data?.imageUrl ?? g.act.imageUrl ?? null,
   }));

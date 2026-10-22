@@ -1,28 +1,53 @@
 /** Pure helpers for the Discover page: who the set is for, and the act cards. */
 
-/** Same key shape the server builds `heardTrackKeys` from. */
-const trackKey = (title: string, artist: string) => `${title}||${artist}`;
+import { baseTitle } from './releaseShelves';
+import { norm } from './shelfSearch';
+
+/** One song whatever the version: "Neverender (Radio Edit)", "Neverender - Remastered", "Sweet Love Ft Nazlyn" and plain titles match. */
+export const songKey = (title: string) => norm(baseTitle(title).replace(/\s+(ft|feat|featuring)\.?\s.*$/, ''));
 
 export interface ActGroup<T> {
   act: DjArtist;
   tracks: T[];
 }
 
+export interface UnheardOptions {
+  /** Tracks per act. */
+  perAct: number;
+  /** What's in the queue now. DJ picks are queued unattributed, so they never reach the history. */
+  queued?: { title: string; artist: string }[];
+  /** Which window of each act's pool to show: 0 is the top, 1 the next `perAct`, wrapping round. */
+  round?: number;
+}
+
 /**
- * Each act's tracks the office has never played, capped per act, in the acts' rank order.
- * Acts with nothing unheard are dropped. `songs[i]` is the browse result for `acts[i]`.
+ * Each act's songs the office has never played and that aren't queued, in the acts' rank order. A song
+ * appears once on the page: the first (highest-ranked) act to offer it keeps it, so a collaboration
+ * isn't repeated under each of its artists. Acts with nothing left are dropped. `songs[i]` is the
+ * browse result for `acts[i]`.
  */
-export function groupUnheard<T extends { title: string; artists?: string[] }>(
+export function groupUnheard<T extends { title: string }>(
   acts: DjArtist[],
   songs: (T[] | undefined)[],
-  perAct: number,
+  { perAct, queued = [], round = 0 }: UnheardOptions,
 ): ActGroup<T>[] {
+  const taken = new Set<string>();
   return acts.flatMap((act, i) => {
-    const heard = new Set(act.heardTrackKeys);
-    const tracks = (songs[i] ?? [])
-      .filter((t) => !heard.has(trackKey(t.title, t.artists?.[0] ?? act.artist)) && !heard.has(trackKey(t.title, act.artist)))
-      .slice(0, perAct);
-    return tracks.length ? [{ act, tracks }] : [];
+    // heardTrackKeys are "title||credited artist" for this act's played tracks; the title is enough here.
+    const heard = new Set(act.heardTrackKeys.map((k) => songKey(k.split('||')[0])));
+    const actName = norm(act.artist);
+    // Queue items often carry no artist (the sidebar resolves it separately); without one, the title has to do.
+    for (const q of queued) if (!q.artist.trim() || norm(q.artist).includes(actName)) heard.add(songKey(q.title));
+    const pool = (songs[i] ?? []).filter((t) => {
+      const key = songKey(t.title);
+      if (heard.has(key) || taken.has(key)) return false;
+      taken.add(key);
+      return true;
+    });
+    if (!pool.length) return [];
+    const start = pool.length > perAct ? (round * perAct) % pool.length : 0;
+    const tracks = Array.from({ length: Math.min(perAct, pool.length) }, (_, j) => pool[(start + j) % pool.length]);
+    return [{ act, tracks }];
   });
 }
 

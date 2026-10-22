@@ -19,7 +19,7 @@ vi.mock('../../providers', () => ({ getActiveProvider: () => ({ removeFromQueue 
 
 // Browsing each act is the hook's job (and its pure logic is tested in lib/discover); here it's a fixture.
 const mockDiscoveries = vi.fn();
-vi.mock('../../hooks/useDjDiscoveries', () => ({ useDjDiscoveries: () => mockDiscoveries() }));
+vi.mock('../../hooks/useDjDiscoveries', () => ({ useDjDiscoveries: (...args: unknown[]) => mockDiscoveries(...args) }));
 
 const onAddToQueue = vi.fn();
 
@@ -113,7 +113,10 @@ describe('DiscoverPanel', () => {
       track: { id: `id-${title}`, title, artist: title === 'Back On 74' ? 'Jungle' : 'Muse' },
     })) as never;
     renderPanel({ queueItems });
-    await userEvent.click(await screen.findByTitle('Add every pick to the queue'));
+    const button = await screen.findByTitle('Add every pick to the queue');
+    // Honest about how many: exactly the tracks on the page.
+    expect(button).toHaveTextContent('Queue all (3)');
+    await userEvent.click(button);
 
     expect(onAddToQueue.mock.calls.map((c) => c[0].title)).toEqual(['Hysteria', 'Back On 74', 'Madness']);
     for (const call of onAddToQueue.mock.calls) expect(call[2]).toEqual({ attribute: false });
@@ -174,6 +177,59 @@ describe('DiscoverPanel', () => {
     );
     expect(screen.getByTitle('Alex — no Teams presence')).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: "Back to who's in" })).toBeInTheDocument();
+  });
+
+  it('keeps the cards, dimmed, while a new room loads instead of flashing a skeleton', async () => {
+    vi.mocked(window.sonos.fetchOfficePresence).mockResolvedValue({
+      inOffice: ['Rich'], basis: 'sensed', observed: 1, detail: [],
+    });
+    renderPanel();
+    await screen.findByRole('button', { name: 'Open Muse' }, { timeout: 4000 });
+    vi.mocked(window.sonos.fetchDjSet).mockReturnValue(new Promise(() => {}));
+    await userEvent.click(await screen.findByRole('button', { name: '+2' }));
+    await userEvent.click(screen.getByTitle('Alex — no Teams presence'));
+
+    expect(screen.getByRole('button', { name: 'Open Muse' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open Muse' }).closest('[aria-busy]')).toHaveAttribute('aria-busy', 'true');
+    // Don't bulk-queue a set that's about to change.
+    expect(screen.getByTitle('Add every pick to the queue')).toBeDisabled();
+  });
+
+  it('collapses a big room to eight faces and +N', async () => {
+    const names = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+    vi.mocked(window.sonos.fetchUsers).mockResolvedValue(names.map((userId) => ({ userId, lastQueued: 1, imageUrl: null })) as UserSummary[]);
+    vi.mocked(window.sonos.fetchOfficePresence).mockResolvedValue({ inOffice: names, basis: 'sensed', observed: 10, detail: [] });
+    renderPanel();
+    expect(await screen.findByRole('button', { name: '+2' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { pressed: true })).toHaveLength(8);
+    await userEvent.click(screen.getByRole('button', { name: '+2' }));
+    // The two hidden were still in the set.
+    expect(screen.getAllByRole('button', { pressed: true })).toHaveLength(10);
+  });
+
+  it('leaves out what is already queued, and shuffles to other songs', async () => {
+    const queueItems = [{ index: 0, track: { id: 'q1', title: 'Explorer', artist: 'Connan Mockasin' } }] as never;
+    renderPanel({ queueItems });
+    await waitFor(() =>
+      expect(mockDiscoveries).toHaveBeenLastCalledWith(
+        djSet.artists,
+        true,
+        { queued: [{ title: 'Explorer', artist: 'Connan Mockasin' }], round: 0 },
+      ),
+    );
+    await userEvent.click(screen.getByRole('button', { name: /Shuffle/ }));
+    expect(mockDiscoveries).toHaveBeenLastCalledWith(djSet.artists, true, expect.objectContaining({ round: 1 }));
+  });
+
+  it('says plainly when the set could not be built, with a retry, not the raw error', async () => {
+    mockDiscoveries.mockReturnValue({ discoveries: [], groups: [], isLoading: false });
+    vi.mocked(window.sonos.fetchDjSet).mockResolvedValue({ error: 'ECONNRESET socket hang up' });
+    renderPanel();
+    expect(await screen.findByText("Couldn't load picks right now")).toBeInTheDocument();
+    expect(screen.queryByText(/ECONNRESET/)).toBeNull();
+    const calls = vi.mocked(window.sonos.fetchDjSet).mock.calls.length;
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(vi.mocked(window.sonos.fetchDjSet).mock.calls.length).toBeGreaterThan(calls));
   });
 
   it('marks which of them is you', async () => {

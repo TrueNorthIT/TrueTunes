@@ -41,11 +41,6 @@
   gap: 0.6em;
 }
 
-.spinning { animation: spin 0.9s linear infinite; }
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 /* ── Who it's for ────────────────────────────────────────────────────────── */
 
 .room { margin-bottom: 1.4em; }
@@ -160,6 +155,7 @@
 .link:focus-visible { color: var(--text); text-decoration: underline; }
 
 .note {
+  max-width: 70ch;
   margin-top: 0.6em;
   font-size: max(13px, 0.93em);
   color: var(--text-3);
@@ -172,7 +168,10 @@
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 22em), 1fr));
   gap: 1.1em;
   align-items: start;
+  transition: opacity var(--dur-fast) var(--ease-fast);
 }
+/* The room changed and its picks are on the way: the old cards stay, quietly. Same as Search. */
+.stale { opacity: 0.6; }
 .tracks {
   list-style: none;
   margin: 0;
@@ -199,6 +198,7 @@
   font-size: 1em;
   color: var(--text-3);
 }
+.retry { margin-top: 1.1em; }
 .emptyTitle {
   font-size: 1.6em;
   font-weight: 600;
@@ -208,7 +208,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .spinning { animation: none; }
+  .grid { transition: none; }
   .face,
   .faceAvatar,
   .faceName,

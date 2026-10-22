@@ -605,7 +605,9 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
   // Picks: the same engine as Discover
   const djOpts = useMemo(() => ({ users: inOffice, limit: 25 }), [inOffice]);
   const { data: djSet, isLoading: djLoading } = useDjSet(djOpts, isAuthed);
-  const { discoveries, isLoading: discoveriesLoading } = useDjDiscoveries(djSet?.artists, isAuthed);
+  // Don't pick what's already queued (unattributed DJ picks never reach the heard list).
+  const queued = useMemo(() => queueItems.map((q) => ({ title: q.track.title, artist: q.track.artist })), [queueItems]);
+  const { discoveries, isLoading: discoveriesLoading } = useDjDiscoveries(djSet?.artists, isAuthed, { queued });
   const actByName = new Map((djSet?.artists ?? []).map((a) => [a.artist, a]));
   const discoveryPicks = discoveries.slice(0, 8).map((d) => {
     const act = actByName.get(d.artist);
