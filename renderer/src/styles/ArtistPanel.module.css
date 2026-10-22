@@ -1,292 +1,115 @@
 .panel {
+  /* red accent, scoped to the artist page: focus rings and the track-hit line only */
+  --artist-accent: #fa2d48;
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   padding-bottom: calc(var(--player-h) + 24px);
 }
 
-/* ── Header ── */
-.header {
+/* ── Hero: full-bleed artist photo ── */
+.hero {
+  --hero-h: clamp(320px, 45vh, 560px);
   position: relative;
-  padding: var(--nav-h) 28px 0;
-  /* background gradient applied via inline style from dominant colour */
-}
-
-/* flex row: circle + name, vertically centred together */
-.headerRow {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-/* Circle: in flow, negative margin-bottom makes bottom half bleed into body */
-.headerArtWrap {
-  flex-shrink: 0;
-  width: 200px;
-  height: 200px;
-  margin-bottom: -100px;
-  position: relative;
-  z-index: 10;
-  border-radius: 50%;
+  height: var(--hero-h);
   overflow: hidden;
-  background: var(--bg-2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-  border: 3px solid rgba(255, 255, 255, 0.15);
 }
-
-.headerArt {
+/* the photo is square, so on wide windows it is not stretched across the band: a blurred copy fills the
+   width and the sharp photo sits on the right, its left edge blended into the backdrop */
+.heroBackdrop {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center 20%;
+  filter: blur(40px) saturate(1.2) brightness(0.55);
+  transform: scale(1.15); /* hides the blur's soft edges */
+  /* fade to transparent (not to a colour) so the hero melts into whatever tint the page has */
+  -webkit-mask-image: linear-gradient(180deg, #000 45%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 45%, transparent 100%);
   display: block;
 }
-
-.headerArtPh {
-  width: 100%;
+.heroImg {
+  position: absolute;
+  top: 0;
+  right: 0;
   height: 100%;
-  background: var(--bg-1);
+  width: min(100%, calc(var(--hero-h) * 1.5));
+  object-fit: cover;
+  object-position: center 20%;
+  /* left edge blends into the backdrop; bottom fades out with it */
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 30%), linear-gradient(180deg, #000 45%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 30%), linear-gradient(180deg, #000 45%, transparent 100%);
+  mask-composite: intersect;
+  display: block;
+}
+/* light scrim for name legibility only; the fade itself is done by the masks */
+.heroFade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 50%, rgba(0, 0, 0, 0.25) 100%);
+}
+.heroText {
+  position: absolute;
+  left: 28px;
+  right: 28px;
+  bottom: 28px;
 }
 
-.headerInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-  flex: 1;
-  margin-top: 7rem;
-}
-
-.headerSocial {
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
-  align-self: flex-end;
-  flex-shrink: 0;
-  padding-bottom: 4px;
-}
-
-.socialLink {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  padding: 4px 8px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  color: var(--text-3);
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-  text-decoration: none;
-}
-.socialLink:hover {
-  color: var(--text);
-  border-color: var(--border-2);
-}
-
-.artistLabel {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-3);
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
+/* No artist image: the colour wash with the name on it */
+.washHeader {
+  padding: calc(var(--nav-h) + 24px) 28px 16px;
 }
 
 .artistName {
-  font-size: 92px;
+  margin: 0;
+  font-size: clamp(48px, 6vw, 96px);
   font-weight: 800;
-  letter-spacing: -1.5px;
+  letter-spacing: -0.03em;
   color: var(--text);
   line-height: 1;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.45);
 }
 
-.artistBlurb {
-  margin: 8px 0 0;
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--text-3);
-  max-width: 460px;
-}
-
-/* ── Alternate names ── */
 .altNames {
   font-size: 11.5px;
   font-weight: 500;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.48);
+  color: rgba(255, 255, 255, 0.7);
   margin-top: 10px;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.5);
 }
 
-/* ── About / Genius bio ── */
-.aboutSection {
-  padding-bottom: 22px;
-  margin-bottom: 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  max-height: 210px;
-  overflow-y: auto;
-}
-
-.aboutEyebrow {
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.25);
-  margin-bottom: 10px;
-}
-
-.aboutText {
-  font-size: 14.5px;
-  line-height: 1.75;
-  color: rgba(255, 255, 255, 0.68);
-  margin: 0 0 16px;
-  font-style: italic;
-  letter-spacing: 0.1px;
-}
-
-.socialSection {
-  margin-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-}
-
-.socialIcons {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-start;
-  padding-bottom: 10px;
-}
-
-.socialIconBtn {
-  background: none;
-  border: none;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-3);
-  cursor: pointer;
-  transition: color 0.15s;
-}
-.socialIconBtn:hover {
-  color: var(--text);
-}
-
-.aboutSocials {
-  display: flex;
-  gap: 28px;
-}
-
-.aboutSocialBtn {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.aboutSocialPlatform {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: -0.1px;
-  color: var(--text-3);
-  line-height: 1;
-  margin-bottom: 4px;
-  transition: color 0.15s;
-}
-
-.aboutSocialHandle {
-  font-size: 12px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.5);
-  line-height: 1;
-  transition: color 0.15s;
-}
-
-.aboutSocialBtn:hover .aboutSocialHandle {
-  color: rgba(255, 255, 255, 0.92);
-}
-
-.aboutSocialBtn:hover .aboutSocialPlatform {
-  color: rgba(255, 255, 255, 0.45);
-}
-
-.headerActions {
-  display: flex;
-  gap: 10px;
-  margin-top: 4px;
-}
-
-.headerBtn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  color: var(--text-2);
-  font-size: 12px;
-  font-weight: 500;
-  padding: 6px 14px;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.headerBtn:hover {
-  background: var(--bg-1);
-  color: var(--text);
-}
-
-/* ── Two-column grid ── */
-.mainGrid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 0;
-  /* top padding clears the 100px circle overhang + gap */
-  padding: 120px 28px 8px;
-  align-items: start;
-}
-
-/* ── Top Songs (left) ── */
-.topSongsCol {
-  min-width: 0;
-  padding-right: 32px;
-}
-
+/* Same scale as the Carousel shelf titles so every section shares one hierarchy */
 .sectionTitle {
-  font-size: 13px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 12px;
-  letter-spacing: -0.1px;
+  margin: 0 0 18px;
+  letter-spacing: -0.4px;
 }
 
-.sectionTitleBtn {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 12px;
-  letter-spacing: -0.1px;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
+/* ── Top band: Latest Release tile + Top Songs carousel ── */
+.topBand {
   display: flex;
-  align-items: center;
-  gap: 4px;
-  transition: color 0.15s;
+  gap: 32px;
+  align-items: flex-start;
+  padding: 8px 28px 8px;
 }
-.sectionTitleBtn:hover {
-  color: var(--text-2);
+.topSongsCarousel {
+  flex: 1;
+  min-width: 0;
 }
-
-.sectionChevron {
-  color: var(--text-3);
-  font-size: 14px;
+/* four rows, filling column by column, scrolled by the Carousel */
+.songsGrid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(4, min-content);
+  grid-auto-columns: 320px;
+  column-gap: 16px;
 }
 
 .topSongRow {
@@ -415,47 +238,34 @@
   transition: all 0.15s;
   opacity: 0;
 }
-.topSongRow:hover .addBtn {
+.topSongRow:hover .addBtn,
+.topSongRow:focus-within .addBtn,
+.addBtn:focus-visible {
   opacity: 1;
 }
+.addBtn:focus-visible { outline: 2px solid var(--artist-accent); outline-offset: 2px; }
 .addBtn:hover {
   border-color: var(--border-2);
   color: var(--text-2);
   background: var(--bg-2);
 }
 
-/* ── Side column (right) ── */
-.sideCol {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* Latest Release */
+/* ── Latest Release tile ── */
 .latestRelease {
+  flex: 0 0 220px;
+  width: 220px;
 }
-
 .latestCard {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 10px;
-  border-radius: var(--r-md);
   cursor: pointer;
-  transition: background 0.15s;
-  margin-top: 2px;
+  border-radius: var(--r-md);
 }
-.latestCard:hover {
-  background: var(--bg-2);
-}
-
 .latestArt {
-  width: 160px;
-  height: 160px;
-  flex-shrink: 0;
-  border-radius: var(--r-sm);
+  width: 220px;
+  height: 220px;
+  border-radius: 6px;
   overflow: hidden;
   background: var(--bg-1);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 .latestArt img {
   width: 100%;
@@ -472,67 +282,22 @@
   font-size: 24px;
   color: var(--text-3);
 }
-.latestArtRadio {
-  position: relative;
-  background: var(--bg-2);
-  color: var(--text-3);
-}
-
-.latestArtRadioBg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  filter: brightness(0.45) saturate(1.2);
-}
-
-.latestArtRadioOverlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-}
-
-.latestMeta {
-  min-width: 0;
-}
 .latestTitle {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text);
+  margin-top: 10px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .latestSub {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-3);
-  margin-top: 3px;
-}
-
-/* Artist Radio */
-.radioBtn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  color: var(--text-2);
-  font-size: 13px;
-  font-weight: 500;
-  padding: 10px 16px;
-  border-radius: var(--r-md);
-  cursor: pointer;
-  width: 100%;
-  transition: all 0.15s;
-}
-.radioBtn:hover {
-  background: var(--bg-1);
-  color: var(--text);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── Loading skeletons ── */
@@ -541,6 +306,18 @@
   50% { opacity: 0.6; }
 }
 
+.skeletonTile {
+  flex: 0 0 220px;
+  height: 220px;
+  border-radius: 6px;
+  background: var(--bg-2);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+.songsSkeleton {
+  flex: 1;
+  min-width: 0;
+  max-width: 656px;
+}
 .skeletonRow {
   height: 46px;
   border-radius: var(--r-sm);
@@ -556,14 +333,14 @@
   animation: pulse 1.8s ease-in-out infinite;
 }
 
-/* ── Albums shelf ── */
+/* ── Shelves ── */
 .albumsSection {
-  padding: 20px 28px 24px;
+  padding: 20px 28px 8px;
 }
 
 .albumCard {
-  flex: 0 0 156px;
-  width: 156px;
+  flex: 0 0 190px;
+  width: 190px;
   min-width: 0;
   box-sizing: border-box;
   cursor: pointer;
@@ -579,9 +356,10 @@
   width: 100%;
   aspect-ratio: 1;
   height: auto;
-  border-radius: var(--r-sm);
+  border-radius: 6px;
   overflow: hidden;
   background: var(--bg-1);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
   margin-bottom: 8px;
   position: relative;
 }
@@ -604,7 +382,11 @@
   align-items: center;
   justify-content: center;
 }
-.albumCard:hover .albumOverlay { opacity: 1; }
+.albumCard:hover .albumOverlay,
+.albumCard:focus-within .albumOverlay { opacity: 1; }
+.albumCard:focus-visible,
+.latestCard:focus-visible { outline: 2px solid var(--artist-accent); outline-offset: 2px; }
+.albumAddBtn:focus-visible { outline: 2px solid var(--artist-accent); outline-offset: 2px; }
 
 .albumAddBtn {
   width: 40px;
@@ -637,8 +419,8 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text);
 }
 
@@ -650,7 +432,7 @@
   flex: 1;
 }
 .albumSub {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-3);
   margin-top: 2px;
   white-space: nowrap;
@@ -659,9 +441,8 @@
 }
 
 .albumHit {
-  font-size: 11px;
-  color: var(--accent, rgba(255, 255, 255, 0.65));
-  opacity: 0.85;
+  font-size: 12px;
+  color: var(--artist-accent);
   margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -673,27 +454,48 @@
   padding: 8px 0;
 }
 
-/* ── Release shelves ── */
 .shelf { margin-bottom: 24px; }
 /* Carousel header: 4px more than its default 18px so an expanded group's box clears the title */
 .shelf > :first-child { margin-bottom: 22px; }
 .shelfSkeleton { display: flex; gap: 14px; }
-.shelfSkeleton .skeletonCard { flex: 0 0 156px; height: 156px; }
+.shelfSkeleton .skeletonCard { flex: 0 0 190px; height: 190px; }
 
+/* Radio cards: Artist Shuffle / Artist Radio */
+.radioArt { background: var(--bg-2); color: var(--text-3); }
+.radioBg {
+  filter: brightness(0.6) saturate(1.1);
+}
+/* dark overlay tinted with the page accent, under the icon */
+.radioArt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--artist-accent) 55%, transparent), rgba(0, 0, 0, 0.55));
+}
+.radioIcon { z-index: 1; }
+.radioIcon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
 
+/* ── Stacks (offsets scale with the 190px card) ── */
 .stackWrap { position: relative; margin-bottom: 8px; }
 .stackWrap .albumArt { margin-bottom: 0; }
 .stackLayer {
   position: absolute;
   inset: 0;
-  border-radius: var(--r-sm);
+  border-radius: 6px;
   background: var(--bg-2) center / cover;
   filter: brightness(0.55);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-sizing: border-box;
 }
-.stackLayer1 { transform: translate(6px, -6px); }
-.stackLayer2 { transform: translate(12px, -12px); filter: brightness(0.35); }
+.stackLayer1 { transform: translate(7px, -7px); }
+.stackLayer2 { transform: translate(14px, -14px); filter: brightness(0.35); }
 .stackPill {
   position: absolute;
   right: 6px;
@@ -750,4 +552,63 @@
   cursor: pointer;
 }
 .groupClose:hover { color: var(--text); background: rgba(255, 255, 255, 0.1); }
+.groupClose:focus-visible { outline: 2px solid var(--artist-accent); outline-offset: 1px; }
 .groupCards { display: flex; gap: 4px; }
+
+/* ── About ── */
+.aboutCard {
+  margin: 8px 28px 0;
+  padding: 24px 28px 20px;
+  border-radius: var(--r-lg);
+  background: rgba(255, 255, 255, 0.05);
+}
+.aboutText {
+  font-size: 14.5px;
+  line-height: 1.75;
+  color: rgba(255, 255, 255, 0.68);
+  margin: 0 0 8px;
+  max-width: 70ch;
+  white-space: pre-line;
+  letter-spacing: 0.1px;
+}
+.aboutClamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.moreBtn {
+  background: none;
+  border: none;
+  padding: 2px 0;
+  margin-bottom: 12px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.moreBtn:hover { color: var(--text); }
+.moreBtn:focus-visible,
+.socialIconBtn:focus-visible { outline: 2px solid var(--artist-accent); outline-offset: 2px; border-radius: 2px; }
+
+.socialIcons {
+  display: flex;
+  gap: 14px;
+  padding-top: 4px;
+}
+.socialIconBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.socialIconBtn:hover {
+  color: var(--text);
+}

@@ -15,11 +15,6 @@ vi.mock('../../../hooks/useImage', () => ({ useImage: () => null }));
 describe('RadioCard', () => {
   const item: SonosItem = { title: 'Beatles Radio', type: 'ITEM_PLAYLIST' };
 
-  it('renders Artist Radio label', () => {
-    render(<RadioCard item={item} artUrl={null} onOpen={vi.fn()} />);
-    expect(screen.getByText('Artist Radio')).toBeInTheDocument();
-  });
-
   it('renders item title', () => {
     render(<RadioCard item={item} artUrl={null} onOpen={vi.fn()} />);
     expect(screen.getByText('Beatles Radio')).toBeInTheDocument();

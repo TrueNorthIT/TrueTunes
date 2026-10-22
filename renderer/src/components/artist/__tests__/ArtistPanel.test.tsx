@@ -6,7 +6,9 @@ import type { SonosItem } from '../../../types/sonos';
 
 const mockUseLocation = vi.fn();
 vi.mock('react-router-dom', () => ({ useLocation: () => mockUseLocation() }));
-vi.mock('../../../hooks/useImage', () => ({ useImage: () => null }));
+const mockUseImage = vi.fn();
+vi.mock('../../../hooks/useImage', () => ({ useImage: (...args: unknown[]) => mockUseImage(...args) }));
+vi.mock('../../../hooks/useAlbumBrowse', () => ({ useAlbumBrowse: () => ({ data: { totalTracks: 12 } }) }));
 vi.mock('../../../hooks/useDominantColor', () => ({ useDominantColor: () => null }));
 vi.mock('../../../hooks/useOpenItem', () => ({ useOpenItem: () => vi.fn() }));
 
@@ -72,6 +74,7 @@ const defaultProps = { onAddToQueue: vi.fn(), currentTrackName: '', isPlaybackAc
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockUseImage.mockReturnValue(null);
   mockUseLocation.mockReturnValue({ state: { item: artistItem } });
   mockUseArtistBrowse.mockReturnValue({ data: makeData(), isLoading: false });
   mockCounts.mockReturnValue({ counts: new Map(), isLoading: false });
@@ -108,17 +111,80 @@ describe('ArtistPanel', () => {
     expect(screen.getByText('Let It Be')).toBeInTheDocument();
   });
 
-  it('toggles showing all songs when Top Songs button is clicked', async () => {
+  it('shows every top song in a Top Songs carousel, with no Show all toggle', () => {
     const topSongs = Array.from({ length: 12 }, (_, i) => ({
       name: `Song ${i + 1}`,
       id: { objectId: `trk-${i}` },
     }));
     mockUseArtistBrowse.mockReturnValue({ data: makeData({ topSongs }), isLoading: false });
-    const user = userEvent.setup();
     render(<ArtistPanel {...defaultProps} />);
-    expect(screen.queryByText('Song 11')).not.toBeInTheDocument();
-    await user.click(screen.getByText(/Top Songs/));
-    expect(screen.getByText('Song 11')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Top Songs' })).toBeInTheDocument();
+    expect(screen.getByText('Song 12')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Show all|Show less/ })).not.toBeInTheDocument();
+  });
+
+  describe('hero', () => {
+    it('renders the full-bleed photo at the large size when the artist has an image', () => {
+      mockUseImage.mockImplementation((u: string | null) => u);
+      mockUseArtistBrowse.mockReturnValue({
+        data: makeData({ imageUrl: 'https://lh3.example/a=w544-h544-l90-rj' }),
+        isLoading: false,
+      });
+      const { container } = render(<ArtistPanel {...defaultProps} />);
+      const img = container.querySelector('[class*="heroImg"]');
+      expect(img).toHaveAttribute('src', 'https://lh3.example/a=w2000-h2000-l90-rj');
+      expect(screen.getByRole('heading', { name: 'The Beatles' })).toBeInTheDocument();
+    });
+
+    it('falls back to the colour-wash header when there is no artist image', () => {
+      const { container } = render(<ArtistPanel {...defaultProps} />);
+      expect(container.querySelector('[class*="hero"]')).toBeNull();
+      expect(container.querySelector('[class*="washHeader"]')).not.toBeNull();
+      expect(screen.getByRole('heading', { name: 'The Beatles' })).toBeInTheDocument();
+    });
+  });
+
+  describe('About and Radio', () => {
+    const long = 'Sentence about the band. '.repeat(20);
+    const withGenius = (blurb: string) => ({
+      genius: {
+        description: { tag: 'root', children: [{ tag: 'p', children: [blurb] }] },
+        alternateNames: [],
+        instagram: 'beatles',
+        twitter: null,
+      },
+    });
+
+    it('puts About at the very bottom with a More toggle and the social icons inside', async () => {
+      mockUseArtistBrowse.mockReturnValue({ data: makeData(withGenius(long)), isLoading: false });
+      const user = userEvent.setup();
+      const { container } = render(<ArtistPanel {...defaultProps} />);
+      const about = screen.getByRole('region', { name: 'About The Beatles' });
+      expect(container.querySelector('[class*="panel"]')?.lastElementChild).toBe(about);
+      expect(about).toContainElement(screen.getByRole('button', { name: 'Instagram @beatles' }));
+      const more = screen.getByRole('button', { name: 'More' });
+      expect(more).toHaveAttribute('aria-expanded', 'false');
+      await user.click(more);
+      expect(screen.getByRole('button', { name: 'Less' })).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('shows no More toggle for a short bio', () => {
+      mockUseArtistBrowse.mockReturnValue({ data: makeData(withGenius('Short.')), isLoading: false });
+      render(<ArtistPanel {...defaultProps} />);
+      expect(screen.queryByRole('button', { name: 'More' })).not.toBeInTheDocument();
+    });
+
+    it('renders a Radio shelf for the artist playlists, and hides it when there are none', () => {
+      const playlists = [{ title: 'Artist Shuffle', id: { objectId: 'p1' } }, { title: 'Artist Radio', id: { objectId: 'p2' } }];
+      mockUseArtistBrowse.mockReturnValue({ data: makeData({ playlists }), isLoading: false });
+      const { unmount } = render(<ArtistPanel {...defaultProps} />);
+      expect(screen.getByRole('heading', { name: 'Radio' })).toBeInTheDocument();
+      expect(screen.getByText('Artist Shuffle')).toBeInTheDocument();
+      unmount();
+      mockUseArtistBrowse.mockReturnValue({ data: makeData(), isLoading: false });
+      render(<ArtistPanel {...defaultProps} />);
+      expect(screen.queryByRole('heading', { name: 'Radio' })).not.toBeInTheDocument();
+    });
   });
 
   it('renders albums section when more than one album', () => {
@@ -150,7 +216,7 @@ describe('ArtistPanel', () => {
     mockCounts.mockReturnValue({ counts: new Map([['big', 10], ['tiny', 1], ['l', 8]]), isLoading: false });
     mockUseArtistBrowse.mockReturnValue({ data: makeData({ albums }), isLoading: false });
     render(<ArtistPanel {...defaultProps} />);
-    const heads = screen.getAllByRole('heading').map(h => h.textContent);
+    const heads = screen.getAllByRole('heading', { level: 2 }).map(h => h.textContent);
     expect(heads).toEqual(['Albums', 'Singles & EPs', 'Other versions']);
   });
 
@@ -193,8 +259,11 @@ describe('ArtistPanel', () => {
     expect(screen.getByText('Foo (Deluxe)')).toBeInTheDocument();
     expect(screen.queryByText('2 versions')).not.toBeInTheDocument();
     expect(screen.getByText('Foo · 2 versions')).toBeInTheDocument();
+    // focus moves to the group's ✕ on expand, and back to the stack on collapse
+    expect(screen.getByRole('button', { name: 'Collapse Foo versions' })).toHaveFocus();
     await user.click(screen.getByRole('button', { name: 'Collapse Foo versions' }));
     expect(screen.getByText('2 versions')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Foo, 2 versions/ })).toHaveFocus();
   });
 
   it('shows the primary year on a stack', () => {

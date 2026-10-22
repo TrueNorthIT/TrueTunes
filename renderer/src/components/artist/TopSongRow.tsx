@@ -2,6 +2,7 @@ import { useImage } from '../../hooks/useImage';
 import { ExplicitBadge } from '../common/ExplicitBadge';
 import { useTrackContextMenu } from '../common/ContextMenu';
 import { fmtDuration } from '../../lib/itemHelpers';
+import { withoutPageArtist } from '../../lib/artistSubtitle';
 import type { AlbumTrack } from '../../hooks/useAlbumBrowse';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/ArtistPanel.module.css';
@@ -15,12 +16,15 @@ interface Props {
   onAdd: (item: SonosItem) => void;
   onClick: (index: number, e: React.MouseEvent) => void;
   onDragStart: (index: number, e: React.DragEvent) => void;
+  /** The page's artist, dropped from the artist line. */
+  artistName?: string;
 }
 
-export function TopSongRow({ track, index, isSelected, isCurrentTrack, isPlaybackActive, onAdd, onClick, onDragStart }: Props) {
+export function TopSongRow({ track, index, isSelected, isCurrentTrack, isPlaybackActive, onAdd, onClick, onDragStart, artistName }: Props) {
   const art = useImage(track.artUrl);
   const { showTrackMenu } = useTrackContextMenu();
   const subtitle = (track.raw as Record<string, unknown>)?.['subtitle'] as string | undefined;
+  const shownSubtitle = withoutPageArtist(subtitle, artistName);
 
   const trackPayload: PlaylistTrack = {
     uri: track.id.objectId ?? '',
@@ -59,10 +63,10 @@ export function TopSongRow({ track, index, isSelected, isCurrentTrack, isPlaybac
           {track.title}
           {track.explicit && <ExplicitBadge />}
         </span>
-        {subtitle && <span className={styles.topSongSub}>{subtitle}</span>}
+        {shownSubtitle && <span className={styles.topSongSub} title={subtitle}>{shownSubtitle}</span>}
       </div>
       <span className={styles.topSongDur}>{fmtDuration(track.durationSeconds)}</span>
-      <button className={styles.addBtn} onClick={e => { e.stopPropagation(); onAdd(track.raw); }}>+</button>
+      <button className={styles.addBtn} aria-label={`Add ${track.title} to queue`} onClick={e => { e.stopPropagation(); onAdd(track.raw); }}>+</button>
     </div>
   );
 }

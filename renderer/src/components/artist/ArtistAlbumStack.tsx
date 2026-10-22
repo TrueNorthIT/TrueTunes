@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useImage } from '../../hooks/useImage';
 import { ArtistAlbumCard } from './ArtistAlbumCard';
 import { TrackHitLine } from './TrackHitLine';
+import { cardSubtitle } from '../../lib/artistSubtitle';
 import { releaseKey, type ReleaseGroup } from '../../lib/releaseShelves';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/ArtistPanel.module.css';
@@ -12,16 +13,21 @@ interface StackProps {
   year?: number;
   trackHits?: string[];
   searching?: boolean;
+  artistName?: string;
+  /** Lets the parent return focus here after a collapse. */
+  innerRef?: (el: HTMLDivElement | null) => void;
 }
 
 /** Collapsed group of several versions of one release. Click expands in place; queue from the expanded cards. */
-export function ArtistAlbumStack({ group, onExpand, year, trackHits, searching }: StackProps) {
+export function ArtistAlbumStack({ group, onExpand, year, trackHits, searching, artistName, innerRef }: StackProps) {
   const { primary, versions } = group;
   const art = useImage((primary.images as Record<string, string> | undefined)?.['tile1x1'] ?? null);
-  const subtitle = [year, (primary as Record<string, unknown>)['subtitle'] as string | undefined].filter(Boolean).join(' · ');
+  const fullSubtitle = (primary as Record<string, unknown>)['subtitle'] as string | undefined;
+  const subtitle = cardSubtitle(year, fullSubtitle, artistName);
   const layer = art ? { backgroundImage: `url(${art})` } : undefined;
   return (
     <div
+      ref={innerRef}
       className={styles.albumCard}
       role="button"
       tabIndex={0}
@@ -43,7 +49,7 @@ export function ArtistAlbumStack({ group, onExpand, year, trackHits, searching }
         </div>
       </div>
       <div className={styles.albumTitle}><span className={styles.albumTitleText} title={primary.title}>{primary.title}</span></div>
-      {subtitle && <div className={styles.albumSub} title={subtitle}>{subtitle}</div>}
+      {subtitle && <div className={styles.albumSub} title={fullSubtitle}>{subtitle}</div>}
       <TrackHitLine hits={trackHits} searching={searching} />
     </div>
   );
@@ -58,10 +64,13 @@ interface GroupProps {
   years: Map<string, number>;
   trackHits?: Map<string, string[]>;
   searching?: boolean;
+  artistName?: string;
+  /** Lets the parent focus the collapse button when the group opens. */
+  closeRef?: (el: HTMLButtonElement | null) => void;
 }
 
 /** Expanded stack: one tinted container holding each version as a normal card. */
-export function ArtistAlbumGroup({ group, title, onCollapse, onOpen, onAdd, years, trackHits, searching }: GroupProps) {
+export function ArtistAlbumGroup({ group, title, onCollapse, onOpen, onAdd, years, trackHits, searching, artistName, closeRef }: GroupProps) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     ref.current?.scrollIntoView?.({ inline: 'nearest', block: 'nearest', behavior: 'smooth' });
@@ -74,11 +83,11 @@ export function ArtistAlbumGroup({ group, title, onCollapse, onOpen, onAdd, year
     >
       <div className={styles.groupHeader}>
         <span className={styles.groupTitle} title={title}>{title} · {group.versions.length} versions</span>
-        <button className={styles.groupClose} aria-label={`Collapse ${title} versions`} onClick={onCollapse}>✕</button>
+        <button ref={closeRef} className={styles.groupClose} aria-label={`Collapse ${title} versions`} onClick={onCollapse}>✕</button>
       </div>
       <div className={styles.groupCards}>
         {group.versions.map(v => (
-          <ArtistAlbumCard key={releaseKey(v)} album={v} onOpen={onOpen} onAdd={onAdd} year={years.get(releaseKey(v))} trackHits={trackHits?.get(releaseKey(v))} searching={searching} />
+          <ArtistAlbumCard key={releaseKey(v)} album={v} onOpen={onOpen} onAdd={onAdd} year={years.get(releaseKey(v))} artistName={artistName} trackHits={trackHits?.get(releaseKey(v))} searching={searching} />
         ))}
       </div>
     </div>

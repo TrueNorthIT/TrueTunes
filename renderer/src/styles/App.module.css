@@ -3,11 +3,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse at 20% 50%, rgba(90, 50, 150, 0.7) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 15%, rgba(25, 70, 130, 0.55) 0%, transparent 55%),
-    radial-gradient(ellipse at 55% 85%, rgba(20, 65, 110, 0.45) 0%, transparent 50%),
-    #0f0f14;
+  /* neutral base; colour comes from each page's artwork via --panel-color on .body */
+  background: var(--bg);
 }
 
 .body {
@@ -18,8 +15,8 @@
   position: relative;
   background: linear-gradient(
     180deg,
-    rgba(var(--panel-color, 80, 60, 120), 0.55) 0%,
-    rgba(var(--panel-color, 80, 60, 120), 0.2) 20%,
+    rgba(var(--panel-color, 28, 28, 30), 0.55) 0%,
+    rgba(var(--panel-color, 28, 28, 30), 0.2) 20%,
     transparent 40%
   );
   transition: background 0.8s ease;
