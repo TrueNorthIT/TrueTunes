@@ -360,7 +360,7 @@ function buildUrl(
 
 // ─── HTTP fetch helper ────────────────────────────────────────────────────────
 
-async function sonosFetch(request: FetchRequest): Promise<FetchResponse> {
+async function sonosFetch(request: FetchRequest, isRetry = false): Promise<FetchResponse> {
   if (!sessionToken) {
     return { error: 'No session token — please log in first' };
   }
@@ -388,6 +388,11 @@ async function sonosFetch(request: FetchRequest): Promise<FetchResponse> {
       return { error: msg };
     }
   }
+
+  // The default serviceId this URL was built with (undefined if the caller
+  // passed one explicitly or the operation has none) — used by the self-heal.
+  const defaultServiceId =
+    operation.path.includes(':serviceId') && !request.pathParams?.serviceId ? config.serviceId : undefined;
 
   // Build headers once so we can log them before sending
   const reqHeaders: Record<string, string> = {
@@ -506,6 +511,21 @@ async function sonosFetch(request: FetchRequest): Promise<FetchResponse> {
       createAuthWindow();
     }
     return { error: '401 Unauthorized — re-authenticating' };
+  }
+
+  // Self-heal a bad default service: re-select and retry once. Only for
+  // requests that relied on config.serviceId (discovery probes pass explicit
+  // IDs, so they never get here), and the retry itself can't heal again.
+  if (!response.ok && !isRetry && defaultServiceId && bodyText.includes('ERROR_SERVICE_NOT_CONFIGURED')) {
+    log(`[config] serviceId ${defaultServiceId} not configured (${request.operationId}) — re-selecting service`);
+    // Only clear if nobody has already replaced it, so concurrent failures
+    // coalesce onto one selection instead of discarding a fresh choice.
+    if (config.serviceId === defaultServiceId) {
+      config.serviceId = undefined;
+      config.accountId = undefined;
+    }
+    await discoverServiceCredentials();
+    return sonosFetch(request, true);
   }
 
   if (!response.ok) {
@@ -749,8 +769,10 @@ function parseIntegrationsCreds(data: unknown): ServiceCreds[] {
   return results;
 }
 
-/** Called after bootstrap (and lazily from sonosFetch) when serviceId isn't
- *  in config. Uses /integrations/registrations (only needs householdId).
+/** Chooses the default music service when serviceId isn't in config: called
+ *  at bootstrap, after a new sign-in, and lazily from sonosFetch. Lists
+ *  /integrations/registrations (only needs householdId), drops the platform
+ *  service, and keeps the first candidate whose root container browses OK.
  *  Coalesces concurrent callers onto a single in-flight request. */
 let _discoverInFlight: Promise<void> | null = null;
 function discoverServiceCredentials(): Promise<void> {
@@ -764,21 +786,37 @@ function discoverServiceCredentials(): Promise<void> {
         return;
       }
 
-      const allCreds = parseIntegrationsCreds(r.data);
+      const candidates = parseIntegrationsCreds(r.data).filter((c) => c.serviceId !== PLATFORM_SERVICE_ID);
       log(
-        '[config] Found services:',
-        allCreds.map((c) => `${c.serviceId}/${c.accountId}`)
+        '[config] Candidate services:',
+        candidates.map((c) => `${c.serviceId}/${c.accountId}`)
       );
 
-      // Use the first service the API returns — Sonos places the primary
-      // content service first (the one that owns the user's queue, favorites,
-      // and history).
-      const primary = allCreds[0];
-      if (primary) {
-        config.serviceId = primary.serviceId;
-        config.accountId = primary.accountId;
-        saveConfig();
-        log('[config] Using serviceId:', config.serviceId, 'accountId:', config.accountId);
+      // Probe in API order with explicit IDs (so sonosFetch's self-heal never
+      // fires for these). First root browse that succeeds wins.
+      let chosen: ServiceCreds | undefined;
+      let reason = 'root browse OK';
+      for (const c of candidates) {
+        const probe = await sonosFetch({
+          operationId: 'browseContainer',
+          pathParams: { containerId: 'root', serviceId: c.serviceId, accountId: c.accountId },
+          query: { muse2: 'true' },
+        });
+        if (!probe.error) {
+          chosen = c;
+          break;
+        }
+        log(`[config] Probe ${c.serviceId}/${c.accountId} failed: ${probe.error.slice(0, 160)}`);
+      }
+      if (!chosen && candidates[0]) {
+        chosen = candidates[0];
+        reason = 'no probe succeeded, falling back to first candidate';
+      }
+
+      if (chosen) {
+        config.serviceId = chosen.serviceId;
+        config.accountId = chosen.accountId;
+        log(`[config] Using serviceId ${chosen.serviceId}/${chosen.accountId} (${reason})`);
       } else {
         log('[config] No service credentials found — content APIs will fail until configured');
       }
@@ -1089,20 +1127,17 @@ function createAuthWindow(): void {
     if (match) {
       const token = match[1];
       if (token !== sessionToken) {
+        const isSignIn = sessionToken === null; // first launch or after a 401, not a cookie refresh
         sessionToken = token;
         void saveSessionToken(token);
         log('[auth] Session token captured:', token.slice(0, 20) + '…');
-      }
-    }
-
-    // Auto-discover serviceId/accountId from content API URLs the first time
-    if (!config.serviceId) {
-      const svcMatch = details.url.match(/\/services\/([^/]+)\/accounts\/([^/]+)\//);
-      if (svcMatch && svcMatch[1] !== SEARCH_SERVICE_ID) {
-        config.serviceId = svcMatch[1];
-        config.accountId = svcMatch[2];
-        log('[config] Discovered serviceId:', config.serviceId, 'accountId:', config.accountId);
-        saveConfig();
+        if (isSignIn) {
+          // The old service choice may belong to another account. Without a
+          // householdId yet (first launch), bootstrap selects instead.
+          config.serviceId = undefined;
+          config.accountId = undefined;
+          if (config.householdId) void discoverServiceCredentials();
+        }
       }
     }
 
