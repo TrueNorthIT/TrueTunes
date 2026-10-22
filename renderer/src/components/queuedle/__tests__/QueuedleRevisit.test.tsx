@@ -69,7 +69,7 @@ const stats: GameStatsResult = {
 const playedEntry = { userName: 'Rich', mainScore: 2, bonusScore: 1, total: 3 } as GameScoreDoc;
 
 const fullScore: GameMyScoreResult = {
-  score: { mainScore: 2, bonusScore: 1, total: 3, guesses: { main: ['left', 'right'], bonus: ['alice', 'bob'] } },
+  score: { mainScore: 2, bonusScore: 1, guesses: { main: ['left', 'right'], bonus: ['alice', 'bob'] } },
 };
 
 let client: QueryClient;
@@ -121,7 +121,7 @@ describe('Queuedle revisit shows the question breakdown', () => {
 
     // The server now has the score; the my-score cached before submission must not stick.
     vi.mocked(window.sonos.fetchMyScore).mockResolvedValue({
-      score: { mainScore: 1, bonusScore: 1, total: 2, guesses: { main: ['left'], bonus: ['alice'] } },
+      score: { mainScore: 1, bonusScore: 1, guesses: { main: ['left'], bonus: ['alice'] } },
     });
     vi.mocked(window.sonos.fetchGameLeaderboard).mockResolvedValue({
       gameId: GAME_ID,

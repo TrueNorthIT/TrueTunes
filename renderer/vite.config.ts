@@ -15,5 +15,7 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    // root is renderer/, but node_modules (e.g. bundled fonts) live at the repo root
+    fs: { allow: [path.resolve(__dirname, '..')] },
   },
 });

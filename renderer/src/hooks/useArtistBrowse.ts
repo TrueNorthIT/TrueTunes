@@ -119,13 +119,13 @@ export function useArtistBrowse(
  * full artistQueryOptions (top songs + Genius bio) would be wasteful. Cached
  * under a distinct key so it doesn't conflict with the full browse cache.
  */
-export function useArtistImage(
+export function artistImageQueryOptions(
   artistId: string | undefined,
   serviceId: string | undefined,
   accountId: string | undefined,
   defaults?: string,
 ) {
-  return useQuery({
+  return {
     queryKey: ['artist-image', artistId] as const,
     queryFn: async (): Promise<string | null> => {
       const r = await api.browse.artist(artistId!, { serviceId, accountId, defaults, muse2: true });
@@ -136,5 +136,14 @@ export function useArtistImage(
     staleTime: Infinity,
     gcTime: 60 * 60 * 1000,
     retry: false,
-  });
+  };
+}
+
+export function useArtistImage(
+  artistId: string | undefined,
+  serviceId: string | undefined,
+  accountId: string | undefined,
+  defaults?: string,
+) {
+  return useQuery(artistImageQueryOptions(artistId, serviceId, accountId, defaults));
 }

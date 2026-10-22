@@ -1,19 +1,21 @@
 :root {
-  --bg: #1c1c1e;
-  --bg-1: #252528;
-  --bg-2: rgba(255, 255, 255, 0.08);
-  --bg-glass: rgba(22, 22, 24, 0.88);
-  --border: rgba(255, 255, 255, 0.1);
-  --border-2: rgba(255, 255, 255, 0.2);
-  /* Apple dark-mode label scale */
-  --label: rgba(255, 255, 255, 0.92);
-  --label-2: rgba(235, 235, 245, 0.6);
-  --label-3: rgba(235, 235, 245, 0.3); /* Apple's tertiary: disabled / placeholder only, it is below 4.5:1 on our surfaces */
+  /* Deep navy-indigo world. Everything tinted is derived from --tint, so one value retunes the lot. */
+  --tint: 150, 158, 255;
+  --bg: #12131f;
+  --bg-1: #1b1d2e;
+  --bg-2: rgba(var(--tint), 0.09);
+  --bg-glass: rgba(16, 17, 30, 0.88);
+  --border: rgba(var(--tint), 0.13);
+  --border-2: rgba(var(--tint), 0.24);
+  /* Dark-mode label scale, tinted to match the window */
+  --label: rgba(246, 247, 255, 0.93);
+  --label-2: rgba(222, 226, 250, 0.62);
+  --label-3: rgba(222, 226, 250, 0.32); /* disabled / placeholder only, it is below 4.5:1 on our surfaces */
   --text: var(--label);
   --text-2: var(--label-2);
-  /* --text-3 carries real subtitles, so it stays at .5 rather than Apple's .3 (contrast) */
-  --text-3: rgba(235, 235, 245, 0.5);
-  --separator: rgba(255, 255, 255, 0.08);
+  /* --text-3 carries real subtitles, so it stays at .5 rather than .3 (contrast) */
+  --text-3: rgba(222, 226, 250, 0.52);
+  --separator: rgba(var(--tint), 0.1);
   /* artwork tiles: soft drop shadow, plus a 1px inner keyline drawn by each art box's ::after */
   --art-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
   --art-keyline: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
@@ -41,21 +43,9 @@ textarea {
   user-select: text;
 }
 
-@font-face {
-  font-family: 'San Francisco';
-  font-weight: 400;
-  src: url('https://applesocial.s3.amazonaws.com/assets/styles/fonts/sanfrancisco/sanfranciscodisplay-regular-webfont.woff');
-  /* This webfont only ships Basic Latin glyphs and renders a visible box for
-     anything outside it (e.g. the æ/ó/ð in "Ágætis Byrjun" / "Sigur Rós").
-     A box counts as a glyph, so the browser won't fall back per-character.
-     Scoping the font to ASCII lets every other codepoint fall through to the
-     system fonts below, which have full multi-language coverage. */
-  unicode-range: U+0000-007F;
-}
-
 body {
   font-family:
-    'San Francisco',
+    'Manrope Variable',
     -apple-system,
     BlinkMacSystemFont,
     'SF Pro Text',

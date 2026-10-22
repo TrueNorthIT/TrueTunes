@@ -542,6 +542,8 @@ useEffect(() => {
                 ytm={ytm}
                 ytmLoading={ytmLoading}
                 displayName={displayName}
+                playback={playback}
+                queueItems={queueItems}
               />
             }
           />

@@ -40,7 +40,9 @@ vi.mock('../../../providers', () => ({
   }),
 }));
 
-vi.mock('../../../hooks/useAttribution', () => ({
+vi.mock('../../../hooks/useAttribution', async (importOriginal) => ({
+  // keep the real pure resolveAttribution (moved here from QueueSidebar); stub only the hook
+  ...(await importOriginal<typeof import('../../../hooks/useAttribution')>()),
   useAttribution: () => ({}),
   attributionContentKey: () => null,
 }));

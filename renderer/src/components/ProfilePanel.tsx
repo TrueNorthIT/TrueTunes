@@ -9,6 +9,7 @@ import { getGameRankIcon } from '../lib/gameRankAssets';
 import { useOpenItem } from '../hooks/useOpenItem';
 import { createDragGhost } from '../lib/dragHelpers';
 import { normalizeAvatar } from '../lib/avatarImage';
+import { statsTrackToItem } from '../lib/homeData';
 import { CardRow } from './CardRow';
 import { MediaRow } from './common/MediaRow';
 import { CreatePlaylistDialog } from './common/ContextMenu';
@@ -33,17 +34,6 @@ function TrackSubtitle({ t, openItem, linkClass }: { t: StatsTrack; openItem: (i
         : t.album}</>}
     </>
   );
-}
-
-function statsTrackToSonosItem(t: StatsTrack): SonosItem {
-  return {
-    type: 'TRACK',
-    title: t.trackName,
-    resource: {
-      type: 'TRACK',
-      id: { objectId: t.uri ?? '', serviceId: t.serviceId ?? '', accountId: t.accountId ?? '' },
-    },
-  };
 }
 
 function getAvatarStyle(name: string): React.CSSProperties {
@@ -108,7 +98,7 @@ const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, 
   const handleTrackDragStart = useCallback((idx: number, e: React.DragEvent) => {
     const indices = trackSelected.has(idx) ? [...trackSelected].sort((a, b) => a - b) : [idx];
     if (!trackSelected.has(idx)) { setTrackSelected(new Set([idx])); lastTrackSelected.current = idx; }
-    const items = indices.map(i => statsTrackToSonosItem(topTracks[i]));
+    const items = indices.map(i => statsTrackToItem(topTracks[i])).filter((x): x is SonosItem => x !== null);
     e.dataTransfer.effectAllowed = 'copy';
     e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(items));
     createDragGhost(items.length > 1 ? `${items.length} tracks` : topTracks[idx].trackName, e.dataTransfer);

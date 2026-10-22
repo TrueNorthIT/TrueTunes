@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Music2, MicVocal } from 'lucide-react';
 import { useNowPlaying } from '../hooks/useNowPlaying';
-import { useLyrics } from '../hooks/useLyrics';
+import { activeLyricIndex, lyricElapsedMs, useLyrics } from '../hooks/useLyrics';
 import { useGeniusDescription } from '../hooks/useGeniusDescription';
 import type { PlaybackState } from '../hooks/usePlayback';
 import styles from './LyricsPanel.module.css';
@@ -39,14 +39,14 @@ export function LyricsPanel({ playback }: Props) {
   const { displayTrack, displayArtist, albumName, cachedArt, dominantColor, progressPct, durationMs } =
     useNowPlaying(playback);
 
-  const elapsedMs = Math.round((progressPct / 100) * durationMs) + 250;
+  const elapsedMs = lyricElapsedMs(progressPct, durationMs);
 
   const { lines, isLoading: lyricsLoading, isInstrumental, notFound } =
     useLyrics(displayTrack, displayArtist, albumName, durationMs);
 
   const { description } = useGeniusDescription(displayTrack, displayArtist);
 
-  const activeLine = lines.reduce((acc, l, i) => (l.timeMs <= elapsedMs ? i : acc), -1);
+  const activeLine = activeLyricIndex(lines, elapsedMs);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const lineRefs = useRef<(HTMLDivElement | null)[]>([]);

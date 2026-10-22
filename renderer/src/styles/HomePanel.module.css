@@ -2,441 +2,1044 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: calc(var(--nav-h) + 24px) 28px calc(var(--player-h) + 24px);
+  padding: calc(var(--nav-h) + 16px) 28px calc(var(--player-h) + 24px);
 }
 
-.section {
-  margin-bottom: 40px;
+/*
+ * Everything on Home is sized in em from this one font-size, so the page scales with the window:
+ * 14px at 1280 up to 17.5px (1.25x) at ultrawide. Surfaces use --tint from global.css.
+ */
+.page {
+  --surface: rgba(var(--tint), 0.06);
+  --surface-hi: rgba(var(--tint), 0.085);
+  --row-hover: rgba(var(--tint), 0.09);
+  /* Home sits on raised surfaces and washes; the global tertiary label (.52) measured 4.3-4.4:1 here. */
+  --text-3: rgba(224, 228, 252, 0.64);
+  font-size: clamp(14px, calc(0.45vw + 8.2px), 16px);
+  max-width: 2400px;
+  margin: 0 auto;
+  container-type: inline-size;
 }
-
-.sectionAction {
-  margin-left: auto;
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 4px 12px;
-  font-size: 12px;
-  font-family: inherit;
-  color: var(--text-3);
-  cursor: pointer;
-  transition: all 0.12s;
-}
-.sectionAction:hover { color: var(--text); border-color: var(--border-2); background: rgba(255,255,255,0.05); }
-
-.userChip {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 7px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  flex-shrink: 0;
-  font-family: inherit;
-}
-.userChip:hover .userAvatar { transform: scale(1.07); box-shadow: 0 0 0 2px rgba(255,255,255,0.3); }
-
-.userAvatar {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: var(--bg-2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--text);
-  overflow: hidden;
-  transition: transform 0.15s, box-shadow 0.15s;
-  flex-shrink: 0;
-}
-.userAvatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.userAvatarSkel {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: var(--bg-2);
-  animation: skelPulse 1.4s ease-in-out infinite;
-  flex-shrink: 0;
-}
-
-.userName {
-  font-size: 11px;
-  color: var(--text-2);
-  max-width: 64px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-align: center;
-}
-
-.sectionTitle {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: -0.4px;
-}
+/* Buttons don't inherit font size (Chromium sets 13.33px), which broke the em scale inside every
+   button-wrapped tile. Zero-specificity so a component's own font-size class still wins. */
+:where(.page) :where(button) { font: inherit; }
 
 .msg {
   color: var(--text-3);
-  font-size: 14px;
+  font-size: 1em;
   text-align: center;
-  padding: 56px 0;
+  padding: 4em 0;
 }
 
-.recentHeader {
-  margin-bottom: 20px;
-}
+/* ── Header ──────────────────────────────────────────────────────────────── */
 
-.userSep {
-  color: var(--text-3);
-}
-
-.subSectionTitle {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-2);
-  letter-spacing: -0.2px;
-}
-
-.recentEmpty {
-  color: var(--text-3);
-  font-size: 13px;
-  padding: 12px 0 32px;
-}
-
-/* ── Skeletons ───────────────────────────────────────────────────────────── */
-
-.skelTitle {
-  height: 18px;
-  width: 56px;
-  border-radius: 4px;
-  background: var(--bg-1);
-  animation: skelPulse 1.8s ease-in-out infinite;
-  margin-bottom: 2px;
-}
-
-.skelAlbumArt {
-  width: 46px;
-  height: 46px;
-  border-radius: 5px;
-  flex-shrink: 0;
-  background: var(--bg-1);
-  animation: skelPulse 1.8s ease-in-out infinite;
-}
-
-.skelLine {
-  height: 12px;
-  width: 78%;
-  border-radius: 3px;
-  background: var(--bg-1);
-  animation: skelPulse 1.8s ease-in-out infinite;
-}
-
-.skelLineShort {
-  height: 10px;
-  width: 50%;
-  border-radius: 3px;
-  background: var(--bg-1);
-  animation: skelPulse 1.8s ease-in-out infinite;
-  margin-top: 5px;
-}
-
-.skelCircle {
-  width: min(100cqi, calc(100cqb - 18px));
-  height: min(100cqi, calc(100cqb - 18px));
-  border-radius: 50%;
-  background: var(--bg-1);
-  animation: skelPulse 1.8s ease-in-out infinite;
-}
-
-/* ── Recently Played grid layout ─────────────────────────────────────────── */
-
-.recentGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 32px;
-  align-items: stretch;
-  margin-bottom: 40px;
-}
-
-/* Album list */
-
-.albumList {
+.hero {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.albumRow {
-  display: flex;
-  gap: 12px;
   align-items: center;
-  padding: 7px 8px;
-  border-radius: 8px;
-  cursor: grab;
+  justify-content: space-between;
+  gap: 1.1em;
+  flex-wrap: wrap;
+  margin-bottom: 1.4em;
+}
+.greeting {
+  font-size: 2.2em;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  color: var(--text);
+}
+.queuedle {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  padding: 0.6em 0.6em 0.6em 1.2em;
+  border-radius: 1em;
+  background: var(--surface);
+}
+.queuedleText { display: flex; flex-direction: column; gap: 1px; }
+.queuedleLabel { font-size: max(13px, 0.86em); font-weight: 600; color: var(--text-3); }
+.queuedleState { font-size: 1.05em; font-weight: 500; color: var(--text); font-variant-numeric: tabular-nums; }
+
+.pillBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  border: none;
+  border-radius: 2em;
+  background: var(--text);
+  color: var(--bg);
+  font-family: inherit;
+  font-size: max(13px, 0.92em);
+  font-weight: 600;
+  padding: 0.55em 1.1em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.pillBtn:hover { opacity: 0.78; }
+/* Secondary: loud office actions should not be the loudest thing on the page. */
+.ghostBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  border: none;
+  border-radius: 2em;
+  background: rgba(var(--tint), 0.12);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.92em;
+  font-weight: 600;
+  padding: 0.55em 1.1em;
+  cursor: pointer;
+  white-space: nowrap;
   transition: background 0.15s;
 }
-.albumRow:active { cursor: grabbing; }
-.albumRow:hover { background: rgba(255, 255, 255, 0.06); }
-.albumRow:hover .albumAddBtn { opacity: 1; }
+.ghostBtn:hover { background: rgba(var(--tint), 0.22); }
+.pillBtn:focus-visible,
+.ghostBtn:focus-visible,
+.face:focus-visible,
+.albumAdd:focus-visible,
+.lyricsBox:focus-visible,
+.addBtn:focus-visible,
+.miniAdd:focus-visible,
+.artAdd:focus-visible,
+.tileAdd:focus-visible,
+.linkBtn:focus-visible,
+.seeAll:focus-visible,
+.tileMain:focus-visible,
+.jumpTile:focus-visible { outline: 2px solid var(--text-2); outline-offset: 2px; }
 
-.albumAddBtn {
-  margin-left: auto;
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  border: none;
-  cursor: pointer;
+/* ── Sections ────────────────────────────────────────────────────────────── */
+
+.section { margin-bottom: 1.4em; min-width: 0; }
+
+.featured,
+.card {
+  border-radius: 1.2em;
+  padding: 1.7em;
+  background: var(--surface);
+}
+.card { padding: 1.5em; }
+/* A wash of the hero artwork's dominant colour bleeds in from the top left, like the reference. */
+.featured {
+  background:
+    radial-gradient(120% 110% at 15% 0%, rgba(var(--wash, 150, 158, 255), 0.26), transparent 62%),
+    var(--surface-hi);
+}
+.bare { margin-top: 2.2em; margin-bottom: 0; }
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  gap: 1.1em;
+  flex-wrap: wrap;
+  margin-bottom: 1.1em;
+}
+.headAction { margin-left: auto; }
+
+.sectionTitle {
+  font-size: 1.6em;
+  font-weight: 600;
+  line-height: 1.2;
   color: var(--text);
-  font-size: 18px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.15s, background 0.15s;
+  letter-spacing: -0.015em;
 }
-.albumAddBtn:hover { background: rgba(255, 255, 255, 0.22); }
+/* The shared Carousel titles use 22/700; match the page. */
+.carouselSec h2 { font-size: 1.6em; font-weight: 600; letter-spacing: -0.015em; }
 
-.albumArtWrap {
-  width: 46px;
-  height: 46px;
-  border-radius: 5px;
-  overflow: hidden;
-  flex-shrink: 0;
-  background: var(--bg-1);
-}
-.albumArt {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.albumArtPh { width: 100%; height: 100%; }
-
-.albumInfo { overflow: hidden; }
-.albumName {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.albumSub {
-  font-size: 11px;
-  color: var(--text-2);
-  margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Artist grid */
-
-.artistGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.artistGridInner {
-  /* Cells are square (width tracks the row height) and packed to the left so the
-     first column lines up under the "Artists" title. Sizing columns as 1fr made
-     the cells stretch far wider than the height-driven circles on full-screen,
-     centering each circle in an over-wide cell and visibly drifting it away from
-     the title. */
-  --artist-cell: calc((var(--inner-h, 0px) - (var(--grid-rows, 1) - 1) * 4px) / var(--grid-rows, 1));
-  display: grid;
-  grid-template-columns: repeat(var(--grid-cols, 3), var(--artist-cell));
-  grid-template-rows: repeat(var(--grid-rows, 3), 1fr);
-  justify-content: start;
-  row-gap: 4px;
-  column-gap: 0;
-}
-
-.artistCell {
-  container-type: size;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  cursor: pointer;
-}
-
-.artistCircle {
-  position: relative;
-  width: min(100cqi, calc(100cqb - 18px));
-  height: min(100cqi, calc(100cqb - 18px));
-  flex-shrink: 0;
-  border-radius: 50%;
-  overflow: hidden;
-  background: var(--bg-1);
-  transition: box-shadow 0.3s ease;
-}
-.artistCell:hover .artistCircle {
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.5),
-    0 0 10px 3px rgba(255, 255, 255, 0.2),
-    0 0 20px 4px rgba(255, 255, 255, 0.08);
-}
-
-.artistImg {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.artistPh {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  color: var(--text-3);
-}
-.artistCellName {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--text-2);
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 100%;
-  line-height: 1;
-}
-
-.userDropdown {
-  position: relative;
-  display: inline-block;
-}
-
-.userDropdownTrigger {
+.seeAll {
   background: none;
   border: none;
   padding: 0;
-  margin: 0;
-  font-size: inherit;
-  font-weight: inherit;
-  letter-spacing: inherit;
-  color: var(--text);
+  font: inherit;
+  font-size: 0.95em;
+  font-weight: 500;
+  color: var(--text-2);
   cursor: pointer;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 4px;
+  transition: color 0.15s;
 }
+.seeAll:hover,
+.seeAll:focus-visible { color: var(--text); text-decoration: underline; }
 
-.userDropdownTrigger:disabled {
-  cursor: default;
-}
-
-.chevron {
-  font-size: 15px;
-  opacity: 0.75;
-  line-height: 1;
-}
-
-.chevronLocked {
-  font-size: 13px;
-  opacity: 0.6;
-  line-height: 1;
-}
-
-.userDropdownList {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 50;
-  background: #1e1e1e;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 4px;
-  min-width: 160px;
-  list-style: none;
-  margin: 0;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-}
-
-.userDropdownLi {
+.faces {
   display: flex;
   align-items: center;
+  gap: 0.9em;
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
-
-.userDropdownItem,
-.userDropdownItemActive {
-  display: block;
-  flex: 1;
-  min-width: 0;
+.face {
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
   background: none;
   border: none;
-  text-align: left;
-  padding: 7px 12px;
-  border-radius: 5px;
-  font-size: 13px;
+  padding: 0.15em 0.6em 0.15em 0.15em;
+  border-radius: 2em;
+  font-family: inherit;
   cursor: pointer;
-  color: var(--text-2);
-  transition: background 0.1s;
+  transition: background 0.15s;
+}
+.face:hover,
+.face:focus-visible { background: var(--row-hover); }
+.face:hover .faceAvatar,
+.face:focus-visible .faceAvatar { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55); }
+.face:hover .faceName,
+.face:focus-visible .faceName { color: var(--text); }
+.faceAvatar {
+  width: 1.9em;
+  height: 1.9em;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: max(13px, 0.8em);
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: box-shadow 0.15s;
+}
+.faceAvatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.faceName { font-size: max(13px, 0.9em); color: var(--text-2); transition: color 0.15s; }
+
+/* ── Artwork cards (Picks) ───────────────────────────────────────────────── */
+
+.picksLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1.4em;
+  align-items: stretch;
+}
+.picksCol { display: flex; flex-direction: column; gap: 0.9em; min-width: 0; }
+
+.artCard {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1em;
+  background: var(--bg-1);
+  min-width: 0;
+}
+.artLarge { min-height: 23em; }
+.artMedium { aspect-ratio: 4 / 3; }
+.artFill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%; /* keep faces in frame */
+  display: block;
+  transition: transform 0.15s, filter 0.15s;
+}
+.artCard:hover .artFill,
+.artCard:focus-within .artFill,
+.artTile:hover .artFill,
+.artTile:focus-within .artFill { transform: scale(1.03); filter: brightness(0.88); }
+.artPhoto { animation: homeFadeIn 0.6s ease both; }
+@keyframes homeFadeIn { from { opacity: 0; } to { opacity: 1; } }
+/* Soft scrim over the lower part so text always reads. */
+.artCard::after,
+.tileMain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 22%),
+    linear-gradient(to top, rgba(0, 0, 0, 0.74) 0%, rgba(0, 0, 0, 0.26) 42%, rgba(0, 0, 0, 0) 70%);
+  pointer-events: none;
+}
+.artLabel {
+  position: absolute;
+  top: 1.1em;
+  left: 1.2em;
+  z-index: 1;
+  max-width: calc(100% - 2.4em);
+  font-size: 0.95em;
+  font-weight: 500;
+  color: #fff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.artCaption {
+  position: absolute;
+  left: 1.2em;
+  right: 4em;
+  bottom: 1em;
+  z-index: 1;
+  min-width: 0;
+}
+.artTitle {
+  font-size: 1.5em;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.artMedium .artTitle { font-size: 1.15em; }
+.artSub {
+  font-size: 0.95em;
+  color: rgba(255, 255, 255, 0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.artAdd {
+  position: absolute;
+  right: 0.9em;
+  bottom: 0.9em;
+  z-index: 2;
+  width: 2.6em;
+  height: 2.6em;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0.55;
+  transition: background 0.15s, opacity 0.15s;
+}
+.artCard:hover .artAdd,
+.artCard:focus-within .artAdd,
+.artAdd:focus-visible { opacity: 1; }
+.artAdd:hover { background: rgba(255, 255, 255, 0.34); }
+
+/* ── Track rows ──────────────────────────────────────────────────────────── */
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-.profileLinkBtn {
+.trackRow {
+  display: flex;
+  align-items: center;
+  gap: 0.9em;
+  padding: 0.45em 0.6em;
+  border-radius: 0.65em;
+  transition: background 0.15s;
+  min-width: 0;
+}
+.trackRow:hover,
+.trackRow:focus-within { background: var(--row-hover); }
+
+.trackArt,
+.trackArtPh {
+  width: 3.2em;
+  height: 3.2em;
+  border-radius: 0.6em;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+.trackArtPh { background: var(--bg-1); }
+
+.trackText { min-width: 0; flex: 1; }
+.trackLine {
+  font-size: 1.07em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trackTitle { font-weight: 500; color: rgba(255, 255, 255, 0.84); transition: color 0.15s; }
+.trackRow:hover .trackTitle,
+.trackRow:focus-within .trackTitle { color: #fff; }
+.trackArtist { font-weight: 400; color: var(--text-3); }
+.dash { white-space: pre; }
+.reason {
+  font-size: max(13px, 0.86em);
+  color: var(--text-3);
+  margin-top: 0.15em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.addBtn {
   background: none;
   border: none;
   color: var(--text-3);
+  border-radius: 50%;
+  width: 2.2em;
+  height: 2.2em;
+  display: grid;
+  place-items: center;
   cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
   flex-shrink: 0;
   opacity: 0;
-  transition: opacity 0.12s, color 0.12s, background 0.12s;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
 }
-.userDropdownLi:hover .profileLinkBtn { opacity: 1; }
-.profileLinkBtn:hover { color: var(--text); background: rgba(255, 255, 255, 0.07); }
+.trackRow:hover .addBtn,
+.chartRow:hover .addBtn,
+.chartRow:focus-within .addBtn,
+.trackRow:focus-within .addBtn,
+.addBtn:focus-visible { opacity: 1; }
+.addBtn:hover { background: var(--bg-2); color: var(--text); }
+.addSpacer { width: 2.2em; }
 
-.userDropdownItem:hover {
-  background: rgba(255, 255, 255, 0.07);
-  color: var(--text);
-}
-
-.userDropdownItemActive {
-  color: var(--text);
-  font-weight: 600;
-}
-
-.userDropdown[data-tooltip] {
-  cursor: default;
-}
-
-.userDropdown[data-tooltip]:hover::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  background: #242424;
-  color: var(--text-2);
-  font-size: 12px;
-  font-weight: 400;
-  letter-spacing: 0;
-  padding: 7px 11px;
-  border-radius: 7px;
+.linkBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 1em;
+  color: var(--text-3);
+  text-align: left;
+  cursor: pointer;
   white-space: nowrap;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
-  pointer-events: none;
-  z-index: 100;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.linkBtn:hover { color: var(--text); text-decoration: underline; }
+
+/* ── Trending chart | right column ───────────────────────────────────────── */
+
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 1.4em;
+  align-items: start;
+  margin-bottom: 1.4em; /* same gap as every other band */
+}
+.split .section { margin-bottom: 0; }
+.rightCol { min-width: 0; display: flex; flex-direction: column; gap: 1.4em; }
+
+.chartHead,
+.chartRow {
+  display: grid;
+  grid-template-columns: 2.4em minmax(0, 1.6fr) minmax(0, 1fr) 4em 2.2em;
+  align-items: center;
+  column-gap: 0.9em;
+}
+.chartHead {
+  padding: 0 0.6em 0.6em;
+  font-size: max(13px, 0.86em);
+  color: var(--text-3);
+}
+.chartHead > :nth-child(4) { grid-column: 4; }
+.chart { list-style: none; margin: 0; padding: 0; }
+.chartRow {
+  padding: 0.55em 0.6em;
+  border-radius: 0.65em;
+  transition: background 0.15s;
+}
+.chartRow:hover,
+.chartRow:focus-within { background: var(--row-hover); }
+.rank {
+  font-size: 1.15em;
+  font-weight: 500;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.chartTitleCell { display: flex; align-items: center; gap: 0.9em; min-width: 0; }
+.chartArt,
+.chartArtPh {
+  width: 3.2em;
+  height: 3.2em;
+  border-radius: 0.6em;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: var(--bg-1);
+}
+.chartTitle {
+  font-size: 1.1em;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.84);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.15s;
+}
+.chartRow:hover .chartTitle,
+.chartRow:focus-within .chartTitle { color: #fff; }
+.plays {
+  text-align: right;
+  font-size: 1em;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Jump back in ────────────────────────────────────────────────────────── */
+
+.jumpTile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+  width: 100%;
+  min-width: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 0.9em;
+  transition: transform 0.15s;
+}
+.jumpArt,
+.jumpArtRound {
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--bg-1);
+  display: block;
+  transition: box-shadow 0.15s;
+}
+.jumpArt { border-radius: 0.9em; }
+.jumpArtRound { border-radius: 50%; }
+.jumpArt img,
+.jumpArtRound img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.jumpArtPh { display: grid; place-items: center; width: 100%; height: 100%; color: var(--text-3); }
+.jumpTile:hover,
+.jumpTile:focus-visible { transform: translateY(-2px); }
+.jumpTile:hover .jumpArt,
+.jumpTile:hover .jumpArtRound,
+.jumpTile:focus-visible .jumpArt,
+.jumpTile:focus-visible .jumpArtRound { box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4); }
+.jumpTile:hover .jumpName,
+.jumpTile:focus-visible .jumpName { color: #fff; }
+.jumpName,
+.jumpSub {
+  font-size: 1em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.jumpName { font-weight: 500; color: rgba(255, 255, 255, 0.84); transition: color 0.15s; }
+.jumpSub { color: var(--text-3); font-size: max(13px, 0.86em); margin-top: -0.3em; }
+
+/* ── Jump back in grid ───────────────────────────────────────────────────── */
+
+.jumpGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5em, 1fr));
+  gap: 1.2em 1em;
+}
+
+/* ── Clickable track parts ───────────────────────────────────────────────── */
+
+.artBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  display: block;
+  flex-shrink: 0;
+  cursor: pointer;
+  border-radius: 0.6em;
+}
+.titleBtn,
+.artistBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.titleBtn:hover,
+.titleBtn:focus-visible,
+.artistBtn:hover,
+.artistBtn:focus-visible { color: #fff; text-decoration: underline; }
+.titleBtn:focus-visible,
+.artistBtn:focus-visible,
+.artCover:focus-visible,
+.albumMain:focus-visible,
+.personHead:focus-visible,
+.artBtn:focus-visible { outline: 2px solid var(--text-2); outline-offset: 2px; }
+.artistLinks { min-width: 0; }
+.chartArtist {
+  min-width: 0;
+  font-size: 1em;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Whole art card opens the album; the artist links and + sit above it. */
+.artCover {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.artCaption { pointer-events: none; }
+.artCaption .artistBtn { pointer-events: auto; color: rgba(255, 255, 255, 0.75); }
+.artCaption .artistBtn:hover,
+.artCaption .artistBtn:focus-visible { color: #fff; }
+
+/* ── People: recent albums per person ────────────────────────────────────── */
+
+.peopleGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22em), 1fr));
+  gap: 1.1em;
+  align-items: stretch;
+}
+.person {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9em;
+  min-width: 0;
+  padding: 0.9em;
+  border-radius: 1em;
+  background: var(--surface);
+}
+.personHead {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  width: 100%;
+  border: none;
+  padding: 0.5em 0.6em;
+  border-radius: 0.8em;
+  background: rgba(var(--tint), 0.06);
+  font-family: inherit;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.personHead:hover,
+.personHead:focus-visible { filter: brightness(1.25); }
+.personAvatar {
+  width: 2.8em;
+  height: 2.8em;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.personAvatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.personWho { display: flex; flex-direction: column; min-width: 0; }
+.personName { font-size: 1em; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.personCount { font-size: max(13px, 0.86em); color: var(--text-3); }
+
+.albumRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8em;
+  flex: 1;
+  align-items: start;
+}
+.albumTile { position: relative; min-width: 0; }
+.albumMain {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 0.7em;
+  transition: transform 0.15s;
+}
+.albumMain:hover,
+.albumMain:focus-visible { transform: translateY(-2px); }
+.albumArt {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 0.7em;
+  background: var(--bg-1);
+  margin-bottom: 0.4em;
+  transition: box-shadow 0.15s;
+}
+.albumArt img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.albumMain:hover .albumArt,
+.albumMain:focus-visible .albumArt { box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4); }
+.albumTitle,
+.albumSub {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.93em;
+}
+.albumTitle { font-weight: 500; color: rgba(255, 255, 255, 0.84); transition: color 0.15s; }
+.albumMain:hover .albumTitle,
+.albumMain:focus-visible .albumTitle { color: #fff; }
+.albumSub { color: var(--text-3); font-size: max(13px, 0.82em); }
+.albumAdd {
+  position: absolute;
+  top: 0.4em;
+  right: 0.4em;
+  z-index: 2;
+  width: 2em;
+  height: 2em;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+}
+.albumTile:hover .albumAdd,
+.albumTile:focus-within .albumAdd,
+.albumAdd:focus-visible { opacity: 1; }
+.albumAdd:hover { background: rgba(0, 0, 0, 0.8); }
+
+/* ── For You tiles ───────────────────────────────────────────────────────── */
+
+.artTile { position: relative; width: 11.5em; height: 11.5em; flex-shrink: 0; }
+.tileMain {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: none;
+  padding: 0;
+  border-radius: 0.9em;
+  background: var(--bg-1);
+  font-family: inherit;
+  text-align: left;
+}
+button.tileMain { cursor: pointer; }
+/* Tile captions sit on art that often carries its own text, so the scrim is deeper than on cards. */
+.tileMain::after {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.86) 0%, rgba(0, 0, 0, 0.4) 38%, rgba(0, 0, 0, 0) 68%);
+}
+.artPh { position: absolute; inset: 0; display: grid; place-items: center; color: var(--text-3); }
+.tileName {
+  position: absolute;
+  left: 0.9em;
+  right: 0.9em;
+  bottom: 0.75em;
+  z-index: 1;
+  font-size: 1.05em;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tileAdd {
+  position: absolute;
+  top: 0.6em;
+  right: 0.6em;
+  z-index: 2;
+  width: 2.2em;
+  height: 2.2em;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+}
+.artTile:hover .tileAdd,
+.artTile:focus-within .tileAdd,
+.tileAdd:focus-visible { opacity: 1; }
+.tileAdd:hover { background: rgba(0, 0, 0, 0.75); }
+.tileSkel {
+  width: 11.5em;
+  height: 11.5em;
+  flex-shrink: 0;
+  border-radius: 0.9em;
+  background: var(--bg-1);
+}
+
+/* ── Narrower: stack ─────────────────────────────────────────────────────── */
+
+/* Keep three picks columns but squarer, so Trending starts in the first screen. */
+@container (max-width: 1100px) {
+  .picksLayout { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr); gap: 1.1em; }
+  .artMedium { aspect-ratio: 1 / 1; }
+  .artLarge { min-height: 0; }
+  .split { grid-template-columns: minmax(0, 1fr); }
+  .hero { margin-bottom: 1.4em; }
+}
+
+@container (max-width: 700px) {
+  .picksLayout { grid-template-columns: 1fr 1fr; }
+  .artLarge { grid-column: 1 / -1; aspect-ratio: 3.2 / 1; max-height: 300px; }
+}
+
+/* ── Now playing band ────────────────────────────────────────────────────── */
+
+.band {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 1.4em;
+  margin-bottom: 1.4em;
+}
+.bandSolo { grid-template-columns: minmax(0, 1fr); }
+
+.nowCard {
+  position: relative;
+  display: flex;
+  gap: 1.6em;
+  align-items: stretch;
+  min-width: 0;
+  padding: 1.4em;
+  border-radius: 1.2em;
+  background:
+    radial-gradient(120% 150% at 0% 0%, rgba(var(--wash, 150, 158, 255), 0.3), transparent 65%),
+    var(--surface-hi);
+}
+.nowArt {
+  flex: none;
+  width: 16em;
+  height: 16em;
+  align-self: center;
+  padding: 0;
+  border: none;
+  border-radius: 1em;
+  overflow: hidden;
+  background: var(--bg-1);
+  cursor: pointer;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.nowArt img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.nowArt:hover,
+.nowArt:focus-visible { transform: scale(1.02); box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45); }
+.nowArt:focus-visible,
+.lyricsOpen:focus-visible,
+.queuerChip:focus-visible { outline: 2px solid var(--text-2); outline-offset: 2px; }
+
+.nowInfo {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.55em;
+  min-width: 0;
+  flex: 1;
+}
+.nowLabel {
+  font-size: max(13px, 0.86em);
+  font-weight: 600;
+  color: var(--text-3);
+}
+.nowTitle {
+  font-size: 1.9em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.nowTitle .titleBtn { color: inherit; }
+.nowMeta { display: flex; align-items: baseline; gap: 0.4em; min-width: 0; white-space: nowrap; font-size: 1.05em; color: var(--text-2); }
+.metaArtist { flex: 0 1 auto; max-width: 60%; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.metaAlbum { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.metaDot { flex: none; }
+/* Only the text rows at the top reserve room for the queuer chip; the bar and description run full width. */
+.nowLabel,
+.nowTitle,
+.nowMeta { padding-right: 9em; }
+.nowMeta .artistBtn { color: inherit; }
+.nowMeta .artistBtn:hover,
+.nowMeta .artistBtn:focus-visible { color: #fff; }
+
+.queuerChip {
+  position: absolute;
+  top: 1em;
+  right: 1em;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.2em 0.7em 0.2em 0.2em;
+  border: none;
+  border-radius: 2em;
+  background: rgba(var(--tint), 0.16);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 0.93em;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.queuerChip:hover,
+.queuerChip:focus-visible { background: var(--row-hover); color: #fff; }
+.queuerAvatar {
+  width: 1.9em;
+  height: 1.9em;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: max(13px, 0.8em);
+  font-weight: 700;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.queuerAvatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.nowProgress { display: flex; align-items: center; gap: 0.8em; margin-top: 0.3em; }
+.nowTime { font-size: max(13px, 0.86em); color: var(--text-3); font-variant-numeric: tabular-nums; min-width: 2.6em; }
+.nowTime:last-child { text-align: right; }
+.nowBar { flex: 1; height: 0.32em; border-radius: 1em; background: rgba(255, 255, 255, 0.14); overflow: hidden; }
+.nowFill { width: 100%; height: 100%; border-radius: inherit; background: rgba(255, 255, 255, 0.85); transform-origin: left center; transition: transform 0.4s linear; }
+
+.about { display: flex; flex-direction: column; align-items: flex-start; gap: 0; width: 100%; max-width: 100ch; margin-top: 0.2em; }
+.aboutText {
+  font-size: 0.95em;
+  line-height: 1.55;
+  color: var(--text-3);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  user-select: text;
+}
+
+.lyricsBox {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 1.2em 1.4em 0;
+  border-radius: 1.2em;
+  background: var(--surface);
+  cursor: pointer;
+  overflow: hidden;
+  transition: background 0.15s;
+}
+.lyricsBox:hover { background: var(--surface-hi); }
+.lyricsOpen {
+  position: absolute;
+  top: 0.8em;
+  right: 0.9em;
+  z-index: 2;
+  width: 2.2em;
+  height: 2.2em;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.lyricsOpen:hover,
+.lyricsOpen:focus-visible { background: var(--bg-2); color: var(--text); }
+.lyricsScroll {
+  /* Out of flow so the lyrics never set the band height; the now playing card does. */
+  position: absolute;
+  top: 3em;
+  left: 1.4em;
+  right: 1.4em;
+  bottom: 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 22%, #000 70%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 22%, #000 70%, transparent 100%);
+}
+.lyricsPad { padding: 8em 0 16em; max-width: 46em; }
+/* One fixed line box: the active line scales up inside it (transform only), so nothing reflows.
+   Lines wrap at 1/1.2 of the width so the scaled line still fits. */
+.lyricLine {
+  width: 83%;
+  padding: 0.3em 0;
+  font-size: 1.15em;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text);
+  transform-origin: left center;
+  transition: transform 0.3s, opacity 0.3s;
+}
+.lyricActive { transform: scale(1.2); color: #fff; }
+.lyricPlain { opacity: 0.7; }
+
+/* Loading: skeleton lines at the real line pitch, so the box never changes size. */
+.lyricsSkel { padding-top: 3em; max-width: 46em; }
+.lyricSkel,
+.aboutSkel {
+  display: block;
+  border-radius: 0.4em;
+  background: rgba(var(--tint), 0.18);
+  animation: homePulse 1.4s ease-in-out infinite;
+}
+.lyricSkel { height: 1.1em; margin: 0.65em 0; }
+.aboutSkel { height: 0.95em; margin: 0.3em 0; }
+.aboutSkel:nth-child(2) { animation-delay: 0.15s; }
+.aboutSkel:nth-child(3) { animation-delay: 0.3s; }
+.lyricSkel:nth-child(2) { animation-delay: 0.1s; }
+.lyricSkel:nth-child(3) { animation-delay: 0.2s; }
+.lyricSkel:nth-child(4) { animation-delay: 0.3s; }
+.lyricSkel:nth-child(5) { animation-delay: 0.4s; }
+@keyframes homePulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nowArt,
+  .nowFill,
+  .lyricLine,
+  .lyricsBox { transition: none; }
+  .artPhoto { animation: none; }
+  .artFill { transition: none; }
+  .artCard:hover .artFill,
+  .artCard:focus-within .artFill,
+  .artTile:hover .artFill,
+  .artTile:focus-within .artFill { transform: none; }
+  .jumpTile,
+  .albumMain,
+  .nowArt { transition: none; }
+  .jumpTile:hover,
+  .jumpTile:focus-visible,
+  .albumMain:hover,
+  .albumMain:focus-visible,
+  .nowArt:hover,
+  .nowArt:focus-visible { transform: none; }
+  .lyricSkel,
+  .aboutSkel { animation: none; opacity: 0.7; }
+}
+
+@container (max-width: 1100px) {
+  .band { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+  .nowArt { width: 12.5em; height: 12.5em; }
+  .nowCard { gap: 1.2em; padding: 1.1em; }
+}
+
+@container (max-width: 700px) {
+  .band { grid-template-columns: minmax(0, 1fr); }
+  .lyricsBox { height: 16em; }
+}
+
+@container (max-width: 1100px) {
+  .queuerChip { position: static; align-self: flex-start; }
+  .nowLabel,
+  .nowTitle,
+  .nowMeta { padding-right: 0; }
+  .trackLine { display: flex; flex-direction: column; white-space: normal; }
+  .trackLine > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dash { display: none; }
 }
