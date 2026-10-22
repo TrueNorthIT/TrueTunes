@@ -6,7 +6,12 @@ import type { NormalizedQueueItem } from '../types/provider';
 
 export function decodeDefaults(defaults: string | undefined): Record<string, unknown> | null {
   if (!defaults) return null;
-  try { return JSON.parse(atob(defaults)); } catch { return null; }
+  try {
+    // Base64 (or base64url) of UTF-8 JSON. atob() returns raw bytes as Latin-1 chars, so decode them
+    // as UTF-8 or accented names come out as mojibake ("MisÃ©rables").
+    const bin = atob(defaults.replace(/-/g, '+').replace(/_/g, '/'));
+    return JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0))));
+  } catch { return null; }
 }
 
 // ─── Optimistic queue normaliser ─────────────────────────────────────────────

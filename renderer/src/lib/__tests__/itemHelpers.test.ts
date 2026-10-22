@@ -512,6 +512,20 @@ describe('decodeDefaults', () => {
   it('returns null for invalid base64', () => {
     expect(decodeDefaults('!!!not-base64!!!')).toBeNull();
   });
+
+  // Sonos encodes defaults as UTF-8 JSON; atob alone yields "MisÃ©rables" for "Misérables".
+  const utf8b64 = (o: unknown) => Buffer.from(JSON.stringify(o), 'utf8').toString('base64');
+
+  it('decodes accented UTF-8 text without mojibake', () => {
+    const payload = { name: 'Les Misérables', artist: 'Björk, ROSALÍA', summary: 'Single • Café' };
+    expect(decodeDefaults(utf8b64(payload))).toEqual(payload);
+  });
+
+  it('decodes base64url (- and _) with missing padding', () => {
+    const payload = { name: 'Les Misérables ??>>' };
+    const url = utf8b64(payload).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    expect(decodeDefaults(url)).toEqual(payload);
+  });
 });
 
 describe('isPodcast', () => {
