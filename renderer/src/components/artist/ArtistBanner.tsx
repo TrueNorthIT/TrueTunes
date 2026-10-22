@@ -81,9 +81,12 @@ export function ArtistBanner({ name, altNames, portrait, portraitSrc, wash, offi
       ) : (
         <>
           {wash && <div className={styles.heroWash} aria-hidden="true" />}
-          <div className={styles.print} aria-hidden="true">
-            {portrait && portraitSrc && <img className={styles.printImg} src={portraitSrc} alt="" />}
-          </div>
+          {/* No frame until there is a cover for it: an empty print read as a placeholder while the photo loaded. */}
+          {portrait && portraitSrc && (
+            <div className={styles.print} aria-hidden="true">
+              <img className={styles.printImg} src={portraitSrc} alt="" />
+            </div>
+          )}
         </>
       )}
       <div className={styles.heroText}>
