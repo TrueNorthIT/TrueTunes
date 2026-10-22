@@ -179,10 +179,18 @@ export function isContainer(item: SonosItem): boolean {
       || t === 'CONTAINER' || t === 'SECTION';
 }
 
-/** Items played via WS loadContent (stations, radio mixes, programs). */
+/** Stations, radio mixes and supermixes. Sonos only plays one by replacing the whole queue. */
 export function isProgram(item: SonosItem): boolean {
   const type = (item.resource?.type ?? item.type ?? '') as string;
   return type.toUpperCase() === 'PROGRAM';
+}
+
+/**
+ * Whether a one-click "+" may queue the item whole. Not a station: the queue is shared, so a
+ * station opens as its track list and songs go in one at a time. Not a shelf: it has no queueable id.
+ */
+export function canQueueWhole(item: SonosItem): boolean {
+  return !isProgram(item) && !isContainer(item);
 }
 
 const TYPE_LABELS: Record<string, string> = {

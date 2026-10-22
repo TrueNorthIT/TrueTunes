@@ -12,6 +12,7 @@ import {
   isContainer,
   isPlaylist,
   isProgram,
+  isTrack,
   getName,
   getItemArt,
   browseSub,
@@ -920,7 +921,9 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                         key={i}
                         name={getName(item)}
                         imageUrl={getItemArt(item)}
-                        onAdd={isContainer(item) ? undefined : () => onAddToQueue(item)}
+                        // Only a single song gets a +. My Supermix is a dynamic mix (a PLAYLIST resource, like artist
+                        // radio), stations would replace the shared queue, and shelves are lists: all of them open.
+                        onAdd={isTrack(item) ? () => onAddToQueue(item) : undefined}
                         onOpen={
                           isAlbum(item) || isPlaylist(item) || isContainer(item) || isProgram(item)
                             ? () => openItem(item)

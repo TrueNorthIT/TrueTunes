@@ -1,8 +1,0 @@
-.placeholder {
-  width: var(--card-size);
-  height: var(--card-size);
-  border-radius: var(--r-md);
-  background: var(--bg-1);
-  flex-shrink: 0;
-  animation: skeleton-pulse 1.4s ease-in-out infinite;
-}

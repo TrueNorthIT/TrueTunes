@@ -12,6 +12,17 @@ import { ArtistLinks } from '../TrackLinks';
 vi.mock('../../../hooks/useImage', () => ({ useImage: vi.fn(() => null) }));
 vi.mock('../../../hooks/useDominantColor', () => ({ useDominantColor: vi.fn(() => null) }));
 
+describe('ArtistLinks', () => {
+  it('keeps each comma with the name before it, so a wrapped line never starts with ", "', () => {
+    const { container } = render(<ArtistLinks artist="Dr. Dre, Snoop Dogg, Kurupt" onOpenArtist={() => {}} />);
+    expect(container.textContent).toBe('Dr. Dre, Snoop Dogg, Kurupt');
+    const unit = (name: string) => screen.getByRole('button', { name: `${name}, open artist` }).textContent;
+    expect(unit('Dr. Dre')).toBe('Dr. Dre,');
+    expect(unit('Snoop Dogg')).toBe('Snoop Dogg,');
+    expect(unit('Kurupt')).toBe('Kurupt');
+  });
+});
+
 describe('AddButton', () => {
   it('is named, calls onClick and does not bubble', () => {
     const onClick = vi.fn();

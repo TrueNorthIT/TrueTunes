@@ -344,6 +344,22 @@ describe('HomePanel', () => {
     expect(screen.getByText('Song A')).toBeInTheDocument();
   });
 
+  it('gives For you mixes, stations and shelves no +, only a way in; a single song keeps its +', () => {
+    const onAddToQueue = vi.fn();
+    // The live shapes: the supermix is a PLAYLIST resource, a station a PROGRAM, a shelf a CONTAINER.
+    const supermix = { title: 'My Supermix', type: 'ITEM_PLAYLIST', resource: { type: 'PLAYLIST', id: { objectId: 'mix' } } } as SonosItem;
+    const station = { title: 'Jamie Woon Radio', type: 'ITEM_STATION', resource: { type: 'PROGRAM', id: { objectId: 'st' } } } as SonosItem;
+    const shelf = { title: 'Quick picks', type: 'ITEM_AUDIO', resource: { type: 'CONTAINER', id: { objectId: 'qp' } } } as SonosItem;
+    const ytm = { forYou: [supermix, station, shelf, { name: 'Song A', type: 'TRACK' } as SonosItem], newReleases: [], charts: [] };
+    render(<HomePanel {...defaultProps} onAddToQueue={onAddToQueue} ytm={ytm} />, { wrapper: makeWrapper() });
+    for (const name of ['My Supermix', 'Jamie Woon Radio', 'Quick picks']) {
+      expect(screen.queryByRole('button', { name: `Add ${name} to queue` }), name).toBeNull();
+      expect(screen.getByRole('button', { name }), name).toBeInTheDocument();
+    }
+    expect(screen.getByRole('button', { name: 'Add Song A to queue' })).toBeInTheDocument();
+    expect(onAddToQueue).not.toHaveBeenCalled();
+  });
+
   it('keeps the For You title but no tiles while ytmLoading', () => {
     const ytm = { forYou: [{ name: 'Song A', type: 'TRACK' } as SonosItem], newReleases: [], charts: [] };
     render(<HomePanel {...defaultProps} ytm={ytm} ytmLoading />, { wrapper: makeWrapper() });

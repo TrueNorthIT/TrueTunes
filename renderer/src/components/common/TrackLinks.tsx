@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import styles from './TrackLinks.module.css';
 
 /** A track or album title that opens it. The label carries the action: "Title, open album". */
@@ -18,11 +19,13 @@ export function ArtistLinks({
   onOpenArtist: (name: string, isFirst: boolean) => void;
 }) {
   const names = artist.split(/,\s*/).filter(Boolean);
+  // The comma is part of the name before it and the space after it is the only break, so a wrapped
+  // credit never starts a line with ", Snoop Dogg", even when a long name wraps inside its link.
   return (
     <span className={styles.artists}>
       {names.map((name, i) => (
-        <span key={`${name}-${i}`}>
-          {i > 0 && ', '}
+        <Fragment key={`${name}-${i}`}>
+          {i > 0 && ' '}
           <button
             type="button"
             className={styles.link}
@@ -33,8 +36,9 @@ export function ArtistLinks({
             }}
           >
             {name}
+            {i < names.length - 1 && ','}
           </button>
-        </span>
+        </Fragment>
       ))}
     </span>
   );

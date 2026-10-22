@@ -46,7 +46,8 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
   const openItem = useOpenItem();
   const { resolveAndOpen } = useResolveAndOpen();
 
-  const isPlaylistOrProgram = item ? (isPlaylist(item) || isProgram(item)) : false;
+  const isStation = item ? isProgram(item) : false;
+  const isPlaylistOrProgram = item ? (isPlaylist(item) || isStation) : false;
   const { albumId, serviceId, accountId, defaults } = item
     ? resolveAlbumParams(item)
     : { albumId: undefined, serviceId: undefined, accountId: undefined, defaults: undefined };
@@ -167,7 +168,7 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
         <HeroBand
           wash={dominantColor}
           art={cachedArt ? <img src={cachedArt} alt="" /> : <div className={styles.artPh}>♪</div>}
-          kind={isPlaylistOrProgram ? 'Playlist' : 'Album'}
+          kind={isStation ? 'Station' : isPlaylistOrProgram ? 'Playlist' : 'Album'}
           title={<>{title}{anyExplicit && <ExplicitBadge />}</>}
         >
             {artistParts.length > 0 && (
@@ -193,7 +194,8 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
             )}
             {data && <div className={styles.metaLine}>{meta}</div>}
             <OfficeChip count={queuedHere} />
-            <div className={styles.actions}>
+            {/* No whole-station add: it would replace the shared queue. Its songs add one at a time below. */}
+            {!isStation && <div className={styles.actions}>
               <PillButton
                 variant="primary"
                 disabled={adding || !data?.tracks?.length}
@@ -207,7 +209,7 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
                 <ListPlus size={16} aria-hidden="true" />
                 {adding ? 'Adding…' : 'Add to queue'}
               </PillButton>
-            </div>
+            </div>}
         </HeroBand>
 
         <SectionCard className={`${styles.section} ${styles.trackCard}`}>

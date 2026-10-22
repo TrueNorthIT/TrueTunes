@@ -20,8 +20,6 @@ Not extracted (still in `HomePanel.tsx`): the Now playing card and the lyrics bo
 
 ## Older shared primitives
 
-Brought into the language (tokens, no borders, 13px floor): **Carousel** (title is the SectionCard title style), **MediaCard**, **MediaRow**, **Toast** (tonal surface plus status dot, optional action), **ContextMenu** (a `role=menu` of buttons with lucide icons and arrow-key movement; its CreatePlaylistDialog uses Dialog).
+Brought into the language (tokens, no borders, 13px floor): **Carousel** (title is the SectionCard title style), **Toast** (tonal surface plus status dot, optional action), **ContextMenu** (a `role=menu` of buttons with lucide icons and arrow-key movement; its CreatePlaylistDialog uses Dialog).
 
 - **Carousel** `{ title?, actions?, gap?, className?, rowStyle?, search?, children }`
-- **MediaCard** `{ name, sub?, artUrl?, explicit?, circular?, onAdd?, onOpen? }`
-- **MediaRow** `{ name, artUrl?, explicit?, isPlaying?, isSelected?, leading?, subtitle?, trailing?, onAdd?, onClick?, onDoubleClick?, onHover?, onContextMenu?, draggable?, onDragStart? }`

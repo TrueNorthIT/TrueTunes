@@ -14,6 +14,7 @@ import {
   isArtist,
   isPlaylist,
   isProgram,
+  canQueueWhole,
   extractItems,
   parseServiceSearch,
   resolveAlbumParams,
@@ -167,6 +168,24 @@ describe('isPlaylist', () => {
 
   it('rejects non-playlist types', () => {
     expect(isPlaylist({ type: 'ALBUM' } as SonosItem)).toBe(false);
+  });
+});
+
+describe('canQueueWhole', () => {
+  it('refuses stations, which Sonos can only start by replacing the shared queue', () => {
+    expect(canQueueWhole({ type: 'ITEM_STATION', resource: { type: 'PROGRAM' } } as SonosItem)).toBe(false);
+    expect(canQueueWhole({ type: 'PROGRAM' } as SonosItem)).toBe(false);
+  });
+
+  it('refuses shelves, which have nothing to queue', () => {
+    expect(canQueueWhole({ type: 'CONTAINER' } as SonosItem)).toBe(false);
+    expect(canQueueWhole({ type: 'ITEM_PLAYLIST' } as SonosItem)).toBe(false);
+  });
+
+  it('allows tracks, albums and playlists', () => {
+    expect(canQueueWhole({ type: 'TRACK' } as SonosItem)).toBe(true);
+    expect(canQueueWhole({ type: 'ALBUM' } as SonosItem)).toBe(true);
+    expect(canQueueWhole({ type: 'PLAYLIST' } as SonosItem)).toBe(true);
   });
 });
 

@@ -22,8 +22,7 @@
 
 /* ── Shared glass style ── */
 .nav,
-.historyPill,
-.windowPill {
+.historyPill {
   height: 44px;
   border-radius: 22px;
   /* material tokens come from styles/depth.css */
@@ -68,18 +67,6 @@
 .historyBtn:disabled {
   opacity: 0.3;
   cursor: default;
-}
-
-/* ── Window controls pill — fixed top-right, independent of navRoot ── */
-.windowPill {
-  position: fixed;
-  top: 12px;
-  right: 16px;
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  padding: 0 8px;
-  -webkit-app-region: no-drag;
 }
 
 /* ── Main nav pill ── */
@@ -293,136 +280,14 @@
   z-index: 300;
 }
 
-.profileHeader {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-bottom: 4px;
-}
-
-.profileAvatarLg {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: rgba(var(--tint), 0.24);
-  color: var(--on-art);
-  font-size: 15px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.profileHeaderName {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.profileViewBtn {
-  background: var(--bg-2);
-  border: none;
-  border-radius: var(--r-sm);
-  color: var(--text-2);
-  font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
-  padding: 7px 10px;
-  cursor: pointer;
-  text-align: left;
-  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast);
-}
-.profileViewBtn:hover { background: rgba(var(--tint), 0.16); color: var(--text); }
-
-.profileDivider {
-  height: 1px;
-  background: var(--separator);
-  margin: 0 -12px;
-}
-
-.profileChangeSection {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
 .profileChangeLabel {
   font-size: 13px;
   color: var(--text-3);
   font-weight: 500;
 }
 
-.profileSignOutBtn {
-  background: none;
-  border: none;
-  color: rgba(var(--danger), 0.85);
-  font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
-  padding: 4px 0;
-  cursor: pointer;
-  text-align: left;
-  transition: color var(--dur-fast) var(--ease-fast);
-}
-.profileSignOutBtn:hover { color: rgb(var(--danger)); }
-
-/* ── Name input (shared by profile popover) ── */
-
-.nameInput {
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  color: var(--text);
-  font-size: 13px;
-  font-family: inherit;
-  padding: 7px 10px;
-  transition: border-color var(--dur-fast) var(--ease-fast);
-}
-.nameInput:focus { border-color: var(--border-2); }
-
-.nameSaveBtn {
-  background: rgba(var(--tint), 0.16);
-  border: none;
-  border-radius: var(--r-sm);
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
-  padding: 6px 0;
-  cursor: pointer;
-  transition: background var(--dur-fast) var(--ease-fast);
-}
-.nameSaveBtn:hover:not(:disabled) { background: rgba(var(--tint), 0.24); }
-.nameSaveBtn:disabled { opacity: 0.35; cursor: default; }
-
-.queueModeToggle {
-  display: flex;
-  gap: 4px;
-}
-
-.queueModeBtn {
-  flex: 1;
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  color: var(--text-3);
-  font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
-  padding: 6px 0;
-  cursor: pointer;
-  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast), border-color var(--dur-fast) var(--ease-fast);
-}
-.queueModeBtn:hover { color: var(--text); }
-.queueModeBtnActive {
-  background: rgba(var(--tint), 0.16);
-  border-color: var(--border-2);
-  color: var(--text);
-}
+/* Sign-in popover button: full width, label centred. */
+.signInBtn { justify-content: center; }
 
 .versionRow {
   display: flex;
@@ -437,19 +302,3 @@
   color: var(--text-3);
 }
 
-.updateBtn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(var(--tint), 0.16);
-  border: none;
-  border-radius: 2em;
-  color: var(--text);
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 2px 6px;
-  transition: background var(--dur-fast) var(--ease-fast);
-}
-.updateBtn:hover { background: rgba(var(--tint), 0.24); }

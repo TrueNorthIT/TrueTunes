@@ -102,7 +102,29 @@ The Microsoft To Do sign-in had expired and couldn't be renewed unattended, so t
 4. **Office rank beyond the top ten.** Needs the server to return the user's own rank.
 5. **Slow test.** `queuedleGenerator.requirements.test.ts` takes about 147s against a 180s hook timeout, so it's flaky under load.
 6. **Dead code.** `components/CardRow.tsx` and its test are unused. Removed in the clean-up pass.
-7. **No navigation guard.** `src/main.ts` has no `will-navigate` or `setWindowOpenHandler`, so a stray link replaces the app window. Fixed in the clean-up pass.
-8. **Home's For you "+" on a station** (for example My Supermix) replaces the whole queue. Fixed in the clean-up pass.
+7. **No navigation guard (fixed).** `src/main.ts` had no `will-navigate` or `setWindowOpenHandler`, so a stray link would replace the app window. Fixed in the clean-up pass with `src/nav-guard.ts`.
+8. **Stations replaced the whole queue (fixed).** The root cause was `App.handleAddToQueue` sending PROGRAM items through `loadContent` with `queueAction: 'REPLACE'`. That path is gone, so nothing in the renderer can replace the shared queue now.
+   - **Correction:** My Supermix turned out to be a playlist, not a station.
+   - **Still your call:** opening My Supermix lands on its playlist page, where "Add to queue" queues the whole mix. Artist radio and shuffle playlists behave the same way.
 9. **A second private "Favourites"** appears in the Add-to-playlist submenu. Probably someone else's, coming back from the joined playlists query (`usePlaylists`).
 10. **Playback stopped for a while** during the batch 5 captures, and the queue count rose from 225 to 232. No agent touched the transport or the add controls, so it was the DJ or people in the office. Mentioned in case it wasn't.
+11. **YouTube Music Home came back empty** for a while during the batch 5 fixes, then recovered on its own. The service browse answers normally now. If "For you" ever goes blank again, suspect the service sign-in, not this branch.
+
+### Batch 5 review (unattended)
+The critique rated every surface Good: Lyrics 28, Container 28, mini player 26, skinny 30, dialogs 30. Fixes:
+- **Queue width clamp.** A real bug, from May: after the window went narrower than 864px, the stored queue width went negative and the nav and player bar slid under the queue sidebar. The saved width is now only a preference, and the effective width is recalculated on every resize (`lib/queueWidth.ts`).
+- **Playlist submenu.** It now stays on screen.
+- **Lyrics.** The art grows with the window, and a solo layout replaces the empty lyrics card.
+- **Mini player.** The transport shows on any hover.
+- **Container.** Station tiles say "… Radio".
+- **Smaller fixes.**
+  - Song rows stay two lines tall.
+  - The "Public" checkbox is now drawn.
+  - What's new uses one version format and has one scroll region. Its rail shows the latest 8 releases, plus the installed one, and links to GitHub for older ones.
+
+## Clean-up pass (unattended)
+- **Navigation guard.** Added to the UI and mini windows: same-origin navigation is allowed, http(s) links open in the browser, and everything else is denied. `app:openExternal` is now limited to http(s). This is covered by `npm run test:main`.
+- **Skinny mode.** The queue sidebar hides its own Now playing row, so the track no longer shows twice.
+- **Credits.** The comma in a credit now stays with the name before it, so a line can't start with ", Snoop Dogg".
+- **Sign-in popover.** Its bordered input is replaced by the shared dialog input and PillButton, and about 150 lines of dead TopNav CSS are removed.
+- **Deleted, after an import-graph scan:** CardRow, MediaCard, MediaRow, AppContext, useUserStats, gameRankAssets (the PNGs are kept), and the stale `.impeccable/surfaces/`.

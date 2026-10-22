@@ -143,7 +143,7 @@ True Tunes is a gallery after closing time: dark, quiet walls with album art and
 
 The benchmark is the Apple Music macOS app played straight: no themed or novelty worlds, and the office character lives in people and attribution (who queued what), not in decoration. Type is one family, Manrope, set in sentence case with tight negative tracking on large sizes. Home sizes everything in `em` from one fluid base, so the whole page scales from a 1280px laptop to a 3440px ultrawide without breakpoints jumping. Density is relaxed: generous rows, large artwork, nothing cramped.
 
-This document records the Home and artist page language as *the* system. Older surfaces (Leaderboard, Queuedle, Profile, the dialogs, Discover) predate it and haven't been migrated yet. When you touch one, bring it into this language rather than copying its local styles. The shared primitives in `components/common/` (Carousel, MediaCard, MediaRow) also still carry the older px-based scale and bordered buttons; see Components.
+This document records the Home and artist page language as *the* system. Older surfaces (Leaderboard, Queuedle, Profile, the dialogs, Discover) predate it and haven't been migrated yet. When you touch one, bring it into this language rather than copying its local styles. The shared primitives in `components/common/` (Carousel) also still carry the older px-based scale and bordered buttons; see Components.
 
 **Key Characteristics:**
 - One navy tint. Every tonal surface, fill and hairline is `--tint` at a low alpha.

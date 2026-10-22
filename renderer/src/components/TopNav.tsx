@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import type { NormalizedGroup } from '../types/provider';
 import { addRecentSearch } from '../lib/recentSearches';
+import { PillButton } from './common/PillButton';
+import dialog from './common/Dialog.module.css';
 import styles from '../styles/TopNav.module.css';
 
 interface Props {
@@ -283,7 +285,8 @@ export function TopNav({
                       <div className={styles.profilePopover}>
                         <div className={styles.profileChangeLabel}>Enter your name to get started</div>
                         <input
-                          className={styles.nameInput}
+                          className={dialog.input}
+                          aria-label="Your name"
                           value={nameValue}
                           placeholder="Your name"
                           onChange={(e) => setNameValue(e.target.value)}
@@ -295,13 +298,14 @@ export function TopNav({
                           spellCheck={false}
                           autoFocus
                         />
-                        <button
-                          className={styles.nameSaveBtn}
+                        <PillButton
+                          variant="primary"
+                          className={styles.signInBtn}
                           onClick={submitName}
                           disabled={!nameValue.trim()}
                         >
                           Sign in
-                        </button>
+                        </PillButton>
                         <div className={styles.versionRow}>
                           {appVersion && <div className={styles.appVersion}>v{appVersion}</div>}
                         </div>

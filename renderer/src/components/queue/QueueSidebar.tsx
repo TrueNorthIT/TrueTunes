@@ -299,6 +299,8 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
 
   const selCount = selected.size;
   const isSkinny = variant === 'skinny';
+  // Skinny docks its own Now playing card under the list, so the row here would show the track twice.
+  const nowPlayingRow = !isSkinny;
   const sidebarClass = isSkinny ? `${styles.sidebar} ${styles.skinny}` : styles.sidebar;
   const sidebarStyle = isSkinny ? undefined : { width: liveWidth };
 
@@ -341,7 +343,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
         ) : (
           <div className={styles.headerActions}>
             <button className={styles.iconBtn} onClick={onRefresh} title="Refresh" aria-label="Refresh"><RotateCw size={15} /></button>
-            <button className={styles.iconBtn} onClick={scrollToNowPlaying} title="Jump to now playing" aria-label="Jump to now playing"><LocateFixed size={15} /></button>
+            {nowPlayingRow && <button className={styles.iconBtn} onClick={scrollToNowPlaying} title="Jump to now playing" aria-label="Jump to now playing"><LocateFixed size={15} /></button>}
             {items.length > 0 && (
               <button className={styles.iconBtn} title="Clear queue" aria-label="Clear queue" onClick={() => setPendingClear(true)}><ListX size={15} /></button>
             )}
@@ -380,11 +382,11 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
           </button>
         )}
         {!isLoading && !error && items.map((item, i) => {
-          if (i < firstShown) return null;
+          if (i < firstShown || (grouped && i === playingIdx && !nowPlayingRow)) return null;
           const attr = resolveAttribution(attributionMap, item.track);
           return (
             <Fragment key={i}>
-              {grouped && i === playingIdx && <div className={styles.groupLabel}>Now playing</div>}
+              {grouped && i === playingIdx && nowPlayingRow && <div className={styles.groupLabel}>Now playing</div>}
               {grouped && i === playingIdx + 1 && <div className={styles.groupLabel}>Up next <span className={styles.groupCount}>{items.length - playingIdx - 1}</span></div>}
               {dragOverIndex === i && <div className={styles.dropLine} />}
               <DraggableQueueRow

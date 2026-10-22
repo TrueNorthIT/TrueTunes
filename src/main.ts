@@ -7,10 +7,12 @@ import { officePubSub } from './pubsub';
 import { EntraAuth, PRESENCE_SCOPE } from './auth-entra';
 import { fetchPresences, resolveRoster } from './graph-presence';
 import { pickArtistHit } from './genius-match';
+import { navDecision, isWebUrl } from './nav-guard';
 import type { EntraUser } from './auth-entra';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { readFileSync } from 'fs';
+import { pathToFileURL } from 'url';
 
 // Load secrets baked in at build time — fills gaps that dotenv didn't cover (packaged app has no .env)
 try {
@@ -1308,6 +1310,28 @@ async function onAuthReady(): Promise<void> {
   initPubSub().catch(console.error);
 }
 
+const APP_INDEX = path.join(__dirname, '..', 'renderer', 'dist', 'index.html');
+const APP_URL = app.isPackaged ? pathToFileURL(APP_INDEX).href : 'http://localhost:5173';
+
+/**
+ * Keep an app window on the app. A stray link (changelog markdown, lyrics
+ * credits) would otherwise replace the whole UI: web links go to the system
+ * browser instead, anything else is refused. Not for the auth window, which
+ * navigates through the Sonos sign-in on purpose.
+ */
+function guardNavigation(win: BrowserWindow): void {
+  win.webContents.on('will-navigate', (event) => {
+    const decision = navDecision(event.url, APP_URL);
+    if (decision === 'allow') return;
+    event.preventDefault();
+    if (decision === 'external') void shell.openExternal(event.url);
+  });
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (navDecision(url, APP_URL) === 'external') void shell.openExternal(url);
+    return { action: 'deny' };
+  });
+}
+
 function createUIWindow(): void {
   uiWin = new BrowserWindow({
     width: 1280,
@@ -1331,9 +1355,10 @@ function createUIWindow(): void {
   uiWin.on('maximize',   () => uiWin?.webContents.send('win:maximized', true));
   uiWin.on('unmaximize', () => uiWin?.webContents.send('win:maximized', false));
   setThumbar(uiWin, thumbarIsPlaying);
+  guardNavigation(uiWin);
 
   if (app.isPackaged) {
-    uiWin.loadFile(path.join(__dirname, '..', 'renderer', 'dist', 'index.html'));
+    uiWin.loadFile(APP_INDEX);
   } else {
     uiWin.loadURL('http://localhost:5173');
   }
@@ -1374,8 +1399,10 @@ function createMiniPlayerWindow(): void {
     },
   });
 
+  guardNavigation(miniWin);
+
   if (app.isPackaged) {
-    miniWin.loadFile(path.join(__dirname, '..', 'renderer', 'dist', 'index.html'), { hash: '/mini' });
+    miniWin.loadFile(APP_INDEX, { hash: '/mini' });
   } else {
     miniWin.loadURL('http://localhost:5173/#/mini');
   }
@@ -1451,7 +1478,9 @@ ipcMain.handle('debug:openDevTools', () => { if (!app.isPackaged) uiWin?.webCont
 
 ipcMain.handle('app:version', () => app.getVersion());
 ipcMain.handle('app:isNewVersion', () => isNewVersion);
-ipcMain.handle('app:openExternal', (_: IpcMainInvokeEvent, url: string) => shell.openExternal(url));
+// http(s) only: the renderer never needs another scheme, and shell.openExternal
+// on file: or protocol-handler URLs can launch programs.
+ipcMain.handle('app:openExternal', async (_: IpcMainInvokeEvent, url: string) => { if (isWebUrl(url)) await shell.openExternal(url); });
 
 ipcMain.handle('win:minimize',     () => { uiWin?.minimize(); });
 ipcMain.handle('win:maximize',     () => { if (uiWin?.isMaximized()) uiWin.unmaximize(); else uiWin?.maximize(); });

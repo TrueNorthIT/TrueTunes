@@ -7,7 +7,8 @@ import { useStats } from '../../hooks/useStats';
 import { albumQueryOptions } from '../../hooks/useAlbumBrowse';
 import { artistQueryOptions } from '../../hooks/useArtistBrowse';
 import {
-  fmtTime, getItemArt, getName, isAlbum, isArtist, isPlaylist, isTrack, resolveAlbumParams, resolveArtistParams,
+  canQueueWhole, fmtTime, getItemArt, getName, isAlbum, isArtist, isPlaylist, isProgram, isTrack, resolveAlbumParams,
+  resolveArtistParams,
 } from '../../lib/itemHelpers';
 import {
   albumNameOf, albumSub, pickTopResult, playlistSub, searchTrackRow, topSongRow, withTopSongs, type SongRow,
@@ -338,8 +339,9 @@ function TopResult({
     actions = add;
     count = stats?.topAlbums.find((a) => a.albumId && a.albumId === oid)?.count;
   } else {
-    meta = ['Playlist', playlistSub(item)].filter(Boolean).join(' · ');
-    actions = add;
+    // A station can only start by replacing the shared queue: open it instead, to add its songs.
+    meta = [isProgram(item) ? 'Station' : 'Playlist', playlistSub(item)].filter(Boolean).join(' · ');
+    actions = canQueueWhole(item) ? add : <PillButton variant="primary" onClick={onOpen}>Open</PillButton>;
   }
 
   return (

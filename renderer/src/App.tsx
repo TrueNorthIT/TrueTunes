@@ -54,6 +54,7 @@ import { usePrefetchNextLyrics } from './hooks/usePrefetchNextLyrics';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Splash } from './components/Splash';
 import { getName } from './lib/itemHelpers';
+import { effectiveDockedWidth } from './lib/queueWidth';
 
 import styles from './styles/App.module.css';
 
@@ -100,7 +101,13 @@ function MainApp() {
   const [displayName, setDisplayName] = useState<string | null | undefined>(undefined); // undefined = not yet loaded
   const [entraLoading, setEntraLoading] = useState(false);
   useEnsureFavourites(displayName);
-  const [queueDockedWidth, setQueueDockedWidth] = useState<number>(380);
+  // The saved width is the user's preference; the state is what this window can give it
+  // (effectiveDockedWidth), re-derived on every resize and never written back as the preference.
+  const queueWidthPrefRef = useRef(380);
+  const [queueDockedWidth, setQueueDockedWidth] = useState<number>(() => effectiveDockedWidth(380, window.innerWidth));
+  const fitQueueWidth = useCallback(() => {
+    setQueueDockedWidth(effectiveDockedWidth(queueWidthPrefRef.current, window.innerWidth));
+  }, []);
   const queueSidebarRef = useRef<QueueSidebarHandle>(null);
   // Read inside handleAddToQueue without making it depend on queue contents —
   // it's passed to most of the tree, and rebuilding it on every queue tick would
@@ -115,26 +122,26 @@ function MainApp() {
 
 useEffect(() => {
     window.sonos.getDisplayName().then(setDisplayName);
-    window.sonos.getQueueDockedWidth().then(setQueueDockedWidth).catch(() => {});
+    window.sonos.getQueueDockedWidth().then((w) => {
+      queueWidthPrefRef.current = w;
+      fitQueueWidth();
+    }).catch(() => {});
     return window.sonos.onEntraReady(() => {
       window.sonos.getDisplayName().then(setDisplayName).catch(() => {});
     });
-  }, []);
+  }, [fitQueueWidth]);
 
   useEffect(() => {
-    function clamp() {
-      const max = window.innerWidth - (800 + 64);
-      setQueueDockedWidth((w) => (w > max ? max : w));
-    }
-    window.addEventListener('resize', clamp);
-    clamp();
-    return () => window.removeEventListener('resize', clamp);
-  }, []);
+    window.addEventListener('resize', fitQueueWidth);
+    fitQueueWidth();
+    return () => window.removeEventListener('resize', fitQueueWidth);
+  }, [fitQueueWidth]);
 
   const handleSetQueueDockedWidth = useCallback((width: number) => {
-    setQueueDockedWidth(width);
+    queueWidthPrefRef.current = width;
+    fitQueueWidth();
     window.sonos.setQueueDockedWidth(width).catch(() => {});
-  }, []);
+  }, [fitQueueWidth]);
 
   const splashReadyRef = useRef(false);
   useEffect(() => {
@@ -298,23 +305,10 @@ useEffect(() => {
       // hand Queuedle wrong answers for "who queued this?", and feed the
       // recommender its own output until the corpus is mostly self-generated.
       const attribute = opts?.attribute !== false;
+      // Sonos can only start a station by replacing the whole queue, and this queue is the office's.
+      // Every caller routes through here, so refuse it once: a station opens as its track list instead.
       if (isProgram(item)) {
-        const rid = item.resource?.id as SonosItemId | undefined;
-        const iid = typeof item.id === 'object' ? (item.id as SonosItemId) : undefined;
-        const r = (await window.sonos.loadContent({
-          type: item.resource?.type ?? item.type ?? 'PROGRAM',
-          id: {
-            objectId: rid?.objectId ?? iid?.objectId,
-            accountId: rid?.accountId ?? iid?.accountId,
-            serviceId: rid?.serviceId ?? iid?.serviceId,
-          },
-          playbackAction: 'PLAY',
-          playModes: { shuffle: false },
-          defaults: item.resource?.defaults ?? undefined,
-          queueAction: 'REPLACE',
-        })) as { error?: string } | null;
-        if (r && 'error' in r && r.error) showToast('Play failed: ' + r.error);
-        else reloadQueue();
+        showToast('Open the station to add its songs');
         return;
       }
 

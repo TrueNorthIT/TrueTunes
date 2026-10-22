@@ -499,6 +499,16 @@ describe('QueueSidebar — grouping', () => {
     expect(screen.getByRole('button', { name: /Played/ })).toHaveAttribute('aria-expanded', 'true');
   });
 
+  it('leaves the playing track to the Now playing card in skinny mode, so it shows once', () => {
+    setup({ currentQueueItemId: '2', variant: 'skinny' });
+    expect(screen.queryByTestId('row-1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Now playing')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Jump to now playing' })).not.toBeInTheDocument();
+    expect(screen.getByText('Up next')).toBeInTheDocument();
+    expect(screen.getByTestId('row-2')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Played/ })).toBeInTheDocument();
+  });
+
   it('is a flat list when nothing is playing', () => {
     setup();
     expect(screen.getByTestId('row-0')).toBeInTheDocument();
