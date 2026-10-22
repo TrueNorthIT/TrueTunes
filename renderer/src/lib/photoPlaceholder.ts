@@ -39,7 +39,8 @@ export function usePhotoState(url: string | null): { state: PhotoState; src: str
     if (!url) return;
     let cancelled = false;
     const settle = (src: string | null, blank: boolean) => { if (!cancelled) setResult({ url, src, blank }); };
-    void fetchImage(url).then(src => {
+    // priority: the hero is hidden until this settles, so it must not wait behind the page's tiles
+    void fetchImage(url, true).then(src => {
       if (!src) return settle(null, true);
       const img = new Image();
       img.onload = () => {

@@ -37,7 +37,8 @@ export function getCached(url: string): string | null {
   return objectUrl;
 }
 
-export function fetchImage(url: string): Promise<string | null> {
+/** `priority` jumps the queue: for the one image a page waits on (the artist hero), not for tiles. */
+export function fetchImage(url: string, priority = false): Promise<string | null> {
   const cached = getCached(url);
   if (cached) return Promise.resolve(cached);
 
@@ -80,6 +81,8 @@ export function fetchImage(url: string): Promise<string | null> {
 
     if (active < MAX_CONCURRENT) {
       run();
+    } else if (priority) {
+      queue.unshift(run);
     } else {
       queue.push(run);
     }

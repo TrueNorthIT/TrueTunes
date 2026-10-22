@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Reset the module between tests to get a fresh cache, queue, and active counter.
-let fetchImage: (url: string) => Promise<string | null>;
+let fetchImage: (url: string, priority?: boolean) => Promise<string | null>;
 let getCached: (url: string) => string | null;
 
 const mockFetchGlobal = vi.fn();
@@ -201,5 +201,21 @@ describe('LRU eviction', () => {
 
     expect(mockRevokeObjectURL).toHaveBeenCalledWith('blob:1');
     expect(mockRevokeObjectURL).not.toHaveBeenCalledWith('blob:0');
+  });
+});
+
+describe('priority', () => {
+  it('a priority fetch jumps ahead of queued ones', async () => {
+    const order: string[] = [];
+    const releases: Array<() => void> = [];
+    mockFetchGlobal.mockImplementation((url: string) => {
+      order.push(url);
+      return new Promise<Response>(res => releases.push(() => res(okResponse())));
+    });
+    for (let i = 0; i < 6; i++) void fetchImage(`https://example.com/tile${i}.jpg`); // 4 run, 2 queue
+    void fetchImage('https://example.com/hero.jpg', true);
+    releases[0]();
+    await vi.waitFor(() => expect(order).toHaveLength(5));
+    expect(order[4]).toBe('https://example.com/hero.jpg');
   });
 });
