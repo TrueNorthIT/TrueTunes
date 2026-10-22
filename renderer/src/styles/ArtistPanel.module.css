@@ -41,7 +41,13 @@
   object-position: center 25%;
   display: block;
   transform: scale(1.02); /* trims the thin light border some sources carry, so no edge reads as a rectangle */
+  /* Held back (at most 300ms) until the crop around the faces is known; a later crop eases over, never jumps. */
+  opacity: 0;
+  transition:
+    opacity var(--dur) var(--ease),
+    object-position 0.6s var(--ease);
 }
+.heroImgShown { opacity: 1; }
 /* Legibility: the image-card scrim, a light one under the nav and the deep one up from the bottom. */
 .heroMedia::after {
   content: '';
@@ -483,4 +489,5 @@
   .albumAdd,
   .socialIconBtn { transition: none; }
   .waveformBar { animation: none; transform: scaleY(0.6); }
+  .heroImg { transition: none; }
 }

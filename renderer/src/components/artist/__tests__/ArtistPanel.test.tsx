@@ -9,6 +9,8 @@ const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({ useLocation: () => mockUseLocation(), useNavigate: () => mockNavigate }));
 const mockPhotoState = vi.fn();
 vi.mock('../../../lib/photoPlaceholder', () => ({ usePhotoState: (...args: unknown[]) => mockPhotoState(...args) }));
+const mockPhotoFocus = vi.fn();
+vi.mock('../../../hooks/usePhotoFocus', () => ({ usePhotoFocus: (...args: unknown[]) => mockPhotoFocus(...args) }));
 const mockOpenItem = vi.fn();
 const mockResolveAndOpen = vi.fn();
 const mockUseImage = vi.fn();
@@ -82,6 +84,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockUseImage.mockReturnValue(null);
   mockPhotoState.mockReturnValue({ state: 'placeholder', src: null });
+  mockPhotoFocus.mockReturnValue({ data: undefined, isPending: true });
   mockStats.mockReturnValue({ data: undefined });
   mockUseLocation.mockReturnValue({ state: { item: artistItem } });
   mockUseArtistBrowse.mockReturnValue({ data: makeData(), isLoading: false });
@@ -145,6 +148,25 @@ describe('ArtistPanel', () => {
       expect(container.querySelector('[class*="heroMedia"] img')).toHaveAttribute('src', 'https://lh3.example/a=w2000-h2000-l90-rj');
       expect(container.querySelector('[class*="printImg"]')).toBeNull();
       expect(screen.getByRole('heading', { name: 'The Beatles' })).toBeInTheDocument();
+    });
+
+    it('looks for the focal point once per photo URL and shows the photo when it is known', () => {
+      mockPhotoState.mockImplementation((u: string | null) => ({ state: 'photo', src: u }));
+      mockPhotoFocus.mockReturnValue({ data: { y: 0.5, anchor: 0.42, aspect: 1, via: 'face' }, isPending: false });
+      withPhoto();
+      const { container } = render(<ArtistPanel {...defaultProps} />);
+      const url = 'https://lh3.example/a=w2000-h2000-l90-rj';
+      expect(mockPhotoFocus).toHaveBeenCalledWith(url, url);
+      const img = container.querySelector('[class*="heroMedia"] img');
+      expect(img?.className).toMatch(/heroImgShown/);
+      expect(img).toHaveAttribute('data-focus', 'face');
+    });
+
+    it('holds the photo back while the focal point is still being found', () => {
+      mockPhotoState.mockImplementation((u: string | null) => ({ state: 'photo', src: u }));
+      withPhoto();
+      const { container } = render(<ArtistPanel {...defaultProps} />);
+      expect(container.querySelector('[class*="heroMedia"] img')?.className).not.toMatch(/heroImgShown/);
     });
 
     it('keeps the same hero but shows no portrait while the photo is still being checked', () => {
