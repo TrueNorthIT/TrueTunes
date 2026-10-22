@@ -4,28 +4,59 @@
   --bg: #12131f;
   --bg-1: #1b1d2e;
   --bg-2: rgba(var(--tint), 0.09);
-  --bg-glass: rgba(16, 17, 30, 0.88);
   --border: rgba(var(--tint), 0.13);
   --border-2: rgba(var(--tint), 0.24);
+
+  /* Tonal surfaces (the One Tint Rule): resting card, featured / hovered card, row hover. */
+  --surface: rgba(var(--tint), 0.06);
+  --surface-hi: rgba(var(--tint), 0.085);
+  --row-hover: rgba(var(--tint), 0.09);
+
   /* Dark-mode label scale, tinted to match the window */
   --label: rgba(246, 247, 255, 0.93);
   --label-2: rgba(222, 226, 250, 0.62);
-  --label-3: rgba(222, 226, 250, 0.32); /* disabled / placeholder only, it is below 4.5:1 on our surfaces */
   --text: var(--label);
   --text-2: var(--label-2);
-  /* --text-3 carries real subtitles, so it stays at .5 rather than .3 (contrast) */
-  --text-3: rgba(222, 226, 250, 0.52);
+  /* --text-3 carries real subtitles on raised surfaces and washes; .64 measures >= 4.5:1 on cards. */
+  --text-3: rgba(224, 228, 252, 0.64);
+  /* Titles at rest, and text over artwork (always sits on a scrim). */
+  --title-rest: rgba(255, 255, 255, 0.84);
+  --on-art: #fff;
+  --on-art-2: rgba(255, 255, 255, 0.75);
   --separator: rgba(var(--tint), 0.1);
+  /* Destructive actions only (Clear, Delete): a triplet like --tint, used tonally, never as a slab. */
+  --danger: 248, 113, 113;
+
   /* artwork tiles: soft drop shadow, plus a 1px inner keyline drawn by each art box's ::after */
   --art-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --art-lift-shadow: 0 8px 18px rgba(0, 0, 0, 0.4);
   --art-keyline: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  /* Image-card scrim: darker at the top for the caption, deep at the bottom for title and artist. */
+  --scrim-art:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 22%),
+    linear-gradient(to top, rgba(0, 0, 0, 0.74) 0%, rgba(0, 0, 0, 0.26) 42%, rgba(0, 0, 0, 0) 70%);
+  /* Tiles whose art carries its own text get a deeper, bottom-only scrim. */
+  --scrim-deep: linear-gradient(to top, rgba(0, 0, 0, 0.86) 0%, rgba(0, 0, 0, 0.4) 38%, rgba(0, 0, 0, 0) 68%);
+
   --r-sm: 6px;
   --r-md: 10px;
   --r-lg: 16px;
   --nav-h: 64px; /* 12px top gap + 44px pill + 8px clearance */
   --player-h: 112px; /* 64px bar + 24px bottom margin + 24px clearance */
-  --queue-w: 300px;
   --card-size: clamp(140px, 16vw, 320px);
+
+  /* Motion: one pair for state changes that need a little room, one for hover and focus feedback. */
+  --dur: 0.25s;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 0.15s;
+  --ease-fast: ease;
+
+  /* Focus: every interactive element gets this ring (see the :focus-visible rule below). */
+  --focus-width: 2px;
+  --focus-color: var(--text-2);
+
+  /* Fluid page base: 14px at 1280 wide, 16px from about 1730px up. See .page-scale. */
+  --page-scale: clamp(14px, calc(0.45vw + 8.2px), 16px);
 }
 
 *,
@@ -100,7 +131,52 @@ html[data-mini] #root {
   background-color: rgba(255, 255, 255, 0.22);
 }
 
-@keyframes skelPulse {
-  0%, 100% { opacity: 0.3; }
-  50%       { opacity: 0.55; }
+/*
+ * Page scale. Put className="page-scale" on a page root and size everything inside it in em: the
+ * page then scales with the window from one base. Components in components/common are written in em.
+ *
+ * 13px floor: no content text renders below 13px. For small text write max(13px, Xem), e.g.
+ * font-size: max(13px, 0.86em). 0.93em is the smallest plain em step that holds 13px at the 14px base.
+ */
+.page-scale {
+  font-size: var(--page-scale);
+}
+/* Buttons don't inherit font size (Chromium sets 13.33px), which breaks the em scale inside every
+   button-wrapped tile. Zero-specificity so a component's own font-size still wins. */
+:where(.page-scale) :where(button) {
+  font: inherit;
+}
+
+/* One focus ring for everything. Zero specificity, so a component can restyle its own (e.g. an input
+   that draws the ring on its wrapper) without a fight. */
+:where(:focus-visible) {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: 2px;
+}
+
+/* Loading placeholder: add class="skeleton" and give the element its real size, so nothing shifts on
+   load. Stagger with animation-delay. Static under reduced motion. */
+.skeleton {
+  background: rgba(var(--tint), 0.18);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+/* Static under reduced motion: the same keyframes hold one opacity, so every skeleton in the app,
+   including module classes that name skeleton-pulse directly, stops pulsing. */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes skeleton-pulse {
+    0%,
+    50%,
+    100% {
+      opacity: 0.7;
+    }
+  }
 }

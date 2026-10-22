@@ -1,4 +1,5 @@
 import { useImage } from '../../hooks/useImage';
+import { AddButton } from './AddButton';
 import { ExplicitBadge } from './ExplicitBadge';
 import styles from './MediaRow.module.css';
 
@@ -56,9 +57,7 @@ export function MediaRow({
         {subtitle !== undefined && <div className={styles.sub}>{subtitle}</div>}
       </div>
       {trailing !== undefined && <div className={styles.trailing}>{trailing}</div>}
-      {onAdd && (
-        <button className={styles.addBtn} onClick={e => { e.stopPropagation(); onAdd(); }}>+</button>
-      )}
+      {onAdd && <AddButton className={styles.add} label={`Add ${name} to queue`} onClick={onAdd} />}
     </div>
   );
 }

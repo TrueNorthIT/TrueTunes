@@ -245,7 +245,7 @@ describe('SearchResults — Other section', () => {
       id: { objectId: 'pl-1', serviceId: 'svc' },
     };
     render(<SearchResults results={[playlist]} onAddToQueue={onAddToQueue} />);
-    const addBtn = screen.getByText('+');
+    const addBtn = screen.getByRole('button', { name: /^add .* to queue$/i });
     fireEvent.click(addBtn);
     expect(onAddToQueue).toHaveBeenCalledWith(playlist);
   });

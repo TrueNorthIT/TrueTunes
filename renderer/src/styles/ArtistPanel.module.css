@@ -302,17 +302,13 @@
 }
 
 /* ── Loading skeletons ── */
-@keyframes pulse {
-  0%, 100% { opacity: 0.35; }
-  50% { opacity: 0.6; }
-}
 
 .skeletonTile {
   flex: 0 0 220px;
   height: 220px;
   border-radius: 6px;
   background: var(--bg-2);
-  animation: pulse 1.8s ease-in-out infinite;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
 .songsSkeleton {
   flex: 1;
@@ -324,14 +320,14 @@
   border-radius: var(--r-sm);
   background: var(--bg-2);
   margin-bottom: 2px;
-  animation: pulse 1.8s ease-in-out infinite;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
 
 .skeletonCard {
   height: 182px;
   border-radius: var(--r-md);
   background: var(--bg-2);
-  animation: pulse 1.8s ease-in-out infinite;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
 
 /* ── Shelves ── */

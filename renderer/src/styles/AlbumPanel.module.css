@@ -160,10 +160,6 @@
 }
 
 /* ── Skeleton tracks ── */
-@keyframes pulse {
-  0%, 100% { opacity: 0.3; }
-  50%       { opacity: 0.6; }
-}
 .skeletonRow {
   display: grid;
   grid-template-columns: var(--track-cols);
@@ -173,25 +169,25 @@
 .skeletonOrdinal {
   height: 12px;
   background: var(--bg-2); border-radius: 3px;
-  animation: pulse 1.8s ease-in-out infinite;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
 .skeletonArt {
   width: 38px; height: 38px;
   background: var(--bg-2); border-radius: 4px;
-  animation: pulse 1.8s ease-in-out infinite;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
 .skeletonTitle {
   height: 12px; background: var(--bg-2); border-radius: 3px;
-  animation: pulse 1.8s ease-in-out infinite;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
 .skeletonSub {
   height: 10px; background: var(--bg-2); border-radius: 3px;
-  animation: pulse 1.8s ease-in-out infinite;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
 .skeletonDur {
   height: 10px;
   background: var(--bg-2); border-radius: 3px;
-  animation: pulse 1.8s ease-in-out infinite;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
 
 .selBar {

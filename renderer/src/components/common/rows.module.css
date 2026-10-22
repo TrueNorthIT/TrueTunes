@@ -1,0 +1,131 @@
+/* Shared by TrackRow and ChartRow: borderless rows that fill with a tint on hover or focus. */
+
+.row {
+  border-radius: 0.65em;
+  transition: background var(--dur-fast) var(--ease-fast);
+  min-width: 0;
+}
+.row:hover,
+.row:focus-within { background: var(--row-hover); }
+
+.track {
+  display: flex;
+  align-items: center;
+  gap: 0.9em;
+  padding: 0.45em 0.6em;
+}
+.chart,
+.chartHead {
+  display: grid;
+  grid-template-columns: 2.4em minmax(0, 1.6fr) minmax(0, 1fr) 4em 2.2em;
+  align-items: center;
+  column-gap: 0.9em;
+}
+.chart { padding: 0.55em 0.6em; }
+
+/* Column labels over a chart: same grid as the rows. */
+.chartHead {
+  padding: 0 0.6em 0.6em;
+  font-size: max(13px, 0.86em);
+  color: var(--text-3);
+}
+.chartHead > :nth-child(4) { grid-column: 4; }
+
+/* Thumbnail: a click target for mouse users only; the title button is the keyboard and screen reader path. */
+.artBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  display: block;
+  flex-shrink: 0;
+  cursor: pointer;
+  border-radius: 0.6em;
+}
+.art,
+.artPh {
+  width: 3.2em;
+  height: 3.2em;
+  border-radius: 0.6em;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: var(--bg-1);
+}
+/* The img stays inline (Home's rows were built with the line-box gap under it); the placeholder must be a box to have a size. */
+.artPh { display: block; }
+
+.text { min-width: 0; flex: 1; }
+.line {
+  font-size: 1.07em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.title {
+  font-weight: 500;
+  color: var(--title-rest);
+  transition: color var(--dur-fast) var(--ease-fast);
+}
+.row:hover .title,
+.row:focus-within .title { color: var(--on-art); }
+.artist { font-weight: 400; color: var(--text-3); }
+.dash { white-space: pre; }
+.reason {
+  font-size: max(13px, 0.86em);
+  color: var(--text-3);
+  margin-top: 0.15em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* + : out of sight until the row is hovered or has focus. */
+.add { opacity: 0; }
+.row:hover .add,
+.row:focus-within .add,
+.add:focus-visible { opacity: 1; }
+.addSpacer { width: 2.2em; }
+
+/* Chart cells */
+.rank {
+  font-size: 1.15em;
+  font-weight: 500;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.titleCell { display: flex; align-items: center; gap: 0.9em; min-width: 0; }
+.chartTitle {
+  font-size: 1.1em;
+  font-weight: 500;
+  color: var(--title-rest);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color var(--dur-fast) var(--ease-fast);
+}
+.row:hover .chartTitle,
+.row:focus-within .chartTitle { color: var(--on-art); }
+.chartArtist {
+  min-width: 0;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.plays {
+  text-align: right;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Narrow page: the artist drops under the title. */
+@container (max-width: 1100px) {
+  .line { display: flex; flex-direction: column; white-space: normal; }
+  .line > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dash { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row,
+  .title,
+  .chartTitle { transition: none; }
+}

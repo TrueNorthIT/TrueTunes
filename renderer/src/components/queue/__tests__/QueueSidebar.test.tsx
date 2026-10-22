@@ -109,7 +109,9 @@ beforeEach(() => {
 describe('QueueSidebar — rendering', () => {
   it('renders item count in header', () => {
     setup();
-    expect(screen.getByText(/Queue · Living Room · 3/)).toBeInTheDocument();
+    expect(screen.getByText('Queue')).toBeInTheDocument();
+    expect(screen.getByText('Living Room')).toBeInTheDocument();
+    expect(screen.getByLabelText('3 tracks')).toHaveTextContent('3');
   });
 
   it('shows empty message when no items', () => {
@@ -474,5 +476,33 @@ describe('DJ autoplay section', () => {
     setup({});
     expect(screen.queryByText(/DJ paused/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/DJ takes over/i)).not.toBeInTheDocument();
+  });
+});
+
+// ─── grouping: played / now playing / up next ────────────────────────────────
+
+describe('QueueSidebar — grouping', () => {
+  it('folds played tracks away, labels now playing and up next', () => {
+    setup({ currentQueueItemId: '2' }); // index 1 is playing
+    expect(screen.queryByTestId('row-0')).not.toBeInTheDocument();
+    expect(screen.getByTestId('row-1')).toBeInTheDocument();
+    expect(screen.getByTestId('row-2')).toBeInTheDocument();
+    expect(screen.getByText('Now playing')).toBeInTheDocument();
+    expect(screen.getByText('Up next')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Played/ })).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('opens the played tracks from their label', async () => {
+    const { user } = setup({ currentQueueItemId: '2' });
+    await user.click(screen.getByRole('button', { name: /Played/ }));
+    expect(screen.getByTestId('row-0')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Played/ })).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('is a flat list when nothing is playing', () => {
+    setup();
+    expect(screen.getByTestId('row-0')).toBeInTheDocument();
+    expect(screen.queryByText('Now playing')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Played/ })).not.toBeInTheDocument();
   });
 });

@@ -151,6 +151,7 @@ export function TopNav({
           <div className={styles.inner}>
             <button
               className={`${styles.iconBtn}${isAtRoot ? ' ' + styles.active : ''}`}
+              aria-current={isAtRoot ? 'page' : undefined}
               onClick={handleClear}
               title="Home"
             >
@@ -158,6 +159,7 @@ export function TopNav({
             </button>
             <button
               className={`${styles.iconBtn}${isLeaderboard ? ' ' + styles.active : ''}`}
+              aria-current={isLeaderboard ? 'page' : undefined}
               onClick={() => navigate('/leaderboard')}
               title="Leaderboard"
             >
@@ -165,6 +167,7 @@ export function TopNav({
             </button>
             <button
               className={`${styles.iconBtn}${isQueuedle ? ' ' + styles.active : ''}`}
+              aria-current={isQueuedle ? 'page' : undefined}
               onClick={() => navigate('/queuedle')}
               title="Queuedle — daily game"
             >
@@ -173,6 +176,7 @@ export function TopNav({
 
             <button
               className={`${styles.iconBtn}${isDiscover ? ' ' + styles.active : ''}`}
+              aria-current={isDiscover ? 'page' : undefined}
               onClick={() => navigate('/discover')}
               title="Discover — music for the room"
             >

@@ -45,7 +45,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ showToast }}>
       {children}
       {createPortal(
-        <div className={styles.container}>
+        <div className={styles.container} role="status" aria-live="polite">
           {toasts.map(t => (
             <div key={t.id} className={`${styles.toast} ${styles[t.type]}`}>
               {t.message}

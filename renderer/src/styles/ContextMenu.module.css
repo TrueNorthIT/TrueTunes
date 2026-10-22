@@ -1,13 +1,13 @@
 .menu {
   position: fixed;
   z-index: 9999;
-  background: var(--bg-glass, rgba(22, 22, 24, 0.92));
-  backdrop-filter: blur(24px) saturate(160%);
-  border: 1px solid var(--border);
+  background: var(--material-bg);
+  backdrop-filter: var(--material-filter);
+  border: 1px solid var(--separator);
   border-radius: var(--r-md);
   padding: 4px;
   min-width: 190px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), var(--material-edge);
   animation: menuIn 0.1s ease-out;
   user-select: none;
 }
@@ -31,12 +31,12 @@
   transition: background 0.08s, color 0.08s;
 }
 .item:hover {
-  background: var(--bg-2);
+  background: var(--row-hover);
   color: var(--text);
 }
 
 .itemIcon {
-  font-size: 12px;
+  font-size: 13px;
   width: 16px;
   text-align: center;
   flex-shrink: 0;
@@ -45,14 +45,14 @@
 
 .itemArrow {
   margin-left: auto;
-  font-size: 10px;
+  font-size: 13px;
   color: var(--text-3);
   padding-left: 8px;
 }
 
 .separator {
   height: 1px;
-  background: var(--border);
+  background: var(--separator);
   margin: 4px 2px;
 }
 
@@ -64,15 +64,15 @@
 .submenu {
   position: fixed;
   z-index: 10000;
-  background: var(--bg-glass, rgba(22, 22, 24, 0.92));
-  backdrop-filter: blur(24px) saturate(160%);
-  border: 1px solid var(--border);
+  background: var(--material-bg);
+  backdrop-filter: var(--material-filter);
+  border: 1px solid var(--separator);
   border-radius: var(--r-md);
   padding: 4px;
   min-width: 190px;
   max-height: 280px;
   overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), var(--material-edge);
   animation: menuIn 0.1s ease-out;
 }
 
@@ -83,7 +83,7 @@
 }
 
 .emptyHint {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-3);
   padding: 6px 10px;
   pointer-events: none;

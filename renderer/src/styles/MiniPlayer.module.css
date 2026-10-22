@@ -13,15 +13,15 @@
 
   /* Near-opaque base so the shell renders even when the transparent Electron
      window leaves backdrop-filter with nothing to sample. */
-  background: rgba(14, 14, 20, 0.96);
+  background: var(--bg);
   backdrop-filter: blur(24px) saturate(130%);
 
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--separator);
   /* Only inset shadows — outer shadows get clipped at the window's square
      boundary, which paints a visible rectangular halo around the rounded
      shell. The OS will draw the window shadow instead. */
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    var(--material-edge),
     0 -1px 0 rgba(0, 0, 0, 0.2) inset;
 
   -webkit-app-region: drag;
@@ -47,8 +47,8 @@
   flex-shrink: 0;
   border-radius: 12px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--row-hover);
+  border: 1px solid var(--separator);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.40);
 }
 .art img {
@@ -64,7 +64,7 @@
   align-items: center;
   justify-content: center;
   font-size: 24px;
-  color: rgba(255, 255, 255, 0.25);
+  color: var(--text-3);
 }
 
 /* ── Track info ── */
@@ -80,17 +80,17 @@
   -webkit-app-region: no-drag;
 }
 .title {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   letter-spacing: 0.01em;
 }
 .artist {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.50);
+  font-size: 13px;
+  color: var(--text-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -114,7 +114,7 @@
   transform: translateY(-50%);
   height: 3px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.10);
+  background: var(--row-hover);
   transition: height 0.15s;
   pointer-events: none;
 }
@@ -128,20 +128,20 @@
   transform: translateY(-50%);
   height: 3px;
   border-radius: 2px;
-  background: var(--accent, rgba(255, 255, 255, 0.65));
+  background: var(--accent, var(--text-2));
   transition: width 0.5s linear, height 0.15s, background 0.15s;
   pointer-events: none;
 }
 .progress:hover .progressFill {
   height: 5px;
-  background: #fff;
+  background: var(--on-art);
 }
 .timeRow {
   display: flex;
   justify-content: space-between;
   margin-top: 3px;
-  font-size: 9px;
-  color: rgba(255, 255, 255, 0.35);
+  font-size: 13px;
+  color: var(--text-3);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
 }
@@ -160,24 +160,24 @@
   border-radius: 50%;
   border: none;
   background: none;
-  color: rgba(255, 255, 255, 0.70);
+  color: var(--text-2);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.12s, color 0.12s;
+  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast);
   -webkit-app-region: no-drag;
 }
-.btn:hover  { background: rgba(255, 255, 255, 0.12); color: #fff; }
-.btn:active { background: rgba(255, 255, 255, 0.20); }
+.btn:hover  { background: rgba(var(--tint), 0.16); color: var(--text); }
+.btn:active { background: rgba(var(--tint), 0.24); }
 
 .playBtn {
   width: 34px;
   height: 34px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(var(--tint), 0.16);
+  border: 1px solid var(--separator);
 }
-.playBtn:hover { background: rgba(255, 255, 255, 0.22); }
+.playBtn:hover { background: rgba(var(--tint), 0.24); }
 
 /* ── Close button ──
  * Tucked flush into the top-right corner. The outer corner radius matches the
@@ -192,19 +192,19 @@
   height: 22px;
   border: none;
   border-radius: 0 18px 0 8px;
-  background: rgba(255, 255, 255, 0.07);
-  color: rgba(255, 255, 255, 0.40);
+  background: var(--row-hover);
+  color: var(--text-3);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding-top: 2px;
   padding-right: 2px;
-  font-size: 10px;
+  font-size: 13px;
   line-height: 1;
   flex-shrink: 0;
-  transition: background 0.12s, color 0.12s;
+  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast);
   -webkit-app-region: no-drag;
   z-index: 2;
 }
-.closeBtn:hover { background: rgba(220, 50, 50, 0.55); color: #fff; }
+.closeBtn:hover { background: rgba(var(--danger), 0.5); color: var(--text); }

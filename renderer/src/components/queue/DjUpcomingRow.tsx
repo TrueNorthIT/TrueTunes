@@ -1,3 +1,4 @@
+import { Disc3 } from 'lucide-react';
 import { useImage } from '../../hooks/useImage';
 import styles from '../../styles/QueueSidebar.module.css';
 
@@ -26,9 +27,6 @@ export function DjUpcomingRow({ track, idle }: Props) {
       className={[styles.row, styles.djRow, idle ? styles.djRowIdle : ''].filter(Boolean).join(' ')}
       title={track.because}
     >
-      {/* Empty spacer where the drag handle sits, so the art lines up with the
-          rows above without implying these can be dragged. */}
-      <div className={styles.dragHandle} aria-hidden="true" />
       <div className={styles.artWrap}>
         {art ? (
           <img className={styles.art} src={art} alt="" loading="lazy" />
@@ -38,9 +36,15 @@ export function DjUpcomingRow({ track, idle }: Props) {
       </div>
       <div className={styles.text}>
         <div className={styles.name}>{track.trackName}</div>
-        <div className={styles.sub}>{track.artist}</div>
-        <div className={styles.attribution}>{track.because}</div>
+        <div className={styles.subLine}>
+          <span className={styles.sub}>{track.artist}</span>
+        </div>
       </div>
+      {/* Where a person's avatar sits on a real row: the DJ, with its reason as the name. */}
+      <span className={styles.djPick} title={track.because}>
+        <Disc3 size={14} aria-hidden="true" />
+        <span className={styles.srOnly}>{track.because}</span>
+      </span>
     </div>
   );
 }

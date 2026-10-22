@@ -64,18 +64,18 @@ describe('MediaRow', () => {
     it('renders add button when onAdd is provided', () => {
       const onAdd = vi.fn();
       render(<MediaRow name="Track" onAdd={onAdd} />);
-      expect(screen.getByRole('button', { name: '+' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^add .* to queue$/i })).toBeInTheDocument();
     });
 
     it('does not render add button when onAdd is not provided', () => {
       render(<MediaRow name="Track" />);
-      expect(screen.queryByRole('button', { name: '+' })).toBeNull();
+      expect(screen.queryByRole('button', { name: /^add .* to queue$/i })).toBeNull();
     });
 
     it('calls onAdd when add button is clicked', () => {
       const onAdd = vi.fn();
       render(<MediaRow name="Track" onAdd={onAdd} />);
-      fireEvent.click(screen.getByRole('button', { name: '+' }));
+      fireEvent.click(screen.getByRole('button', { name: /^add .* to queue$/i }));
       expect(onAdd).toHaveBeenCalledOnce();
     });
 
@@ -83,7 +83,7 @@ describe('MediaRow', () => {
       const onClick = vi.fn();
       const onAdd = vi.fn();
       render(<MediaRow name="Track" onClick={onClick} onAdd={onAdd} />);
-      fireEvent.click(screen.getByRole('button', { name: '+' }));
+      fireEvent.click(screen.getByRole('button', { name: /^add .* to queue$/i }));
       expect(onAdd).toHaveBeenCalledOnce();
       expect(onClick).not.toHaveBeenCalled();
     });

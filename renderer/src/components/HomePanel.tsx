@@ -59,6 +59,13 @@ import type { ServiceSearch } from '../types/ServiceSearch';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
 import { artistImageQueryOptions, artistQueryOptions } from '../hooks/useArtistBrowse';
 import { Carousel } from './common/Carousel';
+import { ArtCard } from './common/ArtCard';
+import { ChartHead, ChartRow } from './common/ChartRow';
+import { ImageTile } from './common/ImageTile';
+import { PersonCard } from './common/PersonCard';
+import { SectionCard, SeeAll } from './common/SectionCard';
+import { TrackRow } from './common/TrackRow';
+import { ArtistLinks as SharedArtistLinks } from './common/TrackLinks';
 import { SearchResults } from './search/SearchResults';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/HomePanel.module.css';
@@ -119,116 +126,49 @@ function openArtistWith(
   else void resolveAndOpen(getName(item), 'artist', { serviceId, accountId });
 }
 
-function SeeAll({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button type="button" className={styles.seeAll} onClick={onClick}>
-      {label}
-    </button>
-  );
-}
-
 /** Each credited name is its own link; only the first can use the track's artist id. */
 function ArtistLinks({ t }: { t: NavTrack }) {
   const nav = useContext(NavContext);
-  const names = t.artist.split(/,\s*/).filter(Boolean);
-  return (
-    <span className={styles.artistLinks}>
-      {names.map((name, i) => (
-        <span key={`${name}-${i}`}>
-          {i > 0 && ', '}
-          <button
-            type="button"
-            className={styles.artistBtn}
-            aria-label={`${name}, open artist`}
-            onClick={(e) => { e.stopPropagation(); nav.openArtist(name, t, i === 0); }}
-          >
-            {name}
-          </button>
-        </span>
-      ))}
-    </span>
-  );
-}
-
-function TitleButton({ t }: { t: NavTrack }) {
-  const nav = useContext(NavContext);
-  return (
-    <button
-      type="button"
-      className={styles.titleBtn}
-      aria-label={`${t.title}, open album`}
-      onClick={() => nav.openAlbum(t)}
-    >
-      {t.title}
-    </button>
-  );
-}
-
-interface TrackRowProps {
-  t: NavTrack;
-  reason?: string;
-  onAdd?: () => void;
+  return <SharedArtistLinks artist={t.artist} onOpenArtist={(name, isFirst) => nav.openArtist(name, t, isFirst)} />;
 }
 
 /** Compact row: art, "title — artist", muted reason line, and a + on hover or focus. */
-function TrackRow({ t, reason, onAdd }: TrackRowProps) {
+function PickRow({ t, reason, onAdd }: { t: NavTrack; reason?: string; onAdd?: () => void }) {
   const nav = useContext(NavContext);
-  const art = useImage(t.imageUrl ?? null);
   return (
-    <li className={styles.trackRow} onContextMenu={(e) => nav.menu(t, e)} onMouseEnter={() => nav.prefetch(t)}>
-      <button type="button" className={styles.artBtn} tabIndex={-1} aria-hidden="true" onClick={() => nav.openAlbum(t)}>
-        {art ? <img className={styles.trackArt} src={art} alt="" loading="lazy" /> : <span className={styles.trackArtPh} />}
-      </button>
-      <div className={styles.trackText}>
-        <div className={styles.trackLine}>
-          <span className={styles.trackTitle}><TitleButton t={t} /></span>
-          <span className={styles.trackArtist}><span className={styles.dash}> — </span><ArtistLinks t={t} /></span>
-        </div>
-        {reason && <div className={styles.reason}>{reason}</div>}
-      </div>
-      {onAdd && (
-        <button type="button" className={styles.addBtn} onClick={onAdd} aria-label={`Add ${t.title} to queue`}>
-          <Plus size={16} />
-        </button>
-      )}
-    </li>
+    <TrackRow
+      title={t.title}
+      artists={<ArtistLinks t={t} />}
+      imageUrl={t.imageUrl}
+      reason={reason}
+      onOpen={() => nav.openAlbum(t)}
+      onAdd={onAdd}
+      onContextMenu={(e) => nav.menu(t, e)}
+      onMouseEnter={() => nav.prefetch(t)}
+    />
   );
 }
 
-interface ArtCardProps {
-  size: 'large' | 'medium';
-  label: string;
-  t: NavTrack;
-  photoUrl?: string | null;
-  onAdd: () => void;
-}
-
 /** The artwork is the card: title and artist sit on a soft scrim over the lower part. */
-function ArtCard({ size, label, t, photoUrl, onAdd }: ArtCardProps) {
+function PickCard({ size, label, t, photoUrl, onAdd, className }: {
+  size: 'large' | 'medium'; label: string; t: NavTrack; photoUrl?: string | null; onAdd: () => void; className?: string;
+}) {
   const nav = useContext(NavContext);
-  // Large and medium cards are shown big, so ask the service for a bigger image.
-  // The album cover is always there; the artist photo fades in over it when it arrives, so a late photo never reshuffles the card.
-  const px = size === 'large' ? 1200 : 800;
-  const cover = useImage(t.imageUrl ? withArtworkSize(t.imageUrl, px) : null);
-  const photo = useImage(photoUrl ? withArtworkSize(photoUrl, px) : null);
   return (
-    <div
-      className={`${styles.artCard} ${size === 'large' ? styles.artLarge : styles.artMedium}`}
+    <ArtCard
+      size={size}
+      className={className}
+      label={label}
+      title={t.title}
+      sub={<ArtistLinks t={t} />}
+      imageUrl={t.imageUrl}
+      photoUrl={photoUrl}
+      openLabel={`Open album ${t.album ?? t.title}`}
+      onOpen={() => nav.openAlbum(t)}
+      onAdd={onAdd}
       onContextMenu={(e) => nav.menu(t, e)}
       onMouseEnter={() => nav.prefetch(t)}
-    >
-      {cover && <img className={styles.artFill} src={cover} alt="" />}
-      {photo && <img className={`${styles.artFill} ${styles.artPhoto}`} src={photo} alt="" />}
-      <button type="button" className={styles.artCover} aria-label={`Open album ${t.album ?? t.title}`} onClick={() => nav.openAlbum(t)} />
-      <span className={styles.artLabel}>{label}</span>
-      <div className={styles.artCaption}>
-        <div className={styles.artTitle}>{t.title}</div>
-        <div className={styles.artSub}><ArtistLinks t={t} /></div>
-      </div>
-      <button type="button" className={styles.artAdd} onClick={onAdd} aria-label={`Add ${t.title} to queue`}>
-        <Plus size={18} />
-      </button>
-    </div>
+    />
   );
 }
 
@@ -259,21 +199,6 @@ function ArtTile({ name, imageUrl, onOpen, onAdd }: {
   );
 }
 
-function JumpTile({ label, sub, imageUrl, circular, onOpen, onHover }: {
-  label: string; sub?: string | null; imageUrl?: string | null; circular?: boolean; onOpen: () => void; onHover?: () => void;
-}) {
-  const art = useImage(imageUrl ?? null);
-  return (
-    <button type="button" className={styles.jumpTile} onClick={onOpen} onMouseEnter={onHover}>
-      <span className={circular ? styles.jumpArtRound : styles.jumpArt} aria-hidden="true">
-        {art ? <img src={art} alt="" /> : <span className={styles.jumpArtPh}>♪</span>}
-      </span>
-      <span className={styles.jumpName}>{label}</span>
-      {sub && <span className={styles.jumpSub}>{sub}</span>}
-    </button>
-  );
-}
-
 interface AlbumTileData {
   key: string;
   title: string;
@@ -285,56 +210,6 @@ interface AlbumTileData {
   add?: () => void;
 }
 
-/** Square album art with title, artist and when it was played. Lifts on hover like Jump back in. */
-function AlbumTile({ d }: { d: AlbumTileData }) {
-  const art = useImage(d.imageUrl ?? null);
-  return (
-    <div className={styles.albumTile} onMouseEnter={d.hover}>
-      <button type="button" className={styles.albumMain} onClick={d.open}>
-        <span className={styles.albumArt} aria-hidden="true">
-          {art ? <img src={art} alt="" loading="lazy" /> : <span className={styles.jumpArtPh}>♪</span>}
-        </span>
-        <span className={styles.albumTitle}>{d.title}</span>
-        <span className={styles.albumSub}>{d.sub}</span>
-        {d.when && <span className={styles.albumSub}>{d.when}</span>}
-      </button>
-      {d.add && (
-        <button type="button" className={styles.albumAdd} onClick={d.add} aria-label={`Add ${d.title} to queue`}>
-          <Plus size={16} />
-        </button>
-      )}
-    </div>
-  );
-}
-
-/** Compact person header (tinted from their photo) over their most recent albums. */
-function PersonCard({ user, imageUrl, count, noun, tiles, onOpen }: {
-  user: string;
-  imageUrl?: string | null;
-  count: number;
-  noun: string;
-  tiles: AlbumTileData[];
-  onOpen: () => void;
-}) {
-  const art = useImage(imageUrl ?? null);
-  const color = useDominantColor(art);
-  const wash = color ? { background: `linear-gradient(100deg, rgba(${color}, 0.32), rgba(${color}, 0) 75%)` } : undefined;
-  return (
-    <div className={styles.person}>
-      <button type="button" className={styles.personHead} style={wash} onClick={onOpen} title={`Open ${user}'s profile`}>
-        <UserAvatar name={user} imageUrl={imageUrl} className={styles.personAvatar} />
-        <span className={styles.personWho}>
-          <span className={styles.personName}>{user}</span>
-          <span className={styles.personCount}>{count} {noun}{count === 1 ? '' : 's'} this week</span>
-        </span>
-      </button>
-      <div className={styles.albumRow}>
-        {tiles.map((d) => <AlbumTile key={d.key} d={d} />)}
-      </div>
-    </div>
-  );
-}
-
 function greeting(name?: string | null): string {
   const h = new Date().getHours();
   const part = h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening';
@@ -342,30 +217,22 @@ function greeting(name?: string | null): string {
   return first ? `Good ${part}, ${first}` : `Good ${part}`;
 }
 
-function ChartRow({ rank, t, count, onAdd }: {
+function TrendRow({ rank, t, count, onAdd }: {
   rank: number; t: NavTrack; count: number; onAdd?: () => void;
 }) {
   const nav = useContext(NavContext);
-  const art = useImage(t.imageUrl ?? null);
   return (
-    <li className={styles.chartRow} onContextMenu={(e) => nav.menu(t, e)} onMouseEnter={() => nav.prefetch(t)}>
-      <span className={styles.rank}>{String(rank).padStart(2, '0')}</span>
-      <span className={styles.chartTitleCell}>
-        <button type="button" className={styles.artBtn} tabIndex={-1} aria-hidden="true" onClick={() => nav.openAlbum(t)}>
-          {art ? <img className={styles.chartArt} src={art} alt="" loading="lazy" /> : <span className={styles.chartArtPh} />}
-        </button>
-        <span className={styles.chartTitle}><TitleButton t={t} /></span>
-      </span>
-      <span className={styles.chartArtist}><ArtistLinks t={t} /></span>
-      <span className={styles.plays} title={`${count} times queued`}>{count}</span>
-      {onAdd ? (
-        <button type="button" className={styles.addBtn} onClick={onAdd} aria-label={`Add ${t.title} to queue`}>
-          <Plus size={16} />
-        </button>
-      ) : (
-        <span className={styles.addSpacer} />
-      )}
-    </li>
+    <ChartRow
+      rank={rank}
+      title={t.title}
+      artists={<ArtistLinks t={t} />}
+      imageUrl={t.imageUrl}
+      count={count}
+      onOpen={() => nav.openAlbum(t)}
+      onAdd={onAdd}
+      onContextMenu={(e) => nav.menu(t, e)}
+      onMouseEnter={() => nav.prefetch(t)}
+    />
   );
 }
 
@@ -482,7 +349,7 @@ function NowPlayingBand({ playback, imageByUser }: {
           </div>
           {aboutLoading && !blurb && (
             <div className={styles.about} aria-label="About this track" aria-busy="true">
-              {['100%', '92%', '58%'].map((w) => <span key={w} className={styles.aboutSkel} style={{ width: w }} />)}
+              {['100%', '92%', '58%'].map((w) => <span key={w} className={`skeleton ${styles.aboutSkel}`} style={{ width: w }} />)}
             </div>
           )}
           {blurb && (
@@ -515,7 +382,7 @@ function NowPlayingBand({ playback, imageByUser }: {
           <div ref={boxRef} className={styles.lyricsScroll}>
             {lyricsPending ? (
               <div className={styles.lyricsSkel}>
-                {['70%', '55%', '80%', '45%', '65%'].map((w) => <span key={w} className={styles.lyricSkel} style={{ width: w }} />)}
+                {['70%', '55%', '80%', '45%', '65%'].map((w) => <span key={w} className={`skeleton ${styles.lyricSkel}`} style={{ width: w }} />)}
               </div>
             ) : lyr.lines.length > 0 ? (
               <div className={styles.lyricsPad}>
@@ -828,7 +695,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
   const wash = useDominantColor(heroArt);
   const addPick = (p: (typeof picks)[number]) => () => onAddToQueue(p.item, -1, { attribute: false });
   const pickRow = (p: (typeof picks)[number]) => (
-    <TrackRow key={p.key} t={p.t} reason={neverPlayedTag(p.because) ?? undefined} onAdd={addPick(p)} />
+    <PickRow key={p.key} t={p.t} reason={neverPlayedTag(p.because) ?? undefined} onAdd={addPick(p)} />
   );
   const queueRef = useRef(queueItems);
   useEffect(() => {
@@ -954,7 +821,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
         <div className={styles.msg}>Waiting for authentication…</div>
       ) : (
         <NavContext.Provider value={nav}>
-          <div className={styles.page}>
+          <div className={`page-scale ${styles.page}`}>
             <header className={styles.hero}>
               <h1 className={styles.greeting}>{greeting(displayName)}</h1>
               {todayGameId && (
@@ -979,16 +846,13 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
             )}
 
             {(picksBusy || picks.length > 0) && (
-              <section
-                className={`${styles.section} ${styles.featured}`}
-                style={wash ? ({ '--wash': wash } as React.CSSProperties) : undefined}
-                aria-labelledby="home-picks"
-              >
-                <div className={styles.sectionHead}>
-                  <h2 id="home-picks" className={styles.sectionTitle}>
-                    {inOffice.length ? (solo ? 'Picks for you' : "Picks for who's in") : 'Picks for the whole office'}
-                  </h2>
-                  {inOffice.length > 0 && !solo && (
+              <SectionCard
+                featured
+                wash={wash}
+                className={styles.section}
+                title={inOffice.length ? (solo ? 'Picks for you' : "Picks for who's in") : 'Picks for the whole office'}
+                headContent={
+                  inOffice.length > 0 && !solo ? (
                     <ul className={styles.faces} aria-label="In the office">
                       {inOffice.slice(0, 8).map((u) => (
                         <li key={u}>
@@ -1004,47 +868,48 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                         </li>
                       ))}
                     </ul>
-                  )}
-                  {picks.length > 0 && (
-                    <button type="button" className={`${styles.ghostBtn} ${styles.headAction}`} onClick={queueAll} title="Add every pick to the queue">
+                  ) : undefined
+                }
+                actions={
+                  picks.length > 0 ? (
+                    <button type="button" className={styles.ghostBtn} onClick={queueAll} title="Add every pick to the queue">
                       <ListPlus size={14} /> Queue all
                     </button>
-                  )}
-                </div>
+                  ) : undefined
+                }
+              >
                 {!lead ? (
                   <div className={styles.msg}>Digging for something new…</div>
                 ) : (
                   <div className={styles.picksLayout}>
-                    <ArtCard size="large" label={pickReason(lead.because, displayName)} t={lead.t} photoUrl={lead.photo} onAdd={addPick(lead)} />
+                    <PickCard size="large" className={styles.picksLead} label={pickReason(lead.because, displayName)} t={lead.t} photoUrl={lead.photo} onAdd={addPick(lead)} />
                     {[featured[0], featured[1]].map((p, i) =>
                       p ? (
                         <div key={p.key} className={styles.picksCol}>
-                          <ArtCard size="medium" label={pickReason(p.because, displayName)} t={p.t} photoUrl={p.photo} onAdd={addPick(p)} />
+                          <PickCard size="medium" label={pickReason(p.because, displayName)} t={p.t} photoUrl={p.photo} onAdd={addPick(p)} />
                           <ul className={styles.list}>{(i === 0 ? listA : listB).map(pickRow)}</ul>
                         </div>
                       ) : null,
                     )}
                   </div>
                 )}
-              </section>
+              </SectionCard>
             )}
 
             {(trending.length > 0 || jump.length > 0) && (
               <div className={styles.split}>
                 {trending.length > 0 && (
-                  <section className={`${styles.section} ${styles.card}`} aria-labelledby="home-trending">
-                    <div className={styles.sectionHead}>
-                      <h2 id="home-trending" className={styles.sectionTitle}>Trending in the office · this week</h2>
-                      <span className={styles.headAction}><SeeAll label="See all" onClick={() => navigate('/leaderboard')} /></span>
-                    </div>
-                    <div className={styles.chartHead} aria-hidden="true">
-                      <span>#</span><span>Title</span><span>Artist</span><span className={styles.plays}>Plays</span>
-                    </div>
-                    <ol className={styles.chart}>
+                  <SectionCard
+                    className={styles.section}
+                    title="Trending in the office · this week"
+                    actions={<SeeAll onClick={() => navigate('/leaderboard')} />}
+                  >
+                    <ChartHead />
+                    <ol className={styles.list}>
                       {trending.map((t, i) => {
                         const nt = navTrackFrom(t);
                         return (
-                          <ChartRow
+                          <TrendRow
                             key={`${t.uri ?? t.trackName}-${i}`}
                             rank={i + 1}
                             t={nt}
@@ -1054,19 +919,16 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                         );
                       })}
                     </ol>
-                  </section>
+                  </SectionCard>
                 )}
 
                 {jump.length > 0 && (
-                  <section className={`${styles.section} ${styles.card}`} aria-labelledby="home-jump">
-                    <div className={styles.sectionHead}>
-                      <h2 id="home-jump" className={styles.sectionTitle}>Jump back in</h2>
-                    </div>
+                  <SectionCard className={styles.section} title="Jump back in">
                     <div className={styles.jumpGrid}>
                       {jump.map((j) => (
-                        <JumpTile
+                        <ImageTile
                           key={`${j.kind}-${j.item.label}`}
-                          label={j.item.label}
+                          title={j.item.label}
                           sub={j.item.sub}
                           imageUrl={j.item.item.imageUrl}
                           circular={j.kind === 'artist'}
@@ -1077,33 +939,44 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                         />
                       ))}
                     </div>
-                  </section>
+                  </SectionCard>
                 )}
               </div>
             )}
 
             {people.length > 0 && (
-              <section className={`${styles.section} ${styles.card}`} aria-labelledby="home-people">
-                <div className={styles.sectionHead}>
-                  <h2 id="home-people" className={styles.sectionTitle}>What people are queuing</h2>
-                </div>
+              <SectionCard className={styles.section} title="What people are queuing">
                 <div className={styles.peopleGrid}>
                   {people.map((p) => (
                     <PersonCard
                       key={p.user}
-                      user={p.user}
+                      name={p.user}
                       imageUrl={imageByUser.get(p.user)}
-                      count={p.count}
-                      noun={p.noun}
-                      tiles={p.tiles}
+                      caption={`${p.count} ${p.noun}${p.count === 1 ? '' : 's'} this week`}
                       onOpen={() => navigate(`/profile/${encodeURIComponent(p.user)}`)}
-                    />
+                    >
+                      <div className={styles.albumRow}>
+                        {p.tiles.map((d) => (
+                          <ImageTile
+                            key={d.key}
+                            size="sm"
+                            title={d.title}
+                            sub={d.sub}
+                            meta={d.when}
+                            imageUrl={d.imageUrl}
+                            onOpen={d.open}
+                            onHover={d.hover}
+                            onAdd={d.add}
+                          />
+                        ))}
+                      </div>
+                    </PersonCard>
                   ))}
                 </div>
-              </section>
+              </SectionCard>
             )}
 
-            <section className={`${styles.section} ${styles.card} ${styles.carouselSec}`}>
+            <SectionCard className={styles.section}>
               <Carousel title="For you" gap="16px">
                 {ytmLoading
                   ? Array.from({ length: 6 }).map((_, i) => <div key={i} className={styles.tileSkel} />)
@@ -1121,7 +994,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                       />
                     ))}
               </Carousel>
-            </section>
+            </SectionCard>
           </div>
         </NavContext.Provider>
       )}

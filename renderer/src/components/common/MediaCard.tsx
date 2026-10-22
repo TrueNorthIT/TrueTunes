@@ -1,4 +1,5 @@
 import { useImage } from '../../hooks/useImage';
+import { AddButton } from './AddButton';
 import { ExplicitBadge } from './ExplicitBadge';
 import styles from './MediaCard.module.css';
 
@@ -23,7 +24,7 @@ export function MediaCard({ name, sub, artUrl, explicit, circular, onAdd, onOpen
         }
         {onAdd && (
           <div className={styles.overlay}>
-            <button className={styles.addBtn} onClick={e => { e.stopPropagation(); onAdd(); }}>+</button>
+            <AddButton variant="art" label={`Add ${name} to queue`} onClick={onAdd} />
           </div>
         )}
       </div>

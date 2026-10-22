@@ -1,62 +1,62 @@
 .winBtn {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-3);
   cursor: pointer;
   padding: 6px 8px;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.12s, background 0.12s;
+  transition: color var(--dur-fast) var(--ease-fast), background var(--dur-fast) var(--ease-fast);
   -webkit-app-region: no-drag;
 }
 .winBtn:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  background: var(--row-hover);
 }
 .closeBtn:hover {
-  color: #fff;
-  background: rgba(220, 60, 60, 0.5);
+  color: var(--text);
+  background: rgba(var(--danger), 0.5);
 }
 
 .titleBarUpdateBtn {
   display: flex;
   align-items: center;
   gap: 5px;
-  background: rgba(74, 222, 128, 0.10);
-  border: 1px solid rgba(74, 222, 128, 0.45);
-  color: #4ade80;
+  background: rgba(var(--tint), 0.16);
+  border: none;
+  color: var(--text);
   cursor: pointer;
   font-family: inherit;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   padding: 4px 8px;
   margin-right: 6px;
   border-radius: 8px;
-  transition: background 0.12s;
+  transition: background var(--dur-fast) var(--ease-fast);
   -webkit-app-region: no-drag;
 }
-.titleBarUpdateBtn:hover { background: rgba(74, 222, 128, 0.20); }
+.titleBarUpdateBtn:hover { background: rgba(var(--tint), 0.24); }
 
 .titleBarPollBtn {
   display: flex;
   align-items: center;
   gap: 5px;
-  background: rgba(251, 146, 60, 0.10);
-  border: 1px solid rgba(251, 146, 60, 0.45);
-  color: #fb923c;
+  background: rgba(var(--tint), 0.16);
+  border: none;
+  color: var(--text);
   cursor: pointer;
   font-family: inherit;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   padding: 4px 8px;
   margin-right: 6px;
   border-radius: 8px;
-  transition: background 0.12s;
+  transition: background var(--dur-fast) var(--ease-fast);
   -webkit-app-region: no-drag;
 }
-.titleBarPollBtn:hover { background: rgba(251, 146, 60, 0.20); }
+.titleBarPollBtn:hover { background: rgba(var(--tint), 0.24); }
 
 /* Shakes briefly every few seconds to catch the eye, then rests. */
 .pollIcon {

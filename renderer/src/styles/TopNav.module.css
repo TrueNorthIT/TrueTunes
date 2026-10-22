@@ -52,21 +52,21 @@
 .historyBtn {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-3);
   cursor: pointer;
   padding: 6px 8px;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.12s, background 0.12s;
+  transition: color var(--dur-fast) var(--ease-fast), background var(--dur-fast) var(--ease-fast);
 }
 .historyBtn:hover:not(:disabled) {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  background: var(--row-hover);
 }
 .historyBtn:disabled {
-  color: rgba(255, 255, 255, 0.18);
+  opacity: 0.3;
   cursor: default;
 }
 
@@ -97,30 +97,43 @@
 .iconBtn {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-3);
   cursor: pointer;
   padding: 6px 8px;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.12s, background 0.12s;
+  transition: color var(--dur-fast) var(--ease-fast), background var(--dur-fast) var(--ease-fast);
   flex-shrink: 0;
 }
 .iconBtn:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  background: var(--row-hover);
 }
+/* Where you are: lit icon on a tint chip, plus a small dot under it so it never relies on colour alone. */
+.iconBtn { position: relative; }
 .iconBtn.active {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--on-art);
+  background: rgba(var(--tint), 0.16);
+}
+.iconBtn.active::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: var(--on-art);
 }
 
 /* ── Visual separator ── */
 .sep {
   width: 1px;
   height: 18px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--separator);
   margin: 0 4px;
   flex-shrink: 0;
 }
@@ -131,39 +144,45 @@
   align-items: center;
   gap: 6px;
   padding: 0 8px;
+  border-radius: 16px;
+}
+/* The input draws no ring of its own, so the wrapper shows the global focus ring. */
+.searchWrap:focus-within {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: -2px;
 }
 
 .searchIcon {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-3);
   flex-shrink: 0;
 }
 
 .searchInput {
   background: none;
   border: none;
-  color: #fff;
+  color: var(--text);
   font-size: 13px;
   font-family: inherit;
   width: 180px;
   outline: none;
   padding: 4px 0;
 }
-.searchInput::placeholder { color: rgba(255, 255, 255, 0.35); }
+.searchInput::placeholder { color: var(--text-3); }
 .searchInput:disabled { opacity: 0.35; }
 
 .clearBtn {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-3);
   cursor: pointer;
   padding: 4px;
   border-radius: 50%;
   display: flex;
   align-items: center;
-  transition: color 0.12s;
+  transition: color var(--dur-fast) var(--ease-fast);
   flex-shrink: 0;
 }
-.clearBtn:hover { color: rgba(255, 255, 255, 0.8); }
+.clearBtn:hover { color: var(--text); }
 
 /* ── Group selector ── */
 .groupWrap { position: relative; }
@@ -173,20 +192,20 @@
   top: calc(100% + 20px);
   left: 50%;
   transform: translateX(-50%);
-  background: var(--bg-1);
-  border: 1px solid var(--border);
+  background: var(--material-bg);
+  backdrop-filter: var(--material-filter);
   border-radius: var(--r-md);
   padding: 8px;
   min-width: 160px;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), var(--material-edge);
   z-index: 300;
 }
 
 .groupPopoverLabel {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-3);
   font-weight: 500;
   padding: 2px 8px 6px;
@@ -202,11 +221,11 @@
   padding: 7px 10px;
   border-radius: var(--r-sm);
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast);
   white-space: nowrap;
 }
 .groupOption:hover { background: var(--bg-2); color: var(--text); }
-.groupOptionActive { color: var(--text) !important; font-weight: 600; }
+.groupOption.groupOptionActive { color: var(--text); font-weight: 600; }
 
 /* ── Profile chip + popover ── */
 .profileWrap { position: relative; }
@@ -220,21 +239,21 @@
   padding: 4px 8px 4px 4px;
   border-radius: 20px;
   cursor: pointer;
-  transition: background 0.12s;
+  transition: background var(--dur-fast) var(--ease-fast);
   flex-shrink: 0;
   max-width: 140px;
 }
-.profileChip:hover { background: rgba(255, 255, 255, 0.08); }
-.profileChipOpen  { background: rgba(255, 255, 255, 0.10); }
-.profileChipActive { background: rgba(255, 255, 255, 0.08); }
+.profileChip:hover { background: var(--row-hover); }
+.profileChipOpen,
+.profileChipActive { background: rgba(var(--tint), 0.16); }
 
 .profileAvatar {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
-  font-size: 11px;
+  background: rgba(var(--tint), 0.24);
+  color: var(--on-art);
+  font-size: 13px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -243,18 +262,18 @@
 }
 
 .profileName {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--text-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .profileSignIn {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-3);
   padding: 0 4px;
 }
 
@@ -262,15 +281,15 @@
   position: absolute;
   top: calc(100% + 16px);
   left: 0;
-  background: var(--bg-1);
-  border: 1px solid var(--border);
+  background: var(--material-bg);
+  backdrop-filter: var(--material-filter);
   border-radius: var(--r-md);
   padding: 12px;
   width: 220px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), var(--material-edge);
   z-index: 300;
 }
 
@@ -285,8 +304,8 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
+  background: rgba(var(--tint), 0.24);
+  color: var(--on-art);
   font-size: 15px;
   font-weight: 700;
   display: flex;
@@ -305,23 +324,23 @@
 }
 
 .profileViewBtn {
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid var(--border);
+  background: var(--bg-2);
+  border: none;
   border-radius: var(--r-sm);
   color: var(--text-2);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   font-family: inherit;
   padding: 7px 10px;
   cursor: pointer;
   text-align: left;
-  transition: background 0.12s, color 0.12s;
+  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast);
 }
-.profileViewBtn:hover { background: rgba(255, 255, 255, 0.12); color: var(--text); }
+.profileViewBtn:hover { background: rgba(var(--tint), 0.16); color: var(--text); }
 
 .profileDivider {
   height: 1px;
-  background: var(--border);
+  background: var(--separator);
   margin: 0 -12px;
 }
 
@@ -332,7 +351,7 @@
 }
 
 .profileChangeLabel {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-3);
   font-weight: 500;
 }
@@ -340,16 +359,16 @@
 .profileSignOutBtn {
   background: none;
   border: none;
-  color: rgba(255, 80, 80, 0.75);
-  font-size: 12px;
+  color: rgba(var(--danger), 0.85);
+  font-size: 13px;
   font-weight: 500;
   font-family: inherit;
   padding: 4px 0;
   cursor: pointer;
   text-align: left;
-  transition: color 0.12s;
+  transition: color var(--dur-fast) var(--ease-fast);
 }
-.profileSignOutBtn:hover { color: rgba(255, 80, 80, 1); }
+.profileSignOutBtn:hover { color: rgb(var(--danger)); }
 
 /* ── Name input (shared by profile popover) ── */
 
@@ -361,24 +380,23 @@
   font-size: 13px;
   font-family: inherit;
   padding: 7px 10px;
-  outline: none;
-  transition: border-color 0.15s;
+  transition: border-color var(--dur-fast) var(--ease-fast);
 }
 .nameInput:focus { border-color: var(--border-2); }
 
 .nameSaveBtn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid var(--border-2);
+  background: rgba(var(--tint), 0.16);
+  border: none;
   border-radius: var(--r-sm);
   color: var(--text);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   font-family: inherit;
   padding: 6px 0;
   cursor: pointer;
-  transition: background 0.12s;
+  transition: background var(--dur-fast) var(--ease-fast);
 }
-.nameSaveBtn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.18); }
+.nameSaveBtn:hover:not(:disabled) { background: rgba(var(--tint), 0.24); }
 .nameSaveBtn:disabled { opacity: 0.35; cursor: default; }
 
 .queueModeToggle {
@@ -392,16 +410,16 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   color: var(--text-3);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   font-family: inherit;
   padding: 6px 0;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast), border-color var(--dur-fast) var(--ease-fast);
 }
 .queueModeBtn:hover { color: var(--text); }
 .queueModeBtnActive {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(var(--tint), 0.16);
   border-color: var(--border-2);
   color: var(--text);
 }
@@ -415,7 +433,7 @@
 }
 
 .appVersion {
-  font-size: 10px;
+  font-size: 13px;
   color: var(--text-3);
 }
 
@@ -423,15 +441,15 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  background: none;
-  border: 1px solid rgba(74, 222, 128, 0.45);
-  border-radius: 4px;
-  color: #4ade80;
+  background: rgba(var(--tint), 0.16);
+  border: none;
+  border-radius: 2em;
+  color: var(--text);
   cursor: pointer;
   font-family: inherit;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 600;
   padding: 2px 6px;
-  transition: background 0.12s;
+  transition: background var(--dur-fast) var(--ease-fast);
 }
-.updateBtn:hover { background: rgba(74, 222, 128, 0.12); }
+.updateBtn:hover { background: rgba(var(--tint), 0.24); }

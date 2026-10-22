@@ -1,10 +1,11 @@
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, Fragment, forwardRef } from 'react';
 import { useQueries } from '@tanstack/react-query';
-import { Loader2, Disc3 } from 'lucide-react';
+import { Loader2, Disc3, RotateCw, LocateFixed, ListX, ChevronRight } from 'lucide-react';
 import { applyReorderLocally, expandToAlbumBlock } from '../../lib/queueHelpers';
 import { createDragGhost } from '../../lib/dragHelpers';
 import { getActiveProvider } from '../../providers';
 import { useAttribution, resolveAttribution } from '../../hooks/useAttribution';
+import { useUsers } from '../../hooks/useUsers';
 import { trackQueryOptions } from '../../hooks/useTrackDetails';
 import { DraggableQueueRow } from './DraggableQueueRow';
 import { DjUpcomingRow } from './DjUpcomingRow';
@@ -77,6 +78,11 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   const [selected, setSelected]           = useState<Set<number>>(new Set());
   const [dragOverIndex, setDragOverIndex]  = useState<number | null>(null);
   const [pendingClear, setPendingClear]    = useState(false);
+  // What has already played is folded away by default; the label above the list opens it.
+  const [showPlayed, setShowPlayed]        = useState(false);
+  // Same query Home uses, so queuers' photos cost nothing extra.
+  const { data: users } = useUsers(true, true);
+  const imageByUser = useMemo(() => new Map((users ?? []).map(u => [u.userId, u.imageUrl])), [users]);
   const lastSelected = useRef<number | null>(null);
   const draggingSet  = useRef<Set<number>>(new Set());
 
@@ -282,6 +288,11 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     lastSelected.current = null;
   }
 
+  // Played / now playing / up next, from the live queue position. Without a position the list is flat.
+  const playingIdx = currentQueueItemId !== null ? Number(currentQueueItemId) - 1 : -1;
+  const grouped = playingIdx >= 0 && playingIdx < items.length;
+  const firstShown = grouped && !showPlayed ? playingIdx : 0;
+
   const selCount = selected.size;
   const isSkinny = variant === 'skinny';
   const sidebarClass = isSkinny ? `${styles.sidebar} ${styles.skinny}` : styles.sidebar;
@@ -305,10 +316,14 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
         </div>
       </div>
       <div className={styles.header}>
-        <span className={styles.title}>
-          Queue{groupName ? ` · ${groupName}` : ''}{items.length > 0 ? ` · ${items.length}` : ''}
-          {selCount > 0 && <span className={styles.selBadge}>{selCount} selected</span>}
-        </span>
+        <div className={styles.titleBlock}>
+          <span className={styles.title}>
+            Queue
+            {items.length > 0 && <span className={styles.count} aria-label={`${items.length} tracks`}>{items.length}</span>}
+            {selCount > 0 && <span className={styles.selBadge}>{selCount} selected</span>}
+          </span>
+          {groupName && <span className={styles.room}>{groupName}</span>}
+        </div>
         {pendingClear ? (
           <div className={styles.clearConfirm}>
             <span>Clear all {items.length} tracks?</span>
@@ -321,10 +336,10 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
           </div>
         ) : (
           <div className={styles.headerActions}>
-            <button className={styles.iconBtn} onClick={onRefresh} title="Refresh">↺</button>
-            <button className={styles.iconBtn} onClick={scrollToNowPlaying} title="Jump to now playing">⊙</button>
+            <button className={styles.iconBtn} onClick={onRefresh} title="Refresh" aria-label="Refresh"><RotateCw size={15} /></button>
+            <button className={styles.iconBtn} onClick={scrollToNowPlaying} title="Jump to now playing" aria-label="Jump to now playing"><LocateFixed size={15} /></button>
             {items.length > 0 && (
-              <button className={styles.iconBtn} title="Clear queue" onClick={() => setPendingClear(true)}>⊘</button>
+              <button className={styles.iconBtn} title="Clear queue" aria-label="Clear queue" onClick={() => setPendingClear(true)}><ListX size={15} /></button>
             )}
           </div>
         )}
@@ -333,7 +348,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
       <div
         className={styles.content}
         ref={contentRef}
-onClick={handleContentClick}
+        onClick={handleContentClick}
         onDragOver={e => {
           e.preventDefault();
           e.dataTransfer.dropEffect = e.dataTransfer.types.includes('application/sonos-item-list') ? 'copy' : 'move';
@@ -349,25 +364,44 @@ onClick={handleContentClick}
         {!isLoading && !error && items.length === 0 && (
           <div className={styles.msg}>Queue is empty.</div>
         )}
-        {!isLoading && !error && items.map((item, i) => (
-          <Fragment key={i}>
-            {dragOverIndex === i && <div className={styles.dropLine} />}
-            <DraggableQueueRow
-              item={item}
-              index={i}
-              currentObjectId={currentObjectId}
-              currentQueueItemId={currentQueueItemId}
-              attribution={resolveAttribution(attributionMap, item.track)}
-              isSelected={selected.has(i)}
-              timeToPlay={timesToPlay[i]}
-              onRowClick={handleRowClick}
-              onDragStart={handleDragStart}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              onDragEnd={handleDragEnd}
-            />
-          </Fragment>
-        ))}
+        {!isLoading && !error && grouped && playingIdx > 0 && (
+          <button
+            type="button"
+            className={styles.groupLabel}
+            aria-expanded={showPlayed}
+            onClick={e => { e.stopPropagation(); setShowPlayed(v => !v); setSelected(new Set()); }}
+          >
+            <ChevronRight size={14} style={{ transform: showPlayed ? 'rotate(90deg)' : undefined }} aria-hidden="true" />
+            Played <span className={styles.groupCount}>{playingIdx}</span>
+          </button>
+        )}
+        {!isLoading && !error && items.map((item, i) => {
+          if (i < firstShown) return null;
+          const attr = resolveAttribution(attributionMap, item.track);
+          return (
+            <Fragment key={i}>
+              {grouped && i === playingIdx && <div className={styles.groupLabel}>Now playing</div>}
+              {grouped && i === playingIdx + 1 && <div className={styles.groupLabel}>Up next <span className={styles.groupCount}>{items.length - playingIdx - 1}</span></div>}
+              {dragOverIndex === i && <div className={styles.dropLine} />}
+              <DraggableQueueRow
+                item={item}
+                index={i}
+                currentObjectId={currentObjectId}
+                currentQueueItemId={currentQueueItemId}
+                attribution={attr}
+                attributionImageUrl={attr ? imageByUser.get(attr.user) : undefined}
+                isSelected={selected.has(i)}
+                played={grouped && i < playingIdx}
+                timeToPlay={timesToPlay[i]}
+                onRowClick={handleRowClick}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onDragEnd={handleDragEnd}
+              />
+            </Fragment>
+          );
+        })}
         {dragOverIndex === items.length && <div className={styles.dropLine} />}
 
         {/* Always rendered, even with nothing queued up yet: it's the room's
@@ -386,7 +420,7 @@ onClick={handleContentClick}
                     : 'Let the DJ keep the music going'
                 }
               >
-                <Disc3 size={11} className={autoplay.enabled ? styles.djSpin : undefined} />
+                <Disc3 size={14} className={autoplay.enabled ? styles.djSpin : undefined} />
                 {autoplay.enabled ? 'DJ takes over' : 'DJ paused'}
               </button>
               <span className={styles.djBreakLine} />

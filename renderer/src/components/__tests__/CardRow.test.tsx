@@ -63,7 +63,7 @@ describe('CardRow', () => {
       render(
         <CardRow items={[makeItem('My Track', 'TRACK')]} isLoading={false} onAdd={onAdd} onOpen={onOpen} />
       );
-      const addBtn = screen.getByRole('button', { name: '+' });
+      const addBtn = screen.getByRole('button', { name: /^add .* to queue$/i });
       await user.click(addBtn);
       expect(onAdd).toHaveBeenCalledOnce();
     });
@@ -72,7 +72,7 @@ describe('CardRow', () => {
       render(
         <CardRow items={[makeItem('My Playlist', 'CONTAINER')]} isLoading={false} onAdd={onAdd} onOpen={onOpen} />
       );
-      expect(screen.queryByRole('button', { name: '+' })).toBeNull();
+      expect(screen.queryByRole('button', { name: /^add .* to queue$/i })).toBeNull();
     });
   });
 

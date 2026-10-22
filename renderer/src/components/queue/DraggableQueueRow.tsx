@@ -5,6 +5,7 @@ import { useQueueTrack } from '../../hooks/useQueueTrack';
 import { getActiveProvider } from '../../providers';
 import { ExplicitBadge } from '../common/ExplicitBadge';
 import { useTrackContextMenu } from '../common/ContextMenu';
+import { UserAvatar } from '../common/UserAvatar';
 import type { NormalizedQueueItem } from '../../types/provider';
 import styles from '../../styles/QueueSidebar.module.css';
 
@@ -14,7 +15,11 @@ interface Props {
   currentObjectId: string | null;
   currentQueueItemId: string | null;
   attribution?: AttributionEntry;
+  /** The queuer's photo, if they have one; otherwise their initial. */
+  attributionImageUrl?: string | null;
   isSelected: boolean;
+  /** Already played: shown dimmed. */
+  played?: boolean;
   timeToPlay?: number;
   onRowClick: (index: number, e: React.MouseEvent) => void;
   onDragStart: (index: number, e: React.DragEvent) => void;
@@ -32,8 +37,8 @@ function fmtClockTime(ms: number): string {
 }
 
 export function DraggableQueueRow({
-  item, index, currentObjectId, currentQueueItemId, attribution,
-  isSelected, timeToPlay, onRowClick, onDragStart, onDragOver, onDrop, onDragEnd,
+  item, index, currentObjectId, currentQueueItemId, attribution, attributionImageUrl,
+  isSelected, played, timeToPlay, onRowClick, onDragStart, onDragOver, onDrop, onDragEnd,
 }: Props) {
   const { artUrl, artist, albumName, albumItem, prefetchAlbum, artistItem, prefetchArtist, isPlaying: isPlayingByObjectId, explicit } =
     useQueueTrack(item, currentObjectId);
@@ -58,20 +63,20 @@ export function DraggableQueueRow({
     addedAt: 0,
   };
 
+  const art = cachedArt
+    ? <img className={styles.art} src={cachedArt} alt="" />
+    : <div className={styles.artPh}>♪</div>;
+
   return (
     <div
       className={[
         styles.row,
         isPlaying  ? styles.playing  : '',
         isSelected ? styles.selected : '',
+        played && !isPlaying ? styles.played : '',
       ].filter(Boolean).join(' ')}
       data-playing={isPlaying ? 'true' : undefined}
       draggable
-      onPointerMove={e => {
-        const r = e.currentTarget.getBoundingClientRect();
-        e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`);
-        e.currentTarget.style.setProperty('--my', `${e.clientY - r.top}px`);
-      }}
       onClick={e => onRowClick(index, e)}
       onDoubleClick={() => getActiveProvider().skipToTrack(index + 1)}
       onContextMenu={e => showTrackMenu({ track: trackPayload }, e)}
@@ -80,51 +85,54 @@ export function DraggableQueueRow({
       onDrop={onDrop}
       onDragEnd={onDragEnd}
     >
-      <div className={styles.dragHandle}>⠿</div>
+      <div className={styles.dragHandle} aria-hidden="true">⠿</div>
       <div className={styles.artWrap}>
-        {cachedArt
-          ? <img className={styles.art} src={cachedArt} alt="" />
-          : <div className={styles.artPh}>♪</div>}
+        {albumItem ? (
+          <button
+            type="button"
+            className={styles.artBtn}
+            aria-label={`Open album ${albumName ?? name}`}
+            onClick={e => { e.stopPropagation(); openItem(albumItem); }}
+            onMouseEnter={prefetchAlbum}
+          >
+            {art}
+          </button>
+        ) : art}
         {isPlaying && (
           <div className={styles.overlay}>
             <div className={styles.eq}><span /><span /><span /></div>
           </div>
         )}
       </div>
-      <div className={styles.text}>
+      {/* The album is dropped from the row (it is the art's link and the tooltip) to keep two calm lines. */}
+      <div className={styles.text} title={[albumName ? `${name} · ${albumName}` : '', timeToPlay !== undefined ? `Plays at ${fmtClockTime(timeToPlay)}` : ''].filter(Boolean).join(' — ') || undefined}>
         <div className={styles.name}>{name}{explicit && <ExplicitBadge />}</div>
-        {artist && (
-          artistItem
-            ? <button
-                className={styles.subAlbum}
-                onClick={e => { e.stopPropagation(); openItem(artistItem); }}
-                onMouseEnter={prefetchArtist}
-              >{artist}</button>
-            : <div className={styles.sub}>{artist}</div>
-        )}
-        {albumName && (
-          <button
-            className={styles.subAlbum}
-            onClick={e => { e.stopPropagation(); if (albumItem) openItem(albumItem); }}
-            onMouseEnter={prefetchAlbum}
-          >
-            {albumName}
-          </button>
-        )}
-        {attribution && (
-          <div className={styles.attribution}>
-            by{' '}
-            <button
-              className={styles.attributionUser}
-              onClick={e => { e.stopPropagation(); navigate(`/profile/${encodeURIComponent(attribution.user)}`); }}
-            >
-              {attribution.user}
-            </button>
-          </div>
-        )}
+        <div className={styles.subLine}>
+          {artist && (
+            artistItem
+              ? <button
+                  type="button"
+                  className={styles.subLink}
+                  onClick={e => { e.stopPropagation(); openItem(artistItem); }}
+                  onMouseEnter={prefetchArtist}
+                >{artist}</button>
+              : <span className={styles.sub}>{artist}</span>
+          )}
+          {timeToPlay !== undefined && (
+            <span className={styles.timeToPlay}>{fmtClockTime(timeToPlay)}</span>
+          )}
+        </div>
       </div>
-      {timeToPlay !== undefined && (
-        <div className={styles.timeToPlay}>{fmtClockTime(timeToPlay)}</div>
+      {attribution && (
+        <button
+          type="button"
+          className={styles.queuer}
+          aria-label={`Queued by ${attribution.user}`}
+          title={`Queued by ${attribution.user}`}
+          onClick={e => { e.stopPropagation(); navigate(`/profile/${encodeURIComponent(attribution.user)}`); }}
+        >
+          <UserAvatar name={attribution.user} imageUrl={attributionImageUrl} className={styles.queuerAvatar} />
+        </button>
       )}
     </div>
   );

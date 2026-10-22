@@ -4,6 +4,9 @@ import { getActiveProvider } from "../providers";
 import { useNowPlaying } from "../hooks/useNowPlaying";
 import { useOpenItem } from "../hooks/useOpenItem";
 import { useFavourite } from "../hooks/usePlaylists";
+import { useAttribution, resolveAttribution } from "../hooks/useAttribution";
+import { useUsers } from "../hooks/useUsers";
+import { UserAvatar } from "./common/UserAvatar";
 import { ExplicitBadge } from "./common/ExplicitBadge";
 import type React from "react";
 import {
@@ -228,6 +231,12 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
     accountId: currentAccountId,
   });
 
+  // Who queued what is playing: the same attribution the queue shows, as a small avatar.
+  const attribution = useAttribution();
+  const queuer = resolveAttribution(attribution, { id: currentObjectId, title: displayTrack, artist: displayArtist });
+  const { data: users } = useUsers(isAuthed, true);
+  const queuerImage = queuer ? users?.find((u) => u.userId === queuer.user)?.imageUrl : undefined;
+
   const { shuffle: rawShuffle, repeat: rawRepeat } = playback;
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -252,16 +261,9 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
 
   return (
     <div
-      className={styles.bar}
-      style={
-        dominantColor
-          ? {
-              // artwork tint layered over the depth material (styles/depth.css), never replacing it
-              background: `linear-gradient(105deg, rgba(${dominantColor}, 0.18) 0%, rgba(255,255,255,0.03) 60%), var(--material-bg)`,
-              boxShadow: `0 12px 48px rgba(0,0,0,0.4), var(--material-edge), 0 -1px 0 rgba(0,0,0,0.2) inset`,
-            }
-          : undefined
-      }
+      className={`${styles.bar}${dominantColor ? " " + styles.tinted : ""}`}
+      // the artwork's colour as a triplet; the material, wash and shadow live in PlayerBar.module.css
+      style={dominantColor ? ({ "--bar-tint": dominantColor } as React.CSSProperties) : undefined}
     >
       <div className={styles.inner}>
         {/* Left — art + track info */}
@@ -312,16 +314,32 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
                 className={styles.progressBar}
                 onClick={handleSeek}
                 role="progressbar"
+                aria-label="Track progress"
+                aria-valuemin={0}
+                aria-valuemax={100}
                 aria-valuenow={progressPct}
               >
-                <div
-                  className={styles.progressFill}
-                  style={{ width: `${progressPct}%` }}
-                />
+                <div className={styles.progressTrack}>
+                  <div
+                    className={styles.progressFill}
+                    style={{ transform: `scaleX(${Math.min(1, Math.max(0, progressPct / 100))})` }}
+                  />
+                </div>
               </div>
               <span className={styles.time}>{durationLabel}</span>
             </div>
           </div>
+          {queuer && (
+            <button
+              type="button"
+              className={styles.queuer}
+              aria-label={`Queued by ${queuer.user}`}
+              title={`Queued by ${queuer.user}`}
+              onClick={() => navigate(`/profile/${encodeURIComponent(queuer.user)}`)}
+            >
+              <UserAvatar name={queuer.user} imageUrl={queuerImage} className={styles.queuerAvatar} />
+            </button>
+          )}
         </div>
 
         {/* Centre — transport */}

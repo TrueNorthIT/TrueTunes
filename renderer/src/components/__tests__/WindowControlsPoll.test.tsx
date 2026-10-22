@@ -66,7 +66,11 @@ describe('P-1 Poll button in the title bar', () => {
   it('is shown when a poll is waiting, with the ballot-box (lucide Vote) icon and the label Poll', async () => {
     withPolls(BISCUIT);
     renderControls();
-    const button = await screen.findByRole('button', { name: /^poll\b/i });
+    // Wait on the cheap text query, then run the role query once. As the file's
+    // first test it pays the cold (~150ms alone, 1s+ under load) ByRole setup,
+    // which inside findByRole's polling ate its whole 1000ms budget.
+    await screen.findByText('Poll');
+    const button = screen.getByRole('button', { name: /^poll\b/i });
     expect(button, 'Expected a Poll button when one unanswered live poll exists').toBeInTheDocument();
     expect(button.querySelector('svg.lucide-vote'), 'Expected the lucide-react Vote icon inside the Poll button').not.toBeNull();
     expect(button, 'Expected the visible label "Poll"').toHaveTextContent('Poll');

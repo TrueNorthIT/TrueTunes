@@ -105,7 +105,10 @@ describe('Queuedle revisit shows the question breakdown', () => {
   it('after finishing, leaving the page and coming back (same QueryClient, localStorage kept)', async () => {
     stubServer({ game: gameWith(1), myScore: () => Promise.resolve({}) });
     vi.mocked(window.sonos.submitGameScore).mockResolvedValue({ score: { mainScore: 1, bonusScore: 1 } } as never);
-    const user = userEvent.setup();
+    // Six clicks through a whole game: the default delay:0 puts a real setTimeout
+    // between every pointer sub-event, and under a loaded CPU each of those waits
+    // for a scheduler slice. delay:null drops them (~600ms -> ~400ms alone).
+    const user = userEvent.setup({ delay: null });
 
     const first = renderPanel();
     await act(async () => {

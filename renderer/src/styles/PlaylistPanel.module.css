@@ -423,5 +423,5 @@
 .skelBlock {
   border-radius: 4px;
   background: var(--bg-1);
-  animation: skelPulse 1.8s ease-in-out infinite;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
