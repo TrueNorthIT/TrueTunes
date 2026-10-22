@@ -1,3 +1,5 @@
+import { Music } from 'lucide-react';
+import { PillButton } from '../common/PillButton';
 import styles from '../../styles/Queuedle.module.css';
 
 interface Props {
@@ -9,19 +11,8 @@ interface Props {
   carryFrom?: 'left' | 'right' | null;
 }
 
-function CategoryLabel({ category }: { category: GameItemCategory }) {
-  const label = category === 'track' ? 'Track' : category === 'artist' ? 'Artist' : 'Album';
-  return <span className={styles.categoryBadge}>{label}</span>;
-}
-
-function CountDisplay({ count }: { count: number }) {
-  return (
-    <div>
-      <div className={styles.revealCount}>{count}</div>
-      <div className={styles.revealLabel}>queues</div>
-    </div>
-  );
-}
+const KIND: Record<GameItemCategory, string> = { track: 'Track', artist: 'Artist', album: 'Album' };
+const PICK: Record<GameItemCategory, string> = { track: 'Pick song', artist: 'Pick artist', album: 'Pick album' };
 
 function Side({
   item,
@@ -42,61 +33,69 @@ function Side({
   pickedSide: 'left' | 'right' | null;
   onPick: (side: 'left' | 'right') => void;
 }) {
-  const pickLabel =
-    item.category === 'track' ? 'Pick song' : item.category === 'artist' ? 'Pick artist' : 'Pick album';
-
-  const isWrongPick = revealed && pickedSide === side && !isWinner;
-  const isCorrectPick = revealed && pickedSide === side && isWinner;
-  const slideFromOpposite = isCarryover && carryFrom !== null && carryFrom !== side;
-
+  const yours = revealed && pickedSide === side;
+  const slideFrom = isCarryover && carryFrom !== null && carryFrom !== side ? carryFrom : null;
   const cls = [
     styles.side,
-    isCarryover && !revealed && styles.sideKnown,
-    revealed && isWinner && styles.sideWinner,
-    revealed && !isWinner && styles.sideLoser,
-    isWrongPick && styles.sideWrongPick,
-    isCorrectPick && styles.sideCorrectPick,
-    slideFromOpposite && carryFrom === 'right' && styles.sideCarrySlideFromRight,
-    slideFromOpposite && carryFrom === 'left' && styles.sideCarrySlideFromLeft,
+    revealed && (isWinner ? styles.sideWon : styles.sideLost),
+    slideFrom === 'right' && styles.slideFromRight,
+    slideFrom === 'left' && styles.slideFromLeft,
   ]
     .filter(Boolean)
     .join(' ');
 
+  const body = (
+    <>
+      <span className={`${styles.sideArt}${item.category === 'artist' ? ' ' + styles.round : ''}`}>
+        {item.imageUrl ? <img src={item.imageUrl} alt="" loading="lazy" /> : <Music size={40} aria-hidden="true" />}
+      </span>
+      <span className={styles.sideText}>
+        <span className={styles.kind}>{KIND[item.category]}</span>
+        <span className={styles.itemName}>{item.name}</span>
+        {item.subtitle && item.category !== 'artist' ? <span className={styles.itemSub}>{item.subtitle}</span> : null}
+      </span>
+      <span className={styles.sideFoot}>
+        {revealed || isCarryover ? (
+          <span className={`${styles.count}${revealed && !isCarryover ? ' ' + styles.countIn : ''}`}>
+            <span className={styles.countNum}>{item.count.toLocaleString()}</span> queues
+          </span>
+        ) : (
+          <span className={styles.count} aria-hidden="true">
+            <span className={styles.countNum}>?</span>
+          </span>
+        )}
+        {!revealed && <span className={styles.pickCue}>{PICK[item.category]}</span>}
+        {yours && (
+          <span className={`${styles.yourPick} ${isWinner ? styles.markRight : styles.markWrong}`}>
+            {isWinner ? '✓' : '✗'} Your pick
+          </span>
+        )}
+      </span>
+    </>
+  );
+
+  if (revealed) return <div className={cls}>{body}</div>;
   return (
-    <div className={cls}>
-      <CategoryLabel category={item.category} />
-      {item.imageUrl ? (
-        <img className={styles.artBig} src={item.imageUrl} alt="" loading="lazy" />
-      ) : (
-        <div className={styles.artBigPlaceholder}>♪</div>
-      )}
-      <div className={styles.itemName}>{item.name}</div>
-      {item.subtitle ? <div className={styles.itemSub}>{item.subtitle}</div> : null}
-      {revealed ? (
-        <CountDisplay count={item.count} />
-      ) : (
-        <>
-          {isCarryover && <CountDisplay count={item.count} />}
-          <div className={styles.pickRow}>
-            <button
-              className={styles.pickBtn}
-              onClick={() => onPick(side)}
-              disabled={pickedSide !== null}
-            >
-              {pickLabel}
-            </button>
-          </div>
-        </>
-      )}
-    </div>
+    <button
+      type="button"
+      className={cls}
+      onClick={() => onPick(side)}
+      disabled={pickedSide !== null}
+      aria-label={`${PICK[item.category]}: ${item.name}${isCarryover ? `, ${item.count} queues` : ''}`}
+    >
+      {body}
+    </button>
   );
 }
 
+/** Two prints face off; the whole print is the pick. After the pick both counts show. */
 export function QueuedleQuestionCard({ question, revealed, pickedSide, onPick, onNext, carryFrom }: Props) {
   const carryover = question.carryover;
   const carryFromSide = carryFrom ?? null;
+  const right = pickedSide !== null && pickedSide === question.winner;
   return (
-    <>
+    <div className={styles.faceOff}>
+      <h2 className={styles.prompt}>Which has the office queued more?</h2>
       <div className={styles.question}>
         <Side
           item={question.left}
@@ -108,7 +107,7 @@ export function QueuedleQuestionCard({ question, revealed, pickedSide, onPick, o
           pickedSide={pickedSide}
           onPick={onPick}
         />
-        <div className={styles.versus}>VS</div>
+        <span className={styles.versus} aria-hidden="true">or</span>
         <Side
           item={question.right}
           side="right"
@@ -120,13 +119,16 @@ export function QueuedleQuestionCard({ question, revealed, pickedSide, onPick, o
           onPick={onPick}
         />
       </div>
-      {revealed && (
-        <div className={styles.nextRow}>
-          <button className={styles.nextBtn} onClick={onNext}>
+      <div className={styles.nextRow}>
+        <p className={styles.verdict} role="status">
+          {revealed && pickedSide ? (right ? 'Nice one.' : 'Not this time.') : ''}
+        </p>
+        {revealed && (
+          <PillButton variant="primary" onClick={onNext}>
             Next
-          </button>
-        </div>
-      )}
-    </>
+          </PillButton>
+        )}
+      </div>
+    </div>
   );
 }

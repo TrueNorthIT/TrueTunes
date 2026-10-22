@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import styles from '../../styles/Queuedle.module.css';
 
 interface Props {
@@ -97,7 +98,7 @@ export function QueuedleCalendar({ dates, selectedDate, todayId, onSelectDate }:
           disabled={!canGoPrev}
           aria-label="Previous month"
         >
-          ‹
+          <ChevronLeft size={18} aria-hidden="true" />
         </button>
         <span className={styles.calendarTitle}>
           {MONTH_NAMES[viewMonth]} {viewYear}
@@ -109,7 +110,7 @@ export function QueuedleCalendar({ dates, selectedDate, todayId, onSelectDate }:
           disabled={!canGoNext}
           aria-label="Next month"
         >
-          ›
+          <ChevronRight size={18} aria-hidden="true" />
         </button>
       </div>
       <div className={styles.calendarDayRow}>

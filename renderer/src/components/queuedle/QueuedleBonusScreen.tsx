@@ -1,3 +1,8 @@
+import { PillButton } from '../common/PillButton';
+import { SectionCard } from '../common/SectionCard';
+import { UserAvatar } from '../common/UserAvatar';
+import { BonusItemArt } from './bonusParts';
+import { itemSubLine } from './format';
 import styles from '../../styles/Queuedle.module.css';
 
 interface Props {
@@ -6,73 +11,53 @@ interface Props {
   onSelect: (index: number, name: string) => void;
   onSubmit: () => void;
   submitting: boolean;
+  imageByUser?: Map<string, string | null | undefined>;
 }
 
-function catLabel(c: GameItemCategory): string {
-  return c === 'track' ? 'Track' : c === 'artist' ? 'Artist' : 'Album';
-}
-
-export function QueuedleBonusScreen({
-  winningItems,
-  selections,
-  onSelect,
-  onSubmit,
-  submitting,
-}: Props) {
-  const allAnswered = selections.every((s) => s !== null);
+/** Round two: for each winner, pick the colleague who queued it most. The faces are the choices. */
+export function QueuedleBonusScreen({ winningItems, selections, onSelect, onSubmit, submitting, imageByUser }: Props) {
+  const answered = selections.filter((s) => s !== null).length;
+  const allAnswered = answered === selections.length;
   return (
-    <>
-      <div className={styles.bonusIntro}>
-        <h2 className={styles.bonusIntroTitle}>Bonus round — top queuer</h2>
-        <p className={styles.bonusIntroSub}>
-          For each winning entry, pick who&apos;s queued it the most.
-        </p>
-      </div>
-      <div className={styles.bonusList}>
+    <SectionCard title="Who queued it most?">
+      <p className={styles.cardSub}>For each winner, pick the colleague who has queued it the most.</p>
+      <ol className={styles.bonusList}>
         {winningItems.map((item, i) => (
-          <div key={`${item.category}:${item.id}:${i}`} className={styles.bonusRow}>
-            {item.imageUrl ? (
-              <img className={styles.bonusArt} src={item.imageUrl} alt="" loading="lazy" />
-            ) : (
-              <div className={styles.bonusArtPlaceholder} />
-            )}
-            <div className={styles.bonusInfo}>
+          <li key={`${item.category}:${item.id}:${i}`} className={styles.bonusRow}>
+            <BonusItemArt item={item} />
+            <span className={styles.bonusInfo}>
               <span className={styles.bonusName}>{item.name}</span>
-              <span className={styles.bonusSub}>
-                {catLabel(item.category)}
-                {item.subtitle && item.category !== 'artist' ? ` · ${item.subtitle}` : ''}
-              </span>
-            </div>
-            <div className={styles.bonusOptions}>
+              <span className={styles.bonusSub}>{itemSubLine(item)}</span>
+            </span>
+            <span className={styles.bonusOptions} role="group" aria-label={`Who queued ${item.name} most`}>
               {item.queuerCandidates.map((name) => {
                 const active = selections[i] === name;
-                const cls = active
-                  ? `${styles.bonusOption} ${styles.bonusOptionActive}`
-                  : styles.bonusOption;
                 return (
                   <button
                     key={name}
-                    className={cls}
+                    type="button"
+                    className={`${styles.option}${active ? ' ' + styles.optionActive : ''}`}
+                    aria-pressed={active}
                     onClick={() => onSelect(i, name)}
                     disabled={submitting}
                   >
+                    <UserAvatar name={name} imageUrl={imageByUser?.get(name)} className={styles.optionAvatar} />
                     {name}
                   </button>
                 );
               })}
-            </div>
-          </div>
+            </span>
+          </li>
         ))}
-      </div>
+      </ol>
       <div className={styles.submitRow}>
-        <button
-          className={styles.submitBtn}
-          onClick={onSubmit}
-          disabled={!allAnswered || submitting}
-        >
+        <span className={styles.submitCount}>
+          {answered} of {selections.length} answered
+        </span>
+        <PillButton variant="primary" onClick={onSubmit} disabled={!allAnswered || submitting}>
           {submitting ? 'Submitting…' : 'Submit'}
-        </button>
+        </PillButton>
       </div>
-    </>
+    </SectionCard>
   );
 }

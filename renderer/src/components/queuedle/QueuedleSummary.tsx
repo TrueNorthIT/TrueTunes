@@ -1,5 +1,20 @@
 import { useImage } from '../../hooks/useImage';
+import { SectionCard } from '../common/SectionCard';
 import styles from '../../styles/Queuedle.module.css';
+
+function ReviewSide({ item, won, end }: { item: GameItem; won: boolean; end?: boolean }) {
+  const art = useImage(item.imageUrl);
+  const artClass = `${styles.reviewArt}${item.category === 'artist' ? ' ' + styles.round : ''}`;
+  return (
+    <span className={`${styles.reviewSide}${end ? ' ' + styles.reviewSideEnd : ''}${won ? ' ' + styles.reviewWon : ''}`}>
+      {art ? <img src={art} className={artClass} alt="" /> : <span className={artClass} />}
+      <span className={styles.reviewText}>
+        <span className={styles.reviewName} title={item.name}>{item.name}</span>
+        <span className={styles.reviewCount}>{item.count.toLocaleString()} queues</span>
+      </span>
+    </span>
+  );
+}
 
 interface ReviewRowProps {
   question: GameQuestion;
@@ -11,132 +26,65 @@ interface ReviewRowProps {
 
 function ReviewRow({ question: q, guess, bonusGuess, qStat }: ReviewRowProps) {
   const correct = guess === q.winner;
-  const leftArt = useImage(q.left.imageUrl);
-  const rightArt = useImage(q.right.imageUrl);
-
-  const color = correct ? '74, 222, 128' : '248, 113, 113';
-  const bg =
-    guess === 'left'
-      ? `linear-gradient(90deg, rgba(${color}, 0.18) 0%, rgba(${color}, 0.06) 75%, transparent 85%)`
-      : `linear-gradient(270deg, rgba(${color}, 0.18) 0%, rgba(${color}, 0.06) 75%, transparent 85%)`;
-
   // The bonus question is about the winning item (bonusItem, else the winner).
   const bonusTarget = (q.bonusItem ?? q.winner) === 'left' ? q.left : q.right;
   const bonusCorrect = !!bonusGuess && bonusGuess === bonusTarget.topQueuer;
-
   const correctPct = q.winner === 'left' ? qStat?.leftPct : qStat?.rightPct;
 
   return (
-    <div className={styles.reviewItem}>
-      <div className={styles.reviewRow} style={{ background: bg }}>
-        {leftArt ? <img src={leftArt} className={styles.reviewArt} alt={q.left.name} /> : <div className={styles.reviewArt} />}
-        <span className={`${styles.reviewSide} ${q.winner === 'left' ? styles.reviewSidePicked : ''}`}>
-          <span className={styles.reviewName}>{q.left.name}</span>
-          <span className={styles.reviewCount}>{q.left.count.toLocaleString()}</span>
-        </span>
-        <span className={styles.reviewVs}>
-          <span className={styles.reviewCategory}>{q.left.category}</span>
-          vs
-          <span className={styles.reviewCategory}>{q.right.category}</span>
-        </span>
-        <span
-          className={`${styles.reviewSide} ${styles.reviewSideRight} ${q.winner === 'right' ? styles.reviewSidePicked : ''}`}
-        >
-          <span className={styles.reviewName}>{q.right.name}</span>
-          <span className={styles.reviewCount}>{q.right.count.toLocaleString()}</span>
-        </span>
-        {rightArt ? <img src={rightArt} className={styles.reviewArt} alt={q.right.name} /> : <div className={styles.reviewArt} />}
-      </div>
+    <li className={styles.reviewItem}>
+      <span
+        className={`${styles.mark} ${correct ? styles.markRight : styles.markWrong}`}
+        role="img"
+        aria-label={correct ? 'You got this right' : 'You got this wrong'}
+      >
+        {correct ? '✓' : '✗'}
+      </span>
+      <span className={styles.faceoff}>
+        <ReviewSide item={q.left} won={q.winner === 'left'} />
+        <span className={styles.reviewVs}>vs</span>
+        <ReviewSide item={q.right} won={q.winner === 'right'} end />
+      </span>
       {(qStat || bonusGuess) && (
-        <div className={styles.reviewMeta}>
+        <span className={styles.reviewMeta}>
           {bonusGuess && (
-            <span className={bonusCorrect ? styles.reviewMetaCorrect : styles.reviewMetaBonus}>
-              Your top queuer pick: {bonusCorrect ? '✓' : '✗'} {bonusGuess}
+            <span className={bonusCorrect ? styles.metaRight : styles.metaWrong}>
+              Top queuer: {bonusCorrect ? '✓' : '✗'} {bonusGuess}
             </span>
           )}
-          {qStat && correctPct !== undefined && (
-            <span className={styles.reviewMetaCorrect}>{correctPct}% got this right</span>
-          )}
+          {qStat && correctPct !== undefined && <span>{correctPct}% got it right</span>}
           {qStat && qStat.bonusOptions.length > 0 && (
-            <span className={styles.reviewMetaBonus}>
-              {qStat.bonusOptions.map((o) => `${o.name} ${o.pct}%`).join(' · ')}
-            </span>
+            <span className={styles.metaPicks}>{qStat.bonusOptions.map((o) => `${o.name} ${o.pct}%`).join(' · ')}</span>
           )}
-        </div>
+        </span>
       )}
-    </div>
+    </li>
   );
 }
 
 interface Props {
-  mainScore: number;
-  bonusScore: number;
-  maxMain: number;
-  maxBonus: number;
-  alreadySubmitted?: boolean;
-  hideScoreSummary?: boolean;
   questions?: GameQuestion[];
   mainGuesses?: Array<'left' | 'right'>;
   bonusGuesses?: string[];
   stats?: GameStatsResult;
-  onPlayAgain?: () => void;
 }
 
-export function QueuedleSummary({
-  mainScore,
-  bonusScore,
-  maxMain,
-  maxBonus,
-  alreadySubmitted,
-  hideScoreSummary,
-  questions,
-  mainGuesses,
-  bonusGuesses,
-  stats,
-  onPlayAgain,
-}: Props) {
-  const total = mainScore + bonusScore;
-  const maxTotal = maxMain + maxBonus;
+/** Your answers, round by round: the winner in full white, your mark, and how the room did. */
+export function QueuedleSummary({ questions, mainGuesses, bonusGuesses, stats }: Props) {
+  if (!questions || !mainGuesses || questions.length === 0 || mainGuesses.length < questions.length) return null;
   return (
-    <div className={styles.summary}>
-      {!hideScoreSummary && (
-        <>
-          <div className={styles.summaryScore}>{total}</div>
-          <div className={styles.summaryTotal}>out of {maxTotal}</div>
-          <div className={styles.summaryRows}>
-            <div className={styles.summaryCell}>
-              <div className={styles.summaryCellValue}>{mainScore}/{maxMain}</div>
-              <div className={styles.summaryCellLabel}>Higher or lower</div>
-            </div>
-            <div className={styles.summaryCell}>
-              <div className={styles.summaryCellValue}>{bonusScore}/{maxBonus}</div>
-              <div className={styles.summaryCellLabel}>Top queuer</div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {questions && mainGuesses && questions.length > 0 && mainGuesses.length >= questions.length && (
-        <div className={styles.reviewList}>
-          <h2 className={styles.leaderboardTitle}>Question Breakdown</h2>
-          {questions.map((q, i) => (
-            <ReviewRow key={i} question={q} guess={mainGuesses[i]} bonusGuess={bonusGuesses?.[i] || undefined} qStat={stats?.questions?.[i]} />
-          ))}
-        </div>
-      )}
-
-      {alreadySubmitted && (
-        <div className={styles.alreadyPlayed}>
-          <p className={styles.bonusIntroSub}>
-            You&apos;ve already played today — come back tomorrow for a new Queuedle.
-          </p>
-          {import.meta.env.DEV && onPlayAgain && (
-            <button className={styles.playAgainBtn} onClick={onPlayAgain}>
-              Play Again
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+    <SectionCard title="Your answers">
+      <ol className={styles.review}>
+        {questions.map((q, i) => (
+          <ReviewRow
+            key={i}
+            question={q}
+            guess={mainGuesses[i]}
+            bonusGuess={bonusGuesses?.[i] || undefined}
+            qStat={stats?.questions?.[i]}
+          />
+        ))}
+      </ol>
+    </SectionCard>
   );
 }

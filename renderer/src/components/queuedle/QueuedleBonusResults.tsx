@@ -1,58 +1,56 @@
+import { PillButton } from '../common/PillButton';
+import { SectionCard } from '../common/SectionCard';
+import { UserAvatar } from '../common/UserAvatar';
+import { BonusItemArt } from './bonusParts';
+import { itemSubLine } from './format';
 import styles from '../../styles/Queuedle.module.css';
 
 interface Props {
   winningItems: GameItem[];
   bonusGuesses: string[];
   onContinue: () => void;
+  imageByUser?: Map<string, string | null | undefined>;
 }
 
-function catLabel(c: GameItemCategory): string {
-  return c === 'track' ? 'Track' : c === 'artist' ? 'Artist' : 'Album';
-}
-
-export function QueuedleBonusResults({ winningItems, bonusGuesses, onContinue }: Props) {
+/** Round two marked: your pick against the colleague who really queued it most. */
+export function QueuedleBonusResults({ winningItems, bonusGuesses, onContinue, imageByUser }: Props) {
+  const knew = winningItems.filter((item, i) => bonusGuesses[i] === item.topQueuer).length;
   return (
-    <>
-      <div className={styles.bonusIntro}>
-        <h2 className={styles.bonusIntroTitle}>Bonus results</h2>
-        <p className={styles.bonusIntroSub}>How well do you know your colleagues&apos; taste?</p>
-      </div>
-      <div className={styles.bonusList}>
+    <SectionCard title="Bonus results">
+      <p className={styles.cardSub}>
+        You knew {knew} of {winningItems.length}. How well do you know your colleagues&apos; taste?
+      </p>
+      <ol className={styles.bonusList}>
         {winningItems.map((item, i) => {
           const guess = bonusGuesses[i] ?? '';
-          const correct = item.topQueuer;
-          const isCorrect = guess === correct;
+          const isCorrect = guess === item.topQueuer;
           return (
-            <div key={`${item.category}:${item.id}:${i}`} className={styles.bonusResultRow}>
-              {item.imageUrl ? (
-                <img className={styles.bonusArt} src={item.imageUrl} alt="" loading="lazy" />
-              ) : (
-                <div className={styles.bonusArtPlaceholder} />
-              )}
-              <div className={styles.bonusInfo}>
+            <li key={`${item.category}:${item.id}:${i}`} className={styles.bonusRow}>
+              <BonusItemArt item={item} />
+              <span className={styles.bonusInfo}>
                 <span className={styles.bonusName}>{item.name}</span>
-                <span className={styles.bonusSub}>
-                  {catLabel(item.category)}
-                  {item.subtitle && item.category !== 'artist' ? ` · ${item.subtitle}` : ''}
-                </span>
-              </div>
-              <div className={styles.bonusResultAnswer}>
-                <span className={isCorrect ? styles.resultCorrect : styles.resultWrong}>
+                <span className={styles.bonusSub}>{itemSubLine(item)}</span>
+              </span>
+              <span className={styles.bonusAnswer}>
+                <span className={isCorrect ? styles.metaRight : styles.metaWrong}>
                   {isCorrect ? '✓' : '✗'} {guess || '—'}
                 </span>
                 {!isCorrect && (
-                  <span className={styles.bonusCorrectLabel}>{correct}</span>
+                  <span className={styles.bonusActual}>
+                    <UserAvatar name={item.topQueuer} imageUrl={imageByUser?.get(item.topQueuer)} className={styles.optionAvatar} />
+                    <span>It was {item.topQueuer}</span>
+                  </span>
                 )}
-              </div>
-            </div>
+              </span>
+            </li>
           );
         })}
-      </div>
+      </ol>
       <div className={styles.submitRow}>
-        <button className={styles.nextBtn} onClick={onContinue}>
+        <PillButton variant="primary" onClick={onContinue}>
           See my score
-        </button>
+        </PillButton>
       </div>
-    </>
+    </SectionCard>
   );
 }

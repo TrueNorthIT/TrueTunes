@@ -36,8 +36,8 @@ describe('QueuedleQuestionCard', () => {
         onNext={() => {}}
       />
     );
-    expect(screen.getByRole('button', { name: 'Pick song' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Pick artist' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Pick song/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Pick artist/ })).toBeInTheDocument();
   });
 
   it('calls onPick with the clicked side', () => {
@@ -45,7 +45,7 @@ describe('QueuedleQuestionCard', () => {
     render(
       <QueuedleQuestionCard question={question} revealed={false} pickedSide={null} onPick={onPick} onNext={() => {}} />
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Pick song' }));
+    fireEvent.click(screen.getByRole('button', { name: /Pick song/ }));
     expect(onPick).toHaveBeenCalledWith('left');
   });
 
@@ -65,7 +65,7 @@ describe('QueuedleQuestionCard', () => {
     render(
       <QueuedleQuestionCard question={question} revealed={true} pickedSide="left" onPick={() => {}} onNext={() => {}} />
     );
-    expect(screen.queryAllByRole('button', { name: 'Pick song' })).toHaveLength(0);
+    expect(screen.queryAllByRole('button', { name: /Pick song/ })).toHaveLength(0);
   });
 
   it('shows carry-over count alongside its Pick button', () => {
@@ -81,7 +81,23 @@ describe('QueuedleQuestionCard', () => {
     );
     // Carry-over side reveals its count up front but is still pickable
     expect(screen.getByText('20')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Pick song' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Pick artist' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Pick song/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Pick artist/ })).toBeInTheDocument();
+  });
+
+  it('says whether the pick was right and marks the picked side', () => {
+    const { rerender } = render(
+      <QueuedleQuestionCard question={question} revealed={true} pickedSide="left" onPick={() => {}} onNext={() => {}} />
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('Nice one.');
+    expect(screen.getByText(/Your pick/)).toHaveTextContent('✓ Your pick');
+    rerender(<QueuedleQuestionCard question={question} revealed={true} pickedSide="right" onPick={() => {}} onNext={() => {}} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Not this time.');
+    expect(screen.getByText(/Your pick/)).toHaveTextContent('✗ Your pick');
+  });
+
+  it('states the question being asked', () => {
+    render(<QueuedleQuestionCard question={question} revealed={false} pickedSide={null} onPick={() => {}} onNext={() => {}} />);
+    expect(screen.getByRole('heading', { name: 'Which has the office queued more?' })).toBeInTheDocument();
   });
 });

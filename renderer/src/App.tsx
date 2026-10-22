@@ -553,7 +553,7 @@ useEffect(() => {
           <Route path="/album/:id" element={<AlbumPanel onAddToQueue={handleAddToQueue} playback={playback} />} />
           <Route path="/artist/:id" element={<ArtistPanel onAddToQueue={handleAddToQueue} currentTrackName={playback.trackName} isPlaybackActive={playback.isPlaying} />} />
           <Route path="/container/:id" element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
-          <Route path="/leaderboard" element={<LeaderboardPanel />} />
+          <Route path="/leaderboard" element={<LeaderboardPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/queuedle" element={<QueuedlePanel />} />
           <Route path="/lyrics" element={<LyricsPanel playback={playback} />} />
           <Route path="/profile/:userName" element={<ProfilePanel onAddToQueue={handleAddToQueue} displayName={displayName} onSignOut={async () => { setDisplayName(null); setEntraLoading(true); await window.sonos.entraSignOut().catch(() => {}); await window.sonos.entraReLogin().catch(() => {}); const name = await window.sonos.getDisplayName().catch(() => null); setDisplayName(name); setEntraLoading(false); }} onChangeName={async (name) => { const result = await window.sonos.renameUser(displayName ?? '', name).catch(() => ({ error: 'network' })); if (!result?.error) setDisplayName(name); return result?.error ? { error: result.error } : null; }} />} />

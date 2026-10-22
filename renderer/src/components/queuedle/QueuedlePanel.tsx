@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   useDailyGame,
@@ -20,23 +20,15 @@ import { QueuedleRankChange } from './QueuedleRankChange';
 import type { RankSnapshot } from './QueuedleRankChange';
 import { QueuedleSummary } from './QueuedleSummary';
 import { QueuedleCalendar } from './QueuedleCalendar';
-import { ScoreDistribution } from './ScoreDistribution';
 import { MyScores } from './MyScores';
-import { getGameRankIcon } from '../../lib/gameRankAssets';
+import { QueuedleLeaderboard, type LeaderboardTab } from './QueuedleLeaderboard';
+import { formatGameDate, standingLine } from './format';
+import { useUsers } from '../../hooks/useUsers';
+import { PillButton } from '../common/PillButton';
+import { ArrowLeft, CalendarDays, X } from 'lucide-react';
 import styles from '../../styles/Queuedle.module.css';
 
 type Phase = 'intro' | 'main' | 'bonus' | 'bonus-results' | 'rank-change' | 'summary';
-type LeaderboardTab = 'today' | 'ranked';
-
-const MEDAL_CLASS = [styles.medalGold, styles.medalSilver, styles.medalBronze];
-
-// Top-3 get a metallic medal disc; everyone else gets their plain rank number.
-function RankBadge({ index }: { index: number }) {
-  if (index < 3) {
-    return <span className={`${styles.medal} ${MEDAL_CLASS[index]}`}>{index + 1}</span>;
-  }
-  return <>{index + 1}</>;
-}
 
 function londonDateToday(): string {
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -75,6 +67,8 @@ export function QueuedlePanel() {
   const rankings = useGameRankings(displayName ?? undefined, true);
   const myScore = useMyScore(gameId, displayName);
   const gameStats = useGameStats(gameId);
+  const { data: users } = useUsers(true, true);
+  const imageByUser = useMemo(() => new Map((users ?? []).map((u) => [u.userId, u.imageUrl])), [users]);
   const alreadyPlayed = useMemo(() => {
     if (!displayName || !leaderboard.data || !('scores' in leaderboard.data)) return null;
     const existing = leaderboard.data.scores.find((s) => s.userName === displayName);
@@ -259,174 +253,142 @@ export function QueuedlePanel() {
     resetGameState();
   }
 
-  if (isLoading) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.state}>Loading {isPastDay ? 'that' : "today's"} Queuedle…</div>
+  // Every state renders inside the same scrolling page, so the header never jumps between states.
+  const shell = (content: ReactNode, header?: ReactNode) => (
+    <div className={styles.panel}>
+      <div className={`page-scale ${styles.page}`}>
+        {header}
+        {content}
       </div>
-    );
-  }
+    </div>
+  );
+  const message = (text: ReactNode) => shell(<p className={styles.state}>{text}</p>);
 
-  if (!data || (error && !('questions' in (data ?? {})))) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.state}>Failed to load Queuedle.</div>
-      </div>
-    );
-  }
-
-  if ('error' in data && data.error) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.state}>{data.error}</div>
-      </div>
-    );
-  }
-
+  if (isLoading) return message(`Loading ${isPastDay ? 'that' : "today's"} Queuedle…`);
+  if (!data || (error && !('questions' in (data ?? {})))) return message('Failed to load Queuedle.');
+  if ('error' in data && data.error) return message(data.error);
   if ('status' in data && data.status === 'pending') {
-    return (
-      <div className={styles.page}>
-        <div className={styles.state}>Today&apos;s Queuedle is still brewing. Try again in a minute.</div>
-      </div>
-    );
+    return message("Today's Queuedle is still brewing. Try again in a minute.");
   }
-
-  if (!game) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.state}>No Queuedle available.</div>
-      </div>
-    );
-  }
-
+  if (!game) return message('No Queuedle available.');
   if (game.questions.length === 0) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.state}>
-          Not enough play history yet to build a Queuedle. Queue some tunes and check back tomorrow.
-        </div>
-      </div>
-    );
+    return message('Not enough play history yet to build a Queuedle. Queue some tunes and check back tomorrow.');
   }
 
   const justPlayed = localScore !== null;
   const showAlreadyPlayed = !justPlayed && !devReplay && (localPlayed !== null || alreadyPlayed !== null);
   const stillResolving =
     !justPlayed && !showAlreadyPlayed && (displayName === undefined || leaderboard.isLoading === true);
+  const calendarDates = gameDates.data?.dates ?? [];
+  const scores = leaderboard.data && 'scores' in leaderboard.data ? leaderboard.data.scores : [];
 
-  const headerActions = (
-    <>
-      {selectedDate !== null && (
-        <button className={styles.backToToday} onClick={handleBackToToday}>
-          ← Today
-        </button>
-      )}
-    </>
-  );
-
-  function renderLeaderboardArea(
-    currentGame: GameDoc,
-    scoreForDistributions: { mainScore: number; bonusScore: number } | null,
-    showMyScores: boolean
-  ) {
-    const scores = leaderboard.data && 'scores' in leaderboard.data ? leaderboard.data.scores : [];
-    const rankedRows = rankings.data ?? [];
-    const todayTabClass = `${styles.leaderboardTab}${
-      leaderboardTab === 'today' ? ' ' + styles.leaderboardTabActive : ''
-    }`;
-    const rankedTabClass = `${styles.leaderboardTab}${
-      leaderboardTab === 'ranked' ? ' ' + styles.leaderboardTabActive : ''
-    }`;
-
-    return (
-      <div className={styles.leaderboardSection}>
-        {showMyScores && scoreForDistributions && (
-          <MyScores
-            mainScore={scoreForDistributions.mainScore}
-            bonusScore={scoreForDistributions.bonusScore}
-            maxMain={currentGame.questions.length}
-            maxBonus={currentGame.questions.length}
-          />
+  const header = (
+    <header className={styles.hero}>
+      <div>
+        <h1 className={styles.title}>Queuedle</h1>
+        <p className={styles.premise}>{formatGameDate(game.id)}</p>
+      </div>
+      <div className={styles.actions}>
+        {selectedDate !== null && (
+          <PillButton onClick={handleBackToToday}>
+            <ArrowLeft size={15} aria-hidden="true" /> Back to today
+          </PillButton>
         )}
-        <div className={styles.leaderboardTabs} role="tablist" aria-label="Queuedle leaderboard views">
-          <button
-            className={todayTabClass}
-            role="tab"
-            aria-selected={leaderboardTab === 'today'}
-            onClick={() => setLeaderboardTab('today')}
-          >
-            Today
-          </button>
-          <button
-            className={rankedTabClass}
-            role="tab"
-            aria-selected={leaderboardTab === 'ranked'}
-            onClick={() => setLeaderboardTab('ranked')}
-          >
-            Ranked
-          </button>
-        </div>
-        {leaderboardTab === 'today' && scores.length > 0 && (
-          <>
-            <h2 className={styles.leaderboardTitle}>
-              {selectedDate && selectedDate !== todayId ? `${selectedDate} Leaderboard` : "Today's Leaderboard"}
-            </h2>
-            {scores.slice(0, 10).map((s, i) => (
-              <div key={s.userName} className={styles.scoreRow}>
-                <span className={styles.scoreRank}><RankBadge index={i} /></span>
-                <button className={styles.scoreNameBtn} onClick={() => navigate(`/profile/${encodeURIComponent(s.userName)}`)}>{s.userName}</button>
-                <span className={styles.scoreBreakdown}>
-                  {s.mainScore}/{currentGame.questions.length} · {s.bonusScore}/{currentGame.questions.length}
-                </span>
-                <span className={styles.scoreTotal}>{s.total}</span>
-              </div>
-            ))}
-            <ScoreDistribution
-              scores={scores.map((s) => s.mainScore)}
-              maxScore={currentGame.questions.length}
-              playerScore={scoreForDistributions?.mainScore ?? -1}
-              title="Higher or Lower"
-            />
-            <ScoreDistribution
-              scores={scores.map((s) => s.bonusScore)}
-              maxScore={currentGame.questions.length}
-              playerScore={scoreForDistributions?.bonusScore ?? -1}
-              title="Top Queuer"
-            />
-          </>
-        )}
-        {leaderboardTab === 'ranked' && (
-          <>
-            <h2 className={styles.leaderboardTitle}>Ranked Leaderboard</h2>
-            {rankings.isLoading && <div className={styles.rankedState}>Loading rankings...</div>}
-            {!rankings.isLoading && rankedRows.length === 0 && (
-              <div className={styles.rankedState}>No ranked scores yet.</div>
-            )}
-            {!rankings.isLoading &&
-              rankedRows.slice(0, 10).map((ranked, i) => (
-                <div key={ranked.userName} className={styles.scoreRow}>
-                  <span className={styles.scoreRank}><RankBadge index={i} /></span>
-                  <button className={styles.scoreNameBtn} onClick={() => navigate(`/profile/${encodeURIComponent(ranked.userName)}`)}>{ranked.userName}</button>
-                  <span className={styles.scoreBreakdown}>
-                    {ranked.gamesPlayed} {ranked.gamesPlayed === 1 ? 'game' : 'games'} ·{' '}
-                    <span className={styles.rankedTier}>
-                      {getGameRankIcon(ranked.tierKey) && (
-                        <img
-                          className={styles.rankedTierIcon}
-                          src={getGameRankIcon(ranked.tierKey)!}
-                          alt=""
-                          loading="lazy"
-                        />
-                      )}
-                      {ranked.tierName}
-                    </span>
-                  </span>
-                  <span className={styles.scoreTotal}>{ranked.averageTotal.toFixed(1)}</span>
-                </div>
-              ))}
-          </>
+        {calendarDates.length > 0 && (
+          <PillButton onClick={() => setCalendarOpen(true)} aria-haspopup="dialog">
+            <CalendarDays size={15} aria-hidden="true" /> Past games
+          </PillButton>
         )}
       </div>
+    </header>
+  );
+
+  const calendar = calendarOpen && calendarDates.length > 0 && (
+    <div className={styles.overlay} onClick={() => setCalendarOpen(false)}>
+      <div
+        className={`page-scale ${styles.dialog}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="queuedle-calendar-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className={styles.dialogHead}>
+          <h2 id="queuedle-calendar-title" className={styles.dialogTitle}>Past games</h2>
+          <button
+            type="button"
+            className={styles.dialogClose}
+            onClick={() => setCalendarOpen(false)}
+            aria-label="Close calendar"
+            autoFocus
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
+        </div>
+        <QueuedleCalendar dates={calendarDates} selectedDate={gameId} todayId={todayId} onSelectDate={handleSelectDate} />
+      </div>
+    </div>
+  );
+
+  const page = (content: ReactNode) =>
+    shell(
+      <>
+        {content}
+        {calendar}
+      </>,
+      header
+    );
+
+  // The payoff of a once-a-day game: your score against the room, then the room, then your answers.
+  function renderResults(
+    currentGame: GameDoc,
+    score: { mainScore: number; bonusScore: number },
+    guesses: Array<'left' | 'right'> | undefined,
+    bonusGuesses: string[] | undefined,
+    note?: ReactNode
+  ) {
+    const max = currentGame.questions.length;
+    const mine = score.mainScore + score.bonusScore;
+    // Count yourself in straight away, before the leaderboard refetch catches up with your submission.
+    const room =
+      displayName && !scores.some((s) => s.userName === displayName)
+        ? [...scores, { userName: displayName, mainScore: score.mainScore, bonusScore: score.bonusScore, total: mine }].sort(
+            (a, b) => b.total - a.total
+          )
+        : scores;
+    const others = room.filter((s) => s.userName !== displayName).map((s) => s.total);
+    return (
+      <>
+        <MyScores
+          mainScore={score.mainScore}
+          bonusScore={score.bonusScore}
+          maxMain={max}
+          maxBonus={max}
+          standing={displayName ? standingLine(mine, others, isPastDay) : undefined}
+          mainScores={room.map((s) => s.mainScore)}
+          bonusScores={room.map((s) => s.bonusScore)}
+          note={note}
+        />
+        <div className={styles.resultsGrid}>
+          <QueuedleLeaderboard
+            tab={leaderboardTab}
+            onTab={setLeaderboardTab}
+            gameId={isPastDay ? currentGame.id : null}
+            scores={room}
+            maxPerRound={max}
+            rankings={rankings.data ?? []}
+            rankingsLoading={rankings.isLoading}
+            me={displayName ?? null}
+            imageByUser={imageByUser}
+            onOpenProfile={(name) => navigate(`/profile/${encodeURIComponent(name)}`)}
+          />
+          <QueuedleSummary
+            questions={currentGame.questions}
+            mainGuesses={guesses}
+            bonusGuesses={bonusGuesses}
+            stats={gameStats.data}
+          />
+        </div>
+      </>
     );
   }
 
@@ -434,74 +396,25 @@ export function QueuedlePanel() {
     const cachedScore =
       localPlayed ??
       (alreadyPlayed ? { mainScore: alreadyPlayed.mainScore, bonusScore: alreadyPlayed.bonusScore } : null);
-    const calendarDates = gameDates.data?.dates ?? [];
-    return (
-      <div className={styles.page}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>Queuedle</h1>
-          <span className={styles.sub}>{game.id}</span>
-          <div className={styles.spacer} />
-          {selectedDate !== null && (
-            <button className={styles.backToToday} onClick={handleBackToToday}>
-              ← Today
-            </button>
-          )}
-          {calendarDates.length > 0 && (
-            <button className={styles.calendarBtn} onClick={() => setCalendarOpen(true)}>
-              📅 Calendar
-            </button>
-          )}
-        </div>
-        <div className={styles.body}>
-          <div className={styles.alreadyPlayedColumns}>
-            {cachedScore && (
-              <QueuedleSummary
-                mainScore={cachedScore.mainScore}
-                bonusScore={cachedScore.bonusScore}
-                maxMain={game.questions.length}
-                maxBonus={game.questions.length}
-                alreadySubmitted
-                hideScoreSummary
-                questions={game.questions}
-                mainGuesses={reviewGuesses}
-                bonusGuesses={reviewBonusGuesses}
-                stats={gameStats.data}
-                onPlayAgain={handleDevPlayAgain}
-              />
-            )}
-            {renderLeaderboardArea(game, cachedScore, true)}
-          </div>
-        </div>
-        {calendarOpen && calendarDates.length > 0 && (
-          <div className={styles.calendarOverlay} onClick={() => setCalendarOpen(false)}>
-            <div className={styles.calendarModal} onClick={(e) => e.stopPropagation()}>
-              <button
-                className={styles.calendarClose}
-                onClick={() => setCalendarOpen(false)}
-                aria-label="Close calendar"
-              >
-                ✕
-              </button>
-              <QueuedleCalendar
-                dates={calendarDates}
-                selectedDate={gameId}
-                todayId={todayId}
-                onSelectDate={handleSelectDate}
-              />
-            </div>
-          </div>
+    if (!cachedScore) return page(null);
+    const note = (
+      <div className={styles.playedNote}>
+        <span>
+          {isPastDay
+            ? 'You played this one.'
+            : "You've already played today. A new Queuedle arrives tomorrow."}
+        </span>
+        {import.meta.env.DEV && (
+          <button type="button" className={styles.devReplay} onClick={handleDevPlayAgain}>
+            Play again (dev)
+          </button>
         )}
       </div>
     );
+    return page(renderResults(game, cachedScore, reviewGuesses, reviewBonusGuesses, note));
   }
 
-  if (stillResolving) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.state}>Checking your score…</div>
-      </div>
-    );
-  }
+  if (stillResolving) return shell(<p className={styles.state}>Checking your score…</p>, header);
 
   const question = game.questions[currentIdx];
   const total = game.questions.length;
@@ -596,94 +509,84 @@ export function QueuedlePanel() {
   }
 
   const pips = game.questions.map((q, i) => {
-    if (i < currentIdx) {
-      return mainGuesses[i] === q.winner ? styles.pipCorrect : styles.pipWrong;
-    }
-    if (i === currentIdx && revealed && pickedSide) {
-      return mainGuesses[i] === q.winner ? styles.pipCorrect : styles.pipWrong;
-    }
-    if (i === currentIdx) return styles.pipCurrent;
+    const answered = i < currentIdx || (i === currentIdx && revealed && pickedSide);
+    if (answered) return mainGuesses[i] === q.winner ? styles.pipRight : styles.pipWrong;
+    if (i === currentIdx && phase === 'main') return styles.pipCurrent;
     return '';
   });
 
   const bonusGuesses = bonusSelections.map((s) => s ?? '');
+  const showProgress = phase === 'main' || phase === 'bonus';
 
-  return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Queuedle</h1>
-        <span className={styles.sub}>{game.id}</span>
-        <div className={styles.spacer} />
-        {headerActions}
-      </div>
-      <div className={styles.body}>
-        {phase !== 'intro' && phase !== 'summary' && phase !== 'bonus-results' && phase !== 'rank-change' && (
-          <div className={styles.progress}>
+  return page(
+    <>
+      {showProgress && (
+        <div className={styles.progress}>
+          <span className={styles.progressLabel}>
+            {phase === 'main' ? `Round ${currentIdx + 1} of ${total}` : 'Bonus round'}
+          </span>
+          <div className={styles.pips} aria-hidden="true">
             {pips.map((cls, i) => (
-              <div key={i} className={`${styles.pip}${cls ? ' ' + cls : ''}`} />
+              <span key={i} className={`${styles.pip}${cls ? ' ' + cls : ''}`} />
             ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {phase === 'intro' && <QueuedleIntro onStart={() => setPhase('main')} />}
+      {phase === 'intro' && (
+        <QueuedleIntro
+          onStart={() => setPhase('main')}
+          rounds={total}
+          isPastDay={isPastDay}
+          players={scores
+            .filter((s) => s.userName !== displayName)
+            .map((s) => ({ name: s.userName, imageUrl: imageByUser.get(s.userName) }))}
+        />
+      )}
 
-        {phase === 'main' && question && (
-          <QueuedleQuestionCard
-            question={question}
-            revealed={revealed}
-            pickedSide={pickedSide}
-            onPick={handlePick}
-            onNext={handleNext}
-            carryFrom={carryFrom}
-          />
-        )}
+      {phase === 'main' && question && (
+        <QueuedleQuestionCard
+          question={question}
+          revealed={revealed}
+          pickedSide={pickedSide}
+          onPick={handlePick}
+          onNext={handleNext}
+          carryFrom={carryFrom}
+        />
+      )}
 
-        {phase === 'bonus' && (
-          <QueuedleBonusScreen
-            winningItems={winningItems}
-            selections={bonusSelections}
-            onSelect={handleBonusSelect}
-            onSubmit={handleSubmit}
-            submitting={submit.isPending}
-          />
-        )}
+      {phase === 'bonus' && (
+        <QueuedleBonusScreen
+          winningItems={winningItems}
+          selections={bonusSelections}
+          onSelect={handleBonusSelect}
+          onSubmit={handleSubmit}
+          submitting={submit.isPending}
+          imageByUser={imageByUser}
+        />
+      )}
 
-        {phase === 'bonus-results' && (
-          <QueuedleBonusResults
-            winningItems={winningItems}
-            bonusGuesses={bonusGuesses}
-            onContinue={() => {
-              // Skip the rank-change beat for dev replays (no real submission) and
-              // when we couldn't compute an "after" snapshot (e.g. no displayName).
-              if (devReplay || !afterRanking) setPhase('summary');
-              else setPhase('rank-change');
-            }}
-          />
-        )}
+      {phase === 'bonus-results' && (
+        <QueuedleBonusResults
+          winningItems={winningItems}
+          bonusGuesses={bonusGuesses}
+          imageByUser={imageByUser}
+          onContinue={() => {
+            // Skip the rank-change beat for dev replays (no real submission) and
+            // when we couldn't compute an "after" snapshot (e.g. no displayName).
+            if (devReplay || !afterRanking) setPhase('summary');
+            else setPhase('rank-change');
+          }}
+        />
+      )}
 
-        {phase === 'rank-change' && afterRanking && (
-          <QueuedleRankChange
-            before={beforeRankSnapshot}
-            after={afterRanking}
-            onContinue={() => setPhase('summary')}
-          />
-        )}
+      {phase === 'rank-change' && afterRanking && (
+        <QueuedleRankChange before={beforeRankSnapshot} after={afterRanking} onContinue={() => setPhase('summary')} />
+      )}
 
-        {phase === 'summary' && localScore && (
-          <div className={styles.alreadyPlayedColumns}>
-            <QueuedleSummary
-              mainScore={localScore.main}
-              bonusScore={localScore.bonus}
-              maxMain={game.questions.length}
-              maxBonus={game.questions.length}
-              questions={game.questions}
-              mainGuesses={mainGuesses}
-              stats={gameStats.data}
-            />
-            {renderLeaderboardArea(game, { mainScore: localScore.main, bonusScore: localScore.bonus }, false)}
-          </div>
-        )}
-      </div>
-    </div>
+      {phase === 'summary' &&
+        localScore &&
+        renderResults(game, { mainScore: localScore.main, bonusScore: localScore.bonus }, mainGuesses, bonusGuesses)}
+    </>
   );
 }

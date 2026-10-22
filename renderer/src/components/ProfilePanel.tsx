@@ -1,52 +1,39 @@
-import { useCallback, useRef, useState } from 'react';
+import { useRef, useState, type CSSProperties } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useUserStats } from '../hooks/useUserStats';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Camera } from 'lucide-react';
+import { useStats } from '../hooks/useStats';
 import { useGameRankings } from '../hooks/useDailyGame';
 import { useMyPlaylists } from '../hooks/usePlaylists';
 import { useUserProfile, useInvalidateUserProfile } from '../hooks/useUserProfile';
+import { useOfficePresence } from '../hooks/useOfficePresence';
+import { useUsers } from '../hooks/useUsers';
 import { useImage } from '../hooks/useImage';
-import { getGameRankIcon } from '../lib/gameRankAssets';
+import { useDominantColor } from '../hooks/useDominantColor';
 import { useOpenItem } from '../hooks/useOpenItem';
+import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
+import { albumQueryOptions } from '../hooks/useAlbumBrowse';
+import { useArtistImage } from '../hooks/useArtistBrowse';
+import { getGameRankIcon } from '../lib/gameRankAssets';
 import { createDragGhost } from '../lib/dragHelpers';
 import { normalizeAvatar } from '../lib/avatarImage';
-import { statsTrackToItem } from '../lib/homeData';
-import { CardRow } from './CardRow';
-import { MediaRow } from './common/MediaRow';
-import { CreatePlaylistDialog } from './common/ContextMenu';
-import { PlaylistCard } from './common/PlaylistCard';
+import { primaryArtistName, relativeDay, statsAlbumToItem, statsArtistToItem, statsTrackToItem } from '../lib/homeData';
+import { resolveAlbumParams } from '../lib/itemHelpers';
+import { groupByDay, officeRank, profileFacts } from '../lib/profileData';
+import { Carousel } from './common/Carousel';
+import { ChartHead, ChartRow } from './common/ChartRow';
+import { CreatePlaylistDialog, useTrackContextMenu } from './common/ContextMenu';
+import { ImageTile } from './common/ImageTile';
+import { PillButton } from './common/PillButton';
+import { SectionCard } from './common/SectionCard';
+import { TrackRow } from './common/TrackRow';
+import { ArtistLinks } from './common/TrackLinks';
+import { UserAvatar } from './common/UserAvatar';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/ProfilePanel.module.css';
 
-function TrackSubtitle({ t, openItem, linkClass }: { t: StatsTrack; openItem: (item: SonosItem) => void; linkClass: string }) {
-  const artistItem: SonosItem | null = t.artistId
-    ? { type: 'ARTIST', name: t.artist, resource: { type: 'ARTIST', id: { objectId: t.artistId, serviceId: t.serviceId, accountId: t.accountId } } }
-    : null;
-  const albumItem: SonosItem | null = t.albumId && t.album
-    ? { type: 'ALBUM', name: t.album, resource: { type: 'ALBUM', id: { objectId: t.albumId, serviceId: t.serviceId, accountId: t.accountId } } }
-    : null;
-  return (
-    <>
-      {artistItem
-        ? <button className={linkClass} onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); openItem(artistItem); }}>{t.artist}</button>
-        : t.artist}
-      {t.album && <>{' · '}{albumItem
-        ? <button className={linkClass} onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); openItem(albumItem); }}>{t.album}</button>
-        : t.album}</>}
-    </>
-  );
-}
-
-function getAvatarStyle(name: string): React.CSSProperties {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    hash |= 0;
-  }
-  const hue = Math.abs(hash) % 360;
-  return {
-    background: `linear-gradient(135deg, hsl(${hue},55%,38%), hsl(${(hue + 40) % 360},60%,28%))`,
-  };
-}
+/** StatsTrack and RecentTrack carry the same navigation fields. */
+type ProfileTrack = Omit<StatsTrack, 'count'>;
 
 interface Props {
   onAddToQueue: (item: SonosItem) => void;
@@ -55,58 +42,75 @@ interface Props {
   onChangeName?: (name: string) => Promise<{ error: string } | null>;
 }
 
-export function ProfilePanel({ onAddToQueue, displayName, onSignOut, onChangeName }: Props) {
+/** Keyed on the person, so moving from one profile to another starts at the top with nothing selected. */
+export function ProfilePanel(props: Props) {
   const { userName } = useParams<{ userName: string }>();
+  if (!userName) return null;
+  return <Profile key={userName} userName={userName} {...props} />;
+}
+
+/** Artist tile with the artist's photo: the stats carry no artist image of their own. */
+function ArtistTile({ a, onOpen }: { a: StatsArtist; onOpen: () => void }) {
+  const { data: photo } = useArtistImage(a.artistId, a.serviceId, a.accountId);
+  return (
+    <div className={styles.shelfTile}>
+      <ImageTile circular title={a.artist} sub={`${a.count} ${a.count === 1 ? 'play' : 'plays'}`} imageUrl={photo ?? a.imageUrl} onOpen={onOpen} />
+    </div>
+  );
+}
+
+function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName }: Props & { userName: string }) {
   const navigate = useNavigate();
   const openItem = useOpenItem();
-  const [createPlaylistOpen, setCreatePlaylistOpen] = useState(false);
+  const { resolveAndOpen } = useResolveAndOpen();
+  const { showTrackMenu } = useTrackContextMenu();
+  const queryClient = useQueryClient();
+  const isOwnProfile = !!displayName && displayName === userName;
+
+  // Real data only: this person's all-time and weekly stats, their last seven days, the office ranking.
+  const { data: stats, isLoading: statsLoading } = useStats('alltime', userName, 25);
+  const { data: week } = useStats('week', userName);
+  const { data: office } = useStats('alltime');
+  const { data: recent, isLoading: recentLoading } = useQuery({
+    queryKey: ['recentlyPlayed', userName], // the key and fetcher useRecentlyPlayed uses, so the cache is shared
+    queryFn: () => window.sonos.fetchRecentlyPlayed(userName),
+    staleTime: 5 * 60_000,
+  });
+  const { data: rankings } = useGameRankings(userName, true);
+  const ranking = rankings?.find((r) => r.userName === userName) ?? null;
+  const { data: presence } = useOfficePresence();
+  // Only a sensed or rostered presence says someone is here; "available" includes working from home.
+  const inOffice = (presence?.basis === 'sensed' || presence?.basis === 'rostered') && presence.inOffice.includes(userName);
+
+  const topTracks = stats?.topTracks ?? [];
+  const topArtists = stats?.topArtists ?? [];
+  const topAlbums = stats?.topAlbums ?? [];
+  const plays = stats?.totalEvents ?? 0;
+  const lately = (recent?.tracks ?? []).slice(0, 10);
+  const { data: users } = useUsers(true, true);
+  const lastQueued = users?.find((u) => u.userId === userName)?.lastQueued;
+  const chart = topTracks.slice(0, 10);
+  const facts = profileFacts({ plays, weekPlays: week?.totalEvents ?? 0, rank: officeRank(office?.topUsers, userName) });
+
+  // The face leads; its colour washes the hero. Without a photo, the person's most played album lends its colour.
+  const { data: profile } = useUserProfile(userName);
+  const photo = useImage(profile?.imageUrl ?? null);
+  const leadAlbumArt = useImage(topAlbums[0]?.imageUrl ?? null);
+  const wash = useDominantColor(photo ?? leadAlbumArt);
+
+  // ── Own profile: photo, name ──
+  const invalidateProfile = useInvalidateUserProfile();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const [renameError, setRenameError] = useState<string | null>(null);
   const [renameSaving, setRenameSaving] = useState(false);
-
-const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, isLoading: statsLoading } =
-    useUserStats(userName, 25);
-
-  const { data: rankings } = useGameRankings(userName, !!userName);
-  const ranking = rankings?.find(r => r.userName === userName) ?? null;
-
-  const isOwnProfile = !!displayName && displayName === userName;
-  const { data: profile } = useUserProfile(userName);
-  const profileArt = useImage(profile?.imageUrl ?? null);
-  const invalidateProfile = useInvalidateUserProfile();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [trackSelected, setTrackSelected] = useState<Set<number>>(new Set());
-  const lastTrackSelected = useRef<number | null>(null);
-
-  const handleTrackClick = useCallback((idx: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (e.shiftKey && lastTrackSelected.current !== null) {
-      const lo = Math.min(lastTrackSelected.current, idx);
-      const hi = Math.max(lastTrackSelected.current, idx);
-      setTrackSelected(prev => { const next = new Set(prev); for (let j = lo; j <= hi; j++) next.add(j); return next; });
-    } else if (e.ctrlKey || e.metaKey) {
-      setTrackSelected(prev => { const next = new Set(prev); if (next.has(idx)) next.delete(idx); else next.add(idx); return next; });
-      lastTrackSelected.current = idx;
-    } else {
-      if (trackSelected.size === 1 && trackSelected.has(idx)) { setTrackSelected(new Set()); lastTrackSelected.current = null; }
-      else { setTrackSelected(new Set([idx])); lastTrackSelected.current = idx; }
-    }
-  }, [trackSelected]);
-
-  const handleTrackDragStart = useCallback((idx: number, e: React.DragEvent) => {
-    const indices = trackSelected.has(idx) ? [...trackSelected].sort((a, b) => a - b) : [idx];
-    if (!trackSelected.has(idx)) { setTrackSelected(new Set([idx])); lastTrackSelected.current = idx; }
-    const items = indices.map(i => statsTrackToItem(topTracks[i])).filter((x): x is SonosItem => x !== null);
-    e.dataTransfer.effectAllowed = 'copy';
-    e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(items));
-    createDragGhost(items.length > 1 ? `${items.length} tracks` : topTracks[idx].trackName, e.dataTransfer);
-  }, [trackSelected, topTracks]);
+  const [createPlaylistOpen, setCreatePlaylistOpen] = useState(false);
 
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file || !userName) return;
+    if (!file) return;
     setUploading(true);
     try {
       const { buffer, mimeType } = await normalizeAvatar(file);
@@ -128,208 +132,285 @@ const { topTracks, artistItems: topArtists, albumItems: topAlbums, totalEvents, 
     setRenameSaving(false);
     if (result?.error === 'taken') {
       setRenameError('That name is already taken.');
+    } else if (result?.error) {
+      setRenameError('Couldn’t change your name. Try again.');
     } else {
       setRenaming(false);
-      navigate(`/profile/${trimmed}`);
+      navigate(`/profile/${encodeURIComponent(trimmed)}`);
     }
   }
 
-  const { owned: ownedPlaylists, joined: joinedPlaylists } = useMyPlaylists(userName);
-  const allPlaylists = isOwnProfile
-    ? [...ownedPlaylists, ...joinedPlaylists]
-    : ownedPlaylists.filter(p => p.isPublic);
-  const visiblePlaylists = [...allPlaylists].sort((a, b) => {
+  // ── Track navigation: album on the title or art, artist on the name, the track menu on right-click ──
+  const albumItemFor = (t: ProfileTrack): SonosItem | null =>
+    t.albumId
+      ? ({
+          title: t.album ?? t.trackName,
+          type: 'ITEM_ALBUM',
+          resource: { type: 'ALBUM', id: { objectId: t.albumId, serviceId: t.serviceId ?? '', accountId: t.accountId ?? '' } },
+        } as SonosItem)
+      : null;
+  const openAlbum = (t: ProfileTrack) => {
+    const item = albumItemFor(t);
+    if (item) openItem(item);
+    else void resolveAndOpen(t.album || t.trackName, 'album', { artist: primaryArtistName(t.artist), serviceId: t.serviceId, accountId: t.accountId });
+  };
+  const prefetchAlbum = (t: ProfileTrack) => {
+    const p = resolveAlbumParams(albumItemFor(t) ?? ({} as SonosItem));
+    if (p.albumId && p.serviceId && p.accountId) void queryClient.prefetchQuery(albumQueryOptions(p.albumId, p.serviceId, p.accountId, p.defaults));
+  };
+  const openArtist = (name: string, ids: { artistId?: string; serviceId?: string; accountId?: string }) => {
+    if (ids.artistId) openItem(statsArtistToItem({ artist: name, count: 0, ...ids }));
+    else void resolveAndOpen(name, 'artist', { serviceId: ids.serviceId, accountId: ids.accountId });
+  };
+  const artistLinks = (t: ProfileTrack) => (
+    <ArtistLinks
+      artist={t.artist}
+      onOpenArtist={(name, isFirst) => openArtist(name, { artistId: isFirst ? t.artistId : undefined, serviceId: t.serviceId, accountId: t.accountId })}
+    />
+  );
+  const menu = (t: ProfileTrack, e: React.MouseEvent) => {
+    if (!t.uri) return;
+    showTrackMenu(
+      {
+        track: {
+          uri: t.uri, trackName: t.trackName, artist: t.artist, albumName: t.album, imageUrl: t.imageUrl,
+          serviceId: t.serviceId ?? '', accountId: t.accountId ?? '', addedBy: '', addedAt: 0,
+        },
+        sonosItem: statsTrackToItem(t) ?? undefined,
+      },
+      e,
+    );
+  };
+  const addTrack = (t: ProfileTrack) => {
+    const item = statsTrackToItem(t);
+    return item ? () => onAddToQueue(item) : undefined;
+  };
+
+  // ── Top tracks: click, shift and ctrl select; drag the selection onto the queue ──
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const lastSelected = useRef<number | null>(null);
+  function handleTrackClick(i: number, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (e.shiftKey && lastSelected.current !== null) {
+      const lo = Math.min(lastSelected.current, i);
+      const hi = Math.max(lastSelected.current, i);
+      setSelected((prev) => { const next = new Set(prev); for (let j = lo; j <= hi; j++) next.add(j); return next; });
+    } else if (e.ctrlKey || e.metaKey) {
+      setSelected((prev) => { const next = new Set(prev); if (next.has(i)) next.delete(i); else next.add(i); return next; });
+      lastSelected.current = i;
+    } else if (selected.size === 1 && selected.has(i)) {
+      setSelected(new Set());
+      lastSelected.current = null;
+    } else {
+      setSelected(new Set([i]));
+      lastSelected.current = i;
+    }
+  }
+  function handleTrackDragStart(i: number, e: React.DragEvent) {
+    const indices = selected.has(i) ? [...selected].sort((a, b) => a - b) : [i];
+    if (!selected.has(i)) { setSelected(new Set([i])); lastSelected.current = i; }
+    const items = indices.map((j) => statsTrackToItem(chart[j])).filter((x): x is SonosItem => x !== null);
+    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(items));
+    createDragGhost(items.length > 1 ? `${items.length} tracks` : chart[i].trackName, e.dataTransfer);
+  }
+
+  // ── Playlists: your own and the ones you've joined; for someone else, their public ones ──
+  const { owned, joined } = useMyPlaylists(userName);
+  const playlists = (isOwnProfile ? [...owned, ...joined] : owned.filter((p) => p.isPublic)).sort((a, b) => {
     if (!!b.isFavourites !== !!a.isFavourites) return b.isFavourites ? 1 : -1;
     return b.updatedAt - a.updatedAt;
   });
 
-  if (!userName) return null;
-
   const tierIcon = ranking ? getGameRankIcon(ranking.tierKey) : null;
+  const nothingYet = !statsLoading && plays === 0;
 
   return (
-    <div className={styles.panel}>
-      {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className={styles.header}>
-        <div
-          className={`${styles.avatar}${isOwnProfile ? ' ' + styles.avatarEditable : ''}`}
-          style={profileArt ? undefined : getAvatarStyle(userName)}
-          onClick={isOwnProfile ? () => fileInputRef.current?.click() : undefined}
-          title={isOwnProfile ? 'Change photo' : undefined}
-        >
-          {profileArt
-            ? <img src={profileArt} alt="" className={styles.avatarImg} />
-            : userName[0].toUpperCase()
-          }
-          {isOwnProfile && (
-            <div className={`${styles.avatarOverlay}${uploading ? ' ' + styles.avatarOverlayActive : ''}`}>
-              {uploading ? '…' : '📷'}
+    <div className={`page-scale ${styles.panel}`}>
+      <header className={styles.hero} style={wash ? ({ '--wash': wash } as CSSProperties) : undefined}>
+        {wash && <div className={styles.heroWash} aria-hidden="true" />}
+
+        {isOwnProfile ? (
+          <button type="button" className={`${styles.avatarBtn} ${styles.avatar}`} onClick={() => fileInputRef.current?.click()} aria-label="Change your photo">
+            <UserAvatar name={userName} imageUrl={profile?.imageUrl} className={styles.avatarFace} />
+            <span className={`${styles.avatarOverlay}${uploading ? ' ' + styles.avatarOverlayOn : ''}`} aria-hidden="true">
+              {uploading ? 'Uploading…' : <><Camera size={22} /> Change photo</>}
+            </span>
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={handleAvatarUpload} />
+          </button>
+        ) : (
+          <UserAvatar name={userName} imageUrl={profile?.imageUrl} className={`${styles.avatar} ${styles.avatarFace}`} />
+        )}
+
+        <div className={styles.heroText}>
+          {renaming ? (
+            <form onSubmit={handleRenameSubmit} className={styles.renameForm}>
+              <input
+                className={styles.renameInput}
+                aria-label="Your name"
+                value={renameValue}
+                onChange={(e) => { setRenameValue(e.target.value); setRenameError(null); }}
+                autoFocus
+                maxLength={32}
+                spellCheck={false}
+              />
+              <PillButton type="submit" variant="primary" disabled={!renameValue.trim() || renameSaving}>{renameSaving ? 'Saving…' : 'Save'}</PillButton>
+              <PillButton onClick={() => { setRenaming(false); setRenameError(null); }}>Cancel</PillButton>
+              {renameError && <p className={styles.renameError} role="alert">{renameError}</p>}
+            </form>
+          ) : (
+            <h1 className={styles.name}>{userName}</h1>
+          )}
+          {facts.length > 0 && <p className={styles.facts}>{facts.join(' · ')}</p>}
+          {nothingYet && <p className={styles.facts}>Nothing queued yet</p>}
+          {inOffice && <span className={styles.chip}>In the office today</span>}
+          {isOwnProfile && !renaming && (onChangeName || onSignOut) && (
+            <div className={styles.heroActions}>
+              {onChangeName && <PillButton onClick={() => { setRenameValue(userName); setRenaming(true); }}>Change name</PillButton>}
+              {onSignOut && <PillButton onClick={onSignOut}>Sign out</PillButton>}
             </div>
           )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            style={{ display: 'none' }}
-            onChange={handleAvatarUpload}
-          />
         </div>
-        <div className={styles.headerInfo}>
-          <div className={styles.nameWrap}>
-            {renaming ? (
-              <form onSubmit={handleRenameSubmit} className={styles.renameForm}>
-                <input
-                  className={styles.renameInput}
-                  value={renameValue}
-                  onChange={e => { setRenameValue(e.target.value); setRenameError(null); }}
-                  autoFocus
-                  maxLength={32}
-                  spellCheck={false}
-                />
-                <button type="submit" className={styles.renameBtn} disabled={!renameValue.trim() || renameSaving}>
-                  {renameSaving ? '…' : 'Save'}
-                </button>
-                <button type="button" className={styles.renameCancelBtn} onClick={() => { setRenaming(false); setRenameError(null); }}>
-                  Cancel
-                </button>
-                {renameError && <span className={styles.renameError}>{renameError}</span>}
-              </form>
-            ) : (
-              <h1 className={styles.userName}>{userName}</h1>
-            )}
-          </div>
-          {(totalEvents > 0 || isOwnProfile) && (
-            <span className={styles.statChip}>
-              {totalEvents > 0 && (
-                <><span className={styles.statChipValue}>{totalEvents.toLocaleString()}</span> plays</>
-              )}
-              {isOwnProfile && onChangeName && !renaming && (
-                <>
-                  {totalEvents > 0 && <span className={styles.statChipSep}>|</span>}
-                  <button className={styles.changeNameInline} onClick={() => { setRenameValue(userName ?? ''); setRenaming(true); }}>Change name</button>
-                </>
-              )}
-              {isOwnProfile && onSignOut && (
-                <>
-                  <span className={styles.statChipSep}>|</span>
-                  <button className={styles.signOutInline} onClick={onSignOut}>Sign out</button>
-                </>
-              )}
-            </span>
-          )}
-        </div>
+
         {ranking && (
-          <div className={styles.rankHero}>
-            {tierIcon && <img src={tierIcon} alt="" className={styles.rankHeroIcon} />}
-            <div className={styles.rankHeroText}>
-              <span className={styles.rankHeroName}>
-                {ranking.isProvisional ? 'Provisional' : ranking.tierName}
-              </span>
-              <span className={styles.rankHeroPercent}>
+          <div className={styles.rank}>
+            {tierIcon && <img src={tierIcon} alt="" className={styles.rankIcon} />}
+            <div className={styles.rankText}>
+              <span className={styles.rankName}>{ranking.isProvisional ? 'Provisional rank' : ranking.tierName}</span>
+              <span className={styles.rankDetail}>
                 {ranking.isProvisional
-                  ? <>{ranking.gamesPlayed} {ranking.gamesPlayed === 1 ? 'game' : 'games'} played</>
-                  : <>{ranking.averagePercent.toFixed(0)}% <span className={styles.sc}>avg</span> · <span className={styles.sc}>best</span> {ranking.bestTotal} · {ranking.gamesPlayed} <span className={styles.sc}>{ranking.gamesPlayed === 1 ? 'game' : 'games'}</span></>
-                }
+                  ? `Queuedle · ${ranking.gamesPlayed} ${ranking.gamesPlayed === 1 ? 'game' : 'games'} played`
+                  : `Queuedle · ${ranking.averagePercent.toFixed(0)}% average · best ${ranking.bestTotal} · ${ranking.gamesPlayed} ${ranking.gamesPlayed === 1 ? 'game' : 'games'}`}
               </span>
             </div>
           </div>
         )}
-      </div>
+      </header>
 
-      {/* ── Top Tracks ───────────────────────────────────────────────────── */}
-      {(statsLoading || topTracks.length > 0) && (
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Top Tracks</h2>
-          <div
-            className={styles.topTracksGrid}
-            onClick={() => { setTrackSelected(new Set()); lastTrackSelected.current = null; }}
-          >
-            <div className={styles.topTracksCol}>
-              {statsLoading
-                ? Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className={styles.skelBlock} style={{ height: 52, marginBottom: 2, animationDelay: `${i * 60}ms` }} />
-                  ))
-                : topTracks.slice(0, 5).map((t, i) => (
-                    <MediaRow
-                      key={i}
-                      name={t.trackName}
-                      subtitle={<TrackSubtitle t={t} openItem={openItem} linkClass={styles.trackLink} />}
-                      artUrl={t.imageUrl}
-                      trailing={<span className={styles.countBadge}>{t.count}×</span>}
-                      isSelected={trackSelected.has(i)}
-                      onClick={e => handleTrackClick(i, e)}
-                      draggable={!!t.uri}
-                      onDragStart={t.uri ? e => handleTrackDragStart(i, e) : undefined}
+      {nothingYet && (
+        <p className={`${styles.band} ${styles.empty}`}>
+          {isOwnProfile ? 'Anything you add to the queue shows up here: your top tracks, artists and albums.' : `${userName} hasn’t queued anything yet.`}
+        </p>
+      )}
+
+      {(statsLoading || chart.length > 0 || lately.length > 0) && (
+        <div className={`${styles.band} ${styles.split}`}>
+          <SectionCard title="Top tracks">
+            {statsLoading ? (
+              <div aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <div key={i} className={`skeleton ${styles.rowSkel}`} />)}</div>
+            ) : (
+              <>
+                <ChartHead />
+                <ol className={styles.list} onClick={() => { setSelected(new Set()); lastSelected.current = null; }}>
+                  {chart.map((t, i) => (
+                    <ChartRow
+                      key={`${t.uri ?? t.trackName}-${i}`}
+                      rank={i + 1}
+                      title={t.trackName}
+                      artists={artistLinks(t)}
+                      imageUrl={t.imageUrl}
+                      count={t.count}
+                      countLabel={`Queued ${t.count === 1 ? 'once' : `${t.count} times`}`}
+                      selected={selected.has(i)}
+                      onClick={(e) => handleTrackClick(i, e)}
+                      onDragStart={t.uri ? (e) => handleTrackDragStart(i, e) : undefined}
+                      onOpen={() => openAlbum(t)}
+                      onAdd={addTrack(t)}
+                      onContextMenu={(e) => menu(t, e)}
+                      onMouseEnter={() => prefetchAlbum(t)}
                     />
-                  ))
-              }
-            </div>
-            <div className={styles.topTracksCol}>
-              {statsLoading
-                ? Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className={styles.skelBlock} style={{ height: 52, marginBottom: 2, animationDelay: `${(i + 5) * 60}ms` }} />
-                  ))
-                : topTracks.slice(5, 10).map((t, i) => (
-                    <MediaRow
-                      key={i + 5}
-                      name={t.trackName}
-                      subtitle={<TrackSubtitle t={t} openItem={openItem} linkClass={styles.trackLink} />}
-                      artUrl={t.imageUrl}
-                      trailing={<span className={styles.countBadge}>{t.count}×</span>}
-                      isSelected={trackSelected.has(i + 5)}
-                      onClick={e => handleTrackClick(i + 5, e)}
-                      draggable={!!t.uri}
-                      onDragStart={t.uri ? e => handleTrackDragStart(i + 5, e) : undefined}
-                    />
-                  ))
-              }
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── Top Artists ───────────────────────────────────────────────────── */}
-      {(statsLoading || topArtists.length > 0) && (
-        <section className={styles.section}>
-          <CardRow title="Top Artists" items={topArtists} isLoading={statsLoading} onAdd={onAddToQueue} onOpen={openItem} cardSize="110px" />
-        </section>
-      )}
-
-      {/* ── Top Albums ────────────────────────────────────────────────────── */}
-      {(statsLoading || topAlbums.length > 0) && (
-        <section className={styles.section}>
-          <CardRow title="Top Albums" items={topAlbums} isLoading={statsLoading} onAdd={onAddToQueue} onOpen={openItem} cardSize="110px" />
-        </section>
-      )}
-
-      {/* ── Playlists ────────────────────────────────────────────────────── */}
-      {(visiblePlaylists.length > 0 || isOwnProfile) && (
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Playlists</h2>
-            {isOwnProfile && (
-              <button className={styles.sectionAction} onClick={() => setCreatePlaylistOpen(true)}>+ New</button>
+                  ))}
+                </ol>
+              </>
             )}
-          </div>
-          <div className={styles.playlistRow}>
-            {visiblePlaylists.map((pl) => (
-              <PlaylistCard
-                key={pl.id}
-                pl={pl}
-                displayName={isOwnProfile ? displayName : userName}
-                onClick={() => navigate(`/playlist/${pl.id}`)}
-              />
-            ))}
-          </div>
-        </section>
+          </SectionCard>
+
+          <SectionCard title="Lately">
+            {recentLoading ? (
+              <div aria-hidden="true">{Array.from({ length: 8 }, (_, i) => <div key={i} className={`skeleton ${styles.rowSkel}`} />)}</div>
+            ) : lately.length === 0 ? (
+              <p className={styles.empty}>
+                Nothing in the last seven days.{lastQueued ? ` Last queued ${relativeDay(lastQueued).toLowerCase()}.` : ''}
+              </p>
+            ) : (
+              groupByDay(lately).map((g) => (
+                <div key={g.day} className={styles.day}>
+                  <h3 className={styles.dayTitle}>{g.day}</h3>
+                  <ul className={styles.list}>
+                    {g.items.map((t, i) => (
+                      <TrackRow
+                        key={`${t.uri ?? t.trackName}-${i}`}
+                        title={t.trackName}
+                        artists={artistLinks(t)}
+                        imageUrl={t.imageUrl}
+                        onOpen={() => openAlbum(t)}
+                        onAdd={addTrack(t)}
+                        onContextMenu={(e) => menu(t, e)}
+                        onMouseEnter={() => prefetchAlbum(t)}
+                      />
+                    ))}
+                  </ul>
+                </div>
+              ))
+            )}
+          </SectionCard>
+        </div>
+      )}
+
+      {topArtists.length > 0 && (
+        <Carousel title="Top artists" className={styles.band} gap="1.2em">
+          {topArtists.map((a, i) => (
+            <ArtistTile key={`${a.artistId ?? a.artist}-${i}`} a={a} onOpen={() => openArtist(a.artist, a)} />
+          ))}
+        </Carousel>
+      )}
+
+      {topAlbums.length > 0 && (
+        <Carousel title="Top albums" className={styles.band} gap="1.2em">
+          {topAlbums.map((a, i) => {
+            const item = statsAlbumToItem(a);
+            return (
+              <div key={`${a.albumId ?? a.album}-${i}`} className={styles.shelfTile}>
+                <ImageTile
+                  title={a.album}
+                  sub={a.artist}
+                  meta={`${a.count} ${a.count === 1 ? 'play' : 'plays'}`}
+                  imageUrl={a.imageUrl}
+                  onOpen={() => (a.albumId ? openItem(item) : void resolveAndOpen(a.album, 'album', { artist: primaryArtistName(a.artist) }))}
+                />
+              </div>
+            );
+          })}
+        </Carousel>
+      )}
+
+      {(playlists.length > 0 || isOwnProfile) && (
+        <Carousel
+          title="Playlists"
+          className={styles.band}
+          gap="1.2em"
+          actions={isOwnProfile ? <PillButton onClick={() => setCreatePlaylistOpen(true)}>New playlist</PillButton> : undefined}
+        >
+          {playlists.length === 0 ? (
+            <p className={styles.empty}>No playlists yet.</p>
+          ) : (
+            playlists.map((pl) => (
+              <div key={pl.id} className={styles.shelfTile}>
+                <ImageTile
+                  title={pl.name}
+                  sub={`${pl.trackCount} ${pl.trackCount === 1 ? 'track' : 'tracks'}`}
+                  meta={pl.owner !== userName ? `By ${pl.owner}` : !pl.isPublic ? 'Private' : null}
+                  imageUrl={pl.imageUrl}
+                  onOpen={() => navigate(`/playlist/${pl.id}`)}
+                />
+              </div>
+            ))
+          )}
+        </Carousel>
       )}
 
       {createPlaylistOpen && (
-        <CreatePlaylistDialog
-          displayName={displayName}
-          pendingTrack={null}
-          onClose={() => setCreatePlaylistOpen(false)}
-        />
+        <CreatePlaylistDialog displayName={displayName} pendingTrack={null} onClose={() => setCreatePlaylistOpen(false)} />
       )}
     </div>
   );

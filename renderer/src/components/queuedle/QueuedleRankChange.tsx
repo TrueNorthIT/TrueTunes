@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { getGameRankIcon } from '../../lib/gameRankAssets';
 import type { GameRankTierKey } from '../../hooks/useDailyGame';
+import { ArrowRight } from 'lucide-react';
+import { PillButton } from '../common/PillButton';
+import { SectionCard } from '../common/SectionCard';
 import styles from '../../styles/Queuedle.module.css';
 
 export interface RankSnapshot {
@@ -29,7 +32,7 @@ function useTween(from: number, to: number, durationMs: number) {
     startRef.current = null;
     const tick = (now: number) => {
       if (startRef.current === null) startRef.current = now;
-      const t = Math.min(1, (now - startRef.current) / durationMs);
+      const t = durationMs > 0 ? Math.min(1, (now - startRef.current) / durationMs) : 1;
       const eased = 1 - Math.pow(1 - t, 3);
       setValue(Math.round(from + (to - from) * eased));
       if (t < 1) rafRef.current = requestAnimationFrame(tick);
@@ -45,67 +48,58 @@ function useTween(from: number, to: number, durationMs: number) {
 
 export function QueuedleRankChange({ before, after, onContinue }: Props) {
   const fromRating = before?.rating ?? after.rating;
-  const display = useTween(fromRating, after.rating, ANIM_MS);
+  const reduceMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const display = useTween(fromRating, after.rating, reduceMotion ? 0 : ANIM_MS);
   const delta = before ? after.rating - before.rating : 0;
   const tierChanged = !!before && before.tierKey !== after.tierKey;
   const tierIcon = getGameRankIcon(after.tierKey);
   const prevTierIcon = before ? getGameRankIcon(before.tierKey) : null;
-
-  const deltaLabel = delta > 0 ? `+${delta}` : `${delta}`;
-  const deltaClass =
-    delta > 0
-      ? styles.rankDeltaUp
-      : delta < 0
-        ? styles.rankDeltaDown
-        : styles.rankDeltaFlat;
+  const showDelta = !!before && !after.isProvisional && !before.isProvisional && delta !== 0;
+  const gamesLeft = Math.max(0, 3 - after.gamesPlayed);
 
   return (
-    <div className={styles.rankChangeWrap}>
-      <h2 className={styles.rankChangeTitle}>
-        {before ? 'Rank update' : 'Welcome to the ranks'}
-      </h2>
+    <SectionCard featured className={styles.rankCard}>
+      <h2 className={styles.rankTitle}>{before ? 'Rank update' : 'Welcome to the ranks'}</h2>
 
-      <div className={styles.rankChangeBadgeRow}>
+      <div className={styles.rankBadges}>
         {tierChanged && prevTierIcon && (
-          <div className={styles.rankBadgePrev}>
-            <img src={prevTierIcon} alt="" className={styles.rankBadgeImg} />
-          </div>
+          <>
+            <span className={`${styles.rankBadge} ${styles.rankBadgePrev}`}>
+              <img src={prevTierIcon} alt="" />
+            </span>
+            <ArrowRight className={styles.rankArrow} size={22} aria-hidden="true" />
+          </>
         )}
-        {tierChanged && prevTierIcon && (
-          <div className={styles.rankBadgeArrow}>→</div>
-        )}
-        <div
-          className={`${styles.rankBadgeCurrent}${tierChanged ? ' ' + styles.rankBadgePulse : ''}`}
-        >
-          {tierIcon ? (
-            <img src={tierIcon} alt="" className={styles.rankBadgeImg} />
-          ) : (
-            <div className={styles.rankBadgePlaceholder} />
-          )}
-        </div>
+        <span className={`${styles.rankBadge}${tierChanged ? ' ' + styles.rankBadgeIn : ''}`}>
+          {tierIcon ? <img src={tierIcon} alt="" /> : <span className={styles.rankBadgeEmpty} />}
+        </span>
       </div>
 
-      <div className={styles.rankTierName}>{after.tierName}</div>
+      <p className={styles.rankTier}>
+        {tierChanged && before ? `${before.tierName} to ${after.tierName}` : after.tierName}
+      </p>
 
-      <div className={styles.rankRatingRow}>
-        <span className={styles.rankRatingNumber}>{display}</span>
-        {before && !after.isProvisional && !before.isProvisional && delta !== 0 && (
-          <span className={`${styles.rankDeltaChip} ${deltaClass}`}>{deltaLabel}</span>
+      <p className={styles.rankRating}>
+        <span className={styles.rankNumber}>{display}</span>
+        {showDelta && (
+          <span className={`${styles.rankDelta} ${delta > 0 ? styles.markRight : styles.markWrong}`}>
+            {delta > 0 ? `+${delta}` : `${delta}`}
+          </span>
         )}
-      </div>
+      </p>
+      <p className={styles.rankCaption}>Rating</p>
 
       {after.isProvisional && (
-        <div className={styles.rankProvisional}>
-          Provisional · play {Math.max(0, 3 - after.gamesPlayed)} more
-          {Math.max(0, 3 - after.gamesPlayed) === 1 ? ' game' : ' games'} to lock in a tier
-        </div>
+        <p className={styles.rankProvisional}>
+          Provisional: play {gamesLeft} more {gamesLeft === 1 ? 'game' : 'games'} to lock in a tier
+        </p>
       )}
 
       <div className={styles.submitRow}>
-        <button className={styles.nextBtn} onClick={onContinue}>
-          Continue →
-        </button>
+        <PillButton variant="primary" onClick={onContinue}>
+          Continue
+        </PillButton>
       </div>
-    </div>
+    </SectionCard>
   );
 }

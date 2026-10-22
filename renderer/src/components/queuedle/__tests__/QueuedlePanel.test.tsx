@@ -89,11 +89,13 @@ vi.mock('../QueuedleRankChange', () => ({
     </div>
   ),
 }));
-vi.mock('../QueuedleSummary', () => ({
-  QueuedleSummary: ({ mainScore, bonusScore }: { mainScore: number; bonusScore: number }) => (
+vi.mock('../MyScores', () => ({
+  MyScores: ({ mainScore, bonusScore }: { mainScore: number; bonusScore: number }) => (
     <div>Score: {mainScore + bonusScore}</div>
   ),
 }));
+vi.mock('../QueuedleSummary', () => ({ QueuedleSummary: () => <div>Answers</div> }));
+vi.mock('@/hooks/useUsers', () => ({ useUsers: () => ({ data: [] }) }));
 vi.mock('../QueuedleCalendar', () => ({
   QueuedleCalendar: ({
     dates,
@@ -232,7 +234,7 @@ describe('QueuedlePanel', () => {
     render(<QueuedlePanel />);
     await flushPromises();
     expect(screen.getByText('Queuedle')).toBeInTheDocument();
-    expect(screen.getByText('2024-01-01')).toBeInTheDocument();
+    expect(screen.getByText('Monday 1 January 2024')).toBeInTheDocument();
   });
 
   it('picking an answer reveals the result', async () => {
@@ -421,7 +423,7 @@ describe('QueuedlePanel', () => {
       isLoading: false,
     });
     render(<QueuedlePanel />);
-    await waitFor(() => expect(screen.getByText("Today's Leaderboard")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Today's leaderboard")).toBeInTheDocument());
     expect(screen.getByText('alice')).toBeInTheDocument();
   });
 
@@ -456,7 +458,7 @@ describe('QueuedlePanel', () => {
     const user = userEvent.setup();
     render(<QueuedlePanel />);
     await user.click(await screen.findByRole('tab', { name: 'Ranked' }));
-    expect(screen.getByText('Ranked Leaderboard')).toBeInTheDocument();
+    expect(screen.getByText('Ranked leaderboard')).toBeInTheDocument();
     expect(screen.getByText('alice')).toBeInTheDocument();
     expect(screen.getByText('Provisional')).toBeInTheDocument();
     expect(screen.getByText('4.5')).toBeInTheDocument();
@@ -496,7 +498,7 @@ describe('QueuedlePanel', () => {
     await user.click(await screen.findByRole('tab', { name: 'Ranked' }));
     expect(screen.getByText('ranked-player')).toBeInTheDocument();
     await user.click(screen.getByRole('tab', { name: 'Today' }));
-    expect(screen.getByText("Today's Leaderboard")).toBeInTheDocument();
+    expect(screen.getByText("Today's leaderboard")).toBeInTheDocument();
     expect(screen.getByText('daily-player')).toBeInTheDocument();
     expect(screen.queryByText('ranked-player')).not.toBeInTheDocument();
   });
@@ -526,9 +528,9 @@ describe('QueuedlePanel', () => {
     const user = userEvent.setup();
     render(<QueuedlePanel />);
     // Calendar is not rendered inline — it's hidden until the button is clicked.
-    await waitFor(() => expect(screen.getByText('📅 Calendar')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Past games')).toBeInTheDocument());
     expect(screen.queryByText('cal-2023-12-31')).not.toBeInTheDocument();
-    await user.click(screen.getByText('📅 Calendar'));
+    await user.click(screen.getByText('Past games'));
     expect(screen.getByText('cal-2023-12-31')).toBeInTheDocument();
     expect(screen.getByText('cal-2024-01-01-played')).toBeInTheDocument();
   });
@@ -538,7 +540,7 @@ describe('QueuedlePanel', () => {
     mockUseGameDates.mockReturnValue({ data: { dates: [] }, isLoading: false });
     render(<QueuedlePanel />);
     await waitFor(() => expect(screen.getByText('Score: 3')).toBeInTheDocument());
-    expect(screen.queryByText('📅 Calendar')).not.toBeInTheDocument();
+    expect(screen.queryByText('Past games')).not.toBeInTheDocument();
   });
 
   it('selecting a past date in the calendar closes the popup and resets to the intro screen', async () => {
@@ -556,10 +558,10 @@ describe('QueuedlePanel', () => {
     }));
     const user = userEvent.setup();
     render(<QueuedlePanel />);
-    await user.click(await screen.findByText('📅 Calendar'));
+    await user.click(await screen.findByText('Past games'));
     await user.click(screen.getByText('cal-2023-12-31'));
     expect(await screen.findByText('Intro screen')).toBeInTheDocument();
-    expect(screen.getByText('← Today')).toBeInTheDocument();
+    expect(screen.getByText('Back to today')).toBeInTheDocument();
     // Popup no longer mounted after selection.
     expect(screen.queryByText('cal-2023-12-31')).not.toBeInTheDocument();
   });
@@ -577,10 +579,10 @@ describe('QueuedlePanel', () => {
     }));
     const user = userEvent.setup();
     render(<QueuedlePanel />);
-    await user.click(await screen.findByText('📅 Calendar'));
+    await user.click(await screen.findByText('Past games'));
     await user.click(await screen.findByText('cal-2023-12-31'));
     expect(await screen.findByText('Intro screen')).toBeInTheDocument();
-    await user.click(screen.getByText('← Today'));
+    await user.click(screen.getByText('Back to today'));
     // After back-to-today, the localStorage short-circuit re-fires for today's id.
     await waitFor(() => expect(screen.getByText('Score: 3')).toBeInTheDocument());
   });

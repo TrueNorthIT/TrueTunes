@@ -1,42 +1,58 @@
+import { SectionCard } from '../common/SectionCard';
+import { PillButton } from '../common/PillButton';
+import { UserAvatar } from '../common/UserAvatar';
+import { playedLine } from './format';
 import styles from '../../styles/Queuedle.module.css';
 
 interface Props {
   onStart: () => void;
+  rounds: number;
+  isPastDay?: boolean;
+  /** Colleagues who have already played this game. */
+  players?: Array<{ name: string; imageUrl?: string | null }>;
 }
 
-export function QueuedleIntro({ onStart }: Props) {
+/** The start line: what the game asks, who has played, and one button. */
+export function QueuedleIntro({ onStart, rounds, isPastDay, players = [] }: Props) {
   return (
     <div className={styles.intro}>
-      <div className={styles.bonusIntro}>
-        <h2 className={styles.bonusIntroTitle}>Welcome to Queuedle</h2>
-        <p className={styles.bonusIntroSub}>The daily office music guessing game.</p>
-      </div>
-      <div className={styles.introRules}>
-        <div className={styles.introRule}>
-          <h3 className={styles.introRuleTitle}>Round 1 — Higher or Lower</h3>
-          <p className={styles.introRuleBody}>
-            Two tracks, artists, or albums face off. Pick the one that&apos;s been queued more times in the
-            office. The winner carries over and faces a new challenger in the next round.
-          </p>
+      <SectionCard featured className={styles.introLead}>
+        <h2 className={styles.introTitle}>{rounds} rounds on what the office has queued</h2>
+        <p className={styles.introSub}>Guess which got queued more, then who queued it most. It takes a couple of minutes.</p>
+        <div className={styles.introStart}>
+          <PillButton variant="primary" className={styles.startBtn} onClick={onStart}>
+            Start
+          </PillButton>
+          {players.length > 0 && (
+            <div className={styles.played}>
+              <span className={styles.playedFaces} aria-hidden="true">
+                {players.slice(0, 5).map((p) => (
+                  <UserAvatar key={p.name} name={p.name} imageUrl={p.imageUrl} className={styles.playedAvatar} />
+                ))}
+              </span>
+              <span className={styles.playedText}>{playedLine(players.map((p) => p.name), isPastDay)}</span>
+            </div>
+          )}
         </div>
-        <div className={styles.introRule}>
-          <h3 className={styles.introRuleTitle}>Round 2 — Top Queuer</h3>
-          <p className={styles.introRuleBody}>
-            For each winning item, guess which colleague has played it the most.
+      </SectionCard>
+      <ol className={styles.rules}>
+        <li className={styles.rule}>
+          <span className={styles.ruleNum}>1</span>
+          <h3 className={styles.ruleTitle}>Higher or lower</h3>
+          <p className={styles.ruleBody}>
+            Two tracks, artists or albums. Pick the one the office has queued more. The winner stays on to face the next
+            challenger.
           </p>
-        </div>
-        <div className={styles.introRule}>
-          <h3 className={styles.introRuleTitle}>Score</h3>
-          <p className={styles.introRuleBody}>
-            One point per correct answer in each round. Come back tomorrow for a new Queuedle.
-          </p>
-        </div>
-      </div>
-      <div className={styles.nextRow}>
-        <button className={styles.nextBtn} onClick={onStart}>
-          Start
-        </button>
-      </div>
+        </li>
+        <li className={styles.rule}>
+          <span className={styles.ruleNum}>2</span>
+          <h3 className={styles.ruleTitle}>Top queuer</h3>
+          <p className={styles.ruleBody}>For each winner, guess which colleague has queued it the most.</p>
+        </li>
+      </ol>
+      <p className={styles.ruleFoot}>
+        One point for each right answer, {rounds * 2} in all. A new Queuedle arrives every day.
+      </p>
     </div>
   );
 }

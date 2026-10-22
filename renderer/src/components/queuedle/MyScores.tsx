@@ -1,3 +1,6 @@
+import type { ReactNode } from 'react';
+import { SectionCard } from '../common/SectionCard';
+import { ScoreDistribution } from './ScoreDistribution';
 import styles from '../../styles/Queuedle.module.css';
 
 interface Props {
@@ -5,28 +8,32 @@ interface Props {
   bonusScore: number;
   maxMain: number;
   maxBonus: number;
+  /** "Joint 1st of 5 today". */
+  standing?: string;
+  /** Everyone's round scores (you included), for the two distributions. */
+  mainScores?: number[];
+  bonusScores?: number[];
+  /** Under the standing: the "come back tomorrow" line. */
+  note?: ReactNode;
 }
 
-export function MyScores({ mainScore, bonusScore, maxMain, maxBonus }: Props) {
-  const total = mainScore + bonusScore;
-  const maxTotal = maxMain + maxBonus;
+/** The results hero: your total and place, beside how the room scored in each round. */
+export function MyScores({ mainScore, bonusScore, maxMain, maxBonus, standing, mainScores, bonusScores, note }: Props) {
   return (
-    <div className={styles.myScores}>
-      <h2 className={styles.leaderboardTitle}>My Scores</h2>
-      <div className={styles.myScoresTotal}>
-        <span className={styles.myScoresTotalValue}>{total}</span>
-        <span className={styles.myScoresTotalOf}>/ {maxTotal}</span>
+    <SectionCard featured className={styles.scoreHero}>
+      <div className={styles.scoreMain}>
+        <h2 className={styles.scoreLabel}>Your score</h2>
+        <p className={styles.scoreLine}>
+          <span className={styles.scoreValue}>{mainScore + bonusScore}</span>
+          <span className={styles.scoreOf}>out of {maxMain + maxBonus}</span>
+        </p>
+        {standing && <p className={styles.standing}>{standing}</p>}
+        {note}
       </div>
-      <div className={styles.myScoresCells}>
-        <div className={styles.summaryCell}>
-          <div className={styles.summaryCellValue}>{mainScore}/{maxMain}</div>
-          <div className={styles.summaryCellLabel}>Higher or lower</div>
-        </div>
-        <div className={styles.summaryCell}>
-          <div className={styles.summaryCellValue}>{bonusScore}/{maxBonus}</div>
-          <div className={styles.summaryCellLabel}>Top queuer</div>
-        </div>
+      <div className={styles.rounds}>
+        <ScoreDistribution title="Higher or lower" scores={mainScores ?? [mainScore]} maxScore={maxMain} playerScore={mainScore} />
+        <ScoreDistribution title="Top queuer" scores={bonusScores ?? [bonusScore]} maxScore={maxBonus} playerScore={bonusScore} />
       </div>
-    </div>
+    </SectionCard>
   );
 }
