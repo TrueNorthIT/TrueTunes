@@ -27,7 +27,7 @@ import { useReleaseTrackCounts } from '../../hooks/useReleaseTrackCounts';
 import { useReleaseYears } from '../../hooks/useReleaseYears';
 import { useReleaseTracklists } from '../../hooks/useReleaseTracklists';
 import { filterShelves } from '../../lib/shelfSearch';
-import { groupReleases, releaseKey, sortShelvesByYear, type ReleaseGroup } from '../../lib/releaseShelves';
+import { groupReleases, latestRelease, releaseKey, sortShelvesByYear, type ReleaseGroup } from '../../lib/releaseShelves';
 import type { AlbumTrack } from '../../hooks/useAlbumBrowse';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/ArtistPanel.module.css';
@@ -142,7 +142,11 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
     setTimeout(() => ghost.remove(), 0);
   }
 
-  const latestAlbum = data?.albums[0] ?? null;
+  const releases = data?.albums ?? [];
+  const { counts, isLoading: countsLoading } = useReleaseTrackCounts(releases);
+  const { years } = useReleaseYears(releases, name);
+  const sortedShelves = sortShelvesByYear(groupReleases(releases, counts), years);
+  const latestAlbum = latestRelease(sortedShelves, years) ?? releases[0] ?? null;
   const latestId = latestAlbum?.resource?.id;
   const { data: latestData } = useAlbumBrowse(latestId?.objectId, latestId?.serviceId, latestId?.accountId, latestAlbum?.resource?.defaults);
 
@@ -182,10 +186,6 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
   }
   const openArtistByName = (artist: string) => void resolveAndOpen(artist, 'artist');
 
-  const releases = data?.albums ?? [];
-  const { counts, isLoading: countsLoading } = useReleaseTrackCounts(releases);
-  const { years } = useReleaseYears(releases, name);
-  const sortedShelves = sortShelvesByYear(groupReleases(releases, counts), years);
   const [query, setQuery] = useState('');
   const [tracksEnabled, setTracksEnabled] = useState(false); // on from the box's first focus, for the page's life
   const { tracksByRelease, isLoading: tracksLoading } = useReleaseTracklists(releases, tracksEnabled);

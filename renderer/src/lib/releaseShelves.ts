@@ -125,3 +125,15 @@ export function sortShelvesByYear(shelves: Shelves, years: Map<string, number>):
   };
   return { albums: sortShelf(shelves.albums), singles: sortShelf(shelves.singles), other: sortShelf(shelves.other) };
 }
+
+/**
+ * The newest album or single (never a live or alternate version), from shelves already sorted by
+ * sortShelvesByYear. The album wins a tie or when neither year is known; null when both shelves are empty.
+ */
+export function latestRelease(shelves: Shelves, years: Map<string, number>): SonosItem | null {
+  const album = shelves.albums[0]?.primary ?? null;
+  const single = shelves.singles[0]?.primary ?? null;
+  if (!album || !single) return album ?? single;
+  const yr = (i: SonosItem) => years.get(releaseKey(i)) ?? -Infinity;
+  return yr(single) > yr(album) ? single : album;
+}

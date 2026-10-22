@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sortShelvesByYear, type ReleaseGroup } from '../releaseShelves';
+import { latestRelease, sortShelvesByYear, type ReleaseGroup } from '../releaseShelves';
 import type { SonosItem } from '../../types/sonos';
 
 const it_ = (id: string): SonosItem => ({ id, title: id }) as SonosItem;
@@ -39,5 +39,21 @@ describe('sortShelvesByYear', () => {
     expect(ids(s.singles)).toEqual(['b', 'a']);
     expect(ids(s.other)).toEqual(['d', 'c']);
     expect(ids(input.singles)).toEqual(['a', 'b']);
+  });
+});
+
+describe('latestRelease', () => {
+  const both = (albums: ReleaseGroup[], singles: ReleaseGroup[]) => ({ albums, singles, other: [grp('live')] });
+  it('picks the newer of the top album and top single', () => {
+    expect(latestRelease(both([grp('a')], [grp('s')]), new Map([['a', 2021], ['s', 2023]]))?.id).toBe('s');
+    expect(latestRelease(both([grp('a')], [grp('s')]), new Map([['a', 2021], ['s', 2016]]))?.id).toBe('a');
+  });
+  it('prefers the album on a tie or when years are unknown', () => {
+    expect(latestRelease(both([grp('a')], [grp('s')]), new Map([['a', 2021], ['s', 2021]]))?.id).toBe('a');
+    expect(latestRelease(both([grp('a')], [grp('s')]), new Map())?.id).toBe('a');
+  });
+  it('never picks from the other versions shelf', () => {
+    expect(latestRelease(both([], [grp('s')]), new Map([['live', 2030]]))?.id).toBe('s');
+    expect(latestRelease(both([], []), new Map())).toBeNull();
   });
 });

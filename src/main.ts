@@ -2324,15 +2324,14 @@ ipcMain.handle('genius:albumYear', async (_: IpcMainInvokeEvent, albumName: stri
 
     type Hit = {
       result: {
-        primary_artist: { name: string } | null;
+        primary_artist: { name: string };
         release_date_components: { year: number | null } | null;
       };
     };
     const searchData = JSON.parse(searchBody) as { response: { hits: Hit[] } };
-    const hits = searchData.response?.hits ?? [];
-    const lower = artistName.toLowerCase();
-    const hit = hits.find((h) => h.result.primary_artist?.name?.toLowerCase().includes(lower)) ?? hits[0];
-    return hit?.result?.release_date_components?.year ?? null;
+    const hits = (searchData.response?.hits ?? []).filter((h) => h.result.primary_artist);
+    // Only this artist's hit: falling back to the first hit gave a stranger's song year (Adele's live single as 2000).
+    return pickArtistHit(hits, artistName)?.result?.release_date_components?.year ?? null;
   } catch (err) {
     log(`[genius] albumYear error: ${err}`);
     return null;
