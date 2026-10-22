@@ -1,8 +1,15 @@
 import { useImage } from '../../hooks/useImage';
 
+/** No purple: a name hash lands on 0–250° or 330–360°, never on the 250–330° violets. */
+function avatarHue(hash: number): number {
+  const hue = Math.abs(hash) % 280;
+  return hue < 250 ? hue : hue + 80;
+}
+
 /**
  * Stable colour per person, so someone without a photo still looks like
- * themselves everywhere they appear.
+ * themselves everywhere they appear. One hue, from 30% to 20% lightness,
+ * so the white initial reads at 4.5:1 or better on every hue.
  */
 export function avatarGradient(name: string): string {
   let h = 0;
@@ -10,8 +17,8 @@ export function avatarGradient(name: string): string {
     h = name.charCodeAt(i) + ((h << 5) - h);
     h |= 0;
   }
-  const hue = Math.abs(h) % 360;
-  return `linear-gradient(135deg, hsl(${hue},55%,38%), hsl(${(hue + 40) % 360},60%,28%))`;
+  const hue = avatarHue(h);
+  return `linear-gradient(135deg, hsl(${hue},55%,30%), hsl(${hue},60%,20%))`;
 }
 
 /**

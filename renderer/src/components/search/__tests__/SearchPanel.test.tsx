@@ -63,4 +63,34 @@ describe('SearchPanel', () => {
     expect(await screen.findByText('Results for mr brightside')).toBeInTheDocument();
     expect(mockServiceQuery).toHaveBeenCalledWith('mr brightside', { count: 50 });
   });
+
+  it('keeps an error an error, with Retry', async () => {
+    setQuery('love');
+    mockServiceQuery.mockResolvedValue({ error: 'busy' });
+    renderPanel();
+    const retry = await screen.findByRole('button', { name: 'Retry' }, { timeout: 4000 });
+    expect(screen.queryByText(/No results/)).not.toBeInTheDocument();
+    mockServiceQuery.mockResolvedValue({ data: { resourceOrder: ['TRACKS'], TRACKS: { resources: [{ name: 'Love', id: { objectId: 't', serviceId: 's', accountId: 'a' } }] } } });
+    fireEvent.click(retry);
+    expect(await screen.findByText('Results for love')).toBeInTheDocument();
+  });
+
+  it('gives a dead end a hint and the recent searches', async () => {
+    localStorage.setItem('tt2.recentSearches', JSON.stringify(['Beyonce']));
+    setQuery('zzqx');
+    mockServiceQuery.mockResolvedValue({ data: { resourceOrder: [] } });
+    renderPanel();
+    expect(await screen.findByText(/Check the spelling/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Beyonce' })).toBeInTheDocument();
+  });
+
+  it('names the page and announces the count', async () => {
+    setQuery('mr brightside');
+    mockServiceQuery.mockResolvedValue({
+      data: { resourceOrder: ['TRACKS'], TRACKS: { resources: [{ name: 'A', id: { objectId: 'a', serviceId: 's', accountId: 'x' } }, { name: 'B', id: { objectId: 'b', serviceId: 's', accountId: 'x' } }] } },
+    });
+    renderPanel();
+    expect(screen.getByRole('heading', { level: 1, name: 'Results for ‘mr brightside’' })).toBeInTheDocument();
+    expect(await screen.findByText('2 results')).toHaveAttribute('aria-live', 'polite');
+  });
 });

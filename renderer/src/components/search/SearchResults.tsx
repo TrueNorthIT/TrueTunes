@@ -9,7 +9,9 @@ import { artistQueryOptions } from '../../hooks/useArtistBrowse';
 import {
   fmtTime, getItemArt, getName, isAlbum, isArtist, isPlaylist, isTrack, resolveAlbumParams, resolveArtistParams,
 } from '../../lib/itemHelpers';
-import { albumNameOf, albumSub, pickTopResult, playlistSub } from '../../lib/searchResults';
+import {
+  albumNameOf, albumSub, pickTopResult, playlistSub, searchTrackRow, topSongRow, withTopSongs, type SongRow,
+} from '../../lib/searchResults';
 import { officeCountFor } from '../../lib/artistOffice';
 import { withArtworkSize } from '../../lib/artworkUrl';
 import { createDragGhost } from '../../lib/dragHelpers';
@@ -22,7 +24,7 @@ import { SectionCard, SeeAll } from '../common/SectionCard';
 import { TopResultCard } from '../common/TopResultCard';
 import { TrackRow } from '../common/TrackRow';
 import { ArtistLinks } from '../common/TrackLinks';
-import type { SonosItem, SonosArtist, SonosItemId, SonosAlbum } from '../../types/sonos';
+import type { SonosItem, SonosAlbum } from '../../types/sonos';
 import styles from './SearchResults.module.css';
 
 const SONGS_SHOWN = 5;
@@ -39,19 +41,23 @@ function albumItemOf(track: SonosItem): SonosItem | null {
   return { title: a.name, type: 'ITEM_ALBUM', resource: { type: 'ALBUM', id: a.id } };
 }
 
-function buildTrackPayload(item: SonosItem): PlaylistTrack {
-  const rid = (typeof item.id === 'object' ? item.id : item.resource?.id) as SonosItemId | undefined;
+function buildTrackPayload(r: SongRow): PlaylistTrack {
   return {
-    uri: rid?.objectId ?? item.objectId ?? '',
-    trackName: getName(item),
-    artist: item.artists?.[0]?.name ?? '',
-    albumName: albumNameOf(item),
-    imageUrl: getItemArt(item),
-    serviceId: rid?.serviceId ?? item.serviceId ?? '',
-    accountId: rid?.accountId ?? item.accountId ?? '',
+    uri: r.id.objectId ?? '',
+    trackName: r.title,
+    artist: r.artists[0]?.name ?? '',
+    albumName: r.album?.name,
+    imageUrl: r.imageUrl,
+    serviceId: r.id.serviceId ?? '',
+    accountId: r.id.accountId ?? '',
     addedBy: '',
     addedAt: 0,
   };
+}
+
+/** The album page item for a row, when its album's id is known. */
+function rowAlbumItem(r: SongRow): SonosItem | null {
+  return r.album?.id?.objectId ? { title: r.album.name, type: 'ITEM_ALBUM', resource: { type: 'ALBUM', id: r.album.id } } : null;
 }
 
 interface Props {
@@ -81,9 +87,8 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
   const top = pickTopResult(results, query);
   const notTop = (i: SonosItem) => i !== top;
   const tracks = results.filter(isTrack);
-  const songs = tracks.filter((t) => albumNameOf(t) && notTop(t));
-  const videos = tracks.filter((t) => !albumNameOf(t) && notTop(t));
-  const rowTracks = [...songs, ...videos]; // one index space, so a selection can span both lists
+  const searchSongs = tracks.filter((t) => albumNameOf(t) && notTop(t)).map(searchTrackRow);
+  const videos = tracks.filter((t) => !albumNameOf(t) && notTop(t)).map(searchTrackRow);
   const artists = results.filter((i) => isArtist(i) && notTop(i));
   const albums = results.filter((i) => isAlbum(i) && notTop(i));
   const playlists = results.filter((i) => isPlaylist(i) && notTop(i));
@@ -96,6 +101,15 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
     enabled: !!(topArtist?.artistId && topArtist.serviceId && topArtist.accountId),
   });
   const radio = topArtist ? topArtistData?.playlists.find((p) => /radio/i.test(p.title ?? '')) : undefined;
+
+  // For an artist, Songs leads with the artist's own top songs (the search's picks run to live cuts, remixes and
+  // other people's tracks); the search's songs follow under See all.
+  const songs = topArtist && topArtistData?.topSongs.length
+    ? withTopSongs(topArtistData.topSongs.map(topSongRow), searchSongs)
+    : searchSongs;
+  // With no songs at all, the videos take the songs' place beside the top result, unfolded.
+  const videosLead = songs.length === 0 && videos.length > 0;
+  const rowTracks = [...songs, ...videos]; // one index space, so a selection can span both lists
 
   const prefetchAlbum = (item: SonosItem) => {
     const { albumId, serviceId, accountId, defaults } = resolveAlbumParams(item);
@@ -112,8 +126,8 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the albums' ids, not the array identity
   }, [albumKey]);
 
-  function openArtist(track: SonosItem, name: string) {
-    const a = (track.artists as SonosArtist[] | undefined)?.find((x) => x.name === name);
+  function openArtist(artists: SongRow['artists'], name: string) {
+    const a = artists.find((x) => x.name === name);
     if (a?.id?.objectId) openItem({ type: 'ARTIST', name, resource: { type: 'ARTIST', id: a.id } });
     else void resolveAndOpen(name, 'artist');
   }
@@ -139,34 +153,40 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
     const toMove = selected.has(i) ? [...selected].sort((a, b) => a - b) : [i];
     if (!selected.has(i)) { setSelected(new Set([i])); lastSelected.current = i; }
     e.dataTransfer.effectAllowed = 'copy';
-    e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(toMove.map((idx) => rowTracks[idx])));
-    createDragGhost(toMove.length > 1 ? `${toMove.length} tracks` : getName(rowTracks[i]), e.dataTransfer);
+    e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(toMove.map((idx) => rowTracks[idx].item)));
+    createDragGhost(toMove.length > 1 ? `${toMove.length} tracks` : rowTracks[i].title, e.dataTransfer);
   }
 
   const clearSelection = () => { setSelected(new Set()); lastSelected.current = null; };
 
-  const trackRow = (t: SonosItem, i: number) => {
-    const albumItem = albumItemOf(t);
-    const names = artistNamesOf(t);
+  const trackRow = (r: SongRow, i: number) => {
+    const albumItem = rowAlbumItem(r);
+    const names = r.artists.map((a) => a.name).join(', ');
     return (
       <TrackRow
-        key={`${objectIdOf(t) ?? ''}-${i}`}
-        title={getName(t)}
-        artists={names ? <ArtistLinks artist={names} onOpenArtist={(n) => openArtist(t, n)} /> : undefined}
-        imageUrl={getItemArt(t)}
-        explicit={!!t.explicit}
-        aside={albumNameOf(t)}
-        trailing={t.durationMs ? fmtTime(t.durationMs) : undefined}
+        key={`${r.key}-${i}`}
+        title={r.title}
+        artists={names ? <ArtistLinks artist={names} onOpenArtist={(n) => openArtist(r.artists, n)} /> : undefined}
+        imageUrl={r.imageUrl}
+        explicit={r.explicit}
+        aside={r.album?.name}
+        trailing={r.durationMs ? fmtTime(r.durationMs) : undefined}
         onOpen={albumItem ? () => openItem(albumItem) : undefined}
         onMouseEnter={albumItem ? () => prefetchAlbum(albumItem) : undefined}
-        onAdd={() => onAddToQueue(t)}
+        onAdd={() => onAddToQueue(r.item)}
         selected={selected.has(i)}
         onClick={(e) => { e.stopPropagation(); handleTrackClick(i, e); }}
-        onContextMenu={(e) => showTrackMenu({ track: buildTrackPayload(t) }, e)}
+        onContextMenu={(e) => showTrackMenu({ track: buildTrackPayload(r) }, e)}
         onDragStart={(e) => handleDragStart(e, i)}
       />
     );
   };
+  // data-rows-wrap: the whole title shows, over two lines at most, so a version suffix is never cut off.
+  const rowList = (rows: SongRow[], offset: number) => (
+    <ul className={styles.list} data-search-rows="" data-rows-wrap="" onClick={clearSelection}>
+      {rows.map((r, j) => trackRow(r, offset + j))}
+    </ul>
+  );
 
   const shelf = (title: string, items: SonosItem[], tile: (item: SonosItem) => React.ReactNode) =>
     items.length > 0 ? (
@@ -214,7 +234,7 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
 
   return (
     <div className={styles.results} onClickCapture={onEngage}>
-      <div className={`${styles.lead} ${songs.length === 0 ? styles.leadSolo : ''}`}>
+      <div className={`${styles.lead} ${!top || (songs.length === 0 && !videosLead) ? styles.leadSolo : ''}`}>
         {top && (
           <TopResult
             item={top}
@@ -223,13 +243,13 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
             onOpen={() => {
               const albumItem = isTrack(top) ? albumItemOf(top) : null;
               if (albumItem) openItem(albumItem);
-              else if (isTrack(top) && top.artists?.[0]) openArtist(top, top.artists[0].name);
+              else if (isTrack(top) && top.artists?.[0]) openArtist(searchTrackRow(top).artists, top.artists[0].name);
               else openItem(top);
             }}
             onAdd={() => onAddToQueue(top)}
             openItem={openItem}
             onHover={() => (isArtist(top) ? prefetchArtist(top) : prefetchAlbum(isTrack(top) ? albumItemOf(top) ?? top : top))}
-            onContextMenu={isTrack(top) ? (e) => showTrackMenu({ track: buildTrackPayload(top) }, e) : undefined}
+            onContextMenu={isTrack(top) ? (e) => showTrackMenu({ track: buildTrackPayload(searchTrackRow(top)) }, e) : undefined}
           />
         )}
         {songs.length > 0 && (
@@ -242,25 +262,26 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
               ) : undefined
             }
           >
-            <ul className={styles.list} data-search-rows="" onClick={clearSelection}>
-              {visibleSongs.map((t, i) => trackRow(t, i))}
-            </ul>
+            {rowList(visibleSongs, 0)}
+          </SectionCard>
+        )}
+        {videosLead && (
+          <SectionCard className={styles.songs} title={`Videos and uploads (${videos.length})`}>
+            {rowList(videos, 0)}
           </SectionCard>
         )}
       </div>
 
       {lower.map((s, i) => <div key={i}>{s.node}</div>)}
 
-      {videos.length > 0 && (
+      {videos.length > 0 && !videosLead && (
         <SectionCard
           className={styles.section}
           title={`Videos and uploads (${videos.length})`}
           actions={<SeeAll label={videosOpen ? 'Hide' : 'Show'} onClick={() => setVideosOpen((o) => !o)} />}
         >
           {videosOpen ? (
-            <ul className={styles.list} data-search-rows="" onClick={clearSelection}>
-              {videos.map((t, j) => trackRow(t, songs.length + j))}
-            </ul>
+            rowList(videos, songs.length)
           ) : (
             <p className={styles.note}>Lyric videos, covers and other uploads that aren’t on an album.</p>
           )}

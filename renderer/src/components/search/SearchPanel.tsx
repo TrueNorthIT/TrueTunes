@@ -9,7 +9,9 @@ import { useOpenItem } from '../../hooks/useOpenItem';
 import { useOfficePresence } from '../../hooks/useOfficePresence';
 import { useDjSet } from '../../hooks/useDjSet';
 import { useDjDiscoveries } from '../../hooks/useDjDiscoveries';
+import { Carousel } from '../common/Carousel';
 import { ImageTile } from '../common/ImageTile';
+import { PillButton } from '../common/PillButton';
 import { SectionCard, SeeAll } from '../common/SectionCard';
 import { SearchResults } from './SearchResults';
 import type { ServiceSearch } from '../../types/ServiceSearch';
@@ -40,28 +42,50 @@ export function SearchPanel({ onAddToQueue }: { onAddToQueue: AddToQueue }) {
   const q = (params.get('q') ?? '').trim();
 
   // Keyed by the query; the last results stay up (dimmed) while the next ones load.
-  const { data, isFetching, isPlaceholderData } = useQuery({
+  // An error stays an error (not "no results"), so it can say so and offer Retry.
+  const { data, isFetching, isPlaceholderData, isError, refetch } = useQuery({
     queryKey: ['search', q],
     queryFn: async () => {
       const r = await api.search.serviceQuery(q, { count: 50 });
-      return { query: q, items: r.error ? [] : dedupeTracks(parseServiceSearch(r.data as ServiceSearch)) };
+      if (r.error) throw new Error(String(r.error));
+      return { query: q, items: dedupeTracks(parseServiceSearch(r.data as ServiceSearch)) };
     },
     enabled: !!q,
     placeholderData: keepPreviousData,
     staleTime: 2 * 60 * 1000,
+    retry: 1,
   });
+  const settled = !!data && !isPlaceholderData && !isFetching;
+  const count = data?.items.length ?? 0;
 
   return (
     <div className={styles.panel}>
       <div className={`page-scale ${styles.page}`} onKeyDown={arrowNav}>
+        {q && <h1 className={styles.srOnly}>Results for ‘{q}’</h1>}
+        <p className={styles.srOnly} aria-live="polite">
+          {q && isError ? 'Search failed' : q && settled ? (count ? `${count} result${count === 1 ? '' : 's'}` : 'No results') : ''}
+        </p>
         {!q ? (
           <SearchHome onAddToQueue={onAddToQueue} />
+        ) : isError && !isFetching ? (
+          <div className={styles.msg}>
+            <p>Search didn’t go through. The music service may be busy.</p>
+            <PillButton className={styles.retry} onClick={() => void refetch()}>Retry</PillButton>
+          </div>
         ) : !data ? (
           <ResultsSkeleton />
         ) : (
           <div className={`${styles.body} ${isPlaceholderData ? styles.stale : ''}`} aria-busy={isFetching}>
             {data.items.length === 0 ? (
-              !isFetching && <p className={styles.msg}>No results for ‘{data.query}’</p>
+              !isFetching && (
+                <>
+                  <div className={styles.msg}>
+                    <p className={styles.msgTitle}>No results for ‘{data.query}’</p>
+                    <p>Check the spelling, or try fewer words: just the song or the artist.</p>
+                  </div>
+                  <RecentSearches />
+                </>
+              )
             ) : (
               <SearchResults
                 key={data.query}
@@ -82,7 +106,7 @@ export function SearchPanel({ onAddToQueue }: { onAddToQueue: AddToQueue }) {
 function SearchHome({ onAddToQueue }: { onAddToQueue: AddToQueue }) {
   const navigate = useNavigate();
   const openItem = useOpenItem();
-  const [recent, setRecent] = useState(getRecentSearches);
+  const [recentCount] = useState(() => getRecentSearches().length);
 
   // The same set as Home's picks (same query keys), so after Home this costs nothing.
   const { data: presence } = useOfficePresence();
@@ -90,55 +114,65 @@ function SearchHome({ onAddToQueue }: { onAddToQueue: AddToQueue }) {
   const djOpts = useMemo(() => ({ users: roomKey ? roomKey.split(',') : [], limit: 25 }), [roomKey]);
   const { data: djSet } = useDjSet(djOpts);
   const { discoveries } = useDjDiscoveries(djSet?.artists);
-  const fresh = discoveries.slice(0, 6);
+  const fresh = discoveries.slice(0, 12);
 
   return (
     <div className={styles.body}>
-      {recent.length > 0 && (
-        <SectionCard title="Recent searches" actions={<SeeAll label="Clear" onClick={() => setRecent(clearRecentSearches())} />}>
-          <ul className={styles.recents}>
-            {recent.map((s) => (
-              <li key={s}>
-                <button
-                  type="button"
-                  className={styles.recent}
-                  data-search-stop=""
-                  onClick={() => navigate(`/search?q=${encodeURIComponent(s)}`, { replace: true })}
-                >
-                  {s}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
-      )}
+      <RecentSearches />
 
       {fresh.length > 0 && (
-        <SectionCard title="New to the office" actions={<SeeAll label="More in Discover" onClick={() => navigate('/discover')} />}>
-          <div className={styles.freshGrid}>
+        <SectionCard>
+          {/* One row at tile size that scrolls, like the result shelves, rather than six tiles stretched to fill a wide window. */}
+          <Carousel title="New to the office" gap="1.4em" actions={<SeeAll label="More in Discover" onClick={() => navigate('/discover')} />}>
             {fresh.map((d) => {
               const t = d.track;
               return (
-                <ImageTile
-                  key={t.id.objectId}
-                  title={t.title}
-                  sub={d.artist}
-                  imageUrl={t.artUrl}
-                  onOpen={() =>
-                    t.albumId
-                      ? openItem({ title: t.albumName ?? t.title, type: 'ITEM_ALBUM', resource: { type: 'ALBUM', id: { ...t.id, objectId: t.albumId } } })
-                      : openItem(t.raw)
-                  }
-                  onAdd={() => onAddToQueue(t.raw, -1, { attribute: false })}
-                />
+                <div key={t.id.objectId} className={styles.freshCell}>
+                  <ImageTile
+                    title={t.title}
+                    sub={d.artist}
+                    imageUrl={t.artUrl}
+                    onOpen={() =>
+                      t.albumId
+                        ? openItem({ title: t.albumName ?? t.title, type: 'ITEM_ALBUM', resource: { type: 'ALBUM', id: { ...t.id, objectId: t.albumId } } })
+                        : openItem(t.raw)
+                    }
+                    onAdd={() => onAddToQueue(t.raw, -1, { attribute: false })}
+                  />
+                </div>
               );
             })}
-          </div>
+          </Carousel>
         </SectionCard>
       )}
 
-      {recent.length === 0 && fresh.length === 0 && <p className={styles.msg}>Find a song, artist or album.</p>}
+      {recentCount === 0 && fresh.length === 0 && <p className={styles.msg}>Find a song, artist or album.</p>}
     </div>
+  );
+}
+
+/** This viewer's recent searches as pills; nothing when there are none. */
+function RecentSearches() {
+  const navigate = useNavigate();
+  const [recent, setRecent] = useState(getRecentSearches);
+  if (recent.length === 0) return null;
+  return (
+    <SectionCard title="Recent searches" actions={<SeeAll label="Clear" onClick={() => setRecent(clearRecentSearches())} />}>
+      <ul className={styles.recents}>
+        {recent.map((s) => (
+          <li key={s}>
+            <button
+              type="button"
+              className={styles.recent}
+              data-search-stop=""
+              onClick={() => navigate(`/search?q=${encodeURIComponent(s)}`, { replace: true })}
+            >
+              {s}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </SectionCard>
   );
 }
 

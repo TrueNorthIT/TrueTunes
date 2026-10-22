@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { pickTopResult, dedupeTracks, albumNameOf, albumSub, playlistSub } from '../searchResults';
+import { pickTopResult, dedupeTracks, albumNameOf, albumSub, playlistSub, searchTrackRow, topSongRow, withTopSongs } from '../searchResults';
+import type { AlbumTrack } from '../../hooks/useAlbumBrowse';
 import type { SonosItem } from '../../types/sonos';
 
 const id = (objectId: string) => ({ objectId, serviceId: 's', accountId: 'a' });
@@ -59,13 +60,23 @@ describe('pickTopResult', () => {
     expect(pickTopResult(items, 'favourite worst')?.name).toBe('Favourite Worst Nightmare');
   });
 
-  it("otherwise takes the service's first track", () => {
-    const items = [artist('Someone'), album('Unrelated'), track('First', 'X'), track('Second', 'Y', 'Z')];
-    expect(pickTopResult(items, 'killers brightside')?.name).toBe('First');
+  it("otherwise takes the service's first track that shares a word with the query", () => {
+    const items = [artist('Someone'), album('Unrelated'), track('First', 'X'), track('Mr. Brightside', 'The Killers', 'Hot Fuss')];
+    expect(pickTopResult(items, 'killers brightside')?.name).toBe('Mr. Brightside');
+    expect(pickTopResult([artist('Someone'), track('Song', 'The Killers')], 'killers live')?.name).toBe('Song');
   });
 
-  it('falls back to the first item when there are no tracks, and null when there is nothing', () => {
-    expect(pickTopResult([artist('Someone')], 'zzz')?.name).toBe('Someone');
+  it('gives gibberish no top result, even though the service returns something', () => {
+    const items = [artist('Kids Show'), track('Wheels On The Bus | A Musical Bus Ride For Toddler', 'The Kids Show')];
+    expect(pickTopResult(items, 'zxqvbnmlkjhg')).toBeNull();
+  });
+
+  it('does not count filler words as a match', () => {
+    expect(pickTopResult([track('The Wheels', 'The Band')], 'the zxq')).toBeNull();
+  });
+
+  it('falls back to another kind of item when no track shares a word, and null when there is nothing', () => {
+    expect(pickTopResult([artist('Someone'), album('Some Album')], 'album zzz')?.name).toBe('Some Album');
     expect(pickTopResult([], 'anything')).toBeNull();
   });
 
@@ -120,5 +131,30 @@ describe('album and playlist subtitles', () => {
   it('shows a playlist owner without the "Playlist" prefix', () => {
     expect(playlistSub({ type: 'PLAYLIST', summary: { content: 'Playlist • hyperyouth' } })).toBe('hyperyouth');
     expect(playlistSub({ type: 'PLAYLIST' })).toBeNull();
+  });
+});
+
+describe('song rows', () => {
+  const topSong = (title: string, extra: Partial<AlbumTrack> = {}): AlbumTrack => ({
+    title, ordinal: 1, durationSeconds: 223, artUrl: 'art', id: id(`ts-${title}`), artists: ['Beyoncé'],
+    albumName: 'Lemonade', albumId: 'lem', explicit: false, raw: { title, type: 'ITEM_TRACK' }, ...extra,
+  });
+
+  it('reads a search track: album, length, artists with ids', () => {
+    const r = searchTrackRow({ ...track('Mr. Brightside', 'The Killers', 'Hot Fuss'), durationMs: 223000 });
+    expect(r).toMatchObject({ title: 'Mr. Brightside', album: { name: 'Hot Fuss' }, durationMs: 223000, artists: [{ name: 'The Killers' }] });
+  });
+
+  it("reads an artist's top song, queueing the service's own item", () => {
+    const t = topSong('Formation', { artistObjects: [{ name: 'Beyoncé', objectId: 'bey' }] });
+    const r = topSongRow(t);
+    expect(r.item).toBe(t.raw);
+    expect(r).toMatchObject({ durationMs: 223000, album: { name: 'Lemonade', id: { objectId: 'lem' } }, artists: [{ name: 'Beyoncé', id: { objectId: 'bey' } }] });
+  });
+
+  it('puts top songs first and drops search songs that repeat one', () => {
+    const top = [topSongRow(topSong('Halo')), topSongRow(topSong('Formation'))];
+    const rest = [searchTrackRow(track('Halo', 'Beyoncé', 'I Am... Sasha Fierce')), searchTrackRow(track('Diva (Live)', 'Beyoncé', 'Tour'))];
+    expect(withTopSongs(top, rest).map((r) => r.title)).toEqual(['Halo', 'Formation', 'Diva (Live)']);
   });
 });

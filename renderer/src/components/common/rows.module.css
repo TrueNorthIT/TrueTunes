@@ -235,11 +235,31 @@
 }
 .remove:hover { background: rgba(var(--danger), 0.16); color: rgb(var(--danger)); }
 
+/*
+ * Opt-in on the list (data-rows-wrap): the whole title shows, over two lines at most, and the aside takes less room.
+ * Search uses it, where a version suffix ("(CD Pro Version)", "(Live From The Royal Albert Hall)") is the whole point.
+ */
+[data-rows-wrap] .aside { flex-basis: 20%; }
+[data-rows-wrap] .line {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
+[data-rows-wrap] .title button { display: inline; white-space: normal; }
+
 /* Narrow page: the artist drops under the title. */
 @container (max-width: 1100px) {
   .line { display: flex; flex-direction: column; white-space: normal; }
   .line > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .dash { display: none; }
+  [data-rows-wrap] .line { display: flex; }
+  [data-rows-wrap] .line > .title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

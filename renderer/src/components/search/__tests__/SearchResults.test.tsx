@@ -10,6 +10,10 @@ const mockResolveAndOpen = vi.fn();
 vi.mock('../../../hooks/useOpenItem', () => ({ useOpenItem: () => mockOpenItem }));
 vi.mock('../../../hooks/useResolveAndOpen', () => ({ useResolveAndOpen: () => ({ resolveAndOpen: mockResolveAndOpen }) }));
 vi.mock('../../../hooks/useImage', () => ({ useImage: () => null }));
+const mockTopSongs = vi.fn();
+vi.mock('../../../hooks/useArtistBrowse', () => ({
+  artistQueryOptions: (artistId?: string) => ({ queryKey: ['artist', artistId], queryFn: async () => ({ playlists: [], topSongs: mockTopSongs() }) }),
+}));
 vi.mock('../../../lib/photoPlaceholder', () => ({ usePhotoState: () => ({ state: 'unknown', src: null }) }));
 
 const onAddToQueue = vi.fn();
@@ -46,6 +50,7 @@ const songRows = () => within(songsCard()).getAllByRole('listitem');
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockTopSongs.mockReturnValue([]);
   vi.mocked(window.sonos.fetchStats).mockResolvedValue({ topUsers: [], topTracks: [], topArtists: [], topAlbums: [], totalEvents: 0, periodStart: 0 });
 });
 
@@ -82,6 +87,21 @@ describe('top result', () => {
     renderResults([makeTrack('Mr. Brightside', { by: 'The Killers', album: 'Hot Fuss', oid: 'hit' })], 'mr brightside');
     expect(await screen.findByText('Queued here 27 times')).toBeInTheDocument();
   });
+
+  it('gives a query nothing matches no top result, so nothing is one click from the speakers', () => {
+    renderResults([makeArtist('Kids Show'), makeTrack('Wheels On The Bus', { by: 'The Kids Show', album: '' })], 'zxqvbnmlkjhg');
+    expect(screen.queryByRole('region', { name: 'Top result' })).not.toBeInTheDocument();
+  });
+
+  it("for an artist, leads Songs with the artist's own top songs, then the search's", async () => {
+    mockTopSongs.mockReturnValue([
+      { title: 'Halo', ordinal: 1, durationSeconds: 261, artUrl: null, id: id('halo'), artists: ['Beyoncé'], albumName: 'I Am... Sasha Fierce', albumId: 'iam', explicit: false, raw: { title: 'Halo' } },
+    ]);
+    renderResults([makeArtist('Beyoncé'), makeTrack('Diva (Live)', { by: 'Beyoncé', album: 'Tour' })], 'beyonce');
+    expect(await within(songsCard()).findByText('Halo')).toBeInTheDocument();
+    expect(within(songRows()[0]).getByText('I Am... Sasha Fierce')).toBeInTheDocument();
+    expect(within(songRows()[1]).getByText('Diva (Live)')).toBeInTheDocument();
+  });
 });
 
 describe('songs', () => {
@@ -114,6 +134,13 @@ describe('songs', () => {
 });
 
 describe('videos and uploads', () => {
+  it('take the songs slot, unfolded, when there are no songs', () => {
+    renderResults([makeTrack('Song (Lyrics)', { album: '' }), makeTrack('Song karaoke', { album: '' })], 'song');
+    const card = screen.getByRole('region', { name: /Videos and uploads/ });
+    expect(within(card).getAllByRole('listitem')).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'Show' })).not.toBeInTheDocument();
+  });
+
   it('folds tracks with no album away, and shows them on request', () => {
     renderResults([makeTrack('Top'), makeTrack('Song', { album: 'Real' }), makeTrack('Song (Lyrics)', { album: '' }), makeTrack('Song karaoke', { album: '' })], 'top');
     expect(screen.getByText('Videos and uploads (2)')).toBeInTheDocument();

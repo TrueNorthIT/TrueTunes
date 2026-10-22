@@ -21,10 +21,32 @@
 .stale { opacity: 0.6; }
 
 .msg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5em;
   color: var(--text-3);
   font-size: 1em;
   text-align: center;
   padding: 4em 0;
+}
+.msgTitle {
+  font-size: 1.3em;
+  font-weight: 600;
+  color: var(--text);
+}
+.retry { margin-top: 0.6em; }
+
+/* Read by screen readers only: the page heading and the live result count. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* Recent searches: quiet tonal pills. */
@@ -48,10 +70,11 @@
 }
 .recent:hover { background: rgba(var(--tint), 0.22); }
 
-.freshGrid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 1.4em;
+/* Home's tile size (Jump back in is minmax(8.5em, 1fr)), in one scrolling row. */
+.freshCell {
+  flex: none;
+  width: 9.5em;
+  min-width: 0;
 }
 
 /* Loading: the results layout at its real size. */
@@ -73,7 +96,6 @@
 
 @container (max-width: 700px) {
   .skelLead { grid-template-columns: minmax(0, 1fr); }
-  .freshGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (prefers-reduced-motion: reduce) {

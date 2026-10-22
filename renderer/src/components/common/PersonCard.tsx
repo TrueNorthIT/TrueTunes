@@ -23,7 +23,7 @@ export function PersonCard({ name, imageUrl, caption, onOpen, openLabel, childre
   const art = useImage(imageUrl ?? null);
   const color = useDominantColor(art);
   const wash = color
-    ? { background: `linear-gradient(100deg, rgba(${color}, 0.32), rgba(${color}, 0) 75%)` }
+    ? { background: `linear-gradient(100deg, rgba(${color}, 0.3), rgba(${color}, 0) 75%)` }
     : undefined;
   return (
     <div className={styles.card}>

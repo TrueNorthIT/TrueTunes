@@ -116,8 +116,13 @@ export function TopNav({
 
   // Search as you type: one search per pause. The first keystroke pushes /search and the rest replace it,
   // so Back leaves search in one step instead of walking back through every prefix.
-  const runSearch = (q: string) =>
-    navigate(q ? `/search?q=${encodeURIComponent(q)}` : '/search', { replace: isInSearch });
+  // Whether this box pushed the search page on top of another page, so leaving search can go back to it.
+  const pushedSearch = useRef(false);
+  const openSearch = (to: string) => {
+    if (!isInSearch) pushedSearch.current = true;
+    navigate(to, { replace: isInSearch });
+  };
+  const runSearch = (q: string) => openSearch(q ? `/search?q=${encodeURIComponent(q)}` : '/search');
   useEffect(() => {
     const q = searchText.trim();
     if (q === urlQuery || (!isInSearch && !q) || q.length === 1) return;
@@ -141,10 +146,17 @@ export function TopNav({
         first.focus();
       }
     }
-    if (e.key === 'Escape') {
-      setSearchText('');
-      navigate('/');
-    }
+    if (e.key === 'Escape') leaveSearch();
+  };
+
+  // Esc and ×: back to the page search was opened from, or Home when search was arrived at some other way
+  // (Back or Forward, a restart). Off the search page they only empty the box.
+  const leaveSearch = () => {
+    setSearchText('');
+    if (!isInSearch) return;
+    if (pushedSearch.current) navigate(-1);
+    else navigate('/');
+    pushedSearch.current = false;
   };
 
   const handleClear = () => {
@@ -223,7 +235,7 @@ export function TopNav({
                 onKeyDown={handleKeyDown}
                 onFocus={() => {
                   // An empty box opens the search page, where the recent searches are.
-                  if (!isInSearch && !searchText) navigate('/search');
+                  if (!isInSearch && !searchText) openSearch('/search');
                 }}
                 aria-label="Search songs, artists and albums"
                 data-search-input=""
@@ -231,7 +243,7 @@ export function TopNav({
               />
               <button
                 className={styles.clearBtn}
-                onClick={handleClear}
+                onClick={leaveSearch}
                 title="Clear"
                 style={{ visibility: isInSearch || searchText ? 'visible' : 'hidden' }}
               >

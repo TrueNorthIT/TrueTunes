@@ -108,7 +108,7 @@ describe('TopNav', () => {
     const user = userEvent.setup();
     render(<TopNav {...defaultProps} />);
     await user.click(screen.getByPlaceholderText('Search…'));
-    expect(mockNavigate).toHaveBeenCalledWith('/search');
+    expect(mockNavigate).toHaveBeenCalledWith('/search', { replace: false });
   });
 
   it('moves focus to the top result on Down', async () => {
@@ -122,12 +122,35 @@ describe('TopNav', () => {
     target.remove();
   });
 
-  it('navigates to / on Escape in search input', async () => {
+  it('on Escape, goes back to the page search was opened from', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<TopNav {...defaultProps} />);
+    await user.click(screen.getByPlaceholderText('Search…'));
+    expect(mockNavigate).toHaveBeenCalledWith('/search', { replace: false });
+    mockUseLocation.mockReturnValue({ pathname: '/search' });
+    rerender(<TopNav {...defaultProps} />);
+    await user.keyboard('{Escape}');
+    expect(mockNavigate).toHaveBeenLastCalledWith(-1);
+  });
+
+  it('on Escape, goes Home when search was not opened from this box', async () => {
+    mockUseLocation.mockReturnValue({ pathname: '/search' });
+    mockUseSearchParams.mockReturnValue([new URLSearchParams({ q: 'Beatles' })]);
+    const user = userEvent.setup();
+    render(<TopNav {...defaultProps} />);
+    await user.type(screen.getByPlaceholderText('Search…'), '{Escape}');
+    expect(mockNavigate).toHaveBeenLastCalledWith('/');
+  });
+
+  it('on Escape off the search page, only empties the box', async () => {
+    mockUseLocation.mockReturnValue({ pathname: '/album/x' });
     const user = userEvent.setup();
     render(<TopNav {...defaultProps} />);
     const input = screen.getByPlaceholderText('Search…');
-    await user.type(input, 'test{Escape}');
-    expect(mockNavigate).toHaveBeenCalledWith('/');
+    await user.type(input, 'B{Escape}');
+    expect(input).toHaveValue('');
+    expect(mockNavigate).not.toHaveBeenCalledWith('/');
+    expect(mockNavigate).not.toHaveBeenCalledWith(-1);
   });
 
   it('clears search and navigates to / on Clear button click', async () => {
