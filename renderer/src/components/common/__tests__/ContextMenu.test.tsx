@@ -1,0 +1,64 @@
+import { describe, it, expect, vi } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
+import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { ContextMenuProvider, useTrackContextMenu } from '../ContextMenu';
+import type { SonosItem } from '../../../types/sonos';
+
+const TRACK: PlaylistTrack = {
+  uri: 'u', trackName: 'Desert Rose', artist: 'Sting', serviceId: 's', accountId: 'a', addedBy: 'Alice', addedAt: 0,
+};
+
+function Row() {
+  const { showTrackMenu } = useTrackContextMenu();
+  return <div onContextMenu={(e) => showTrackMenu({ track: TRACK, sonosItem: {} as SonosItem }, e)}>Row</div>;
+}
+
+function renderMenu(onAddToQueue = vi.fn()) {
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter>
+        <ContextMenuProvider displayName={null} onAddToQueue={onAddToQueue}>
+          <Row />
+        </ContextMenuProvider>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+  fireEvent.contextMenu(screen.getByText('Row'), { clientX: 10, clientY: 10 });
+  return onAddToQueue;
+}
+
+describe('track context menu', () => {
+  it('is a menu of buttons, focused with nothing pre-selected', () => {
+    renderMenu();
+    const menu = screen.getByRole('menu', { name: 'Desert Rose' });
+    expect(menu).toHaveFocus();
+    expect(screen.getAllByRole('menuitem').map((b) => b.textContent)).toEqual([
+      'Play next', 'Add to queue', 'Add to playlist', "View Alice's profile",
+    ]);
+  });
+
+  it('arrow keys move between items and wrap', async () => {
+    const user = userEvent.setup();
+    renderMenu();
+    await user.keyboard('{ArrowDown}');
+    expect(screen.getByRole('menuitem', { name: 'Play next' })).toHaveFocus();
+    await user.keyboard('{ArrowUp}');
+    expect(screen.getByRole('menuitem', { name: "View Alice's profile" })).toHaveFocus();
+  });
+
+  it('Enter straight after opening does not queue anything', async () => {
+    const user = userEvent.setup();
+    const onAddToQueue = renderMenu();
+    await user.keyboard('{Enter}');
+    expect(onAddToQueue).not.toHaveBeenCalled();
+  });
+
+  it('Escape closes it', async () => {
+    const user = userEvent.setup();
+    renderMenu();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+});

@@ -1,250 +1,232 @@
-/* ── Full-screen overlay ── */
-.overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 149;
-  background: #06060e;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  animation: panelIn 0.35s ease;
-  isolation: isolate;
-  will-change: transform;
-}
+/* Lyrics: the Home now playing band at full size. Sized in em from the page base (.page-scale on .page).
+   The page itself never scrolls: the lyrics and the about text scroll inside their cards. */
 
-@keyframes panelIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-/* ── Background layers ── */
-.bgArt {
-  position: absolute;
-  inset: -8%;
-  width: 116%;
-  height: 116%;
-  object-fit: cover;
-  filter: blur(72px) saturate(1.35) brightness(0.32);
-  pointer-events: none;
-}
-
-.waveBg {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    160deg,
-    rgba(var(--dc, 90, 70, 180), 0.65) 0%,
-    rgba(var(--dc, 90, 70, 180), 0.35) 45%,
-    rgba(var(--dc, 90, 70, 180), 0.12) 75%,
-    rgba(4, 4, 14, 0.9) 100%
-  );
-  pointer-events: none;
-}
-
-.vignette {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at 50% 45%, transparent 20%, rgba(0, 0, 0, 0.52) 100%);
-  pointer-events: none;
-}
-
-/* ── Two-column content area ── */
-.content {
-  position: relative;
-  z-index: 5;
+.panel {
   flex: 1;
-  display: grid;
-  grid-template-columns: 38% 62%;
-  min-height: 0;
-  margin-right: var(--docked-queue-w, 0px);
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  padding: calc(var(--nav-h) + 16px) 28px calc(var(--player-h) + 24px);
+  container-type: inline-size;
 }
 
-/* ── Left panel ── */
-.leftPanel {
+.page {
+  height: 100%;
+  max-width: 2400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(19em, 0.62fr) minmax(0, 1fr);
+  gap: 1.4em;
+}
+.pageSolo {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  padding: 110px 44px 140px 60px;
-  gap: 20px;
-  overflow: hidden;
-  max-width: 560px;
-}
-
-.bigArt {
-  width: min(260px, 75%);
-  aspect-ratio: 1;
-  border-radius: 18px;
-  object-fit: cover;
-  box-shadow:
-    0 24px 64px rgba(0, 0, 0, 0.7),
-    0 0 0 1px rgba(255, 255, 255, 0.06);
-  flex-shrink: 0;
-}
-
-.bigArtPh {
-  width: min(260px, 75%);
-  aspect-ratio: 1;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.07);
-  display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.25);
-  flex-shrink: 0;
+  gap: 0.4em;
+  text-align: center;
 }
+.emptyTitle { font-size: 1.6em; font-weight: 600; letter-spacing: -0.015em; color: var(--text); }
+.emptyText { font-size: 1.07em; color: var(--text-3); }
+
+/* ── Now playing card (lit wall + the artwork wash, as on Home) ─────────── */
+
+.nowCard {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2em;
+  min-width: 0;
+  min-height: 0;
+  padding: 1.4em;
+  border-radius: 1.2em;
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(var(--wash, 150, 158, 255), 0.3), transparent 65%),
+    var(--surface-hi);
+}
+
+.art {
+  flex: none;
+  /* Never taller than a third of the window, so the about text keeps room on a 720px screen. */
+  width: min(100%, 20em, 34vh);
+  aspect-ratio: 1;
+  padding: 0;
+  border: none;
+  border-radius: 1em;
+  overflow: hidden;
+  background: var(--bg-1);
+  cursor: pointer;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  transition:
+    transform var(--dur-fast) var(--ease-fast),
+    box-shadow var(--dur-fast) var(--ease-fast);
+}
+.art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.art:hover,
+.art:focus-visible { transform: scale(1.02); box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45); }
+.artPh { display: grid; place-items: center; width: 100%; height: 100%; font-size: 2.4em; color: var(--text-3); }
+
+.info { display: flex; flex-direction: column; align-items: flex-start; gap: 0.55em; min-width: 0; }
+
+.title {
+  max-width: 100%;
+  font-size: 1.9em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-fast);
+}
+.link:hover,
+.link:focus-visible { color: var(--on-art); }
+.title .link:hover { text-decoration: underline; text-decoration-thickness: 0.06em; text-underline-offset: 0.12em; }
 
 .meta {
-  text-align: left;
-  width: 100%;
-}
-
-.metaTrack {
-  font-size: 36px;
-  font-weight: 700;
-  color: rgba(var(--tc, 255, 255, 255), 1);
+  display: flex;
+  align-items: baseline;
+  gap: 0.4em;
+  max-width: 100%;
+  min-width: 0;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 1.05em;
+  color: var(--text-2);
+}
+.metaArtist { flex: 0 1 auto; max-width: 60%; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.metaAlbum { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.metaDot { flex: none; }
+
+.queuer { margin-top: 0.2em; }
+
+.label {
+  font-size: max(13px, 0.86em);
+  font-weight: 600;
+  color: var(--text-3);
 }
 
-.metaArtist {
-  font-size: 22px;
-  color: rgba(var(--tc, 255, 255, 255), 0.65);
-  margin-top: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.geniusDesc {
-  font-size: 20px;
-  line-height: 1.7;
-  color: rgba(var(--tc, 255, 255, 255), 0.5);
-  text-align: left;
-  width: 100%;
-  flex: 1;
+/* About: takes whatever height is left and scrolls inside, fading out at the bottom edge. */
+.about {
+  flex: 1 1 0;
+  min-height: 4em;
   overflow-y: auto;
-  scrollbar-width: none;
+  padding-bottom: 1.2em;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 2.4em), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 2.4em), transparent);
 }
-
-.geniusDesc::-webkit-scrollbar {
-  display: none;
+.aboutText {
+  margin-top: 0.5em;
+  max-width: 100ch;
+  font-size: 0.95em;
+  line-height: 1.55;
+  color: var(--text-3);
+  user-select: text;
 }
+.aboutText p + p,
+.aboutText p + ul,
+.aboutText ul + p,
+.aboutText blockquote { margin-top: 0.7em; }
+.aboutText ul,
+.aboutText ol { padding-left: 1.2em; }
+.aboutText blockquote { padding-left: 0.9em; box-shadow: inset 2px 0 0 rgba(var(--tint), 0.24); }
+.aboutText strong,
+.aboutText em { color: var(--text-2); }
+.aboutLink { color: var(--text-2); text-decoration: underline; text-decoration-color: rgba(var(--tint), 0.4); text-underline-offset: 0.15em; }
+.aboutLink:hover,
+.aboutLink:focus-visible { color: var(--on-art); }
 
-.descPara {
-  margin: 0 0 10px;
-}
+/* ── Lyrics card (the wall, as the Home box) ─────────────────────────────── */
 
-.descPara:last-child {
-  margin-bottom: 0;
-}
-
-.descLink {
-  color: rgba(var(--tc, 255, 255, 255), 0.75);
-  cursor: pointer;
-}
-
-.descLink:hover {
-  color: rgba(var(--tc, 255, 255, 255), 1);
-}
-
-/* ── Right panel — lyrics ── */
-.lyricsContainer {
+.lyricsCard {
   position: relative;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 1.2em;
+  background: var(--surface);
+  overflow: hidden;
+  container-type: inline-size;
+}
+
+.scroll {
+  /* Positioned: the line offsets are measured from here (useFollowActiveLine). */
+  position: absolute;
+  inset: 0;
   overflow-y: auto;
   scrollbar-width: none;
-  padding-bottom: 120px;
+  padding: 0 2.4em;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 78%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 78%, transparent 100%);
 }
+.scroll::-webkit-scrollbar { display: none; }
+/* Plain lyrics don't follow the song, so they scroll by hand and show where you are. */
+.scrollFree { scrollbar-width: auto; }
+.scrollFree::-webkit-scrollbar { display: block; }
 
-.lyricsContainer::-webkit-scrollbar {
-  display: none;
-}
+.pad { padding: 34vh 0 50vh; max-width: 60em; }
+.padPlain { padding-top: 3em; padding-bottom: 6em; }
 
-.lyricsPad {
-  padding: 34vh 8% 34vh 4%;
-  text-align: left;
-}
-
+/* One fixed line box, as on Home: the active line scales up inside it (transform only), so nothing
+   reflows. Lines wrap at 1/1.1 of the width so the scaled line still fits. Big enough to read across
+   the office: grows with the card, from 1.7em to 2.4em. */
 .line {
-  padding: 9px 0;
-  font-size: 22px;
-  font-weight: 400;
-  color: #fff;
-  line-height: 1.4;
-  cursor: default;
-  transition: opacity 0.55s ease, font-size 0.45s ease;
+  width: 91%;
+  padding: 0.22em 0;
+  font-size: clamp(1.7em, 3.4cqi, 2.4em);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+  color: var(--text);
+  transform-origin: left center;
+  transition: transform 0.3s, opacity 0.3s;
 }
+.lineActive { transform: scale(1.1); color: var(--on-art); }
+.linePlain { font-size: clamp(1.4em, 2.6cqi, 1.9em); opacity: 0.85; }
+.padPlain .label { margin-bottom: 1em; }
 
-.lineActive {
-  font-size: 32px;
-  font-weight: 700;
+/* Skeleton lines at the real line pitch (1.7em type, 1.3 line height, 0.22em padding). */
+.lineSkel {
+  display: block;
+  height: 1.4em;
+  margin: 0.95em 0;
+  border-radius: 0.4em;
+  font-size: clamp(1.7em, 3.4cqi, 2.4em);
 }
 
 .status {
-  font-size: 20px;
-  color: rgba(255, 255, 255, 0.38);
-  padding: 20px 0;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 2em;
+  font-size: 1.07em;
+  color: var(--text-3);
   text-align: center;
 }
 
-/* ── Lyrics loading state ── */
-.loadingWrap {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding-bottom: 120px; /* nudge up to match where active lyric sits */
+@media (prefers-reduced-motion: reduce) {
+  .art,
+  .line { transition: none; }
+  .art:hover,
+  .art:focus-visible { transform: none; }
 }
 
-.loadingIcon {
-  color: rgba(255, 255, 255, 0.7);
-  animation: breathe 2.2s ease-in-out infinite;
-  line-height: 1;
-}
+/* ── Narrow: the card becomes a strip over the lyrics, without the about text ── */
 
-.loadingLabel {
-  font-size: 18px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.55);
-  letter-spacing: 0.01em;
-}
-
-.dots {
-  display: flex;
-  gap: 6px;
-}
-
-.dots span {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.35);
-  animation: dot 1.2s ease-in-out infinite;
-}
-
-.dots span:nth-child(2) { animation-delay: 0.2s; }
-.dots span:nth-child(3) { animation-delay: 0.4s; }
-
-@keyframes breathe {
-  0%, 100% { opacity: 0.45; transform: scale(0.96); }
-  50%       { opacity: 1;    transform: scale(1.04); }
-}
-
-@keyframes dot {
-  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
-  40%           { opacity: 1;    transform: translateY(-4px); }
-}
-
-@media (max-width: 800px) {
-  .content {
-    grid-template-columns: 1fr;
-  }
-
-  .leftPanel {
-    display: none;
-  }
+@container (max-width: 760px) {
+  .page { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .nowCard { flex-direction: row; align-items: center; padding: 1em; }
+  .art { width: 5.5em; }
+  .title { font-size: 1.5em; -webkit-line-clamp: 1; }
+  .about { display: none; }
 }

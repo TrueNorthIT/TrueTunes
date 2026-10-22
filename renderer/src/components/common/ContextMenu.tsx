@@ -2,10 +2,25 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { ChevronRight, Heart, ListMusic, ListPlus, ListStart, Lock, Plus, UserRound } from 'lucide-react';
 import { useMyPlaylists, favouritesId } from '../../hooks/usePlaylists';
 import { useToast } from './Toast';
+import { Dialog } from './Dialog';
+import { PillButton } from './PillButton';
 import type { SonosItem } from '../../types/sonos';
+import dialog from './Dialog.module.css';
 import styles from '../../styles/ContextMenu.module.css';
+
+/** Up and Down move between a menu's items, wrapping at the ends. */
+function onMenuKeyDown(e: React.KeyboardEvent<HTMLElement>) {
+  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+  e.preventDefault();
+  const items = [...e.currentTarget.querySelectorAll<HTMLElement>('[role=menuitem]')];
+  const i = items.indexOf(document.activeElement as HTMLElement);
+  const down = e.key === 'ArrowDown';
+  const next = i < 0 ? (down ? 0 : items.length - 1) : (i + (down ? 1 : -1) + items.length) % items.length;
+  items[next]?.focus();
+}
 
 interface TrackMenuPayload {
   track: PlaylistTrack;
@@ -59,7 +74,11 @@ function PlaylistSubmenu({
   const { showToast } = useToast();
   const ref = useRef<HTMLDivElement>(null);
 
-  const allPlaylists = [...owned, ...joined];
+  // Favourites has its own menu item, and a playlist you own can also come back as joined.
+  const favId = displayName ? favouritesId(displayName) : null;
+  const allPlaylists = [...owned, ...joined].filter(
+    (pl, i, all) => pl.id !== favId && all.findIndex((p) => p.id === pl.id) === i,
+  );
 
   async function handleAdd(playlist: PlaylistMeta) {
     try {
@@ -83,29 +102,34 @@ function PlaylistSubmenu({
   return createPortal(
     <div
       ref={ref}
-      className={styles.submenu}
+      className={`page-scale ${styles.submenu}`}
       style={{ left, top }}
+      role="menu"
+      aria-label="Add to playlist"
       onMouseDown={(e) => e.stopPropagation()}
+      onKeyDown={onMenuKeyDown}
     >
       {isLoading && <div className={styles.emptyHint}>Loading…</div>}
       {!isLoading && allPlaylists.length === 0 && (
         <div className={styles.emptyHint}>No playlists yet</div>
       )}
       {allPlaylists.map((pl) => (
-        <div key={pl.id} className={styles.item} onClick={() => handleAdd(pl)}>
-          <span className={styles.itemIcon}>♪</span>
-          {pl.name}
-          {!pl.isPublic && <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--text-3)' }}>🔒</span>}
-        </div>
+        <button key={pl.id} type="button" role="menuitem" className={styles.item} onClick={() => handleAdd(pl)}>
+          <ListMusic className={styles.itemIcon} size={16} aria-hidden="true" />
+          <span className={styles.itemLabel}>{pl.name}</span>
+          {!pl.isPublic && <Lock className={styles.itemTrail} size={13} aria-label="Private" />}
+        </button>
       ))}
-      {allPlaylists.length > 0 && <div className={styles.separator} />}
-      <div
+      {allPlaylists.length > 0 && <div className={styles.separator} role="separator" />}
+      <button
+        type="button"
+        role="menuitem"
         className={styles.item}
         onClick={() => { onClose(); onOpenCreate(); }}
       >
-        <span className={styles.itemIcon}>+</span>
-        Create new playlist…
-      </div>
+        <Plus className={styles.itemIcon} size={16} aria-hidden="true" />
+        New playlist…
+      </button>
     </div>,
     document.body,
   );
@@ -148,6 +172,14 @@ export function ContextMenuProvider({ children, displayName, onAddToQueue }: Pro
     }
     document.addEventListener('mousedown', onMouseDown);
     document.addEventListener('keydown', onKeyDown);
+    // Keep the whole menu on screen (it was clamped by a guessed height), then focus the menu itself, so
+    // the arrow keys work but nothing is pre-selected: Enter straight after a right-click can't queue a track.
+    const menu = menuRef.current;
+    if (menu) {
+      const r = menu.getBoundingClientRect();
+      if (r.bottom > window.innerHeight - 8) menu.style.top = `${Math.max(8, window.innerHeight - r.height - 8)}px`;
+      menu.focus();
+    }
     return () => {
       document.removeEventListener('mousedown', onMouseDown);
       document.removeEventListener('keydown', onKeyDown);
@@ -186,12 +218,13 @@ export function ContextMenuProvider({ children, displayName, onAddToQueue }: Pro
     close();
   }
 
-  function handleOpenPlaylistSubmenu(e: React.MouseEvent) {
+  // Hover opens the submenu; a click toggles it. (Hover used to toggle too, so hover-then-click closed it.)
+  function handleOpenPlaylistSubmenu(e: React.MouseEvent, open?: boolean) {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     setMenuState((s) => ({
       ...s,
-      submenuOpen: !s.submenuOpen,
-      submenuAnchor: { x: rect.right + 4, y: rect.top },
+      submenuOpen: open ?? !s.submenuOpen,
+      submenuAnchor: { x: rect.right + 4, y: rect.top - 4 },
     }));
   }
 
@@ -208,41 +241,53 @@ export function ContextMenuProvider({ children, displayName, onAddToQueue }: Pro
       {menuState.open && menuState.payload && createPortal(
         <div
           ref={menuRef}
-          className={styles.menu}
+          className={`page-scale ${styles.menu}`}
           style={{ left: menuState.x, top: menuState.y }}
+          role="menu"
+          tabIndex={-1}
+          aria-label={menuState.payload.track.trackName}
           onMouseDown={(e) => e.stopPropagation()}
+          onKeyDown={onMenuKeyDown}
         >
           {menuState.payload.sonosItem && (
             <>
-              <div className={styles.item} onClick={handlePlayNext}>
-                <span className={styles.itemIcon}>▶</span>
+              <button type="button" role="menuitem" className={styles.item} onClick={handlePlayNext}>
+                <ListStart className={styles.itemIcon} size={16} aria-hidden="true" />
                 Play next
-              </div>
-              <div className={styles.item} onClick={handleAddToQueue}>
-                <span className={styles.itemIcon}>+</span>
+              </button>
+              <button type="button" role="menuitem" className={styles.item} onClick={handleAddToQueue}>
+                <ListPlus className={styles.itemIcon} size={16} aria-hidden="true" />
                 Add to queue
-              </div>
-              <div className={styles.separator} />
+              </button>
+              <div className={styles.separator} role="separator" />
             </>
           )}
           {displayName && (
-            <div className={styles.item} onClick={handleAddToFavourites}>
-              <span className={styles.itemIcon}>❤️</span>
+            <button type="button" role="menuitem" className={styles.item} onClick={handleAddToFavourites}>
+              <Heart className={styles.itemIcon} size={16} aria-hidden="true" />
               Add to Favourites
-            </div>
+            </button>
           )}
-          <div className={styles.item} onMouseEnter={handleOpenPlaylistSubmenu} onClick={handleOpenPlaylistSubmenu}>
-            <span className={styles.itemIcon}>♪</span>
+          <button
+            type="button"
+            role="menuitem"
+            aria-haspopup="menu"
+            aria-expanded={menuState.submenuOpen}
+            className={`${styles.item}${menuState.submenuOpen ? ' ' + styles.itemOpen : ''}`}
+            onMouseEnter={(e) => handleOpenPlaylistSubmenu(e, true)}
+            onClick={(e) => handleOpenPlaylistSubmenu(e)}
+          >
+            <ListMusic className={styles.itemIcon} size={16} aria-hidden="true" />
             Add to playlist
-            <span className={styles.itemArrow}>▶</span>
-          </div>
+            <ChevronRight className={styles.itemTrail} size={15} aria-hidden="true" />
+          </button>
           {menuState.payload.track.addedBy && (
             <>
-              <div className={styles.separator} />
-              <div className={styles.item} onClick={handleOpenProfile}>
-                <span className={styles.itemIcon}>👤</span>
+              <div className={styles.separator} role="separator" />
+              <button type="button" role="menuitem" className={styles.item} onClick={handleOpenProfile}>
+                <UserRound className={styles.itemIcon} size={16} aria-hidden="true" />
                 View {menuState.payload.track.addedBy}'s profile
-              </div>
+              </button>
             </>
           )}
         </div>,
@@ -287,14 +332,9 @@ export function CreatePlaylistDialog({
   const [busy, setBusy] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const queryClient = useQueryClient();
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
 
   async function handleCreate() {
-    if (!name.trim() || !displayName) return;
+    if (!name.trim() || !displayName || busy) return;
     setBusy(true);
     setErrorMsg('');
     try {
@@ -310,76 +350,46 @@ export function CreatePlaylistDialog({
     }
   }
 
-  return createPortal(
-    <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 10001,
-        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}
-      onMouseDown={onClose}
-    >
-      <div
-        style={{
-          background: 'var(--bg-1)', border: '1px solid var(--border)',
-          borderRadius: 14, padding: '24px 28px', minWidth: 300, display: 'flex',
-          flexDirection: 'column', gap: 16,
-        }}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>New playlist</div>
-        <input
-          ref={inputRef}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); if (e.key === 'Escape') onClose(); }}
-          placeholder="Playlist name"
-          style={{
-            background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 8,
-            padding: '8px 12px', color: 'var(--text)', fontSize: 14, outline: 'none',
-            fontFamily: 'inherit',
-          }}
-        />
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text-2)' }}>
-          <input
-            type="checkbox"
-            checked={isPublic}
-            onChange={(e) => setIsPublic(e.target.checked)}
-            style={{ accentColor: 'var(--text)', width: 14, height: 14 }}
-          />
-          Public — anyone can join and add tracks
-        </label>
-        {errorMsg && (
-          <div style={{ fontSize: 12, color: '#f87171', background: 'rgba(248,113,113,0.1)', borderRadius: 6, padding: '6px 10px' }}>
-            {errorMsg}
-          </div>
-        )}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none', border: '1px solid var(--border)', borderRadius: 8,
-              padding: '7px 16px', color: 'var(--text-2)', fontSize: 13, cursor: 'pointer',
-              fontFamily: 'inherit',
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleCreate}
-            disabled={!name.trim() || busy}
-            style={{
-              background: 'rgba(255,255,255,0.12)', border: '1px solid var(--border-2)',
-              borderRadius: 8, padding: '7px 16px', color: 'var(--text)', fontSize: 13,
-              fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-              opacity: (!name.trim() || busy) ? 0.4 : 1,
-            }}
-          >
+  return (
+    <Dialog
+      title="New playlist"
+      onClose={onClose}
+      size="sm"
+      onSubmit={() => void handleCreate()}
+      actions={
+        <>
+          <PillButton onClick={onClose}>Cancel</PillButton>
+          <PillButton variant="primary" type="submit" disabled={!name.trim() || !displayName || busy}>
             {busy ? 'Creating…' : 'Create'}
-          </button>
-        </div>
+          </PillButton>
+        </>
+      }
+    >
+      <div className={dialog.stack}>
+        {pendingTrack && (
+          <p className={dialog.note}>
+            “{pendingTrack.trackName}” goes in it straight away.
+          </p>
+        )}
+        <label className={dialog.field}>
+          <span className={dialog.label}>Name</span>
+          <input
+            className={dialog.input}
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Playlist name"
+          />
+        </label>
+        <label className={styles.check}>
+          <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
+          <span>
+            <span className={styles.checkTitle}>Public</span>
+            <span className={styles.checkSub}>Anyone in the office can join it and add tracks.</span>
+          </span>
+        </label>
+        {errorMsg && <p className={dialog.error} role="alert">{errorMsg}</p>}
       </div>
-    </div>,
-    document.body,
+    </Dialog>
   );
 }

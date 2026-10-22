@@ -20,9 +20,9 @@ beforeEach(() => {
 });
 
 describe('ChangelogDialog', () => {
-  it('renders heading', async () => {
+  it('is a dialog titled in sentence case', async () => {
     render(<ChangelogDialog onClose={vi.fn()} />);
-    expect(screen.getByText("What's New")).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: "What's new" })).toBeInTheDocument();
   });
 
   it('shows loading state initially', () => {
@@ -34,13 +34,22 @@ describe('ChangelogDialog', () => {
   it('shows error state when fetch fails', async () => {
     mockFetch.mockResolvedValue({ ok: false, status: 500 });
     render(<ChangelogDialog onClose={vi.fn()} />);
-    await waitFor(() => expect(screen.getByText('Could not load release notes.')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Couldn't load the release notes from GitHub.")).toBeInTheDocument());
+  });
+
+  it('Try again refetches after an error', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 500 });
+    const user = userEvent.setup();
+    render(<ChangelogDialog onClose={vi.fn()} />);
+    await user.click(await screen.findByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(screen.getByText('Version 1.2.0')).toBeInTheDocument());
+    expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
   it('shows empty state when no releases returned', async () => {
     mockFetch.mockResolvedValue({ ok: true, json: async () => [] });
     render(<ChangelogDialog onClose={vi.fn()} />);
-    await waitFor(() => expect(screen.getByText('No releases found.')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('No releases yet.')).toBeInTheDocument());
   });
 
   it('renders release names in sidebar', async () => {
@@ -62,17 +71,18 @@ describe('ChangelogDialog', () => {
     expect(screen.getByText('No release notes.')).toBeInTheDocument();
   });
 
-  it('shows current version badge', async () => {
-    render(<ChangelogDialog onClose={vi.fn()} />);
-    await waitFor(() => expect(screen.getAllByText('v1.2.0').length).toBeGreaterThan(1));
-    // v1.2.0 appears in the sidebar tag and the header badge
-    expect(screen.getAllByText('v1.2.0').length).toBeGreaterThanOrEqual(2);
-  });
-
-  it('marks current version in sidebar with title', async () => {
+  it('marks the installed release in the list in words, not only colour', async () => {
     render(<ChangelogDialog onClose={vi.fn()} />);
     await waitFor(() => screen.getByText('Version 1.2.0'));
-    expect(screen.getByTitle('Current version')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /v1\.2\.0\s*Installed/ })).toHaveAttribute('aria-current', 'true');
+  });
+
+  it('opens links in the notes in the browser instead of the app window', async () => {
+    mockFetch.mockResolvedValue({ ok: true, json: async () => [{ ...releases[0], body: 'See [the PR](https://github.com/pr/9)' }] });
+    const user = userEvent.setup();
+    render(<ChangelogDialog onClose={vi.fn()} />);
+    await user.click(await screen.findByRole('link', { name: 'the PR' }));
+    expect(window.sonos.openExternal).toHaveBeenCalledWith('https://github.com/pr/9');
   });
 
   it('clicking a sidebar item switches content', async () => {
@@ -102,14 +112,13 @@ describe('ChangelogDialog', () => {
   it('calls openExternal when View on GitHub is clicked', async () => {
     const user = userEvent.setup();
     render(<ChangelogDialog onClose={vi.fn()} />);
-    await waitFor(() => screen.getByTitle('View on GitHub'));
-    await user.click(screen.getByTitle('View on GitHub'));
+    await user.click(await screen.findByRole('button', { name: 'View on GitHub' }));
     expect(window.sonos.openExternal).toHaveBeenCalledWith('https://github.com/releases/1');
   });
 
   it('auto-selects current version release', async () => {
     render(<ChangelogDialog onClose={vi.fn()} />);
     await waitFor(() => expect(screen.getByText('Version 1.2.0')).toBeInTheDocument());
-    expect(screen.getByText('current')).toBeInTheDocument();
+    expect(screen.getByText(/the version you have/)).toBeInTheDocument();
   });
 });

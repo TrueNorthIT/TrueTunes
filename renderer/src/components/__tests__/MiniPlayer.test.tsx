@@ -10,6 +10,8 @@ const mockUseNowPlaying = vi.fn();
 vi.mock('../../hooks/useNowPlaying', () => ({ useNowPlaying: (...a: unknown[]) => mockUseNowPlaying(...a) }));
 vi.mock('../../hooks/useAuth',    () => ({ useAuth: () => true }));
 vi.mock('../../hooks/useGroups',  () => ({ useGroups: () => [] }));
+const mockUseQueuer = vi.fn();
+vi.mock('../../hooks/useQueuer', () => ({ useQueuer: (...a: unknown[]) => mockUseQueuer(...a) }));
 vi.mock('../../hooks/usePlayback', () => ({
   usePlayback: () => ({
     playback: {
@@ -52,6 +54,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockUseNowPlaying.mockReturnValue(makeNP());
+  mockUseQueuer.mockReturnValue(null);
   vi.mocked(window.sonos.skipPrev).mockResolvedValue(undefined);
   vi.mocked(window.sonos.skipNext).mockResolvedValue(undefined);
   vi.mocked(window.sonos.play).mockResolvedValue(undefined);
@@ -115,9 +118,37 @@ describe('MiniPlayerShell', () => {
     expect(window.sonos.closeMiniPlayer).toHaveBeenCalled();
   });
 
-  it('shows — when displayTrack is empty', () => {
+  it('says nothing is playing when displayTrack is empty', () => {
     mockUseNowPlaying.mockReturnValue(makeNP({ displayTrack: '' }));
     render(<MiniPlayerShell />, { wrapper });
-    expect(screen.getByText('—')).toBeInTheDocument();
+    expect(screen.getByText('Nothing playing')).toBeInTheDocument();
+  });
+
+  it('shows who queued the track', () => {
+    mockUseQueuer.mockReturnValue({ user: 'Joe Pitts', imageUrl: null });
+    render(<MiniPlayerShell />, { wrapper });
+    expect(screen.getByText('Joe Pitts')).toBeInTheDocument();
+    expect(screen.getByTitle('Queued by Joe Pitts')).toBeInTheDocument();
+  });
+
+  it('shows the time left, not elapsed and total', () => {
+    // 50% of 3:00
+    render(<MiniPlayerShell />, { wrapper });
+    expect(screen.getByText('−1:30')).toBeInTheDocument();
+    expect(screen.queryByText('3:00')).toBeNull();
+  });
+
+  it('keeps the transport showing while paused', () => {
+    mockUseNowPlaying.mockReturnValue(makeNP({ isPlaying: false }));
+    const { container, rerender } = render(<MiniPlayerShell />, { wrapper });
+    expect(container.querySelector('[class*="paused"]')).toBeTruthy();
+    mockUseNowPlaying.mockReturnValue(makeNP({ isPlaying: true }));
+    rerender(<MiniPlayerShell />);
+    expect(container.querySelector('[class*="paused"]')).toBeNull();
+  });
+
+  it('asks for the attribution map on open', () => {
+    render(<MiniPlayerShell />, { wrapper });
+    expect(window.sonos.refreshAttribution).toHaveBeenCalled();
   });
 });

@@ -1,90 +1,109 @@
-.menu {
+/* Track context menu and its playlist submenu: floating shell material, like the nav and player menus. */
+.menu,
+.submenu {
   position: fixed;
   z-index: 9999;
+  display: flex;
+  flex-direction: column;
   background: var(--material-bg);
   backdrop-filter: var(--material-filter);
   border: 1px solid var(--separator);
-  border-radius: var(--r-md);
-  padding: 4px;
-  min-width: 190px;
+  border-radius: 0.9em;
+  padding: 0.3em;
+  min-width: 15em;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), var(--material-edge);
-  animation: menuIn 0.1s ease-out;
+  animation: menuIn var(--dur-fast) var(--ease);
   user-select: none;
+  outline: none;
+}
+.submenu {
+  z-index: 10000;
+  max-width: 20em;
+  max-height: 20em;
+  overflow-y: auto;
 }
 
 @keyframes menuIn {
   from { opacity: 0; transform: scale(0.97); }
-  to   { opacity: 1; transform: scale(1); }
 }
 
 .item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  border-radius: var(--r-sm);
-  cursor: pointer;
-  font-size: 13px;
-  color: var(--text-2);
-  position: relative;
-  white-space: nowrap;
-  transition: background 0.08s, color 0.08s;
-}
-.item:hover {
-  background: var(--row-hover);
+  gap: 0.6em;
+  width: 100%;
+  padding: 0.5em 0.7em;
+  border: none;
+  border-radius: 0.55em;
+  background: none;
+  font: inherit;
+  font-size: max(13px, 0.93em);
   color: var(--text);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-fast);
 }
+.item:hover,
+.item:focus-visible,
+.itemOpen { background: var(--row-hover); }
+.item:focus-visible { outline-offset: -2px; }
 
 .itemIcon {
-  font-size: 13px;
-  width: 16px;
-  text-align: center;
   flex-shrink: 0;
-  color: var(--text-3);
+  color: var(--text-2);
 }
-
-.itemArrow {
+.itemLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.itemTrail {
+  flex-shrink: 0;
   margin-left: auto;
-  font-size: 13px;
   color: var(--text-3);
-  padding-left: 8px;
 }
 
 .separator {
   height: 1px;
   background: var(--separator);
-  margin: 4px 2px;
-}
-
-/* Submenu */
-.submenuWrap {
-  position: relative;
-}
-
-.submenu {
-  position: fixed;
-  z-index: 10000;
-  background: var(--material-bg);
-  backdrop-filter: var(--material-filter);
-  border: 1px solid var(--separator);
-  border-radius: var(--r-md);
-  padding: 4px;
-  min-width: 190px;
-  max-height: 280px;
-  overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), var(--material-edge);
-  animation: menuIn 0.1s ease-out;
-}
-
-.submenu::-webkit-scrollbar { width: 6px; }
-.submenu::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.15);
-  border-radius: 3px;
+  margin: 0.3em 0.5em;
 }
 
 .emptyHint {
-  font-size: 13px;
+  font-size: max(13px, 0.93em);
   color: var(--text-3);
-  padding: 6px 10px;
-  pointer-events: none;
+  padding: 0.5em 0.7em;
+}
+
+/* New playlist dialog: the public checkbox with its explanation */
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7em;
+  cursor: pointer;
+}
+.check > input {
+  flex-shrink: 0;
+  width: 1.1em;
+  height: 1.1em;
+  margin-top: 0.15em;
+  accent-color: var(--text);
+  cursor: pointer;
+}
+.check > span { display: flex; flex-direction: column; gap: 0.1em; }
+.checkTitle {
+  font-size: max(13px, 1em);
+  font-weight: 500;
+  color: var(--text);
+}
+.checkSub {
+  font-size: max(13px, 0.93em);
+  color: var(--text-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu,
+  .submenu { animation: none; }
+  .item { transition: none; }
 }

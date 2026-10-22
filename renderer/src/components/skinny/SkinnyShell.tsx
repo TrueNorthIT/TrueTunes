@@ -1,9 +1,9 @@
-import type React from 'react';
 import type { usePlayback } from '../../hooks/usePlayback';
 import { useNowPlaying } from '../../hooks/useNowPlaying';
 import type { NormalizedQueueItem, NormalizedGroup } from '../../types/provider';
 import { QueueSidebar } from '../queue/QueueSidebar';
 import { SkinnyTransport } from './SkinnyTransport';
+import { AmbientBackdrop } from '../AmbientBackdrop';
 import styles from '../../styles/SkinnyShell.module.css';
 
 interface Props {
@@ -27,9 +27,9 @@ interface Props {
 }
 
 /**
- * Skinny side-panel layout: just the queue (full width) plus a condensed
- * transport strip at the bottom. No nav, no search, no browse panels.
- * Shown automatically when the window is narrower than FULL_MIN.
+ * Skinny side-panel layout: the queue (full width) over a docked Now playing card. No nav, no
+ * search, no browse panels. Shown automatically when the window is narrower than FULL_MIN.
+ * The room's colour comes from the same blurred artwork as the full layout, not a local glow.
  */
 export function SkinnyShell({
   autoplay,
@@ -46,16 +46,9 @@ export function SkinnyShell({
 }: Props) {
   const np = useNowPlaying(playback);
 
-  // Ambient dominant-colour glow centred around the middle of the panel,
-  // fading out toward the top and bottom — keeps the app's glow-y aesthetic.
-  const shellStyle: React.CSSProperties | undefined = np.dominantColor
-    ? {
-        background: `radial-gradient(135% 70% at 50% 50%, rgba(${np.dominantColor}, 0.30) 0%, rgba(${np.dominantColor}, 0.11) 48%, transparent 85%), var(--bg)`,
-      }
-    : undefined;
-
   return (
-    <div className={styles.shell} style={shellStyle}>
+    <div className={styles.shell}>
+      <AmbientBackdrop nowPlayingArt={playback.artUrl} />
       <QueueSidebar
         autoplay={autoplay}
         variant="skinny"

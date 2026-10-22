@@ -5,37 +5,43 @@ import { ContainerPanel } from '../ContainerPanel';
 import type { SonosItem } from '../../types/sonos';
 
 const mockUseLocation = vi.fn();
+const mockOpenItem = vi.fn();
+const mockResolveAndOpen = vi.fn();
 vi.mock('react-router-dom', () => ({ useLocation: () => mockUseLocation() }));
+vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ prefetchQuery: vi.fn() }) }));
 vi.mock('../../hooks/useImage', () => ({ useImage: () => null }));
-vi.mock('../../hooks/useOpenItem', () => ({ useOpenItem: () => vi.fn() }));
+vi.mock('../../hooks/useOpenItem', () => ({ useOpenItem: () => mockOpenItem }));
+vi.mock('../../hooks/useResolveAndOpen', () => ({ useResolveAndOpen: () => ({ resolveAndOpen: mockResolveAndOpen }) }));
 
 const mockUseContainerBrowse = vi.fn();
 vi.mock('../../hooks/useContainerBrowse', () => ({
   useContainerBrowse: (...args: unknown[]) => mockUseContainerBrowse(...args),
 }));
-vi.mock('../common/MediaCard', () => ({
-  MediaCard: ({ name, onOpen, onAdd }: { name: string; onOpen?: () => void; onAdd?: () => void }) => (
-    <div>
-      <span>{name}</span>
-      {onOpen && <button onClick={onOpen}>Open</button>}
-      <button onClick={onAdd}>Add</button>
-    </div>
-  ),
-}));
 
 const containerItem: SonosItem = {
-  title: 'My Playlist',
-  type: 'ITEM_AUDIO_CONTAINER',
-  resource: {
-    type: 'PLAYLIST',
-    id: { objectId: 'pl-1', serviceId: 'svc-1', accountId: 'acc-1' },
-  },
+  title: 'Quick picks',
+  type: 'CONTAINER',
+  resource: { type: 'CONTAINER', id: { objectId: 'c-1', serviceId: 'svc-1', accountId: 'acc-1' } },
 } as SonosItem;
+
+const track = (title: string): SonosItem =>
+  ({
+    title,
+    type: 'ITEM_TRACK',
+    subtitle: 'Daft Punk',
+    artists: [{ name: 'Daft Punk', id: 'srn:content:audio:artist:dp#svc-1:acc-1' }],
+    duration: '432',
+    resource: { type: 'TRACK', id: { objectId: title, serviceId: 'svc-1', accountId: 'acc-1' } },
+  }) as unknown as SonosItem;
+const album = (title: string): SonosItem =>
+  ({ title, type: 'ITEM_ALBUM', subtitle: 'Geese', resource: { type: 'ALBUM', id: { objectId: title } } }) as SonosItem;
+const station = (title: string): SonosItem =>
+  ({ title, type: 'ITEM_STATION', subtitle: `${title} Radio`, resource: { type: 'PROGRAM', id: { objectId: title } } }) as SonosItem;
 
 beforeEach(() => {
   vi.clearAllMocks();
   mockUseLocation.mockReturnValue({ state: { item: containerItem } });
-  mockUseContainerBrowse.mockReturnValue({ data: undefined, isLoading: false, error: null });
+  mockUseContainerBrowse.mockReturnValue({ data: undefined, isLoading: false, error: null, refetch: vi.fn() });
 });
 
 describe('ContainerPanel', () => {
@@ -45,47 +51,69 @@ describe('ContainerPanel', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('shows the container title', () => {
+  it('names the shelf as the page heading', () => {
     render(<ContainerPanel onAddToQueue={vi.fn()} />);
-    expect(screen.getByText('My Playlist')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Quick picks' })).toBeInTheDocument();
   });
 
-  it('shows loading skeletons while loading', () => {
-    mockUseContainerBrowse.mockReturnValue({ data: undefined, isLoading: true, error: null });
+  it('shows skeleton tiles while loading', () => {
+    mockUseContainerBrowse.mockReturnValue({ data: undefined, isLoading: true, error: null, refetch: vi.fn() });
     const { container } = render(<ContainerPanel onAddToQueue={vi.fn()} />);
-    expect(container.querySelectorAll('[class*="skeletonCard"]').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('[class*="skelTile"]').length).toBeGreaterThan(0);
   });
 
-  it('shows error message when fetch fails', () => {
-    mockUseContainerBrowse.mockReturnValue({ data: undefined, isLoading: false, error: new Error('fail') });
+  it('offers Retry when the browse fails', async () => {
+    const refetch = vi.fn();
+    mockUseContainerBrowse.mockReturnValue({ data: undefined, isLoading: false, error: new Error('fail'), refetch });
     render(<ContainerPanel onAddToQueue={vi.fn()} />);
-    expect(screen.getByText('Failed to load.')).toBeInTheDocument();
+    expect(screen.getByText(/Couldn’t load Quick picks/)).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Retry' }));
+    expect(refetch).toHaveBeenCalled();
   });
 
-  it('shows empty message when data is empty', () => {
-    mockUseContainerBrowse.mockReturnValue({ data: [], isLoading: false, error: null });
+  it('says so when the shelf is empty', () => {
+    mockUseContainerBrowse.mockReturnValue({ data: [], isLoading: false, error: null, refetch: vi.fn() });
     render(<ContainerPanel onAddToQueue={vi.fn()} />);
-    expect(screen.getByText('This playlist is empty.')).toBeInTheDocument();
+    expect(screen.getByText('Nothing here right now.')).toBeInTheDocument();
   });
 
-  it('renders item names when data is present', () => {
-    const items: SonosItem[] = [
-      { name: 'Song A', type: 'TRACK' } as SonosItem,
-      { name: 'Song B', type: 'TRACK' } as SonosItem,
-    ];
-    mockUseContainerBrowse.mockReturnValue({ data: items, isLoading: false, error: null });
-    render(<ContainerPanel onAddToQueue={vi.fn()} />);
-    expect(screen.getByText('Song A')).toBeInTheDocument();
-    expect(screen.getByText('Song B')).toBeInTheDocument();
-  });
-
-  it('calls onAddToQueue when Add button is clicked on a track item', async () => {
+  it('lists songs as rows with a count, and adds one to the queue', async () => {
     const onAddToQueue = vi.fn();
-    const user = userEvent.setup();
-    const items: SonosItem[] = [{ name: 'Track Item', type: 'TRACK' } as SonosItem];
-    mockUseContainerBrowse.mockReturnValue({ data: items, isLoading: false, error: null });
+    mockUseContainerBrowse.mockReturnValue({ data: [track('Song A'), track('Song B')], isLoading: false, error: null, refetch: vi.fn() });
     render(<ContainerPanel onAddToQueue={onAddToQueue} />);
-    await user.click(screen.getByText('Add'));
-    expect(onAddToQueue).toHaveBeenCalled();
+    expect(screen.getByText('2 songs')).toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(2);
+    expect(screen.getAllByText('7:12')).toHaveLength(2);
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Add Song A to queue' }));
+    expect(onAddToQueue).toHaveBeenCalledWith(expect.objectContaining({ title: 'Song A' }));
+  });
+
+  it('opens a song artist from the browse SRN id', async () => {
+    mockUseContainerBrowse.mockReturnValue({ data: [track('Song A')], isLoading: false, error: null, refetch: vi.fn() });
+    render(<ContainerPanel onAddToQueue={vi.fn()} />);
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Daft Punk, open artist' }));
+    expect(mockOpenItem).toHaveBeenCalledWith(
+      expect.objectContaining({ resource: { type: 'ARTIST', id: { objectId: 'dp', serviceId: 'svc-1', accountId: 'acc-1' } } }),
+    );
+  });
+
+  it('heads each kind on a mixed shelf, in the order they first appear', () => {
+    mockUseContainerBrowse.mockReturnValue({
+      data: [album('Getting Killed'), track('Song A'), album('3D Country')],
+      isLoading: false, error: null, refetch: vi.fn(),
+    });
+    render(<ContainerPanel onAddToQueue={vi.fn()} />);
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['Albums', 'Songs']);
+    expect(screen.getByText('2 albums · 1 song')).toBeInTheDocument();
+  });
+
+  it('opens a station and never offers + on it, because starting one replaces the shared queue', async () => {
+    const onAddToQueue = vi.fn();
+    mockUseContainerBrowse.mockReturnValue({ data: [station('STORM II')], isLoading: false, error: null, refetch: vi.fn() });
+    render(<ContainerPanel onAddToQueue={onAddToQueue} />);
+    expect(screen.queryByRole('button', { name: /to queue/ })).toBeNull();
+    await userEvent.setup().click(screen.getByRole('button', { name: /STORM II/ }));
+    expect(mockOpenItem).toHaveBeenCalledWith(expect.objectContaining({ title: 'STORM II' }));
+    expect(onAddToQueue).not.toHaveBeenCalled();
   });
 });

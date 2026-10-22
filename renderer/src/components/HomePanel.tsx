@@ -44,7 +44,7 @@ import { useDailyGame, useMyScore } from '../hooks/useDailyGame';
 import { useImage } from '../hooks/useImage';
 import { useDominantColor } from '../hooks/useDominantColor';
 import { useNowPlaying } from '../hooks/useNowPlaying';
-import { activeLyricIndex, lyricElapsedMs, useLyrics } from '../hooks/useLyrics';
+import { useFollowActiveLine, useLiveLyrics } from '../hooks/useLiveLyrics';
 import { useAttribution, resolveAttribution } from '../hooks/useAttribution';
 import { useGeniusDescription } from '../hooks/useGeniusDescription';
 import type { PlaybackState } from '../hooks/usePlayback';
@@ -53,6 +53,7 @@ import { getActiveProvider } from '../providers';
 import type { NormalizedQueueItem } from '../types/provider';
 import { withArtworkSize } from '../lib/artworkUrl';
 import { UserAvatar } from './common/UserAvatar';
+import { QueuerChip } from './common/QueuerChip';
 import { useTrackContextMenu } from './common/ContextMenu';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
 import { artistImageQueryOptions, artistQueryOptions } from '../hooks/useArtistBrowse';
@@ -233,16 +234,6 @@ function TrendRow({ rank, t, count, onAdd }: {
   );
 }
 
-/** Queuer avatar + name; opens their profile. */
-function QueuerChip({ user, imageUrl, onOpen, prefix }: { user: string; imageUrl?: string | null; onOpen: () => void; prefix?: string }) {
-  return (
-    <button type="button" className={styles.queuerChip} onClick={onOpen} aria-label={`${prefix ?? ''}${user}, open profile`}>
-      <UserAvatar name={user} imageUrl={imageUrl} className={styles.queuerAvatar} />
-      <span>{prefix}{user}</span>
-    </button>
-  );
-}
-
 /** Now playing card and live synced lyrics. No transport controls: the player bar has them. */
 function NowPlayingBand({ playback, imageByUser }: {
   playback: PlaybackState;
@@ -266,29 +257,15 @@ function NowPlayingBand({ playback, imageByUser }: {
   const { description, isLoading: aboutLoading } = useGeniusDescription(np.displayTrack, np.displayArtist);
   const blurb = geniusFirstParagraph(description);
 
-  const lyr = useLyrics(np.displayTrack, np.displayArtist, np.albumName, np.durationMs);
-  const activeLine = activeLyricIndex(lyr.lines, lyricElapsedMs(np.progressPct, np.durationMs));
-  const plain = lyr.lines.length
-    ? []
-    : (lyr.plainLyrics ?? '').split('\n').map((l) => l.trim()).filter(Boolean).slice(0, 5);
-  const hasLyrics = lyr.lines.length > 0 || plain.length > 0;
+  const lyr = useLiveLyrics(np);
+  const { activeLine } = lyr;
+  const plain = lyr.plain.slice(0, 5);
+  const lyricsPending = lyr.pending;
   // Keep the box while the current track's lyrics resolve; hide only once settled with nothing.
-  const lyricsPending = lyr.isLoading && !hasLyrics;
-  const showLyrics = lyricsPending || hasLyrics;
+  const showLyrics = lyricsPending || lyr.hasLyrics;
 
-  const boxRef = useRef<HTMLDivElement>(null);
-  const lineRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const scrolledRef = useRef(false);
-  useEffect(() => {
-    const box = boxRef.current;
-    const line = lineRefs.current[activeLine];
-    if (!box || !line || activeLine < 0 || typeof box.scrollTo !== 'function') return;
-    // Keep the active line about 40% of the way down the box.
-    const target = line.offsetTop + line.offsetHeight / 2 - box.clientHeight * 0.4;
-    const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    box.scrollTo({ top: Math.max(0, target), behavior: scrolledRef.current && !calm ? 'smooth' : 'auto' });
-    scrolledRef.current = true;
-  }, [activeLine]);
+  // Keep the active line about 40% of the way down the box.
+  const { boxRef, lineRefs } = useFollowActiveLine(activeLine, 0.4);
 
   const openAlbum = () =>
     np.albumItem
@@ -335,7 +312,7 @@ function NowPlayingBand({ playback, imageByUser }: {
             )}
           </div>
           {queuer && (
-            <QueuerChip user={queuer.user} imageUrl={imageByUser.get(queuer.user)} onOpen={() => profile(queuer.user)} prefix="Queued by " />
+            <QueuerChip className={styles.queuerChip} user={queuer.user} imageUrl={imageByUser.get(queuer.user)} onOpen={() => profile(queuer.user)} />
           )}
           <div className={styles.nowProgress}>
             <span className={styles.nowTime}>{np.elapsedLabel}</span>

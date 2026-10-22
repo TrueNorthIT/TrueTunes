@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ChevronDown, ChevronUp, Pencil, Plus, Trash2, TriangleAlert } from 'lucide-react';
 import { fitsOnBoard, POLL_QUESTION_ROWS, wrapForBoard } from '../../lib/pollBoard';
-import feedback from '../../styles/FeedbackDialog.module.css';
+import { Dialog } from '../common/Dialog';
+import { PillButton } from '../common/PillButton';
+import dialog from '../common/Dialog.module.css';
 import styles from '../../styles/PollDialog.module.css';
 
 /**
@@ -27,6 +30,7 @@ function formatMonday(iso: string | null): string {
   });
 }
 
+/** The board as it will read: monospace and upper case because the Vestaboard is. */
 function Preview({ question }: { question: string }) {
   const lines = wrapForBoard(question).slice(0, POLL_QUESTION_ROWS);
   return (
@@ -45,9 +49,10 @@ interface FormProps {
   poll?: PollAdminItem;
   onSaved: () => void;
   onCancel: () => void;
+  onClose: () => void;
 }
 
-function PollForm({ poll, onSaved, onCancel }: FormProps) {
+function PollForm({ poll, onSaved, onCancel, onClose }: FormProps) {
   const [question, setQuestion] = useState(poll?.question ?? '');
   const [choices, setChoices] = useState<string[]>(poll?.choices ?? ['', '']);
   const [saving, setSaving] = useState(false);
@@ -74,58 +79,69 @@ function PollForm({ poll, onSaved, onCancel }: FormProps) {
   }
 
   return (
-    <form
-      className={feedback.form}
-      onSubmit={(e) => {
-        e.preventDefault();
-        void save();
-      }}
+    <Dialog
+      title={poll ? 'Edit poll' : 'New poll'}
+      onClose={onClose}
+      onSubmit={() => void save()}
+      actions={
+        <>
+          <PillButton onClick={onCancel}>Cancel</PillButton>
+          <PillButton variant="primary" type="submit" disabled={!valid || saving}>Save poll</PillButton>
+        </>
+      }
     >
-      <input
-        className={feedback.input}
-        type="text"
-        aria-label="Question"
-        placeholder="Question"
-        value={question}
-        onChange={(e) => setQuestion(e.target.value)}
-        maxLength={200}
-        autoFocus
-      />
-      {choices.map((choice, i) => (
-        <input
-          key={i}
-          className={feedback.input}
-          type="text"
-          aria-label={`Choice ${i + 1}`}
-          placeholder={`Choice ${i + 1}`}
-          value={choice}
-          onChange={(e) => setChoices((prev) => prev.map((c, j) => (j === i ? e.target.value : c)))}
-          maxLength={80}
-        />
-      ))}
-      <button
-        className={feedback.btn}
-        type="button"
-        disabled={choices.length >= MAX_CHOICES}
-        onClick={() => setChoices((prev) => [...prev, ''])}
-      >
-        Add choice
-      </button>
+      <div className={dialog.stack}>
+        <label className={dialog.field}>
+          <span className={dialog.label}>Question</span>
+          <input
+            className={dialog.input}
+            type="text"
+            placeholder="e.g. Best biscuit for the tea round?"
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            maxLength={200}
+          />
+        </label>
 
-      <Preview question={question} />
-      {!fits && (
-        <p className={styles.warning} role="alert">
-          This question does not fit on the Vestaboard (4 rows of 22 characters). A generic &quot;new poll&quot; message will be
-          posted instead.
-        </p>
-      )}
-      {error && <p className={feedback.error} role="status">{error}</p>}
+        <div className={dialog.field} role="group" aria-label="Choices">
+          <span className={dialog.label} aria-hidden="true">Choices</span>
+          {choices.map((choice, i) => (
+            <input
+              key={i}
+              className={dialog.input}
+              type="text"
+              aria-label={`Choice ${i + 1}`}
+              placeholder={`Choice ${i + 1}`}
+              value={choice}
+              onChange={(e) => setChoices((prev) => prev.map((c, j) => (j === i ? e.target.value : c)))}
+              maxLength={80}
+            />
+          ))}
+          <PillButton
+            className={styles.addChoice}
+            disabled={choices.length >= MAX_CHOICES}
+            onClick={() => setChoices((prev) => [...prev, ''])}
+          >
+            <Plus size={15} aria-hidden="true" /> Add choice
+          </PillButton>
+        </div>
 
-      <div className={styles.actions}>
-        <button className={feedback.btn} type="button" onClick={onCancel}>Cancel</button>
-        <button className={feedback.btn} type="submit" disabled={!valid || saving}>Save poll</button>
+        <div className={dialog.field}>
+          <span className={dialog.label}>On the Vestaboard</span>
+          <Preview question={question} />
+          {!fits && (
+            <p className={styles.warning} role="alert">
+              <TriangleAlert size={15} aria-hidden="true" />
+              <span>
+                This question doesn't fit on the Vestaboard (4 rows of 22 characters), so a generic &quot;new poll&quot;
+                message will be posted instead.
+              </span>
+            </p>
+          )}
+        </div>
+        {error && <p className={dialog.error} role="status">{error}</p>}
       </div>
-    </form>
+    </Dialog>
   );
 }
 
@@ -172,85 +188,94 @@ export function PollAdminDialog({ onClose }: PollAdminDialogProps): ReactElement
     void run(() => window.sonos.pollAdminDelete(poll.id));
   }
 
-  return (
-    <div
-      className={feedback.overlay}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') onClose();
-      }}
-    >
-      <div className={`${feedback.modal} ${styles.modalWide}`} role="dialog" aria-modal="true" aria-label="Poll admin">
-        <button className={feedback.close} onClick={onClose} aria-label="Close">✕</button>
-        <h2 className={feedback.heading}>{editing ? (editing === 'new' ? 'New poll' : 'Edit poll') : 'Polls'}</h2>
+  if (editing) {
+    return (
+      <PollForm
+        poll={editing === 'new' ? undefined : editing}
+        onSaved={() => {
+          setEditing(null);
+          void refresh();
+        }}
+        onCancel={() => setEditing(null)}
+        onClose={onClose}
+      />
+    );
+  }
 
-        {editing ? (
-          <PollForm
-            poll={editing === 'new' ? undefined : editing}
-            onSaved={() => {
-              setEditing(null);
-              void refresh();
-            }}
-            onCancel={() => setEditing(null)}
-          />
-        ) : (
-          <>
-            <p className={feedback.sub}>
-              One poll goes live each Monday, in this order. Live polls are locked. Results are read straight from Cosmos.
-            </p>
-            {isError && <p className={feedback.error} role="status">Could not load the polls.</p>}
-            <ul className={styles.rows}>
-              {(polls ?? []).map((poll) => {
-                const upcomingIndex = upcomingIds.indexOf(poll.id);
-                return (
-                  <li key={poll.id} className={styles.row}>
-                    <div className={styles.rowText}>
-                      <span className={styles.question}>{poll.question}</span>
-                      <span className={styles.date}>{formatMonday(poll.liveFrom)}</span>
-                    </div>
-                    {poll.live && <span className={styles.liveBadge}>Live</span>}
-                    <div className={styles.rowActions}>
-                      <button
-                        className={styles.iconBtn}
-                        aria-label={`Move up: ${poll.question}`}
-                        disabled={poll.live || upcomingIndex <= 0}
-                        onClick={() => move(poll.id, -1)}
-                      >
-                        ↑
-                      </button>
-                      <button
-                        className={styles.iconBtn}
-                        aria-label={`Move down: ${poll.question}`}
-                        disabled={poll.live || upcomingIndex >= upcomingIds.length - 1}
-                        onClick={() => move(poll.id, 1)}
-                      >
-                        ↓
-                      </button>
-                      <button
-                        className={styles.iconBtn}
-                        aria-label={`Edit poll: ${poll.question}`}
-                        disabled={poll.live}
-                        onClick={() => setEditing(poll)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className={styles.iconBtn}
-                        aria-label={`Delete poll: ${poll.question}`}
-                        disabled={poll.live}
-                        onClick={() => remove(poll)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-            {error && <p className={feedback.error} role="status">{error}</p>}
-            <button className={feedback.btn} style={{ width: '100%' }} onClick={() => setEditing('new')}>New poll</button>
-          </>
-        )}
+  return (
+    <Dialog
+      title="Poll admin"
+      onClose={onClose}
+      actions={
+        <PillButton variant="primary" onClick={() => setEditing('new')}>
+          <Plus size={15} aria-hidden="true" /> New poll
+        </PillButton>
+      }
+    >
+      <div className={dialog.stack}>
+        <p className={dialog.note}>
+          One poll goes live each Monday, in this order. Live polls are locked. Results are read straight from Cosmos.
+        </p>
+        {isError && <p className={dialog.error} role="status">Couldn't load the polls.</p>}
+        <ul className={styles.rows}>
+          {(polls ?? []).map((poll) => {
+            const upcomingIndex = upcomingIds.indexOf(poll.id);
+            return (
+              <li key={poll.id} className={styles.row}>
+                <div className={styles.rowText}>
+                  <span className={styles.question}>{poll.question}</span>
+                  <span className={styles.date}>{formatMonday(poll.liveFrom)}</span>
+                </div>
+                {poll.live ? (
+                  <span className={styles.liveChip}>Live</span>
+                ) : (
+                  <div className={styles.rowActions}>
+                    <button
+                      type="button"
+                      className={styles.iconBtn}
+                      aria-label={`Move up: ${poll.question}`}
+                      title="Move up"
+                      disabled={upcomingIndex <= 0}
+                      onClick={() => move(poll.id, -1)}
+                    >
+                      <ChevronUp size={18} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.iconBtn}
+                      aria-label={`Move down: ${poll.question}`}
+                      title="Move down"
+                      disabled={upcomingIndex >= upcomingIds.length - 1}
+                      onClick={() => move(poll.id, 1)}
+                    >
+                      <ChevronDown size={18} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.iconBtn}
+                      aria-label={`Edit poll: ${poll.question}`}
+                      title="Edit"
+                      onClick={() => setEditing(poll)}
+                    >
+                      <Pencil size={16} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.iconBtn} ${styles.iconDanger}`}
+                      aria-label={`Delete poll: ${poll.question}`}
+                      title="Delete"
+                      onClick={() => remove(poll)}
+                    >
+                      <Trash2 size={16} aria-hidden="true" />
+                    </button>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+        {error && <p className={dialog.error} role="status">{error}</p>}
       </div>
-    </div>
+    </Dialog>
   );
 }

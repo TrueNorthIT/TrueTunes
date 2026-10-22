@@ -68,6 +68,32 @@ The Impeccable critique scored both Search and Discover 25/40. Fixes:
   - Right and wrong use a local soft mint and `--danger`, always paired with ✓ and ✗.
   - The in-game screens couldn't be captured live, because playing would spend a real attempt. They're covered by component tests; "Play again (dev)" shows them.
 
+### Batch 4 review (unattended)
+The critique scored Leaderboard 26/40, Profile 26/40 and Queuedle 25/40. Fixes:
+- **Counts.** Profile and the Leaderboard count queued tracks from `topUsers` and say "queued". The server's `totalEvents` includes album adds. The Leaderboard's total is "At least N" once the server's top-ten cap is reached.
+- **Tier badges.** The raster tier art (purple neon, uppercase text baked in) is replaced on all three pages by a sentence-case tonal chip. This is an unattended call; redrawn badges would be the long-term fix.
+- **Dialogs.** The rank and Past games dialogs use the new shared `common/Dialog`.
+- **Leaderboard and Queuedle.** Artists are merged case-insensitively in the renderer, as a stopgap until the server fix (flag 1). Tied players share a place. Skeletons replace "Loading…". Queuedle's lavender fallback wash is removed, and played days get a ✓.
+
+## Batch 5: Lyrics, Container, mini player, skinny, dialogs (unattended)
+- **Lyrics page.** The Home now-playing band at full size: a Now Playing card (art, links, queued-by, About this song) beside a lyrics card. The live-lyrics logic is shared with Home through `hooks/useLiveLyrics.ts`. Plain, unsynced lyrics now show in full instead of a blank page.
+- **Container page.** One section per kind of item: song rows, then album, playlist and station tiles.
+  - **Safety fix.** The old "+" on a station replaced the entire shared queue. Stations now open as track lists instead.
+- **Mini player.**
+  - The art fills the left edge.
+  - The transport sits over the art, shown on hover and always while paused, which frees the width for title, artist, queuer and time left.
+  - It asks for attribution again when it opens, otherwise the queuer was always blank.
+- **Skinny mode.**
+  - The current track gets a Now Playing card with a queued-by chip, laid out in one row from 640px wide.
+  - The centred radial glow is replaced by the shared artwork backdrop.
+- **Dialogs.**
+  - One shared native `<dialog>` with `showModal()`: Tab is trapped, Esc and backdrop close it, and focus returns to the opener. Form dialogs don't close on an outside click.
+  - The context menu is a real `role=menu`, and Enter right after a right-click can't queue anything.
+  - Feedback: Send works again after an error.
+  - What's new: links open in the browser.
+  - The unused `DisplayNameModal` is deleted.
+  - Poll admin keeps `window.confirm` for delete, because a pinned requirement says so.
+
 ## Flags for Joe
 The Microsoft To Do sign-in had expired and couldn't be renewed unattended, so these are here instead.
 1. **Server: artist names are case-sensitive.** `server/src/shared/aggregate.ts` keys artists by raw name, so "Fontaines D.C." and "FONTAINES D.C." count as two. The fix is a case-insensitive key, then a deploy.
@@ -76,3 +102,7 @@ The Microsoft To Do sign-in had expired and couldn't be renewed unattended, so t
 4. **Office rank beyond the top ten.** Needs the server to return the user's own rank.
 5. **Slow test.** `queuedleGenerator.requirements.test.ts` takes about 147s against a 180s hook timeout, so it's flaky under load.
 6. **Dead code.** `components/CardRow.tsx` and its test are unused. Removed in the clean-up pass.
+7. **No navigation guard.** `src/main.ts` has no `will-navigate` or `setWindowOpenHandler`, so a stray link replaces the app window. Fixed in the clean-up pass.
+8. **Home's For you "+" on a station** (for example My Supermix) replaces the whole queue. Fixed in the clean-up pass.
+9. **A second private "Favourites"** appears in the Add-to-playlist submenu. Probably someone else's, coming back from the joined playlists query (`usePlaylists`).
+10. **Playback stopped for a while** during the batch 5 captures, and the queue count rose from 225 to 232. No agent touched the transport or the add controls, so it was the DJ or people in the office. Mentioned in case it wasn't.
