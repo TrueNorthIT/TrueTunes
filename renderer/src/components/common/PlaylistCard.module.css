@@ -23,7 +23,16 @@
   font-weight: 700;
   color: rgba(255, 255, 255, 0.6);
   transition: opacity 0.15s;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  position: relative;
+  box-shadow: var(--art-shadow);
+}
+.playlistCardArt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--art-keyline);
+  pointer-events: none;
 }
 
 .playlistCardName {

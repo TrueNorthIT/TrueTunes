@@ -5,6 +5,7 @@ import { useImage } from '../../hooks/useImage';
 import { useAlbumBrowse } from '../../hooks/useAlbumBrowse';
 import { usePlaylistBrowse } from '../../hooks/usePlaylistBrowse';
 import { useDominantColor } from '../../hooks/useDominantColor';
+import { usePageArt } from '../../lib/pageArt';
 import { useGeniusAlbumYear } from '../../hooks/useGeniusAlbumYear';
 import { artistQueryOptions } from '../../hooks/useArtistBrowse';
 import { useResolveAndOpen } from '../../hooks/useResolveAndOpen';
@@ -56,6 +57,7 @@ export function AlbumPanel({ onAddToQueue }: Props) {
   const artUrl = data?.artUrl ?? (item ? getItemArt(item) : null);
   const cachedArt     = useImage(artUrl);
   const dominantColor = useDominantColor(cachedArt, { setGlobal: true });
+  usePageArt(cachedArt);
   const year = useGeniusAlbumYear(
     isPlaylistOrProgram ? null : title,
     isPlaylistOrProgram ? null : artist,

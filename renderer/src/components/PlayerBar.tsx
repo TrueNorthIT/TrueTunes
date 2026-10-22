@@ -256,8 +256,9 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
       style={
         dominantColor
           ? {
-              background: `linear-gradient(105deg, rgba(${dominantColor}, 0.18) 0%, rgba(255,255,255,0.03) 60%)`,
-              boxShadow: `0 12px 48px rgba(0,0,0,0.4), 0 0 50px rgba(${dominantColor}, 0.12), 0 1px 0 rgba(255,255,255,0.08) inset, 0 -1px 0 rgba(0,0,0,0.2) inset`,
+              // artwork tint layered over the depth material (styles/depth.css), never replacing it
+              background: `linear-gradient(105deg, rgba(${dominantColor}, 0.18) 0%, rgba(255,255,255,0.03) 60%), var(--material-bg)`,
+              boxShadow: `0 12px 48px rgba(0,0,0,0.4), var(--material-edge), 0 -1px 0 rgba(0,0,0,0.2) inset`,
             }
           : undefined
       }

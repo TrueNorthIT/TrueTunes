@@ -5,9 +5,18 @@
   --bg-glass: rgba(22, 22, 24, 0.88);
   --border: rgba(255, 255, 255, 0.1);
   --border-2: rgba(255, 255, 255, 0.2);
-  --text: #ffffff;
-  --text-2: rgba(255, 255, 255, 0.65);
-  --text-3: rgba(255, 255, 255, 0.5);
+  /* Apple dark-mode label scale */
+  --label: rgba(255, 255, 255, 0.92);
+  --label-2: rgba(235, 235, 245, 0.6);
+  --label-3: rgba(235, 235, 245, 0.3); /* Apple's tertiary: disabled / placeholder only, it is below 4.5:1 on our surfaces */
+  --text: var(--label);
+  --text-2: var(--label-2);
+  /* --text-3 carries real subtitles, so it stays at .5 rather than Apple's .3 (contrast) */
+  --text-3: rgba(235, 235, 245, 0.5);
+  --separator: rgba(255, 255, 255, 0.08);
+  /* artwork tiles: soft drop shadow, plus a 1px inner keyline drawn by each art box's ::after */
+  --art-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --art-keyline: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   --r-sm: 6px;
   --r-md: 10px;
   --r-lg: 16px;

@@ -1,6 +1,7 @@
 import { useImage } from '../../hooks/useImage';
 import { useDominantColor } from '../../hooks/useDominantColor';
 import { withArtworkSize } from '../../lib/artworkUrl';
+import { usePageArt } from '../../lib/pageArt';
 import styles from '../../styles/ArtistPanel.module.css';
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 export function ArtistBanner({ name, altNames, imageUrl }: Props) {
   const art = useImage(imageUrl ? withArtworkSize(imageUrl) : null);
   const dominant = useDominantColor(art, { setGlobal: true });
+  usePageArt(art);
   const wash = dominant
     ? { background: `linear-gradient(180deg, rgba(${dominant},0.55) 0%, rgba(${dominant},0.2) 60%, transparent 100%)`, transition: 'background 0.8s ease' }
     : undefined;

@@ -265,7 +265,8 @@
   border-radius: 6px;
   overflow: hidden;
   background: var(--bg-1);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  position: relative;
+  box-shadow: var(--art-shadow);
 }
 .latestArt img {
   width: 100%;
@@ -359,9 +360,18 @@
   border-radius: 6px;
   overflow: hidden;
   background: var(--bg-1);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--art-shadow);
   margin-bottom: 8px;
   position: relative;
+}
+.albumArt::after,
+.latestArt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--art-keyline);
+  pointer-events: none;
 }
 .albumArt img {
   position: absolute;

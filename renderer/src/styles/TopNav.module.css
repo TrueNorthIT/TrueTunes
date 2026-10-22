@@ -26,14 +26,14 @@
 .windowPill {
   height: 44px;
   border-radius: 22px;
-  background: rgba(12, 12, 18, 0.48);
-  backdrop-filter: blur(48px) saturate(240%) brightness(1.05);
+  /* material tokens come from styles/depth.css */
+  background: var(--material-bg);
+  backdrop-filter: var(--material-filter);
   will-change: backdrop-filter;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--separator);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.5),
-    0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 -1px 0 rgba(0, 0, 0, 0.3) inset;
+    var(--material-edge);
 }
 
 /* ── History pill — fixed top-left, independent of navRoot ── */

@@ -1,0 +1,40 @@
+/* ── Ambient artwork behind the whole app ── */
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .ambient { display: none; }
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  opacity: 0.22;
+  /* the opacity fade runs on the compositor; will-change only while it is running */
+  will-change: opacity;
+  animation: ambientIn 1s ease both;
+}
+.layer.out { animation: ambientOut 1s ease both; }
+.layer.settled { will-change: auto; }
+
+/* The blur is on the static image, rendered once; nothing here scrolls. Over-sized so the blur has no soft edge. */
+.img {
+  position: absolute;
+  inset: -160px;
+  width: calc(100% + 320px);
+  height: calc(100% + 320px);
+  object-fit: cover;
+  filter: blur(120px) saturate(1.4) brightness(0.8);
+}
+
+@keyframes ambientIn  { from { opacity: 0; } to { opacity: 0.22; } }
+@keyframes ambientOut { from { opacity: 0.22; } to { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .layer { animation: none; will-change: auto; }
+  .layer.out { display: none; }
+}

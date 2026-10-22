@@ -1,0 +1,29 @@
+/*
+ * Shell materials: neutral window, translucent nav / player / queue sidebar over the ambient
+ * artwork layer (components/AmbientBackdrop.tsx). The shell CSS modules only read these tokens.
+ *
+ *   --window-bg       window / shell background
+ *   --material-bg     nav pill, player bar
+ *   --material-filter backdrop-filter for those
+ *   --material-edge   inset highlight on those
+ *   --sidebar-bg      queue sidebar
+ *   --sidebar-filter  backdrop-filter for the sidebar
+ */
+:root {
+  --window-bg: #1e1e1e;
+  --material-bg: rgba(30, 30, 32, 0.62);
+  --material-filter: blur(30px) saturate(1.8);
+  --material-edge: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --sidebar-bg: rgba(30, 30, 32, 0.62);
+  --sidebar-filter: blur(30px) saturate(1.8);
+}
+
+/* Accessibility fallback: solid surfaces */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --material-bg: #262628;
+    --material-filter: none;
+    --sidebar-bg: #232325;
+    --sidebar-filter: none;
+  }
+}

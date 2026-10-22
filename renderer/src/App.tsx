@@ -26,6 +26,7 @@ import type { SonosItem, SonosItemId } from './types/sonos';
 
 import { TopNav } from './components/TopNav';
 import { PlayerBar } from './components/PlayerBar';
+import { AmbientBackdrop } from './components/AmbientBackdrop';
 import { HomePanel, fetchYtmSections } from './components/HomePanel';
 import type { YtmSections } from './components/HomePanel';
 import { AlbumPanel } from './components/album/AlbumPanel';
@@ -528,7 +529,9 @@ useEffect(() => {
         }}
         onChangelogOpen={() => setChangelogOpen(true)}
       />
+      <AmbientBackdrop nowPlayingArt={playback.artUrl} />
       <div className={styles.body}>
+        <main className={styles.main}>
         <Routes>
           <Route
             path="/"
@@ -564,6 +567,7 @@ useEffect(() => {
           <Route path="/profile/:userName" element={<ProfilePanel onAddToQueue={handleAddToQueue} displayName={displayName} onSignOut={async () => { setDisplayName(null); setEntraLoading(true); await window.sonos.entraSignOut().catch(() => {}); await window.sonos.entraReLogin().catch(() => {}); const name = await window.sonos.getDisplayName().catch(() => null); setDisplayName(name); setEntraLoading(false); }} onChangeName={async (name) => { const result = await window.sonos.renameUser(displayName ?? '', name).catch(() => ({ error: 'network' })); if (!result?.error) setDisplayName(name); return result?.error ? { error: result.error } : null; }} />} />
           <Route path="/playlist/:id" element={<PlaylistPanel displayName={displayName} onAddToQueue={handleAddToQueue} />} />
         </Routes>
+        </main>
         <QueueSidebar
           ref={queueSidebarRef}
           items={queueItems}

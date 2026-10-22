@@ -6,7 +6,10 @@
      of flow (e.g. LyricsPanel uses position:fixed), the auto margin
      consumes any leftover space on the sidebar's left side. */
   margin-left: auto;
-  background: transparent;
+  /* material tokens come from styles/depth.css */
+  background: var(--sidebar-bg, transparent);
+  backdrop-filter: var(--sidebar-filter, none);
+  border-left: 1px solid var(--separator);
   overflow: visible;
   display: flex;
   flex-direction: column;
