@@ -11,12 +11,15 @@ interface Props {
   caption?: string;
   /** Opens their profile. */
   onOpen: () => void;
+  /** Title and accessible name of the header button. Default "Open {name}'s profile". */
+  openLabel?: string;
   /** Whatever sits under the header: tiles, rows. */
   children?: ReactNode;
 }
 
 /** A person: avatar, name and a count, with their photo's dominant colour washed across the header. */
-export function PersonCard({ name, imageUrl, caption, onOpen, children }: Props) {
+export function PersonCard({ name, imageUrl, caption, onOpen, openLabel, children }: Props) {
+  const label = openLabel ?? `Open ${name}'s profile`;
   const art = useImage(imageUrl ?? null);
   const color = useDominantColor(art);
   const wash = color
@@ -24,7 +27,7 @@ export function PersonCard({ name, imageUrl, caption, onOpen, children }: Props)
     : undefined;
   return (
     <div className={styles.card}>
-      <button type="button" className={styles.head} style={wash} onClick={onOpen} title={`Open ${name}'s profile`}>
+      <button type="button" className={styles.head} style={wash} onClick={onOpen} title={label} aria-label={openLabel}>
         <UserAvatar name={name} imageUrl={imageUrl} className={styles.avatar} />
         <span className={styles.who}>
           <span className={styles.name}>{name}</span>

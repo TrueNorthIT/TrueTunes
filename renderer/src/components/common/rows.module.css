@@ -70,6 +70,15 @@
   color: var(--title-rest);
   transition: color var(--dur-fast) var(--ease-fast);
 }
+/* A long title ellipsises instead of the whole button clipping at the edge. */
+.title button {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
 .row:hover .title,
 .row:focus-within .title { color: var(--on-art); }
 .artist { font-weight: 400; color: var(--text-3); }

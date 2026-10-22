@@ -1,0 +1,82 @@
+.panel {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: calc(var(--nav-h) + 16px) 28px calc(var(--player-h) + 24px);
+}
+
+.page {
+  max-width: 2400px;
+  margin: 0 auto;
+  container-type: inline-size;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4em;
+  transition: opacity var(--dur-fast) var(--ease-fast);
+}
+/* The previous query's results while the next load: still readable, clearly not current. */
+.stale { opacity: 0.6; }
+
+.msg {
+  color: var(--text-3);
+  font-size: 1em;
+  text-align: center;
+  padding: 4em 0;
+}
+
+/* Recent searches: quiet tonal pills. */
+.recents {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em;
+}
+.recent {
+  border: none;
+  border-radius: 2em;
+  padding: 0.5em 1.05em;
+  background: rgba(var(--tint), 0.12);
+  color: var(--text);
+  font: inherit;
+  font-size: max(13px, 0.93em);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-fast);
+}
+.recent:hover { background: rgba(var(--tint), 0.22); }
+
+.freshGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1.4em;
+}
+
+/* Loading: the results layout at its real size. */
+.skelLead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 1.4em;
+}
+.skelCard { height: 22em; border-radius: 1.2em; }
+.skelRows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9em;
+  padding: 1.5em;
+  border-radius: 1.2em;
+  background: var(--surface);
+}
+.skelRow { height: 3.2em; border-radius: 0.65em; }
+
+@container (max-width: 700px) {
+  .skelLead { grid-template-columns: minmax(0, 1fr); }
+  .freshGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .body,
+  .recent { transition: none; }
+}

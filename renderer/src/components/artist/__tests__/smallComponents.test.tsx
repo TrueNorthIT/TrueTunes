@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { TopSongRow } from '../TopSongRow';
-import { HeroTrackRow } from '../HeroTrackRow';
 import { ArtistAlbumCard } from '../ArtistAlbumCard';
 import { LatestReleaseCard } from '../LatestReleaseCard';
 import type { SonosItem } from '../../../types/sonos';
@@ -78,8 +77,6 @@ describe('TopSongRow', () => {
   });
 });
 
-// ─── HeroTrackRow ─────────────────────────────────────────────────────────────
-
 // ─── ArtistAlbumCard ──────────────────────────────────────────────────────────
 
 describe('ArtistAlbumCard', () => {
@@ -142,59 +139,5 @@ describe('LatestReleaseCard', () => {
     const withSub = { ...album, subtitle: 'Single' };
     render(<LatestReleaseCard album={withSub} onOpen={vi.fn()} />);
     expect(screen.getByText('Single')).toBeInTheDocument();
-  });
-});
-
-import type { HeroTrack } from '../HeroTrackRow';
-
-function makeHeroTrack(overrides: Partial<HeroTrack> = {}): HeroTrack {
-  return {
-    title: 'Hey Jude',
-    durationSeconds: 431,
-    artUrl: null,
-    explicit: false,
-    raw: { name: 'Hey Jude', type: 'TRACK' } as SonosItem,
-    ...overrides,
-  };
-}
-
-describe('HeroTrackRow', () => {
-  it('renders track title', () => {
-    render(
-      <HeroTrackRow track={makeHeroTrack()} index={0} isSelected={false} onClick={vi.fn()} onDragStart={vi.fn()} onAdd={vi.fn()} />
-    );
-    expect(screen.getByText('Hey Jude')).toBeInTheDocument();
-  });
-
-  it('calls onClick when row is clicked', () => {
-    const onClick = vi.fn();
-    render(
-      <HeroTrackRow track={makeHeroTrack()} index={3} isSelected={false} onClick={onClick} onDragStart={vi.fn()} onAdd={vi.fn()} />
-    );
-    fireEvent.click(screen.getByText('Hey Jude'));
-    expect(onClick).toHaveBeenCalledWith(3, expect.any(Object));
-  });
-
-  it('calls onAdd when + button is clicked', () => {
-    const onAdd = vi.fn();
-    render(
-      <HeroTrackRow track={makeHeroTrack()} index={0} isSelected={false} onClick={vi.fn()} onDragStart={vi.fn()} onAdd={onAdd} />
-    );
-    fireEvent.click(screen.getByText('+'));
-    expect(onAdd).toHaveBeenCalled();
-  });
-
-  it('renders formatted duration', () => {
-    render(
-      <HeroTrackRow track={makeHeroTrack({ durationSeconds: 431 })} index={0} isSelected={false} onClick={vi.fn()} onDragStart={vi.fn()} onAdd={vi.fn()} />
-    );
-    expect(screen.getByText('7:11')).toBeInTheDocument();
-  });
-
-  it('shows ExplicitBadge when explicit is true', () => {
-    render(
-      <HeroTrackRow track={makeHeroTrack({ explicit: true })} index={0} isSelected={false} onClick={vi.fn()} onDragStart={vi.fn()} onAdd={vi.fn()} />
-    );
-    expect(screen.getByTitle('Explicit')).toBeInTheDocument();
   });
 });

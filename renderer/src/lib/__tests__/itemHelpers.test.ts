@@ -369,6 +369,31 @@ describe('parseServiceSearch', () => {
   });
 });
 
+describe('parseServiceSearch: track album and duration', () => {
+  const b64 = (o: object) => btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(o))));
+  const data = (resource: object) =>
+    ({ resourceOrder: ['TRACKS'], TRACKS: { resources: [{ name: 'Mr. Brightside', id: { objectId: 't', serviceId: 's', accountId: 'c' }, ...resource }] } }) as unknown as ServiceSearch;
+
+  it('reads the album name and id from the container', () => {
+    const [t] = parseServiceSearch(data({ durationMs: 223000, container: { name: 'Hot Fuss', id: { objectId: 'alb', serviceId: 's', accountId: 'c' } } }));
+    expect(t.album).toEqual({ name: 'Hot Fuss', id: { objectId: 'alb', serviceId: 's', accountId: 'c' } });
+    expect(t.durationMs).toBe(223000);
+  });
+
+  it('falls back to containerName and durationMs in the defaults blob, accents intact', () => {
+    const [t] = parseServiceSearch(data({ defaults: b64({ containerName: 'Les Misérables', containerId: 'alb2', durationMs: 220000 }) }));
+    expect(t.album).toEqual({ name: 'Les Misérables', id: { objectId: 'alb2', serviceId: 's', accountId: 'c' } });
+    expect(t.durationMs).toBe(220000);
+    expect(t.resource?.defaults).toBeTruthy();
+  });
+
+  it('leaves album undefined for a video or upload with no container', () => {
+    const [t] = parseServiceSearch(data({ durationMs: 224000, defaults: b64({ durationMs: 224000 }) }));
+    expect(t.album).toBeUndefined();
+  });
+});
+
+
 // ─── resolveAlbumParams ───────────────────────────────────────────────────────
 
 describe('resolveAlbumParams', () => {

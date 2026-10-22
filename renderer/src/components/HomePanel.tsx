@@ -1,11 +1,10 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { Plus, ListPlus, ArrowUpRight } from 'lucide-react';
 import { api } from '../lib/sonosApi';
 import {
   extractItems,
-  parseServiceSearch,
   resolveAlbumParams,
   resolveArtistParams,
   isAlbum,
@@ -55,7 +54,6 @@ import type { NormalizedQueueItem } from '../types/provider';
 import { withArtworkSize } from '../lib/artworkUrl';
 import { UserAvatar } from './common/UserAvatar';
 import { useTrackContextMenu } from './common/ContextMenu';
-import type { ServiceSearch } from '../types/ServiceSearch';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
 import { artistImageQueryOptions, artistQueryOptions } from '../hooks/useArtistBrowse';
 import { Carousel } from './common/Carousel';
@@ -66,7 +64,6 @@ import { PersonCard } from './common/PersonCard';
 import { SectionCard, SeeAll } from './common/SectionCard';
 import { TrackRow } from './common/TrackRow';
 import { ArtistLinks as SharedArtistLinks } from './common/TrackLinks';
-import { SearchResults } from './search/SearchResults';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/HomePanel.module.css';
 
@@ -500,15 +497,11 @@ export async function fetchYtmSections(): Promise<YtmSections> {
 export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName, playback, queueItems = [] }: Props) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
-  const location = useLocation();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const openItem = useOpenItem();
   const { resolveAndOpen } = useResolveAndOpen();
   const { showTrackMenu } = useTrackContextMenu();
 
-  const view = location.pathname === '/search' ? 'search' : 'home';
-  const activeSearch = searchParams.get('q') ?? '';
 
   // Navigation shared by every track on Home: album on the title or art, artist on the name,
   // the app's track context menu on right-click, and a prefetch on hover so the click is instant.
@@ -611,7 +604,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
 
   // Picks: the same engine as Discover
   const djOpts = useMemo(() => ({ users: inOffice, limit: 25 }), [inOffice]);
-  const { data: djSet, isLoading: djLoading } = useDjSet(djOpts, isAuthed && view === 'home');
+  const { data: djSet, isLoading: djLoading } = useDjSet(djOpts, isAuthed);
   const { discoveries, isLoading: discoveriesLoading } = useDjDiscoveries(djSet?.artists, isAuthed);
   const actByName = new Map((djSet?.artists ?? []).map((a) => [a.artist, a]));
   const discoveryPicks = discoveries.slice(0, 8).map((d) => {
@@ -708,7 +701,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
   const trending = capPerArtist(weekStats?.topTracks ?? [], 2).slice(0, 10);
 
   // What people are queuing: each person's recent albums, or their latest tracks if they have no albums
-  const { tracksByUser, albumsByUser } = useRecentTracksByUser(inOffice.slice(0, 10), isAuthed && view === 'home');
+  const { tracksByUser, albumsByUser } = useRecentTracksByUser(inOffice.slice(0, 10), isAuthed);
   const trackPicks = new Map(picksByPerson(inOffice, tracksByUser, { perPerson: 3, maxPeople: 10 }).map((p) => [p.user, p.tracks]));
   const people = inOffice
     .flatMap((user) => {
@@ -757,46 +750,6 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
       item,
     })),
   );
-
-  const { data: searchResults = [], isFetching: searchLoading } = useQuery({
-    queryKey: ['search', activeSearch],
-    queryFn: async () => {
-      const r = await api.search.serviceQuery(activeSearch, { count: 50 });
-      return r.error ? [] : parseServiceSearch(r.data as ServiceSearch);
-    },
-    enabled: view === 'search' && !!activeSearch,
-    staleTime: 2 * 60 * 1000,
-  });
-
-  useEffect(() => {
-    if (view !== 'search' || !searchResults.length) return;
-    searchResults
-      .filter(isAlbum)
-      .slice(0, 3)
-      .forEach((item) => {
-        const { albumId, serviceId, accountId, defaults } = resolveAlbumParams(item);
-        if (albumId && serviceId && accountId)
-          queryClient.prefetchQuery(albumQueryOptions(albumId, serviceId, accountId, defaults));
-      });
-    const top = searchResults[0];
-    if (top && isArtist(top)) {
-      const { artistId, serviceId, accountId, defaults } = resolveArtistParams(top);
-      if (artistId && serviceId && accountId)
-        queryClient.prefetchQuery(artistQueryOptions(artistId, serviceId, accountId, defaults));
-    }
-  }, [searchResults, view, queryClient]);
-
-  if (view === 'search') {
-    return (
-      <div className={styles.panel}>
-        {searchLoading ? (
-          <div className={styles.msg}>Searching…</div>
-        ) : (
-          <SearchResults results={searchResults} onAddToQueue={onAddToQueue} />
-        )}
-      </div>
-    );
-  }
 
   const queueAll = () => {
     const added = picks.map((p) => ({ id: p.t.uri ?? p.key ?? '', title: p.t.title, artist: p.t.artist }));
@@ -871,11 +824,14 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                   ) : undefined
                 }
                 actions={
-                  picks.length > 0 ? (
-                    <button type="button" className={styles.ghostBtn} onClick={queueAll} title="Add every pick to the queue">
-                      <ListPlus size={14} /> Queue all
-                    </button>
-                  ) : undefined
+                  <>
+                    {picks.length > 0 && (
+                      <button type="button" className={styles.ghostBtn} onClick={queueAll} title="Add every pick to the queue">
+                        <ListPlus size={14} /> Queue all
+                      </button>
+                    )}
+                    <SeeAll onClick={() => navigate('/discover')} />
+                  </>
                 }
               >
                 {!lead ? (

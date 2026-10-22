@@ -39,9 +39,6 @@ vi.mock('../../lib/sonosApi', () => ({
   },
 }));
 
-vi.mock('../search/SearchResults', () => ({
-  SearchResults: ({ results }: { results: SonosItem[] }) => <div>Search results ({results.length})</div>,
-}));
 
 const mockShowToast = vi.fn();
 vi.mock('../common/Toast', () => ({ useToast: () => ({ showToast: mockShowToast }) }));
@@ -829,30 +826,6 @@ describe('HomePanel', () => {
     it('drives the progress bar with scaleX, not width', () => {
       expect(rule('nowFill'), 'Expected a transform transition').toMatch(/transition:\s*transform/);
       expect(rule('nowFill'), 'Expected no width transition').not.toMatch(/transition:[^;]*width/);
-    });
-  });
-
-  describe('search view', () => {
-    it('shows SearchResults on /search path after query resolves', async () => {
-      mockUseLocation.mockReturnValue({ pathname: '/search' });
-      mockUseSearchParams.mockReturnValue([new URLSearchParams({ q: 'Beatles' })]);
-      render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
-      await waitFor(() => expect(screen.getByText(/Search results/)).toBeInTheDocument());
-    });
-
-    it('shows "Searching…" on /search path while loading', () => {
-      mockUseLocation.mockReturnValue({ pathname: '/search' });
-      mockUseSearchParams.mockReturnValue([new URLSearchParams({ q: 'Beatles' })]);
-      mockServiceQuery.mockReturnValue(new Promise(() => {}));
-      render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
-      expect(screen.getByText('Searching…')).toBeInTheDocument();
-    });
-
-    it('shows empty SearchResults when on /search with no query', () => {
-      mockUseLocation.mockReturnValue({ pathname: '/search' });
-      mockUseSearchParams.mockReturnValue([new URLSearchParams()]);
-      render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
-      expect(screen.getByText('Search results (0)')).toBeInTheDocument();
     });
   });
 });

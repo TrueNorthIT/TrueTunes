@@ -287,17 +287,25 @@ export function parseServiceSearch(data: ServiceSearch): SonosItem[] {
         break;
       case 'TRACKS':
         for (const r of data.TRACKS?.resources ?? []) {
+          // The album tells versions apart (Hot Fuss vs a live set). Tracks with none are videos and uploads.
+          const defs = decodeDefaults(r.defaults);
+          const albumName = r.container?.name ?? (defs?.['containerName'] as string | undefined);
+          const albumId = r.container?.id?.objectId ?? (defs?.['containerId'] as string | undefined);
           result.push({
             type: 'TRACK',
             name: r.name,
             images: r.images,
             artists: r.artists?.map(a => ({ name: a.name, id: a.id })),
             explicit: r.explicit,
-            durationMs: r.durationMs,
+            durationMs: r.durationMs ?? (defs?.['durationMs'] as number | undefined),
+            ...(albumName
+              ? { album: { name: albumName, id: albumId ? { objectId: albumId, serviceId: r.id.serviceId, accountId: r.id.accountId } : undefined } }
+              : {}),
             id: { objectId: r.id.objectId, serviceId: r.id.serviceId, accountId: r.id.accountId },
             resource: {
               type: 'TRACK',
               id: { objectId: r.id.objectId, serviceId: r.id.serviceId, accountId: r.id.accountId },
+              defaults: r.defaults,
             },
           });
         }

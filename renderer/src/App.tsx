@@ -33,6 +33,7 @@ import { AlbumPanel } from './components/album/AlbumPanel';
 import { ArtistPanel } from './components/artist/ArtistPanel';
 import { ContainerPanel } from './components/ContainerPanel';
 import { DiscoverPanel } from './components/DiscoverPanel';
+import { SearchPanel } from './components/search/SearchPanel';
 import { useAutoplay } from './hooks/useAutoplay';
 import type { NormalizedQueueItem } from './types/provider';
 import { LeaderboardPanel } from './components/LeaderboardPanel';
@@ -547,19 +548,8 @@ useEffect(() => {
               />
             }
           />
-          <Route
-            path="/search"
-            element={
-              <HomePanel
-                isAuthed={isAuthed}
-                onAddToQueue={handleAddToQueue}
-                ytm={ytm}
-                ytmLoading={ytmLoading}
-                displayName={displayName}
-              />
-            }
-          />
-          <Route path="/discover" element={<DiscoverPanel onAddToQueue={handleAddToQueue} displayName={displayName} />} />
+          <Route path="/search" element={<SearchPanel onAddToQueue={handleAddToQueue} />} />
+          <Route path="/discover" element={<DiscoverPanel onAddToQueue={handleAddToQueue} displayName={displayName} queueItems={queueItems} />} />
           <Route path="/album/:id" element={<AlbumPanel onAddToQueue={handleAddToQueue} playback={playback} />} />
           <Route path="/artist/:id" element={<ArtistPanel onAddToQueue={handleAddToQueue} currentTrackName={playback.trackName} isPlaybackActive={playback.isPlaying} />} />
           <Route path="/container/:id" element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
