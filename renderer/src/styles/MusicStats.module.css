@@ -1,194 +1,36 @@
-.page {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: var(--nav-h) 28px 16px;
-  flex-shrink: 0;
-}
-
-.title {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: -0.01em;
-}
-
-.sub {
-  font-size: 13px;
-  color: var(--text-3);
-  font-variant-numeric: tabular-nums;
-}
-
-.spacer { flex: 1; }
-
-.backBtn {
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--text-2);
-  font-family: inherit;
-  font-size: 12px;
-  padding: 6px 12px;
-  border-radius: var(--r-sm);
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s;
-}
-.backBtn:hover { background: var(--bg-2); color: var(--text); }
-
-.body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0 28px 120px;
-}
+/* Music stats: the frame and header are stats/StatsPage, the cards common/SectionCard. Sized in em from the page base. */
 
 .state {
-  padding: 48px 28px;
+  padding: 3em 0;
   color: var(--text-3);
-  font-size: 14px;
+  font-size: var(--fs-body);
   text-align: center;
 }
 
 .empty {
-  padding: 20px 4px;
+  padding: 1.4em 0.3em;
   color: var(--text-3);
-  font-size: 13px;
+  font-size: var(--fs-label);
   text-align: center;
 }
 
 .strong { color: var(--text); font-weight: 600; }
 
 /* ── Sections ── */
-.section {
-  background: var(--glass-faint);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  padding: 16px 18px 18px;
-  margin-bottom: 16px;
-  min-width: 0;
-}
-.sectionTitle {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-2);
-  margin: 0;
-}
-.sectionHint {
-  font-size: 12px;
-  color: var(--text-3);
-  margin: 4px 0 12px;
-}
-.subTitle {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-3);
-  margin: 0 0 8px;
-}
-
+.section { margin-bottom: 1.4em; }
 .twoUp {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  gap: 16px;
-  margin-bottom: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(26em, 1fr));
+  gap: 1.4em;
+  margin-bottom: 1.4em;
 }
-.twoUp > .section { margin-bottom: 0; }
+.busy { max-width: 64em; }
 
-.chart {
-  position: relative;
-  width: 100%;
-}
-
-/* ── Tooltip ── */
-.tooltip {
-  position: absolute;
-  z-index: 5;
-  max-width: 240px;
-  padding: 6px 10px;
-  background: var(--bg-glass);
-  border: 1px solid var(--border-2);
-  border-radius: var(--r-sm);
-  pointer-events: none;
-  font-size: 12px;
-  white-space: nowrap;
-  backdrop-filter: blur(8px);
-}
-.tipTitle { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
-
-/* ── Busy hours heatmap ── */
-.heat {
-  display: grid;
-  grid-template-columns: 34px repeat(24, minmax(0, 1fr));
-  gap: 3px;
-  max-width: 900px;
-}
-.heatRowWrap { display: contents; }
-.heatHour {
-  font-size: 10px;
-  color: var(--text-3);
-  height: 14px;
-  font-variant-numeric: tabular-nums;
-}
-.heatDay {
-  font-size: 11px;
-  color: var(--text-2);
-  display: flex;
-  align-items: center;
-}
-.heatCell, .heatEmpty {
-  height: 20px;
-  border-radius: 3px;
-}
-.heatEmpty, .heatEmptyKey { box-shadow: inset 0 0 0 1px var(--glass-faint); }
-.heatCell:hover, .heatEmpty:hover { outline: 2px solid var(--text); outline-offset: -1px; }
-.rampLegend {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
-  font-size: 11px;
-  color: var(--text-3);
-}
-.rampBar { width: 120px; height: 8px; border-radius: 4px; }
-.heatEmptyKey { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-left: 12px; }
-
-/* ── Per-person bars ── */
-.bars { display: flex; flex-direction: column; gap: 6px; }
-.barRow {
-  display: grid;
-  grid-template-columns: minmax(60px, 120px) minmax(40px, 1fr) auto minmax(0, max-content);
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-}
-.barName { color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.barTrack { height: 10px; min-width: 0; }
-.bar { display: block; height: 100%; border-radius: 0 4px 4px 0; min-width: 2px; }
-.barValue {
-  color: var(--text);
-  text-align: right;
-  font-variant-numeric: tabular-nums;
+.subTitle {
+  font-size: var(--fs-body);
   font-weight: 600;
-  white-space: nowrap;
-  min-width: 42px;
-}
-.barSub {
-  color: var(--text-3);
-  font-size: 11px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+  margin: 0 0 0.6em;
 }
 
 /* ── Lists (songs, discoverers, re-queued) ── */
@@ -198,23 +40,23 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.7em;
 }
 .item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.8em;
   min-width: 0;
 }
 .thumb {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--r-sm);
+  width: 2.9em;
+  height: 2.9em;
+  border-radius: var(--r-thumb);
   object-fit: cover;
   flex-shrink: 0;
   background: var(--bg-2);
 }
-.thumbRound { border-radius: 50%; }
+.thumbRound { border-radius: var(--r-round); }
 .itemText { flex: 1; min-width: 0; }
 .itemPerson,
 .itemTitle,
@@ -223,77 +65,57 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.itemPerson { font-size: 11px; color: var(--text-3); }
-.itemTitle { font-size: 13px; color: var(--text); font-weight: 500; }
-.itemSub { font-size: 11px; color: var(--text-3); }
+.itemPerson { font-size: var(--fs-small); color: var(--text-3); }
+.itemTitle { font-size: var(--fs-label); color: var(--text); font-weight: 500; }
+.itemSub { font-size: var(--fs-small); color: var(--text-3); }
 .itemNums {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   flex-shrink: 0;
-  gap: 2px;
+  gap: 0.15em;
 }
-.itemValue { font-size: 13px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
-.itemMuted { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.itemValue { font-size: var(--fs-label); color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.itemMuted { font-size: var(--fs-small); color: var(--text-3); font-variant-numeric: tabular-nums; flex-shrink: 0; }
 
 /* ── Taste over time ── */
 .picker {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 16px;
+  gap: 0.5em;
+  margin-bottom: 1.2em;
 }
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  max-width: 200px;
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--text-2);
-  font-family: inherit;
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  cursor: pointer;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
-}
-.chip:hover { background: var(--bg-2); color: var(--text); }
-.chipOn { border-color: var(--border-2); color: var(--text); background: var(--bg-2); }
 
 .taste {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
-  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) minmax(14em, 20em);
+  gap: 2em;
 }
-@media (max-width: 900px) {
+@container (max-width: 64em) {
   .taste { grid-template-columns: minmax(0, 1fr); }
 }
-.months { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.months { display: flex; flex-direction: column; gap: 0.8em; min-width: 0; }
 .month {
   display: grid;
-  grid-template-columns: 72px 90px minmax(0, 1fr);
+  grid-template-columns: 6em 7em minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
-  font-size: 12px;
+  gap: 0.8em;
+  font-size: var(--fs-label);
 }
 .monthLabel { color: var(--text-2); white-space: nowrap; }
-.monthQueues { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.monthBar { display: block; height: 8px; border-radius: 0 4px 4px 0; min-width: 2px; max-width: 54px; flex-shrink: 0; }
-.monthCount { color: var(--text-3); font-size: 11px; font-variant-numeric: tabular-nums; }
-.monthArtists { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.monthQueues { display: flex; align-items: center; gap: 0.5em; min-width: 0; }
+.monthBar { display: block; height: 0.6em; border-radius: var(--r-pill); min-width: 0.15em; max-width: 54px; flex-shrink: 0; }
+.monthCount { color: var(--text-3); font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
+.monthArtists { display: flex; flex-wrap: wrap; gap: 0.5em; min-width: 0; }
 .artistPill {
   display: inline-flex;
   align-items: baseline;
-  gap: 5px;
+  gap: 0.4em;
   max-width: 100%;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--bg-2);
+  padding: 0.15em 0.7em;
+  border-radius: var(--r-pill);
+  background: rgba(var(--tint), 0.1);
   min-width: 0;
 }
 .artistName {
@@ -311,15 +133,15 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  font-size: 12px;
+  gap: 0.4em;
+  font-size: var(--fs-label);
 }
-.topArtist { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
-.rank { width: 16px; text-align: right; color: var(--text-3); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.topArtist { display: flex; align-items: baseline; gap: 0.6em; min-width: 0; }
+.rank { width: 1.4em; text-align: right; color: var(--text-3); font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .topArtist .artistName { flex: 1; }
 
 .staleNote {
-  font-size: 12px;
+  font-size: var(--fs-label);
   color: var(--text-3);
-  margin: 0 0 12px;
+  margin: 0 0 1em;
 }

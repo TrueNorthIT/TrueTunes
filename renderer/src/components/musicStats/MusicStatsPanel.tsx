@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -25,30 +25,19 @@ import {
   slotLabel,
   varietyRows,
 } from '../../lib/musicStats';
+import { PersonChip } from '../common/PersonChip';
+import { SectionCard } from '../common/SectionCard';
+import { BarList } from '../stats/BarList';
+import { TipTitle } from '../stats/ChartTooltip';
+import { Heatmap } from '../stats/Heatmap';
+import { RAMP } from '../stats/ramp';
+import { StatsPage } from '../stats/StatsPage';
 import styles from '../../styles/MusicStats.module.css';
 
 // Single-series charts: you in blue, everyone else in a recessive grey (the
 // same convention as the Queuedle stats page). Values are always text-coloured.
 const ME = 'var(--series-1)';
-const MUTED = 'var(--glass)';
-
-// Sequential blue, dark surface: quiet hours recede towards the surface.
-const RAMP = Array.from({ length: 9 }, (_, i) => `color-mix(in srgb, var(--ramp-hi) ${Math.round((i / 8) * 100)}%, var(--ramp-lo))`);
-
-interface Tip {
-  x: number;
-  y: number;
-  content: ReactNode;
-}
-
-function Tooltip({ tip }: { tip: Tip | null }) {
-  if (!tip) return null;
-  return (
-    <div className={styles.tooltip} style={{ left: tip.x, top: tip.y }} role="tooltip">
-      {tip.content}
-    </div>
-  );
-}
+const MUTED = 'var(--glass)'; // taste bars; the shared BarList mutes its own
 
 function Thumb({ url, round }: { url: string | null; round?: boolean }) {
   const cached = useImage(url);
@@ -57,74 +46,35 @@ function Thumb({ url, round }: { url: string | null; round?: boolean }) {
   return <img className={cls} src={cached} alt="" loading="lazy" />;
 }
 
-function Section({ title, hint, children }: { title: string; hint?: ReactNode; children: ReactNode }) {
-  return (
-    <section className={styles.section}>
-      <h2 className={styles.sectionTitle}>{title}</h2>
-      {hint && <p className={styles.sectionHint}>{hint}</p>}
-      {children}
-    </section>
-  );
-}
-
 const Empty = ({ children }: { children: ReactNode }) => <div className={styles.empty}>{children}</div>;
 
 // ── Busy hours heatmap ───────────────────────────────────────────────────────
 
 function BusyHours({ grid }: { grid: number[][] }) {
-  const [tip, setTip] = useState<Tip | null>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
   const max = useMemo(() => Math.max(0, ...grid.flat()), [grid]);
-
-  function show(e: React.PointerEvent, weekday: number, hour: number, count: number) {
-    const wrap = wrapRef.current?.getBoundingClientRect();
-    const cell = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    if (!wrap) return;
-    setTip({
-      x: Math.max(0, Math.min(cell.left - wrap.left + cell.width + 6, wrap.width - 190)),
-      y: cell.top - wrap.top - 6,
-      content: (
-        <div className={styles.tipTitle}>
-          {slotLabel(weekday, hour)} · {formatCount(count)} {count === 1 ? 'queue' : 'queues'}
-        </div>
-      ),
-    });
-  }
-
+  const count = (wd: number, h: number) => grid[wd]?.[h] ?? 0;
   return (
-    <div ref={wrapRef} className={styles.chart} onPointerLeave={() => setTip(null)}>
-      <div className={styles.heat} role="img" aria-label="Queues by day of the week and hour">
-        <div />
-        {Array.from({ length: 24 }, (_, h) => (
-          <div key={h} className={styles.heatHour}>{h % 3 === 0 ? h : ''}</div>
-        ))}
-        {WEEKDAYS.map((day, wd) => (
-          <div key={day} className={styles.heatRowWrap}>
-            <div className={styles.heatDay}>{day}</div>
-            {Array.from({ length: 24 }, (_, h) => {
-              const count = grid[wd]?.[h] ?? 0;
-              const i = rampIndex(count, max, RAMP.length);
-              return (
-                <div
-                  key={h}
-                  className={i === -1 ? styles.heatEmpty : styles.heatCell}
-                  style={i === -1 ? undefined : { background: RAMP[i] }}
-                  onPointerEnter={(e) => show(e, wd, h, count)}
-                  aria-label={`${slotLabel(wd, h)}: ${count} queues`}
-                />
-              );
-            })}
-          </div>
-        ))}
-      </div>
-      <div className={styles.rampLegend} aria-hidden="true">
-        <span>Quiet</span>
-        <span className={styles.rampBar} style={{ background: `linear-gradient(to right, ${RAMP.join(',')})` }} />
-        <span>Busiest ({formatCount(max)})</span>
-        <span className={styles.heatEmptyKey} /> <span>nothing queued</span>
-      </div>
-      <Tooltip tip={tip} />
-    </div>
+    <Heatmap
+      className={styles.busy}
+      ariaLabel="Queues by day of the week and hour"
+      // Every third hour is named: at 13px a label for each would run into its neighbour.
+      columns={Array.from({ length: 24 }, (_, h) => (h % 3 === 0 ? String(h) : ''))}
+      rows={WEEKDAYS.map((day, wd) => ({
+        key: day,
+        label: day,
+        cells: Array.from({ length: 24 }, (_, h) => {
+          const i = rampIndex(count(wd, h), max, RAMP.length);
+          return i === -1 ? null : RAMP[i];
+        }),
+      }))}
+      cellLabel={(wd, h) => `${slotLabel(wd, h)}: ${count(wd, h)} queues`}
+      renderTip={(wd, h) => (
+        <TipTitle>
+          {slotLabel(wd, h)} · {formatCount(count(wd, h))} {count(wd, h) === 1 ? 'queue' : 'queues'}
+        </TipTitle>
+      )}
+      legend={{ lo: 'Quiet', hi: `Busiest (${formatCount(max)})`, empty: 'nothing queued' }}
+    />
   );
 }
 
@@ -139,23 +89,19 @@ interface BarRow {
 }
 
 function PersonBars({ rows, me, max }: { rows: BarRow[]; me: string | null | undefined; max?: number }) {
-  const top = max ?? Math.max(1e-9, ...rows.map((r) => r.value));
   return (
-    <div className={styles.bars}>
-      {rows.map((r) => {
-        const mine = !!me && r.userId === me;
-        return (
-          <div key={r.userId} className={styles.barRow} title={r.title}>
-            <span className={`${styles.barName}${mine ? ' ' + styles.strong : ''}`}>{r.userId}</span>
-            <span className={styles.barTrack}>
-              <span className={styles.bar} style={{ width: `${Math.min(100, (r.value / top) * 100)}%`, background: mine ? ME : MUTED }} />
-            </span>
-            <span className={styles.barValue}>{r.label}</span>
-            {r.sub !== undefined && <span className={styles.barSub}>{r.sub}</span>}
-          </div>
-        );
-      })}
-    </div>
+    <BarList
+      max={max}
+      rows={rows.map((r) => ({
+        key: r.userId,
+        name: r.userId,
+        value: r.value,
+        label: r.label,
+        sub: r.sub,
+        title: r.title,
+        colour: me && r.userId === me ? ME : null,
+      }))}
+    />
   );
 }
 
@@ -246,15 +192,16 @@ function Stats({ data, me }: { data: MusicStatsResult; me: string | null | undef
 
   return (
     <>
-      <Section
+      <SectionCard
+        className={styles.section}
         title="Busy hours"
-        hint={peak ? `When the office reaches for the queue. Peak: ${slotLabel(peak.weekday, peak.hour)}.` : 'When the office reaches for the queue.'}
+        sub={peak ? `When the office reaches for the queue. Peak: ${slotLabel(peak.weekday, peak.hour)}.` : 'When the office reaches for the queue.'}
       >
         <BusyHours grid={data.busyHours} />
-      </Section>
+      </SectionCard>
 
       <div className={styles.twoUp}>
-        <Section title="Airtime" hint={coverage ? `Hours of music each person has put on. ${coverage}.` : 'Hours of music each person has put on.'}>
+        <SectionCard title="Airtime" sub={coverage ? `Hours of music each person has put on. ${coverage}.` : 'Hours of music each person has put on.'}>
           {hasLengths && airtime.length > 0 ? (
             <PersonBars
               me={me}
@@ -269,11 +216,10 @@ function Stats({ data, me }: { data: MusicStatsResult; me: string | null | undef
           ) : (
             <Empty>{NO_LENGTHS_TEXT}</Empty>
           )}
-        </Section>
+        </SectionCard>
 
-        <Section
-          title="Song length"
-          hint={`Average song length. Top of the list queues the prog epics.${coverage ? ` ${coverage}.` : ''}`}
+        <SectionCard
+          title="Song length" sub={`Average song length. Top of the list queues the prog epics.${coverage ? ` ${coverage}.` : ''}`}
         >
           {hasLengths && avgLength.length > 0 ? (
             <PersonBars
@@ -288,20 +234,20 @@ function Stats({ data, me }: { data: MusicStatsResult; me: string | null | undef
           ) : (
             <Empty>{NO_LENGTHS_TEXT}</Empty>
           )}
-        </Section>
+        </SectionCard>
       </div>
 
       <div className={styles.twoUp}>
-        <Section title="Longest songs" hint="Settle in.">
+        <SectionCard title="Longest songs" sub="Settle in.">
           {hasLengths && data.longest.length > 0 ? <TrackList tracks={data.longest} /> : <Empty>{NO_LENGTHS_TEXT}</Empty>}
-        </Section>
-        <Section title="Shortest songs" hint="Blink and you’ll miss them.">
+        </SectionCard>
+        <SectionCard title="Shortest songs" sub="Blink and you’ll miss them.">
           {hasLengths && data.shortest.length > 0 ? <TrackList tracks={data.shortest} /> : <Empty>{NO_LENGTHS_TEXT}</Empty>}
-        </Section>
+        </SectionCard>
       </div>
 
       <div className={styles.twoUp}>
-        <Section title="Explicit" hint="Share of each person’s songs with a parental advisory sticker.">
+        <SectionCard title="Explicit" sub="Share of each person’s songs with a parental advisory sticker.">
           {explicit.length > 0 ? (
             <PersonBars
               me={me}
@@ -316,11 +262,10 @@ function Stats({ data, me }: { data: MusicStatsResult; me: string | null | undef
           ) : (
             <Empty>{hasLengths ? 'No explicit flags known yet.' : NO_LENGTHS_TEXT}</Empty>
           )}
-        </Section>
+        </SectionCard>
 
-        <Section
-          title="Variety"
-          hint={`Different artists per song queued. Only people with ${VARIETY_MIN_TRACKS}+ songs, so one-hit visitors don’t top it.`}
+        <SectionCard
+          title="Variety" sub={`Different artists per song queued. Only people with ${VARIETY_MIN_TRACKS}+ songs, so one-hit visitors don’t top it.`}
         >
           {variety.length > 0 ? (
             <PersonBars
@@ -336,11 +281,11 @@ function Stats({ data, me }: { data: MusicStatsResult; me: string | null | undef
           ) : (
             <Empty>Nobody has queued {VARIETY_MIN_TRACKS} songs yet.</Empty>
           )}
-        </Section>
+        </SectionCard>
       </div>
 
       <div className={styles.twoUp}>
-        <Section title="Discoverers" hint="Who brought an artist to the office before everyone else caught on.">
+        <SectionCard title="Discoverers" sub="Who brought an artist to the office before everyone else caught on.">
           {data.discoverers.length > 0 ? (
             <ol className={styles.list}>
               {data.discoverers.map((d) => (
@@ -361,9 +306,9 @@ function Stats({ data, me }: { data: MusicStatsResult; me: string | null | undef
           ) : (
             <Empty>No discoveries yet.</Empty>
           )}
-        </Section>
+        </SectionCard>
 
-        <Section title="Most re-queued" hint="Everyone’s comfort song.">
+        <SectionCard title="Most re-queued" sub="Everyone’s comfort song.">
           {requeued.length > 0 ? (
             <ol className={styles.list}>
               {requeued.map((p) => (
@@ -383,27 +328,23 @@ function Stats({ data, me }: { data: MusicStatsResult; me: string | null | undef
           ) : (
             <Empty>Nobody has queued the same song twice. Yet.</Empty>
           )}
-        </Section>
+        </SectionCard>
       </div>
 
-      <Section title="Taste over time" hint="Top artists month by month. Pick someone to nose through their history.">
-        <div className={styles.picker} aria-label="Pick a person">
-          {chipOrder.map((p) => {
-            const on = p.userId === tasteName;
-            return (
-              <button
-                key={p.userId}
-                className={`${styles.chip}${on ? ' ' + styles.chipOn : ''}`}
-                aria-pressed={on}
-                onClick={() => setPicked(p.userId)}
-              >
-                {p.userId}{p.userId === me ? ' (you)' : ''}
-              </button>
-            );
-          })}
+      <SectionCard className={styles.section} title="Taste over time" sub="Top artists month by month. Pick someone to nose through their history.">
+        <div className={styles.picker} role="group" aria-label="Pick a person">
+          {chipOrder.map((p) => (
+            <PersonChip
+              key={p.userId}
+              name={p.userId}
+              suffix={p.userId === me ? ' (you)' : ''}
+              selected={p.userId === tasteName}
+              onClick={() => setPicked(p.userId)}
+            />
+          ))}
         </div>
         {tastePerson ? <Taste person={tastePerson} mine={tastePerson.userId === me} /> : <Empty>Nobody to show.</Empty>}
-      </Section>
+      </SectionCard>
     </>
   );
 }
@@ -424,23 +365,18 @@ export function MusicStatsPanel() {
   const data = stats.data;
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Music stats</h1>
-        <span className={styles.sub}>
-          {data ? `${formatCount(data.totalEvents)} queues · ${data.people.length} people` : ''}
-        </span>
-        <div className={styles.spacer} />
-        <button className={styles.backBtn} onClick={() => navigate('/leaderboard')}>← Leaderboard</button>
-      </div>
-      <div className={styles.body}>
-        {stats.isLoading && <div className={styles.state}>Crunching every queue so far…</div>}
-        {stats.isError && !data && <div className={styles.state}>Couldn’t load the music stats.</div>}
-        {/* A failed background refresh keeps the last stats on screen. */}
-        {stats.isError && data && <div className={styles.staleNote}>Couldn’t refresh just now, so these may be a few minutes old.</div>}
-        {data && data.people.length === 0 && <div className={styles.state}>Nothing queued yet.</div>}
-        {data && data.people.length > 0 && <Stats data={data} me={displayName} />}
-      </div>
-    </div>
+    <StatsPage
+      title="Music stats"
+      facts={data ? `${formatCount(data.totalEvents)} queues · ${data.people.length} people` : undefined}
+      backLabel="Leaderboard"
+      onBack={() => navigate('/leaderboard')}
+    >
+      {stats.isLoading && <p className={styles.state}>Crunching every queue so far…</p>}
+      {stats.isError && !data && <p className={styles.state}>Couldn’t load the music stats.</p>}
+      {/* A failed background refresh keeps the last stats on screen. */}
+      {stats.isError && data && <p className={styles.staleNote}>Couldn’t refresh just now, so these may be a few minutes old.</p>}
+      {data && data.people.length === 0 && <p className={styles.state}>Nothing queued yet.</p>}
+      {data && data.people.length > 0 && <Stats data={data} me={displayName} />}
+    </StatsPage>
   );
 }
