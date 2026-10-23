@@ -809,11 +809,11 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                   <div className={styles.msg}>Digging for something new…</div>
                 ) : (
                   <div className={styles.picksLayout}>
-                    <PickCard size="large" className={styles.picksLead} label={pickReason(lead.because, displayName)} t={lead.t} photoUrl={lead.photo} onAdd={addPick(lead)} why={lead.why} />
+                    <PickCard size="large" className={styles.picksLead} label={pickReason(lead.because, displayName, lead.why.fans)} t={lead.t} photoUrl={lead.photo} onAdd={addPick(lead)} why={lead.why} />
                     {[featured[0], featured[1]].map((p, i) =>
                       p ? (
                         <div key={p.key} className={styles.picksCol}>
-                          <PickCard size="medium" label={pickReason(p.because, displayName)} t={p.t} photoUrl={p.photo} onAdd={addPick(p)} why={p.why} />
+                          <PickCard size="medium" label={pickReason(p.because, displayName, p.why.fans)} t={p.t} photoUrl={p.photo} onAdd={addPick(p)} why={p.why} />
                           <ul className={styles.list}>{(i === 0 ? listA : listB).map(pickRow)}</ul>
                         </div>
                       ) : null,

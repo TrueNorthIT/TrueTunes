@@ -133,8 +133,12 @@ export function geniusFirstParagraph(node: GeniusDomNode | null | undefined): st
   return geniusParagraphs(node)[0] ?? '';
 }
 
-/** "Rich and Alex queue Gorillaz — never played here" becomes "Rich & Alex love Gorillaz". The viewer becomes "You". */
-export function pickReason(because: string, viewer?: string | null): string {
+/**
+ * "Rich and Alex queue Gorillaz — never played here" becomes "Rich & Alex love Gorillaz". The viewer becomes "You".
+ * With `fans` (each person's all-time queues of the artist) the verb follows the evidence, judged by the lowest count
+ * among the people named, so it is true of all of them: 5+ "love", 2–4 "like", 1 "have played".
+ */
+export function pickReason(because: string, viewer?: string | null, fans?: { user: string; count: number }[]): string {
   const [lead] = because.split(' — ');
   const m = lead.match(/^(.*?)\s(queues?)\s(.*)$/);
   if (!m) return lead;
@@ -144,7 +148,11 @@ export function pickReason(because: string, viewer?: string | null): string {
   const subject =
     parts.length > 2 ? `${parts.slice(0, -1).join(', ')} & ${parts[parts.length - 1]}` : parts.join(' & ');
   const plural = mine || parts.length > 1 || m[2] === 'queue';
-  return `${subject} ${plural ? 'love' : 'loves'} ${m[3]}`;
+  const counts = names.flatMap((n) => fans?.find((f) => f.user === n)?.count ?? []);
+  const least = counts.length ? Math.min(...counts) : Infinity;
+  const verb =
+    least >= 5 ? (plural ? 'love' : 'loves') : least >= 2 ? (plural ? 'like' : 'likes') : plural ? 'have played' : 'has played';
+  return `${subject} ${verb} ${m[3]}`;
 }
 
 /** The small muted tag for compact rows: only "Never played here", nothing else. */

@@ -501,6 +501,23 @@ describe('pickReason: the short "why" on a pick card', () => {
   it('leaves text without a subject and verb alone', () => {
     expect(pickReason('Because 1'), 'Expected untouched text').toBe('Because 1');
   });
+
+  it('only says "love" when everyone named has the plays to back it', () => {
+    const fans = (a: number, r: number) => [{ user: 'Alex', count: a }, { user: 'Rich', count: r }];
+    const why = 'Rich and Alex queue Sugababes — never played here';
+    expect(pickReason(why, null, fans(12, 12)), 'Expected love at 5+ each').toBe('Rich & Alex love Sugababes');
+    expect(pickReason(why, null, fans(3, 2)), 'Expected like at 2-4').toBe('Rich & Alex like Sugababes');
+    expect(pickReason(why, null, fans(1, 1)), 'Expected have played at 1').toBe('Rich & Alex have played Sugababes');
+    expect(pickReason(why, null, fans(12, 1)), 'Expected the lowest count to decide').toBe('Rich & Alex have played Sugababes');
+    expect(pickReason('Rich queues Sugababes', null, [{ user: 'Rich', count: 3 }]), 'Expected a singular verb').toBe('Rich likes Sugababes');
+    expect(pickReason('Rich queues Sugababes', null, [{ user: 'Rich', count: 1 }]), 'Expected a singular verb').toBe('Rich has played Sugababes');
+    expect(pickReason('Joe Pitts queues Sugababes', 'Joe Pitts', [{ user: 'Joe Pitts', count: 1 }]), 'Expected You').toBe('You have played Sugababes');
+  });
+
+  it('ignores "others", and keeps "love" when there are no counts to go on', () => {
+    expect(pickReason('Rich, Alex, Sam and others queue HAIM', null, [{ user: 'Rich', count: 9 }, { user: 'Alex', count: 6 }, { user: 'Sam', count: 5 }]), 'Expected others to be ignored').toBe('Rich, Alex, Sam & others love HAIM');
+    expect(pickReason('Rich and Alex queue HAIM', null, []), 'Expected love without counts').toBe('Rich & Alex love HAIM');
+  });
 });
 
 describe('neverPlayedTag', () => {
