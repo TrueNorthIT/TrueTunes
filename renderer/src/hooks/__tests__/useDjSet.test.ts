@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { djSetQueryOptions } from '../useDjSet';
+import { runQueryFn } from '../../test/queryFn';
 
 beforeEach(() => {
   vi.mocked(window.sonos.fetchDjSet).mockReset();
@@ -14,7 +15,7 @@ describe('djSetQueryOptions', () => {
       inferredListeners: false,
     });
     const opts = { users: ['Rich'], limit: 5 };
-    await djSetQueryOptions(opts).queryFn();
+    await runQueryFn(djSetQueryOptions(opts));
     expect(window.sonos.fetchDjSet).toHaveBeenCalledWith(opts);
   });
 
@@ -26,7 +27,7 @@ describe('djSetQueryOptions', () => {
   it('fills in the arrays when the bridge returns only an error', async () => {
     vi.mocked(window.sonos.fetchDjSet).mockResolvedValueOnce({ error: 'fetch failed' });
 
-    const result = await djSetQueryOptions().queryFn();
+    const result = await runQueryFn(djSetQueryOptions());
 
     expect(result.tracks).toEqual([]);
     expect(result.listeners).toEqual([]);
@@ -38,7 +39,7 @@ describe('djSetQueryOptions', () => {
 
   it('survives a null response', async () => {
     vi.mocked(window.sonos.fetchDjSet).mockResolvedValueOnce(null as unknown as DjSetResponse);
-    const result = await djSetQueryOptions().queryFn();
+    const result = await runQueryFn(djSetQueryOptions());
     expect(result.listeners).toEqual([]);
     expect(result.tracks).toEqual([]);
   });
@@ -59,7 +60,7 @@ describe('djSetQueryOptions', () => {
       inferredListeners: true,
     });
 
-    const result = await djSetQueryOptions().queryFn();
+    const result = await runQueryFn(djSetQueryOptions());
     expect(result.tracks).toHaveLength(1);
     expect(result.listeners).toEqual(['Sam', 'Alex']);
     expect(result.artistsConsidered).toBe(409);

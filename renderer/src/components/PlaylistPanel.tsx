@@ -2,7 +2,7 @@ import { Fragment, useRef, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { Camera, Globe, Lock, ListPlus } from 'lucide-react';
-import { usePlaylist } from '../hooks/usePlaylists';
+import { usePlaylist, playlistKeys } from '../hooks/usePlaylists';
 import { useImage } from '../hooks/useImage';
 import { useDominantColor } from '../hooks/useDominantColor';
 import { useTrackDetails, trackQueryOptions } from '../hooks/useTrackDetails';
@@ -163,13 +163,13 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
       const newTracks = [...playlist.tracks];
       const [moved] = newTracks.splice(from, 1);
       newTracks.splice(index, 0, moved);
-      queryClient.setQueryData(['playlist', id], { ...playlist, tracks: newTracks });
+      queryClient.setQueryData(playlistKeys.detail(id), { ...playlist, tracks: newTracks });
       try {
         await window.sonos.reorderPlaylistTracks(id, from, index);
-        queryClient.invalidateQueries({ queryKey: ['playlist', id] });
-        queryClient.invalidateQueries({ queryKey: ['playlists', 'owned', displayName] });
+        queryClient.invalidateQueries({ queryKey: playlistKeys.detail(id) });
+        queryClient.invalidateQueries({ queryKey: playlistKeys.owned(displayName) });
       } catch {
-        queryClient.setQueryData(['playlist', id], snapshot);
+        queryClient.setQueryData(playlistKeys.detail(id), snapshot);
         showToast('Failed to reorder tracks');
       }
     },
@@ -198,8 +198,8 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
     if (!id || !displayName) return;
     try {
       await window.sonos.joinPlaylist(id, isMember ? 'leave' : 'join');
-      queryClient.invalidateQueries({ queryKey: ['playlist', id] });
-      queryClient.invalidateQueries({ queryKey: ['playlists', 'joined', displayName] });
+      queryClient.invalidateQueries({ queryKey: playlistKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: playlistKeys.joined(displayName) });
     } catch {
       showToast(isMember ? 'Failed to leave playlist' : 'Failed to join playlist');
     }
@@ -217,7 +217,7 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
       const buffer = await file.arrayBuffer();
       const result = await window.sonos.uploadPlaylistImage(id, buffer, file.type, displayName ?? '');
       if (result && 'imageUrl' in result) {
-        queryClient.invalidateQueries({ queryKey: ['playlist', id] });
+        queryClient.invalidateQueries({ queryKey: playlistKeys.detail(id) });
       } else if (result && 'error' in result) {
         showToast((result as { error: string }).error);
       }
@@ -230,15 +230,15 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
   async function handleRemoveTrack(uri: string, index: number) {
     if (!playlist || !id) return;
     const snapshot = playlist;
-    queryClient.setQueryData<PlaylistDoc>(['playlist', id], {
+    queryClient.setQueryData<PlaylistDoc>(playlistKeys.detail(id), {
       ...playlist,
       tracks: playlist.tracks.filter((_, i) => i !== index),
     });
     try {
       await window.sonos.removeTrackFromPlaylist(id, uri);
-      queryClient.invalidateQueries({ queryKey: ['playlists', 'owned', displayName] });
+      queryClient.invalidateQueries({ queryKey: playlistKeys.owned(displayName) });
     } catch {
-      queryClient.setQueryData(['playlist', id], snapshot);
+      queryClient.setQueryData(playlistKeys.detail(id), snapshot);
       showToast('Failed to remove track');
     }
   }
@@ -257,12 +257,12 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
     }
     setRenaming(false);
     const snapshot = playlist;
-    queryClient.setQueryData(['playlist', id], { ...playlist, name: trimmed });
+    queryClient.setQueryData(playlistKeys.detail(id), { ...playlist, name: trimmed });
     try {
       await window.sonos.updatePlaylist(id, { name: trimmed });
-      queryClient.invalidateQueries({ queryKey: ['playlists', 'owned', displayName] });
+      queryClient.invalidateQueries({ queryKey: playlistKeys.owned(displayName) });
     } catch {
-      queryClient.setQueryData(['playlist', id], snapshot);
+      queryClient.setQueryData(playlistKeys.detail(id), snapshot);
       showToast('Failed to rename playlist');
     }
   }
@@ -272,8 +272,8 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
     const owner = playlist.owner;
     try {
       await window.sonos.deletePlaylist(id);
-      queryClient.removeQueries({ queryKey: ['playlist', id] });
-      queryClient.invalidateQueries({ queryKey: ['playlists', 'owned', owner] });
+      queryClient.removeQueries({ queryKey: playlistKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: playlistKeys.owned(owner) });
       navigate(`/profile/${encodeURIComponent(owner)}`);
     } catch {
       setConfirmDelete(false);

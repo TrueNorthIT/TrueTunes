@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/sonosApi';
 import { parseServiceSearch, albumItem } from '../../lib/itemHelpers';
@@ -14,9 +14,9 @@ import { ImageTile } from '../common/ImageTile';
 import { PillButton } from '../common/PillButton';
 import { SectionCard, SeeAll } from '../common/SectionCard';
 import { SearchResults } from './SearchResults';
-import type { ServiceSearch } from '../../types/ServiceSearch';
 import type { SonosItem } from '../../types/sonos';
 import styles from './SearchPanel.module.css';
+import { STALE } from '../../lib/queryDefaults';
 
 /**
  * Up and down move between the top result, the recent searches and the song rows (a row's first control takes focus).
@@ -38,6 +38,23 @@ function arrowNav(e: React.KeyboardEvent<HTMLElement>) {
 
 type AddToQueue = (item: SonosItem, position?: number, opts?: { attribute?: boolean }) => void;
 
+export const searchKeys = {
+  query: (q: string) => ['search', q] as const,
+};
+
+export const searchQueryOptions = (q: string) =>
+  queryOptions({
+    queryKey: searchKeys.query(q),
+    queryFn: async () => {
+      const r = await api.search.serviceQuery(q, { count: 50 });
+      if (r.error || !r.data) throw new Error(String(r.error ?? 'No results payload'));
+      return { query: q, items: dedupeTracks(parseServiceSearch(r.data)) };
+    },
+    enabled: !!q,
+    staleTime: STALE.twoMinutes,
+    retry: 1,
+  });
+
 /** Search runs from the nav's search box, which writes ?q= as you type. This page reads it. */
 export function SearchPanel({ onAddToQueue }: { onAddToQueue: AddToQueue }) {
   const [params] = useSearchParams();
@@ -46,16 +63,8 @@ export function SearchPanel({ onAddToQueue }: { onAddToQueue: AddToQueue }) {
   // Keyed by the query; the last results stay up (dimmed) while the next ones load.
   // An error stays an error (not "no results"), so it can say so and offer Retry.
   const { data, isFetching, isPlaceholderData, isError, refetch } = useQuery({
-    queryKey: ['search', q],
-    queryFn: async () => {
-      const r = await api.search.serviceQuery(q, { count: 50 });
-      if (r.error) throw new Error(String(r.error));
-      return { query: q, items: dedupeTracks(parseServiceSearch(r.data as ServiceSearch)) };
-    },
-    enabled: !!q,
+    ...searchQueryOptions(q),
     placeholderData: keepPreviousData,
-    staleTime: 2 * 60 * 1000,
-    retry: 1,
   });
   const settled = !!data && !isPlaceholderData && !isFetching;
   const count = data?.items.length ?? 0;

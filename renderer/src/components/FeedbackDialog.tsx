@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ExternalLink } from 'lucide-react';
+import { useDisplayName } from '../hooks/useDisplayName';
 import { Dialog } from './common/Dialog';
 import { PillButton } from './common/PillButton';
 import dialog from './common/Dialog.module.css';
@@ -45,14 +46,7 @@ export function FeedbackDialog({ onClose }: Props) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [issueUrl, setIssueUrl] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
-  const [displayName, setDisplayName] = useState<string | null>(null);
-
-  useEffect(() => {
-    window.sonos
-      .getDisplayName()
-      .then(setDisplayName)
-      .catch(() => null);
-  }, []);
+  const displayName = useDisplayName() ?? null;
 
   const canSubmit = title.trim().length > 0;
   const busy = status === 'loading';

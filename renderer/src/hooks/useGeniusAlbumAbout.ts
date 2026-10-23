@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import { geniusParagraphs } from '../lib/homeData';
+import { STALE } from '../lib/queryDefaults';
 
 /** The text an About card shows: plain paragraphs, the release date as read, and the Genius page. */
 export interface GeniusAbout {
@@ -22,12 +23,18 @@ export function releasedLabel(date: string | undefined): string | undefined {
   });
 }
 
+export const geniusAboutKeys = {
+  album: (albumName: string | null | undefined, artistName: string | null | undefined) =>
+    ['genius-album-about', albumName, artistName] as const,
+  artistBio: (artistName: string | null | undefined) => ['genius-artist-bio', artistName] as const,
+};
+
 export function geniusAlbumAboutQueryOptions(
   albumName: string | null | undefined,
   artistName: string | null | undefined
 ) {
-  return {
-    queryKey: ['genius-album-about', albumName, artistName] as const,
+  return queryOptions({
+    queryKey: geniusAboutKeys.album(albumName, artistName),
     queryFn: async (): Promise<GeniusAbout | null> => {
       const r = await window.sonos.geniusAlbumAbout(albumName!, artistName!);
       if (!r) return null;
@@ -37,23 +44,23 @@ export function geniusAlbumAboutQueryOptions(
         url: r.url,
       };
     },
-    staleTime: Infinity,
+    staleTime: STALE.forever,
     retry: false,
     enabled: !!albumName && !!artistName,
-  };
+  });
 }
 
 export function geniusArtistBioQueryOptions(artistName: string | null | undefined) {
-  return {
-    queryKey: ['genius-artist-bio', artistName] as const,
+  return queryOptions({
+    queryKey: geniusAboutKeys.artistBio(artistName),
     queryFn: async (): Promise<GeniusAbout | null> => {
       const r = await window.sonos.geniusArtist(artistName!);
       if (!r) return null;
       return { paragraphs: geniusParagraphs(r.description).slice(0, MAX_PARAGRAPHS), url: r.url ?? undefined };
     },
-    staleTime: Infinity,
+    staleTime: STALE.forever,
     retry: false,
-  };
+  });
 }
 
 /**

@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import { detailFocusY, faceFocusY, FACE_ANCHOR, FOCUS_ANCHOR } from '../lib/focalPoint';
+import { STALE, GC_HOUR } from '../lib/queryDefaults';
 
 export interface PhotoFocus {
   /** Fraction of the image height to keep in view (0 top, 1 bottom). */
@@ -50,13 +51,20 @@ export async function findFocus(src: string): Promise<PhotoFocus | null> {
  * Where the faces (or failing that, the detail) are in an artist photo, found once per photo URL. `src` is the
  * already-fetched same-origin copy, so the canvas is never tainted. null data means use the default crop.
  */
-export function usePhotoFocus(url: string | null, src: string | null) {
-  return useQuery({
-    queryKey: ['photo-focus', url] as const,
+export const photoFocusKeys = {
+  url: (url: string | null) => ['photo-focus', url] as const,
+};
+
+export const photoFocusQueryOptions = (url: string | null, src: string | null) =>
+  queryOptions({
+    queryKey: photoFocusKeys.url(url),
     queryFn: () => (src ? findFocus(src) : null),
     enabled: !!url && !!src,
-    staleTime: Infinity,
-    gcTime: 60 * 60 * 1000,
+    staleTime: STALE.forever,
+    gcTime: GC_HOUR,
     retry: false,
   });
+
+export function usePhotoFocus(url: string | null, src: string | null) {
+  return useQuery(photoFocusQueryOptions(url, src));
 }

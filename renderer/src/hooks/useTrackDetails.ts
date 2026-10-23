@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import { api } from '../lib/sonosApi';
 import { decodeDefaults } from '../lib/itemHelpers';
+import { STALE, GC_HOUR } from '../lib/queryDefaults';
 
 export interface TrackDetails {
   trackName: string | undefined;
@@ -15,8 +16,8 @@ export interface TrackDetails {
   explicit: boolean | undefined;
 }
 
-function parseResponse(data: unknown): TrackDetails {
-  const d = data as Record<string, unknown>;
+function parseResponse(d: Record<string, unknown> | undefined): TrackDetails {
+  if (!d) throw new Error('empty now-playing response');
   const item = d['item'] as Record<string, unknown> | undefined;
 
   // Track name
@@ -55,10 +56,14 @@ function parseResponse(data: unknown): TrackDetails {
   return { trackName, artUrl, artist, artistId, albumName, albumId, serviceId, accountId, durationMs, explicit };
 }
 
+export const trackKeys = {
+  detail: (trackId: string) => ['track', trackId] as const,
+};
+
 export function trackQueryOptions(trackId: string, serviceId: string, rawAccountId: string) {
   const accountId = rawAccountId.replace(/^sn_/, '');
-  return {
-    queryKey: ['track', trackId] as const,
+  return queryOptions({
+    queryKey: trackKeys.detail(trackId),
     queryFn: async (): Promise<TrackDetails | null> => {
       const r = await api.nowPlaying.track(trackId, { serviceId, accountId });
       if (!r.error) return parseResponse(r.data);
@@ -71,10 +76,10 @@ export function trackQueryOptions(trackId: string, serviceId: string, rawAccount
 
       return null;
     },
-    staleTime: Infinity,
-    gcTime: 60 * 60 * 1000,
+    staleTime: STALE.forever,
+    gcTime: GC_HOUR,
     retry: false,
-  };
+  });
 }
 
 export function useTrackDetails(

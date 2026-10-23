@@ -16,6 +16,7 @@ import {
   slotLabel,
   varietyRows,
 } from '../musicStats';
+import { runQueryFn } from '../../test/queryFn';
 
 const person = (userId: string, over: Partial<MusicPersonStats> = {}): MusicPersonStats => ({
   userId,
@@ -120,6 +121,6 @@ describe('musicStatsQueryOptions', () => {
 
   it('throws on an error reply so the page shows its error state', async () => {
     vi.mocked(window.sonos.fetchMusicStats).mockResolvedValueOnce({ error: 'boom' });
-    await expect(musicStatsQueryOptions().queryFn()).rejects.toThrow('boom');
+    await expect(runQueryFn(musicStatsQueryOptions())).rejects.toThrow('boom');
   });
 });

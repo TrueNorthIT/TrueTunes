@@ -40,15 +40,15 @@ interface AttributionEvent {
 }
 
 interface FetchRequest {
-  operationId: string;
+  operationId: import('../lib/sonosApi').OperationId;
   pathParams?: Record<string, string>;
   query?: Record<string, string | undefined>;
   body?: unknown;
   headers?: Record<string, string>;
 }
 
-interface FetchResponse {
-  data?: unknown;
+interface FetchResponse<T = unknown> {
+  data?: T;
   error?: string;
   etag?: string;
 }

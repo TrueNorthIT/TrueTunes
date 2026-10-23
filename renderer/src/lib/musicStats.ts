@@ -2,6 +2,7 @@
 // straight from the server (server/src/shared/musicStats.ts); this only shapes
 // them for display.
 
+import { queryOptions } from '@tanstack/react-query';
 export const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 /** People need at least this many track queues to appear on the variety chart. */
@@ -121,12 +122,14 @@ export function defaultTastePerson(people: MusicPersonStats[], displayName: stri
 export const NO_LENGTHS_TEXT = 'No song lengths yet. They’re being filled in, check back soon.';
 
 /** React Query options for the stats page; a `{ error }` reply becomes a query error. */
-export const musicStatsQueryOptions = () => ({
-  queryKey: ['music-stats'],
-  queryFn: async (): Promise<MusicStatsResult> => {
-    const res = await window.sonos.fetchMusicStats();
-    if (isMusicStatsError(res)) throw new Error(res.error);
-    return res;
-  },
-  staleTime: 5 * 60_000,
-});
+export const musicStatsKeys = { all: ['music-stats'] as const };
+
+export const musicStatsQueryOptions = () =>
+  queryOptions({
+    queryKey: musicStatsKeys.all,
+    queryFn: async (): Promise<MusicStatsResult> => {
+      const res = await window.sonos.fetchMusicStats();
+      if (isMusicStatsError(res)) throw new Error(res.error);
+      return res;
+    },
+  });

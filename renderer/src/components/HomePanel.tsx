@@ -488,7 +488,7 @@ export async function fetchYtmSections(): Promise<YtmSections> {
   const rootR = await api.browse.container('root', { muse2: true });
   if (rootR.error) return { forYou: [], newReleases: [], charts: [] };
 
-  const d = rootR.data as Record<string, unknown>;
+  const d = rootR.data ?? {};
   const stack = ((d['sections'] as Record<string, unknown>)?.['items'] as unknown[])?.[0] as
     | Record<string, unknown>
     | undefined;

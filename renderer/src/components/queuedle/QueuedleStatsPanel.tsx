@@ -1,7 +1,8 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQueuedleHistory } from '../../hooks/useDailyGame';
+import { useDisplayName } from '../../hooks/useDisplayName';
 import {
   buildHeatmap,
   buildRatingSeries,
@@ -432,11 +433,8 @@ function WeeklyBars({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: str
 
 export function QueuedleStatsPanel() {
   const navigate = useNavigate();
-  const [displayName, setDisplayName] = useState<string | null | undefined>(undefined);
+  const displayName = useDisplayName();
   const [picks, setPicks] = useState<(string | null)[]>([]);
-  useEffect(() => {
-    window.sonos.getDisplayName().then(setDisplayName);
-  }, []);
   const history = useQueuedleHistory(displayName);
   const days = useMemo(() => history.data ?? [], [history.data]);
   const players = useMemo(() => listPlayers(days), [days]);

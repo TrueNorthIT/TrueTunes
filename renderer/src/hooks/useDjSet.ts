@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 
 interface DjSetOptions {
   users?: string[];
@@ -22,17 +22,20 @@ function normalise(res: DjSetResponse | null | undefined): DjSetResult {
   };
 }
 
+export const djKeys = {
+  set: (opts: DjSetOptions) => ['dj', opts.users ?? null, opts.limit ?? null, opts.excludeUris?.length ?? 0] as const,
+};
+
 export function djSetQueryOptions(opts: DjSetOptions = {}) {
-  return {
-    queryKey: ['dj', opts.users ?? null, opts.limit ?? null, opts.excludeUris?.length ?? 0],
+  return queryOptions({
+    queryKey: djKeys.set(opts),
     queryFn: async (): Promise<DjSetResult> => normalise(await window.sonos.fetchDjSet(opts)),
     // The set is built from 90 days of history — it doesn't shift minute to minute,
     // and refetching on every focus would reshuffle the list under the user's cursor.
-    staleTime: 5 * 60_000,
     retry: 1,
-  };
+  });
 }
 
 export function useDjSet(opts: DjSetOptions = {}, enabled = true) {
-  return useQuery<DjSetResult>({ ...djSetQueryOptions(opts), enabled });
+  return useQuery({ ...djSetQueryOptions(opts), enabled });
 }

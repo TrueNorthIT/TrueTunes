@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { trackQueryOptions } from '../useTrackDetails';
+import { runQueryFn } from '../../test/queryFn';
 
 const mockFetch = vi.mocked(window.sonos.fetch);
 
@@ -23,7 +24,7 @@ describe('accountId normalisation', () => {
   it('strips sn_ prefix from accountId before sending the API request', async () => {
     mockFetch.mockResolvedValueOnce(makeResponse());
     const opts = trackQueryOptions('trk-1', 'gm', 'sn_acc123');
-    await opts.queryFn();
+    await runQueryFn(opts);
     // The fetch call must use 'acc123', not 'sn_acc123'
     const call = mockFetch.mock.calls[0][0];
     expect(call.pathParams?.accountId).toBe('acc123');
@@ -32,7 +33,7 @@ describe('accountId normalisation', () => {
   it('leaves accountId unchanged when no sn_ prefix', async () => {
     mockFetch.mockResolvedValueOnce(makeResponse());
     const opts = trackQueryOptions('trk-1', 'gm', 'acc123');
-    await opts.queryFn();
+    await runQueryFn(opts);
     const call = mockFetch.mock.calls[0][0];
     expect(call.pathParams?.accountId).toBe('acc123');
   });
@@ -43,13 +44,13 @@ describe('accountId normalisation', () => {
 describe('title parsing', () => {
   it('reads title from top-level title field', async () => {
     mockFetch.mockResolvedValueOnce(makeResponse({ title: 'Come Together' }));
-    const result = await trackQueryOptions('t', 'gm', 'a').queryFn();
+    const result = await runQueryFn(trackQueryOptions('t', 'gm', 'a'));
     expect(result?.trackName).toBe('Come Together');
   });
 
   it('falls back to item.title when top-level title is absent', async () => {
     mockFetch.mockResolvedValueOnce({ data: { item: { title: 'Hey Jude' } } });
-    const result = await trackQueryOptions('t', 'gm', 'a').queryFn();
+    const result = await runQueryFn(trackQueryOptions('t', 'gm', 'a'));
     expect(result?.trackName).toBe('Hey Jude');
   });
 });
@@ -59,13 +60,13 @@ describe('title parsing', () => {
 describe('artUrl parsing', () => {
   it('reads artUrl from top-level images.tile1x1', async () => {
     mockFetch.mockResolvedValueOnce(makeResponse({ images: { tile1x1: 'http://img/top.jpg' } }));
-    const result = await trackQueryOptions('t', 'gm', 'a').queryFn();
+    const result = await runQueryFn(trackQueryOptions('t', 'gm', 'a'));
     expect(result?.artUrl).toBe('http://img/top.jpg');
   });
 
   it('falls back to item.images.tile1x1 when top-level images absent', async () => {
     mockFetch.mockResolvedValueOnce({ data: { item: { images: { tile1x1: 'http://img/item.jpg' } } } });
-    const result = await trackQueryOptions('t', 'gm', 'a').queryFn();
+    const result = await runQueryFn(trackQueryOptions('t', 'gm', 'a'));
     expect(result?.artUrl).toBe('http://img/item.jpg');
   });
 });
@@ -75,19 +76,19 @@ describe('artUrl parsing', () => {
 describe('artist parsing', () => {
   it('reads artist from top-level subtitle', async () => {
     mockFetch.mockResolvedValueOnce(makeResponse({ subtitle: 'The Beatles' }));
-    const result = await trackQueryOptions('t', 'gm', 'a').queryFn();
+    const result = await runQueryFn(trackQueryOptions('t', 'gm', 'a'));
     expect(result?.artist).toBe('The Beatles');
   });
 
   it('falls back to item.subtitle', async () => {
     mockFetch.mockResolvedValueOnce({ data: { item: { subtitle: 'Led Zeppelin' } } });
-    const result = await trackQueryOptions('t', 'gm', 'a').queryFn();
+    const result = await runQueryFn(trackQueryOptions('t', 'gm', 'a'));
     expect(result?.artist).toBe('Led Zeppelin');
   });
 
   it('falls back to item.artists[0].name when no subtitle', async () => {
     mockFetch.mockResolvedValueOnce({ data: { item: { artists: [{ name: 'Pink Floyd' }] } } });
-    const result = await trackQueryOptions('t', 'gm', 'a').queryFn();
+    const result = await runQueryFn(trackQueryOptions('t', 'gm', 'a'));
     expect(result?.artist).toBe('Pink Floyd');
   });
 });
@@ -100,7 +101,7 @@ describe('defaults parsing', () => {
     mockFetch.mockResolvedValueOnce({
       data: { item: { resource: { id: { serviceId: 'gm', accountId: 'acc' }, defaults } } },
     });
-    const result = await trackQueryOptions('t', 'gm', 'a').queryFn();
+    const result = await runQueryFn(trackQueryOptions('t', 'gm', 'a'));
     expect(result?.albumName).toBe('Abbey Road');
     expect(result?.albumId).toBe('alb-1');
     expect(result?.artistId).toBe('art-1');
@@ -110,7 +111,7 @@ describe('defaults parsing', () => {
     mockFetch.mockResolvedValueOnce({
       data: { item: { resource: { id: { serviceId: 'sp', accountId: 'acc-sp' } } } },
     });
-    const result = await trackQueryOptions('t', 'gm', 'a').queryFn();
+    const result = await runQueryFn(trackQueryOptions('t', 'gm', 'a'));
     expect(result?.serviceId).toBe('sp');
     expect(result?.accountId).toBe('acc-sp');
   });
@@ -124,7 +125,7 @@ describe('YT Music fallback', () => {
       .mockResolvedValueOnce({ data: null, error: 'not found' })
       .mockResolvedValueOnce(makeResponse({ title: 'Via YT' }));
 
-    const result = await trackQueryOptions('t', 'gm', 'a').queryFn();
+    const result = await runQueryFn(trackQueryOptions('t', 'gm', 'a'));
 
     expect(result?.trackName).toBe('Via YT');
     expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -135,14 +136,14 @@ describe('YT Music fallback', () => {
   it('returns null when both primary and YT fallback fail', async () => {
     mockFetch.mockResolvedValueOnce({ data: null, error: 'fail' }).mockResolvedValueOnce({ data: null, error: 'fail' });
 
-    const result = await trackQueryOptions('t', 'gm', 'a').queryFn();
+    const result = await runQueryFn(trackQueryOptions('t', 'gm', 'a'));
     expect(result).toBeNull();
   });
 
   it('does not attempt YT fallback when serviceId is already 72711', async () => {
     mockFetch.mockResolvedValueOnce({ data: null, error: 'fail' });
 
-    const result = await trackQueryOptions('t', '72711', 'a').queryFn();
+    const result = await runQueryFn(trackQueryOptions('t', '72711', 'a'));
     expect(result).toBeNull();
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });

@@ -5,12 +5,14 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import {
   calculateGameRankings,
   dailyGameQueryOptions,
+  dailyGameRefetchInterval,
   getGameRankTier,
   useDailyGame,
   useGameLeaderboard,
   useGameRankings,
   useSubmitGameScore,
 } from '../useDailyGame';
+import { runQueryFn } from '../../test/queryFn';
 
 const mockFetch = vi.mocked(window.sonos.fetchDailyGame);
 
@@ -47,7 +49,7 @@ beforeEach(() => {
 describe('dailyGameQueryOptions', () => {
   it('calls fetchDailyGame with the supplied date', async () => {
     mockFetch.mockResolvedValueOnce({ status: 'pending' });
-    await dailyGameQueryOptions('2026-04-21').queryFn();
+    await runQueryFn(dailyGameQueryOptions('2026-04-21'));
     expect(mockFetch).toHaveBeenCalledWith('2026-04-21');
   });
 
@@ -60,27 +62,23 @@ describe('dailyGameQueryOptions', () => {
       questions: [],
     };
     mockFetch.mockResolvedValueOnce(game);
-    const result = await dailyGameQueryOptions().queryFn();
+    const result = await runQueryFn(dailyGameQueryOptions());
     expect(result).toBe(game);
   });
 
   it('returns a pending shape when the server is still generating', async () => {
     mockFetch.mockResolvedValueOnce({ status: 'pending' });
-    const result = await dailyGameQueryOptions().queryFn();
+    const result = await runQueryFn(dailyGameQueryOptions());
     expect(result).toEqual({ status: 'pending' });
   });
 
   it('refetchInterval returns 30000 when status is pending', () => {
-    const opts = dailyGameQueryOptions();
-    const interval = opts.refetchInterval({ state: { data: { status: 'pending' } as GameFetchResult } });
+    const interval = dailyGameRefetchInterval({ status: 'pending' } as GameFetchResult);
     expect(interval).toBe(30_000);
   });
 
   it('refetchInterval returns false when data is a ready game', () => {
-    const opts = dailyGameQueryOptions();
-    const interval = opts.refetchInterval({
-      state: { data: { id: 'g1', questions: [] } as unknown as GameFetchResult },
-    });
+    const interval = dailyGameRefetchInterval({ id: 'g1', questions: [] } as unknown as GameFetchResult);
     expect(interval).toBe(false);
   });
 

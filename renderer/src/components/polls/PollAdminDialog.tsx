@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronUp, Pencil, Plus, Trash2, TriangleAlert } from 'lucide-react';
+import { pollKeys } from '../../hooks/usePolls';
 import { fitsOnBoard, POLL_QUESTION_ROWS, wrapForBoard } from '../../lib/pollBoard';
 import { Dialog } from '../common/Dialog';
 import { PillButton } from '../common/PillButton';
@@ -16,7 +17,6 @@ export interface PollAdminDialogProps {
   onClose: () => void;
 }
 
-const ADMIN_KEY = ['poll-admin'] as const;
 const MAX_CHOICES = 6;
 
 function formatMonday(iso: string | null): string {
@@ -161,7 +161,7 @@ export function PollAdminDialog({ onClose }: PollAdminDialogProps): ReactElement
   const [error, setError] = useState<string | null>(null);
 
   const { data: polls, isError } = useQuery({
-    queryKey: ADMIN_KEY,
+    queryKey: pollKeys.admin,
     queryFn: async () => {
       const res = await window.sonos.pollAdminList();
       if ('error' in res) throw new Error(res.error);
@@ -170,7 +170,7 @@ export function PollAdminDialog({ onClose }: PollAdminDialogProps): ReactElement
     retry: false,
   });
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ADMIN_KEY });
+  const refresh = () => queryClient.invalidateQueries({ queryKey: pollKeys.admin });
   const upcomingIds = (polls ?? []).filter((p) => !p.live).map((p) => p.id);
 
   async function run(call: () => Promise<{ error: string } | object>) {

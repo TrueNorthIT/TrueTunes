@@ -26,6 +26,7 @@ import { QueuedleLeaderboard, type LeaderboardTab } from './QueuedleLeaderboard'
 import { formatGameDate, standingLine } from './format';
 import { clearProgress, loadProgress, pruneProgress, saveProgress } from '../../lib/queuedleProgress';
 import { useUsers } from '../../hooks/useUsers';
+import { useDisplayName } from '../../hooks/useDisplayName';
 import { PillButton } from '../common/PillButton';
 import { ArrowLeft, CalendarDays, ChartColumn } from 'lucide-react';
 import { Dialog } from '../common/Dialog';
@@ -53,12 +54,7 @@ export function QueuedlePanel() {
   const todayId = useMemo(() => londonDateToday(), []);
   const { data, isLoading, error } = useDailyGame(selectedDate ?? undefined);
   const submit = useSubmitGameScore();
-  const [displayName, setDisplayName] = useState<string | null | undefined>(undefined);
-
-  useEffect(() => {
-    window.sonos.getDisplayName().then(setDisplayName);
-  }, []);
-
+  const displayName = useDisplayName();
   const game = data && 'questions' in data ? (data as GameDoc) : null;
   const gameId = game?.id ?? null;
   const isPastDay = selectedDate !== null && selectedDate !== todayId;

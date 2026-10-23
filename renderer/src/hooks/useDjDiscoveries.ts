@@ -2,6 +2,7 @@ import { useQueries } from '@tanstack/react-query';
 import { artistQueryOptions } from './useArtistBrowse';
 import type { AlbumTrack } from './useAlbumBrowse';
 import { groupUnheard, interleave, type UnheardOptions } from '../lib/discover';
+import { STALE } from '../lib/queryDefaults';
 
 export interface DjDiscovery {
   track: AlbumTrack;
@@ -56,7 +57,7 @@ export function useDjDiscoveries(
     queries: acts.map((act) => ({
       ...artistQueryOptions(act.artistId, act.serviceId, act.accountId, undefined, act.artist),
       enabled,
-      staleTime: 30 * 60_000,
+      staleTime: STALE.halfHour,
     })),
   });
 

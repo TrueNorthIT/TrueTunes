@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { officePresenceQueryOptions } from '../useOfficePresence';
+import { runQueryFn } from '../../test/queryFn';
 
 beforeEach(() => {
   vi.mocked(window.sonos.fetchOfficePresence).mockReset();
@@ -17,7 +18,7 @@ describe('officePresenceQueryOptions', () => {
       ],
     });
 
-    const result = await officePresenceQueryOptions().queryFn();
+    const result = await runQueryFn(officePresenceQueryOptions());
     expect(result.inOffice).toEqual(['Rich', 'Alex']);
     expect(result.basis).toBe('sensed');
   });
@@ -32,7 +33,7 @@ describe('officePresenceQueryOptions', () => {
       error: 'no presence consent',
     });
 
-    const result = await officePresenceQueryOptions().queryFn();
+    const result = await runQueryFn(officePresenceQueryOptions());
     expect(result.inOffice).toEqual([]);
     expect(result.basis).toBe('none');
     expect(result.error).toBe('no presence consent');
@@ -40,7 +41,7 @@ describe('officePresenceQueryOptions', () => {
 
   it('survives a malformed response without throwing', async () => {
     vi.mocked(window.sonos.fetchOfficePresence).mockResolvedValueOnce({} as unknown as OfficePresence);
-    const result = await officePresenceQueryOptions().queryFn();
+    const result = await runQueryFn(officePresenceQueryOptions());
     expect(result.inOffice).toEqual([]);
     expect(result.detail).toEqual([]);
   });

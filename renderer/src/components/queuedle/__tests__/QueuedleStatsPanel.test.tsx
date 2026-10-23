@@ -2,6 +2,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueuedleStatsPanel } from '../QueuedleStatsPanel';
 import type { QueuedleDay } from '../../../lib/queuedleStats';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactElement, ReactNode } from 'react';
+
+// The display name now comes from a React Query cache, so panels need a client.
+let queryClient: QueryClient;
+beforeEach(() => {
+  queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+});
+const renderQ = (ui: ReactElement) =>
+  render(ui, {
+    wrapper: ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    ),
+  });
 
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
 
@@ -26,7 +40,7 @@ beforeEach(() => {
 
 describe('Queuedle stats highlighting', () => {
   it('lets you highlight seven others alongside yourself, then stops', async () => {
-    render(<QueuedleStatsPanel />);
+    renderQ(<QueuedleStatsPanel />);
     await waitFor(() => expect(isOn('Rich')).toBe(true));
     ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'].forEach((p) => fireEvent.click(chip(p)));
     expect(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'].every(isOn)).toBe(true);
@@ -35,7 +49,7 @@ describe('Queuedle stats highlighting', () => {
   });
 
   it("keeps everyone else's colour when one pick is removed", async () => {
-    render(<QueuedleStatsPanel />);
+    renderQ(<QueuedleStatsPanel />);
     await waitFor(() => expect(isOn('Rich')).toBe(true));
     ['p1', 'p2', 'p3'].forEach((p) => fireEvent.click(chip(p)));
     const swatch = (name: string) => (chip(name).querySelector('span') as HTMLElement).style.background;
@@ -49,7 +63,7 @@ describe('Queuedle stats highlighting', () => {
   });
 
   it('clears all picks but keeps you highlighted', async () => {
-    render(<QueuedleStatsPanel />);
+    renderQ(<QueuedleStatsPanel />);
     await waitFor(() => expect(isOn('Rich')).toBe(true));
     fireEvent.click(chip('p1'));
     fireEvent.click(screen.getByRole('button', { name: 'Clear' }));

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { geniusAlbumAboutQueryOptions, geniusArtistBioQueryOptions, releasedLabel } from '../useGeniusAlbumAbout';
+import { runQueryFn } from '../../test/queryFn';
 
 const p = (...children: GeniusDomNode[]) => ({ tag: 'p', children });
 
@@ -18,7 +19,7 @@ describe('geniusAlbumAboutQueryOptions', () => {
       releaseDate: '2014-08-22',
       url: 'https://genius.com/albums/Royal-blood/Royal-blood',
     });
-    const r = await geniusAlbumAboutQueryOptions('Royal Blood (10th Anniversary Edition)', 'Royal Blood').queryFn();
+    const r = await runQueryFn(geniusAlbumAboutQueryOptions('Royal Blood (10th Anniversary Edition)', 'Royal Blood'));
     expect(window.sonos.geniusAlbumAbout).toHaveBeenCalledWith('Royal Blood (10th Anniversary Edition)', 'Royal Blood');
     expect(r).toEqual({
       paragraphs: ['Royal Blood is the debut.', 'Second.'],
@@ -31,13 +32,13 @@ describe('geniusAlbumAboutQueryOptions', () => {
     vi.mocked(window.sonos.geniusAlbumAbout).mockResolvedValueOnce({
       description: { tag: 'root', children: [p('1'), p('2'), p('3'), p('4')] },
     });
-    expect((await geniusAlbumAboutQueryOptions('A', 'B').queryFn())?.paragraphs).toEqual(['1', '2', '3']);
+    expect((await runQueryFn(geniusAlbumAboutQueryOptions('A', 'B')))?.paragraphs).toEqual(['1', '2', '3']);
     vi.mocked(window.sonos.geniusAlbumAbout).mockResolvedValueOnce({
       description: { tag: 'root', children: [p('?')] },
     });
-    expect((await geniusAlbumAboutQueryOptions('A', 'B').queryFn())?.paragraphs).toEqual([]);
+    expect((await runQueryFn(geniusAlbumAboutQueryOptions('A', 'B')))?.paragraphs).toEqual([]);
     vi.mocked(window.sonos.geniusAlbumAbout).mockResolvedValueOnce(null);
-    expect(await geniusAlbumAboutQueryOptions('A', 'B').queryFn()).toBeNull();
+    expect(await runQueryFn(geniusAlbumAboutQueryOptions('A', 'B'))).toBeNull();
   });
 
   it('is keyed by album and artist, cached for good, and waits for both names', () => {
@@ -59,7 +60,7 @@ describe('geniusArtistBioQueryOptions', () => {
       twitter: null,
       url: 'https://genius.com/artists/Royal-blood',
     });
-    expect(await geniusArtistBioQueryOptions('Royal Blood').queryFn()).toEqual({
+    expect(await runQueryFn(geniusArtistBioQueryOptions('Royal Blood'))).toEqual({
       paragraphs: ['A rock duo from Brighton.'],
       url: 'https://genius.com/artists/Royal-blood',
     });

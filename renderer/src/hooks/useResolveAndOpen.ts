@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { api } from '../lib/sonosApi';
 import { getName, isAlbum, isArtist, parseServiceSearch, splitArtists } from '../lib/itemHelpers';
-import type { ServiceSearch } from '../types/ServiceSearch';
 import type { SonosArtist, SonosItem } from '../types/sonos';
 import { useOpenItem } from './useOpenItem';
 
@@ -36,8 +35,8 @@ export function useResolveAndOpen() {
         serviceId: opts?.serviceId,
         accountId: opts?.accountId,
       });
-      if (r.error) return;
-      const items = parseServiceSearch(r.data as ServiceSearch);
+      if (r.error || !r.data) return;
+      const items = parseServiceSearch(r.data);
       const filter = target === 'artist' ? isArtist : isAlbum;
       const candidates = items.filter(filter);
 
