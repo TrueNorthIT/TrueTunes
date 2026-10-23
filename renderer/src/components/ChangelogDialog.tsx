@@ -24,6 +24,7 @@ const REPO = 'TrueNorthIT/TrueTunes';
  * Keep the releases for an hour, open or closed, rather than refetching on every open.
  */
 const RELEASES_TTL = 60 * 60 * 1000;
+const NO_RELEASES: Release[] = [];
 
 async function fetchReleases(): Promise<Release[]> {
   const res = await fetch(`https://api.github.com/repos/${REPO}/releases`, {
@@ -49,18 +50,19 @@ interface Props {
 
 export function ChangelogDialog({ onClose }: Props) {
   const [selectedIdx, setSelectedIdx] = useState(0);
-  const query = useQuery({
+  const {
+    data: releases = NO_RELEASES,
+    isSuccess,
+    isError,
+    isFetching,
+    refetch,
+  } = useQuery({
     queryKey: ['github-releases'],
     queryFn: fetchReleases,
     staleTime: RELEASES_TTL,
     gcTime: RELEASES_TTL,
   });
-  const releases = query.data ?? [];
-  const status: 'loading' | 'ready' | 'error' = query.isSuccess
-    ? 'ready'
-    : query.isError && !query.isFetching
-      ? 'error'
-      : 'loading';
+  const status: 'loading' | 'ready' | 'error' = isSuccess ? 'ready' : isError && !isFetching ? 'error' : 'loading';
   const [appVersion, setAppVersion] = useState<string | null>(null);
   const [versionLoaded, setVersionLoaded] = useState(false);
 
@@ -93,7 +95,7 @@ export function ChangelogDialog({ onClose }: Props) {
       {status === 'error' && (
         <div className={styles.empty}>
           <p className={dialog.note}>Couldn't load the release notes from GitHub.</p>
-          <PillButton onClick={() => void query.refetch()}>Try again</PillButton>
+          <PillButton onClick={() => void refetch()}>Try again</PillButton>
         </div>
       )}
 
