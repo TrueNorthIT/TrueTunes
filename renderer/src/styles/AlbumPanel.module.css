@@ -49,6 +49,59 @@
 /* ponytail: capped (68em: full width at 1280, ~1090px from 1730) so the duration stays near the title; a per-track "queued here" column
    would use the width instead, once the stats function can return per-track counts. */
 .trackCard { max-width: 68em; }
+
+/* About this album (Genius) beside the tracks once there is room for both: the 68em tracklist plus a
+   22-28em card. Narrower, it stacks under the tracks, before "More by". In the wide layout it stays in
+   view down a long tracklist. Without a card the tracks keep the page as before (no .body class). */
+.about { max-width: 68em; }
+@container (min-width: 92em) {
+  .body {
+    display: grid;
+    grid-template-columns: minmax(0, 68em) minmax(22em, 28em);
+    column-gap: 1.4em;
+    align-items: start;
+  }
+  .about {
+    position: sticky;
+    top: calc(var(--nav-h) + 16px);
+    max-height: calc(100vh - var(--nav-h) - var(--player-h) - 48px);
+    overflow-y: auto;
+  }
+}
+.released {
+  margin-bottom: 0.8em;
+  font-size: max(13px, 0.93em);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.aboutText {
+  max-width: 72ch;
+  font-size: 0.95em;
+  line-height: 1.55;
+  color: var(--text-3);
+  user-select: text;
+}
+.aboutText p + p { margin-top: 0.7em; }
+.source {
+  margin-top: 1em;
+  font-size: max(13px, 0.93em);
+  color: var(--text-3);
+}
+.sourceLink {
+  color: var(--text-2);
+  text-decoration: underline;
+  text-decoration-color: rgba(var(--tint), 0.4);
+  text-underline-offset: 0.15em;
+  transition: color var(--dur-fast) var(--ease-fast);
+}
+.sourceLink:hover,
+.sourceLink:focus-visible { color: var(--text); }
+.skelLine {
+  display: block;
+  height: 0.95em;
+  margin-bottom: 0.6em;
+  border-radius: 0.4em;
+}
 .tracks { min-width: 0; }
 .list { list-style: none; margin: 0; padding: 0; }
 

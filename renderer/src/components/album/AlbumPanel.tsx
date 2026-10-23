@@ -8,6 +8,7 @@ import { usePlaylistBrowse } from '../../hooks/usePlaylistBrowse';
 import { useDominantColor } from '../../hooks/useDominantColor';
 import { usePageArt } from '../../lib/pageArt';
 import { useGeniusAlbumYear } from '../../hooks/useGeniusAlbumYear';
+import { useGeniusAlbumAbout } from '../../hooks/useGeniusAlbumAbout';
 import { artistQueryOptions } from '../../hooks/useArtistBrowse';
 import { useResolveAndOpen } from '../../hooks/useResolveAndOpen';
 import { useOpenItem } from '../../hooks/useOpenItem';
@@ -31,6 +32,8 @@ import { SectionCard } from '../common/SectionCard';
 import { AlbumTrackRow } from './AlbumTrackRow';
 import type { SonosItem, SonosItemId } from '../../types/sonos';
 import styles from '../../styles/AlbumPanel.module.css';
+
+const ABOUT_SKELETON = ['94%', '88%', '96%', '72%', '90%', '58%'];
 
 interface Props {
   onAddToQueue: (item: SonosItem) => Promise<void> | void;
@@ -91,6 +94,12 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
     isPlaylistOrProgram ? null : title,
     isPlaylistOrProgram ? null : artist,
   );
+  // Beside the tracklist: what the album is, from Genius (else the artist's bio). Nothing at all, no card.
+  const { about, isLoading: aboutLoading } = useGeniusAlbumAbout(
+    isPlaylistOrProgram ? null : title,
+    isPlaylistOrProgram ? null : splitArtists(artist)[0] ?? artist,
+  );
+  const showAbout = aboutLoading || !!about;
 
   // Office layer: how often this album has been queued here, from the all-time chart.
   const { data: stats } = useStats('alltime', undefined, 100);
@@ -212,49 +221,83 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
             </div>}
         </HeroBand>
 
-        <SectionCard className={`${styles.section} ${styles.trackCard}`}>
-          <div
-            className={styles.tracks}
-            onClick={() => { setSelected(new Set()); lastSelected.current = null; }}
-          >
-            {isLoading && (
-              <div aria-busy="true">
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <div key={i} className={styles.skeletonRow}>
-                    <span className={`skeleton ${styles.skelNum}`} />
-                    <span className={`skeleton ${styles.skelTitle}`} style={{ width: `${35 + (i % 4) * 12}%`, animationDelay: `${i * 60}ms` }} />
+        <div className={showAbout ? styles.body : undefined}>
+          <SectionCard className={`${styles.section} ${styles.trackCard}`}>
+            <div
+              className={styles.tracks}
+              onClick={() => { setSelected(new Set()); lastSelected.current = null; }}
+            >
+              {isLoading && (
+                <div aria-busy="true">
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <div key={i} className={styles.skeletonRow}>
+                      <span className={`skeleton ${styles.skelNum}`} />
+                      <span className={`skeleton ${styles.skelTitle}`} style={{ width: `${35 + (i % 4) * 12}%`, animationDelay: `${i * 60}ms` }} />
+                    </div>
+                  ))}
+                </div>
+              )}
+              {error && (
+                <div className={styles.msg}>
+                  Failed to load tracks.
+                  <PillButton onClick={() => void refetch()}>Try again</PillButton>
+                </div>
+              )}
+              {!error && data && data.tracks.length === 0 && <div className={styles.msg}>No tracks found.</div>}
+              {data && data.tracks.length > 0 && (
+                <ul className={styles.list}>
+                  {data.tracks.map((track, i) => (
+                    <AlbumTrackRow
+                      key={track.id.objectId ?? track.ordinal}
+                      track={track}
+                      isPlaylistOrProgram={isPlaylistOrProgram}
+                      isSelected={selected.has(i)}
+                      serviceId={trackServiceId}
+                      accountId={trackAccountId}
+                      albumArtist={isPlaylistOrProgram ? undefined : artist}
+                      playing={!!playback?.isVisible && !!track.id.objectId && track.id.objectId === playback.currentObjectId}
+                      onClick={e => handleTrackClick(i, e)}
+                      onDragStart={e => handleTrackDragStart(i, e)}
+                      onAdd={() => onAddToQueue(track.raw)}
+                    />
+                  ))}
+                </ul>
+              )}
+            </div>
+          </SectionCard>
+
+          {showAbout && (
+            <SectionCard className={`${styles.section} ${styles.about}`} title={about?.title ?? 'About this album'}>
+              {about ? (
+                <>
+                  {about.released && <p className={styles.released}>Released {about.released}</p>}
+                  <div className={styles.aboutText}>
+                    {about.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
                   </div>
-                ))}
-              </div>
-            )}
-            {error && (
-              <div className={styles.msg}>
-                Failed to load tracks.
-                <PillButton onClick={() => void refetch()}>Try again</PillButton>
-              </div>
-            )}
-            {!error && data && data.tracks.length === 0 && <div className={styles.msg}>No tracks found.</div>}
-            {data && data.tracks.length > 0 && (
-              <ul className={styles.list}>
-                {data.tracks.map((track, i) => (
-                  <AlbumTrackRow
-                    key={track.id.objectId ?? track.ordinal}
-                    track={track}
-                    isPlaylistOrProgram={isPlaylistOrProgram}
-                    isSelected={selected.has(i)}
-                    serviceId={trackServiceId}
-                    accountId={trackAccountId}
-                    albumArtist={isPlaylistOrProgram ? undefined : artist}
-                    playing={!!playback?.isVisible && !!track.id.objectId && track.id.objectId === playback.currentObjectId}
-                    onClick={e => handleTrackClick(i, e)}
-                    onDragStart={e => handleTrackDragStart(i, e)}
-                    onAdd={() => onAddToQueue(track.raw)}
-                  />
-                ))}
-              </ul>
-            )}
-          </div>
-        </SectionCard>
+                  {about.url && (
+                    <p className={styles.source}>
+                      From{' '}
+                      <a
+                        href={about.url}
+                        className={styles.sourceLink}
+                        aria-label="Read more on Genius"
+                        onClick={(e) => { e.preventDefault(); void window.sonos.openExternal(about.url!); }}
+                      >
+                        Genius
+                      </a>
+                    </p>
+                  )}
+                </>
+              ) : (
+                <div aria-busy="true" aria-label="Loading">
+                  {ABOUT_SKELETON.map((w, i) => (
+                    <span key={i} className={`skeleton ${styles.skelLine}`} style={{ width: w, animationDelay: `${i * 60}ms` }} />
+                  ))}
+                </div>
+              )}
+            </SectionCard>
+          )}
+        </div>
 
         {moreAlbums.length > 0 && (
           <SectionCard className={styles.section} title={`More by ${artistName}`}>

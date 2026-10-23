@@ -340,4 +340,65 @@ describe('AlbumPanel', () => {
     render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
     expect(screen.getByText('My Playlist')).toBeInTheDocument();
   });
+
+  // ── about this album (Genius) ─────────────────────────────────────────────
+
+  describe('About card', () => {
+    const para = (text: string) => ({ tag: 'root', children: [{ tag: 'p', children: [text] }] });
+    beforeEach(() => {
+      vi.mocked(window.sonos.geniusAlbumAbout).mockReset().mockResolvedValue(null);
+      vi.mocked(window.sonos.geniusArtist).mockReset().mockResolvedValue(null);
+    });
+
+    it("shows the album's Genius description, release date and source link", async () => {
+      vi.mocked(window.sonos.geniusAlbumAbout).mockResolvedValue({
+        description: para('The final Beatles album recorded.'),
+        releaseDate: '1969-09-26',
+        url: 'https://genius.com/albums/The-beatles/Abbey-road',
+      });
+      render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+      expect(await screen.findByText('The final Beatles album recorded.')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'About this album' })).toBeInTheDocument();
+      expect(screen.getByText('Released 26 September 1969')).toBeInTheDocument();
+      expect(window.sonos.geniusAlbumAbout).toHaveBeenCalledWith('Abbey Road', 'The Beatles');
+      expect(window.sonos.geniusArtist).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole('link', { name: 'Read more on Genius' }));
+      expect(window.sonos.openExternal).toHaveBeenCalledWith('https://genius.com/albums/The-beatles/Abbey-road');
+    });
+
+    it("falls back to the artist's Genius bio when the album has no description", async () => {
+      vi.mocked(window.sonos.geniusAlbumAbout).mockResolvedValue({ description: para('?'), url: 'https://genius.com/albums/x' });
+      vi.mocked(window.sonos.geniusArtist).mockResolvedValue({
+        description: para('A band from Liverpool.'),
+        alternateNames: [], imageUrl: null, headerImageUrl: null, instagram: null, twitter: null,
+      });
+      render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+      expect(await screen.findByText('A band from Liverpool.')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'About The Beatles' })).toBeInTheDocument();
+      expect(screen.queryByText(/^Released/)).toBeNull();
+    });
+
+    it('shows a skeleton, not "Loading…", while Genius answers', () => {
+      vi.mocked(window.sonos.geniusAlbumAbout).mockReturnValue(new Promise(() => {}));
+      const { container } = render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+      expect(screen.getByRole('heading', { name: 'About this album' })).toBeInTheDocument();
+      expect(container.querySelectorAll('[class*="skelLine"]').length).toBeGreaterThan(0);
+      expect(screen.queryByText(/Loading/)).toBeNull();
+    });
+
+    it('renders no card when Genius has nothing for the album or the artist', async () => {
+      render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+      await waitFor(() => expect(window.sonos.geniusArtist).toHaveBeenCalledWith('The Beatles'));
+      await waitFor(() => expect(screen.queryByRole('heading', { name: /^About/ })).toBeNull());
+      expect(screen.getByText('Come Together')).toBeInTheDocument();
+    });
+
+    it('asks Genius nothing for a playlist', () => {
+      mockUseLocation.mockReturnValue({ state: { item: playlistItem } });
+      mockUsePlaylistBrowse.mockReturnValue({ data: [], isLoading: false, error: null });
+      render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+      expect(window.sonos.geniusAlbumAbout).not.toHaveBeenCalled();
+      expect(screen.queryByRole('heading', { name: /^About/ })).toBeNull();
+    });
+  });
 });

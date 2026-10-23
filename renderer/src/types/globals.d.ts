@@ -9,6 +9,15 @@ interface GeniusArtistInfo {
   headerImageUrl: string | null;
   instagram: string | null;
   twitter: string | null;
+  /** The artist's Genius page. */
+  url?: string | null;
+}
+
+/** The album's Genius page: its description (null when nobody has written one), release date (ISO, or as Genius shows it) and URL. */
+interface GeniusAlbumAbout {
+  description: GeniusDomNode | null;
+  releaseDate?: string;
+  url?: string;
 }
 
 interface AttributionEntry {
@@ -475,6 +484,8 @@ interface SonosPreload {
   geniusAlbumYear: (albumName: string, artistName: string) => Promise<number | null>;
   /** Every album/single Genius lists for the artist, with its release year. [] on any failure. */
   geniusArtistAlbums: (artistName: string) => Promise<Array<{ name: string; year: number | null }>>;
+  /** This artist's album on Genius (exact title, else another edition of it). Null when Genius has no such album. */
+  geniusAlbumAbout: (albumName: string, artistName: string) => Promise<GeniusAlbumAbout | null>;
   /** Fire-and-forget telemetry event routed through the main process. No-op when App Insights is not configured. */
   trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
   minimizeWindow:    () => Promise<void>;

@@ -122,20 +122,23 @@ export function relativeDay(ts: number, now = Date.now()): string {
 function domText(node: GeniusDomNode): string {
   if (typeof node === 'string') return node;
   if (node.tag === 'br') return ' ';
+  // A list reads as one line, its items comma-separated (Genius bios list band members).
+  if (node.tag === 'ul' || node.tag === 'ol') return (node.children ?? []).map((c) => domText(c).trim()).filter(Boolean).join(', ');
   return (node.children ?? []).map(domText).join('');
+}
+
+/** Plain text of each non-empty paragraph (top-level block) of a Genius description. */
+export function geniusParagraphs(node: GeniusDomNode | null | undefined): string[] {
+  // Genius returns "?" as the description of songs nobody has written about yet.
+  const real = (t: string) => (t && t !== '?' ? t : '');
+  if (!node || typeof node === 'string') return [real((node ?? '').trim())].filter(Boolean);
+  const paras = node.tag === 'p' ? [node] : (node.children ?? []);
+  return paras.map((p) => real(domText(p).replace(/\s+/g, ' ').trim())).filter(Boolean);
 }
 
 /** Plain text of the first non-empty paragraph of a Genius description, or '' when there is none. */
 export function geniusFirstParagraph(node: GeniusDomNode | null | undefined): string {
-  // Genius returns "?" as the description of songs nobody has written about yet.
-  const real = (t: string) => (t && t !== '?' ? t : '');
-  if (!node || typeof node === 'string') return real((node ?? '').trim());
-  const paras = node.tag === 'p' ? [node] : (node.children ?? []);
-  for (const p of paras) {
-    const text = real(domText(p).replace(/\s+/g, ' ').trim());
-    if (text) return text;
-  }
-  return '';
+  return geniusParagraphs(node)[0] ?? '';
 }
 
 /** "Rich and Alex queue Gorillaz — never played here" becomes "Rich & Alex love Gorillaz". The viewer becomes "You". */

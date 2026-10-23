@@ -10,6 +10,7 @@ import {
   capPerArtist,
   relativeDay,
   geniusFirstParagraph,
+  geniusParagraphs,
   pickReason,
   neverPlayedTag,
   indicesToUndo,
@@ -469,6 +470,19 @@ describe('geniusFirstParagraph: plain text of the first description paragraph', 
     expect(geniusFirstParagraph({ tag: 'root', children: [{ tag: 'p', children: ['?'] }] })).toBe('');
     expect(geniusFirstParagraph('?')).toBe('');
     expect(geniusFirstParagraph({ tag: 'root', children: [{ tag: 'p', children: [' ? '] }, { tag: 'p', children: ['Real.'] }] })).toBe('Real.');
+  });
+});
+
+describe('geniusParagraphs: every non-empty top-level block', () => {
+  it('keeps each paragraph, reads a list as one comma-separated line, and drops "?" and blanks', () => {
+    const li = (t: string) => ({ tag: 'li', children: [t] });
+    expect(geniusParagraphs({ tag: 'root', children: [
+      { tag: 'p', children: ['Members:'] },
+      '',
+      { tag: 'ul', children: [li('Ellie Rowsell (vocals)'), li('Joel Amey (drums)')] },
+      { tag: 'p', children: ['?'] },
+    ] })).toEqual(['Members:', 'Ellie Rowsell (vocals), Joel Amey (drums)']);
+    expect(geniusParagraphs(null)).toEqual([]);
   });
 });
 

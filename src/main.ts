@@ -6,7 +6,7 @@ import { autoUpdater } from 'electron-updater';
 import { officePubSub } from './pubsub';
 import { EntraAuth, PRESENCE_SCOPE } from './auth-entra';
 import { fetchPresences, resolveRoster } from './graph-presence';
-import { pickArtistHit } from './genius-match';
+import { albumBaseTitle, geniusHasText, pickAlbumHits, pickArtistHit } from './genius-match';
 import { navDecision, isWebUrl } from './nav-guard';
 import type { EntraUser } from './auth-entra';
 import * as path from 'path';
@@ -2309,6 +2309,7 @@ ipcMain.handle('genius:artist', async (_: IpcMainInvokeEvent, artistName: string
           header_image_url: string | null;
           instagram_name: string | null;
           twitter_name: string | null;
+          url: string | null;
         };
       };
     };
@@ -2323,6 +2324,7 @@ ipcMain.handle('genius:artist', async (_: IpcMainInvokeEvent, artistName: string
       headerImageUrl: a.header_image_url ?? null,
       instagram: a.instagram_name ?? null,
       twitter: a.twitter_name ?? null,
+      url: a.url ?? null,
     };
   } catch (err) {
     log(`[genius] artist error: ${err}`);
@@ -2368,20 +2370,21 @@ ipcMain.handle('genius:albumYear', async (_: IpcMainInvokeEvent, albumName: stri
 });
 
 // ponytail: genius.com/api is Genius's unofficial web API (no token); it may change or vanish without notice.
-ipcMain.handle('genius:artistAlbums', async (_: IpcMainInvokeEvent, artistName: string) => {
-  const debugReq = (id: string, url: string, ts: number) =>
-    httpDebugWin?.webContents.send('http:req', { id, ts, operationId: 'genius:artistAlbums', method: 'GET', url, headers: {} });
-  const debugRes = (id: string, status: number, body: string, ts: number) =>
-    httpDebugWin?.webContents.send('http:res', { id, status, statusText: String(status), headers: {}, body, durationMs: Date.now() - ts });
-  const get = async (url: string): Promise<unknown> => {
+/** A JSON GET against genius.com/api, logged to the HTTP debug window. Throws on a non-2xx. */
+function geniusWebGet(operationId: string) {
+  return async (url: string): Promise<unknown> => {
     const id = randomUUID(); const ts = Date.now();
-    debugReq(id, url, ts);
+    httpDebugWin?.webContents.send('http:req', { id, ts, operationId, method: 'GET', url, headers: {} });
     const res = await fetch(url);
     const body = await res.text();
-    debugRes(id, res.status, body, ts);
+    httpDebugWin?.webContents.send('http:res', { id, status: res.status, statusText: String(res.status), headers: {}, body, durationMs: Date.now() - ts });
     if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
     return JSON.parse(body);
   };
+}
+
+ipcMain.handle('genius:artistAlbums', async (_: IpcMainInvokeEvent, artistName: string) => {
+  const get = geniusWebGet('genius:artistAlbums');
 
   try {
     type Search = { response: { sections: { hits: { result: { id: number; name: string } }[] }[] } };
@@ -2402,6 +2405,43 @@ ipcMain.handle('genius:artistAlbums', async (_: IpcMainInvokeEvent, artistName: 
   } catch (err) {
     log(`[genius] artistAlbums error: ${err}`);
     return [];
+  }
+});
+
+// The album's own Genius page, by album search (the song search ranks strangers first and its hits carry no album).
+// Exact title first, then another edition of it; only this artist's albums. Null when none matches.
+ipcMain.handle('genius:albumAbout', async (_: IpcMainInvokeEvent, albumName: string, artistName: string) => {
+  const get = geniusWebGet('genius:albumAbout');
+  try {
+    type Search = { response: { sections: { hits: { result: { id: number; name: string; artist: { name: string } | null } }[] }[] } };
+    const q = `${albumBaseTitle(albumName)} ${artistName}`;
+    const search = await get(`https://genius.com/api/search/album?q=${encodeURIComponent(q)}`) as Search;
+    const hits = pickAlbumHits(search.response?.sections?.[0]?.hits ?? [], albumName, artistName).slice(0, 2);
+
+    type Album = {
+      response: {
+        album: {
+          url: string;
+          release_date: string | null;
+          release_date_for_display: string | null;
+          description_annotation: { annotations?: { body?: { dom?: unknown } }[] } | null;
+        };
+      };
+    };
+    let fallback: { description: null; releaseDate?: string; url: string } | null = null;
+    for (const h of hits) {
+      const a = (await get(`https://genius.com/api/albums/${h.result.id}`) as Album).response?.album;
+      if (!a) continue;
+      const releaseDate = a.release_date ?? a.release_date_for_display ?? undefined;
+      const dom = a.description_annotation?.annotations?.[0]?.body?.dom;
+      // An edition's page is often blank; then the original's description stands in, with its own date and link.
+      if (geniusHasText(dom)) return { description: dom, releaseDate, url: a.url };
+      fallback ??= { description: null, releaseDate, url: a.url };
+    }
+    return fallback;
+  } catch (err) {
+    log(`[genius] albumAbout error: ${err}`);
+    return null;
   }
 });
 
