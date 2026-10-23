@@ -1,4 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { callerName } from '../lib/caller';
 import {
   BlobServiceClient,
   StorageSharedKeyCredential,
@@ -35,8 +36,9 @@ export async function playlistUploadImageHandler(
   const id = request.params['id'];
   if (!id) return { status: 400, jsonBody: { error: 'id required' } };
 
-  const userName = request.query.get('userName');
-  if (!userName) return { status: 400, jsonBody: { error: 'userName required' } };
+  const caller = await callerName(request, context, request.query.get('userName'));
+  if ('response' in caller) return caller.response;
+  const userName = caller.name;
 
   const storageConn = process.env['STORAGE_CONNECTION_STRING'];
   const cosmosConn = process.env['COSMOS_CONNECTION_STRING'];
@@ -112,7 +114,6 @@ export async function playlistUploadImageHandler(
 
     return {
       jsonBody: { imageUrl },
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[playlist-upload-image] failed:', err);

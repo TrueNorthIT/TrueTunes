@@ -4,11 +4,11 @@ import { createPollService, HttpResult, PollService } from '../shared/pollServic
 import { containerPollStore } from '../shared/pollCosmosStore';
 import { runPollPost } from '../shared/pollPost';
 import { sendPollAnnouncement } from '../shared/vestaboard';
+import { requireAuth } from '../shared/auth';
 
 // Weekly anonymous poll. Answers carry only {pollId, choice}: nothing about the caller is read,
-// stored or logged here, and the chosen answer is never logged. Admin routes are honour-system.
-
-const headers = { 'Access-Control-Allow-Origin': '*' };
+// stored or logged here, and the chosen answer is never logged. Admin routes are honour-system:
+// writes need a signed-in caller (requireAuth), but any colleague may administer.
 
 let cachedStore: ReturnType<typeof containerPollStore> | undefined;
 let cachedService: PollService | undefined;
@@ -45,13 +45,13 @@ async function run(
   call: (service: PollService) => Promise<HttpResult>
 ): Promise<HttpResponseInit> {
   const service = getService();
-  if (!service) return { status: 500, jsonBody: { error: 'Cosmos not configured' }, headers };
+  if (!service) return { status: 500, jsonBody: { error: 'Cosmos not configured' } };
   try {
     const { status, body } = await call(service);
-    return { status, jsonBody: body, headers };
+    return { status, jsonBody: body };
   } catch (err: unknown) {
     context.error(`[${name}] failed:`, err);
-    return { status: 500, jsonBody: { error: 'Poll request failed' }, headers };
+    return { status: 500, jsonBody: { error: 'Poll request failed' } };
   }
 }
 
@@ -116,7 +116,7 @@ app.http('polls-answer', {
   methods: ['POST'],
   route: 'polls/answer',
   authLevel: 'anonymous',
-  handler: pollsAnswerHandler,
+  handler: requireAuth(pollsAnswerHandler),
 });
 app.http('polls-admin-list', {
   methods: ['GET'],
@@ -128,25 +128,25 @@ app.http('polls-admin-create', {
   methods: ['POST'],
   route: 'polls-admin',
   authLevel: 'anonymous',
-  handler: pollsAdminCreateHandler,
+  handler: requireAuth(pollsAdminCreateHandler),
 });
 app.http('polls-admin-reorder', {
   methods: ['POST'],
   route: 'polls-admin/reorder',
   authLevel: 'anonymous',
-  handler: pollsAdminReorderHandler,
+  handler: requireAuth(pollsAdminReorderHandler),
 });
 app.http('polls-admin-update', {
   methods: ['PUT'],
   route: 'polls-admin/{id}',
   authLevel: 'anonymous',
-  handler: pollsAdminUpdateHandler,
+  handler: requireAuth(pollsAdminUpdateHandler),
 });
 app.http('polls-admin-delete', {
   methods: ['DELETE'],
   route: 'polls-admin/{id}',
   authLevel: 'anonymous',
-  handler: pollsAdminDeleteHandler,
+  handler: requireAuth(pollsAdminDeleteHandler),
 });
 
 // Fires at 10:23 and 11:23 UTC on weekdays; shouldPostPoll lets only the 11:23 Europe/London one through.

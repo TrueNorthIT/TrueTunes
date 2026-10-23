@@ -47,7 +47,6 @@ export async function usersListHandler(request: HttpRequest, context: Invocation
 
     return {
       jsonBody: result,
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[users-list] failed:', err);

@@ -1,4 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { callerName } from '../lib/caller';
 import { CosmosClient } from '@azure/cosmos';
 import { londonDate } from './generate-game';
 import { sendScoreAnnouncement, sendLeaderboard } from '../shared/vestaboard';
@@ -47,7 +48,9 @@ export async function submitScoreHandler(request: HttpRequest, context: Invocati
     return { status: 400, jsonBody: { error: 'Invalid JSON body' } };
   }
 
-  const userName = (body.userName ?? '').trim();
+  const caller = await callerName(request, context, (body.userName ?? '').trim());
+  if ('response' in caller) return caller.response;
+  const userName = caller.name;
   if (!body.gameId || !userName || !body.guesses) {
     return { status: 400, jsonBody: { error: 'Missing required fields' } };
   }
@@ -69,7 +72,6 @@ export async function submitScoreHandler(request: HttpRequest, context: Invocati
         return {
           status: 409,
           jsonBody: { error: 'Already submitted', existing },
-          headers: { 'Access-Control-Allow-Origin': '*' },
         };
       }
     } catch (err: unknown) {
@@ -137,7 +139,6 @@ export async function submitScoreHandler(request: HttpRequest, context: Invocati
     return {
       status: 201,
       jsonBody: scoreDoc,
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[submit-score] failed:', err);

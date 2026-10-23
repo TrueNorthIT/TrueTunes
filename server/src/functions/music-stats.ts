@@ -17,9 +17,8 @@ export async function musicStatsHandler(_request: HttpRequest, context: Invocati
     return { status: 500, jsonBody: { error: 'Cosmos not configured' } };
   }
 
-  const headers = { 'Access-Control-Allow-Origin': '*' };
   if (cached && Date.now() - cached.at < CACHE_MS) {
-    return { jsonBody: cached.body, headers };
+    return { jsonBody: cached.body };
   }
 
   try {
@@ -46,7 +45,7 @@ export async function musicStatsHandler(_request: HttpRequest, context: Invocati
     cached = { at: Date.now(), body };
 
     context.log(`[music-stats] events=${events.resources.length} tracks=${tracks.resources.length}`);
-    return { jsonBody: body, headers };
+    return { jsonBody: body };
   } catch (err) {
     context.error('[music-stats] failed:', err);
     return { status: 500, jsonBody: { error: String(err) } };

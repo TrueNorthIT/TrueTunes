@@ -1,4 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { callerName } from '../lib/caller';
 import { withOCC } from '../lib/withOCC';
 import { getPlaylistContainer } from '../lib/getContainer';
 
@@ -18,7 +19,10 @@ export async function playlistUpdateHandler(
     return { status: 400, jsonBody: { error: 'Invalid JSON body' } };
   }
 
-  const { userName, name, isPublic } = body;
+  const { name, isPublic } = body;
+  const caller = await callerName(request, context, body.userName);
+  if ('response' in caller) return caller.response;
+  const userName = caller.name;
   if (!userName) {
     return { status: 400, jsonBody: { error: 'userName required' } };
   }
@@ -54,7 +58,6 @@ export async function playlistUpdateHandler(
 
     return {
       jsonBody: resource,
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     const code = (err as { statusCode?: number }).statusCode;

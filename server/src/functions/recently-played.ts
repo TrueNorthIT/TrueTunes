@@ -144,7 +144,6 @@ export async function recentlyPlayedHandler(
 
     return {
       jsonBody: { tracks, artists, albums, availableUsers },
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[recently-played] query failed:', err);

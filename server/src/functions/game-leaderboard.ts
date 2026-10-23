@@ -43,7 +43,6 @@ export async function gameLeaderboardHandler(
     return {
       status: 200,
       jsonBody: { gameId, scores: resources },
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[game-leaderboard] failed:', err);

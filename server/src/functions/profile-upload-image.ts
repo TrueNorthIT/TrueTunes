@@ -1,4 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { callerName } from '../lib/caller';
 import {
   BlobServiceClient,
   StorageSharedKeyCredential,
@@ -32,8 +33,9 @@ export async function profileUploadImageHandler(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
-  const userName = request.params['userName'];
-  if (!userName) return { status: 400, jsonBody: { error: 'userName required' } };
+  const caller = await callerName(request, context, request.params['userName']);
+  if ('response' in caller) return caller.response;
+  const userName = caller.name;
 
   const storageConn = process.env['STORAGE_CONNECTION_STRING'];
   const cosmosConn = process.env['COSMOS_CONNECTION_STRING'];
@@ -93,7 +95,6 @@ export async function profileUploadImageHandler(
 
     return {
       jsonBody: { imageUrl },
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[profile-upload-image] failed:', err);

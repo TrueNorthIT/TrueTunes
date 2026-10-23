@@ -75,7 +75,6 @@ export async function statsHandler(request: HttpRequest, context: InvocationCont
 
     return {
       jsonBody: { topUsers, topTracks, topArtists, topAlbums, totalEvents: resources.length, periodStart: startMs },
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[stats] query failed:', err);
