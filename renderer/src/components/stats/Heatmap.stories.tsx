@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { TipTitle } from './ChartTooltip';
-import { Heatmap, RAMP } from './Heatmap';
+import { Heatmap } from './Heatmap';
+import { RAMP } from './ramp';
 import type { HeatRow } from './Heatmap';
 
 const fill = (v: number | null) => (v === null ? null : RAMP[Math.min(RAMP.length - 1, Math.floor(v * RAMP.length))]);

@@ -1,15 +1,9 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { ChartTooltip } from './ChartTooltip';
 import type { Tip } from './ChartTooltip';
+import { RAMP } from './ramp';
 import styles from './Heatmap.module.css';
-
-/** Sequential ramp, dark surface: low values recede towards the surface. */
-export const RAMP_STEPS = 9;
-export const RAMP = Array.from(
-  { length: RAMP_STEPS },
-  (_, i) => `color-mix(in srgb, var(--ramp-hi) ${Math.round((i / (RAMP_STEPS - 1)) * 100)}%, var(--ramp-lo))`,
-);
 
 export interface HeatRow {
   key: string;
@@ -43,6 +37,12 @@ export function Heatmap({
 }: Props) {
   const [tip, setTip] = useState<Tip | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el && startAtEnd) el.scrollLeft = el.scrollWidth;
+  }, [startAtEnd, columns.length]);
 
   function show(e: React.PointerEvent, r: number, c: number) {
     const wrap = wrapRef.current?.getBoundingClientRect();
@@ -57,36 +57,32 @@ export function Heatmap({
 
   return (
     <div ref={wrapRef} className={[styles.frame, className].filter(Boolean).join(' ')} onPointerLeave={() => setTip(null)}>
-      <div
-        ref={(el) => {
-          if (el && startAtEnd) el.scrollLeft = el.scrollWidth;
-        }}
-        className={styles.scroll}
-      >
-        <div
-          className={styles.grid}
-          role={ariaLabel ? 'img' : undefined}
-          aria-label={ariaLabel}
-          style={{ '--cols': columns.length, '--min-cell': minCell, '--cell-h': cellHeight } as CSSProperties}
-        >
-          <div className={styles.corner} />
-          {columns.map((c, i) => (
-            <div key={i} className={styles.colHead}>{c && <span>{c}</span>}</div>
+      <div className={styles.body} style={{ '--cols': columns.length, '--min-cell': minCell, '--cell-h': cellHeight } as CSSProperties}>
+        <div className={styles.names}>
+          <div className={styles.colHead} />
+          {rows.map((r) => (
+            <div key={r.key} className={styles.rowHead}>
+              <div className={styles.rowName}>{r.label}</div>
+            </div>
           ))}
-          {rows.map((r, ri) => (
-            <div key={r.key} className={styles.row}>
-              <div className={styles.rowHead}>{r.label}</div>
-              {r.cells.map((fill, ci) => (
+        </div>
+        <div ref={scrollRef} className={styles.scroll}>
+          <div className={styles.grid} role={ariaLabel ? 'img' : undefined} aria-label={ariaLabel}>
+            {columns.map((c, i) => (
+              <div key={i} className={styles.colHead}>{c && <span>{c}</span>}</div>
+            ))}
+            {rows.map((r, ri) =>
+              r.cells.map((fill, ci) => (
                 <div
-                  key={ci}
+                  key={`${r.key}|${ci}`}
                   className={fill === null ? styles.empty : styles.cell}
                   style={fill === null ? undefined : { background: fill }}
                   onPointerEnter={(e) => show(e, ri, ci)}
                   aria-label={cellLabel(ri, ci)}
                 />
-              ))}
-            </div>
-          ))}
+              )),
+            )}
+          </div>
         </div>
       </div>
       <div className={styles.legend} aria-hidden="true">

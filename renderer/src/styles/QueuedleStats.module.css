@@ -1,127 +1,43 @@
-.page {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: var(--nav-h) 28px 16px;
-  flex-shrink: 0;
-}
-
-.title {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: -0.01em;
-}
-
-.sub {
-  font-size: 13px;
-  color: var(--text-3);
-}
-
-.spacer { flex: 1; }
-
-.backBtn {
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--text-2);
-  font-family: inherit;
-  font-size: 12px;
-  padding: 6px 12px;
-  border-radius: var(--r-sm);
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s;
-}
-.backBtn:hover { background: var(--bg-2); color: var(--text); }
-
-.body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0 28px 120px;
-}
+/* Queuedle stats: the frame and header are stats/StatsPage, the cards common/SectionCard. Sized in em from the page base. */
 
 .state {
-  padding: 48px 28px;
+  padding: 3em 0;
   color: var(--text-3);
-  font-size: 14px;
+  font-size: var(--fs-body);
   text-align: center;
 }
+
+.strong { color: var(--text); font-weight: 600; }
 
 /* ── Player picker ── */
 .picker {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 20px;
+  gap: 0.5em;
+  margin-bottom: 1.4em;
 }
 .pickerHint {
-  font-size: 12px;
+  font-size: var(--fs-label);
   color: var(--text-3);
-  margin-right: 4px;
+  margin-right: 0.3em;
 }
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--text-2);
-  font-family: inherit;
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
-}
-.chip:hover:not(:disabled) { background: var(--bg-2); color: var(--text); }
-.chip:disabled { cursor: default; }
-.chipOn { border-color: var(--border-2); color: var(--text); background: var(--bg-2); }
 
 .swatch {
   display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: 0.7em;
+  height: 0.7em;
+  border-radius: var(--r-round);
   flex-shrink: 0;
 }
 
 /* ── Sections ── */
-.section {
-  background: var(--glass-faint);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  padding: 16px 18px 18px;
-  margin-bottom: 16px;
-  min-width: 0;
-}
-.sectionTitle {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-2);
-  margin: 0;
-}
-.sectionHint {
-  font-size: 12px;
-  color: var(--text-3);
-  margin: 4px 0 12px;
-}
-
+.section { margin-bottom: 1.4em; }
 .twoUp {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(26em, 1fr));
+  gap: 1.4em;
 }
-.twoUp > .section { margin-bottom: 0; }
 
 .chart {
   position: relative;
@@ -130,121 +46,14 @@
 
 /* ── SVG anatomy ── */
 .grid { stroke: var(--glass-faint); stroke-width: 1; }
-.axisLabel { fill: var(--text-3); font-size: 10px; }
-.axisTitle { fill: var(--text-3); font-size: 11px; }
-.directLabel { fill: var(--text); font-size: 11px; font-weight: 600; }
+.axisLabel { fill: var(--text-3); font-size: var(--fs-small); }
+.axisTitle { fill: var(--text-3); font-size: var(--fs-small); }
+.directLabel { fill: var(--text); font-size: var(--fs-small); font-weight: 600; }
 .crosshair { stroke: var(--glass-hi); stroke-width: 1; }
 .diagonal { stroke: var(--track); stroke-width: 1; stroke-dasharray: 4 4; }
 .ring { stroke: var(--bg); stroke-width: 2; }
 
-/* ── Tooltip ── */
-.tooltip {
-  position: absolute;
-  z-index: 5;
-  min-width: 150px;
-  max-width: 220px;
-  padding: 8px 10px;
-  background: var(--bg-glass);
-  border: 1px solid var(--border-2);
-  border-radius: var(--r-sm);
-  pointer-events: none;
-  font-size: 12px;
-  backdrop-filter: blur(8px);
-}
-.tipTitle { color: var(--text); font-weight: 600; margin-bottom: 4px; }
-.tipRow { display: flex; align-items: center; gap: 6px; color: var(--text-2); line-height: 1.6; }
-.tipName { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tipValue { color: var(--text); font-variant-numeric: tabular-nums; }
-
-/* ── Heatmap ── */
-.heatmap { display: flex; min-width: 0; }
-.heatNames { flex-shrink: 0; padding-right: 8px; }
-.heatCorner { height: 18px; }
-.heatName {
-  height: 16px;
-  margin-bottom: 2px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  color: var(--text-2);
-  max-width: 150px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.heatNameStrong { color: var(--text); font-weight: 600; }
-.heatScroll { overflow-x: auto; min-width: 0; padding-bottom: 6px; }
-.heatDates, .heatRow { display: flex; gap: 2px; }
-.heatDates { height: 18px; }
-.heatRow { margin-bottom: 2px; }
-.heatDate {
-  width: 16px;
-  flex-shrink: 0;
-  font-size: 10px;
-  color: var(--text-3);
-  white-space: nowrap;
-  overflow: visible;
-}
-.heatCell, .heatEmpty {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-  border-radius: 3px;
-}
-.heatEmpty, .heatEmptyKey { box-shadow: inset 0 0 0 1px var(--glass-faint); }
-.heatCell:hover, .heatEmpty:hover { outline: 2px solid var(--text); outline-offset: -1px; }
-.rampLegend {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-  font-size: 11px;
-  color: var(--text-3);
-}
-.rampBar { width: 120px; height: 8px; border-radius: 4px; }
-.heatEmptyKey { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-left: 12px; }
-
 /* ── Weekly bars ── */
-.weekNav { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.weekLabel { font-size: 13px; color: var(--text); font-weight: 600; min-width: 110px; text-align: center; }
-.navBtn {
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--text-2);
-  width: 26px;
-  height: 26px;
-  border-radius: var(--r-sm);
-  cursor: pointer;
-  font-size: 15px;
-  line-height: 1;
-}
-.navBtn:hover:not(:disabled) { background: var(--bg-2); color: var(--text); }
-.navBtn:disabled { opacity: 0.35; cursor: default; }
-.bars { display: flex; flex-direction: column; gap: 6px; }
-.barRow {
-  display: grid;
-  grid-template-columns: 18px minmax(70px, 130px) 1fr 32px 24px;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-}
-.barRank { color: var(--text-3); text-align: right; font-variant-numeric: tabular-nums; }
-.barName { color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.barTrack { height: 10px; }
-.bar { display: block; height: 100%; border-radius: 0 4px 4px 0; min-width: 2px; }
-.barValue { color: var(--text); text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
-.barGames { color: var(--text-3); font-size: 11px; }
-
-.clearBtn {
-  background: none;
-  border: none;
-  color: var(--text-3);
-  font-family: inherit;
-  font-size: 12px;
-  padding: 4px 6px;
-  cursor: pointer;
-  text-decoration: underline;
-}
-.clearBtn:hover { color: var(--text); }
-.chip:disabled:not(.chipOn) { opacity: 0.45; }
+.weekNav { display: flex; align-items: center; gap: 0.8em; margin-bottom: 0.9em; }
+.weekLabel { font-size: var(--fs-label); color: var(--text); font-weight: 600; min-width: 9em; text-align: center; }
+.navBtn { padding: 0.5em; }
