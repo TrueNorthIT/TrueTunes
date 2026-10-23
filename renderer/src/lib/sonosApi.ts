@@ -2,26 +2,64 @@
 // ES module version of the Sonos API client.
 // Calls window.sonos.fetch (set by preload contextBridge) under the hood.
 
-// ─── IPC types ───────────────────────────────────────────────────────────────
+import type { AlbumResponse } from '../types/AlbumResponse';
+import type { ArtistResponse } from '../types/ArtistResponse';
+import type { PlaylistResponse } from '../types/PlaylistResponse';
+import type { ServiceSearch } from '../types/ServiceSearch';
 
-interface FetchResponse {
-  data?: unknown;
-  error?: string;
-  etag?: string;
-}
+// ─── Operation ids ───────────────────────────────────────────────────────────
+// Every operationId in SonosWebPlayerAPI.yaml. lib/__tests__/sonosApi.test.ts fails
+// if this list and the yaml disagree, so add new operations in both places.
+
+export const OPERATION_IDS = [
+  'getAuthDiscovery',
+  'getQueueResources',
+  'addQueueResource',
+  'deleteQueueResources',
+  'reorderQueueResources',
+  'browseAlbum',
+  'browseArtist',
+  'browseContainer',
+  'browsePlaylist',
+  'getCatalogContainerResources',
+  'getFavoriteResources',
+  'getHistory',
+  'searchHousehold',
+  'searchService',
+  'getIntegrations',
+  'getIntegrationRegistrations',
+  'getTrackNowPlaying',
+  'getMfe',
+  'getOptimizelyConfig',
+  'postMetrics',
+  'getGroups',
+  'getPlaybackState',
+  'play',
+  'pause',
+  'skipToNextTrack',
+  'skipToPreviousTrack',
+  'setPlayMode',
+] as const;
+
+export type OperationId = (typeof OPERATION_IDS)[number];
+
+/** Container and now-playing payloads are loosely shaped; callers narrow them with helpers. */
+type Loose = Record<string, unknown>;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function call(
-  operationId: string,
+// The one cast: the IPC bridge hands back unknown, each api.* method declares what the
+// operation returns.
+function call<T = unknown>(
+  operationId: OperationId,
   options: {
     pathParams?: Record<string, string>;
     query?: Record<string, string | undefined>;
     body?: unknown;
     headers?: Record<string, string>;
   } = {}
-): Promise<FetchResponse> {
-  return window.sonos.fetch({ operationId, ...options });
+): Promise<FetchResponse<T>> {
+  return window.sonos.fetch({ operationId, ...options }) as Promise<FetchResponse<T>>;
 }
 
 function defined(obj: Record<string, string | undefined>): Record<string, string> {
@@ -138,7 +176,7 @@ function buildApi() {
           offset?: number;
         }
       ) =>
-        call('browseAlbum', {
+        call<AlbumResponse>('browseAlbum', {
           pathParams: { albumId, ...defined({ serviceId: params?.serviceId, accountId: params?.accountId }) },
           query: defined({
             defaults: params?.defaults,
@@ -152,7 +190,7 @@ function buildApi() {
         artistId: string,
         params?: { serviceId?: string; accountId?: string; defaults?: string; muse2?: boolean }
       ) =>
-        call('browseArtist', {
+        call<ArtistResponse>('browseArtist', {
           pathParams: { artistId, ...defined({ serviceId: params?.serviceId, accountId: params?.accountId }) },
           query: defined({ defaults: params?.defaults, muse2: params?.muse2 ? 'true' : undefined }),
         }),
@@ -161,7 +199,7 @@ function buildApi() {
         containerId: string,
         params?: { serviceId?: string; accountId?: string; defaults?: string; muse2?: boolean }
       ) =>
-        call('browseContainer', {
+        call<Loose>('browseContainer', {
           pathParams: { containerId, ...defined({ serviceId: params?.serviceId, accountId: params?.accountId }) },
           query: defined({ defaults: params?.defaults, muse2: params?.muse2 ? 'true' : undefined }),
         }),
@@ -170,7 +208,7 @@ function buildApi() {
         playlistId: string,
         params?: { serviceId?: string; accountId?: string; defaults?: string; muse2?: boolean; count?: number }
       ) =>
-        call('browsePlaylist', {
+        call<PlaylistResponse>('browsePlaylist', {
           pathParams: { playlistId, ...defined({ serviceId: params?.serviceId, accountId: params?.accountId }) },
           query: defined({
             defaults: params?.defaults,
@@ -207,7 +245,7 @@ function buildApi() {
         }),
 
       serviceQuery: (q: string, params?: { serviceId?: string; accountId?: string; count?: number }) =>
-        call('searchService', {
+        call<ServiceSearch>('searchService', {
           pathParams: defined({ serviceId: params?.serviceId, accountId: params?.accountId }),
           query: defined({ query: q, count: params?.count?.toString() }),
         }),
@@ -220,7 +258,7 @@ function buildApi() {
 
     nowPlaying: {
       track: (trackId: string, params?: { serviceId?: string; accountId?: string }) =>
-        call('getTrackNowPlaying', {
+        call<Loose>('getTrackNowPlaying', {
           pathParams: { trackId, ...defined({ serviceId: params?.serviceId, accountId: params?.accountId }) },
         }),
     },

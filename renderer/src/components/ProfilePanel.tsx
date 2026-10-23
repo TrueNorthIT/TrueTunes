@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Camera } from 'lucide-react';
 import { useStats } from '../hooks/useStats';
+import { recentlyPlayedQueryOptions } from '../hooks/useRecentlyPlayed';
 import { useGameRankings } from '../hooks/useDailyGame';
 import { useMyPlaylists } from '../hooks/usePlaylists';
 import { useUserProfile, useInvalidateUserProfile } from '../hooks/useUserProfile';
@@ -66,11 +67,7 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
   const { data: stats, isLoading: statsLoading } = useStats('alltime', userName, 25);
   const { data: week } = useStats('week', userName);
   const { data: office } = useStats('alltime');
-  const { data: recent, isLoading: recentLoading } = useQuery({
-    queryKey: ['recentlyPlayed', userName], // the key and fetcher useRecentlyPlayed uses, so the cache is shared
-    queryFn: () => window.sonos.fetchRecentlyPlayed(userName),
-    staleTime: 5 * 60_000,
-  });
+  const { data: recent, isLoading: recentLoading } = useQuery(recentlyPlayedQueryOptions(userName)); // shared with useRecentlyPlayed
   const { data: rankings } = useGameRankings(userName, true);
   const ranking = rankings?.find((r) => r.userName === userName) ?? null;
   const { data: presence } = useOfficePresence();

@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useImage } from '../../hooks/useImage';
+import { useDisplayName } from '../../hooks/useDisplayName';
 import {
   WEEKDAYS,
   VARIETY_MIN_TRACKS,
@@ -391,16 +392,7 @@ function Stats({ data, me }: { data: MusicStatsResult; me: string | null | undef
 
 export function MusicStatsPanel() {
   const navigate = useNavigate();
-  const [displayName, setDisplayName] = useState<string | null | undefined>(undefined);
-  useEffect(() => {
-    let live = true;
-    Promise.resolve(window.sonos.getDisplayName())
-      .then((n) => live && setDisplayName(n ?? null))
-      .catch(() => live && setDisplayName(null));
-    return () => {
-      live = false;
-    };
-  }, []);
+  const displayName = useDisplayName();
   const stats = useQuery(musicStatsQueryOptions());
   const data = stats.data;
 

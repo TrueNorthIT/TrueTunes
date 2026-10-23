@@ -140,7 +140,7 @@ export class SonosProvider implements AudioProvider {
   }): Promise<{ items: NormalizedQueueItem[]; etag?: string; error?: string }> {
     const r = await api.queue.list({ count: params?.count, offset: params?.offset });
     if (r.error) return { items: [], error: r.error };
-    const raw = extractItems(r.data) as SonosItem[];
+    const raw = extractItems(r.data);
     const offset = params?.offset ?? 0;
     return {
       items: raw.map((item, i) => normalizeSonosItemToQueueItem(item, offset + i)),

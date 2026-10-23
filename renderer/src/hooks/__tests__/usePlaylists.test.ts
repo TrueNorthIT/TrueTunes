@@ -148,8 +148,8 @@ describe('useFavourite', () => {
 });
 
 describe('useEnsureFavourites', () => {
-  it('registers query with staleTime=5 minutes and retry=2', () => {
-    const qc = new QueryClient();
+  it('registers query with retry=2 and inherits the 5 minute default staleTime', () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 5 * 60_000 } } });
     renderHook(() => useEnsureFavourites(DISPLAY_NAME), { wrapper: makeWrapper(qc) });
     const query = qc.getQueryCache().find({ queryKey: ['favourites-ensure', DISPLAY_NAME] });
     const opts = query?.options as { staleTime?: number; retry?: number | boolean | null } | undefined;

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, Heart, ListMusic, ListPlus, ListStart, Lock, Plus, UserRound } from 'lucide-react';
-import { useMyPlaylists, favouritesId } from '../../hooks/usePlaylists';
+import { useMyPlaylists, favouritesId, playlistKeys } from '../../hooks/usePlaylists';
 import { useToast } from './Toast';
 import { Dialog } from './Dialog';
 import { PillButton } from './PillButton';
@@ -91,10 +91,10 @@ function PlaylistSubmenu({
   async function handleAdd(playlist: PlaylistMeta) {
     try {
       await window.sonos.addTrackToPlaylist(playlist.id, track);
-      queryClient.invalidateQueries({ queryKey: ['playlist', playlist.id] });
-      queryClient.invalidateQueries({ queryKey: ['playlists', 'owned', playlist.owner] });
+      queryClient.invalidateQueries({ queryKey: playlistKeys.detail(playlist.id) });
+      queryClient.invalidateQueries({ queryKey: playlistKeys.owned(playlist.owner) });
       if (displayName && playlist.owner !== displayName) {
-        queryClient.invalidateQueries({ queryKey: ['playlists', 'joined', displayName] });
+        queryClient.invalidateQueries({ queryKey: playlistKeys.joined(displayName) });
       }
     } catch {
       showToast(`Failed to add to ${playlist.name}`);
@@ -220,19 +220,19 @@ export function ContextMenuProvider({ children, displayName, onAddToQueue, onQue
     if (!menuState.payload || !displayName) return;
     const favId = favouritesId(displayName);
     const track = menuState.payload.track;
-    const snapshot = queryClient.getQueryData<PlaylistDoc>(['playlist', favId]);
+    const snapshot = queryClient.getQueryData<PlaylistDoc>(playlistKeys.detail(favId));
     if (snapshot) {
-      queryClient.setQueryData(['playlist', favId], {
+      queryClient.setQueryData(playlistKeys.detail(favId), {
         ...snapshot,
         tracks: [...snapshot.tracks, track],
       });
     }
     try {
       await window.sonos.addTrackToPlaylist(favId, track);
-      queryClient.invalidateQueries({ queryKey: ['playlist', favId] });
-      queryClient.invalidateQueries({ queryKey: ['playlists', 'owned', displayName] });
+      queryClient.invalidateQueries({ queryKey: playlistKeys.detail(favId) });
+      queryClient.invalidateQueries({ queryKey: playlistKeys.owned(displayName) });
     } catch {
-      if (snapshot) queryClient.setQueryData(['playlist', favId], snapshot);
+      if (snapshot) queryClient.setQueryData(playlistKeys.detail(favId), snapshot);
       showToast('Failed to add to Favourites');
     }
     close();
@@ -371,7 +371,7 @@ export function CreatePlaylistDialog({
       if (pendingTrack && playlist.id) {
         await window.sonos.addTrackToPlaylist(playlist.id, pendingTrack);
       }
-      queryClient.invalidateQueries({ queryKey: ['playlists', 'owned', displayName] });
+      queryClient.invalidateQueries({ queryKey: playlistKeys.owned(displayName) });
       onClose();
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : String(err));

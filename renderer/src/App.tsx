@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { getActiveProvider } from './providers';
 import { useAuth } from './hooks/useAuth';
 import { useGroups } from './hooks/useGroups';
@@ -27,8 +27,8 @@ import type { SonosItem, SonosItemId } from './types/sonos';
 import { TopNav } from './components/TopNav';
 import { PlayerBar } from './components/PlayerBar';
 import { AmbientBackdrop } from './components/AmbientBackdrop';
-import { HomePanel, fetchYtmSections } from './components/HomePanel';
-import type { YtmSections } from './components/HomePanel';
+import { HomePanel } from './components/HomePanel';
+import { useYtmHome } from './hooks/useYtmHome';
 import { AlbumPanel } from './components/album/AlbumPanel';
 import { ArtistPanel } from './components/artist/ArtistPanel';
 import { ContainerPanel } from './components/ContainerPanel';
@@ -48,6 +48,7 @@ import { FeedbackDialog } from './components/FeedbackDialog';
 import { PollAdminLauncher } from './components/polls/PollAdminLauncher';
 import { ChangelogDialog } from './components/ChangelogDialog';
 import { LyricsPanel } from './components/LyricsPanel';
+import { useDisplayName, useDisplayNameActions, refreshDisplayName } from './hooks/useDisplayName';
 import { ProfilePanel } from './components/ProfilePanel';
 import { PlaylistPanel } from './components/PlaylistPanel';
 import { positionAfterCurrent } from './lib/queueHelpers';
@@ -112,7 +113,8 @@ function MainApp() {
 
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [changelogOpen, setChangelogOpen] = useState(false);
-  const [displayName, setDisplayName] = useState<string | null | undefined>(undefined); // undefined = not yet loaded
+  const displayName = useDisplayName(); // undefined = not yet loaded
+  const displayNameActions = useDisplayNameActions();
   const [entraLoading, setEntraLoading] = useState(false);
   useEnsureFavourites(displayName);
   // The saved width is the user's preference; the state is what this window can give it
@@ -135,7 +137,6 @@ function MainApp() {
   }, []);
 
   useEffect(() => {
-    window.sonos.getDisplayName().then(setDisplayName);
     window.sonos
       .getQueueDockedWidth()
       .then((w) => {
@@ -144,12 +145,9 @@ function MainApp() {
       })
       .catch(() => {});
     return window.sonos.onEntraReady(() => {
-      window.sonos
-        .getDisplayName()
-        .then(setDisplayName)
-        .catch(() => {});
+      void refreshDisplayName(queryClient);
     });
-  }, [fitQueueWidth]);
+  }, [fitQueueWidth, queryClient]);
 
   useEffect(() => {
     window.addEventListener('resize', fitQueueWidth);
@@ -262,16 +260,7 @@ function MainApp() {
     ) => {
       // Use cached metadata if available; publish immediately with fallback so attribution
       // is never lost because of a secondary metadata fetch failing.
-      const cached = queryClient.getQueryData(trackQueryOptions(trackId, serviceId, accountId).queryKey) as
-        | {
-            trackName?: string;
-            artist?: string;
-            artistId?: string;
-            albumName?: string;
-            albumId?: string;
-            artUrl?: string;
-          }
-        | undefined;
+      const cached = queryClient.getQueryData(trackQueryOptions(trackId, serviceId, accountId).queryKey);
       window.sonos
         .publishQueued({
           eventType: 'track',
@@ -516,12 +505,7 @@ function MainApp() {
 
   const homeEnabled = isAuthed && groups.length > 0;
 
-  const { data: ytm, isLoading: ytmLoading } = useQuery<YtmSections>({
-    queryKey: ['ytm-home'],
-    queryFn: fetchYtmSections,
-    enabled: homeEnabled,
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: ytm, isLoading: ytmLoading } = useYtmHome(homeEnabled);
 
   const splashReady = isAuthed && groups.length > 0 && !ytmLoading;
 
@@ -573,7 +557,7 @@ function MainApp() {
                 void window.sonos
                   .setDisplayName(stored)
                   .then((result) => {
-                    if (!result?.error) setDisplayName(stored || null);
+                    if (!result?.error) displayNameActions.set(stored || null);
                   })
                   .catch(() => {});
               }}
@@ -635,21 +619,14 @@ function MainApp() {
                         onAddToQueue={handleAddToQueue}
                         displayName={displayName}
                         onSignOut={async () => {
-                          setDisplayName(null);
+                          displayNameActions.set(null);
                           setEntraLoading(true);
                           await window.sonos.entraSignOut().catch(() => {});
                           await window.sonos.entraReLogin().catch(() => {});
-                          const name = await window.sonos.getDisplayName().catch(() => null);
-                          setDisplayName(name);
+                          await displayNameActions.refresh();
                           setEntraLoading(false);
                         }}
-                        onChangeName={async (name) => {
-                          const result = await window.sonos
-                            .renameUser(displayName ?? '', name)
-                            .catch(() => ({ error: 'network' }));
-                          if (!result?.error) setDisplayName(name);
-                          return result?.error ? { error: result.error } : null;
-                        }}
+                        onChangeName={(name) => displayNameActions.rename(displayName, name)}
                       />
                     }
                   />

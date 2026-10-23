@@ -1,8 +1,13 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
+import { STALE } from '../lib/queryDefaults';
+
+export const officePresenceKeys = {
+  all: ['office-presence'] as const,
+};
 
 export function officePresenceQueryOptions() {
-  return {
-    queryKey: ['office-presence'],
+  return queryOptions({
+    queryKey: officePresenceKeys.all,
     queryFn: async (): Promise<OfficePresence> => {
       const res = await window.sonos.fetchOfficePresence();
       return {
@@ -15,11 +20,11 @@ export function officePresenceQueryOptions() {
     },
     // People wander in and out; a couple of minutes is fresh enough and keeps
     // us well inside Graph's rate limit.
-    staleTime: 2 * 60_000,
+    staleTime: STALE.twoMinutes,
     retry: 1,
-  };
+  });
 }
 
 export function useOfficePresence(enabled = true) {
-  return useQuery<OfficePresence>({ ...officePresenceQueryOptions(), enabled });
+  return useQuery({ ...officePresenceQueryOptions(), enabled });
 }

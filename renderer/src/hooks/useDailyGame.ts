@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   calculateWeeklyLeaderboard,
   isInWeek,
@@ -10,6 +10,7 @@ import {
 } from '../lib/queuedleWeek';
 import type { WeeklyStanding } from '../lib/queuedleWeek';
 import type { QueuedleDay } from '../lib/queuedleStats';
+import { STALE } from '../lib/queryDefaults';
 
 export interface GameRanking {
   userName: string;
@@ -160,44 +161,71 @@ export function calculateGameRankings(sources: GameRankingSource[]): GameRanking
     );
 }
 
+export const queuedleKeys = {
+  game: (date?: string) => ['queuedle', date ?? 'today'] as const,
+  leaderboard: (date?: string) => ['queuedle-leaderboard', date ?? 'today'] as const,
+  /** Prefix of every leaderboard key, for invalidation. */
+  leaderboards: ['queuedle-leaderboard'] as const,
+  dates: (userName: string | null | undefined) => ['queuedle-dates', userName ?? ''] as const,
+  datesAll: ['queuedle-dates'] as const,
+  history: (userName: string | null | undefined) => ['queuedle-history', userName ?? ''] as const,
+  historyAll: ['queuedle-history'] as const,
+  weekly: (from: string | undefined, userName: string | null | undefined) =>
+    ['queuedle-weekly', from ?? '', userName ?? ''] as const,
+  weeklyAll: ['queuedle-weekly'] as const,
+  lastWeekWinner: (from: string | undefined) => ['queuedle-last-week-winner', from ?? ''] as const,
+  stats: (gameId: string | null) => ['queuedle-stats', gameId ?? 'today'] as const,
+  /** Prefix of one game's score keys, for invalidation. */
+  myScoresFor: (gameId: string) => ['queuedle-my-score', gameId] as const,
+  myScore: (gameId: string | null, userName: string | null | undefined) =>
+    ['queuedle-my-score', gameId ?? '', userName ?? ''] as const,
+};
+
+/** Poll while the server is still generating today's game. */
+export function dailyGameRefetchInterval(data: GameFetchResult | undefined): number | false {
+  return data && 'status' in data && data.status === 'pending' ? 30_000 : false;
+}
+
 export function dailyGameQueryOptions(date?: string) {
-  return {
-    queryKey: ['queuedle', date ?? 'today'] as const,
+  return queryOptions({
+    queryKey: queuedleKeys.game(date),
     queryFn: async (): Promise<GameFetchResult> => window.sonos.fetchDailyGame(date),
-    staleTime: 60_000,
+    staleTime: STALE.minute,
     retry: (failureCount: number, err: unknown) => {
       void err;
       return failureCount < 3;
     },
-    refetchInterval: (q: { state: { data?: GameFetchResult } }) => {
-      const d = q.state.data;
-      if (d && 'status' in d && d.status === 'pending') return 30_000;
-      return false as const;
-    },
-  };
+    refetchInterval: (q) => dailyGameRefetchInterval(q.state.data),
+  });
 }
 
 export function useDailyGame(date?: string) {
   return useQuery(dailyGameQueryOptions(date));
 }
 
-export function useGameLeaderboard(date?: string) {
-  return useQuery<GameLeaderboardResult>({
-    queryKey: ['queuedle-leaderboard', date ?? 'today'],
-    queryFn: () => window.sonos.fetchGameLeaderboard(date),
-    staleTime: 30_000,
+export const gameLeaderboardQueryOptions = (date?: string) =>
+  queryOptions({
+    queryKey: queuedleKeys.leaderboard(date),
+    queryFn: (): Promise<GameLeaderboardResult> => window.sonos.fetchGameLeaderboard(date),
+    staleTime: STALE.live,
     refetchInterval: 60_000,
   });
+
+export function useGameLeaderboard(date?: string) {
+  return useQuery(gameLeaderboardQueryOptions(date));
 }
 
-export function useGameDates(userName: string | null | undefined) {
-  return useQuery<GameDatesResult>({
-    queryKey: ['queuedle-dates', userName ?? ''],
-    queryFn: () => window.sonos.fetchGameDates(userName ?? ''),
+export const gameDatesQueryOptions = (userName: string | null | undefined) =>
+  queryOptions({
+    queryKey: queuedleKeys.dates(userName),
+    queryFn: (): Promise<GameDatesResult> => window.sonos.fetchGameDates(userName ?? ''),
     enabled: userName !== undefined,
-    staleTime: 60_000,
+    staleTime: STALE.minute,
     refetchInterval: 5 * 60_000,
   });
+
+export function useGameDates(userName: string | null | undefined) {
+  return useQuery(gameDatesQueryOptions(userName));
 }
 
 /**
@@ -226,12 +254,11 @@ export async function fetchQueuedleHistory(userName: string): Promise<QueuedleDa
 }
 
 export function queuedleHistoryQueryOptions(userName: string | null | undefined) {
-  return {
-    queryKey: ['queuedle-history', userName ?? ''] as const,
+  return queryOptions({
+    queryKey: queuedleKeys.history(userName),
     queryFn: () => fetchQueuedleHistory(userName ?? ''),
-    staleTime: 5 * 60_000,
     refetchInterval: 5 * 60_000,
-  };
+  });
 }
 
 export function useQueuedleHistory(userName: string | null | undefined, enabled = true) {
@@ -239,18 +266,19 @@ export function useQueuedleHistory(userName: string | null | undefined, enabled 
 }
 
 export function useGameRankings(userName: string | null | undefined, enabled: boolean) {
-  return useQuery<QueuedleDay[], Error, GameRanking[]>({
+  return useQuery({
     ...queuedleHistoryQueryOptions(userName),
-    select: (days) => calculateGameRankings(days.map((d) => ({ leaderboard: d, maxTotal: d.questionCount * 2 }))),
+    select: (days): GameRanking[] =>
+      calculateGameRankings(days.map((d) => ({ leaderboard: d, maxTotal: d.questionCount * 2 }))),
     enabled: enabled && userName !== undefined,
   });
 }
 
-export function useWeeklyLeaderboard(gameId: string | null, userName: string | null | undefined) {
+export const weeklyLeaderboardQueryOptions = (gameId: string | null, userName: string | null | undefined) => {
   const range = gameId ? weekRangeOf(gameId) : null;
-  return useQuery<WeeklyStanding[]>({
-    queryKey: ['queuedle-weekly', range?.from ?? '', userName ?? ''],
-    queryFn: async () => {
+  return queryOptions({
+    queryKey: queuedleKeys.weekly(range?.from, userName),
+    queryFn: async (): Promise<WeeklyStanding[]> => {
       const datesResult = await window.sonos.fetchGameDates(userName ?? '');
       const dates = Array.isArray(datesResult.dates) ? datesResult.dates : [];
       const inWeek = dates.filter((d) => d.status === 'ready' && range && isInWeek(d.gameId, range));
@@ -260,9 +288,13 @@ export function useWeeklyLeaderboard(gameId: string | null, userName: string | n
       return calculateWeeklyLeaderboard(boards);
     },
     enabled: !!range && userName !== undefined,
-    staleTime: 60_000,
+    staleTime: STALE.minute,
     refetchInterval: 5 * 60_000,
   });
+};
+
+export function useWeeklyLeaderboard(gameId: string | null, userName: string | null | undefined) {
+  return useQuery(weeklyLeaderboardQueryOptions(gameId, userName));
 }
 
 /** Last week's Queuedle winner, for the gold avatar on Home all this week. */
@@ -273,9 +305,13 @@ export function useLastWeekWinner(userName: string | null | undefined) {
     const id = setInterval(() => setNow(Date.now()), 30 * 60_000);
     return () => clearInterval(id);
   }, []);
-  const range = previousWeekRange(londonDateId(now));
-  return useQuery({
-    queryKey: ['queuedle-last-week-winner', range?.from ?? ''],
+  return useQuery(lastWeekWinnerQueryOptions(userName, londonDateId(now)));
+}
+
+export const lastWeekWinnerQueryOptions = (userName: string | null | undefined, today: string) => {
+  const range = previousWeekRange(today);
+  return queryOptions({
+    queryKey: queuedleKeys.lastWeekWinner(range?.from),
     queryFn: async () => {
       if (!range) return null;
       const datesResult = await window.sonos.fetchGameDates(userName ?? '');
@@ -287,25 +323,28 @@ export function useLastWeekWinner(userName: string | null | undefined) {
       return weeklyWinner(boards, range);
     },
     enabled: !!range && userName !== undefined,
-    staleTime: 30 * 60_000,
+    staleTime: STALE.halfHour,
     refetchInterval: 30 * 60_000,
   });
-}
+};
 
-export function useGameStats(gameId: string | null) {
-  return useQuery<GameStatsResult>({
-    queryKey: ['queuedle-stats', gameId ?? 'today'],
-    queryFn: () => window.sonos.fetchGameStats(gameId ?? undefined),
+export const gameStatsQueryOptions = (gameId: string | null) =>
+  queryOptions({
+    queryKey: queuedleKeys.stats(gameId),
+    queryFn: (): Promise<GameStatsResult> => window.sonos.fetchGameStats(gameId ?? undefined),
     enabled: !!gameId,
-    staleTime: 60_000,
+    staleTime: STALE.minute,
     refetchInterval: 60_000,
   });
+
+export function useGameStats(gameId: string | null) {
+  return useQuery(gameStatsQueryOptions(gameId));
 }
 
-export function useMyScore(gameId: string | null, userName: string | null | undefined) {
-  return useQuery<GameMyScoreResult>({
-    queryKey: ['queuedle-my-score', gameId ?? '', userName ?? ''],
-    queryFn: async () => {
+export const myScoreQueryOptions = (gameId: string | null, userName: string | null | undefined) =>
+  queryOptions({
+    queryKey: queuedleKeys.myScore(gameId, userName),
+    queryFn: async (): Promise<GameMyScoreResult> => {
       const result = await window.sonos.fetchMyScore(gameId!, userName!);
       // The IPC returns { error } rather than throwing. Throw so the failure is
       // retried and never cached as if it were an answer.
@@ -317,8 +356,11 @@ export function useMyScore(gameId: string | null, userName: string | null | unde
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
     // A score with its guesses never changes, so keep it. Anything else (no score
     // yet, or a score without guesses) is re-checked on the next mount.
-    staleTime: (query) => (query.state.data?.score?.guesses?.main?.length ? Infinity : 0),
+    staleTime: (query) => (query.state.data?.score?.guesses?.main?.length ? STALE.forever : 0),
   });
+
+export function useMyScore(gameId: string | null, userName: string | null | undefined) {
+  return useQuery(myScoreQueryOptions(gameId, userName));
 }
 
 export function useSubmitGameScore() {
@@ -334,14 +376,14 @@ export function useSubmitGameScore() {
   >({
     mutationFn: (input) => window.sonos.submitGameScore(input),
     onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: ['queuedle-leaderboard'] });
-      qc.invalidateQueries({ queryKey: ['queuedle', variables.gameId] });
-      qc.invalidateQueries({ queryKey: ['queuedle', 'today'] });
-      qc.invalidateQueries({ queryKey: ['queuedle-dates'] });
-      qc.invalidateQueries({ queryKey: ['queuedle-history'] });
-      qc.invalidateQueries({ queryKey: ['queuedle-weekly'] });
-      qc.invalidateQueries({ queryKey: ['queuedle-my-score', variables.gameId] });
-      qc.invalidateQueries({ queryKey: ['queuedle-stats', variables.gameId] });
+      qc.invalidateQueries({ queryKey: queuedleKeys.leaderboards });
+      qc.invalidateQueries({ queryKey: queuedleKeys.game(variables.gameId) });
+      qc.invalidateQueries({ queryKey: queuedleKeys.game() });
+      qc.invalidateQueries({ queryKey: queuedleKeys.datesAll });
+      qc.invalidateQueries({ queryKey: queuedleKeys.historyAll });
+      qc.invalidateQueries({ queryKey: queuedleKeys.weeklyAll });
+      qc.invalidateQueries({ queryKey: queuedleKeys.myScoresFor(variables.gameId) });
+      qc.invalidateQueries({ queryKey: queuedleKeys.stats(variables.gameId) });
     },
   });
 }
