@@ -593,6 +593,11 @@ interface SonosPreload {
   entraReLogin: () => Promise<void>;
   onEntraReady: (cb: (user: EntraUser) => void) => Unsubscribe;
   renameUser: (oldName: string, newName: string) => Promise<{ ok?: boolean; error?: string }>;
+  submitFeedback: (
+    type: 'bug' | 'feature',
+    title: string,
+    description: string
+  ) => Promise<{ url: string } | { error: string }>;
   updateNowPlayingSmtc: (data: {
     title?: string;
     artist?: string;

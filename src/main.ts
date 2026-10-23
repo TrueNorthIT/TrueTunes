@@ -1219,7 +1219,7 @@ async function initPubSub(): Promise<void> {
     pubsubInitialised = false;
   }
   try {
-    const initialMap = await officePubSub.connect(config.displayName, PUBSUB_FUNCTION_URL);
+    const initialMap = await officePubSub.connect(config.displayName, PUBSUB_FUNCTION_URL, entraIdToken);
     broadcastToRenderers('attribution:map', initialMap);
     officePubSub.onEvent((event) => {
       broadcastToRenderers('attribution:event', event);
@@ -1237,7 +1237,7 @@ async function initPubSub(): Promise<void> {
 /** Returns true if the name is already owned by a different Entra OID. */
 async function claimDisplayName(oid: string, displayName: string): Promise<boolean> {
   try {
-    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/profile/claim`, {
+    const res = await fnFetch(`${PUBSUB_FUNCTION_URL}/api/profile/claim`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ oid, displayName }),
@@ -1264,6 +1264,20 @@ async function lookupProfileByOid(oid: string): Promise<string | null> {
 // ─── Entra auth ───────────────────────────────────────────────────────────────
 
 let entraAuth: EntraAuth | null = null;
+
+/** The signed-in user's Entra ID token, or null before sign-in (or when Entra isn't configured). */
+const entraIdToken = async (): Promise<string | null> => (entraAuth ? entraAuth.idToken() : null);
+
+/**
+ * fetch for the True Tunes functions that write or act as the user: adds the Entra ID
+ * token, so the server takes the caller from it rather than from the body.
+ */
+async function fnFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  const token = await entraIdToken();
+  const headers = new Headers(init.headers);
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  return fetch(url, { ...init, headers });
+}
 
 async function ensureEntraAuth(forcePrompt?: string): Promise<void> {
   // Lazy-init so env vars are guaranteed to be loaded (dotenv + build-env.json
@@ -1295,7 +1309,9 @@ async function ensureEntraAuth(forcePrompt?: string): Promise<void> {
   }
 
   // Register this display name under this OID (no-op if already claimed; migrates pre-Entra users).
-  claimDisplayName(user.oid, config.displayName).catch(() => {});
+  // Awaited: the functions resolve a token's caller through this claim, so it must land before the
+  // first write (pubsub connect follows this).
+  await claimDisplayName(user.oid, config.displayName);
 
   await saveConfig();
 
@@ -1600,7 +1616,7 @@ ipcMain.handle('playlist:create', (_: IpcMainInvokeEvent, name: string, isPublic
 );
 
 async function playlistFetch(url: string, init: RequestInit): Promise<unknown> {
-  const res = await fetch(url, init);
+  const res = await fnFetch(url, init);
   const body = (await res.json().catch(() => ({}))) as { error?: string };
   if (!res.ok) throw new Error(body.error ?? `Server error ${res.status}`);
   return body;
@@ -1671,7 +1687,7 @@ ipcMain.handle(
   async (_: IpcMainInvokeEvent, playlistId: string, data: ArrayBuffer, mimeType: string, userName: string) => {
     try {
       const url = `${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/image?userName=${encodeURIComponent(userName)}`;
-      const res = await fetch(url, {
+      const res = await fnFetch(url, {
         method: 'POST',
         headers: { 'Content-Type': mimeType },
         body: Buffer.from(data),
@@ -1710,7 +1726,7 @@ ipcMain.handle(
   'profile:uploadImage',
   async (_: IpcMainInvokeEvent, userName: string, data: ArrayBuffer, mimeType: string) => {
     try {
-      const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/profile/${encodeURIComponent(userName)}/image`, {
+      const res = await fnFetch(`${PUBSUB_FUNCTION_URL}/api/profile/${encodeURIComponent(userName)}/image`, {
         method: 'POST',
         headers: { 'Content-Type': mimeType },
         body: Buffer.from(data),
@@ -1727,7 +1743,7 @@ ipcMain.handle(
   async (_: IpcMainInvokeEvent, oldName: string, newName: string): Promise<{ ok?: boolean; error?: string }> => {
     if (!config.entraOid) return { error: 'not-authed' };
     try {
-      const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/profile/rename`, {
+      const res = await fnFetch(`${PUBSUB_FUNCTION_URL}/api/profile/rename`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ oid: config.entraOid, oldName, newName }),
@@ -1740,6 +1756,32 @@ ipcMain.handle(
       await saveConfig();
       initPubSub().catch(console.error);
       return { ok: true };
+    } catch (err) {
+      return { error: String(err) };
+    }
+  }
+);
+
+// The GitHub token lives in the feedback function, not the app; the function signs the
+// issue with the caller's name from their Entra token.
+ipcMain.handle(
+  'feedback:submit',
+  async (
+    _: IpcMainInvokeEvent,
+    type: 'bug' | 'feature',
+    title: string,
+    description: string
+  ): Promise<{ url: string } | { error: string }> => {
+    try {
+      const res = await fnFetch(`${PUBSUB_FUNCTION_URL}/api/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, title, description }),
+      });
+      if (res.status === 401) return { error: 'sign in with your work account first' };
+      const body = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+      if (!res.ok || !body.url) return { error: body.error ?? `server error ${res.status}` };
+      return { url: body.url };
     } catch (err) {
       return { error: String(err) };
     }
@@ -1797,7 +1839,7 @@ ipcMain.handle('stats:fetch', async (_: IpcMainInvokeEvent, period: string, user
 
 ipcMain.handle('dj:autoplay', async (_: IpcMainInvokeEvent, body: unknown) => {
   try {
-    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/dj/autoplay`, {
+    const res = await fnFetch(`${PUBSUB_FUNCTION_URL}/api/dj/autoplay`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body ?? {}),
@@ -1883,7 +1925,7 @@ ipcMain.handle(
     }
   ) => {
     try {
-      const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/score`, {
+      const res = await fnFetch(`${PUBSUB_FUNCTION_URL}/api/score`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
@@ -1902,7 +1944,7 @@ ipcMain.handle(
 // ever { pollId, choice } and is not tied to the user in any way).
 async function pollRequest(method: string, path: string, body?: unknown): Promise<unknown> {
   try {
-    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/${path}`, {
+    const res = await fnFetch(`${PUBSUB_FUNCTION_URL}/api/${path}`, {
       method,
       headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -1963,7 +2005,7 @@ ipcMain.handle('music:stats', async () => {
 
 ipcMain.handle('music:track-meta', async (_: IpcMainInvokeEvent, tracks: unknown) => {
   try {
-    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/track-meta`, {
+    const res = await fnFetch(`${PUBSUB_FUNCTION_URL}/api/track-meta`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tracks }),

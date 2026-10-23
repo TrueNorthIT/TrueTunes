@@ -17,18 +17,11 @@ const renderQ = (ui: ReactElement) =>
     ),
   });
 
-const mockFetch = vi.fn();
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(globalThis as any).fetch = mockFetch;
-
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(window.sonos.getDisplayName).mockResolvedValue('Test User');
   vi.mocked(window.sonos.openExternal).mockResolvedValue(undefined);
-  mockFetch.mockResolvedValue({
-    ok: true,
-    json: async () => ({ html_url: 'https://github.com/issues/1' }),
-  });
+  vi.mocked(window.sonos.submitFeedback).mockResolvedValue({ url: 'https://github.com/issues/1' });
 });
 
 describe('FeedbackDialog', () => {
@@ -88,7 +81,7 @@ describe('FeedbackDialog', () => {
     const user = userEvent.setup();
     renderQ(<FeedbackDialog onClose={vi.fn()} />);
     await user.type(screen.getByPlaceholderText('What went wrong?'), 'A bug{Enter}');
-    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(window.sonos.submitFeedback).toHaveBeenCalledWith('bug', 'A bug', ''));
   });
 
   it('shows success state after successful submission', async () => {
@@ -100,10 +93,7 @@ describe('FeedbackDialog', () => {
   });
 
   it('shows the error and allows another try', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      json: async () => ({ message: 'API error' }),
-    });
+    vi.mocked(window.sonos.submitFeedback).mockResolvedValueOnce({ error: 'API error' });
     const user = userEvent.setup();
     renderQ(<FeedbackDialog onClose={vi.fn()} />);
     await user.type(screen.getByPlaceholderText('What went wrong?'), 'A bug');

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { ExternalLink } from 'lucide-react';
@@ -18,12 +19,16 @@ interface Release {
 }
 
 const REPO = 'TrueNorthIT/TrueTunes';
-const PAT = import.meta.env.VITE_GITHUB_PAT as string | undefined;
+/**
+ * Unauthenticated, so GitHub allows 60 requests an hour per IP, and the whole office shares one.
+ * Keep the releases for an hour, open or closed, rather than refetching on every open.
+ */
+const RELEASES_TTL = 60 * 60 * 1000;
 
 async function fetchReleases(): Promise<Release[]> {
-  const headers: Record<string, string> = { Accept: 'application/vnd.github+json' };
-  if (PAT) headers['Authorization'] = `Bearer ${PAT}`;
-  const res = await fetch(`https://api.github.com/repos/${REPO}/releases`, { headers });
+  const res = await fetch(`https://api.github.com/repos/${REPO}/releases`, {
+    headers: { Accept: 'application/vnd.github+json' },
+  });
   if (!res.ok) throw new Error(`GitHub API error ${res.status}`);
   return res.json() as Promise<Release[]>;
 }
@@ -43,10 +48,19 @@ interface Props {
 }
 
 export function ChangelogDialog({ onClose }: Props) {
-  const [releases, setReleases] = useState<Release[]>([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [attempt, setAttempt] = useState(0);
+  const query = useQuery({
+    queryKey: ['github-releases'],
+    queryFn: fetchReleases,
+    staleTime: RELEASES_TTL,
+    gcTime: RELEASES_TTL,
+  });
+  const releases = query.data ?? [];
+  const status: 'loading' | 'ready' | 'error' = query.isSuccess
+    ? 'ready'
+    : query.isError && !query.isFetching
+      ? 'error'
+      : 'loading';
   const [appVersion, setAppVersion] = useState<string | null>(null);
   const [versionLoaded, setVersionLoaded] = useState(false);
 
@@ -59,15 +73,6 @@ export function ChangelogDialog({ onClose }: Props) {
       })
       .catch(() => setVersionLoaded(true));
   }, []);
-
-  useEffect(() => {
-    fetchReleases()
-      .then((data) => {
-        setReleases(data);
-        setStatus('ready');
-      })
-      .catch(() => setStatus('error'));
-  }, [attempt]);
 
   useEffect(() => {
     if (!versionLoaded || status !== 'ready' || !appVersion || releases.length === 0) return;
@@ -88,14 +93,7 @@ export function ChangelogDialog({ onClose }: Props) {
       {status === 'error' && (
         <div className={styles.empty}>
           <p className={dialog.note}>Couldn't load the release notes from GitHub.</p>
-          <PillButton
-            onClick={() => {
-              setStatus('loading');
-              setAttempt((a) => a + 1);
-            }}
-          >
-            Try again
-          </PillButton>
+          <PillButton onClick={() => void query.refetch()}>Try again</PillButton>
         </div>
       )}
 

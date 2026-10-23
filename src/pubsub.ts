@@ -45,14 +45,14 @@ function httpGet(rawUrl: string): Promise<Buffer> {
   });
 }
 
-function httpPostJson(rawUrl: string, payload: unknown): Promise<void> {
+function httpPostJson(rawUrl: string, payload: unknown, headers: Record<string, string>): Promise<void> {
   return new Promise((resolve, reject) => {
     const buf = Buffer.from(JSON.stringify(payload), 'utf8');
     const url = new URL(rawUrl);
     const mod = url.protocol === 'https:' ? https : http;
     const req = mod.request(
       rawUrl,
-      { method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': buf.length } },
+      { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json', 'Content-Length': buf.length } },
       (res) => {
         res.resume();
         if ((res.statusCode ?? 0) >= 400) {
@@ -68,11 +68,11 @@ function httpPostJson(rawUrl: string, payload: unknown): Promise<void> {
   });
 }
 
-function httpPost(rawUrl: string): Promise<Buffer> {
+function httpPost(rawUrl: string, headers: Record<string, string>): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const url = new URL(rawUrl);
     const mod = url.protocol === 'https:' ? https : http;
-    const req = mod.request(rawUrl, { method: 'POST' }, (res) => {
+    const req = mod.request(rawUrl, { method: 'POST', headers }, (res) => {
       if ((res.statusCode ?? 0) >= 400) {
         reject(new Error(`POST ${rawUrl} → ${res.statusCode}`));
         return;
@@ -91,6 +91,8 @@ function httpPost(rawUrl: string): Promise<Buffer> {
 export class OfficePubSub {
   private ws: WebSocket | null = null;
   private functionUrl = '';
+  /** The caller's Entra ID token for the functions, or null (an old server ignores it; a new one falls back to the username). */
+  private getToken: () => Promise<string | null> = async () => null;
   private attributionMap: AttributionMap = {};
   private eventCbs: ((e: AttributionEvent) => void)[] = [];
   private username = '';
@@ -100,13 +102,18 @@ export class OfficePubSub {
   private reconnectTimer: NodeJS.Timeout | null = null;
 
   /** Connect to Azure Web PubSub and load attribution history from Cosmos. */
-  async connect(username: string, functionUrl: string): Promise<AttributionMap> {
+  async connect(
+    username: string,
+    functionUrl: string,
+    getToken: () => Promise<string | null>
+  ): Promise<AttributionMap> {
+    this.getToken = getToken;
     this.username = username;
     this.functionUrl = functionUrl.replace(/\/$/, '');
     this.intentionalClose = false;
 
     const url = `${this.functionUrl}/api/connect?username=${encodeURIComponent(username)}`;
-    const raw = await httpPost(url);
+    const raw = await httpPost(url, await this.authHeaders());
     const { webPubSubUrl } = JSON.parse(raw.toString()) as { webPubSubUrl: string; [k: string]: unknown };
 
     const initialMap = await this.loadAttribution();
@@ -208,6 +215,11 @@ export class OfficePubSub {
 
   // ── Private ─────────────────────────────────────────────────────────────────
 
+  private async authHeaders(): Promise<Record<string, string>> {
+    const token = await this.getToken().catch(() => null);
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
   private openWebSocket(wsUrl: string): void {
     this.ws = new WebSocket(wsUrl, SUBPROTOCOL);
 
@@ -268,7 +280,7 @@ export class OfficePubSub {
       if (this.intentionalClose || !this.functionUrl) return;
       try {
         const url = `${this.functionUrl}/api/connect?username=${encodeURIComponent(this.username)}`;
-        const raw = await httpPost(url);
+        const raw = await httpPost(url, await this.authHeaders());
         const { webPubSubUrl } = JSON.parse(raw.toString()) as { webPubSubUrl: string; [k: string]: unknown };
         this.openWebSocket(webPubSubUrl);
       } catch {
@@ -280,7 +292,7 @@ export class OfficePubSub {
   private logEventWithRetry(event: AttributionEvent): void {
     const attempt = async (n: number): Promise<void> => {
       try {
-        await httpPostJson(`${this.functionUrl}/api/log-event`, event);
+        await httpPostJson(`${this.functionUrl}/api/log-event`, event, await this.authHeaders());
       } catch (err) {
         if (n < 2) {
           setTimeout(() => void attempt(n + 1), 1000 * (n + 1));
