@@ -36,8 +36,10 @@ The renderer is **never type-checked by Vite** (esbuild strips types). `npm run 
 
 ```bash
 node scripts/screenshot.mjs shot.png                    # current page
-node scripts/screenshot.mjs shot.png '#/leaderboard'    # after moving to a route
+node scripts/screenshot.mjs shot.png leaderboard        # after moving to #/leaderboard ("" for Home)
 ```
+
+Give the route without `#/`: Git Bash rewrites path-like arguments, so `'#/leaderboard'` arrives as `#C:/Program Files/Git/leaderboard`.
 
 Live data (now playing, queue, picks) changes between shots, so for before/after comparisons of a component prefer its stories. If Vite serves stale modules after big edits, stop dev and delete `node_modules/.vite`.
 

@@ -1,11 +1,12 @@
 // Screenshot the running dev app over CDP (port 9333), optionally after moving to a route.
-//   node scripts/screenshot.mjs <out.png> [hash-route] [waitMs]
-//   node scripts/screenshot.mjs shot.png '#/leaderboard' 6000
+//   node scripts/screenshot.mjs <out.png> [route] [waitMs]
+//   node scripts/screenshot.mjs shot.png queuedle/stats 6000
+// The route is given without "#/": Git Bash rewrites arguments that look like paths ("#/x" becomes "#C:/Program Files/Git/x").
 // Navigation only. Never script clicks on add, queue, transport or Queuedle: the app drives the office speakers.
 import { writeFileSync } from 'node:fs';
 
 const [out, route, wait = '4000'] = process.argv.slice(2);
-if (!out) throw new Error('usage: node scripts/screenshot.mjs <out.png> [hash-route] [waitMs]');
+if (!out) throw new Error('usage: node scripts/screenshot.mjs <out.png> [route] [waitMs]');
 
 const targets = await (await fetch('http://localhost:9333/json/list')).json();
 const page = targets.find((t) => t.type === 'page' && t.url.startsWith('http://localhost:5173'));
@@ -26,7 +27,9 @@ const send = (method, params = {}) =>
     ws.send(JSON.stringify({ id, method, params }));
   });
 
-if (route) await send('Runtime.evaluate', { expression: `location.hash = ${JSON.stringify(route)}` });
+if (route !== undefined) {
+  await send('Runtime.evaluate', { expression: `location.hash = ${JSON.stringify('#/' + route.replace(/^#?\/?/, ''))}` });
+}
 await new Promise((r) => setTimeout(r, Number(wait)));
 const shot = await send('Page.captureScreenshot', { format: 'png' });
 writeFileSync(out, Buffer.from(shot.result.data, 'base64'));
