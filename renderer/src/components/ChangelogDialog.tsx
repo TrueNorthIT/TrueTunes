@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { GC_HOUR } from '../lib/queryDefaults';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { ExternalLink } from 'lucide-react';
@@ -23,7 +24,7 @@ const REPO = 'TrueNorthIT/TrueTunes';
  * Unauthenticated, so GitHub allows 60 requests an hour per IP, and the whole office shares one.
  * Keep the releases for an hour, open or closed, rather than refetching on every open.
  */
-const RELEASES_TTL = 60 * 60 * 1000;
+const RELEASES_TTL = GC_HOUR;
 const NO_RELEASES: Release[] = [];
 
 async function fetchReleases(): Promise<Release[]> {

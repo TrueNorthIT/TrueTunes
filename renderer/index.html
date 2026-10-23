@@ -4,12 +4,12 @@
   <meta charset="UTF-8" />
   <!--
     script-src: 'wasm-unsafe-eval' is for the MediaPipe face detector; the hash is the inline mini-player
-    script below (csp.test.ts fails if they drift apart). connect-src: the hosts the renderer fetches directly.
+    script below (csp.test.ts fails if they drift apart). connect-src: the hosts the renderer fetches directly (APIs, art CDNs and the profile/playlist image storage account).
     Other image hosts fail here and the image cache falls back to the main-process proxy (image:fetch).
     The dev server relaxes script-src and adds its HMR socket (devCsp in vite.config.ts).
   -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-6bo3883YJ4/EITdThxeMGXTPg35L9i7R4ggDcafvHiw='; style-src 'self' 'unsafe-inline'; img-src 'self' http: https: data: blob:; connect-src 'self' https://api.github.com https://lrclib.net https://www.gstatic.com https://music.youtube.com https://i.ytimg.com https://yt3.googleusercontent.com https://lh3.googleusercontent.com; font-src 'self' https: data:; base-uri 'none'; object-src 'none'">
+        content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-6bo3883YJ4/EITdThxeMGXTPg35L9i7R4ggDcafvHiw='; style-src 'self' 'unsafe-inline'; img-src 'self' http: https: data: blob:; connect-src 'self' https://api.github.com https://lrclib.net https://www.gstatic.com https://music.youtube.com https://i.ytimg.com https://yt3.googleusercontent.com https://lh3.googleusercontent.com https://i.scdn.co https://mosaic.scdn.co https://*.mzstatic.com https://truetunesfoywo62izs34i.blob.core.windows.net; font-src 'self' https: data:; base-uri 'none'; object-src 'none'">
 </head>
 <body>
   <div id="root"></div>

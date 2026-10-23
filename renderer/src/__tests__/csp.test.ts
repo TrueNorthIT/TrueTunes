@@ -31,9 +31,9 @@ describe('renderer CSP', () => {
     expect(directive('script-src')).not.toContain("'unsafe-inline'");
   });
 
-  it('connects only to named https hosts', () => {
+  it('connects only to named https hosts (a subdomain wildcard at most)', () => {
     const sources = directive('connect-src');
     expect(sources).toContain("'self'");
-    for (const s of sources.filter((x) => x !== "'self'")) expect(s).toMatch(/^https:\/\/[a-z0-9.-]+$/);
+    for (const s of sources.filter((x) => x !== "'self'")) expect(s).toMatch(/^https:\/\/(\*\.)?[a-z0-9.-]+$/);
   });
 });
