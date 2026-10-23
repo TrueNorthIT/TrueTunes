@@ -77,3 +77,46 @@ export function calculateWeeklyLeaderboard(leaderboards: unknown[]): WeeklyStand
       a.userName.localeCompare(b.userName)
   );
 }
+
+const londonDay = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/London',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+/** The London calendar date (YYYY-MM-DD) of a moment. */
+export function londonDateId(ms: number): string {
+  return londonDay.format(new Date(ms));
+}
+
+/** The Monday-to-Sunday week before the one containing `gameId`. */
+export function previousWeekRange(gameId: string): WeekRange | null {
+  const current = weekRangeOf(gameId);
+  if (!current) return null;
+  const lastSunday = toId(Date.parse(`${current.from}T00:00:00Z`) - DAY_MS);
+  return weekRangeOf(lastSunday);
+}
+
+/**
+ * A finished week's winner: the top of that week's leaderboard counting only
+ * games submitted by the end of the Sunday, so catching up on an old day later
+ * can't change who won. Null when nobody scored.
+ */
+export function weeklyWinner(
+  leaderboards: unknown[],
+  range: WeekRange
+): (WeeklyStanding & { range: WeekRange }) | null {
+  const onTime = leaderboards.map((board) => {
+    const scores = board && typeof board === 'object' ? (board as Partial<GameLeaderboardResult>).scores : undefined;
+    if (!Array.isArray(scores)) return board;
+    return {
+      ...(board as object),
+      scores: scores.filter(
+        (s) => typeof s?.completedAt !== 'number' || londonDateId(s.completedAt) <= range.to
+      ),
+    };
+  });
+  const top = calculateWeeklyLeaderboard(onTime)[0];
+  return top && top.total > 0 ? { ...top, range } : null;
+}

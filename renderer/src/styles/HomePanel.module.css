@@ -51,6 +51,7 @@
 .queuedleText { display: flex; flex-direction: column; gap: 1px; }
 .queuedleLabel { font-size: var(--fs-small); font-weight: 600; color: var(--text-3); }
 .queuedleState { font-size: var(--fs-body); font-weight: 500; color: var(--text); font-variant-numeric: tabular-nums; }
+.queuedleChamp { font-size: var(--fs-small); color: var(--text-3); font-variant-numeric: tabular-nums; }
 
 .pillBtn {
   display: inline-flex;

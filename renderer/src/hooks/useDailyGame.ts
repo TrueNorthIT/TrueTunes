@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { calculateWeeklyLeaderboard, isInWeek, weekRangeOf } from '../lib/queuedleWeek';
+import { calculateWeeklyLeaderboard, isInWeek, londonDateId, previousWeekRange, weekRangeOf, weeklyWinner } from '../lib/queuedleWeek';
 import type { WeeklyStanding } from '../lib/queuedleWeek';
 import type { QueuedleDay } from '../lib/queuedleStats';
 
@@ -255,6 +256,33 @@ export function useWeeklyLeaderboard(gameId: string | null, userName: string | n
     enabled: !!range && userName !== undefined,
     staleTime: 60_000,
     refetchInterval: 5 * 60_000,
+  });
+}
+
+/** Last week's Queuedle winner, for the gold avatar on Home all this week. */
+export function useLastWeekWinner(userName: string | null | undefined) {
+  // Re-read the date now and then so Monday's handover happens without a restart.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30 * 60_000);
+    return () => clearInterval(id);
+  }, []);
+  const range = previousWeekRange(londonDateId(now));
+  return useQuery({
+    queryKey: ['queuedle-last-week-winner', range?.from ?? ''],
+    queryFn: async () => {
+      if (!range) return null;
+      const datesResult = await window.sonos.fetchGameDates(userName ?? '');
+      const dates = Array.isArray(datesResult.dates) ? datesResult.dates : [];
+      const inWeek = dates.filter((d) => d.status === 'ready' && isInWeek(d.gameId, range));
+      const boards = await Promise.all(
+        inWeek.map((d) => window.sonos.fetchGameLeaderboard(d.gameId).catch(() => null))
+      );
+      return weeklyWinner(boards, range);
+    },
+    enabled: !!range && userName !== undefined,
+    staleTime: 30 * 60_000,
+    refetchInterval: 30 * 60_000,
   });
 }
 

@@ -52,6 +52,7 @@ const mockUseStats = vi.fn();
 const mockUseUsers = vi.fn();
 const mockUseDailyGame = vi.fn();
 const mockUseMyScore = vi.fn();
+const mockUseLastWeekWinner = vi.fn();
 const mockUseRecentTracksByUser = vi.fn();
 vi.mock('../../hooks/useOfficePresence', () => ({ useOfficePresence: () => mockUseOfficePresence() }));
 vi.mock('../../hooks/useDjSet', () => ({ useDjSet: () => mockUseDjSet() }));
@@ -61,6 +62,7 @@ vi.mock('../../hooks/useUsers', () => ({ useUsers: () => mockUseUsers() }));
 vi.mock('../../hooks/useDailyGame', () => ({
   useDailyGame: () => mockUseDailyGame(),
   useMyScore: () => mockUseMyScore(),
+  useLastWeekWinner: () => mockUseLastWeekWinner(),
 }));
 vi.mock('../../hooks/useRecentTracksByUser', () => ({ useRecentTracksByUser: () => mockUseRecentTracksByUser() }));
 
@@ -149,6 +151,7 @@ beforeEach(() => {
   mockUseUsers.mockReturnValue({ data: [] });
   mockUseDailyGame.mockReturnValue({ data: undefined });
   mockUseMyScore.mockReturnValue({ data: undefined });
+  mockUseLastWeekWinner.mockReturnValue({ data: null });
   mockUseRecentTracksByUser.mockReturnValue({ tracksByUser: new Map(), albumsByUser: new Map() });
   mockArtistPhoto.mockImplementation(() => null);
   mockUseNowPlaying.mockReturnValue(nowPlaying);
@@ -694,6 +697,27 @@ describe('HomePanel', () => {
       render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
       expect(screen.getByText('Your score 4 / 6')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'View results' })).toBeInTheDocument();
+    });
+
+    it("crowns last week's winner on the card, and on their face when they're in", () => {
+      mockUseDailyGame.mockReturnValue({ data: { id: 'g1', questions: [1, 2, 3] } });
+      mockUseLastWeekWinner.mockReturnValue({
+        data: { userName: 'Rich', total: 65, gamesPlayed: 5, bestTotal: 18, range: { from: '2026-10-12', to: '2026-10-18' } },
+      });
+      mockUseOfficePresence.mockReturnValue({ data: { inOffice: ['Rich', 'Abbie'] } });
+      mockUseDjSet.mockReturnValue({ data: { artists: [], tracks: [] }, isLoading: false });
+      mockUseDjDiscoveries.mockReturnValue({ discoveries: [discovery(1)], isLoading: false });
+      render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
+      expect(screen.getByText(/Last week: Rich · 65 pts/)).toBeInTheDocument();
+      expect(screen.getByLabelText("Last week's Queuedle champion")).toBeInTheDocument();
+      expect(screen.getByTitle("Rich's profile · last week's Queuedle champion")).toBeInTheDocument();
+      expect(screen.getByTitle("Abbie's profile")).toBeInTheDocument();
+    });
+
+    it('shows no crown when there was no winner last week', () => {
+      mockUseDailyGame.mockReturnValue({ data: { id: 'g1', questions: [1, 2, 3] } });
+      render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
+      expect(screen.queryByText(/Last week:/)).not.toBeInTheDocument();
     });
   });
 

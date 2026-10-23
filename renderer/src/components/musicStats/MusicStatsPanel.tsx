@@ -435,7 +435,9 @@ export function MusicStatsPanel() {
       </div>
       <div className={styles.body}>
         {stats.isLoading && <div className={styles.state}>Crunching every queue so far…</div>}
-        {stats.isError && <div className={styles.state}>Couldn’t load the music stats.</div>}
+        {stats.isError && !data && <div className={styles.state}>Couldn’t load the music stats.</div>}
+        {/* A failed background refresh keeps the last stats on screen. */}
+        {stats.isError && data && <div className={styles.staleNote}>Couldn’t refresh just now, so these may be a few minutes old.</div>}
         {data && data.people.length === 0 && <div className={styles.state}>Nothing queued yet.</div>}
         {data && data.people.length > 0 && <Stats data={data} me={displayName} />}
       </div>

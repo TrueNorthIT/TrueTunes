@@ -44,7 +44,8 @@ import { useStats } from '../hooks/useStats';
 import { useOfficePresence } from '../hooks/useOfficePresence';
 import { useDjSet } from '../hooks/useDjSet';
 import { useDjDiscoveries } from '../hooks/useDjDiscoveries';
-import { useDailyGame, useMyScore } from '../hooks/useDailyGame';
+import { useDailyGame, useLastWeekWinner, useMyScore } from '../hooks/useDailyGame';
+import { formatWeekRange } from '../lib/queuedleWeek';
 import { useImage } from '../hooks/useImage';
 import { useDominantColor } from '../hooks/useDominantColor';
 import { useNowPlaying } from '../hooks/useNowPlaying';
@@ -561,6 +562,9 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
   const { data: todayGame } = useDailyGame();
   const todayGameId = todayGame && 'id' in todayGame ? todayGame.id : null;
   const { data: myScore } = useMyScore(todayGameId, currentUserId);
+  // Last week's Queuedle winner is crowned all this week: on the Queuedle card, and on their face when they're in.
+  const lastWeekWinner = useLastWeekWinner(displayName).data ?? null;
+  const champion = lastWeekWinner?.userName ?? null;
   const score = myScore?.score;
   const maxScore = todayGame && 'questions' in todayGame ? todayGame.questions.length * 2 : null;
 
@@ -757,6 +761,14 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                         ? `Your score ${score.mainScore + score.bonusScore}${maxScore ? ` / ${maxScore}` : ''}`
                         : 'Not played yet'}
                     </span>
+                    {lastWeekWinner && (
+                      <span
+                        className={styles.queuedleChamp}
+                        title={`Queuedle champion, week of ${formatWeekRange(lastWeekWinner.range)}`}
+                      >
+                        <span aria-hidden="true">👑 </span>Last week: {lastWeekWinner.userName} · {lastWeekWinner.total} pts
+                      </span>
+                    )}
                   </span>
                   <button type="button" className={styles.pillBtn} onClick={() => navigate('/queuedle')}>
                     {score ? 'View results' : 'Play'}
@@ -783,11 +795,14 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                           <button
                             type="button"
                             className={styles.face}
-                            title={`${u}'s profile`}
+                            title={u === champion ? `${u}'s profile · last week's Queuedle champion` : `${u}'s profile`}
                             onClick={() => navigate(`/profile/${encodeURIComponent(u)}`)}
                           >
                             <UserAvatar name={u} imageUrl={imageByUser.get(u)} className={styles.faceAvatar} />
-                            <span className={styles.faceName}>{u}</span>
+                            <span className={styles.faceName}>
+                              {u === champion && <span aria-label="Last week's Queuedle champion">👑 </span>}
+                              {u}
+                            </span>
                           </button>
                         </li>
                       ))}
