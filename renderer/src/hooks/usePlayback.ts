@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getActiveProvider } from '../providers';
 import type { NormalizedPlaybackState } from '../types/provider';
 import { fmtTime } from '../lib/itemHelpers';
+import { setPlaybackPosition, ZERO_POSITION, type PlaybackPosition } from './playbackPosition';
 
 export interface PlaybackState {
   isVisible: boolean;
@@ -9,9 +10,7 @@ export interface PlaybackState {
   artistName: string;
   artUrl: string | null;
   stateIcon: string;
-  timeLabel: string;
-  progressPct: number;
-  positionMs: number;
+  /** Track length. The moving position lives in playbackPosition.ts so a tick doesn't re-render the app. */
   durationMs: number;
   isPlaying: boolean;
   shuffle: boolean;
@@ -34,9 +33,6 @@ const IDLE_STATE: PlaybackState = {
   artistName: '',
   artUrl: null,
   stateIcon: '–',
-  timeLabel: '',
-  progressPct: 0,
-  positionMs: 0,
   durationMs: 0,
   isPlaying: false,
   shuffle: false,
@@ -53,8 +49,19 @@ const IDLE_STATE: PlaybackState = {
   queueItemId: null,
 };
 
+const positionOf = (positionMs: number, durationMs: number): PlaybackPosition => ({
+  positionMs,
+  durationMs,
+  progressPct: durationMs > 0 ? Math.min((positionMs / durationMs) * 100, 100) : 0,
+  timeLabel: durationMs > 0 ? `${fmtTime(positionMs)} / ${fmtTime(durationMs)}` : '',
+  trackEndsAtMs: Date.now() + durationMs - positionMs,
+});
+
 export function usePlayback(activeGroupId: string | null) {
   const [state, setState] = useState<PlaybackState>(IDLE_STATE);
+  useEffect(() => {
+    setPlaybackPosition(ZERO_POSITION);
+  }, []);
 
   // Internal progress tracking — these don't need to trigger re-renders on every tick
   const positionMsRef = useRef(0);
@@ -91,8 +98,6 @@ export function usePlayback(activeGroupId: string | null) {
       queueItemId,
     } = normalized;
 
-    const pct = durationMs > 0 ? Math.min((positionMs / durationMs) * 100, 100) : 0;
-
     positionMsRef.current = positionMs;
     durationMsRef.current = durationMs;
     lastUpdateAtRef.current = Date.now();
@@ -118,15 +123,13 @@ export function usePlayback(activeGroupId: string | null) {
       return;
     }
 
+    setPlaybackPosition(positionOf(positionMs, durationMs));
     setState((prev) => ({
       isVisible: true,
       trackName: currentTrack.title,
       artistName: currentTrack.artist,
       artUrl: currentTrack.imageUrl,
       stateIcon: status === 'playing' ? '▶' : status === 'paused' ? '⏸' : '–',
-      timeLabel: durationMs > 0 ? `${fmtTime(positionMs)} / ${fmtTime(durationMs)}` : '',
-      progressPct: pct,
-      positionMs,
       durationMs,
       isPlaying,
       shuffle,
@@ -151,14 +154,7 @@ export function usePlayback(activeGroupId: string | null) {
     const timer = setInterval(() => {
       const elapsed = Date.now() - lastUpdateAtRef.current;
       const pos = Math.min(positionMsRef.current + elapsed, durationMsRef.current || 1);
-      const dur = durationMsRef.current;
-      const pct = dur > 0 ? (pos / dur) * 100 : 0;
-      setState((prev) => ({
-        ...prev,
-        positionMs: pos,
-        timeLabel: dur > 0 ? `${fmtTime(pos)} / ${fmtTime(dur)}` : '',
-        progressPct: pct,
-      }));
+      setPlaybackPosition(positionOf(pos, durationMsRef.current));
     }, 1000);
     return () => clearInterval(timer);
   }, [state.isPlaying]);
@@ -211,6 +207,7 @@ export function usePlayback(activeGroupId: string | null) {
         // Re-null after applyState in case it repopulated from stale cache
         queueVersionRef.current = null;
       } else {
+        setPlaybackPosition(ZERO_POSITION);
         setState({
           ...IDLE_STATE,
           isVisible: true,

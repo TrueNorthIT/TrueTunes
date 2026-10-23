@@ -20,3 +20,4 @@ export const Coloured: Story = {
     ),
   ],
 };
+export const Paused: Story = { args: { paused: true } };

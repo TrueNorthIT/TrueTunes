@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { artistQueryOptions } from '../useArtistBrowse';
+import { runQueryFn } from '../../test/queryFn';
 import { fetchImage } from '../../lib/imageCache';
 
 vi.mock('../../lib/imageCache', () => ({ fetchImage: vi.fn(() => Promise.resolve(null)) }));
@@ -43,7 +44,7 @@ describe('artistQueryOptions — basic parsing', () => {
     // Top Songs playlist fetch returns empty tracks
     mockFetch.mockResolvedValueOnce({ data: { tracks: { items: [] } } });
 
-    const result = await artistQueryOptions('art-1', 'svc', 'acc', undefined).queryFn();
+    const result = await runQueryFn(artistQueryOptions('art-1', 'svc', 'acc', undefined));
     expect(result.name).toBe('The Beatles');
     expect(result.imageUrl).toBe('https://art/beatles.jpg');
   });
@@ -52,7 +53,7 @@ describe('artistQueryOptions — basic parsing', () => {
     mockFetch.mockResolvedValueOnce({ data: makeArtistResponse() });
     mockFetch.mockResolvedValueOnce({ data: { tracks: { items: [] } } });
 
-    const result = await artistQueryOptions('art-1', 'svc', 'acc', undefined).queryFn();
+    const result = await runQueryFn(artistQueryOptions('art-1', 'svc', 'acc', undefined));
     expect(result.albums).toHaveLength(2);
     expect(result.playlists).toHaveLength(1); // Radio only — Top Songs excluded
   });
@@ -67,7 +68,7 @@ describe('artistQueryOptions — basic parsing', () => {
       },
     });
 
-    const result = await artistQueryOptions('art-1', 'svc', 'acc', undefined).queryFn();
+    const result = await runQueryFn(artistQueryOptions('art-1', 'svc', 'acc', undefined));
     expect(result.topSongs).toHaveLength(1);
     expect(result.topSongs[0].title).toBe('Come Together');
   });
@@ -84,13 +85,13 @@ describe('artistQueryOptions — basic parsing', () => {
     });
     mockFetch.mockResolvedValueOnce({ data: noTopSongs });
 
-    const result = await artistQueryOptions('art-1', 'svc', 'acc', undefined).queryFn();
+    const result = await runQueryFn(artistQueryOptions('art-1', 'svc', 'acc', undefined));
     expect(result.topSongs).toHaveLength(0);
   });
 
   it('throws when response has an error', async () => {
     mockFetch.mockResolvedValueOnce({ data: null, error: 'Not found' });
-    await expect(artistQueryOptions('art-1', 'svc', 'acc', undefined).queryFn()).rejects.toThrow('Not found');
+    await expect(runQueryFn(artistQueryOptions('art-1', 'svc', 'acc', undefined))).rejects.toThrow('Not found');
   });
 
   it('returns null imageUrl when images are missing', async () => {
@@ -102,7 +103,7 @@ describe('artistQueryOptions — basic parsing', () => {
     });
     mockFetch.mockResolvedValueOnce({ data: noImagesNoTopSongs });
 
-    const result = await artistQueryOptions('art-1', 'svc', 'acc', undefined).queryFn();
+    const result = await runQueryFn(artistQueryOptions('art-1', 'svc', 'acc', undefined));
     expect(result.imageUrl).toBeNull();
   });
 });
@@ -113,7 +114,7 @@ describe('artistQueryOptions: hero photo', () => {
     const art = makeArtistResponse({ images: { tile1x1: 'https://art/b=w544-h544-l90-rj' } });
     mockFetch.mockResolvedValueOnce({ data: art });
     mockFetch.mockReturnValueOnce(new Promise(() => {})); // top songs never settles
-    void artistQueryOptions('art-1', 'svc', 'acc', undefined).queryFn();
+    void runQueryFn(artistQueryOptions('art-1', 'svc', 'acc', undefined));
     await vi.waitFor(() => expect(fetchImage).toHaveBeenCalledWith('https://art/b=w2000-h2000-l90-rj', true));
   });
 });

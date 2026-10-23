@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { usePlayback } from '../usePlayback';
+import { getPlaybackPosition } from '../playbackPosition';
 import type { PlaybackPayload } from '../../types/sonos';
 
 // ── WS callback capture ───────────────────────────────────────────────────────
@@ -141,7 +142,7 @@ describe('usePlayback — progress and timing', () => {
         metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 120000 } } },
       })
     );
-    expect(result.current.playback.progressPct).toBeCloseTo(50);
+    expect(getPlaybackPosition().progressPct).toBeCloseTo(50);
   });
 
   it('clamps progressPct to 100 when posMs > durMs', () => {
@@ -158,7 +159,7 @@ describe('usePlayback — progress and timing', () => {
         metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
       })
     );
-    expect(result.current.playback.progressPct).toBe(100);
+    expect(getPlaybackPosition().progressPct).toBe(100);
   });
 
   it('sets progressPct to 0 when durMs is 0', () => {
@@ -169,7 +170,7 @@ describe('usePlayback — progress and timing', () => {
         metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 0 } } },
       })
     );
-    expect(result.current.playback.progressPct).toBe(0);
+    expect(getPlaybackPosition().progressPct).toBe(0);
   });
 
   it('builds a timeLabel when duration is known', () => {
@@ -180,7 +181,7 @@ describe('usePlayback — progress and timing', () => {
         metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 183000 } } },
       })
     );
-    expect(result.current.playback.timeLabel).toBe('1:05 / 3:03');
+    expect(getPlaybackPosition().timeLabel).toBe('1:05 / 3:03');
   });
 
   it('sets empty timeLabel when duration is 0', () => {
@@ -190,7 +191,7 @@ describe('usePlayback — progress and timing', () => {
         metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 0 } } },
       })
     );
-    expect(result.current.playback.timeLabel).toBe('');
+    expect(getPlaybackPosition().timeLabel).toBe('');
   });
 });
 
@@ -591,13 +592,13 @@ describe('usePlayback — progress tick', () => {
         metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
       })
     );
-    const initialPct = result.current.playback.progressPct;
+    const initialPct = getPlaybackPosition().progressPct;
 
     act(() => {
       vi.advanceTimersByTime(5000);
     });
 
-    expect(result.current.playback.progressPct).toBeGreaterThan(initialPct);
+    expect(getPlaybackPosition().progressPct).toBeGreaterThan(initialPct);
   });
 
   it('does not tick when paused', () => {
@@ -614,49 +615,85 @@ describe('usePlayback — progress tick', () => {
         metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
       })
     );
-    const initialPct = result.current.playback.progressPct;
+    const initialPct = getPlaybackPosition().progressPct;
 
     act(() => {
       vi.advanceTimersByTime(5000);
     });
 
-    expect(result.current.playback.progressPct).toBe(initialPct);
+    expect(getPlaybackPosition().progressPct).toBe(initialPct);
   });
   it('advances positionMs and timeLabel by wall-clock time while playing', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      playback: { playbackState: 'PLAYBACK_STATE_PLAYING', positionMillis: 90000, queueId: 'q1', queueVersion: 'v1', playModes: {} },
-      metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
-    }));
-    act(() => { vi.advanceTimersByTime(5000); });
-    expect(result.current.playback.positionMs).toBe(95000);
-    expect(result.current.playback.timeLabel).toBe('1:35 / 3:00');
+    firePlayback(
+      makePayload({
+        playback: {
+          playbackState: 'PLAYBACK_STATE_PLAYING',
+          positionMillis: 90000,
+          queueId: 'q1',
+          queueVersion: 'v1',
+          playModes: {},
+        },
+        metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
+      })
+    );
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(getPlaybackPosition().positionMs).toBe(95000);
+    expect(getPlaybackPosition().timeLabel).toBe('1:35 / 3:00');
   });
 
   it('resyncs to the position of the next status update', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    const at = (positionMillis: number) => makePayload({
-      playback: { playbackState: 'PLAYBACK_STATE_PLAYING', positionMillis, queueId: 'q1', queueVersion: 'v1', playModes: {} },
-      metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
-    });
+    const at = (positionMillis: number) =>
+      makePayload({
+        playback: {
+          playbackState: 'PLAYBACK_STATE_PLAYING',
+          positionMillis,
+          queueId: 'q1',
+          queueVersion: 'v1',
+          playModes: {},
+        },
+        metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
+      });
     firePlayback(at(10000));
-    act(() => { vi.advanceTimersByTime(3000); });
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
     firePlayback(at(60000));
-    expect(result.current.playback.positionMs).toBe(60000);
-    act(() => { vi.advanceTimersByTime(2000); });
-    expect(result.current.playback.positionMs).toBe(62000);
+    expect(getPlaybackPosition().positionMs).toBe(60000);
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(getPlaybackPosition().positionMs).toBe(62000);
   });
 
   it('stops ticking once a paused update arrives', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    const withState = (playbackState: string, positionMillis: number) => makePayload({
-      playback: { playbackState, positionMillis, queueId: 'q1', queueVersion: 'v1', playModes: {} },
-      metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
-    });
+    const withState = (playbackState: string, positionMillis: number) =>
+      makePayload({
+        playback: { playbackState, positionMillis, queueId: 'q1', queueVersion: 'v1', playModes: {} },
+        metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
+      });
     firePlayback(withState('PLAYBACK_STATE_PLAYING', 10000));
-    act(() => { vi.advanceTimersByTime(2000); });
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
     firePlayback(withState('PLAYBACK_STATE_PAUSED', 12000));
-    act(() => { vi.advanceTimersByTime(5000); });
-    expect(result.current.playback.positionMs).toBe(12000);
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(getPlaybackPosition().positionMs).toBe(12000);
+  });
+
+  it('keeps the playback object referentially stable across ticks', () => {
+    const { result } = renderHook(() => usePlayback('g1'));
+    firePlayback(makePayload());
+    const before = result.current.playback;
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(result.current.playback).toBe(before);
   });
 });

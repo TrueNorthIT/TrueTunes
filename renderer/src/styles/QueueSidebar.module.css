@@ -488,12 +488,33 @@ button.groupLabel:hover {
 }
 
 /* ── Drop indicator ── */
+/* Laid over the edge of a virtual item rather than between rows, so showing it never moves the list. */
 .dropLine {
+  position: absolute;
+  top: -1px;
+  left: 8px;
+  right: 8px;
   height: 2px;
-  margin: 0 8px;
   background: var(--text-2);
   border-radius: var(--r-pill);
   pointer-events: none;
+  z-index: 1;
+}
+.dropLineEnd {
+  top: auto;
+  bottom: -1px;
+}
+
+/* The queue list is virtual: rows are positioned inside a box as tall as the whole list. */
+.virtualList {
+  position: relative;
+  width: 100%;
+}
+.virtualItem {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
 }
 
 /* ── Selection action bar ── */

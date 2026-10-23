@@ -7,6 +7,7 @@ import { MiniPlayerShell } from '../MiniPlayer';
 
 // Mock all the hooks that MiniPlayerShell pulls in
 const mockUseNowPlaying = vi.fn();
+import { setPlaybackPosition } from '../../hooks/playbackPosition';
 vi.mock('../../hooks/useNowPlaying', () => ({ useNowPlaying: (...a: unknown[]) => mockUseNowPlaying(...a) }));
 vi.mock('../../hooks/useAuth', () => ({ useAuth: () => true }));
 vi.mock('../../hooks/useGroups', () => ({ useGroups: () => [] }));
@@ -45,10 +46,7 @@ function makeNP(overrides: Record<string, unknown> = {}) {
     displayArtist: 'Test Artist',
     cachedArt: null,
     dominantColor: null,
-    progressPct: 50,
     isPlaying: false,
-    elapsedLabel: '1:00',
-    durationLabel: '3:00',
     durationMs: 180000,
     isVisible: true,
     shuffle: false,
@@ -66,6 +64,13 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 beforeEach(() => {
+  setPlaybackPosition({
+    trackEndsAtMs: 0,
+    positionMs: 90000,
+    durationMs: 180000,
+    progressPct: 50,
+    timeLabel: '1:30 / 3:00',
+  });
   vi.clearAllMocks();
   mockUseNowPlaying.mockReturnValue(makeNP());
   mockUseQueuer.mockReturnValue(null);

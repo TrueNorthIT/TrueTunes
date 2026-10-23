@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import { api } from '../lib/sonosApi';
 import type { SonosItem, SonosItemId } from '../types/sonos';
 import { AlbumResponse } from '../types/AlbumResponse';
@@ -83,14 +83,19 @@ function parseAlbum(data: AlbumResponse): AlbumData {
   return { title, artist, artUrl, tracks, totalTracks, artistItem };
 }
 
+export const albumKeys = {
+  all: ['album'] as const,
+  detail: (albumId: string | undefined) => ['album', albumId] as const,
+};
+
 export function albumQueryOptions(
   albumId: string | undefined,
   serviceId: string | undefined,
   accountId: string | undefined,
   defaults: string | undefined
 ) {
-  return {
-    queryKey: ['album', albumId] as const,
+  return queryOptions({
+    queryKey: albumKeys.detail(albumId),
     queryFn: async () => {
       const r = await api.browse.album(albumId!, { serviceId, accountId, defaults, muse2: true, count: 50 });
       if (r.error) throw new Error(r.error);
@@ -119,7 +124,7 @@ export function albumQueryOptions(
     },
     staleTime: Infinity,
     gcTime: 60 * 60 * 1000,
-  };
+  });
 }
 
 export function useAlbumBrowse(

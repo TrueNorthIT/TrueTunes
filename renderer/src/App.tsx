@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { getActiveProvider } from './providers';
@@ -66,7 +66,7 @@ import styles from './styles/App.module.css';
 
 // ── Main app ──────────────────────────────────────────────────────────────────
 
-function MainApp() {
+const MainApp = memo(function MainApp() {
   const queryClient = useQueryClient();
   const isAuthed = useAuth();
   const groups = useGroups();
@@ -645,7 +645,7 @@ function MainApp() {
                 error={queueError}
                 currentObjectId={playback.currentObjectId}
                 currentQueueItemId={playback.queueItemId}
-                positionMs={playback.positionMs}
+                isPlaying={playback.isPlaying}
                 currentTrackDurationMs={playback.durationMs}
                 groupName={groups.find((g) => g.id === activeGroupId)?.name ?? null}
                 onRefresh={reloadQueue}
@@ -672,7 +672,7 @@ function MainApp() {
       </ContextMenuProvider>
     </ToastProvider>
   );
-}
+});
 
 // ── Root ──────────────────────────────────────────────────────────────────────
 

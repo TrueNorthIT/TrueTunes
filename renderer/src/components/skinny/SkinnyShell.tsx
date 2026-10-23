@@ -62,7 +62,7 @@ export function SkinnyShell({
         error={queueError}
         currentObjectId={playback.currentObjectId}
         currentQueueItemId={playback.queueItemId}
-        positionMs={playback.positionMs}
+        isPlaying={playback.isPlaying}
         currentTrackDurationMs={playback.durationMs}
         groupName={groups.find((g) => g.id === activeGroupId)?.name ?? null}
         onRefresh={reloadQueue}

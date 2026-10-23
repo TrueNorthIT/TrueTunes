@@ -59,6 +59,8 @@ import type { NormalizedQueueItem } from '../types/provider';
 import { withArtworkSize } from '../lib/artworkUrl';
 import { UserAvatar } from './common/UserAvatar';
 import { Artwork } from './common/Artwork';
+import { PlaybackTime } from './common/SeekBar';
+import { usePlaybackPosition } from '../hooks/playbackPosition';
 import { QueuerChip } from './common/QueuerChip';
 import { useTrackContextMenu } from './common/ContextMenu';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
@@ -270,6 +272,27 @@ function TrendRow({ rank, t, count, onAdd }: { rank: number; t: NavTrack; count:
   );
 }
 
+/** The Now playing band's progress line: the one part of the band that moves every second. */
+function NowProgress() {
+  const pct = usePlaybackPosition((p) => p.progressPct);
+  return (
+    <div className={styles.nowProgress}>
+      <PlaybackTime part="elapsed" className={styles.nowTime} />
+      <div
+        className={styles.nowBar}
+        role="progressbar"
+        aria-label="Track progress"
+        aria-valuenow={Math.round(pct)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div className={styles.nowFill} style={{ transform: `scaleX(${Math.min(1, Math.max(0, pct / 100))})` }} />
+      </div>
+      <PlaybackTime part="duration" className={styles.nowTime} />
+    </div>
+  );
+}
+
 /** Now playing card and live synced lyrics. No transport controls: the player bar has them. */
 function NowPlayingBand({
   playback,
@@ -375,23 +398,7 @@ function NowPlayingBand({
               onOpen={() => profile(queuer.user)}
             />
           )}
-          <div className={styles.nowProgress}>
-            <span className={styles.nowTime}>{np.elapsedLabel}</span>
-            <div
-              className={styles.nowBar}
-              role="progressbar"
-              aria-label="Track progress"
-              aria-valuenow={Math.round(np.progressPct)}
-              aria-valuemin={0}
-              aria-valuemax={100}
-            >
-              <div
-                className={styles.nowFill}
-                style={{ transform: `scaleX(${Math.min(1, Math.max(0, np.progressPct / 100))})` }}
-              />
-            </div>
-            <span className={styles.nowTime}>{np.durationLabel}</span>
-          </div>
+          <NowProgress />
           {aboutLoading && !blurb && (
             <div className={styles.about} aria-label="About this track" aria-busy="true">
               {['100%', '92%', '58%'].map((w) => (

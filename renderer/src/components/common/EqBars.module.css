@@ -4,11 +4,15 @@
   gap: 2px;
   height: 14px;
 }
+/* Bars are 13px tall and scale from the baseline: transform and opacity animate on the compositor,
+   where animating height would re-run layout and paint on the main thread every frame. */
 .eq span {
   display: block;
   width: 3px;
+  height: 13px;
   border-radius: var(--r-pill);
   background: currentColor;
+  transform-origin: bottom;
   animation: eqBar 0.9s ease-in-out infinite alternate;
 }
 .eq span:nth-child(1) {
@@ -25,18 +29,24 @@
 
 @keyframes eqBar {
   from {
-    height: 3px;
+    transform: scaleY(0.23); /* 3px of 13 */
     opacity: 0.7;
   }
   to {
-    height: 13px;
+    transform: scaleY(1);
     opacity: 1;
   }
+}
+
+/* Not playing, or reduced motion: still bars at rest height (9px of 13), no animation at all. */
+.still span {
+  animation: none;
+  transform: scaleY(0.69);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .eq span {
     animation: none;
-    height: 9px;
+    transform: scaleY(0.69);
   }
 }

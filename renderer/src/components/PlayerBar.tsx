@@ -8,7 +8,7 @@ import { useAttribution, resolveAttribution } from '../hooks/useAttribution';
 import { useUsers } from '../hooks/useUsers';
 import { UserAvatar } from './common/UserAvatar';
 import { ExplicitBadge } from './common/ExplicitBadge';
-import { SeekBar } from './common/SeekBar';
+import { LiveSeekBar, PlaybackTime } from './common/SeekBar';
 import { TransportButtons } from './common/TransportButtons';
 import type React from 'react';
 import {
@@ -209,9 +209,6 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
     displayArtist,
     cachedArt,
     dominantColor,
-    elapsedLabel,
-    durationLabel,
-    progressPct,
     durationMs,
     isPlaying,
     isVisible,
@@ -301,17 +298,14 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
               {isExplicit && <ExplicitBadge />}
             </div>
             <div className={styles.progressSection}>
-              <span className={styles.time}>{elapsedLabel}</span>
-              <SeekBar
-                progressPct={progressPct}
+              <PlaybackTime part="elapsed" className={styles.time} />
+              <LiveSeekBar
                 durationMs={durationMs}
-                elapsedLabel={elapsedLabel}
-                durationLabel={durationLabel}
                 className={styles.progressBar}
                 trackClassName={styles.progressTrack}
                 fillClassName={styles.progressFill}
               />
-              <span className={styles.time}>{durationLabel}</span>
+              <PlaybackTime part="duration" className={styles.time} />
             </div>
           </div>
           {queuer && (
