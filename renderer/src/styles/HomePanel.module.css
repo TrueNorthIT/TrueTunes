@@ -42,9 +42,10 @@
   display: flex;
   gap: 20px;
   overflow-x: auto;
-  /* vertical padding absorbs the scale(1.07) + ring shadow without clipping */
-  padding: 6px 4px 10px;
-  margin: -6px -4px -10px;
+  /* padding absorbs the scale(1.07) + ring shadow, and the champion's glow
+     and crown, without clipping */
+  padding: 14px 12px 12px;
+  margin: -14px -12px -12px;
 }
 .usersRow::-webkit-scrollbar { height: 0; }
 
@@ -464,4 +465,42 @@
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
   pointer-events: none;
   z-index: 100;
+}
+
+/* ── Last week's Queuedle champion ── */
+.userAvatarWrap {
+  position: relative;
+  display: block;
+}
+.userChipChampion .userAvatar {
+  box-shadow:
+    0 0 0 2px #e8b84a,
+    0 0 16px 3px rgba(232, 184, 74, 0.55);
+  animation: championGlow 2.8s ease-in-out infinite;
+}
+.userChipChampion:hover .userAvatar {
+  box-shadow:
+    0 0 0 2px #f3cf6e,
+    0 0 22px 5px rgba(243, 207, 110, 0.7);
+}
+.userChipChampion .userName {
+  color: #f3cf6e;
+  font-weight: 600;
+}
+.championBadge {
+  position: absolute;
+  top: -8px;
+  right: -4px;
+  font-size: 20px;
+  line-height: 1;
+  transform: rotate(18deg);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+  pointer-events: none;
+}
+@keyframes championGlow {
+  0%, 100% { box-shadow: 0 0 0 2px #e8b84a, 0 0 12px 2px rgba(232, 184, 74, 0.45); }
+  50%      { box-shadow: 0 0 0 2px #f3cf6e, 0 0 22px 5px rgba(243, 207, 110, 0.7); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .userChipChampion .userAvatar { animation: none; }
 }

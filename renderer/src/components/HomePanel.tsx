@@ -19,7 +19,8 @@ import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
 import { useRecentlyPlayed } from '../hooks/useRecentlyPlayed';
 import { useMyPlaylists } from '../hooks/usePlaylists';
 import { useUsers } from '../hooks/useUsers';
-import { useDailyGame, useMyScore } from '../hooks/useDailyGame';
+import { useDailyGame, useLastWeekWinner, useMyScore } from '../hooks/useDailyGame';
+import { formatWeekRange } from '../lib/queuedleWeek';
 import { useImage } from '../hooks/useImage';
 import { createDragGhost } from '../lib/dragHelpers';
 import { PlaylistCard } from './common/PlaylistCard';
@@ -33,10 +34,17 @@ import { CreatePlaylistDialog } from './common/ContextMenu';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/HomePanel.module.css';
 
-function UserAvatarChip({ user, onClick }: { user: UserSummary; onClick: () => void }) {
+function UserAvatarChip({ user, champion, onClick }: { user: UserSummary; champion?: string; onClick: () => void }) {
   return (
-    <button className={styles.userChip} onClick={onClick} title={user.userId}>
-      <UserAvatar name={user.userId} imageUrl={user.imageUrl} className={styles.userAvatar} />
+    <button
+      className={`${styles.userChip}${champion ? ' ' + styles.userChipChampion : ''}`}
+      onClick={onClick}
+      title={champion ? `${user.userId} · ${champion}` : user.userId}
+    >
+      <span className={styles.userAvatarWrap}>
+        <UserAvatar name={user.userId} imageUrl={user.imageUrl} className={styles.userAvatar} />
+        {champion && <span className={styles.championBadge} aria-label={champion}>👑</span>}
+      </span>
       <span className={styles.userName}>{user.userId}</span>
     </button>
   );
@@ -180,6 +188,11 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
   const activeSearch = searchParams.get('q') ?? '';
 
   const { owned: ownedPlaylists, joined: joinedPlaylists } = useMyPlaylists(displayName);
+  // Last week's Queuedle winner wears gold on their avatar all this week.
+  const lastWeekWinner = useLastWeekWinner(displayName).data ?? null;
+  const championLabel = lastWeekWinner
+    ? `Queuedle champion, week of ${formatWeekRange(lastWeekWinner.range)} (${lastWeekWinner.total} pts)`
+    : undefined;
   const { data: colleagues = [], isLoading: colleaguesLoading } = useUsers(isAuthed);
 
   const [createPlaylistOpen, setCreatePlaylistOpen] = useState(false);
@@ -278,6 +291,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                       <UserAvatarChip
                         key={u.userId}
                         user={u}
+                        champion={lastWeekWinner?.userName === u.userId ? championLabel : undefined}
                         onClick={() => navigate(`/profile/${encodeURIComponent(u.userId)}`)}
                       />
                     ))

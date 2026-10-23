@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MusicStatsPanel } from '../MusicStatsPanel';
 import { NO_LENGTHS_TEXT } from '../../../lib/musicStats';
@@ -52,8 +52,9 @@ function fixture(withLengths: boolean): MusicStatsResult {
   };
 }
 
+let client: QueryClient;
 function renderPanel() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
       <MusicStatsPanel />
@@ -114,5 +115,16 @@ describe('MusicStatsPanel', () => {
     vi.mocked(window.sonos.fetchMusicStats).mockResolvedValue({ error: 'nope' });
     renderPanel();
     expect(await screen.findByText(/Couldn’t load the music stats/)).toBeInTheDocument();
+  });
+
+  it('keeps showing the stats when a later refresh fails', async () => {
+    vi.mocked(window.sonos.fetchMusicStats).mockResolvedValueOnce(fixture(true));
+    renderPanel();
+    expect(await screen.findByText(/12,441 queues/)).toBeInTheDocument();
+    vi.mocked(window.sonos.fetchMusicStats).mockResolvedValue({ error: 'Not Found' });
+    await act(() => client.refetchQueries({ queryKey: ['music-stats'] }));
+    expect(await screen.findByText(/Couldn’t refresh just now/)).toBeInTheDocument();
+    expect(screen.queryByText(/Couldn’t load the music stats/)).toBeNull();
+    expect(screen.getByText(/12,441 queues/)).toBeInTheDocument();
   });
 });
