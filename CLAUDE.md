@@ -30,25 +30,16 @@ The renderer is **never type-checked by Vite** (esbuild strips types). `npm run 
 
 ## Visual verification (Claude Code)
 
-The app supports visual feedback via Chrome DevTools Protocol during development.
+**The live app drives the office speakers.** Never press (or script a click on) add, queue, play next, station, transport or seek controls, and never play or submit Queuedle, feedback or polls. Navigate and hover only. To see a control's states, use its story in Storybook (below), where nothing reaches Sonos.
 
-### Verify and connect
+`npm run dev` enables Chrome DevTools Protocol on port 9333 (`curl -s http://localhost:9333/json/version` to check).
 
 ```bash
-curl -s http://localhost:9333/json/version   # should return Electron/Chrome JSON
-agent-browser connect 9333
-agent-browser screenshot /tmp/screenshot.png
-agent-browser snapshot -i                   # DOM inspection
+node scripts/screenshot.mjs shot.png                    # current page
+node scripts/screenshot.mjs shot.png '#/leaderboard'    # after moving to a route
 ```
 
-### Workflow
-
-After making UI changes:
-
-1. `npm run dev` (CDP already enabled)
-2. `agent-browser connect 9333`
-3. `agent-browser screenshot /tmp/tt2-screenshot.png`
-4. Inspect the screenshot and fix any rendering issues before committing
+Live data (now playing, queue, picks) changes between shots, so for before/after comparisons of a component prefer its stories. If Vite serves stale modules after big edits, stop dev and delete `node_modules/.vite`.
 
 ---
 
@@ -127,6 +118,22 @@ Main process (`src/`), IPC handlers, WebSocket bootstrap, auth flow, and most ho
 
 ---
 
+## UI: design system and shared components
+
+**DESIGN.md is the spec** ("After-Hours Gallery"): colours, type roles, shadow vocabulary, radius scale, components and the do/don't rules (no text under 13px, shadows only on artwork and floating surfaces, no purple/neon/glow). Read it before UI work. If you change a design rule, update DESIGN.md in the same commit.
+
+**Tokens, not values.** Every colour, shadow, border radius and font size in renderer CSS comes from a token in `renderer/src/styles/global.css` (`:root`) or `depth.css` (shell materials), so one edit retunes the app.
+
+- Colours: `var(--text*)`, `--on-art*`, `--glass*`, `--overlay*`, and tints as `rgba(var(--tint), a)`. Shadows: `--art-shadow`, `--hero-shadow`, `--float-shadow` and friends. Radii: `--r-*`. Type: `--fs-*` (smaller steps are already `max(13px, …)`).
+- `renderer/src/__tests__/cssTokens.test.ts` fails on any raw hex/rgb/hsl/named colour outside those two files (mask gradients exempt). Radii and font sizes aren't test-enforced, so use the tokens anyway.
+- Need a value no token covers? Use the nearest token first. If it is a genuinely new role, add it beside its siblings in `global.css` with a one-line comment, and name it in DESIGN.md.
+
+**Reuse before you build.** Shared components live in `renderer/src/components/common/`, and Storybook is the catalogue of what exists and its states. Before writing a card, tile, row, button, chip, dialog, menu, artwork or seek/transport control, check there.
+
+- Extend a shared component with a prop rather than copying it. Promote a page-local component to `common/` once a second page needs it.
+- Data helpers too: `lib/itemHelpers.ts` has `trackPayload()` (context-menu track), `albumItem()` and `artistItem()` (navigable `SonosItem`s). Don't hand-build those objects.
+- A new shared component gets a story (see below).
+
 ## Storybook
 
 ```bash
@@ -157,7 +164,7 @@ Stories sit beside the component as `Foo.stories.tsx` (CSF, `args` for controls,
    - Add the resource to `server/azuredeploy.json`
    - Redeploy: `az deployment group create --resource-group truetunes-rg --template-file server/azuredeploy.json --mode Incremental`
 
-4. If it is a new shared component in `renderer/src/components/common/`, add a `Foo.stories.tsx`.
+4. If it has UI: reuse `common/` components, style with tokens only (see "UI: design system and shared components"), and add a `Foo.stories.tsx` for any new shared component in `renderer/src/components/common/`.
 
 5. Run `npm run typecheck && npm run test:run` before committing.
 
