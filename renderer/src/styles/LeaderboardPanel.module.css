@@ -55,13 +55,13 @@
   display: inline-flex;
   gap: 0.2em;
   padding: 0.25em;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   background: var(--surface);
 }
 .segment {
   border: none;
   background: none;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   padding: 0.45em 1.1em;
   font-size: max(13px, 0.93em);
   font-weight: 500;
@@ -128,7 +128,7 @@
   border: none;
   background: none;
   padding: 0.25em 0.9em 0.25em 0.3em;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   font-size: max(13px, 0.93em);
   color: var(--text-2);
   cursor: pointer;
@@ -144,7 +144,7 @@
 .faceAvatar {
   width: 2em;
   height: 2em;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -164,24 +164,24 @@
   gap: 0.9em;
   padding: 0 0.3em 0.2em;
 }
-.skelCircle { aspect-ratio: 1; border-radius: 50%; margin-bottom: 2.6em; }
+.skelCircle { aspect-ratio: 1; border-radius: var(--r-round); margin-bottom: 2.6em; }
 /* Page skeleton: a band title, PersonCard-sized cards, then a chart card. */
-.skelTitle { width: 9em; height: 1.6em; border-radius: 0.5em; margin-bottom: 0.7em; }
+.skelTitle { width: 9em; height: 1.6em; border-radius: var(--r-xs); margin-bottom: 0.7em; }
 .skelCard {
   display: flex;
   flex-direction: column;
   gap: 0.9em;
   padding: 0.9em;
-  border-radius: 1em;
+  border-radius: var(--r-art-card);
   background: var(--surface);
 }
-.skelHead { height: 3.8em; border-radius: 0.8em; }
+.skelHead { height: 3.8em; border-radius: var(--r-tile); }
 
 /* Loading rows at a chart row's pitch, so the cards don't jump when the tracks arrive. */
 .skelRows { display: flex; flex-direction: column; }
 .skelRow { display: flex; align-items: center; gap: 0.9em; padding: 0.45em 0.6em; }
-.skelThumb { width: 3.2em; height: 3.2em; border-radius: 0.6em; flex-shrink: 0; }
-.skelLine { height: 1em; width: 60%; border-radius: 0.5em; }
+.skelThumb { width: 3.2em; height: 3.2em; border-radius: var(--r-thumb); flex-shrink: 0; }
+.skelLine { height: 1em; width: 60%; border-radius: var(--r-xs); }
 
 /* ── Artists and albums ──────────────────────────────────────────────────── */
 
@@ -211,7 +211,7 @@
   align-items: center;
   column-gap: 0.9em;
   padding: 0.45em 0.6em;
-  border-radius: 0.65em;
+  border-radius: var(--r-row);
   transition: background var(--dur-fast) var(--ease-fast);
 }
 .standing:hover,
@@ -236,7 +236,7 @@
 .standingAvatar {
   width: 2.4em;
   height: 2.4em;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -269,7 +269,7 @@
   color: var(--text-2);
   background: rgba(var(--tint), 0.16);
   padding: 0.2em 0.8em;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   white-space: nowrap;
   /* Sentence case from the server's title-case tier names; the DOM text is unchanged. */
   text-transform: lowercase;
@@ -332,7 +332,7 @@
   justify-content: center;
   gap: 0.4em;
   padding: 1.4em 0.8em;
-  border-radius: 1em;
+  border-radius: var(--r-art-card);
   background: var(--surface);
   text-align: center;
 }

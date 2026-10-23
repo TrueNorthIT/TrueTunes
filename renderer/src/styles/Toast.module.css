@@ -33,7 +33,7 @@
   flex: none;
   width: 0.6em;
   height: 0.6em;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   background: var(--dot, var(--text-3));
 }
 

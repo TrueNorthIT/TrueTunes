@@ -41,7 +41,7 @@
   backdrop-filter: blur(8px);
   color: var(--on-art);
   padding: 8px 16px;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   font-size: 13px;
   font-weight: 500;
   z-index: 9999;

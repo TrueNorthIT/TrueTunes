@@ -28,7 +28,7 @@
   box-sizing: border-box;
   padding: 0 4px 0 10px;
   border: 1px solid var(--border);
-  border-radius: 13px;
+  border-radius: var(--r-pill);
   background: var(--glass-faint);
 }
 .searchBox:focus-within { border-color: var(--border-2); }
@@ -52,7 +52,7 @@
   font-size: 13px;
   line-height: 1;
   padding: 4px;
-  border-radius: 50%;
+  border-radius: var(--r-round);
 }
 .searchClear:hover { color: var(--text); }
 .searchStatus { font-size: 13px; color: var(--text-3); white-space: nowrap; }
@@ -67,7 +67,7 @@
 .arrow {
   width: 28px;
   height: 28px;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   border: none;
   background: none;
   color: var(--text-3);

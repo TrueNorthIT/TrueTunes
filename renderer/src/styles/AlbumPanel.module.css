@@ -100,7 +100,7 @@
   display: block;
   height: 0.95em;
   margin-bottom: 0.6em;
-  border-radius: 0.4em;
+  border-radius: var(--r-xs);
 }
 .tracks { min-width: 0; }
 .list { list-style: none; margin: 0; padding: 0; }
@@ -122,8 +122,8 @@
   gap: 1em;
   padding: 0.7em 0.6em;
 }
-.skelNum { width: 2em; height: 0.9em; border-radius: 0.4em; }
-.skelTitle { height: 1em; border-radius: 0.4em; }
+.skelNum { width: 2em; height: 0.9em; border-radius: var(--r-xs); }
+.skelTitle { height: 1em; border-radius: var(--r-xs); }
 
 /* ── More by the artist ── */
 .shelf {

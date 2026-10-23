@@ -24,7 +24,7 @@
 .nav,
 .historyPill {
   height: 44px;
-  border-radius: 22px;
+  border-radius: var(--r-shell);
   /* material tokens come from styles/depth.css */
   background: var(--material-bg);
   backdrop-filter: var(--material-filter);
@@ -52,7 +52,7 @@
   color: var(--text-3);
   cursor: pointer;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -85,7 +85,7 @@
   color: var(--text-3);
   cursor: pointer;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -110,7 +110,7 @@
   width: 4px;
   height: 4px;
   margin-left: -2px;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   background: var(--on-art);
 }
 
@@ -129,7 +129,7 @@
   align-items: center;
   gap: 6px;
   padding: 0 8px;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
 }
 /* The input draws no ring of its own, so the wrapper shows the global focus ring. */
 .searchWrap:focus-within {
@@ -161,7 +161,7 @@
   color: var(--text-3);
   cursor: pointer;
   padding: 4px;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   display: flex;
   align-items: center;
   transition: color var(--dur-fast) var(--ease-fast);
@@ -222,7 +222,7 @@
   background: none;
   border: none;
   padding: 4px 8px 4px 4px;
-  border-radius: 20px;
+  border-radius: var(--r-shell);
   cursor: pointer;
   transition: background var(--dur-fast) var(--ease-fast);
   flex-shrink: 0;
@@ -235,7 +235,7 @@
 .profileAvatar {
   width: 22px;
   height: 22px;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   background: rgba(var(--tint), 0.24);
   color: var(--on-art);
   font-size: 13px;

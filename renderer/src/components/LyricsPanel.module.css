@@ -41,7 +41,7 @@
   align-self: start;
   max-height: 100%;
   padding: 1.4em;
-  border-radius: 1.2em;
+  border-radius: var(--r-card);
   background:
     radial-gradient(120% 90% at 0% 0%, rgba(var(--wash, 150, 158, 255), 0.3), transparent 65%),
     var(--surface-hi);
@@ -55,7 +55,7 @@
   aspect-ratio: 1;
   padding: 0;
   border: none;
-  border-radius: 1em;
+  border-radius: var(--r-art-card);
   overflow: hidden;
   background: var(--bg-1);
   cursor: pointer;
@@ -160,7 +160,7 @@
   position: relative;
   min-width: 0;
   min-height: 0;
-  border-radius: 1.2em;
+  border-radius: var(--r-card);
   background: var(--surface);
   overflow: hidden;
   container-type: inline-size;
@@ -209,7 +209,7 @@
   display: block;
   height: 1.4em;
   margin: 0.95em 0;
-  border-radius: 0.4em;
+  border-radius: var(--r-xs);
   font-size: clamp(1.7em, 3.4cqi, 2.4em);
 }
 

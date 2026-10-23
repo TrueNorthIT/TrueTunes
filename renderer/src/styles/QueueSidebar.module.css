@@ -49,7 +49,7 @@
   align-items: center;
   gap: 2px;
   background: var(--row-hover);
-  border-radius: 20px;
+  border-radius: var(--r-shell);
   padding: 3px 4px;
   -webkit-app-region: no-drag;
 }
@@ -135,7 +135,7 @@
   color: var(--text-2);
   background: var(--bg-2);
   padding: 1px 8px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   font-variant-numeric: tabular-nums;
 }
 
@@ -145,7 +145,7 @@
   color: var(--text-2);
   background: var(--bg-2);
   padding: 1px 8px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
 }
 
 .headerActions { display: flex; align-items: center; gap: 2px; }
@@ -163,7 +163,7 @@
 .selExpandBtn {
   padding: 4px 12px;
   border: none;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   font-family: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -191,7 +191,7 @@
   background: none; border: none;
   color: var(--text-3); cursor: pointer;
   padding: 7px;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   display: flex; align-items: center; justify-content: center;
   transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast);
   line-height: 1;
@@ -218,7 +218,7 @@
   border: 2px solid transparent;
   background-clip: padding-box;
   background-color: var(--glass);
-  border-radius: 99px;
+  border-radius: var(--r-pill);
   max-height: 300px;
 }
 .content::-webkit-scrollbar-thumb:hover {
@@ -253,7 +253,7 @@ button.groupLabel:hover { color: var(--text); }
   align-items: center;
   gap: 10px;
   padding: 6px 10px 6px 16px;
-  border-radius: 0.65em;
+  border-radius: var(--r-row);
   transition: background var(--dur-fast) var(--ease-fast), opacity var(--dur-fast) var(--ease-fast);
   cursor: default;
   position: relative;
@@ -361,7 +361,7 @@ button.groupLabel:hover { color: var(--text); }
   padding: 0;
   border: none;
   background: none;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   cursor: pointer;
   line-height: 0;
   transition: box-shadow var(--dur-fast) var(--ease-fast);
@@ -370,7 +370,7 @@ button.groupLabel:hover { color: var(--text); }
 .queuerAvatar {
   width: 26px;
   height: 26px;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -387,7 +387,7 @@ button.groupLabel:hover { color: var(--text); }
   height: 2px;
   margin: 0 8px;
   background: var(--text-2);
-  border-radius: 1px;
+  border-radius: var(--r-pill);
   pointer-events: none;
 }
 
@@ -446,7 +446,7 @@ button.groupLabel:hover { color: var(--text); }
   font-weight: 600;
   cursor: pointer;
   padding: 3px 8px;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   transition: color var(--dur-fast) var(--ease-fast), background var(--dur-fast) var(--ease-fast);
   white-space: nowrap;
 }
@@ -484,7 +484,7 @@ button.groupLabel:hover { color: var(--text); }
   flex-shrink: 0;
   width: 26px;
   height: 26px;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   display: grid;
   place-items: center;
   color: var(--text-3);

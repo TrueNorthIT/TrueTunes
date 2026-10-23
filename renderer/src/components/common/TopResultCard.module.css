@@ -7,7 +7,7 @@
   min-width: 0;
   min-height: 20em;
   overflow: hidden;
-  border-radius: 1.2em;
+  border-radius: var(--r-card);
   /* No art: the lit wall with the tint wash from the top left, as the featured cards have. */
   background:
     radial-gradient(120% 110% at 15% 0%, rgba(var(--tint), 0.26), transparent 62%),

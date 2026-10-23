@@ -1,7 +1,7 @@
 /* Shared by TrackRow and ChartRow: borderless rows that fill with a tint on hover or focus. */
 
 .row {
-  border-radius: 0.65em;
+  border-radius: var(--r-row);
   transition: background var(--dur-fast) var(--ease-fast);
   min-width: 0;
 }
@@ -44,13 +44,13 @@
   display: block;
   flex-shrink: 0;
   cursor: pointer;
-  border-radius: 0.6em;
+  border-radius: var(--r-thumb);
 }
 .art,
 .artPh {
   width: 3.2em;
   height: 3.2em;
-  border-radius: 0.6em;
+  border-radius: var(--r-thumb);
   flex-shrink: 0;
   object-fit: cover;
   background: var(--bg-1);
@@ -202,7 +202,7 @@
   padding: 0;
   border: none;
   background: none;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   cursor: pointer;
   line-height: 0;
   transition: box-shadow var(--dur-fast) var(--ease-fast);
@@ -211,7 +211,7 @@
 .whoAvatar {
   width: 1.9em;
   height: 1.9em;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -231,7 +231,7 @@
   width: 2.2em;
   height: 2.2em;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   background: none;
   color: var(--text-3);
   cursor: pointer;

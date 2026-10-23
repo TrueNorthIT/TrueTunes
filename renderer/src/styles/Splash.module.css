@@ -34,7 +34,7 @@
   position: relative;
   width: 8em;
   height: 3px;
-  border-radius: 3px;
+  border-radius: var(--r-pill);
   background: rgba(var(--tint), 0.14);
   overflow: hidden;
 }

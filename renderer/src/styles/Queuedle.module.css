@@ -67,9 +67,9 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
-.premiseSkel { display: block; width: 14em; height: 1.1em; margin-top: 0.45em; border-radius: 0.4em; }
-.heroSkel { height: 14em; border-radius: 1.2em; }
-.round { border-radius: 50%; }
+.premiseSkel { display: block; width: 14em; height: 1.1em; margin-top: 0.45em; border-radius: var(--r-xs); }
+.heroSkel { height: 14em; border-radius: var(--r-card); }
+.round { border-radius: var(--r-round); }
 .cardSub {
   margin: -0.4em 0 1.1em;
   font-size: max(13px, 0.95em);
@@ -178,13 +178,13 @@
   width: 100%;
   display: flex;
   align-items: flex-end;
-  border-radius: 0.35em;
+  border-radius: var(--r-xs);
   background: rgba(var(--tint), 0.07);
   overflow: hidden;
 }
 .distFill {
   width: 100%;
-  border-radius: 0.35em;
+  border-radius: var(--r-xs);
   background: rgba(var(--tint), 0.32);
 }
 .distFillMine { background: var(--text); }
@@ -210,13 +210,13 @@
   display: inline-flex;
   gap: 0.2em;
   padding: 0.25em;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   background: var(--surface);
 }
 .segment {
   border: none;
   background: none;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   padding: 0.45em 1.1em;
   font-size: max(13px, 0.93em);
   font-weight: 500;
@@ -246,7 +246,7 @@
   align-items: center;
   column-gap: 0.9em;
   padding: 0.45em 0.6em;
-  border-radius: 0.65em;
+  border-radius: var(--r-row);
   transition: background var(--dur-fast) var(--ease-fast);
 }
 li.boardRow:hover { background: var(--row-hover); }
@@ -271,7 +271,7 @@ li.boardRowMe:hover { background: rgba(var(--tint), 0.14); }
   width: 2.2em;
   height: 2.2em;
   flex-shrink: 0;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -333,7 +333,7 @@ li.boardRowMe:hover { background: rgba(var(--tint), 0.14); }
   text-align: center;
   width: 2em;
 }
-.boardSkel { grid-column: 2 / -1; height: 2.2em; border-radius: 0.65em; }
+.boardSkel { grid-column: 2 / -1; height: 2.2em; border-radius: var(--r-row); }
 
 /* The tier: its name in a tonal chip, sentence-cased here (the server sends title case). Matches the Leaderboard. */
 .tierChip {
@@ -348,7 +348,7 @@ li.boardRowMe:hover { background: rgba(var(--tint), 0.14); }
   color: var(--text-2);
   background: rgba(var(--tint), 0.16);
   padding: 0.2em 0.8em;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   white-space: nowrap;
   text-transform: lowercase;
 }
@@ -364,14 +364,14 @@ li.boardRowMe:hover { background: rgba(var(--tint), 0.14); }
   row-gap: 0.25em;
   align-items: center;
   padding: 0.5em 0.6em;
-  border-radius: 0.65em;
+  border-radius: var(--r-row);
   transition: background var(--dur-fast) var(--ease-fast);
 }
 .reviewItem:hover { background: var(--row-hover); }
 .mark {
   width: 1.9em;
   height: 1.9em;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   display: grid;
   place-items: center;
   font-size: max(13px, 0.93em);
@@ -390,12 +390,12 @@ li.boardRowMe:hover { background: rgba(var(--tint), 0.14); }
   width: 2.4em;
   height: 2.4em;
   flex-shrink: 0;
-  border-radius: 0.5em;
+  border-radius: var(--r-xs);
   object-fit: cover;
   background: var(--bg-1);
   box-shadow: var(--art-shadow);
 }
-.reviewArt.round { border-radius: 50%; }
+.reviewArt.round { border-radius: var(--r-round); }
 .reviewText { display: flex; flex-direction: column; min-width: 0; }
 .reviewName {
   font-size: max(13px, 0.95em);
@@ -460,7 +460,7 @@ li.boardRowMe:hover { background: rgba(var(--tint), 0.14); }
 .playedAvatar {
   width: 2em;
   height: 2em;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -488,14 +488,14 @@ li.boardRowMe:hover { background: rgba(var(--tint), 0.14); }
   row-gap: 0.3em;
   align-content: start;
   padding: 1.3em 1.5em;
-  border-radius: 1.2em;
+  border-radius: var(--r-card);
   background: var(--surface);
 }
 .ruleNum {
   grid-row: span 2;
   width: 2.2em;
   height: 2.2em;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   display: grid;
   place-items: center;
   background: rgba(var(--tint), 0.16);
@@ -531,7 +531,7 @@ li.boardRowMe:hover { background: rgba(var(--tint), 0.14); }
 .pip {
   flex: 1;
   height: 0.32em;
-  border-radius: 1em;
+  border-radius: var(--r-art-card);
   background: rgba(var(--tint), 0.16);
   transition: background var(--dur) var(--ease);
 }
@@ -570,7 +570,7 @@ li.boardRowMe:hover { background: rgba(var(--tint), 0.14); }
   min-width: 0;
   padding: 1.1em 1.1em 1.3em;
   border: none;
-  border-radius: 1.2em;
+  border-radius: var(--r-card);
   background: var(--surface);
   color: inherit;
   text-align: left;
@@ -598,14 +598,14 @@ button.side:disabled { cursor: default; }
   place-items: center;
   width: 100%;
   aspect-ratio: 1;
-  border-radius: 0.9em;
+  border-radius: var(--r-tile);
   overflow: hidden;
   background: var(--bg-1);
   color: var(--text-3);
   box-shadow: var(--art-shadow);
   transition: box-shadow var(--dur-fast) var(--ease-fast);
 }
-.sideArt.round { border-radius: 50%; }
+.sideArt.round { border-radius: var(--r-round); }
 .sideArt img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .sideArt::after {
   content: '';
@@ -661,7 +661,7 @@ button.side:disabled { cursor: default; }
   to { opacity: 1; transform: none; }
 }
 .pickCue {
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   padding: 0.55em 1.1em;
   font-size: max(13px, 0.92em);
   font-weight: 600;
@@ -670,7 +670,7 @@ button.side:disabled { cursor: default; }
   transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast);
 }
 .yourPick {
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   padding: 0.4em 0.9em;
   font-size: max(13px, 0.92em);
   font-weight: 600;
@@ -712,19 +712,19 @@ button.side:disabled { cursor: default; }
   align-items: center;
   column-gap: 0.9em;
   padding: 0.55em 0.6em;
-  border-radius: 0.65em;
+  border-radius: var(--r-row);
   transition: background var(--dur-fast) var(--ease-fast);
 }
 .bonusRow:hover { background: var(--row-hover); }
 .bonusArt {
   width: 3.2em;
   height: 3.2em;
-  border-radius: 0.6em;
+  border-radius: var(--r-thumb);
   object-fit: cover;
   background: var(--bg-1);
   box-shadow: var(--art-shadow);
 }
-.bonusArt.round { border-radius: 50%; }
+.bonusArt.round { border-radius: var(--r-round); }
 .bonusInfo { display: flex; flex-direction: column; gap: 0.1em; min-width: 0; }
 .bonusName {
   font-size: 1.07em;
@@ -747,7 +747,7 @@ button.side:disabled { cursor: default; }
   align-items: center;
   gap: 0.45em;
   border: none;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   padding: 0.2em 0.8em 0.2em 0.2em;
   background: rgba(var(--tint), 0.1);
   color: var(--text-2);
@@ -765,7 +765,7 @@ button.side:disabled { cursor: default; }
   width: 1.7em;
   height: 1.7em;
   flex-shrink: 0;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -841,7 +841,7 @@ button.side:disabled { cursor: default; }
   font-variant-numeric: tabular-nums;
 }
 .rankDelta {
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   padding: 0.25em 0.7em;
   font-size: 1.07em;
   font-weight: 700;
@@ -859,7 +859,7 @@ button.side:disabled { cursor: default; }
   height: 2.2em;
   padding: 0;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   background: none;
   color: var(--text-2);
   cursor: pointer;
@@ -905,7 +905,7 @@ button.side:disabled { cursor: default; }
   place-items: center;
   padding: 0;
   border: none;
-  border-radius: 0.6em;
+  border-radius: var(--r-thumb);
   background: transparent;
   color: var(--text-3);
   font-size: max(13px, 0.95em);
@@ -936,7 +936,7 @@ button.side:disabled { cursor: default; }
 .calendarLegendSwatch {
   width: 1.4em;
   height: 1.4em;
-  border-radius: 0.4em;
+  border-radius: var(--r-xs);
   display: inline-grid;
   place-items: center;
   font-size: max(13px, 0.86em);

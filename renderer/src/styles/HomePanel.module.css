@@ -45,7 +45,7 @@
   align-items: center;
   gap: 1em;
   padding: 0.6em 0.6em 0.6em 1.2em;
-  border-radius: 1em;
+  border-radius: var(--r-art-card);
   background: var(--surface);
 }
 .queuedleText { display: flex; flex-direction: column; gap: 1px; }
@@ -57,7 +57,7 @@
   align-items: center;
   gap: 0.45em;
   border: none;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   background: var(--text);
   color: var(--bg);
   font-family: inherit;
@@ -75,7 +75,7 @@
   align-items: center;
   gap: 0.45em;
   border: none;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   background: rgba(var(--tint), 0.12);
   color: var(--text);
   font-family: inherit;
@@ -109,7 +109,7 @@
   background: none;
   border: none;
   padding: 0.15em 0.6em 0.15em 0.15em;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   font-family: inherit;
   cursor: pointer;
   transition: background var(--dur-fast) var(--ease-fast);
@@ -123,7 +123,7 @@
 .faceAvatar {
   width: 1.9em;
   height: 1.9em;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -229,7 +229,7 @@
   overflow: hidden;
   border: none;
   padding: 0;
-  border-radius: 0.9em;
+  border-radius: var(--r-tile);
   background: var(--bg-1);
   font-family: inherit;
   text-align: left;
@@ -274,7 +274,7 @@ button.tileMain { cursor: pointer; }
   width: 11.5em;
   height: 11.5em;
   flex-shrink: 0;
-  border-radius: 0.9em;
+  border-radius: var(--r-tile);
   background: var(--bg-1);
 }
 
@@ -295,7 +295,7 @@ button.tileMain { cursor: pointer; }
   align-items: stretch;
   min-width: 0;
   padding: 1.4em;
-  border-radius: 1.2em;
+  border-radius: var(--r-card);
   background:
     radial-gradient(120% 150% at 0% 0%, rgba(var(--wash, 150, 158, 255), 0.3), transparent 65%),
     var(--surface-hi);
@@ -307,7 +307,7 @@ button.tileMain { cursor: pointer; }
   align-self: center;
   padding: 0;
   border: none;
-  border-radius: 1em;
+  border-radius: var(--r-art-card);
   overflow: hidden;
   background: var(--bg-1);
   cursor: pointer;
@@ -367,7 +367,7 @@ button.tileMain { cursor: pointer; }
 .nowProgress { display: flex; align-items: center; gap: 0.8em; margin-top: 0.3em; }
 .nowTime { font-size: max(13px, 0.86em); color: var(--text-3); font-variant-numeric: tabular-nums; min-width: 2.6em; }
 .nowTime:last-child { text-align: right; }
-.nowBar { flex: 1; height: 0.32em; border-radius: 1em; background: var(--track); overflow: hidden; }
+.nowBar { flex: 1; height: 0.32em; border-radius: var(--r-art-card); background: var(--track); overflow: hidden; }
 .nowFill { width: 100%; height: 100%; border-radius: inherit; background: var(--title-rest); transform-origin: left center; transition: transform 0.4s linear; }
 
 .about { display: flex; flex-direction: column; align-items: flex-start; gap: 0; width: 100%; max-width: 100ch; margin-top: 0.2em; }
@@ -388,7 +388,7 @@ button.tileMain { cursor: pointer; }
   flex-direction: column;
   min-width: 0;
   padding: 1.2em 1.4em 0;
-  border-radius: 1.2em;
+  border-radius: var(--r-card);
   background: var(--surface);
   cursor: pointer;
   overflow: hidden;
@@ -405,7 +405,7 @@ button.tileMain { cursor: pointer; }
   display: grid;
   place-items: center;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   background: none;
   color: var(--text-3);
   cursor: pointer;
@@ -447,7 +447,7 @@ button.tileMain { cursor: pointer; }
 .lyricSkel,
 .aboutSkel {
   display: block;
-  border-radius: 0.4em;
+  border-radius: var(--r-xs);
 }
 .lyricSkel { height: 1.1em; margin: 0.65em 0; }
 .aboutSkel { height: 0.95em; margin: 0.3em 0; }

@@ -33,7 +33,7 @@
   width: 100%;
   padding: 0.55em 0.6em;
   border: none;
-  border-radius: 0.65em;
+  border-radius: var(--r-row);
   background: none;
   text-align: left;
   cursor: pointer;
@@ -152,12 +152,12 @@
   font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
   font-size: max(13px, 0.9em);
   background: var(--row-hover);
-  border-radius: 0.35em;
+  border-radius: var(--r-xs);
   padding: 0.05em 0.35em;
 }
 .notes :global(pre) {
   background: var(--surface);
-  border-radius: 0.65em;
+  border-radius: var(--r-row);
   padding: 0.9em 1em;
   overflow-x: auto;
   margin: 0 0 0.75em;

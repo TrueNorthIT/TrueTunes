@@ -9,5 +9,5 @@
   color: var(--text-2);
   background: rgba(var(--tint), 0.16);
   padding: 0.2em 0.8em;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
 }

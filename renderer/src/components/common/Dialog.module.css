@@ -8,7 +8,7 @@
   margin: auto;
   padding: 0;
   border: none;
-  border-radius: 1.2em;
+  border-radius: var(--r-card);
   background: var(--bg-1);
   color: var(--text);
   box-shadow: var(--float-shadow);
@@ -58,7 +58,7 @@
   margin-left: auto;
   padding: 0;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   background: none;
   color: var(--text-2);
   cursor: pointer;
@@ -114,7 +114,7 @@
   color: var(--text);
   background: var(--row-hover);
   border: none;
-  border-radius: 0.65em;
+  border-radius: var(--r-row);
   padding: 0.65em 0.85em;
   outline: none;
   transition: background var(--dur-fast) var(--ease-fast);

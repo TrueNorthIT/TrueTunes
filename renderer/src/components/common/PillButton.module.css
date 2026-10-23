@@ -3,7 +3,7 @@
   align-items: center;
   gap: 0.45em;
   border: none;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   font-family: inherit;
   font-size: max(13px, 0.92em);
   font-weight: 600;

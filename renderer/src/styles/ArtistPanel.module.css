@@ -77,7 +77,7 @@
   right: 28px;
   width: var(--print);
   height: var(--print);
-  border-radius: 0.9em;
+  border-radius: var(--r-tile);
   overflow: hidden;
   background: var(--bg-1);
   box-shadow: var(--hero-shadow);
@@ -232,7 +232,7 @@
 }
 .waveformBar {
   width: 0.2em;
-  border-radius: 0.1em;
+  border-radius: var(--r-pill);
   background: var(--on-art);
   transform-origin: bottom;
   animation: waveformLevel 0.9s ease-in-out infinite alternate;
@@ -248,17 +248,17 @@
 /* ── Loading: sized like the content they replace; colour and pulse are the global .skeleton ── */
 .skeletonTile {
   aspect-ratio: 1;
-  border-radius: 1em;
+  border-radius: var(--r-art-card);
 }
 .songsSkeleton { min-width: 0; }
 .skeletonRow {
   height: 4.3em;
-  border-radius: 0.65em;
+  border-radius: var(--r-row);
   margin-bottom: 0.2em;
 }
 .skeletonCard {
   height: 15em;
-  border-radius: 0.9em;
+  border-radius: var(--r-tile);
 }
 .shelfSkeleton { display: flex; gap: 14px; }
 .shelfSkeleton .skeletonCard { flex: 0 0 13.6em; }
@@ -270,7 +270,7 @@
   min-width: 0;
   box-sizing: border-box;
   cursor: pointer;
-  border-radius: 0.9em;
+  border-radius: var(--r-tile);
   padding: 0.6em;
   transition: background var(--dur-fast) var(--ease-fast);
 }
@@ -280,7 +280,7 @@
   width: 100%;
   aspect-ratio: 1;
   height: auto;
-  border-radius: 0.7em;
+  border-radius: var(--r-art);
   overflow: hidden;
   background: var(--bg-1);
   box-shadow: var(--art-shadow);
@@ -373,7 +373,7 @@
 .stackLayer {
   position: absolute;
   inset: 0;
-  border-radius: 0.7em;
+  border-radius: var(--r-art);
   background: var(--bg-1) center / cover;
   filter: brightness(0.55);
 }
@@ -387,7 +387,7 @@
   align-items: center;
   gap: 0.3em;
   padding: 0.15em 0.55em 0.15em 0.7em;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   background: var(--overlay-strong);
   color: var(--on-art);
   font-size: max(13px, 0.93em);
@@ -406,7 +406,7 @@
   flex-direction: column;
   padding: 0 4px 4px;
   margin: -20px 0 -4px;
-  border-radius: 0.9em;
+  border-radius: var(--r-tile);
   background: var(--bg-2);
 }
 .groupBox .albumCard:hover { background: rgba(var(--tint), 0.14); }
@@ -427,7 +427,7 @@
   line-height: 1;
   padding: 0;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   background: none;
   color: var(--text-3);
   font-size: 13px;
@@ -474,7 +474,7 @@
   width: 2.4em;
   height: 2.4em;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   background: none;
   display: grid;
   place-items: center;

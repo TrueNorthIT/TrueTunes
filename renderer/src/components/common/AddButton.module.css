@@ -3,7 +3,7 @@
   place-items: center;
   flex-shrink: 0;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   cursor: pointer;
   transition:
     opacity var(--dur-fast) var(--ease-fast),

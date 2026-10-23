@@ -67,8 +67,8 @@
 
 /* Skeleton tiles at the real tile size (square art, then the title line). */
 .skelTile { display: flex; flex-direction: column; gap: 0.6em; min-width: 0; }
-.skelArt { display: block; width: 100%; aspect-ratio: 1; border-radius: 0.9em; }
-.skelLine { display: block; width: 70%; height: 1em; border-radius: 0.4em; animation-delay: 0.1s; }
+.skelArt { display: block; width: 100%; aspect-ratio: 1; border-radius: var(--r-tile); }
+.skelLine { display: block; width: 70%; height: 1em; border-radius: var(--r-xs); animation-delay: 0.1s; }
 
 @container (max-width: 700px) {
   .grid { grid-template-columns: repeat(auto-fill, minmax(9em, 1fr)); }

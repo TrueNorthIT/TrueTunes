@@ -8,7 +8,7 @@
   background: var(--material-bg);
   backdrop-filter: var(--material-filter);
   border: 1px solid var(--separator);
-  border-radius: 0.9em;
+  border-radius: var(--r-tile);
   padding: 0.3em;
   min-width: 15em;
   box-shadow: var(--float-shadow);
@@ -34,7 +34,7 @@
   width: 100%;
   padding: 0.5em 0.7em;
   border: none;
-  border-radius: 0.55em;
+  border-radius: var(--r-row);
   background: none;
   font: inherit;
   font-size: max(13px, 0.93em);
@@ -90,7 +90,7 @@
   width: 1.15em;
   height: 1.15em;
   margin-top: 0.15em;
-  border-radius: 0.3em;
+  border-radius: var(--r-xs);
   background: rgba(var(--tint), 0.2) center / 75% no-repeat;
   cursor: pointer;
   transition: background-color var(--dur-fast) var(--ease-fast);

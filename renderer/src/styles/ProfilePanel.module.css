@@ -43,7 +43,7 @@
 .avatar {
   width: clamp(132px, 14cqw, 232px);
   aspect-ratio: 1;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   flex-shrink: 0;
   box-shadow: var(--hero-shadow);
 }
@@ -52,7 +52,7 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   font-size: clamp(56px, 6cqw, 96px);
   font-weight: 700;
   color: var(--on-art);
@@ -74,7 +74,7 @@
 .avatarOverlay {
   position: absolute;
   inset: 0;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -138,7 +138,7 @@
   color: var(--text-2);
   background: rgba(var(--tint), 0.16);
   padding: 0.2em 0.8em;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   line-height: 1.5;
 }
 
@@ -163,7 +163,7 @@
   color: var(--text);
   background: var(--glass-faint);
   border: 1px solid var(--border);
-  border-radius: 0.4em;
+  border-radius: var(--r-xs);
   padding: 0.1em 0.4em;
   width: min(12em, 100%);
   outline: none;
@@ -185,7 +185,7 @@
   color: var(--text-2);
   background: rgba(var(--tint), 0.16);
   padding: 0.2em 0.8em;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   white-space: nowrap;
   text-transform: lowercase;
 }
@@ -227,7 +227,7 @@
 /* The skeleton sits at a chart row's pitch, so nothing moves when the rows arrive. */
 .rowSkel {
   height: 3.8em;
-  border-radius: 0.65em;
+  border-radius: var(--r-row);
   margin-bottom: 0.5em;
 }
 

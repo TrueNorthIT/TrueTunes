@@ -8,7 +8,7 @@
   left: calc((100vw - var(--docked-queue-w, 0px)) / 2);
   transform: translateX(-50%) translateZ(0);
   z-index: 150;
-  border-radius: 22px;
+  border-radius: var(--r-shell);
   /* material tokens come from styles/depth.css */
   background: var(--material-bg);
   backdrop-filter: var(--material-filter);
@@ -51,7 +51,7 @@
 .art {
   width: 40px;
   height: 40px;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   object-fit: cover;
   display: block;
   cursor: pointer;
@@ -65,7 +65,7 @@
   width: 40px;
   height: 40px;
   flex-shrink: 0;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   background: var(--bg-2);
   display: flex;
   align-items: center;
@@ -152,7 +152,7 @@ button.trackArtist:hover {
   padding: 0;
   border: none;
   background: none;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   cursor: pointer;
   line-height: 0;
   transition: box-shadow var(--dur-fast) var(--ease-fast);
@@ -161,7 +161,7 @@ button.trackArtist:hover {
 .queuerAvatar {
   width: 26px;
   height: 26px;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -204,7 +204,7 @@ button.trackArtist:hover {
   width: 100%;
   height: 3px;
   background: var(--track);
-  border-radius: 3px;
+  border-radius: var(--r-pill);
   overflow: hidden;
   transition: transform var(--dur-fast) var(--ease-fast);
 }
@@ -215,7 +215,7 @@ button.trackArtist:hover {
   width: 100%;
   height: 100%;
   background: var(--on-art);
-  border-radius: 3px;
+  border-radius: var(--r-pill);
   transform-origin: left center;
   transition: transform 1s linear;
 }
@@ -235,7 +235,7 @@ button.trackArtist:hover {
   cursor: pointer;
   font-size: 14px;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   line-height: 1;
   transition:
     color var(--dur-fast) var(--ease-fast),
@@ -268,7 +268,7 @@ button.trackArtist:hover {
 .playBtn {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   background: var(--text);
   color: var(--bg);
   font-size: 13px;
@@ -305,7 +305,7 @@ button.trackArtist:hover {
   padding: 10px 8px;
   background: var(--material-bg);
   backdrop-filter: var(--material-filter);
-  border-radius: 10px;
+  border-radius: var(--r-md);
   box-shadow: var(--float-shadow);
   animation: volFadeIn var(--dur-fast) var(--ease-fast);
 }
@@ -346,7 +346,7 @@ button.trackArtist:hover {
   direction: rtl;
   width: 3px;
   height: 80px;
-  border-radius: 3px;
+  border-radius: var(--r-pill);
   background: var(--glass);
   cursor: pointer;
 }
@@ -354,7 +354,7 @@ button.trackArtist:hover {
   -webkit-appearance: none;
   width: 12px;
   height: 12px;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   background: var(--on-art);
   cursor: pointer;
   transition: transform var(--dur-fast) var(--ease-fast);
@@ -372,7 +372,7 @@ button.trackArtist:hover {
   color: var(--text-3);
   cursor: pointer;
   padding: 2px 6px;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;

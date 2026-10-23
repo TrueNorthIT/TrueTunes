@@ -4,7 +4,7 @@
   color: var(--text-3);
   cursor: pointer;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -33,7 +33,7 @@
   font-weight: 600;
   padding: 4px 8px;
   margin-right: 6px;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   transition: background var(--dur-fast) var(--ease-fast);
   -webkit-app-region: no-drag;
 }
@@ -52,7 +52,7 @@
   font-weight: 600;
   padding: 4px 8px;
   margin-right: 6px;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   transition: background var(--dur-fast) var(--ease-fast);
   -webkit-app-region: no-drag;
 }

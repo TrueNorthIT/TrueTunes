@@ -58,7 +58,7 @@
 }
 .recent {
   border: none;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   padding: 0.5em 1.05em;
   background: rgba(var(--tint), 0.12);
   color: var(--text);
@@ -83,16 +83,16 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
   gap: 1.4em;
 }
-.skelCard { height: 22em; border-radius: 1.2em; }
+.skelCard { height: 22em; border-radius: var(--r-card); }
 .skelRows {
   display: flex;
   flex-direction: column;
   gap: 0.9em;
   padding: 1.5em;
-  border-radius: 1.2em;
+  border-radius: var(--r-card);
   background: var(--surface);
 }
-.skelRow { height: 3.2em; border-radius: 0.65em; }
+.skelRow { height: 3.2em; border-radius: var(--r-row); }
 
 @container (max-width: 700px) {
   .skelLead { grid-template-columns: minmax(0, 1fr); }

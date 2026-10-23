@@ -6,7 +6,7 @@
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   background: rgba(var(--tint), 0.16);
   font-size: 13px;
   font-weight: 700;

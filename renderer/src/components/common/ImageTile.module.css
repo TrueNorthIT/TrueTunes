@@ -48,18 +48,18 @@
 .sub { color: var(--text-3); }
 
 /* md: Jump back in */
-.md .main { gap: 0.6em; border-radius: 0.9em; }
-.md .art { border-radius: 0.9em; }
+.md .main { gap: 0.6em; border-radius: var(--r-tile); }
+.md .art { border-radius: var(--r-tile); }
 .md .title { font-size: 1em; }
 .md .sub { font-size: max(13px, 0.86em); margin-top: -0.3em; }
 
 /* sm: three-up groups */
-.sm .main { gap: 0.15em; border-radius: 0.7em; }
-.sm .art { border-radius: 0.7em; margin-bottom: 0.4em; }
+.sm .main { gap: 0.15em; border-radius: var(--r-art); }
+.sm .art { border-radius: var(--r-art); margin-bottom: 0.4em; }
 .sm .title { font-size: max(13px, 0.93em); }
 .sm .sub { font-size: max(13px, 0.82em); }
 
-.tile .round { border-radius: 50%; }
+.tile .round { border-radius: var(--r-round); }
 
 .add {
   position: absolute;

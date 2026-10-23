@@ -4,12 +4,12 @@
   align-self: flex-start;
   gap: 0.2em;
   padding: 0.2em;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   background: var(--surface);
 }
 .segment {
   border: none;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   background: none;
   color: var(--text-2);
   font: inherit;

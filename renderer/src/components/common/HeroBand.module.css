@@ -6,7 +6,7 @@
   min-width: 0;
   padding: 1.4em;
   margin-bottom: 1.4em;
-  border-radius: 1.2em;
+  border-radius: var(--r-card);
   /* the wash is applied inline from the artwork's dominant colour; this is the no-colour fallback */
   background:
     radial-gradient(120% 150% at 0% 0%, rgba(var(--tint), 0.3), transparent 65%),
@@ -25,7 +25,7 @@
   flex: none;
   width: 16em;
   height: 16em;
-  border-radius: 1em;
+  border-radius: var(--r-art-card);
   overflow: hidden;
   background: var(--bg-1);
   box-shadow: var(--hero-shadow);

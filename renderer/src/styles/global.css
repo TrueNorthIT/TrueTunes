@@ -65,9 +65,20 @@
   /* Behind the text block of a Top result, so the text holds on pale covers. */
   --scrim-text: linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.66) 50%, rgba(0, 0, 0, 0.42) 80%, rgba(0, 0, 0, 0) 100%);
 
+  /* Radius scale (DESIGN.md "Shapes"). Em radii scale with the type of the element that uses them. */
   --r-sm: 6px;
   --r-md: 10px;
   --r-lg: 16px;
+  --r-shell: 22px; /* floating shell pills: half their 44px height */
+  --r-card: 1.2em; /* section cards, dialogs */
+  --r-art-card: 1em; /* image cards, person cards */
+  --r-tile: 0.9em; /* tiles, prints, menus */
+  --r-art: 0.7em; /* album art */
+  --r-row: 0.65em; /* rows and fields */
+  --r-thumb: 0.6em; /* row thumbnails */
+  --r-xs: 0.4em; /* skeleton lines and small chips */
+  --r-pill: 2em; /* buttons and chips; also thin bars, which round fully */
+  --r-round: 50%; /* icon buttons, avatars, portraits */
   --nav-h: 64px; /* 12px top gap + 44px pill + 8px clearance */
   --player-h: 112px; /* 64px bar + 24px bottom margin + 24px clearance */
   --card-size: clamp(140px, 16vw, 320px);
@@ -152,7 +163,7 @@ html[data-mini] #root {
   border: 2px solid transparent;
   background-clip: padding-box;
   background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 99px;
+  border-radius: var(--r-pill);
 }
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.22);

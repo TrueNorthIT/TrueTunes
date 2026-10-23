@@ -1,7 +1,7 @@
 .card {
   position: relative;
   overflow: hidden;
-  border-radius: 1em;
+  border-radius: var(--r-art-card);
   background: var(--bg-1);
   min-width: 0;
 }

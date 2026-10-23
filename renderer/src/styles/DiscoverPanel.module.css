@@ -81,7 +81,7 @@
   background: none;
   border: none;
   padding: 0.15em 0.7em 0.15em 0.15em;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   font-family: inherit;
   cursor: pointer;
   transition: background var(--dur-fast) var(--ease-fast);
@@ -95,7 +95,7 @@
 .faceAvatar {
   width: 1.9em;
   height: 1.9em;
-  border-radius: 50%;
+  border-radius: var(--r-round);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -139,7 +139,7 @@
   height: 2.2em;
   min-width: 2.2em;
   padding: 0 0.8em;
-  border-radius: 2em;
+  border-radius: var(--r-pill);
   background: rgba(var(--tint), 0.12);
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
@@ -184,13 +184,13 @@
   flex-direction: column;
   gap: 0.9em;
   padding: 0.9em;
-  border-radius: 1em;
+  border-radius: var(--r-art-card);
   background: var(--surface);
 }
-.skelHead { height: 3.8em; border-radius: 0.8em; }
+.skelHead { height: 3.8em; border-radius: var(--r-tile); }
 .skelRow { display: flex; align-items: center; gap: 0.9em; padding: 0.45em 0.6em; }
-.skelThumb { width: 3.2em; height: 3.2em; border-radius: 0.6em; flex-shrink: 0; }
-.skelLine { height: 1em; width: 55%; border-radius: 0.5em; }
+.skelThumb { width: 3.2em; height: 3.2em; border-radius: var(--r-thumb); flex-shrink: 0; }
+.skelLine { height: 1em; width: 55%; border-radius: var(--r-xs); }
 
 .empty {
   max-width: 40em;
