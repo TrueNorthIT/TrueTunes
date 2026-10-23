@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applyReorderLocally, expandToAlbumBlock, projectPlayTimes, FALLBACK_TRACK_MS } from '../queueHelpers';
+import { applyReorderLocally, expandToAlbumBlock, projectPlayTimes, positionAfterCurrent, FALLBACK_TRACK_MS } from '../queueHelpers';
 
 // Using plain strings — applyReorderLocally is generic, no QueueItem needed here.
 const items = ['A', 'B', 'C', 'D', 'E'];
@@ -169,5 +169,24 @@ describe('projectPlayTimes', () => {
     expect(projectPlayTimes({ nowMs: now, currentIdx: 2, remainingMs: 0, durations: [MIN, MIN, MIN, MIN] }).slice(0, 3))
       .toEqual([undefined, undefined, undefined]);
     expect(projectPlayTimes({ nowMs: now, currentIdx: -1, remainingMs: 0, durations: [MIN, MIN] })).toEqual([undefined, undefined]);
+  });
+});
+
+describe('positionAfterCurrent', () => {
+  it('inserts straight after the playing track', () => {
+    // Track 3 of 10 is playing (1-based), so the next slot is 0-based index 3.
+    expect(positionAfterCurrent('3', 10)).toBe(3);
+    expect(positionAfterCurrent('1', 10)).toBe(1);
+  });
+
+  it('appends when the playing track is the last one', () => {
+    expect(positionAfterCurrent('10', 10)).toBe(-1);
+  });
+
+  it('appends when nothing is playing from the queue', () => {
+    expect(positionAfterCurrent(null, 10)).toBe(-1);
+    expect(positionAfterCurrent('', 10)).toBe(-1);
+    expect(positionAfterCurrent('0', 10)).toBe(-1);
+    expect(positionAfterCurrent('abc', 10)).toBe(-1);
   });
 });

@@ -47,6 +47,7 @@ import { ChangelogDialog } from './components/ChangelogDialog';
 import { LyricsPanel } from './components/LyricsPanel';
 import { ProfilePanel } from './components/ProfilePanel';
 import { PlaylistPanel } from './components/PlaylistPanel';
+import { positionAfterCurrent } from './lib/queueHelpers';
 import { ContextMenuProvider } from './components/common/ContextMenu';
 import { ToastProvider } from './components/common/Toast';
 import { usePrefetchNextLyrics } from './hooks/usePrefetchNextLyrics';
@@ -490,9 +491,20 @@ useEffect(() => {
 
   const splashReady = isAuthed && groups.length > 0 && !ytmLoading;
 
+  // "Queue next": straight after whatever is playing, credited like any add.
+  const queueItemIdRef = useRef(playback.queueItemId);
+  useEffect(() => {
+    queueItemIdRef.current = playback.queueItemId;
+  }, [playback.queueItemId]);
+  const handleQueueNext = useCallback(
+    (item: SonosItem) =>
+      handleAddToQueue(item, positionAfterCurrent(queueItemIdRef.current, queueItemsRef.current.length)),
+    [handleAddToQueue],
+  );
+
   return (
     <ToastProvider>
-    <ContextMenuProvider displayName={displayName} onAddToQueue={handleAddToQueue}>
+    <ContextMenuProvider displayName={displayName} onAddToQueue={handleAddToQueue} onQueueNext={handleQueueNext}>
     <Splash ready={splashReady} />
     {skinny ? (
       <SkinnyShell

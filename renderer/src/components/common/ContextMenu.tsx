@@ -26,6 +26,7 @@ interface ProviderProps {
   children: React.ReactNode;
   displayName: string | null | undefined;
   onAddToQueue: (item: SonosItem, position?: number) => void;
+  onQueueNext: (item: SonosItem) => void;
 }
 
 interface MenuState {
@@ -111,7 +112,7 @@ function PlaylistSubmenu({
   );
 }
 
-export function ContextMenuProvider({ children, displayName, onAddToQueue }: ProviderProps) {
+export function ContextMenuProvider({ children, displayName, onAddToQueue, onQueueNext }: ProviderProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -154,8 +155,8 @@ export function ContextMenuProvider({ children, displayName, onAddToQueue }: Pro
     };
   }, [menuState.open, close]);
 
-  function handlePlayNext() {
-    if (menuState.payload?.sonosItem) onAddToQueue(menuState.payload.sonosItem, 0);
+  function handleQueueNext() {
+    if (menuState.payload?.sonosItem) onQueueNext(menuState.payload.sonosItem);
     close();
   }
 
@@ -214,9 +215,9 @@ export function ContextMenuProvider({ children, displayName, onAddToQueue }: Pro
         >
           {menuState.payload.sonosItem && (
             <>
-              <div className={styles.item} onClick={handlePlayNext}>
+              <div className={styles.item} onClick={handleQueueNext}>
                 <span className={styles.itemIcon}>▶</span>
-                Play next
+                Queue next
               </div>
               <div className={styles.item} onClick={handleAddToQueue}>
                 <span className={styles.itemIcon}>+</span>
