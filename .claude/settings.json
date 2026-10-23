@@ -20,5 +20,13 @@
       "Bash(curl -s http://localhost:9333/json/version)"
     ],
     "deny": ["Read(./.env)", "Read(./.env.*)"]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/scripts/lint-edited.mjs\"" }]
+      }
+    ]
   }
 }
