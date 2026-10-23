@@ -19,8 +19,9 @@ npm run dev          # build main + start Vite + Electron concurrently
 npm run build:main   # tsc only (main process)
 npm run build        # main + renderer
 npm run typecheck    # tsc --noEmit for both main AND renderer (run this before committing)
-npm run test:run     # full test suite once
+npm run test:run     # full test suite once: the jsdom suite AND the story tests
 npm run lint         # ESLint
+npm run storybook    # component workshop on :6006
 ```
 
 The renderer is **never type-checked by Vite** (esbuild strips types). `npm run typecheck` is the only way to catch renderer type errors — always run it.
@@ -91,7 +92,7 @@ npm test             # watch mode
 
 ### Setup
 
-`renderer/src/test/setup.ts` mocks all of `window.sonos`. Every mock is a `vi.fn()`. If you add a method to `SonosPreload` you must also add it here or tests that import anything using `window.sonos` will fail.
+`renderer/src/test/setup.ts` mocks all of `window.sonos`, wrapping each method of `renderer/src/test/sonosFake.ts` in a `vi.fn()`. If you add a method to `SonosPreload` add it to `sonosFake.ts` (typecheck fails until you do), not to setup.ts.
 
 ### How to test hooks
 
@@ -116,11 +117,29 @@ Use `@testing-library/react` with `render`. The `window.sonos` mock in setup.ts 
 
 Reset mocks between tests when a test sets up a pending promise (the default) and a later test needs a resolved one — use `vi.mocked(window.sonos.X).mockReset()` in `beforeEach`.
 
+### Story tests
+
+`npm run test:run` also runs every story in real Chromium (Playwright) as the second Vitest project, `stories`; a story that throws on render fails, named by its title. First run on a machine needs `npx playwright install chromium`. Run just them with `npx vitest run --config renderer/vitest.config.ts --project stories`.
+
 ### What's not tested
 
 Main process (`src/`), IPC handlers, WebSocket bootstrap, auth flow, and most hooks and components. 85% of the codebase has no tests. Prioritise `usePlayback`, `useQueue`, `useGroups`, and `useAuth` if adding coverage.
 
 ---
+
+## Storybook
+
+```bash
+npm run storybook         # http://localhost:6006; config in renderer/.storybook/
+npm run build-storybook   # static build to storybook-static/ (gitignored)
+```
+
+Stories sit beside the component as `Foo.stories.tsx` (CSF, `args` for controls, `fn()` for callbacks) and are typechecked and linted with the rest of `renderer/`. Use them to tweak a component in isolation and to screenshot a deterministic state: the live app's data changes under you, and its transport controls play on the office speakers.
+
+- **Nothing in Storybook may reach Sonos.** There is no Electron, so `renderer/.storybook/preview.tsx` installs a fake `window.sonos` built from `renderer/src/test/sonosFake.ts`; every call is logged in the Actions panel and does nothing else. `getActiveProvider()` goes through it, so `TransportButtons` and `SeekBar` only log. Never point a story at a real bridge or URL.
+- Art comes from the SVG data URIs in `renderer/.storybook/fixtures.ts`, so stories render the same offline. They go through the real `useImage` cache.
+- The preview loads `global.css`, `depth.css` and the Manrope font, wraps each story in a fresh `QueryClient` (retries off), a `MemoryRouter` and a `page-scale` root on `--bg`.
+- Add a story when you add a shared component in `common/`, covering its real states (default, no art, long title, disabled, playing and so on).
 
 ## Adding a new feature — checklist
 
@@ -129,7 +148,7 @@ Main process (`src/`), IPC handlers, WebSocket bootstrap, auth flow, and most ho
    - Add to `contextBridge.exposeInMainWorld` in `src/preload.ts`
    - Add `ipcMain.handle(...)` in `src/main.ts`
    - Add to `SonosPreload` interface in `renderer/src/types/globals.d.ts`
-   - Add mock to `renderer/src/test/setup.ts`
+   - Add to `renderer/src/test/sonosFake.ts` (the one shared `window.sonos` fake: `setup.ts` wraps it in `vi.fn()`, the Storybook preview logs it as actions)
 
 2. If it makes Sonos API calls:
    - Add the method to `renderer/src/lib/sonosApi.ts`
@@ -138,7 +157,9 @@ Main process (`src/`), IPC handlers, WebSocket bootstrap, auth flow, and most ho
    - Add the resource to `server/azuredeploy.json`
    - Redeploy: `az deployment group create --resource-group truetunes-rg --template-file server/azuredeploy.json --mode Incremental`
 
-4. Run `npm run typecheck && npm run test:run` before committing.
+4. If it is a new shared component in `renderer/src/components/common/`, add a `Foo.stories.tsx`.
+
+5. Run `npm run typecheck && npm run test:run` before committing.
 
 ---
 
