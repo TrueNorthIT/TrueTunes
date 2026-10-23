@@ -18,6 +18,7 @@ import { EntraAuth, PRESENCE_SCOPE } from './auth-entra';
 import { fetchPresences, resolveRoster } from './graph-presence';
 import { albumBaseTitle, geniusHasText, pickAlbumHits, pickArtistHit } from './genius-match';
 import { navDecision, isWebUrl } from './nav-guard';
+import { sendsSessionCookie } from './sonos-cookie';
 import type { EntraUser } from './auth-entra';
 import * as path from 'path';
 import * as fs from 'fs/promises';
@@ -2082,7 +2083,9 @@ ipcMain.handle('image:fetch', async (_event: IpcMainInvokeEvent, url: string) =>
     const res = await fetch(url, {
       headers: {
         'User-Agent': SPOOF_UA,
-        ...(sessionToken ? { Cookie: `__Secure-next-auth.session-token=${sessionToken}` } : {}),
+        ...(sessionToken && sendsSessionCookie(url)
+          ? { Cookie: `__Secure-next-auth.session-token=${sessionToken}` }
+          : {}),
       },
     });
     if (!res.ok) return { error: `${res.status} ${res.statusText}` };
