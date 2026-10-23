@@ -107,7 +107,9 @@ export function QueuedleQuestionCard({ question, revealed, pickedSide, onPick, o
           pickedSide={pickedSide}
           onPick={onPick}
         />
-        <span className={styles.versus} aria-hidden="true">or</span>
+        <span className={styles.versus} aria-hidden="true">
+          or
+        </span>
         <Side
           item={question.right}
           side="right"

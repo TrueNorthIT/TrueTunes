@@ -2,10 +2,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { withOCC } from '../lib/withOCC';
 import { getPlaylistContainer } from '../lib/getContainer';
 
-export async function playlistJoinHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
+export async function playlistJoinHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const id = request.params['id'];
   if (!id) {
     return { status: 400, jsonBody: { error: 'id param required' } };
@@ -45,7 +42,7 @@ export async function playlistJoinHandler(
           doc.updatedAt = Date.now();
         }
       },
-      (doc, etag) => container.item(id, id).replace(doc, { accessCondition: { type: 'IfMatch', condition: etag } }),
+      (doc, etag) => container.item(id, id).replace(doc, { accessCondition: { type: 'IfMatch', condition: etag } })
     );
 
     context.log(`[playlist-join] id=${id} userName=${userName} action=${action}`);

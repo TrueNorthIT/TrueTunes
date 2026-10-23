@@ -45,7 +45,9 @@ export function formatWeekRange(range: WeekRange): string {
     });
   };
   const sameMonth = range.from.slice(0, 7) === range.to.slice(0, 7);
-  return sameMonth ? `${fmt(range.from, false)}–${fmt(range.to, true)}` : `${fmt(range.from, true)} – ${fmt(range.to, true)}`;
+  return sameMonth
+    ? `${fmt(range.from, false)}–${fmt(range.to, true)}`
+    : `${fmt(range.from, true)} – ${fmt(range.to, true)}`;
 }
 
 /**
@@ -112,9 +114,7 @@ export function weeklyWinner(
     if (!Array.isArray(scores)) return board;
     return {
       ...(board as object),
-      scores: scores.filter(
-        (s) => typeof s?.completedAt !== 'number' || londonDateId(s.completedAt) <= range.to
-      ),
+      scores: scores.filter((s) => typeof s?.completedAt !== 'number' || londonDateId(s.completedAt) <= range.to),
     };
   });
   const top = calculateWeeklyLeaderboard(onTime)[0];

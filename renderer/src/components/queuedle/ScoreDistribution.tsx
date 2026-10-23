@@ -11,7 +11,9 @@ interface Props {
 /** One round: your score, and a bar per possible score showing how many people got it. */
 export function ScoreDistribution({ scores, maxScore, playerScore, title }: Props) {
   const counts = Array.from({ length: maxScore + 1 }, () => 0);
-  scores.forEach((s) => { if (s >= 0 && s <= maxScore) counts[s]++; });
+  scores.forEach((s) => {
+    if (s >= 0 && s <= maxScore) counts[s]++;
+  });
   const peak = Math.max(1, ...counts);
   const summary = counts
     .map((c, s) => (c ? `${c} scored ${s}` : ''))
@@ -28,7 +30,11 @@ export function ScoreDistribution({ scores, maxScore, playerScore, title }: Prop
           </span>
         )}
       </figcaption>
-      <div className={styles.distBars} role="img" aria-label={`${title} across the room: ${summary || 'no scores yet'}`}>
+      <div
+        className={styles.distBars}
+        role="img"
+        aria-label={`${title} across the room: ${summary || 'no scores yet'}`}
+      >
         {counts.map((c, score) => (
           <div key={score} className={styles.distCol}>
             <div className={styles.distTrack}>
@@ -37,7 +43,9 @@ export function ScoreDistribution({ scores, maxScore, playerScore, title }: Prop
                 style={{ height: c ? `${Math.max(8, (c / peak) * 100)}%` : 0 }}
               />
             </div>
-            <span className={`${styles.distLabel}${score === playerScore ? ' ' + styles.distLabelMine : ''}`}>{score}</span>
+            <span className={`${styles.distLabel}${score === playerScore ? ' ' + styles.distLabelMine : ''}`}>
+              {score}
+            </span>
           </div>
         ))}
       </div>

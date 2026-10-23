@@ -45,7 +45,11 @@ async function morning(): Promise<SimReport> {
 test('D-1 simulation: no song is enqueued twice in one London day, across clears, a regroup, re-keyed uris and lease swaps', async () => {
   const r = await morning();
   for (const d of r.days) {
-    assert.equal(d.duplicatePicks, 0, `Expected no duplicate enqueue instructions on ${d.day}, got ${d.duplicatePicks} (of ${d.djPicks} picks)`);
+    assert.equal(
+      d.duplicatePicks,
+      0,
+      `Expected no duplicate enqueue instructions on ${d.day}, got ${d.duplicatePicks} (of ${d.djPicks} picks)`
+    );
     assert.equal(d.heardTwice, 0, `Expected no DJ song to play twice on ${d.day}, got ${d.heardTwice}`);
   }
 });
@@ -53,7 +57,11 @@ test('D-1 simulation: no song is enqueued twice in one London day, across clears
 test('D-1 simulation: the DJ never enqueues a song a person hand-queued earlier the same London day', async () => {
   const r = await morning();
   for (const d of r.days) {
-    assert.equal(d.collisionsWithHandQueued, 0, `Expected no DJ pick to collide with a hand-queued song on ${d.day}, got ${d.collisionsWithHandQueued}`);
+    assert.equal(
+      d.collisionsWithHandQueued,
+      0,
+      `Expected no DJ pick to collide with a hand-queued song on ${d.day}, got ${d.collisionsWithHandQueued}`
+    );
   }
 });
 
@@ -70,7 +78,10 @@ test('D-1/D-3 simulation: the DJ keeps picking across London midnight and the ne
   const r = await morning();
   assert.equal(r.days.length, 2, `Expected two London days in the run, got ${r.days.map((d) => d.day).join(', ')}`);
   const [, after] = r.days;
-  assert.ok(after.djPicks >= 3, `Expected the DJ to keep supplying songs after midnight (00:00-00:15 BST), got ${after.djPicks}`);
+  assert.ok(
+    after.djPicks >= 3,
+    `Expected the DJ to keep supplying songs after midnight (00:00-00:15 BST), got ${after.djPicks}`
+  );
   assert.equal(after.duplicatePicks, 0, 'Expected no duplicates within the new day either');
 });
 
@@ -79,6 +90,6 @@ test('D-4 simulation: the heavy history is fetched a handful of times, not once 
   assert.ok(r.calls > 500, `test setup: expected hundreds of polls, got ${r.calls}`);
   assert.ok(
     r.heavyHistoryFetches <= Math.ceil(r.calls / 20),
-    `Expected the all-time history to be cached for minutes (<= 1 fetch per 20 polls), got ${r.heavyHistoryFetches} fetches over ${r.calls} polls`,
+    `Expected the all-time history to be cached for minutes (<= 1 fetch per 20 polls), got ${r.heavyHistoryFetches} fetches over ${r.calls} polls`
   );
 });

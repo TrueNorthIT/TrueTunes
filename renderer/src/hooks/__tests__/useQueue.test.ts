@@ -29,9 +29,7 @@ describe('useQueue — initial load', () => {
     mockFetch.mockResolvedValue(queueResponse());
     renderHook(() => useQueue(true, 'g1', 'q1'));
     await waitFor(() =>
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.objectContaining({ operationId: 'getQueueResources' }),
-      ),
+      expect(mockFetch).toHaveBeenCalledWith(expect.objectContaining({ operationId: 'getQueueResources' }))
     );
   });
 
@@ -149,9 +147,7 @@ describe('useQueue — reload', () => {
   });
 
   it('does not fire onEtag on reload when list response has no etag', async () => {
-    mockFetch
-      .mockResolvedValueOnce(queueResponse([], 'etag-initial'))
-      .mockResolvedValueOnce(queueResponse([]));
+    mockFetch.mockResolvedValueOnce(queueResponse([], 'etag-initial')).mockResolvedValueOnce(queueResponse([]));
     const onEtag = vi.fn();
     const { result } = renderHook(() => useQueue(true, 'g1', 'q1', onEtag));
     await waitFor(() => expect(onEtag).toHaveBeenCalledWith('etag-initial'));
@@ -173,9 +169,7 @@ describe('useQueue — reload error handling', () => {
       .mockResolvedValueOnce(queueResponse([{ name: 'Old Song' }], 'etag-v1'))
       .mockResolvedValueOnce({ data: null, error: '500 Internal Server Error' });
     const onReloadError = vi.fn();
-    const { result } = renderHook(() =>
-      useQueue(true, 'g1', 'q1', undefined, onReloadError),
-    );
+    const { result } = renderHook(() => useQueue(true, 'g1', 'q1', undefined, onReloadError));
     await waitFor(() => expect(result.current.items[0]?.track.title).toBe('Old Song'));
 
     await act(async () => {
@@ -190,9 +184,7 @@ describe('useQueue — reload error handling', () => {
   it('still surfaces the error in state when the very first load fails (no items yet)', async () => {
     mockFetch.mockResolvedValueOnce({ data: null, error: '500 Internal Server Error' });
     const onReloadError = vi.fn();
-    const { result } = renderHook(() =>
-      useQueue(true, 'g1', 'q1', undefined, onReloadError),
-    );
+    const { result } = renderHook(() => useQueue(true, 'g1', 'q1', undefined, onReloadError));
     await waitFor(() => expect(result.current.error).toBe('500 Internal Server Error'));
     expect(result.current.items).toHaveLength(0);
     expect(onReloadError).not.toHaveBeenCalled();

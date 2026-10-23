@@ -31,12 +31,17 @@ export function InfoTip({ label, children, className, icon }: Props) {
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const open = hover || focus;
 
-  const hide = useCallback(() => { setHover(false); setFocus(false); }, []);
+  const hide = useCallback(() => {
+    setHover(false);
+    setFocus(false);
+  }, []);
 
   // Escape works wherever focus is, including after a hover-open.
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') hide(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') hide();
+    };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [open, hide]);
@@ -79,7 +84,7 @@ export function InfoTip({ label, children, className, icon }: Props) {
           >
             {children}
           </div>,
-          document.body,
+          document.body
         )}
     </>
   );

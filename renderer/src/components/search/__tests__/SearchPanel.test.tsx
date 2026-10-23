@@ -8,17 +8,23 @@ const mockNavigate = vi.fn();
 const mockParams = vi.fn();
 const mockServiceQuery = vi.fn();
 vi.mock('react-router-dom', () => ({ useNavigate: () => mockNavigate, useSearchParams: () => mockParams() }));
-vi.mock('../../../lib/sonosApi', () => ({ api: { search: { serviceQuery: (...a: unknown[]) => mockServiceQuery(...a) } } }));
+vi.mock('../../../lib/sonosApi', () => ({
+  api: { search: { serviceQuery: (...a: unknown[]) => mockServiceQuery(...a) } },
+}));
 vi.mock('../../../hooks/useOpenItem', () => ({ useOpenItem: () => vi.fn() }));
 vi.mock('../../../hooks/useOfficePresence', () => ({ useOfficePresence: () => ({ data: undefined }) }));
 vi.mock('../../../hooks/useDjSet', () => ({ useDjSet: () => ({ data: undefined }) }));
 vi.mock('../../../hooks/useDjDiscoveries', () => ({ useDjDiscoveries: () => ({ discoveries: [], isLoading: false }) }));
-vi.mock('../SearchResults', () => ({ SearchResults: ({ query }: { query: string }) => <div>Results for {query}</div> }));
+vi.mock('../SearchResults', () => ({
+  SearchResults: ({ query }: { query: string }) => <div>Results for {query}</div>,
+}));
 
 const setQuery = (q?: string) => mockParams.mockReturnValue([new URLSearchParams(q ? { q } : {})]);
 const renderPanel = () => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={client}>{children}</QueryClientProvider>
+  );
   return render(<SearchPanel onAddToQueue={vi.fn()} />, { wrapper });
 };
 
@@ -57,7 +63,10 @@ describe('SearchPanel', () => {
   it('renders the results for the query', async () => {
     setQuery('mr brightside');
     mockServiceQuery.mockResolvedValue({
-      data: { resourceOrder: ['TRACKS'], TRACKS: { resources: [{ name: 'Mr. Brightside', id: { objectId: 't', serviceId: 's', accountId: 'a' } }] } },
+      data: {
+        resourceOrder: ['TRACKS'],
+        TRACKS: { resources: [{ name: 'Mr. Brightside', id: { objectId: 't', serviceId: 's', accountId: 'a' } }] },
+      },
     });
     renderPanel();
     expect(await screen.findByText('Results for mr brightside')).toBeInTheDocument();
@@ -70,7 +79,12 @@ describe('SearchPanel', () => {
     renderPanel();
     const retry = await screen.findByRole('button', { name: 'Retry' }, { timeout: 4000 });
     expect(screen.queryByText(/No results/)).not.toBeInTheDocument();
-    mockServiceQuery.mockResolvedValue({ data: { resourceOrder: ['TRACKS'], TRACKS: { resources: [{ name: 'Love', id: { objectId: 't', serviceId: 's', accountId: 'a' } }] } } });
+    mockServiceQuery.mockResolvedValue({
+      data: {
+        resourceOrder: ['TRACKS'],
+        TRACKS: { resources: [{ name: 'Love', id: { objectId: 't', serviceId: 's', accountId: 'a' } }] },
+      },
+    });
     fireEvent.click(retry);
     expect(await screen.findByText('Results for love')).toBeInTheDocument();
   });
@@ -87,7 +101,15 @@ describe('SearchPanel', () => {
   it('names the page and announces the count', async () => {
     setQuery('mr brightside');
     mockServiceQuery.mockResolvedValue({
-      data: { resourceOrder: ['TRACKS'], TRACKS: { resources: [{ name: 'A', id: { objectId: 'a', serviceId: 's', accountId: 'x' } }, { name: 'B', id: { objectId: 'b', serviceId: 's', accountId: 'x' } }] } },
+      data: {
+        resourceOrder: ['TRACKS'],
+        TRACKS: {
+          resources: [
+            { name: 'A', id: { objectId: 'a', serviceId: 's', accountId: 'x' } },
+            { name: 'B', id: { objectId: 'b', serviceId: 's', accountId: 'x' } },
+          ],
+        },
+      },
     });
     renderPanel();
     expect(screen.getByRole('heading', { level: 1, name: 'Results for ‘mr brightside’' })).toBeInTheDocument();

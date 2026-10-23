@@ -19,7 +19,7 @@ export function withoutPageArtist(subtitle: string | undefined, pageArtist: stri
 export function cardSubtitle(
   year: number | undefined,
   subtitle: string | undefined,
-  pageArtist: string | undefined,
+  pageArtist: string | undefined
 ): string | undefined {
   return [year, withoutPageArtist(subtitle, pageArtist)].filter(Boolean).join(' · ') || undefined;
 }

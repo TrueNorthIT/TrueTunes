@@ -1,5 +1,7 @@
 /* What's new: the shared Dialog at full height, releases on the left, the notes as a measured reading column. */
-.reader { height: calc(100vh - 56px); }
+.reader {
+  height: calc(100vh - 56px);
+}
 
 .empty {
   display: flex;
@@ -39,23 +41,31 @@
   cursor: pointer;
   transition: background var(--dur-fast) var(--ease-fast);
 }
-.release:hover { background: var(--row-hover); }
+.release:hover {
+  background: var(--row-hover);
+}
 .releaseActive,
-.releaseActive:hover { background: rgba(var(--tint), 0.16); }
+.releaseActive:hover {
+  background: rgba(var(--tint), 0.16);
+}
 .tag {
   font-size: var(--fs-prose);
   font-weight: 600;
   color: var(--title-rest);
   font-variant-numeric: tabular-nums;
 }
-.releaseActive .tag { color: var(--on-art); }
+.releaseActive .tag {
+  color: var(--on-art);
+}
 .date {
   font-size: var(--fs-label);
   color: var(--text-3);
 }
 
 /* ── The selected release ── */
-.article { min-width: 0; }
+.article {
+  min-width: 0;
+}
 .articleHead {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -90,7 +100,11 @@
   cursor: pointer;
   text-align: left;
 }
-.allLink:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+.allLink:hover {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 
 .ghLink {
   grid-column: 2;
@@ -106,7 +120,11 @@
   cursor: pointer;
   white-space: nowrap;
 }
-.ghLink:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+.ghLink:hover {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 
 /* ── Release notes (markdown from GitHub) ── */
 .notes {
@@ -117,7 +135,9 @@
   overflow-wrap: break-word;
   user-select: text;
 }
-.notes :global(*) { user-select: text; }
+.notes :global(*) {
+  user-select: text;
+}
 .notes :global(h1),
 .notes :global(h2),
 .notes :global(h3),
@@ -128,26 +148,45 @@
   letter-spacing: -0.01em;
   margin: 1.4em 0 0.4em;
 }
-.notes > :global(:first-child) { margin-top: 0; }
+.notes > :global(:first-child) {
+  margin-top: 0;
+}
 .notes :global(h1),
-.notes :global(h2) { font-size: var(--fs-title-card); }
+.notes :global(h2) {
+  font-size: var(--fs-title-card);
+}
 .notes :global(h3),
-.notes :global(h4) { font-size: var(--fs-body); }
+.notes :global(h4) {
+  font-size: var(--fs-body);
+}
 .notes :global(p),
 .notes :global(ul),
-.notes :global(ol) { margin: 0 0 0.75em; }
+.notes :global(ol) {
+  margin: 0 0 0.75em;
+}
 .notes :global(ul),
-.notes :global(ol) { padding-left: 1.3em; }
-.notes :global(li) { margin-bottom: 0.3em; }
-.notes :global(li)::marker { color: var(--text-3); }
-.notes :global(strong) { color: var(--text); font-weight: 600; }
+.notes :global(ol) {
+  padding-left: 1.3em;
+}
+.notes :global(li) {
+  margin-bottom: 0.3em;
+}
+.notes :global(li)::marker {
+  color: var(--text-3);
+}
+.notes :global(strong) {
+  color: var(--text);
+  font-weight: 600;
+}
 .notes :global(a) {
   color: var(--text);
   text-decoration: underline;
   text-decoration-color: var(--border-2);
   text-underline-offset: 3px;
 }
-.notes :global(a:hover) { text-decoration-color: currentColor; }
+.notes :global(a:hover) {
+  text-decoration-color: currentColor;
+}
 .notes :global(code) {
   font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
   font-size: var(--fs-label);
@@ -162,8 +201,13 @@
   overflow-x: auto;
   margin: 0 0 0.75em;
 }
-.notes :global(pre) :global(code) { background: none; padding: 0; }
+.notes :global(pre) :global(code) {
+  background: none;
+  padding: 0;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .release { transition: none; }
+  .release {
+    transition: none;
+  }
 }

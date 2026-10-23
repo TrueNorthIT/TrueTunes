@@ -15,12 +15,7 @@
 import type { AggregateResult, AlbumEntry, ArtistEntry, TrackEntry } from '../../src/shared/aggregate';
 import { itemKey } from '../../src/shared/aggregate';
 import { mulberry32 } from '../../src/shared/gameGenerator';
-import {
-  REAL_TOP_ALBUM_COUNTS,
-  REAL_TOP_ARTIST_COUNTS,
-  REAL_TOP_TRACKS,
-  REAL_USER_WEIGHTS,
-} from './realdata';
+import { REAL_TOP_ALBUM_COUNTS, REAL_TOP_ARTIST_COUNTS, REAL_TOP_TRACKS, REAL_USER_WEIGHTS } from './realdata';
 
 export type DataVariant = 'allTime' | 'ninetyDay';
 

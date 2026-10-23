@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { competitionRanks, formatGameDate, formatGameDateShort, itemSubLine, playedLine, standingLine } from '../format';
+import {
+  competitionRanks,
+  formatGameDate,
+  formatGameDateShort,
+  itemSubLine,
+  playedLine,
+  standingLine,
+} from '../format';
 
 describe('Queuedle format helpers', () => {
   it('formats a game id as a long and a short date', () => {

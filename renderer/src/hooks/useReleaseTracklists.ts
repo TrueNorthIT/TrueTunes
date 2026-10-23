@@ -9,7 +9,9 @@ import type { SonosItem } from '../types/sonos';
  */
 export function useReleaseTracklists(releases: SonosItem[], enabled: boolean) {
   // one query per id: the same key twice in useQueries trips its "Duplicate Queries found" warning
-  const withId = [...new Map(releases.filter((r) => r.resource?.id?.objectId).map((r) => [r.resource?.id?.objectId, r])).values()];
+  const withId = [
+    ...new Map(releases.filter((r) => r.resource?.id?.objectId).map((r) => [r.resource?.id?.objectId, r])).values(),
+  ];
   // ponytail: all requests fire at once; cap concurrency if the BFF rate-limits.
   const results = useQueries({
     queries: withId.map((r) => {

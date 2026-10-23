@@ -29,7 +29,11 @@ export function PollAnswerDialog({ poll, remaining, submitting, error, onChoose,
             </button>
           ))}
         </div>
-        {error && <p className={dialog.error} role="status">{error}</p>}
+        {error && (
+          <p className={dialog.error} role="status">
+            {error}
+          </p>
+        )}
       </div>
     </Dialog>
   );

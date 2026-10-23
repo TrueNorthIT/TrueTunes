@@ -26,11 +26,21 @@ interface Props {
 
 /** One ranked Top Songs row: the shared ChartRow, plus the page's selection, drag and now-playing. */
 export function TopSongRow({
-  track, index, isSelected, isCurrentTrack, isPlaybackActive, onAdd, onClick, onDragStart, onOpenAlbum, onOpenArtist, artistName,
+  track,
+  index,
+  isSelected,
+  isCurrentTrack,
+  isPlaybackActive,
+  onAdd,
+  onClick,
+  onDragStart,
+  onOpenAlbum,
+  onOpenArtist,
+  artistName,
 }: Props) {
   const { showTrackMenu } = useTrackContextMenu();
   const page = artistName?.trim().toLowerCase();
-  const others = track.artists.filter(a => a.trim().toLowerCase() !== page);
+  const others = track.artists.filter((a) => a.trim().toLowerCase() !== page);
 
   const payload = trackPayload({
     uri: track.id.objectId ?? '',
@@ -44,9 +54,11 @@ export function TopSongRow({
 
   const artists = (
     <>
-      {others.length > 0
-        ? <ArtistLinks artist={others.join(', ')} onOpenArtist={name => onOpenArtist(name)} />
-        : track.albumName && <span title={track.albumName}>{track.albumName}</span>}
+      {others.length > 0 ? (
+        <ArtistLinks artist={others.join(', ')} onOpenArtist={(name) => onOpenArtist(name)} />
+      ) : (
+        track.albumName && <span title={track.albumName}>{track.albumName}</span>
+      )}
       {track.explicit && <ExplicitBadge />}
     </>
   );
@@ -54,13 +66,19 @@ export function TopSongRow({
   return (
     <ChartRow
       rank={index + 1}
-      rankSlot={isCurrentTrack ? (
-        <span className={`${styles.waveform}${!isPlaybackActive ? ' ' + styles.waveformPaused : ''}`} role="img" aria-label="Now playing">
-          <span className={styles.waveformBar} />
-          <span className={styles.waveformBar} />
-          <span className={styles.waveformBar} />
-        </span>
-      ) : undefined}
+      rankSlot={
+        isCurrentTrack ? (
+          <span
+            className={`${styles.waveform}${!isPlaybackActive ? ' ' + styles.waveformPaused : ''}`}
+            role="img"
+            aria-label="Now playing"
+          >
+            <span className={styles.waveformBar} />
+            <span className={styles.waveformBar} />
+            <span className={styles.waveformBar} />
+          </span>
+        ) : undefined
+      }
       title={track.title}
       artists={artists}
       imageUrl={track.artUrl}
@@ -68,11 +86,11 @@ export function TopSongRow({
       selected={isSelected}
       playing={isCurrentTrack}
       onOpen={() => onOpenAlbum(track)}
-      onClick={e => onClick(index, e)}
-      onDragStart={e => onDragStart(index, e)}
+      onClick={(e) => onClick(index, e)}
+      onDragStart={(e) => onDragStart(index, e)}
       onAdd={() => onAdd(track.raw)}
       addLabel={`Add ${track.title} to queue`}
-      onContextMenu={e => showTrackMenu({ track: payload, sonosItem: track.raw }, e)}
+      onContextMenu={(e) => showTrackMenu({ track: payload, sonosItem: track.raw }, e)}
     />
   );
 }

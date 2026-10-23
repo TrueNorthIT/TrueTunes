@@ -16,7 +16,7 @@ interface PlaylistTrack {
 
 export async function playlistAddTrackHandler(
   request: HttpRequest,
-  context: InvocationContext,
+  context: InvocationContext
 ): Promise<HttpResponseInit> {
   const id = request.params['id'];
   if (!id) {
@@ -49,7 +49,7 @@ export async function playlistAddTrackHandler(
         doc.tracks = [...(doc.tracks ?? []), updatedTrack];
         doc.updatedAt = Date.now();
       },
-      (doc, etag) => container.item(id, id).replace(doc, { accessCondition: { type: 'IfMatch', condition: etag } }),
+      (doc, etag) => container.item(id, id).replace(doc, { accessCondition: { type: 'IfMatch', condition: etag } })
     );
 
     context.log(`[playlist-add-track] id=${id} userName=${userName} track=${track.trackName}`);

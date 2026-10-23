@@ -4,7 +4,7 @@ import { getPlaylistContainer } from '../lib/getContainer';
 
 export async function playlistRemoveTrackHandler(
   request: HttpRequest,
-  context: InvocationContext,
+  context: InvocationContext
 ): Promise<HttpResponseInit> {
   const id = request.params['id'];
   if (!id) {
@@ -41,7 +41,7 @@ export async function playlistRemoveTrackHandler(
         doc.tracks = tracks;
         doc.updatedAt = Date.now();
       },
-      (doc, etag) => container.item(id, id).replace(doc, { accessCondition: { type: 'IfMatch', condition: etag } }),
+      (doc, etag) => container.item(id, id).replace(doc, { accessCondition: { type: 'IfMatch', condition: etag } })
     );
 
     context.log(`[playlist-remove-track] id=${id} uri=${uri}`);

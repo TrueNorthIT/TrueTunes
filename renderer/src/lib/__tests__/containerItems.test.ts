@@ -22,7 +22,11 @@ describe('containerKind', () => {
 describe('groupContainerItems', () => {
   it('groups by kind in first-appearance order and keeps the service order inside a group', () => {
     const groups = groupContainerItems([
-      item('ALBUM', 'a1'), item('TRACK', 't1'), item('PLAYLIST', 'p1'), item('TRACK', 't2'), item('ALBUM', 'a2'),
+      item('ALBUM', 'a1'),
+      item('TRACK', 't1'),
+      item('PLAYLIST', 'p1'),
+      item('TRACK', 't2'),
+      item('ALBUM', 'a2'),
     ]);
     expect(groups.map((g) => g.kind)).toEqual(['albums', 'songs', 'playlists']);
     expect(groups[0].items.map((i) => i.name)).toEqual(['a1', 'a2']);

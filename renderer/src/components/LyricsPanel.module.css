@@ -26,8 +26,16 @@
   gap: 0.4em;
   text-align: center;
 }
-.emptyTitle { font-size: var(--fs-title); font-weight: 600; letter-spacing: -0.015em; color: var(--text); }
-.emptyText { font-size: var(--fs-body); color: var(--text-3); }
+.emptyTitle {
+  font-size: var(--fs-title);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--text);
+}
+.emptyText {
+  font-size: var(--fs-body);
+  color: var(--text-3);
+}
 
 /* ── Now playing card (lit wall + the artwork wash, as on Home) ─────────── */
 
@@ -43,8 +51,7 @@
   padding: 1.4em;
   border-radius: var(--r-card);
   background:
-    radial-gradient(120% 90% at 0% 0%, rgba(var(--wash, 150, 158, 255), 0.3), transparent 65%),
-    var(--surface-hi);
+    radial-gradient(120% 90% at 0% 0%, rgba(var(--wash, 150, 158, 255), 0.3), transparent 65%), var(--surface-hi);
 }
 
 .art {
@@ -64,12 +71,33 @@
     transform var(--dur-fast) var(--ease-fast),
     box-shadow var(--dur-fast) var(--ease-fast);
 }
-.art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .art:hover,
-.art:focus-visible { transform: scale(1.02); box-shadow: var(--hero-lift-shadow); }
-.artPh { display: grid; place-items: center; width: 100%; height: 100%; font-size: 2.4em; color: var(--text-3); }
+.art:focus-visible {
+  transform: scale(1.02);
+  box-shadow: var(--hero-lift-shadow);
+}
+.artPh {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 2.4em;
+  color: var(--text-3);
+}
 
-.info { display: flex; flex-direction: column; align-items: flex-start; gap: 0.55em; min-width: 0; }
+.info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55em;
+  min-width: 0;
+}
 
 .title {
   max-width: 100%;
@@ -95,8 +123,14 @@
   transition: color var(--dur-fast) var(--ease-fast);
 }
 .link:hover,
-.link:focus-visible { color: var(--on-art); }
-.title .link:hover { text-decoration: underline; text-decoration-thickness: 0.06em; text-underline-offset: 0.12em; }
+.link:focus-visible {
+  color: var(--on-art);
+}
+.title .link:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 0.06em;
+  text-underline-offset: 0.12em;
+}
 
 .meta {
   display: flex;
@@ -108,11 +142,26 @@
   font-size: var(--fs-body);
   color: var(--text-2);
 }
-.metaArtist { flex: 0 1 auto; max-width: 60%; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.metaAlbum { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.metaDot { flex: none; }
+.metaArtist {
+  flex: 0 1 auto;
+  max-width: 60%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.metaAlbum {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.metaDot {
+  flex: none;
+}
 
-.queuer { margin-top: 0.2em; }
+.queuer {
+  margin-top: 0.2em;
+}
 
 .label {
   font-size: var(--fs-small);
@@ -130,9 +179,13 @@
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 2.4em), transparent);
   mask-image: linear-gradient(to bottom, #000 calc(100% - 2.4em), transparent);
 }
-.about::-webkit-scrollbar-thumb { background: transparent; }
+.about::-webkit-scrollbar-thumb {
+  background: transparent;
+}
 .about:hover::-webkit-scrollbar-thumb,
-.about:focus-visible::-webkit-scrollbar-thumb { background: rgba(var(--tint), 0.24); }
+.about:focus-visible::-webkit-scrollbar-thumb {
+  background: rgba(var(--tint), 0.24);
+}
 .aboutText {
   margin-top: 0.5em;
   max-width: 100ch;
@@ -144,15 +197,31 @@
 .aboutText p + p,
 .aboutText p + ul,
 .aboutText ul + p,
-.aboutText blockquote { margin-top: 0.7em; }
+.aboutText blockquote {
+  margin-top: 0.7em;
+}
 .aboutText ul,
-.aboutText ol { padding-left: 1.2em; }
-.aboutText blockquote { padding-left: 0.9em; box-shadow: inset 2px 0 0 rgba(var(--tint), 0.24); }
+.aboutText ol {
+  padding-left: 1.2em;
+}
+.aboutText blockquote {
+  padding-left: 0.9em;
+  box-shadow: inset 2px 0 0 rgba(var(--tint), 0.24);
+}
 .aboutText strong,
-.aboutText em { color: var(--text-2); }
-.aboutLink { color: var(--text-2); text-decoration: underline; text-decoration-color: rgba(var(--tint), 0.4); text-underline-offset: 0.15em; }
+.aboutText em {
+  color: var(--text-2);
+}
+.aboutLink {
+  color: var(--text-2);
+  text-decoration: underline;
+  text-decoration-color: rgba(var(--tint), 0.4);
+  text-underline-offset: 0.15em;
+}
 .aboutLink:hover,
-.aboutLink:focus-visible { color: var(--on-art); }
+.aboutLink:focus-visible {
+  color: var(--on-art);
+}
 
 /* ── Lyrics card (the wall, as the Home box) ─────────────────────────────── */
 
@@ -178,13 +247,25 @@
   -webkit-mask-image: linear-gradient(to bottom, transparent 1.6em, #000 20%, #000 76%, transparent calc(100% - 1.6em));
   mask-image: linear-gradient(to bottom, transparent 1.6em, #000 20%, #000 76%, transparent calc(100% - 1.6em));
 }
-.scroll::-webkit-scrollbar { display: none; }
+.scroll::-webkit-scrollbar {
+  display: none;
+}
 /* Plain lyrics don't follow the song, so they scroll by hand and show where you are. */
-.scrollFree { scrollbar-width: auto; }
-.scrollFree::-webkit-scrollbar { display: block; }
+.scrollFree {
+  scrollbar-width: auto;
+}
+.scrollFree::-webkit-scrollbar {
+  display: block;
+}
 
-.pad { padding: 34vh 0 50vh; max-width: 60em; }
-.padPlain { padding-top: 3em; padding-bottom: 6em; }
+.pad {
+  padding: 34vh 0 50vh;
+  max-width: 60em;
+}
+.padPlain {
+  padding-top: 3em;
+  padding-bottom: 6em;
+}
 
 /* One fixed line box, as on Home: the active line scales up inside it (transform only), so nothing
    reflows. Lines wrap at 1/1.1 of the width so the scaled line still fits. Big enough to read across
@@ -199,11 +280,21 @@
   line-height: 1.3;
   color: var(--text);
   transform-origin: left center;
-  transition: transform 0.3s, opacity 0.3s;
+  transition:
+    transform 0.3s,
+    opacity 0.3s;
 }
-.lineActive { transform: scale(1.1); color: var(--on-art); }
-.linePlain { font-size: clamp(1.4em, 2.6cqi, 1.9em); opacity: 0.85; }
-.padPlain .label { margin-bottom: 1em; }
+.lineActive {
+  transform: scale(1.1);
+  color: var(--on-art);
+}
+.linePlain {
+  font-size: clamp(1.4em, 2.6cqi, 1.9em);
+  opacity: 0.85;
+}
+.padPlain .label {
+  margin-bottom: 1em;
+}
 
 /* Skeleton lines at the real line pitch (1.7em type, 1.3 line height, 0.22em padding). */
 .lineSkel {
@@ -216,8 +307,15 @@
 }
 
 /* No lyrics (instrumental, none found): one column, Now playing leads as a wide card, art beside the text. */
-.note { margin-top: 0.4em; font-size: var(--fs-body); color: var(--text-3); }
-.pageStatus { grid-template-columns: minmax(0, 1fr); max-width: 72em; }
+.note {
+  margin-top: 0.4em;
+  font-size: var(--fs-body);
+  color: var(--text-3);
+}
+.pageStatus {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 72em;
+}
 .pageStatus .nowCard {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -226,25 +324,51 @@
   row-gap: 1.2em;
   padding: 1.7em;
 }
-.pageStatus .art { grid-row: 1 / 3; align-self: start; width: min(24em, calc(54vh - 140px), 36cqi); }
-.pageStatus .info { align-self: end; }
+.pageStatus .art {
+  grid-row: 1 / 3;
+  align-self: start;
+  width: min(24em, calc(54vh - 140px), 36cqi);
+}
+.pageStatus .info {
+  align-self: end;
+}
 /* A grid row won't shrink to the page like the flex column does, so cap About to what's left of the
    window under the nav, the player and the card's own text. */
-.pageStatus .about { max-height: max(6em, calc(100vh - 30em)); }
+.pageStatus .about {
+  max-height: max(6em, calc(100vh - 30em));
+}
 
 @media (prefers-reduced-motion: reduce) {
   .art,
-  .line { transition: none; }
+  .line {
+    transition: none;
+  }
   .art:hover,
-  .art:focus-visible { transform: none; }
+  .art:focus-visible {
+    transform: none;
+  }
 }
 
 /* ── Narrow: the card becomes a strip over the lyrics, without the about text ── */
 
 @container (max-width: 760px) {
-  .page { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
-  .nowCard { flex-direction: row; align-items: center; padding: 1em; }
-  .art { width: 5.5em; }
-  .title { font-size: var(--fs-title-caption); -webkit-line-clamp: 1; }
-  .about { display: none; }
+  .page {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .nowCard {
+    flex-direction: row;
+    align-items: center;
+    padding: 1em;
+  }
+  .art {
+    width: 5.5em;
+  }
+  .title {
+    font-size: var(--fs-title-caption);
+    -webkit-line-clamp: 1;
+  }
+  .about {
+    display: none;
+  }
 }

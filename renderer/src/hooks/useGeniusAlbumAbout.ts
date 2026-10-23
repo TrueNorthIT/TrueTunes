@@ -14,16 +14,28 @@ const MAX_PARAGRAPHS = 3;
 /** "2014-08-22" reads "22 August 2014"; anything else (a bare year, Genius's own wording) as given. */
 export function releasedLabel(date: string | undefined): string | undefined {
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return date || undefined;
-  return new Date(`${date}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
 }
 
-export function geniusAlbumAboutQueryOptions(albumName: string | null | undefined, artistName: string | null | undefined) {
+export function geniusAlbumAboutQueryOptions(
+  albumName: string | null | undefined,
+  artistName: string | null | undefined
+) {
   return {
     queryKey: ['genius-album-about', albumName, artistName] as const,
     queryFn: async (): Promise<GeniusAbout | null> => {
       const r = await window.sonos.geniusAlbumAbout(albumName!, artistName!);
       if (!r) return null;
-      return { paragraphs: geniusParagraphs(r.description).slice(0, MAX_PARAGRAPHS), released: releasedLabel(r.releaseDate), url: r.url };
+      return {
+        paragraphs: geniusParagraphs(r.description).slice(0, MAX_PARAGRAPHS),
+        released: releasedLabel(r.releaseDate),
+        url: r.url,
+      };
     },
     staleTime: Infinity,
     retry: false,

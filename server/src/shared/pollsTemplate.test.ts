@@ -21,28 +21,45 @@ interface Resource {
   };
 }
 
-const template = JSON.parse(readFileSync(path.resolve(__dirname, '..', '..', 'azuredeploy.json'), 'utf8')) as { resources: Resource[] };
+const template = JSON.parse(readFileSync(path.resolve(__dirname, '..', '..', 'azuredeploy.json'), 'utf8')) as {
+  resources: Resource[];
+};
 const CONTAINER_TYPE = 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers';
-const pollsContainer = () => template.resources.find((r) => r.type === CONTAINER_TYPE && r.properties?.resource?.id === 'polls');
+const pollsContainer = () =>
+  template.resources.find((r) => r.type === CONTAINER_TYPE && r.properties?.resource?.id === 'polls');
 
 test('P-11 template: declares a Cosmos container "polls" in the truetunes database', () => {
   const c = pollsContainer();
-  assert.ok(c, 'Expected a Microsoft.DocumentDB .../sqlDatabases/containers resource with id "polls" in server/azuredeploy.json');
-  assert.equal(c?.name, "[concat(variables('cosmosName'), '/truetunes/polls')]", 'Expected the resource name to follow the existing containers (database truetunes)');
   assert.ok(
-    (c?.dependsOn ?? []).some((d) => d.includes("sqlDatabases") && d.includes("'truetunes'")),
-    'Expected the container to depend on the truetunes database like the other containers',
+    c,
+    'Expected a Microsoft.DocumentDB .../sqlDatabases/containers resource with id "polls" in server/azuredeploy.json'
+  );
+  assert.equal(
+    c?.name,
+    "[concat(variables('cosmosName'), '/truetunes/polls')]",
+    'Expected the resource name to follow the existing containers (database truetunes)'
+  );
+  assert.ok(
+    (c?.dependsOn ?? []).some((d) => d.includes('sqlDatabases') && d.includes("'truetunes'")),
+    'Expected the container to depend on the truetunes database like the other containers'
   );
 });
 
 test('P-11 template: the polls container is partitioned on /id', () => {
-  assert.deepEqual(pollsContainer()?.properties?.resource?.partitionKey, { paths: ['/id'], kind: 'Hash' }, 'Expected a Hash partition key on /id');
+  assert.deepEqual(
+    pollsContainer()?.properties?.resource?.partitionKey,
+    { paths: ['/id'], kind: 'Hash' },
+    'Expected a Hash partition key on /id'
+  );
 });
 
 test('P-11 template: the polls container has no defaultTtl so poll data never expires', () => {
   const resource = pollsContainer()?.properties?.resource;
   assert.ok(resource, 'Expected the polls container to exist');
-  assert.ok(!('defaultTtl' in (resource ?? {})), 'Expected no defaultTtl property on the polls container (as on the games container)');
+  assert.ok(
+    !('defaultTtl' in (resource ?? {})),
+    'Expected no defaultTtl property on the polls container (as on the games container)'
+  );
 });
 
 test('P-11 template: the function app has the COSMOS_POLLS_CONTAINER app setting set to polls', () => {

@@ -5,8 +5,12 @@
   background: var(--bg-1);
   min-width: 0;
 }
-.large { min-height: 23em; }
-.medium { aspect-ratio: 4 / 3; }
+.large {
+  min-height: 23em;
+}
+.medium {
+  aspect-ratio: 4 / 3;
+}
 
 .fill {
   position: absolute;
@@ -25,8 +29,17 @@
   transform: scale(1.03);
   filter: brightness(0.88);
 }
-.photo { animation: fadeIn 0.6s ease both; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.photo {
+  animation: fadeIn 0.6s ease both;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 
 /* Scrim over the top and bottom so the caption always reads. */
 .card::after {
@@ -49,7 +62,9 @@
   cursor: pointer;
 }
 
-.cover:focus-visible { outline-offset: -3px; } /* the card clips an outer ring */
+.cover:focus-visible {
+  outline-offset: -3px;
+} /* the card clips an outer ring */
 
 .top {
   position: absolute;
@@ -64,7 +79,9 @@
   color: var(--on-art);
   text-shadow: var(--text-shadow);
 }
-.top > button { pointer-events: auto; }
+.top > button {
+  pointer-events: auto;
+}
 .label {
   min-width: 0;
   font-size: var(--fs-prose);
@@ -93,7 +110,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.medium .title { font-size: var(--fs-title-card); }
+.medium .title {
+  font-size: var(--fs-title-card);
+}
 .sub {
   font-size: var(--fs-prose);
   color: var(--on-art-2);
@@ -101,7 +120,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.sub button { pointer-events: auto; }
+.sub button {
+  pointer-events: auto;
+}
 
 .add {
   position: absolute;
@@ -112,20 +133,35 @@
 }
 .card:hover .add,
 .card:focus-within .add,
-.add:focus-visible { opacity: 1; }
+.add:focus-visible {
+  opacity: 1;
+}
 
 /* Narrower page: squarer cards so the next band starts in the first screen. */
 @container (max-width: 1100px) {
-  .medium { aspect-ratio: 1 / 1; }
-  .large { min-height: 0; }
+  .medium {
+    aspect-ratio: 1 / 1;
+  }
+  .large {
+    min-height: 0;
+  }
 }
 @container (max-width: 700px) {
-  .large { aspect-ratio: 3.2 / 1; max-height: 300px; }
+  .large {
+    aspect-ratio: 3.2 / 1;
+    max-height: 300px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .photo { animation: none; }
-  .fill { transition: none; }
+  .photo {
+    animation: none;
+  }
+  .fill {
+    transition: none;
+  }
   .card:hover .fill,
-  .card:focus-within .fill { transform: none; }
+  .card:focus-within .fill {
+    transform: none;
+  }
 }

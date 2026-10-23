@@ -26,7 +26,10 @@ function StoryShell({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={client}>
       <MemoryRouter>
         {/* global.css sets body to 100vh with no scroll, as in the app, so the story scrolls itself. */}
-        <div className="page-scale" style={{ height: '100vh', overflow: 'auto', padding: 24, background: 'var(--bg)', color: 'var(--text)' }}>
+        <div
+          className="page-scale"
+          style={{ height: '100vh', overflow: 'auto', padding: 24, background: 'var(--bg)', color: 'var(--text)' }}
+        >
           {children}
         </div>
       </MemoryRouter>
@@ -35,7 +38,13 @@ function StoryShell({ children }: { children: React.ReactNode }) {
 }
 
 const preview: Preview = {
-  decorators: [(Story, { id }) => <StoryShell key={id}><Story /></StoryShell>],
+  decorators: [
+    (Story, { id }) => (
+      <StoryShell key={id}>
+        <Story />
+      </StoryShell>
+    ),
+  ],
   parameters: {
     layout: 'fullscreen',
     backgrounds: { disabled: true },

@@ -1,10 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { CosmosClient } from '@azure/cosmos';
-import {
-  containerDocStore,
-  eventsSinceQuery,
-  historyQuery,
-} from '../shared/cosmosAdapters';
+import { containerDocStore, eventsSinceQuery, historyQuery } from '../shared/cosmosAdapters';
 import {
   createDjAutoplayService,
   type AutoplayBody,
@@ -25,12 +21,9 @@ export function getDjAutoplayService(connStr: string): DjAutoplayService {
     const events = db.container(process.env['COSMOS_CONTAINER'] ?? 'events');
     // The day ledger shares the sessions container (partition /id): one document
     // per London day beside the per-group sessions, so no new infrastructure.
-    const sessions = containerDocStore(
-      db.container(process.env['COSMOS_SESSIONS_CONTAINER'] ?? 'sessions'),
-    );
+    const sessions = containerDocStore(db.container(process.env['COSMOS_SESSIONS_CONTAINER'] ?? 'sessions'));
     service = createDjAutoplayService({
-      fetchHistory: async () =>
-        (await events.items.query<TimedEvent>(historyQuery()).fetchAll()).resources,
+      fetchHistory: async () => (await events.items.query<TimedEvent>(historyQuery()).fetchAll()).resources,
       fetchEventsSince: async (sinceMs) =>
         (await events.items.query<TimedEvent>(eventsSinceQuery(sinceMs)).fetchAll()).resources,
       sessions,
@@ -42,10 +35,7 @@ export function getDjAutoplayService(connStr: string): DjAutoplayService {
 }
 
 export function createDjAutoplayHandler(resolveService: (connStr: string) => DjAutoplayService) {
-  return async function djAutoplayHandler(
-    request: HttpRequest,
-    context: InvocationContext,
-  ): Promise<HttpResponseInit> {
+  return async function djAutoplayHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
     const headers = { 'Access-Control-Allow-Origin': '*' };
     const connStr = process.env['COSMOS_CONNECTION_STRING'];
 
@@ -69,7 +59,7 @@ export function createDjAutoplayHandler(resolveService: (connStr: string) => DjA
 
       if (result.enqueue) {
         context.log(
-          `[dj-autoplay] group=${groupId} client=${clientId} enqueue=${result.enqueue.artist} — ${result.enqueue.trackName}`,
+          `[dj-autoplay] group=${groupId} client=${clientId} enqueue=${result.enqueue.artist} — ${result.enqueue.trackName}`
         );
       }
 

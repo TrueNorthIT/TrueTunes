@@ -43,36 +43,43 @@ interface Props {
 }
 
 export function ChangelogDialog({ onClose }: Props) {
-  const [releases, setReleases]     = useState<Release[]>([]);
+  const [releases, setReleases] = useState<Release[]>([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
-  const [status, setStatus]         = useState<'loading' | 'ready' | 'error'>('loading');
-  const [attempt, setAttempt]       = useState(0);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [attempt, setAttempt] = useState(0);
   const [appVersion, setAppVersion] = useState<string | null>(null);
   const [versionLoaded, setVersionLoaded] = useState(false);
 
   useEffect(() => {
-    window.sonos.getVersion()
-      .then(v => { setAppVersion(v); setVersionLoaded(true); })
+    window.sonos
+      .getVersion()
+      .then((v) => {
+        setAppVersion(v);
+        setVersionLoaded(true);
+      })
       .catch(() => setVersionLoaded(true));
   }, []);
 
   useEffect(() => {
     fetchReleases()
-      .then(data => { setReleases(data); setStatus('ready'); })
+      .then((data) => {
+        setReleases(data);
+        setStatus('ready');
+      })
       .catch(() => setStatus('error'));
   }, [attempt]);
 
   useEffect(() => {
     if (!versionLoaded || status !== 'ready' || !appVersion || releases.length === 0) return;
-    const idx = releases.findIndex(r =>
-      r.tag_name === `v${appVersion}` || r.tag_name === appVersion
-    );
+    const idx = releases.findIndex((r) => r.tag_name === `v${appVersion}` || r.tag_name === appVersion);
     if (idx >= 0) setSelectedIdx(idx);
   }, [versionLoaded, status, appVersion, releases]);
 
   const isInstalled = (r: Release) => !!appVersion && (r.tag_name === `v${appVersion}` || r.tag_name === appVersion);
   const selected = releases[selectedIdx];
-  const rail = releases.map((r, i) => ({ r, i })).filter(({ r, i }) => i < RAIL_COUNT || i === selectedIdx || isInstalled(r));
+  const rail = releases
+    .map((r, i) => ({ r, i }))
+    .filter(({ r, i }) => i < RAIL_COUNT || i === selectedIdx || isInstalled(r));
 
   return (
     <Dialog title="What's new" onClose={onClose} size="lg" className={styles.reader}>
@@ -81,7 +88,14 @@ export function ChangelogDialog({ onClose }: Props) {
       {status === 'error' && (
         <div className={styles.empty}>
           <p className={dialog.note}>Couldn't load the release notes from GitHub.</p>
-          <PillButton onClick={() => { setStatus('loading'); setAttempt(a => a + 1); }}>Try again</PillButton>
+          <PillButton
+            onClick={() => {
+              setStatus('loading');
+              setAttempt((a) => a + 1);
+            }}
+          >
+            Try again
+          </PillButton>
         </div>
       )}
 
@@ -103,7 +117,11 @@ export function ChangelogDialog({ onClose }: Props) {
               </button>
             ))}
             {releases.length > rail.length && (
-              <button type="button" className={styles.allLink} onClick={() => window.sonos.openExternal(`https://github.com/${REPO}/releases`)}>
+              <button
+                type="button"
+                className={styles.allLink}
+                onClick={() => window.sonos.openExternal(`https://github.com/${REPO}/releases`)}
+              >
                 Older releases on GitHub <ExternalLink size={14} aria-hidden="true" />
               </button>
             )}
@@ -112,29 +130,36 @@ export function ChangelogDialog({ onClose }: Props) {
           {selected && (
             <article className={styles.article} aria-labelledby="release-title">
               <header className={styles.articleHead}>
-                <h3 id="release-title" className={styles.articleTitle}>{selected.name || version(selected)}</h3>
+                <h3 id="release-title" className={styles.articleTitle}>
+                  {selected.name || version(selected)}
+                </h3>
                 <p className={styles.meta}>
                   {formatDate(selected.published_at)}
                   {isInstalled(selected) && ' · the version you have'}
                 </p>
-                <button type="button" className={styles.ghLink} onClick={() => window.sonos.openExternal(selected.html_url)}>
+                <button
+                  type="button"
+                  className={styles.ghLink}
+                  onClick={() => window.sonos.openExternal(selected.html_url)}
+                >
                   View on GitHub <ExternalLink size={14} aria-hidden="true" />
                 </button>
               </header>
-              {selected.body?.trim()
-                ? <div
-                    className={styles.notes}
-                    // Links in the notes open in the browser; followed in place they'd replace the app window.
-                    onClick={(e) => {
-                      const a = (e.target as HTMLElement).closest('a');
-                      if (!a) return;
-                      e.preventDefault();
-                      if (a.href) void window.sonos.openExternal(a.href);
-                    }}
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(selected.body.trim()) as string) }}
-                  />
-                : <p className={dialog.note}>No release notes.</p>
-              }
+              {selected.body?.trim() ? (
+                <div
+                  className={styles.notes}
+                  // Links in the notes open in the browser; followed in place they'd replace the app window.
+                  onClick={(e) => {
+                    const a = (e.target as HTMLElement).closest('a');
+                    if (!a) return;
+                    e.preventDefault();
+                    if (a.href) void window.sonos.openExternal(a.href);
+                  }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(selected.body.trim()) as string) }}
+                />
+              ) : (
+                <p className={dialog.note}>No release notes.</p>
+              )}
             </article>
           )}
         </div>

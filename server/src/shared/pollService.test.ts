@@ -39,8 +39,12 @@ const SECRET_CHOICE = 'Zebra-Crossing-Choice';
 const USER = 'Richard Kelsey';
 const answerable = (): Poll[] =>
   queue(
-    poll('live', '2026-10-19', { question: 'Cross where?', choices: ['Pelican', SECRET_CHOICE, 'Puffin'], counts: [0, 0, 0] }),
-    poll('next', '2026-10-26'),
+    poll('live', '2026-10-19', {
+      question: 'Cross where?',
+      choices: ['Pelican', SECRET_CHOICE, 'Puffin'],
+      counts: [0, 0, 0],
+    }),
+    poll('next', '2026-10-26')
   );
 
 // ---------------------------------------------------------------- GET live polls (P-2, P-6, P-7)
@@ -52,7 +56,7 @@ test('P-2 listLive: returns id, question, choices and liveFrom for a live poll',
   assert.deepEqual(
     res.body.polls,
     [{ id: 'live', question: 'Cross where?', choices: ['Pelican', SECRET_CHOICE, 'Puffin'], liveFrom: '2026-10-19' }],
-    'Expected exactly the four public fields of the one live poll',
+    'Expected exactly the four public fields of the one live poll'
   );
 });
 
@@ -62,15 +66,23 @@ test('P-3 listLive: never exposes counts, order or any other internal field', as
   const text = JSON.stringify(res.body);
   assert.ok(!text.includes('counts'), 'Expected no counts property in the live poll response');
   assert.ok(!text.includes('11') && !text.includes('22'), 'Expected no count values in the live poll response');
-  assert.deepEqual(Object.keys(res.body.polls[0]).sort(), ['choices', 'id', 'liveFrom', 'question'], 'Expected only id, question, choices, liveFrom');
+  assert.deepEqual(
+    Object.keys(res.body.polls[0]).sort(),
+    ['choices', 'id', 'liveFrom', 'question'],
+    'Expected only id, question, choices, liveFrom'
+  );
 });
 
 test('P-6 listLive: every live poll of the current year, oldest first; upcoming polls are not listed', async () => {
   const { service } = setup(
-    queue(poll('c', '2026-10-12'), poll('a', '2026-08-03'), poll('b', '2026-09-14'), poll('future', '2026-10-26')),
+    queue(poll('c', '2026-10-12'), poll('a', '2026-08-03'), poll('b', '2026-09-14'), poll('future', '2026-10-26'))
   );
   const res = await service.listLive();
-  assert.deepEqual(res.body.polls.map((p) => p.id), ['a', 'b', 'c'], 'Expected the three live polls oldest liveFrom first and no upcoming poll');
+  assert.deepEqual(
+    res.body.polls.map((p) => p.id),
+    ['a', 'b', 'c'],
+    'Expected the three live polls oldest liveFrom first and no upcoming poll'
+  );
 });
 
 test('P-7 listLive: on 2027-01-02 a poll live from 2026-12-28 is not returned', async () => {
@@ -102,7 +114,7 @@ test('P-3 answer: the ONLY store write is one incrementCount for that poll and i
   assert.deepEqual(
     store.writes(),
     [{ op: 'incrementCount', id: 'live', index: 1 }],
-    'Expected a single atomic incrementCount(live, 1) and no create/replace/remove (no per-answer record, no read-modify-write)',
+    'Expected a single atomic incrementCount(live, 1) and no create/replace/remove (no per-answer record, no read-modify-write)'
   );
 });
 
@@ -111,8 +123,16 @@ test('P-3 answer: the poll document is unchanged apart from the one count (no ti
   const { service, store } = setup(before);
   await service.answer({ pollId: 'live', choice: 1 });
   const after = store.docs.get('live') as Poll;
-  assert.deepEqual(Object.keys(after).sort(), Object.keys(before[0]).sort(), 'Expected no new properties on the poll document');
-  assert.deepEqual({ ...after, counts: null }, { ...before[0], counts: null }, 'Expected everything but counts to be identical');
+  assert.deepEqual(
+    Object.keys(after).sort(),
+    Object.keys(before[0]).sort(),
+    'Expected no new properties on the poll document'
+  );
+  assert.deepEqual(
+    { ...after, counts: null },
+    { ...before[0], counts: null },
+    'Expected everything but counts to be identical'
+  );
   assert.equal(store.docs.size, before.length, 'Expected no new documents (no per-answer record)');
 });
 
@@ -121,7 +141,10 @@ test('P-3 answer: extra properties in the body (such as a user name) are ignored
   const res = await service.answer({ pollId: 'live', choice: 1, userName: USER, oid: 'abc-123', timestamp: 1 });
   assert.equal(res.status, 200, 'Expected the answer to succeed');
   const everything = JSON.stringify([...store.docs.values()]) + JSON.stringify(store.writes()) + logs.join('\n');
-  assert.ok(!everything.includes(USER) && !everything.includes('abc-123'), 'Expected no user identity in the store or the logs');
+  assert.ok(
+    !everything.includes(USER) && !everything.includes('abc-123'),
+    'Expected no user identity in the store or the logs'
+  );
 });
 
 test('P-3 answer: nothing logged contains the chosen answer', async () => {
@@ -175,22 +198,33 @@ test('P-3 answer: concurrent answers are never lost', async () => {
 
 test('P-9 adminList: lists every poll in schedule order with liveFrom and a live flag, and no counts', async () => {
   const { service } = setup(
-    queue(poll('L', '2026-10-12', { counts: [5, 6] }), poll('U1', '2026-10-26'), poll('U2', '2026-11-02')),
+    queue(poll('L', '2026-10-12', { counts: [5, 6] }), poll('U1', '2026-10-26'), poll('U2', '2026-11-02'))
   );
   const res = await service.adminList();
   assert.equal(res.status, 200, 'Expected 200');
   assert.deepEqual(
     res.body.polls.map((p) => [p.id, p.liveFrom, p.live]),
-    [['L', '2026-10-12', true], ['U1', '2026-10-26', false], ['U2', '2026-11-02', false]],
-    'Expected schedule order with the live flag set only for the poll that is already live',
+    [
+      ['L', '2026-10-12', true],
+      ['U1', '2026-10-26', false],
+      ['U2', '2026-11-02', false],
+    ],
+    'Expected schedule order with the live flag set only for the poll that is already live'
   );
-  assert.ok(!JSON.stringify(res.body).includes('counts'), 'Expected the admin list not to expose counts (there is no results UI)');
+  assert.ok(
+    !JSON.stringify(res.body).includes('counts'),
+    'Expected the admin list not to expose counts (there is no results UI)'
+  );
 });
 
 test('P-9 adminList: lists polls from previous years too', async () => {
   const { service } = setup(queue(poll('old', '2025-12-29'), poll('new', '2026-10-19')));
   const res = await service.adminList();
-  assert.deepEqual(res.body.polls.map((p) => p.id), ['old', 'new'], 'Expected the admin to see every poll regardless of year');
+  assert.deepEqual(
+    res.body.polls.map((p) => p.id),
+    ['old', 'new'],
+    'Expected the admin to see every poll regardless of year'
+  );
 });
 
 // ---------------------------------------------------------------- create (P-5, P-9)
@@ -205,15 +239,23 @@ test('P-5 create: three polls created on Thursday 2026-10-22 get 10-26, 11-02, 1
   assert.deepEqual([a.status, b.status, c.status], [201, 201, 201], 'Expected 201 for each create');
   assert.deepEqual(
     store.ordered().map((p) => [p.question, p.liveFrom]),
-    [['A?', '2026-10-26'], ['B?', '2026-11-02'], ['C?', '2026-11-09']],
-    'Expected the queue in creation order on consecutive Mondays',
+    [
+      ['A?', '2026-10-26'],
+      ['B?', '2026-11-02'],
+      ['C?', '2026-11-09'],
+    ],
+    'Expected the queue in creation order on consecutive Mondays'
   );
 });
 
 test('P-5 create: a new poll is scheduled after the poll that is live this week', async () => {
   const { service } = setup(queue(poll('L', '2026-10-19')));
   const res = await service.create(input('Next?'));
-  assert.equal((res.body as { poll: { liveFrom: string } }).poll.liveFrom, '2026-10-26', 'Expected the first Monday strictly after the live poll\'s week');
+  assert.equal(
+    (res.body as { poll: { liveFrom: string } }).poll.liveFrom,
+    '2026-10-26',
+    "Expected the first Monday strictly after the live poll's week"
+  );
 });
 
 test('P-9 create: stores zero counts, trimmed text and returns the new poll without counts', async () => {
@@ -231,7 +273,12 @@ test('P-9 create: stores zero counts, trimmed text and returns the new poll with
 });
 
 test('P-9 create: invalid input is a 400 and nothing is stored', async () => {
-  for (const bad of [{ question: '', choices: ['a', 'b'] }, { question: 'Q?', choices: ['a'] }, { question: 'Q?', choices: ['a', ''] }, null]) {
+  for (const bad of [
+    { question: '', choices: ['a', 'b'] },
+    { question: 'Q?', choices: ['a'] },
+    { question: 'Q?', choices: ['a', ''] },
+    null,
+  ]) {
     const { service, store } = setup();
     const res = await service.create(bad);
     assert.equal(res.status, 400, `Expected 400 for ${JSON.stringify(bad)}`);
@@ -241,7 +288,7 @@ test('P-9 create: invalid input is a 400 and nothing is stored', async () => {
 
 // ---------------------------------------------------------------- update (P-9, P-10)
 
-test('P-9 update: an upcoming poll\'s question and choices can be edited; its Monday does not change', async () => {
+test("P-9 update: an upcoming poll's question and choices can be edited; its Monday does not change", async () => {
   const { service, store } = setup(queue(poll('U1', '2026-10-26'), poll('U2', '2026-11-02')));
   const res = await service.update('U1', { question: 'New question?', choices: ['x', 'y', 'z'] });
   assert.equal(res.status, 200, 'Expected 200');
@@ -264,7 +311,11 @@ test('P-10 update: a live poll is rejected with 409 and unchanged', async () => 
 test('P-9 update: an unknown poll is a 404 and invalid input is a 400', async () => {
   const { service, store } = setup(queue(poll('U1', '2026-10-26')));
   assert.equal((await service.update('nope', input('Q?'))).status, 404, 'Expected 404 for an unknown poll');
-  assert.equal((await service.update('U1', { question: '', choices: ['a', 'b'] })).status, 400, 'Expected 400 for an empty question');
+  assert.equal(
+    (await service.update('U1', { question: '', choices: ['a', 'b'] })).status,
+    400,
+    'Expected 400 for an empty question'
+  );
   assert.deepEqual(store.writes(), [], 'Expected no write');
 });
 
@@ -282,8 +333,11 @@ test('P-5 remove: later upcoming polls move up onto the freed Monday', async () 
   await service.remove('B');
   assert.deepEqual(
     store.ordered().map((p) => [p.id, p.liveFrom, p.order]),
-    [['A', '2026-10-26', 0], ['C', '2026-11-02', 1]],
-    'Expected C to take B\'s Monday so the schedule has no gap, with order renumbered',
+    [
+      ['A', '2026-10-26', 0],
+      ['C', '2026-11-02', 1],
+    ],
+    "Expected C to take B's Monday so the schedule has no gap, with order renumbered"
   );
 });
 
@@ -301,7 +355,8 @@ test('P-9 remove: an unknown poll is a 404', async () => {
 
 // ---------------------------------------------------------------- reorder (P-9, P-10, P-5)
 
-const upcoming = () => queue(poll('L', '2026-10-12'), poll('A', '2026-10-26'), poll('B', '2026-11-02'), poll('C', '2026-11-09'));
+const upcoming = () =>
+  queue(poll('L', '2026-10-12'), poll('A', '2026-10-26'), poll('B', '2026-11-02'), poll('C', '2026-11-09'));
 
 test('P-9 reorder: re-orders upcoming polls and re-assigns their Mondays', async () => {
   const { service, store } = setup(upcoming());
@@ -309,13 +364,18 @@ test('P-9 reorder: re-orders upcoming polls and re-assigns their Mondays', async
   assert.equal(res.status, 200, 'Expected 200');
   assert.deepEqual(
     store.ordered().map((p) => [p.id, p.liveFrom]),
-    [['L', '2026-10-12'], ['C', '2026-10-26'], ['A', '2026-11-02'], ['B', '2026-11-09']],
-    'Expected C first among the upcoming polls and Mondays re-assigned in that order',
+    [
+      ['L', '2026-10-12'],
+      ['C', '2026-10-26'],
+      ['A', '2026-11-02'],
+      ['B', '2026-11-09'],
+    ],
+    'Expected C first among the upcoming polls and Mondays re-assigned in that order'
   );
   assert.deepEqual(
     (res.body as { polls: Array<{ id: string }> }).polls.map((p) => p.id),
     ['L', 'C', 'A', 'B'],
-    'Expected the response to return the full queue in the new order',
+    'Expected the response to return the full queue in the new order'
   );
 });
 
@@ -334,7 +394,14 @@ test('P-10 reorder: the live poll document is never rewritten', async () => {
 });
 
 test('P-9 reorder: a bad permutation or malformed body is a 400 and nothing changes', async () => {
-  for (const body of [{ orderedIds: ['A', 'B'] }, { orderedIds: ['A', 'A', 'B', 'C'] }, { orderedIds: ['A', 'B', 'C', 'ZZ'] }, { orderedIds: 'A,B,C' }, {}, null]) {
+  for (const body of [
+    { orderedIds: ['A', 'B'] },
+    { orderedIds: ['A', 'A', 'B', 'C'] },
+    { orderedIds: ['A', 'B', 'C', 'ZZ'] },
+    { orderedIds: 'A,B,C' },
+    {},
+    null,
+  ]) {
     const { service, store } = setup(upcoming());
     const res = await service.reorder(body);
     assert.equal(res.status, 400, `Expected 400 for ${JSON.stringify(body)}`);
@@ -346,9 +413,17 @@ test('P-9 reorder: a bad permutation or malformed body is a 400 and nothing chan
 
 test('P-10 an upcoming poll becomes locked once its Monday arrives', async () => {
   const { service, store, clock } = setup(queue(poll('A', '2026-10-26')));
-  assert.equal((await service.update('A', input('Edit while upcoming?'))).status, 200, 'Expected editing to work before the Monday');
+  assert.equal(
+    (await service.update('A', input('Edit while upcoming?'))).status,
+    200,
+    'Expected editing to work before the Monday'
+  );
   clock.now = at('2026-10-26T09:00:00Z');
-  assert.equal((await service.update('A', input('Edit when live?'))).status, 409, 'Expected editing to be refused once live');
+  assert.equal(
+    (await service.update('A', input('Edit when live?'))).status,
+    409,
+    'Expected editing to be refused once live'
+  );
   assert.equal((await service.remove('A')).status, 409, 'Expected deleting to be refused once live');
   assert.equal(store.docs.get('A')?.liveFrom, '2026-10-26', 'Expected liveFrom never to change');
 });

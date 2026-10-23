@@ -17,7 +17,13 @@ const meta = {
     onOpen: fn(),
     onMouseEnter: fn(),
   },
-  decorators: [(Story) => <div style={{ width: '26em' }}><Story /></div>],
+  decorators: [
+    (Story) => (
+      <div style={{ width: '26em' }}>
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof ArtCard>;
 
 export default meta;
@@ -27,7 +33,9 @@ export const Large: Story = {};
 export const Medium: Story = { args: { size: 'medium' } };
 export const WithArtistPhoto: Story = { args: { photoUrl: portrait, label: 'Artist' } };
 export const WithAddButton: Story = { args: { onAdd: fn() } };
-export const WithArtistLinks: Story = { args: { sub: <ArtistLinks artist="Maya Rowan, The Quiet Hours" onOpenArtist={fn()} /> } };
+export const WithArtistLinks: Story = {
+  args: { sub: <ArtistLinks artist="Maya Rowan, The Quiet Hours" onOpenArtist={fn()} /> },
+};
 export const NoArt: Story = { args: { imageUrl: null } };
 export const LongTitle: Story = {
   args: {

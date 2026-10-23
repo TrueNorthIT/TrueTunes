@@ -14,6 +14,5 @@ export function useUserProfile(userName: string | undefined) {
 
 export function useInvalidateUserProfile() {
   const queryClient = useQueryClient();
-  return (userName: string) =>
-    queryClient.invalidateQueries({ queryKey: ['user-profile', userName] });
+  return (userName: string) => queryClient.invalidateQueries({ queryKey: ['user-profile', userName] });
 }

@@ -38,10 +38,14 @@ test('variety: the pick after a track by Band is by another act when one is on o
       ...tailed('Band'),
       candidates: [track('a', 'Band'), track('b', 'Other'), track('c', 'Third')],
     },
-    1000,
+    1000
   );
   assert.equal(d.enqueue?.uri, 'b', 'Expected the first candidate by a different act');
-  assert.deepEqual(d.upcoming.map((t) => t.uri), ['b', 'c', 'a'], 'Same-act pick is deferred, not dropped');
+  assert.deepEqual(
+    d.upcoming.map((t) => t.uri),
+    ['b', 'c', 'a'],
+    'Same-act pick is deferred, not dropped'
+  );
 });
 
 test('variety: a collab credited to the same lead act still counts as that act', () => {
@@ -52,7 +56,7 @@ test('variety: a collab credited to the same lead act still counts as that act',
       ...tailed('Gorillaz'),
       candidates: [track('a', 'Gorillaz, De La Soul'), track('b', 'Other')],
     },
-    1000,
+    1000
   );
   assert.equal(d.enqueue?.uri, 'b');
 });
@@ -61,7 +65,7 @@ test('variety: with nothing else on offer the same act is still picked (no stall
   const d = decideAutoplay(
     enabled(),
     { clientId: 'c', ...tailed('Band'), candidates: [track('a', 'Band'), track('b', 'Band')] },
-    1000,
+    1000
   );
   assert.equal(d.enqueue?.uri, 'a');
 });
@@ -77,7 +81,7 @@ test('variety: an empty queue has no tail to avoid, so the best-ranked candidate
   const d = decideAutoplay(
     enabled(),
     { clientId: 'c', queueUris: [], candidates: [track('a', 'Band'), track('b', 'Other')] },
-    1000,
+    1000
   );
   assert.equal(d.enqueue?.uri, 'a');
 });

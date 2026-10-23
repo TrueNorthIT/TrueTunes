@@ -4,7 +4,13 @@ import { ChartTooltip, TipRow, TipTitle } from './ChartTooltip';
 const meta = {
   title: 'Stats/ChartTooltip',
   component: ChartTooltip,
-  decorators: [(Story) => <div style={{ position: 'relative', height: '9em' }}><Story /></div>],
+  decorators: [
+    (Story) => (
+      <div style={{ position: 'relative', height: '9em' }}>
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof ChartTooltip>;
 
 export default meta;
@@ -25,7 +31,9 @@ export const Rows: Story = {
           <TipRow
             name="Tom Ellis"
             value="71.5%"
-            swatch={<span style={{ width: '0.6em', height: '0.6em', borderRadius: '50%', background: 'var(--series-2)' }} />}
+            swatch={
+              <span style={{ width: '0.6em', height: '0.6em', borderRadius: '50%', background: 'var(--series-2)' }} />
+            }
           />
         </>
       ),

@@ -19,7 +19,9 @@ function album(title: string, objectId: string): SonosItem {
 function years(titles: string[], genius: { name: string; year: number | null }[]) {
   const releases = titles.map((t, i) => album(t, `r${i}`));
   const map = matchReleaseYears(releases, genius);
-  return Object.fromEntries(releases.flatMap((r) => (map.has(releaseKey(r)) ? [[r.title, map.get(releaseKey(r))]] : [])));
+  return Object.fromEntries(
+    releases.flatMap((r) => (map.has(releaseKey(r)) ? [[r.title, map.get(releaseKey(r))]] : []))
+  );
 }
 
 // Real Everything Everything entries from genius.com/api/artists/104263/albums

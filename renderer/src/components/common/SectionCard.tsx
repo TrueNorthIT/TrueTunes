@@ -30,7 +30,9 @@ export function SectionCard({ title, sub, headContent, actions, featured, wash, 
     >
       {title != null && (
         <div className={sub != null ? `${styles.head} ${styles.headTight}` : styles.head}>
-          <h2 id={titleId} className={styles.title}>{title}</h2>
+          <h2 id={titleId} className={styles.title}>
+            {title}
+          </h2>
           {headContent}
           {actions != null && <div className={styles.actions}>{actions}</div>}
         </div>

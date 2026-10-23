@@ -37,7 +37,11 @@ export function QueuedleBonusResults({ winningItems, bonusGuesses, onContinue, i
                 </span>
                 {!isCorrect && (
                   <span className={styles.bonusActual}>
-                    <UserAvatar name={item.topQueuer} imageUrl={imageByUser?.get(item.topQueuer)} className={styles.optionAvatar} />
+                    <UserAvatar
+                      name={item.topQueuer}
+                      imageUrl={imageByUser?.get(item.topQueuer)}
+                      className={styles.optionAvatar}
+                    />
                     <span>It was {item.topQueuer}</span>
                   </span>
                 )}

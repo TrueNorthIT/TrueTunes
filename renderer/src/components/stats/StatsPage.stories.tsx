@@ -11,7 +11,11 @@ const meta = {
     facts: '12,472 queues · 16 people',
     backLabel: 'Leaderboard',
     onBack: fn(),
-    children: <SectionCard title="Busy hours" sub="When the office reaches for the queue.">Chart goes here.</SectionCard>,
+    children: (
+      <SectionCard title="Busy hours" sub="When the office reaches for the queue.">
+        Chart goes here.
+      </SectionCard>
+    ),
   },
 } satisfies Meta<typeof StatsPage>;
 

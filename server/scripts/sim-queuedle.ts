@@ -32,30 +32,38 @@ function printReport(variant: DataVariant, plays: number, items: string, r: SimR
   const totalQuestions = Object.values(r.gapHistogram).reduce((a, b) => a + b, 0);
   console.log(`\n=== ${variant}: ${r.days} days (${items}; ${plays} track plays) ===`);
   console.log(
-    `  category mix:      track ${r.categoryMix.track}, artist ${r.categoryMix.artist}, album ${r.categoryMix.album}, none ${r.categoryMix.none}`,
+    `  category mix:      track ${r.categoryMix.track}, artist ${r.categoryMix.artist}, album ${r.categoryMix.album}, none ${r.categoryMix.none}`
   );
   console.log(`  lowData days:      ${pct(r.lowDataShare)}   (full 10-question games: ${pct(r.fullGameShare)})`);
   console.log(`  questions/day:     ${r.questionsPerDay.toFixed(2)}`);
-  console.log(`  forced answers:    ${r.forcedCount} of ${r.asked} bridge questions = ${pct(r.forcedShare, 2)}   (Q-1 definition, min gap 2)`);
-  console.log(`    forced under today's rules only (gap 1 allowed): ${r.forcedLegacyCount} = ${pct(r.forcedLegacyShare, 2)}`);
+  console.log(
+    `  forced answers:    ${r.forcedCount} of ${r.asked} bridge questions = ${pct(r.forcedShare, 2)}   (Q-1 definition, min gap 2)`
+  );
+  console.log(
+    `    forced under today's rules only (gap 1 allowed): ${r.forcedLegacyCount} = ${pct(r.forcedLegacyShare, 2)}`
+  );
   console.log(`    by kind:         ${JSON.stringify(r.forcedByKind)}`);
   console.log(`    by bridge count: ${JSON.stringify(r.forcedByBridgeCount)}`);
   console.log(
-    `  carried item wins: ${r.carry.carriedWins} of ${r.carry.questions} = ${pct(r.carry.carriedWinShare)}   (target 40-60%)`,
+    `  carried item wins: ${r.carry.carriedWins} of ${r.carry.questions} = ${pct(r.carry.carriedWinShare)}   (target 40-60%)`
   );
-  console.log(`  1-play gaps:       ${r.oneGapCount} of ${totalQuestions} questions = ${pct(r.oneGapShare, 2)}   (3 vs 4 specifically: ${r.threeVsFourCount})`);
+  console.log(
+    `  1-play gaps:       ${r.oneGapCount} of ${totalQuestions} questions = ${pct(r.oneGapShare, 2)}   (3 vs 4 specifically: ${r.threeVsFourCount})`
+  );
   console.log(`  pair rule breaches (gap<2 or ratio outside 1.15-3): ${r.pairViolations}`);
-  console.log(`  count scale (floor = lowest count shown in any game, ceiling = top count in data): ${JSON.stringify(r.ranges)}`);
+  console.log(
+    `  count scale (floor = lowest count shown in any game, ceiling = top count in data): ${JSON.stringify(r.ranges)}`
+  );
   const rampTable = (title: string, st: SimReport['ramp']) => {
     console.log(`  ${title}`);
     console.log('    Q    n   meanRatio  inBand  band');
     for (const row of st.byQuestion) {
       console.log(
-        `    ${String(row.question).padEnd(3)} ${String(row.n).padStart(5)}   ${row.meanRatio.toFixed(2).padStart(6)}   ${pct(row.inBandShare).padStart(6)}  ${bandFor(row.question)}`,
+        `    ${String(row.question).padEnd(3)} ${String(row.n).padStart(5)}   ${row.meanRatio.toFixed(2).padStart(6)}   ${pct(row.inBandShare).padStart(6)}  ${bandFor(row.question)}`
       );
     }
     console.log(
-      `    band means: easy ${st.bandMeans.easy.toFixed(2)}, medium ${st.bandMeans.medium.toFixed(2)}, hard ${st.bandMeans.hard.toFixed(2)}; overall in-band ${pct(st.inBandShare)}`,
+      `    band means: easy ${st.bandMeans.easy.toFixed(2)}, medium ${st.bandMeans.medium.toFixed(2)}, hard ${st.bandMeans.hard.toFixed(2)}; overall in-band ${pct(st.inBandShare)}`
     );
   };
   rampTable('difficulty ramp (all days)', r.ramp);
@@ -81,6 +89,9 @@ for (const variant of variants) {
   const report = buildReport(agg, results);
   const samples = findForced(results, report.ranges)
     .slice(0, 5)
-    .map((f) => `${f.seed} Q${f.questionIndex} ${f.category} bridge "${f.bridgeName}" shown as ${f.bridgeCount} vs hidden ${f.otherCount} -> ${f.kind}`);
+    .map(
+      (f) =>
+        `${f.seed} Q${f.questionIndex} ${f.category} bridge "${f.bridgeName}" shown as ${f.bridgeCount} vs hidden ${f.otherCount} -> ${f.kind}`
+    );
   printReport(variant, totalTrackPlays(agg), items, report, samples);
 }

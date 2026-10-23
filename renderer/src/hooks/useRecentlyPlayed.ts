@@ -30,7 +30,7 @@ function toArtistItem(a: RecentArtist, resolved?: ResolvedArtist | null): SonosI
       serviceId: a.serviceId ?? resolved?.serviceId,
       accountId: a.accountId ?? resolved?.accountId,
     },
-    { title: a.artist, imageUrl: resolved?.imageUrl ?? a.imageUrl },
+    { title: a.artist, imageUrl: resolved?.imageUrl ?? a.imageUrl }
   );
 }
 
@@ -108,7 +108,7 @@ export function useRecentlyPlayed(selectedUserId?: string) {
       const q = artistImageQueries[i];
       return toArtistItem(a, q?.isSuccess ? q.data : undefined);
     }),
-    albumItems:  (data?.albums ?? []).map(toAlbumItem),
+    albumItems: (data?.albums ?? []).map(toAlbumItem),
     availableUsers: data?.availableUsers ?? [],
     currentUserId: currentUserId ?? null,
     isLoading: !!userId && isLoading,

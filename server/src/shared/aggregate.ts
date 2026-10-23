@@ -107,14 +107,13 @@ export function splitArtists(artist: string | null | undefined): string[] {
   if (/\d/.test(raw)) return [raw];
 
   // parts is only empty when raw is nothing but separators — not a real artist.
-  return raw.split(/,\s*/).map((s) => s.trim()).filter(Boolean);
+  return raw
+    .split(/,\s*/)
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
-function bumpQueuer(
-  queuersByItem: Record<string, Record<string, number>>,
-  key: string,
-  userId: string,
-): void {
+function bumpQueuer(queuersByItem: Record<string, Record<string, number>>, key: string, userId: string): void {
   if (!queuersByItem[key]) queuersByItem[key] = {};
   queuersByItem[key][userId] = (queuersByItem[key][userId] ?? 0) + 1;
 }

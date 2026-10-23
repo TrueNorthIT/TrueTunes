@@ -17,9 +17,13 @@ const mockUseImage = vi.fn();
 vi.mock('../../../hooks/useImage', () => ({ useImage: (...a: unknown[]) => mockUseImage(...a) }));
 
 const mockUseDominantColor = vi.fn();
-vi.mock('../../../hooks/useDominantColor', () => ({ useDominantColor: (...a: unknown[]) => mockUseDominantColor(...a) }));
+vi.mock('../../../hooks/useDominantColor', () => ({
+  useDominantColor: (...a: unknown[]) => mockUseDominantColor(...a),
+}));
 
-vi.mock('../../../hooks/useArtistBrowse', () => ({ artistQueryOptions: vi.fn(() => ({ queryKey: [], queryFn: async () => null })) }));
+vi.mock('../../../hooks/useArtistBrowse', () => ({
+  artistQueryOptions: vi.fn(() => ({ queryKey: [], queryFn: async () => null })),
+}));
 
 const mockUseAlbumBrowse = vi.fn();
 vi.mock('../../../hooks/useAlbumBrowse', () => ({
@@ -43,13 +47,16 @@ vi.mock('../AlbumTrackRow', () => ({
     onClick: (e: React.MouseEvent) => void;
     onAdd: () => void;
   }) => (
-    <div
-      data-testid={track.id.objectId}
-      data-selected={isSelected}
-      onClick={onClick}
-    >
+    <div data-testid={track.id.objectId} data-selected={isSelected} onClick={onClick}>
       {track.title}
-      <button onClick={(e) => { e.stopPropagation(); onAdd(); }}>Add</button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onAdd();
+        }}
+      >
+        Add
+      </button>
     </div>
   ),
 }));
@@ -101,7 +108,11 @@ function makeAlbumData(overrides = {}) {
 }
 
 function wrapper({ children }: { children: React.ReactNode }) {
-  return createElement(QueryClientProvider, { client: new QueryClient({ defaultOptions: { queries: { retry: false } } }) }, children);
+  return createElement(
+    QueryClientProvider,
+    { client: new QueryClient({ defaultOptions: { queries: { retry: false } } }) },
+    children
+  );
 }
 
 beforeEach(() => {
@@ -154,7 +165,11 @@ describe('AlbumPanel', () => {
   });
 
   it('shows no tracks message when empty', () => {
-    mockUseAlbumBrowse.mockReturnValue({ data: makeAlbumData({ tracks: [], totalTracks: 0 }), isLoading: false, error: null });
+    mockUseAlbumBrowse.mockReturnValue({
+      data: makeAlbumData({ tracks: [], totalTracks: 0 }),
+      isLoading: false,
+      error: null,
+    });
     render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
     expect(screen.getByText('No tracks found.')).toBeInTheDocument();
   });
@@ -167,7 +182,11 @@ describe('AlbumPanel', () => {
 
   it('shows only song count when total duration is 0', () => {
     const tracks = [makeTrack('Song A', 0, 0), makeTrack('Song B', 1, 0)];
-    mockUseAlbumBrowse.mockReturnValue({ data: makeAlbumData({ tracks, totalTracks: 2 }), isLoading: false, error: null });
+    mockUseAlbumBrowse.mockReturnValue({
+      data: makeAlbumData({ tracks, totalTracks: 2 }),
+      isLoading: false,
+      error: null,
+    });
     render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
     const metaLine = screen.getByText(/2 songs/);
     expect(metaLine.textContent).not.toContain('min');
@@ -241,7 +260,11 @@ describe('AlbumPanel', () => {
 
   it('shift+click range-selects from last to target', () => {
     const tracks = Array.from({ length: 4 }, (_, i) => makeTrack(`Song ${i}`, i));
-    mockUseAlbumBrowse.mockReturnValue({ data: makeAlbumData({ tracks, totalTracks: 4 }), isLoading: false, error: null });
+    mockUseAlbumBrowse.mockReturnValue({
+      data: makeAlbumData({ tracks, totalTracks: 4 }),
+      isLoading: false,
+      error: null,
+    });
     render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
     fireEvent.click(screen.getByTestId('trk-0'));
     fireEvent.click(screen.getByTestId('trk-2'), { shiftKey: true });
@@ -367,10 +390,17 @@ describe('AlbumPanel', () => {
     });
 
     it("falls back to the artist's Genius bio when the album has no description", async () => {
-      vi.mocked(window.sonos.geniusAlbumAbout).mockResolvedValue({ description: para('?'), url: 'https://genius.com/albums/x' });
+      vi.mocked(window.sonos.geniusAlbumAbout).mockResolvedValue({
+        description: para('?'),
+        url: 'https://genius.com/albums/x',
+      });
       vi.mocked(window.sonos.geniusArtist).mockResolvedValue({
         description: para('A band from Liverpool.'),
-        alternateNames: [], imageUrl: null, headerImageUrl: null, instagram: null, twitter: null,
+        alternateNames: [],
+        imageUrl: null,
+        headerImageUrl: null,
+        instagram: null,
+        twitter: null,
       });
       render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
       expect(await screen.findByText('A band from Liverpool.')).toBeInTheDocument();

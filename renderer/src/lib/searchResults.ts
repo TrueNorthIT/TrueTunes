@@ -5,7 +5,10 @@ import type { AlbumTrack } from '../hooks/useAlbumBrowse';
 
 /** norm() plus no punctuation: "Mr. Brightside" and "mr brightside" are one title. */
 function key(s: string): string {
-  return norm(s).replace(/[^\p{L}\p{N}\s]/gu, '').replace(/\s+/g, ' ').trim();
+  return norm(s)
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /** The album a search track is on, or undefined for a video or upload. */
@@ -37,7 +40,10 @@ export function pickTopResult(items: SonosItem[], query: string): SonosItem | nu
   const tracks = items.filter(isTrack);
   return (
     bestMatch(items.filter(isArtist).slice(0, 1), q) ??
-    bestMatch(tracks.filter((t) => albumNameOf(t)), q) ??
+    bestMatch(
+      tracks.filter((t) => albumNameOf(t)),
+      q
+    ) ??
     bestMatch(items.filter(isAlbum), q) ??
     tracks.find((t) => sharesWord(t, q)) ??
     items.find((i) => sharesWord(i, q)) ??
@@ -122,7 +128,9 @@ export function topSongRow(t: AlbumTrack): SongRow {
     artists: t.artistObjects?.length
       ? t.artistObjects.map((x) => ({ name: x.name, id: { objectId: x.objectId, ...scope } }))
       : t.artists.map((name) => ({ name })),
-    album: t.albumName ? { name: t.albumName, id: t.albumId ? { objectId: t.albumId, ...scope } : undefined } : undefined,
+    album: t.albumName
+      ? { name: t.albumName, id: t.albumId ? { objectId: t.albumId, ...scope } : undefined }
+      : undefined,
     durationMs: t.durationSeconds ? t.durationSeconds * 1000 : undefined,
     imageUrl: t.artUrl,
     explicit: t.explicit,

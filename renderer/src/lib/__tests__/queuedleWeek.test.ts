@@ -54,8 +54,14 @@ describe('isInWeek / formatWeekRange', () => {
 describe('calculateWeeklyLeaderboard', () => {
   it('sums each player across the week', () => {
     const rows = calculateWeeklyLeaderboard([
-      board('2026-10-19', [['alice', 12], ['bob', 15]]),
-      board('2026-10-20', [['alice', 10], ['carol', 18]]),
+      board('2026-10-19', [
+        ['alice', 12],
+        ['bob', 15],
+      ]),
+      board('2026-10-20', [
+        ['alice', 10],
+        ['carol', 18],
+      ]),
     ]);
     expect(rows.map((r) => [r.userName, r.total, r.gamesPlayed, r.bestTotal])).toEqual([
       ['alice', 22, 2, 12],
@@ -66,8 +72,16 @@ describe('calculateWeeklyLeaderboard', () => {
 
   it('breaks a tie on points in favour of fewer games, then the better day', () => {
     const rows = calculateWeeklyLeaderboard([
-      board('2026-10-19', [['alice', 10], ['bob', 20], ['carol', 12]]),
-      board('2026-10-20', [['alice', 10], ['carol', 8], ['dave', 20]]),
+      board('2026-10-19', [
+        ['alice', 10],
+        ['bob', 20],
+        ['carol', 12],
+      ]),
+      board('2026-10-20', [
+        ['alice', 10],
+        ['carol', 8],
+        ['dave', 20],
+      ]),
     ]);
     expect(rows.map((r) => r.userName)).toEqual(['bob', 'dave', 'carol', 'alice']);
   });
@@ -89,7 +103,13 @@ describe("last week's winner", () => {
   const MONDAY = Date.UTC(2026, 9, 26, 9, 0);
   const scored = (gameId: string, rows: Array<[string, number, number]>) => ({
     gameId,
-    scores: rows.map(([userName, total, completedAt]) => ({ userName, total, mainScore: 0, bonusScore: 0, completedAt })),
+    scores: rows.map(([userName, total, completedAt]) => ({
+      userName,
+      total,
+      mainScore: 0,
+      bonusScore: 0,
+      completedAt,
+    })),
   });
 
   it('finds the previous Monday-to-Sunday week', () => {
@@ -105,7 +125,10 @@ describe("last week's winner", () => {
 
   it('picks the top of the week, counting only games submitted by Sunday night', () => {
     const boards = [
-      scored('2026-10-19', [['alice', 15, SUNDAY_LATE], ['bob', 12, SUNDAY_LATE]]),
+      scored('2026-10-19', [
+        ['alice', 15, SUNDAY_LATE],
+        ['bob', 12, SUNDAY_LATE],
+      ]),
       // bob catches up on Tuesday's game after the week ended: it doesn't count.
       scored('2026-10-20', [['bob', 18, MONDAY]]),
     ];

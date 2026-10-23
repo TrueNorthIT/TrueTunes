@@ -70,12 +70,17 @@
   /* Image-card scrim: darker at the top for the caption, deep at the bottom for title and artist. */
   --scrim-top: linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 22%);
   --scrim-art:
-    var(--scrim-top),
-    linear-gradient(to top, rgba(0, 0, 0, 0.74) 0%, rgba(0, 0, 0, 0.26) 42%, rgba(0, 0, 0, 0) 70%);
+    var(--scrim-top), linear-gradient(to top, rgba(0, 0, 0, 0.74) 0%, rgba(0, 0, 0, 0.26) 42%, rgba(0, 0, 0, 0) 70%);
   /* Tiles whose art carries its own text get a deeper, bottom-only scrim. */
   --scrim-deep: linear-gradient(to top, rgba(0, 0, 0, 0.86) 0%, rgba(0, 0, 0, 0.4) 38%, rgba(0, 0, 0, 0) 68%);
   /* Behind the text block of a Top result, so the text holds on pale covers. */
-  --scrim-text: linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.66) 50%, rgba(0, 0, 0, 0.42) 80%, rgba(0, 0, 0, 0) 100%);
+  --scrim-text: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.82) 0%,
+    rgba(0, 0, 0, 0.66) 50%,
+    rgba(0, 0, 0, 0.42) 80%,
+    rgba(0, 0, 0, 0) 100%
+  );
 
   /* Radius scale (DESIGN.md "Shapes"). Em radii scale with the type of the element that uses them. */
   --r-sm: 6px;

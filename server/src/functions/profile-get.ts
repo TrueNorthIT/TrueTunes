@@ -1,15 +1,12 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { CosmosClient } from '@azure/cosmos';
 
-export async function profileGetHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
+export async function profileGetHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const userName = request.params['userName'];
   if (!userName) return { status: 400, jsonBody: { error: 'userName required' } };
 
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
-  const dbName  = process.env['COSMOS_DATABASE'] ?? 'truetunes';
+  const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
 
   if (!connStr) return { status: 500, jsonBody: { error: 'Cosmos not configured' } };
 

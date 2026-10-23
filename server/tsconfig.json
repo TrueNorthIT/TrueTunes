@@ -6,6 +6,9 @@
     "outDir": "dist",
     "rootDir": "src",
     "strict": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "moduleResolution": "node"

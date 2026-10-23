@@ -44,7 +44,18 @@ interface Row {
 
 /** Today's scores or the all-time ranking, with faces; your own row is lit and always shown. */
 export function QueuedleLeaderboard({
-  tab, onTab, gameId, scores, rankings, rankingsLoading, weekly = [], weeklyLoading = false, viewedGameId, me, imageByUser, onOpenProfile,
+  tab,
+  onTab,
+  gameId,
+  scores,
+  rankings,
+  rankingsLoading,
+  weekly = [],
+  weeklyLoading = false,
+  viewedGameId,
+  me,
+  imageByUser,
+  onOpenProfile,
 }: Props) {
   const ranks = competitionRanks(scores.map((s) => s.total));
   const weeklyRanks = competitionRanks(weekly.map((w) => w.total));
@@ -62,28 +73,30 @@ export function QueuedleLeaderboard({
           value: String(s.total),
         }))
       : tab === 'week'
-      ? weekly.map((w, i) => ({
-          key: w.userName,
-          rank: weeklyRanks[i],
-          name: w.userName,
-          sub: <span>{`${w.gamesPlayed} ${w.gamesPlayed === 1 ? 'game' : 'games'} · best ${w.bestTotal}`}</span>,
-          value: String(w.total),
-        }))
-      : rankings.map((r, i) => ({
-          key: r.userName,
-          rank: i + 1,
-          name: r.userName,
-          // The tier is its name in a tonal chip (sentence-cased in CSS), the same chip as the Leaderboard page.
-          sub: (
-            <>
-              <span className={`${styles.tierChip}${r.isProvisional ? ' ' + styles.provisional : ''}`}>{r.tierName}</span>
-              <span>
-                {r.gamesPlayed} {r.gamesPlayed === 1 ? 'game' : 'games'}
-              </span>
-            </>
-          ),
-          value: r.averageTotal.toFixed(1),
-        }));
+        ? weekly.map((w, i) => ({
+            key: w.userName,
+            rank: weeklyRanks[i],
+            name: w.userName,
+            sub: <span>{`${w.gamesPlayed} ${w.gamesPlayed === 1 ? 'game' : 'games'} · best ${w.bestTotal}`}</span>,
+            value: String(w.total),
+          }))
+        : rankings.map((r, i) => ({
+            key: r.userName,
+            rank: i + 1,
+            name: r.userName,
+            // The tier is its name in a tonal chip (sentence-cased in CSS), the same chip as the Leaderboard page.
+            sub: (
+              <>
+                <span className={`${styles.tierChip}${r.isProvisional ? ' ' + styles.provisional : ''}`}>
+                  {r.tierName}
+                </span>
+                <span>
+                  {r.gamesPlayed} {r.gamesPlayed === 1 ? 'game' : 'games'}
+                </span>
+              </>
+            ),
+            value: r.averageTotal.toFixed(1),
+          }));
 
   // Top ten, plus your own row underneath when you're further down.
   const myIndex = me ? rows.findIndex((r) => r.name === me) : -1;
@@ -94,12 +107,18 @@ export function QueuedleLeaderboard({
   const weekRange = viewedGameId ? weekRangeOf(viewedGameId) : null;
   const title =
     tab === 'today'
-      ? gameId ? `Leaderboard for ${todayLabel}` : "Today's leaderboard"
+      ? gameId
+        ? `Leaderboard for ${todayLabel}`
+        : "Today's leaderboard"
       : tab === 'week'
         ? `Week leaderboard${weekRange ? ` · ${formatWeekRange(weekRange)}` : ''}`
         : 'Ranked leaderboard';
   const head: [string, string, string] =
-    tab === 'today' ? ['Player', 'Rounds', 'Total'] : tab === 'week' ? ['Player', '', 'Total'] : ['Player', '', 'Avg score'];
+    tab === 'today'
+      ? ['Player', 'Rounds', 'Total']
+      : tab === 'week'
+        ? ['Player', '', 'Total']
+        : ['Player', '', 'Avg score'];
   const loading = tab === 'ranked' ? rankingsLoading : tab === 'week' && weeklyLoading;
 
   const renderRow = (r: Row) => (
@@ -108,7 +127,12 @@ export function QueuedleLeaderboard({
       <span className={styles.person}>
         <UserAvatar name={r.name} imageUrl={imageByUser.get(r.name)} className={styles.personAvatar} />
         <span className={styles.personText}>
-          <button type="button" className={styles.personName} onClick={() => onOpenProfile(r.name)} title={`${r.name}'s profile`}>
+          <button
+            type="button"
+            className={styles.personName}
+            onClick={() => onOpenProfile(r.name)}
+            title={`${r.name}'s profile`}
+          >
             {r.name}
           </button>
           {r.sub && <span className={styles.personSub}>{r.sub}</span>}
@@ -126,13 +150,7 @@ export function QueuedleLeaderboard({
       actions={
         <div className={styles.segments} role="group" aria-label="Leaderboard view">
           {(['today', 'week', 'ranked'] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              aria-pressed={tab === t}
-              className={styles.segment}
-              onClick={() => onTab(t)}
-            >
+            <button key={t} type="button" aria-pressed={tab === t} className={styles.segment} onClick={() => onTab(t)}>
               {t === 'today' ? todayLabel : t === 'week' ? 'Week' : 'Ranked'}
             </button>
           ))}
@@ -153,7 +171,11 @@ export function QueuedleLeaderboard({
         </ol>
       ) : rows.length === 0 ? (
         <p className={styles.boardNote}>
-          {tab === 'ranked' ? 'No ranked scores yet.' : tab === 'week' ? 'No scores this week yet.' : 'Nobody has played yet.'}
+          {tab === 'ranked'
+            ? 'No ranked scores yet.'
+            : tab === 'week'
+              ? 'No scores this week yet.'
+              : 'Nobody has played yet.'}
         </p>
       ) : (
         <>
@@ -167,7 +189,9 @@ export function QueuedleLeaderboard({
             {shown.map(renderRow)}
             {extra && (
               <>
-                <li className={styles.boardGap} aria-hidden="true">…</li>
+                <li className={styles.boardGap} aria-hidden="true">
+                  …
+                </li>
                 {renderRow(extra)}
               </>
             )}

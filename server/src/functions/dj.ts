@@ -11,10 +11,7 @@ interface TimedEvent extends RawEvent {
   timestamp?: number;
 }
 
-export async function djHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
+export async function djHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const headers = { 'Access-Control-Allow-Origin': '*' };
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
   const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
@@ -45,19 +42,13 @@ export async function djHandler(
     let users = requested;
     if (users.length === 0) {
       const activeSince = Date.now() - ACTIVE_HOURS * 60 * 60 * 1000;
-      users = [
-        ...new Set(
-          resources
-            .filter((e) => (e.timestamp ?? 0) >= activeSince && e.userId)
-            .map((e) => e.userId),
-        ),
-      ];
+      users = [...new Set(resources.filter((e) => (e.timestamp ?? 0) >= activeSince && e.userId).map((e) => e.userId))];
     }
 
     const result = buildDjSet(resources, { users, limit, excludeUris });
 
     context.log(
-      `[dj] events=${resources.length} listeners=${result.listeners.length} tracks=${result.tracks.length} artists=${result.artists.length}`,
+      `[dj] events=${resources.length} listeners=${result.listeners.length} tracks=${result.tracks.length} artists=${result.artists.length}`
     );
 
     return {

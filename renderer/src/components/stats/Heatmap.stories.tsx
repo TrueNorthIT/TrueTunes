@@ -28,11 +28,21 @@ const meta = {
     columns: hours,
     rows: week,
     cellLabel: (r: number, c: number) => `row ${r} column ${c}`,
-    renderTip: (r: number, c: number) => <TipTitle>Row {r}, column {c}</TipTitle>,
+    renderTip: (r: number, c: number) => (
+      <TipTitle>
+        Row {r}, column {c}
+      </TipTitle>
+    ),
     legend: { lo: 'Quiet', hi: 'Busiest (412)', empty: 'nothing queued' },
     ariaLabel: 'Queues by day of the week and hour',
   },
-  decorators: [(Story) => <div style={{ maxWidth: '52em' }}><Story /></div>],
+  decorators: [
+    (Story) => (
+      <div style={{ maxWidth: '52em' }}>
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof Heatmap>;
 
 export default meta;
@@ -40,5 +50,12 @@ type Story = StoryObj<typeof meta>;
 
 export const FitsWidth: Story = {};
 export const ScrollsSideways: Story = {
-  args: { columns: dates, rows: people, minCell: '1.4em', startAtEnd: true, ariaLabel: undefined, legend: { lo: '0%', hi: '100% of the day’s points', empty: 'didn’t play' } },
+  args: {
+    columns: dates,
+    rows: people,
+    minCell: '1.4em',
+    startAtEnd: true,
+    ariaLabel: undefined,
+    legend: { lo: '0%', hi: '100% of the day’s points', empty: 'didn’t play' },
+  },
 };

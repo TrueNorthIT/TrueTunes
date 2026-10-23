@@ -32,8 +32,7 @@ export function londonDayStartMs(nowMs: number): number {
   const p = londonParts(nowMs);
   const key = `${p.year}-${p.month}-${p.day}`;
   const sinceMidnight =
-    ((Number(p.hour) * 60 + Number(p.minute)) * 60 + Number(p.second)) * 1000 +
-    (((nowMs % 1000) + 1000) % 1000);
+    ((Number(p.hour) * 60 + Number(p.minute)) * 60 + Number(p.second)) * 1000 + (((nowMs % 1000) + 1000) % 1000);
 
   // Subtracting the wall-clock time is exact except on the two days a year the
   // clocks change, where the day is 23 or 25 hours long. Try the hour either

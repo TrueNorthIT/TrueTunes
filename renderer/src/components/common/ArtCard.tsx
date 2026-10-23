@@ -31,7 +31,20 @@ interface Props {
 
 /** A print with its label: the artwork is the card, with title and artist on a scrim over the lower part. */
 export function ArtCard({
-  size, label, title, sub, imageUrl, photoUrl, onOpen, openLabel, info, onAdd, addLabel, onContextMenu, onMouseEnter, className,
+  size,
+  label,
+  title,
+  sub,
+  imageUrl,
+  photoUrl,
+  onOpen,
+  openLabel,
+  info,
+  onAdd,
+  addLabel,
+  onContextMenu,
+  onMouseEnter,
+  className,
 }: Props) {
   // Shown big, so ask the service for a bigger image.
   const px = size === 'large' ? 1200 : 800;
@@ -54,7 +67,9 @@ export function ArtCard({
           src={photo}
           alt=""
           onAnimationEnd={() => setPhotoIn(true)}
-          onLoad={() => { if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) setPhotoIn(true); }}
+          onLoad={() => {
+            if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) setPhotoIn(true);
+          }}
         />
       )}
       <button type="button" className={styles.cover} aria-label={openLabel} onClick={onOpen} />
@@ -66,7 +81,9 @@ export function ArtCard({
         <div className={styles.title}>{title}</div>
         {sub != null && <div className={styles.sub}>{sub}</div>}
       </div>
-      {onAdd && <AddButton variant="art" className={styles.add} label={addLabel ?? `Add ${title} to queue`} onClick={onAdd} />}
+      {onAdd && (
+        <AddButton variant="art" className={styles.add} label={addLabel ?? `Add ${title} to queue`} onClick={onAdd} />
+      )}
     </div>
   );
 }

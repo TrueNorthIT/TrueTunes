@@ -57,8 +57,7 @@ test('own taste outranks inferred taste for a single listener', () => {
  * Proportions mirror the real spread (heaviest queuer ~5x the lightest).
  */
 function officeWithADj(): RawEvent[] {
-  const many = (u: string, a: string, n: number) =>
-    Array.from({ length: n }, (_, i) => ev(u, a, `${a}-${i}`));
+  const many = (u: string, a: string, n: number) => Array.from({ length: n }, (_, i) => ev(u, a, `${a}-${i}`));
   return [
     ...many('Heavy', 'Nickelback', 40),
     ...many('Heavy', 'Radiohead', 15),
@@ -94,18 +93,14 @@ test('influenceDamping trades the heavy queuer off against the quiet ones', () =
   // damping 0 → influence tracks raw play count, so the DJ's habit climbs above
   // Pixies, which only one quiet listener plays.
   // damping 1 → every listener counted equally and it slips back below.
-  assert.ok(
-    rankOfNickelback(0) < rankOfNickelback(1),
-    'lower damping must favour the established DJ',
-  );
+  assert.ok(rankOfNickelback(0) < rankOfNickelback(1), 'lower damping must favour the established DJ');
 });
 
 test('strict least misery is still available', () => {
   const events = officeWithADj();
   const nickel = (groupBlend: number) =>
-    buildDjSet(events, { users: ['A', 'B', 'Heavy'], groupBlend }).tracks.find(
-      (t) => t.artist === 'Nickelback',
-    )?.score ?? 0;
+    buildDjSet(events, { users: ['A', 'B', 'Heavy'], groupBlend }).tracks.find((t) => t.artist === 'Nickelback')
+      ?.score ?? 0;
 
   // groupBlend 0 is pure minimum — the divisive pick is judged by the listener
   // who cares least about it.
@@ -145,34 +140,34 @@ test('excluded uris and the per-artist cap are respected', () => {
 test('never plays the same artist twice in a row', () => {
   // Each artist has several tracks, so a "drain one artist then move on" loop
   // would clump them into pairs.
-  const many = (u: string, a: string, n: number) =>
-    Array.from({ length: n }, (_, i) => ev(u, a, `${a}-${i}`));
+  const many = (u: string, a: string, n: number) => Array.from({ length: n }, (_, i) => ev(u, a, `${a}-${i}`));
   const events = [
-    ...many('A', 'Radiohead', 6), ...many('B', 'Radiohead', 6),
-    ...many('A', 'Muse', 5), ...many('B', 'Muse', 4),
-    ...many('A', 'Pixies', 4), ...many('B', 'Pixies', 5),
+    ...many('A', 'Radiohead', 6),
+    ...many('B', 'Radiohead', 6),
+    ...many('A', 'Muse', 5),
+    ...many('B', 'Muse', 4),
+    ...many('A', 'Pixies', 4),
+    ...many('B', 'Pixies', 5),
   ];
 
   const { tracks } = buildDjSet(events, { users: ['A', 'B'], perArtistMax: 3 });
   assert.ok(tracks.length >= 6, `expected a full set, got ${tracks.length}`);
 
   for (let i = 1; i < tracks.length; i++) {
-    assert.notEqual(
-      tracks[i].artist,
-      tracks[i - 1].artist,
-      `${tracks[i].artist} played back to back at position ${i}`,
-    );
+    assert.notEqual(tracks[i].artist, tracks[i - 1].artist, `${tracks[i].artist} played back to back at position ${i}`);
   }
 });
 
 test('a collaboration counts as the same act, not a fresh one', () => {
-  const many = (u: string, a: string, n: number) =>
-    Array.from({ length: n }, (_, i) => ev(u, a, `${a}-${i}`));
+  const many = (u: string, a: string, n: number) => Array.from({ length: n }, (_, i) => ev(u, a, `${a}-${i}`));
   const events = [
-    ...many('A', 'Gorillaz', 5), ...many('B', 'Gorillaz', 5),
+    ...many('A', 'Gorillaz', 5),
+    ...many('B', 'Gorillaz', 5),
     // Same band, different credit string — must not become its own slot.
-    ...many('A', 'Gorillaz, De La Soul', 3), ...many('B', 'Gorillaz, De La Soul', 3),
-    ...many('A', 'Muse', 4), ...many('B', 'Muse', 4),
+    ...many('A', 'Gorillaz, De La Soul', 3),
+    ...many('B', 'Gorillaz, De La Soul', 3),
+    ...many('A', 'Muse', 4),
+    ...many('B', 'Muse', 4),
   ];
 
   const { tracks } = buildDjSet(events, { users: ['A', 'B'], perArtistMax: 3 });
@@ -183,7 +178,7 @@ test('a collaboration counts as the same act, not a fresh one', () => {
     assert.notEqual(
       act(tracks[i].artist),
       act(tracks[i - 1].artist),
-      `${act(tracks[i].artist)} played back to back at position ${i}`,
+      `${act(tracks[i].artist)} played back to back at position ${i}`
     );
   }
 });
@@ -198,7 +193,10 @@ test('still leads with the strongest pick', () => {
   const firstAppearance = new Map<string, number>();
   for (const t of tracks) if (!firstAppearance.has(t.artist)) firstAppearance.set(t.artist, t.score);
   const leadScores = [...firstAppearance.values()];
-  assert.deepEqual(leadScores, [...leadScores].sort((a, b) => b - a));
+  assert.deepEqual(
+    leadScores,
+    [...leadScores].sort((a, b) => b - a)
+  );
 });
 
 test('empty history returns an empty set instead of throwing', () => {
@@ -213,16 +211,12 @@ test('hands back ranked acts with what the office has already heard by them', ()
 
   // The caller subtracts these to find tracks the office has never played.
   const radiohead = artists[0];
-  assert.deepEqual(
-    radiohead.heardTrackKeys.sort(),
-    ['t1||Radiohead', 't2||Radiohead', 't3||Radiohead'],
-  );
+  assert.deepEqual(radiohead.heardTrackKeys.sort(), ['t1||Radiohead', 't2||Radiohead', 't3||Radiohead']);
   assert.ok(radiohead.because.length > 0);
 });
 
 test('caps how many acts the caller has to browse', () => {
-  const many = (u: string, a: string, n: number) =>
-    Array.from({ length: n }, (_, i) => ev(u, a, `${a}-${i}`));
+  const many = (u: string, a: string, n: number) => Array.from({ length: n }, (_, i) => ev(u, a, `${a}-${i}`));
   const events = Array.from({ length: 30 }, (_, i) => [
     ...many('A', `Band${i}`, 3),
     ...many('B', `Band${i}`, 3),
@@ -275,7 +269,7 @@ test('REQ-W2: a track carries each credited listener with their raw queue count,
       { user: 'Bea', count: 5 },
       { user: 'Cy', count: 2 },
     ],
-    'DjTrack.fans should hold raw counts ordered count desc, then user name asc',
+    'DjTrack.fans should hold raw counts ordered count desc, then user name asc'
   );
 });
 
@@ -292,7 +286,7 @@ test('REQ-W2: an act carries each credited listener with their raw queue count, 
       { user: 'Bea', count: 5 },
       { user: 'Cy', count: 2 },
     ],
-    'DjArtist.fans should hold raw counts ordered count desc, then user name asc',
+    'DjArtist.fans should hold raw counts ordered count desc, then user name asc'
   );
 });
 
@@ -306,12 +300,12 @@ test('REQ-W2: fans only lists people in the room, not everyone who ever queued t
     assert.ok(f, 'expected fans to be present');
     assert.ok(
       !f.some((x) => x.user === 'Outsider'),
-      'Outsider is not in options.users so must not be credited, despite 20 queues',
+      'Outsider is not in options.users so must not be credited, despite 20 queues'
     );
   }
 });
 
-test('REQ-W2: fans counts are the listener\'s raw count, not the damped weight', () => {
+test("REQ-W2: fans counts are the listener's raw count, not the damped weight", () => {
   // One listener with a huge habit: damping would flatten this, the raw count must not be.
   const events = [...queued('Alex', 'Radiohead', 40), ...queued('Bea', 'Radiohead', 1)];
   const { artists } = buildDjSet(events, { users: ['Alex', 'Bea'] });
@@ -322,7 +316,7 @@ test('REQ-W2: fans counts are the listener\'s raw count, not the damped weight',
       { user: 'Alex', count: 40 },
       { user: 'Bea', count: 1 },
     ],
-    'expected raw counts 40 and 1 regardless of influence damping',
+    'expected raw counts 40 and 1 regardless of influence damping'
   );
 });
 
@@ -334,12 +328,12 @@ test('REQ-W3: fans is uncapped, so five fans are all listed', () => {
   assert.equal(
     tracks.find((t) => t.artist === 'Radiohead')?.fans?.length,
     5,
-    'DjTrack.fans must list all five credited listeners, not truncate',
+    'DjTrack.fans must list all five credited listeners, not truncate'
   );
   assert.equal(
     artists.find((a) => a.artist === 'Radiohead')?.fans?.length,
     5,
-    'DjArtist.fans must list all five credited listeners, not truncate',
+    'DjArtist.fans must list all five credited listeners, not truncate'
   );
 });
 
@@ -381,7 +375,10 @@ test('trackFans lists room members who queued this track, raw count desc then na
 });
 
 test('trackFans is [] when nobody in the room queued the track', () => {
-  const events = [...trackEvents('Outsider', 'Radiohead', 'Creep', 2), ...trackEvents('Alex', 'Radiohead', 'Karma Police', 2)];
+  const events = [
+    ...trackEvents('Outsider', 'Radiohead', 'Creep', 2),
+    ...trackEvents('Alex', 'Radiohead', 'Karma Police', 2),
+  ];
   const { tracks } = buildDjSet(events, { users: ROOM, perArtistMax: 5 });
   assert.deepEqual(tracks.find((t) => t.trackName === 'Creep')?.trackFans, []);
 });

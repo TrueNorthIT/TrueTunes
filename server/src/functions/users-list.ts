@@ -1,12 +1,9 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { CosmosClient } from '@azure/cosmos';
 
-export async function usersListHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
+export async function usersListHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
-  const dbName  = process.env['COSMOS_DATABASE'] ?? 'truetunes';
+  const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
 
   if (!connStr) return { status: 500, jsonBody: { error: 'Cosmos not configured' } };
 
@@ -14,7 +11,7 @@ export async function usersListHandler(
 
   try {
     const client = new CosmosClient(connStr);
-    const eventsContainer   = client.database(dbName).container('events');
+    const eventsContainer = client.database(dbName).container('events');
     const profilesContainer = client.database(dbName).container('profiles');
 
     const { resources } = await eventsContainer.items
@@ -24,7 +21,7 @@ export async function usersListHandler(
       .fetchAll();
 
     const sorted = resources
-      .filter(r => r.userId && r.userId !== exclude)
+      .filter((r) => r.userId && r.userId !== exclude)
       .sort((a, b) => b.lastQueued - a.lastQueued);
 
     const result = await Promise.all(
@@ -43,7 +40,7 @@ export async function usersListHandler(
         } catch {
           return { userId: r.userId, lastQueued: r.lastQueued, imageUrl: null, entraOid: null };
         }
-      }),
+      })
     );
 
     context.log(`[users-list] count=${result.length} exclude=${exclude}`);

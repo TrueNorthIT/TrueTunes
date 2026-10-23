@@ -10,8 +10,17 @@ import styles from './rows.module.css';
 /** Square thumbnail that opens the item on click. Hidden from assistive tech: the title button is the real control. */
 export function RowThumb({ imageUrl, onOpen }: { imageUrl?: string | null; onOpen?: () => void }) {
   const art = useImage(imageUrl ?? null);
-  const inner = art ? <img className={styles.art} src={art} alt="" loading="lazy" /> : <span className={styles.artPh} />;
-  if (!onOpen) return <span className={styles.artBtn} aria-hidden="true">{inner}</span>;
+  const inner = art ? (
+    <img className={styles.art} src={art} alt="" loading="lazy" />
+  ) : (
+    <span className={styles.artPh} />
+  );
+  if (!onOpen)
+    return (
+      <span className={styles.artBtn} aria-hidden="true">
+        {inner}
+      </span>
+    );
   return (
     <button type="button" className={styles.artBtn} tabIndex={-1} aria-hidden="true" onClick={onOpen}>
       {inner}
@@ -63,19 +72,44 @@ interface Props {
  * The optional props cover numbered album rows, and playlist rows with who added what, drag-reorder and remove.
  */
 export function TrackRow({
-  title, artists, imageUrl, reason, onOpen, onAdd, addLabel, onContextMenu, onMouseEnter,
-  lead, showArt = true, explicit, aside, trailing, attribution, onRemove, removeLabel,
-  selected, playing, onClick, onDragStart, onDragOver, onDrop, onDragEnd, handle,
+  title,
+  artists,
+  imageUrl,
+  reason,
+  onOpen,
+  onAdd,
+  addLabel,
+  onContextMenu,
+  onMouseEnter,
+  lead,
+  showArt = true,
+  explicit,
+  aside,
+  trailing,
+  attribution,
+  onRemove,
+  removeLabel,
+  selected,
+  playing,
+  onClick,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+  handle,
 }: Props) {
   return (
     <li
       className={[
-        styles.row, styles.track,
+        styles.row,
+        styles.track,
         selected ? styles.selected : '',
         playing ? styles.playing : '',
         onDragStart ? styles.draggable : '',
         handle ? styles.withHandle : '',
-      ].filter(Boolean).join(' ')}
+      ]
+        .filter(Boolean)
+        .join(' ')}
       draggable={onDragStart ? true : undefined}
       onClick={onClick}
       onContextMenu={onContextMenu}
@@ -85,7 +119,11 @@ export function TrackRow({
       onDrop={onDrop}
       onDragEnd={onDragEnd}
     >
-      {handle && <span className={styles.handle} aria-hidden="true">⠿</span>}
+      {handle && (
+        <span className={styles.handle} aria-hidden="true">
+          ⠿
+        </span>
+      )}
       {lead != null && <span className={styles.lead}>{lead}</span>}
       {showArt && <RowThumb imageUrl={imageUrl} onOpen={onOpen} />}
       <div className={styles.text}>
@@ -94,7 +132,15 @@ export function TrackRow({
             {onOpen ? <TitleButton title={title} onOpen={onOpen} /> : title}
             {explicit && <ExplicitBadge />}
           </span>
-          {artists != null && <span className={styles.artist}><span className={styles.dash} aria-hidden="true"> — </span>{artists}</span>}
+          {artists != null && (
+            <span className={styles.artist}>
+              <span className={styles.dash} aria-hidden="true">
+                {' '}
+                —{' '}
+              </span>
+              {artists}
+            </span>
+          )}
         </div>
         {reason && <div className={styles.reason}>{reason}</div>}
       </div>
@@ -105,7 +151,10 @@ export function TrackRow({
           className={styles.who}
           aria-label={attribution.label ?? `Added by ${attribution.user}`}
           title={attribution.label ?? `Added by ${attribution.user}`}
-          onClick={(e) => { e.stopPropagation(); attribution.onOpen(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            attribution.onOpen();
+          }}
         >
           <UserAvatar name={attribution.user} imageUrl={attribution.imageUrl} className={styles.whoAvatar} />
         </button>
@@ -118,7 +167,10 @@ export function TrackRow({
           className={`${styles.remove} ${styles.add}`}
           title="Remove"
           aria-label={removeLabel ?? `Remove ${title}`}
-          onClick={(e) => { e.stopPropagation(); onRemove(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
         >
           <X size={16} aria-hidden="true" />
         </button>

@@ -3,7 +3,7 @@ import { getPlaylistContainer } from '../lib/getContainer';
 
 export async function playlistDeleteHandler(
   request: HttpRequest,
-  context: InvocationContext,
+  context: InvocationContext
 ): Promise<HttpResponseInit> {
   const id = request.params['id'];
   if (!id) {

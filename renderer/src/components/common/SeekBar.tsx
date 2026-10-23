@@ -17,7 +17,14 @@ interface Props {
 
 /** Click-and-keyboard seek bar shared by the three players; each passes its own look. */
 export function SeekBar({
-  progressPct, durationMs, elapsedLabel, durationLabel, className, trackClassName, fillClassName, title,
+  progressPct,
+  durationMs,
+  elapsedLabel,
+  durationLabel,
+  className,
+  trackClassName,
+  fillClassName,
+  title,
 }: Props) {
   const pct = Math.min(100, Math.max(0, progressPct || 0));
 
@@ -35,11 +42,15 @@ export function SeekBar({
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const now = (pct / 100) * durationMs;
     const target =
-      e.key === 'ArrowLeft' ? now - STEP_MS
-      : e.key === 'ArrowRight' ? now + STEP_MS
-      : e.key === 'Home' ? 0
-      : e.key === 'End' ? durationMs
-      : null;
+      e.key === 'ArrowLeft'
+        ? now - STEP_MS
+        : e.key === 'ArrowRight'
+          ? now + STEP_MS
+          : e.key === 'Home'
+            ? 0
+            : e.key === 'End'
+              ? durationMs
+              : null;
     if (target === null) return;
     e.preventDefault();
     seekTo(target);

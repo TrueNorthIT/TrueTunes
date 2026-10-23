@@ -22,7 +22,18 @@ interface Props {
 }
 
 /** Artwork over a caption. The tile rises 2px on hover or focus and its art picks up the lifted shadow. */
-export function ImageTile({ title, sub, meta, imageUrl, circular, size = 'md', onOpen, onHover, onAdd, addLabel }: Props) {
+export function ImageTile({
+  title,
+  sub,
+  meta,
+  imageUrl,
+  circular,
+  size = 'md',
+  onOpen,
+  onHover,
+  onAdd,
+  addLabel,
+}: Props) {
   const art = useImage(imageUrl ?? null);
   return (
     <div className={`${styles.tile} ${size === 'sm' ? styles.sm : styles.md}`} onMouseEnter={onHover}>
@@ -34,7 +45,14 @@ export function ImageTile({ title, sub, meta, imageUrl, circular, size = 'md', o
         {sub && <span className={styles.sub}>{sub}</span>}
         {meta && <span className={styles.sub}>{meta}</span>}
       </button>
-      {onAdd && <AddButton variant="corner" className={styles.add} label={addLabel ?? `Add ${title} to queue`} onClick={onAdd} />}
+      {onAdd && (
+        <AddButton
+          variant="corner"
+          className={styles.add}
+          label={addLabel ?? `Add ${title} to queue`}
+          onClick={onAdd}
+        />
+      )}
     </div>
   );
 }

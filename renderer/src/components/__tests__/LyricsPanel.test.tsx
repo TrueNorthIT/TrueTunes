@@ -59,7 +59,11 @@ describe('LyricsPanel', () => {
     mockUseLyrics.mockReturnValue({
       ...noLyrics,
       notFound: false,
-      lines: [{ timeMs: 0, text: 'First' }, { timeMs: 90_000, text: 'Now' }, { timeMs: 150_000, text: 'Later' }],
+      lines: [
+        { timeMs: 0, text: 'First' },
+        { timeMs: 90_000, text: 'Now' },
+        { timeMs: 150_000, text: 'Later' },
+      ],
     });
     render(<LyricsPanel playback={playback} />);
     expect(screen.getByText('Now')).toHaveAttribute('aria-current', 'true');
@@ -104,7 +108,9 @@ describe('LyricsPanel', () => {
     mockGenius.mockReturnValue({ description: { tag: 'root', children: [{ tag: 'p', children: ['?'] }] } });
     const { rerender } = render(<LyricsPanel playback={playback} />);
     expect(screen.queryByText('About this song')).toBeNull();
-    mockGenius.mockReturnValue({ description: { tag: 'root', children: [{ tag: 'p', children: ['A song about aliens.'] }] } });
+    mockGenius.mockReturnValue({
+      description: { tag: 'root', children: [{ tag: 'p', children: ['A song about aliens.'] }] },
+    });
     rerender(<LyricsPanel playback={playback} />);
     expect(screen.getByLabelText('About this song')).toHaveTextContent('A song about aliens.');
   });

@@ -33,10 +33,19 @@ describe('DjUpcomingRow', () => {
   it('REQ-W7: the DJ icon is the info trigger and explains the pick', async () => {
     render(
       <DjUpcomingRow
-        track={track({ fans: [{ user: 'Rich', count: 14 }, { user: 'Alex', count: 6 }], trackFans: [{ user: 'Rich', count: 3 }, { user: 'Alex', count: 1 }] })}
+        track={track({
+          fans: [
+            { user: 'Rich', count: 14 },
+            { user: 'Alex', count: 6 },
+          ],
+          trackFans: [
+            { user: 'Rich', count: 3 },
+            { user: 'Alex', count: 1 },
+          ],
+        })}
         idle={false}
         viewer="Rich"
-      />,
+      />
     );
     await userEvent.hover(screen.getByRole('button', { name: 'Why this pick' }));
     const tip = screen.getByRole('tooltip');

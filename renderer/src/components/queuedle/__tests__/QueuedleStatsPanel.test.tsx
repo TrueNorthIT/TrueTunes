@@ -17,8 +17,7 @@ vi.mock('../../../hooks/useDailyGame', () => ({
   useQueuedleHistory: () => ({ data: days, isLoading: false, isError: false }),
 }));
 
-const chip = (name: string) =>
-  screen.getByRole('button', { name: (n) => n === name || n === `${name} (you)` });
+const chip = (name: string) => screen.getByRole('button', { name: (n) => n === name || n === `${name} (you)` });
 const isOn = (name: string) => chip(name).getAttribute('aria-pressed') === 'true';
 
 beforeEach(() => {
@@ -35,7 +34,7 @@ describe('Queuedle stats highlighting', () => {
     expect(screen.getByText(/7 picked/)).toBeInTheDocument();
   });
 
-  it('keeps everyone else\'s colour when one pick is removed', async () => {
+  it("keeps everyone else's colour when one pick is removed", async () => {
     render(<QueuedleStatsPanel />);
     await waitFor(() => expect(isOn('Rich')).toBe(true));
     ['p1', 'p2', 'p3'].forEach((p) => fireEvent.click(chip(p)));

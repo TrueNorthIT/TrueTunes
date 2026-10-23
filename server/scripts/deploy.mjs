@@ -7,7 +7,7 @@
 //         function code to the Function App.
 
 import { readFileSync, existsSync } from 'node:fs';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -58,7 +58,31 @@ function runChild(commandLabel, command, args, options = {}) {
   });
 }
 
+// `func publish` replaces every function with this checkout's, so a stale or dirty tree deletes or
+// ships code that isn't on main (a feature branch behind main once removed music-stats and track-meta).
+function assertDeployableTree() {
+  const git = (...args) => spawnSync('git', args, { cwd: repoRoot, encoding: 'utf8' });
+  const fetch = git('fetch', 'origin', 'main');
+  if (fetch.status !== 0) {
+    throw new Error(`Refusing to deploy: could not fetch origin/main.\n${fetch.stderr || fetch.error?.message || ''}`);
+  }
+  if (git('merge-base', '--is-ancestor', 'origin/main', 'HEAD').status !== 0) {
+    throw new Error(
+      'Refusing to deploy: HEAD does not contain origin/main. Deploying would delete or roll back ' +
+        "functions that are on main. Merge main into this branch (or deploy from main) and try again.",
+    );
+  }
+  const status = git('status', '--porcelain');
+  if (status.status !== 0 || status.stdout.trim()) {
+    throw new Error(
+      'Refusing to deploy: the working tree has uncommitted changes. Commit or stash them so the deploy ' +
+        `matches a commit.\n${status.stdout}`,
+    );
+  }
+}
+
 async function main() {
+  assertDeployableTree();
   const env = readEnvFile(envPath);
   const vestaboardKey = env.VESTABOARD_API_KEY ?? process.env.VESTABOARD_API_KEY ?? '';
 

@@ -73,19 +73,13 @@ describe('useNowPlaying', () => {
   });
 
   it('splits timeLabel into elapsedLabel and durationLabel', () => {
-    const { result } = renderHook(
-      () => useNowPlaying(makePlayback({ timeLabel: '2:15 / 5:30' })),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useNowPlaying(makePlayback({ timeLabel: '2:15 / 5:30' })), { wrapper });
     expect(result.current.elapsedLabel).toBe('2:15');
     expect(result.current.durationLabel).toBe('5:30');
   });
 
   it('returns empty strings when timeLabel is empty', () => {
-    const { result } = renderHook(
-      () => useNowPlaying(makePlayback({ timeLabel: '' })),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useNowPlaying(makePlayback({ timeLabel: '' })), { wrapper });
     expect(result.current.elapsedLabel).toBe('');
     expect(result.current.durationLabel).toBe('');
   });
@@ -113,19 +107,13 @@ describe('useNowPlaying', () => {
         accountId: 'acc',
       },
     });
-    const { result } = renderHook(
-      () => useNowPlaying(makePlayback()),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useNowPlaying(makePlayback()), { wrapper });
     expect(result.current.albumItem).toBeTruthy();
     expect(result.current.albumItem?.title).toBe('Great Album');
   });
 
   it('returns null albumItem when no albumId', () => {
-    const { result } = renderHook(
-      () => useNowPlaying(makePlayback({ currentAlbumId: null })),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useNowPlaying(makePlayback({ currentAlbumId: null })), { wrapper });
     expect(result.current.albumItem).toBeNull();
   });
 

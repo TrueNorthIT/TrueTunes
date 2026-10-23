@@ -16,7 +16,13 @@ const meta = {
     onOpen: fn(),
     onMouseEnter: fn(),
   },
-  decorators: [(Story) => <div style={{ width: '28em' }}><Story /></div>],
+  decorators: [
+    (Story) => (
+      <div style={{ width: '28em' }}>
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof TopResultCard>;
 
 export default meta;
@@ -38,5 +44,7 @@ export const WithActions: Story = {
 export const NoArt: Story = { args: { imageUrl: null } };
 export const GreySilhouette: Story = { args: { imageUrl: greySilhouette, title: 'Maya Rowan', meta: 'Artist' } };
 export const LongTitle: Story = {
-  args: { title: 'The Extraordinarily Long Title of a Song That Is Clamped to Three Lines on the Card, Whatever Else Happens' },
+  args: {
+    title: 'The Extraordinarily Long Title of a Song That Is Clamped to Three Lines on the Card, Whatever Else Happens',
+  },
 };

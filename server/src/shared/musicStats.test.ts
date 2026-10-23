@@ -23,7 +23,10 @@ test('busy hours use London time, Monday first', () => {
   const r = computeMusicStats([ev('a', 'u1', 'X', MON_0930), ev('a', 'u2', 'X', MON_0930 + 6 * DAY)], new Map());
   assert.equal(r.busyHours[0][9], 1); // Monday 09:00 London, not 08:00 UTC
   assert.equal(r.busyHours[6][9], 1); // Sunday
-  assert.equal(r.busyHours.flat().reduce((a, b) => a + b, 0), 2);
+  assert.equal(
+    r.busyHours.flat().reduce((a, b) => a + b, 0),
+    2
+  );
 });
 
 test('airtime, average length and explicit share cover only known tracks', () => {
@@ -33,7 +36,7 @@ test('airtime, average length and explicit share cover only known tracks', () =>
   ]);
   const r = computeMusicStats(
     [ev('a', 'u1', 'X', MON_0930), ev('a', 'u2', 'Y', MON_0930 + HOUR), ev('a', 'u3', 'Z', MON_0930 + 2 * HOUR)],
-    meta,
+    meta
   );
   const a = r.people[0];
   assert.equal(a.airtimeMs, 780_000);
@@ -54,7 +57,7 @@ test('variety, top artists and most re-queued song per person', () => {
       ev('a', 'u1', 'X', MON_0930 + 2 * HOUR),
       ev('a', 'u2', 'Y, Z', MON_0930 + 3 * HOUR),
     ],
-    new Map(),
+    new Map()
   );
   const a = r.people[0];
   assert.equal(a.uniqueArtists, 3); // X, Y and Z (featured artists count)
@@ -85,18 +88,21 @@ test('discoverer is whoever queued a popular artist first', () => {
 test('taste by month groups by London month', () => {
   const r = computeMusicStats(
     [ev('a', 'u1', 'X', Date.UTC(2026, 8, 30, 12)), ev('a', 'u2', 'Y', Date.UTC(2026, 9, 1, 12))],
-    new Map(),
+    new Map()
   );
   assert.deepEqual(
     r.people[0].tasteByMonth.map((m) => [m.month, m.topArtists[0].artist]),
-    [['2026-09', 'X'], ['2026-10', 'Y']],
+    [
+      ['2026-09', 'X'],
+      ['2026-10', 'Y'],
+    ]
   );
 });
 
 test('album queues count towards busy hours but not song stats', () => {
   const r = computeMusicStats(
     [ev('a', 'alb', 'X', MON_0930, { eventType: 'album' }), ev('a', 'u1', 'X', MON_0930)],
-    new Map(),
+    new Map()
   );
   assert.equal(r.totalEvents, 2);
   assert.equal(r.trackEvents, 1);

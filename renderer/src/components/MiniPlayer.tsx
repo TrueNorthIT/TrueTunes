@@ -24,10 +24,13 @@ export function MiniPlayerShell() {
   // same group the user has selected in the main window, not just groups[0].
   useEffect(() => {
     if (groups.length === 0 || activeGroupId) return;
-    getActiveProvider().getActiveGroup().then((savedCoordinatorId) => {
-      const match = savedCoordinatorId ? groups.find((g) => g.coordinatorId === savedCoordinatorId) : null;
-      setActiveGroupId(match ? match.id : groups[0].id);
-    }).catch(() => setActiveGroupId(groups[0].id));
+    getActiveProvider()
+      .getActiveGroup()
+      .then((savedCoordinatorId) => {
+        const match = savedCoordinatorId ? groups.find((g) => g.coordinatorId === savedCoordinatorId) : null;
+        setActiveGroupId(match ? match.id : groups[0].id);
+      })
+      .catch(() => setActiveGroupId(groups[0].id));
   }, [groups, activeGroupId]);
 
   // The attribution map is broadcast when the office connection comes up, usually long before this
@@ -56,8 +59,16 @@ function MiniPlayer({
   isAuthed: boolean;
 }) {
   const {
-    displayTrack, displayArtist, cachedArt, progressPct, durationMs, isPlaying, dominantColor,
-    elapsedLabel, durationLabel, currentObjectId,
+    displayTrack,
+    displayArtist,
+    cachedArt,
+    progressPct,
+    durationMs,
+    isPlaying,
+    dominantColor,
+    elapsedLabel,
+    durationLabel,
+    currentObjectId,
   } = useNowPlaying(playback);
   const queuer = useQueuer({ id: currentObjectId, title: displayTrack, artist: displayArtist });
 
@@ -71,7 +82,13 @@ function MiniPlayer({
     >
       {/* Paused keeps the transport showing: that the room has stopped is worth a glance. */}
       <div className={`${styles.art}${isPlaying ? '' : ' ' + styles.paused}`}>
-        {cachedArt ? <img src={cachedArt} alt="" /> : <div className={styles.artPh}><Music size={26} /></div>}
+        {cachedArt ? (
+          <img src={cachedArt} alt="" />
+        ) : (
+          <div className={styles.artPh}>
+            <Music size={26} />
+          </div>
+        )}
         <div className={styles.transport}>
           <TransportButtons
             disabled={!isAuthed}
@@ -87,7 +104,9 @@ function MiniPlayer({
 
       <div className={styles.label}>
         <div className={styles.head}>
-          <div className={styles.title} title={displayTrack || undefined}>{displayTrack || 'Nothing playing'}</div>
+          <div className={styles.title} title={displayTrack || undefined}>
+            {displayTrack || 'Nothing playing'}
+          </div>
           {displayArtist && <div className={styles.artist}>{displayArtist}</div>}
         </div>
 
@@ -100,7 +119,11 @@ function MiniPlayer({
                 <UserAvatar name={queuer.user} imageUrl={queuer.imageUrl} className={styles.queuerAvatar} />
                 <span className={styles.queuerName}>{queuer.user}</span>
               </span>
-              {remaining && <span className={styles.time} aria-hidden="true">{remaining}</span>}
+              {remaining && (
+                <span className={styles.time} aria-hidden="true">
+                  {remaining}
+                </span>
+              )}
             </div>
           )}
           <div className={styles.progressRow}>
@@ -114,7 +137,11 @@ function MiniPlayer({
               fillClassName={styles.progressFill}
               title={elapsedLabel && durationLabel ? `${elapsedLabel} / ${durationLabel}` : undefined}
             />
-            {!queuer && remaining && <span className={styles.time} aria-hidden="true">{remaining}</span>}
+            {!queuer && remaining && (
+              <span className={styles.time} aria-hidden="true">
+                {remaining}
+              </span>
+            )}
           </div>
         </div>
       </div>

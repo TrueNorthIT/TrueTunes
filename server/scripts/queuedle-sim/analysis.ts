@@ -166,11 +166,7 @@ export function knownRanges(agg: AggregateResult, results: DayResult[]): Record<
 const EPS = 1e-9;
 
 /** Returns why the answer is deducible from the bridge count alone, or null when it is not. */
-export function forcedKind(
-  bridgeCount: number,
-  range: CountRange,
-  minGap: number = RULES.MIN_GAP,
-): ForcedKind | null {
+export function forcedKind(bridgeCount: number, range: CountRange, minGap: number = RULES.MIN_GAP): ForcedKind | null {
   const b = bridgeCount;
   const lowerLo = Math.max(range.floor, Math.ceil(b / RULES.MAX_RATIO - EPS));
   const lowerHi = Math.min(b - minGap, Math.floor(b / RULES.MIN_RATIO + EPS));
@@ -184,7 +180,7 @@ export function forcedKind(
 export function findForced(
   results: DayResult[],
   ranges: Record<ItemCategory, CountRange>,
-  minGap: number = RULES.MIN_GAP,
+  minGap: number = RULES.MIN_GAP
 ): ForcedQuestion[] {
   const out: ForcedQuestion[] = [];
   for (const r of results) {

@@ -12,7 +12,7 @@ interface ScoreDoc {
 
 export async function gameLeaderboardHandler(
   request: HttpRequest,
-  context: InvocationContext,
+  context: InvocationContext
 ): Promise<HttpResponseInit> {
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
   const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
@@ -31,8 +31,7 @@ export async function gameLeaderboardHandler(
 
     const { resources } = await container.items
       .query<ScoreDoc>({
-        query:
-          'SELECT c.userName, c.mainScore, c.bonusScore, c.total, c.completedAt FROM c WHERE c.gameId = @gameId',
+        query: 'SELECT c.userName, c.mainScore, c.bonusScore, c.total, c.completedAt FROM c WHERE c.gameId = @gameId',
         parameters: [{ name: '@gameId', value: gameId }],
       })
       .fetchAll();

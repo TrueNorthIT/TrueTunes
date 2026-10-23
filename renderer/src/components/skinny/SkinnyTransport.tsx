@@ -19,8 +19,16 @@ interface Props {
  */
 export function SkinnyTransport({ np, isAuthed }: Props) {
   const {
-    displayTrack, displayArtist, cachedArt, progressPct, durationMs, dominantColor,
-    isPlaying, elapsedLabel, durationLabel, currentObjectId,
+    displayTrack,
+    displayArtist,
+    cachedArt,
+    progressPct,
+    durationMs,
+    dominantColor,
+    isPlaying,
+    elapsedLabel,
+    durationLabel,
+    currentObjectId,
   } = np;
   const queuer = useQueuer({ id: currentObjectId, title: displayTrack, artist: displayArtist });
 
@@ -31,11 +39,19 @@ export function SkinnyTransport({ np, isAuthed }: Props) {
       style={dominantColor ? ({ '--wash': dominantColor } as React.CSSProperties) : undefined}
     >
       <div className={styles.art}>
-        {cachedArt ? <img src={cachedArt} alt="" /> : <div className={styles.artPh}><Music size={22} /></div>}
+        {cachedArt ? (
+          <img src={cachedArt} alt="" />
+        ) : (
+          <div className={styles.artPh}>
+            <Music size={22} />
+          </div>
+        )}
       </div>
 
       <div className={styles.info}>
-        <div className={styles.title} title={displayTrack || undefined}>{displayTrack || 'Nothing playing'}</div>
+        <div className={styles.title} title={displayTrack || undefined}>
+          {displayTrack || 'Nothing playing'}
+        </div>
         {displayArtist && <div className={styles.artist}>{displayArtist}</div>}
         {queuer && (
           <span className={styles.queuer}>

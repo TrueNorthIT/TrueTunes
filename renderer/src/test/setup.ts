@@ -15,8 +15,12 @@ import { createSonosFake } from './sonosFake';
 window.innerWidth = 1280;
 
 // jsdom has no showModal()/close(); common/Dialog only needs the open attribute toggled.
-HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.setAttribute('open', ''); };
-HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) { this.removeAttribute('open'); };
+HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
+  this.setAttribute('open', '');
+};
+HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
+  this.removeAttribute('open');
+};
 
 Object.defineProperty(window, 'sonos', {
   writable: true,

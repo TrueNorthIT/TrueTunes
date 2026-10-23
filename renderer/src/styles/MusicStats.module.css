@@ -14,17 +14,24 @@
   text-align: center;
 }
 
-.strong { color: var(--text); font-weight: 600; }
+.strong {
+  color: var(--text);
+  font-weight: 600;
+}
 
 /* ── Sections ── */
-.section { margin-bottom: 1.4em; }
+.section {
+  margin-bottom: 1.4em;
+}
 .twoUp {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(26em, 1fr));
   gap: 1.4em;
   margin-bottom: 1.4em;
 }
-.busy { max-width: 64em; }
+.busy {
+  max-width: 64em;
+}
 
 .subTitle {
   font-size: var(--fs-body);
@@ -56,8 +63,13 @@
   flex-shrink: 0;
   background: var(--bg-2);
 }
-.thumbRound { border-radius: var(--r-round); }
-.itemText { flex: 1; min-width: 0; }
+.thumbRound {
+  border-radius: var(--r-round);
+}
+.itemText {
+  flex: 1;
+  min-width: 0;
+}
 .itemPerson,
 .itemTitle,
 .itemSub {
@@ -65,9 +77,19 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.itemPerson { font-size: var(--fs-small); color: var(--text-3); }
-.itemTitle { font-size: var(--fs-label); color: var(--text); font-weight: 500; }
-.itemSub { font-size: var(--fs-small); color: var(--text-3); }
+.itemPerson {
+  font-size: var(--fs-small);
+  color: var(--text-3);
+}
+.itemTitle {
+  font-size: var(--fs-label);
+  color: var(--text);
+  font-weight: 500;
+}
+.itemSub {
+  font-size: var(--fs-small);
+  color: var(--text-3);
+}
 .itemNums {
   display: flex;
   flex-direction: column;
@@ -75,8 +97,18 @@
   flex-shrink: 0;
   gap: 0.15em;
 }
-.itemValue { font-size: var(--fs-label); color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
-.itemMuted { font-size: var(--fs-small); color: var(--text-3); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.itemValue {
+  font-size: var(--fs-label);
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.itemMuted {
+  font-size: var(--fs-small);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
 
 /* ── Taste over time ── */
 .picker {
@@ -93,9 +125,16 @@
   gap: 2em;
 }
 @container (max-width: 64em) {
-  .taste { grid-template-columns: minmax(0, 1fr); }
+  .taste {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
-.months { display: flex; flex-direction: column; gap: 0.8em; min-width: 0; }
+.months {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8em;
+  min-width: 0;
+}
 .month {
   display: grid;
   grid-template-columns: 6em 7em minmax(0, 1fr);
@@ -103,11 +142,35 @@
   gap: 0.8em;
   font-size: var(--fs-label);
 }
-.monthLabel { color: var(--text-2); white-space: nowrap; }
-.monthQueues { display: flex; align-items: center; gap: 0.5em; min-width: 0; }
-.monthBar { display: block; height: 0.6em; border-radius: var(--r-pill); min-width: 0.15em; max-width: 54px; flex-shrink: 0; }
-.monthCount { color: var(--text-3); font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
-.monthArtists { display: flex; flex-wrap: wrap; gap: 0.5em; min-width: 0; }
+.monthLabel {
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.monthQueues {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  min-width: 0;
+}
+.monthBar {
+  display: block;
+  height: 0.6em;
+  border-radius: var(--r-pill);
+  min-width: 0.15em;
+  max-width: 54px;
+  flex-shrink: 0;
+}
+.monthCount {
+  color: var(--text-3);
+  font-size: var(--fs-small);
+  font-variant-numeric: tabular-nums;
+}
+.monthArtists {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  min-width: 0;
+}
 .artistPill {
   display: inline-flex;
   align-items: baseline;
@@ -126,7 +189,9 @@
   min-width: 0;
 }
 
-.overall { min-width: 0; }
+.overall {
+  min-width: 0;
+}
 .topArtists {
   list-style: none;
   margin: 0;
@@ -136,9 +201,22 @@
   gap: 0.4em;
   font-size: var(--fs-label);
 }
-.topArtist { display: flex; align-items: baseline; gap: 0.6em; min-width: 0; }
-.rank { width: 1.4em; text-align: right; color: var(--text-3); font-variant-numeric: tabular-nums; flex-shrink: 0; }
-.topArtist .artistName { flex: 1; }
+.topArtist {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6em;
+  min-width: 0;
+}
+.rank {
+  width: 1.4em;
+  text-align: right;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.topArtist .artistName {
+  flex: 1;
+}
 
 .staleNote {
   font-size: var(--fs-label);

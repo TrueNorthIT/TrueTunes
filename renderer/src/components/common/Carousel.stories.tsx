@@ -19,7 +19,13 @@ const meta = {
   title: 'Common/Carousel',
   component: Carousel,
   args: { title: 'Made for you', children: tiles(12) },
-  decorators: [(Story) => <div style={{ maxWidth: '48em' }}><Story /></div>],
+  decorators: [
+    (Story) => (
+      <div style={{ maxWidth: '48em' }}>
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof Carousel>;
 
 export default meta;
@@ -36,7 +42,12 @@ function SearchCarousel(args: CarouselProps) {
   return (
     <Carousel
       {...args}
-      search={{ value, onChange: setValue, placeholder: 'Search albums', status: value ? 'searching tracks…' : undefined }}
+      search={{
+        value,
+        onChange: setValue,
+        placeholder: 'Search albums',
+        status: value ? 'searching tracks…' : undefined,
+      }}
     />
   );
 }

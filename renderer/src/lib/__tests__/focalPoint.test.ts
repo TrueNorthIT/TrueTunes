@@ -37,7 +37,12 @@ describe('faceFocusY', () => {
   });
   it('ignores a stray face far from the group (Florence Road: a face low in the frame)', () => {
     // MediaPipe's real result on Florence Road's photo: three band members near the top, one stray near the bottom.
-    const faces = [face(0.234, 0.115, 0.273), face(0.154, 0.105, 0.185), face(0.855, 0.127, 0.901), face(0.139, 0.182, 0.197)];
+    const faces = [
+      face(0.234, 0.115, 0.273),
+      face(0.154, 0.105, 0.185),
+      face(0.855, 0.127, 0.901),
+      face(0.139, 0.182, 0.197),
+    ];
     expect(faceFocusY(faces)).toBeCloseTo(0.185 + 0.3 * (0.273 - 0.185), 3);
   });
   it('is null with no faces', () => {
@@ -50,9 +55,9 @@ describe('detailFocusY', () => {
     Uint8ClampedArray.from(
       Array.from({ length: w * h }, (_, i) => {
         const y = Math.floor(i / w);
-        const v = y >= busyFrom && y < busyTo ? ((i * 97) % 256) : 128;
+        const v = y >= busyFrom && y < busyTo ? (i * 97) % 256 : 128;
         return [v, v, v, 255];
-      }).flat(),
+      }).flat()
     );
   it('finds the busiest band', () => {
     const y = detailFocusY(img(20, 50, 30, 40), 20, 50, 0.2);
@@ -60,13 +65,14 @@ describe('detailFocusY', () => {
     expect(y).toBeLessThan(0.8);
   });
   it('prefers the upper-middle when two bands are equally busy, so a busy shirt does not beat a face', () => {
-    const w = 20, h = 50;
+    const w = 20,
+      h = 50;
     const px = Uint8ClampedArray.from(
       Array.from({ length: w * h }, (_, i) => {
         const y = Math.floor(i / w);
-        const v = (y >= 12 && y < 20) || (y >= 38 && y < 46) ? ((i * 97) % 256) : 128;
+        const v = (y >= 12 && y < 20) || (y >= 38 && y < 46) ? (i * 97) % 256 : 128;
         return [v, v, v, 255];
-      }).flat(),
+      }).flat()
     );
     expect(detailFocusY(px, w, h, 0.2)).toBeLessThan(0.45);
   });

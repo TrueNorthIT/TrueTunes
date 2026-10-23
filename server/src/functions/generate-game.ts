@@ -18,7 +18,7 @@ export function londonDate(now: Date = new Date()): string {
 
 async function runGenerate(
   context: InvocationContext,
-  dateOverride?: string,
+  dateOverride?: string
 ): Promise<{ ok: boolean; gameId: string; count: number; lowData: boolean; error?: string }> {
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
   const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
@@ -68,10 +68,7 @@ export async function generateGameTimer(_myTimer: Timer, context: InvocationCont
   }
 }
 
-export async function generateGameHttp(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
+export async function generateGameHttp(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const dateOverride = request.query.get('date') ?? undefined;
   try {
     const result = await runGenerate(context, dateOverride);

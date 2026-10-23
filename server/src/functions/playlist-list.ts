@@ -14,10 +14,7 @@ interface PlaylistDoc {
   updatedAt: number;
 }
 
-export async function playlistListHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
+export async function playlistListHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const owner = request.query.get('owner');
   const member = request.query.get('member');
 
@@ -32,12 +29,14 @@ export async function playlistListHandler(
 
     if (owner) {
       query = {
-        query: 'SELECT c.id, c.name, c.owner, c.isPublic, c.isFavourites, c.members, c.imageUrl, c.createdAt, c.updatedAt, ARRAY_LENGTH(c.tracks) AS trackCount FROM c WHERE c.owner = @owner ORDER BY c.updatedAt DESC',
+        query:
+          'SELECT c.id, c.name, c.owner, c.isPublic, c.isFavourites, c.members, c.imageUrl, c.createdAt, c.updatedAt, ARRAY_LENGTH(c.tracks) AS trackCount FROM c WHERE c.owner = @owner ORDER BY c.updatedAt DESC',
         parameters: [{ name: '@owner', value: owner }],
       };
     } else {
       query = {
-        query: 'SELECT c.id, c.name, c.owner, c.isPublic, c.isFavourites, c.members, c.imageUrl, c.createdAt, c.updatedAt, ARRAY_LENGTH(c.tracks) AS trackCount FROM c WHERE ARRAY_CONTAINS(c.members, @member) AND c.owner != @member ORDER BY c.updatedAt DESC',
+        query:
+          'SELECT c.id, c.name, c.owner, c.isPublic, c.isFavourites, c.members, c.imageUrl, c.createdAt, c.updatedAt, ARRAY_LENGTH(c.tracks) AS trackCount FROM c WHERE ARRAY_CONTAINS(c.members, @member) AND c.owner != @member ORDER BY c.updatedAt DESC',
         parameters: [{ name: '@member', value: member! }],
       };
     }

@@ -3,7 +3,10 @@ import { activeLyricIndex, lyricElapsedMs, useLyrics } from './useLyrics';
 
 /** Unsynced lyrics as display lines: trimmed, blank lines dropped. */
 export function plainLyricLines(plain: string | null | undefined): string[] {
-  return (plain ?? '').split('\n').map((l) => l.trim()).filter(Boolean);
+  return (plain ?? '')
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
 }
 
 /** scrollTop that puts the line's centre `at` (0 to 1) of the way down a box `boxHeight` tall. */

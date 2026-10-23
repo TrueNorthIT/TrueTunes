@@ -16,11 +16,24 @@
     background var(--dur-fast) var(--ease-fast),
     color var(--dur-fast) var(--ease-fast);
 }
-.chip:hover:not(:disabled) { background: var(--row-hover); color: var(--text); }
-.on { background: rgba(var(--tint), 0.24); color: var(--text); font-weight: 600; }
-.on:hover:not(:disabled) { background: rgba(var(--tint), 0.3); }
-.chip:disabled { cursor: default; }
-.chip:disabled:not(.on) { opacity: 0.4; }
+.chip:hover:not(:disabled) {
+  background: var(--row-hover);
+  color: var(--text);
+}
+.on {
+  background: rgba(var(--tint), 0.24);
+  color: var(--text);
+  font-weight: 600;
+}
+.on:hover:not(:disabled) {
+  background: rgba(var(--tint), 0.3);
+}
+.chip:disabled {
+  cursor: default;
+}
+.chip:disabled:not(.on) {
+  opacity: 0.4;
+}
 
 .avatar {
   width: 1.7em;
@@ -35,10 +48,26 @@
   overflow: hidden;
   flex-shrink: 0;
 }
-.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.dot { width: 0.7em; height: 0.7em; border-radius: var(--r-round); flex-shrink: 0; }
-.name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.dot {
+  width: 0.7em;
+  height: 0.7em;
+  border-radius: var(--r-round);
+  flex-shrink: 0;
+}
+.name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .chip { transition: none; }
+  .chip {
+    transition: none;
+  }
 }

@@ -91,10 +91,7 @@ function RatingChart({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: st
   const h = height - m.top - m.bottom;
   const x = (i: number) => m.left + (dates.length <= 1 ? w / 2 : (i / (dates.length - 1)) * w);
   // Running averages settle well above zero, so fit the axis to the data.
-  const lo = useMemo(
-    () => axisFloor(series.flatMap((s) => s.values.filter((v): v is number => v !== null))),
-    [series]
-  );
+  const lo = useMemo(() => axisFloor(series.flatMap((s) => s.values.filter((v): v is number => v !== null))), [series]);
   const y = (v: number) => m.top + h - ((v - lo) / (100 - lo)) * h;
 
   const path = (values: (number | null)[]) =>
@@ -112,7 +109,7 @@ function RatingChart({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: st
         const last = [...s.values].reverse().find((v) => v !== null) ?? null;
         return { s, y: last === null ? null : y(last), last };
       })
-      .filter((l): l is { s: typeof highlighted[number]; y: number; last: number } => l.y !== null)
+      .filter((l): l is { s: (typeof highlighted)[number]; y: number; last: number } => l.y !== null)
   );
 
   function onMove(e: React.PointerEvent<SVGSVGElement>) {
@@ -130,32 +127,49 @@ function RatingChart({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: st
           .filter((s) => s.values[hover] !== null)
           .map((s) => ({ s, v: s.values[hover]! }))
           .sort((a, b) => b.v - a.v);
-  const shownRows = hoverRows.filter((r) => colourOf(r.s.userName)).concat(
-    hoverRows.filter((r) => !colourOf(r.s.userName)).slice(0, 3)
-  );
+  const shownRows = hoverRows
+    .filter((r) => colourOf(r.s.userName))
+    .concat(hoverRows.filter((r) => !colourOf(r.s.userName)).slice(0, 3));
 
   return (
     <div ref={ref} className={styles.chart}>
       {width > 0 && (
-        <svg width={width} height={height} onPointerMove={onMove} onPointerLeave={() => setHover(null)} role="img"
-          aria-label="Running average score over time for each player">
+        <svg
+          width={width}
+          height={height}
+          onPointerMove={onMove}
+          onPointerLeave={() => setHover(null)}
+          role="img"
+          aria-label="Running average score over time for each player"
+        >
           {ticks.map((t) => (
             <g key={t}>
               <line x1={m.left} x2={m.left + w} y1={y(t)} y2={y(t)} className={styles.grid} />
-              <text x={m.left - 8} y={y(t)} className={styles.axisLabel} textAnchor="end" dominantBaseline="middle">{t}%</text>
+              <text x={m.left - 8} y={y(t)} className={styles.axisLabel} textAnchor="end" dominantBaseline="middle">
+                {t}%
+              </text>
             </g>
           ))}
           {dates.map((d, i) =>
             i % labelEvery === 0 ? (
-              <text key={d} x={x(i)} y={height - 8} className={styles.axisLabel} textAnchor="middle">{shortDate(d)}</text>
+              <text key={d} x={x(i)} y={height - 8} className={styles.axisLabel} textAnchor="middle">
+                {shortDate(d)}
+              </text>
             ) : null
           )}
           {muted.map((s) => (
             <path key={s.userName} d={path(s.values)} fill="none" stroke={MUTED} strokeWidth={1.25} />
           ))}
           {highlighted.map((s) => (
-            <path key={s.userName} d={path(s.values)} fill="none" stroke={colourOf(s.userName)!} strokeWidth={2}
-              strokeLinejoin="round" strokeLinecap="round" />
+            <path
+              key={s.userName}
+              d={path(s.values)}
+              fill="none"
+              stroke={colourOf(s.userName)!}
+              strokeWidth={2}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
           ))}
           {endLabels.map(({ s, y: ly, last }) => (
             <text key={s.userName} x={m.left + w + 8} y={ly} className={styles.directLabel} dominantBaseline="middle">
@@ -167,8 +181,14 @@ function RatingChart({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: st
               <line x1={x(hover)} x2={x(hover)} y1={m.top} y2={m.top + h} className={styles.crosshair} />
               {highlighted.map((s) =>
                 s.values[hover] === null ? null : (
-                  <circle key={s.userName} cx={x(hover)} cy={y(s.values[hover]!)} r={4} fill={colourOf(s.userName)!}
-                    className={styles.ring} />
+                  <circle
+                    key={s.userName}
+                    cx={x(hover)}
+                    cy={y(s.values[hover]!)}
+                    r={4}
+                    fill={colourOf(s.userName)!}
+                    className={styles.ring}
+                  />
                 )
               )}
             </>
@@ -206,7 +226,10 @@ function RatingChart({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: st
 
 function DailyScores({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: string) => string | null }) {
   const { dates, rows } = useMemo(() => buildHeatmap(days), [days]);
-  const maxByDate = useMemo(() => days.reduce<Record<string, number>>((acc, d) => ({ ...acc, [d.gameId]: d.questionCount * 2 }), {}), [days]);
+  const maxByDate = useMemo(
+    () => days.reduce<Record<string, number>>((acc, d) => ({ ...acc, [d.gameId]: d.questionCount * 2 }), {}),
+    [days]
+  );
   // A label every seventh day, counting back from the latest, so the newest day is always named.
   const columns = dates.map((d, i) => ((dates.length - 1 - i) % 7 === 0 ? shortDate(d) : ''));
 
@@ -223,7 +246,9 @@ function DailyScores({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: st
           label: (
             <>
               {colour && <Swatch colour={colour} />}
-              <span className={colour ? styles.strong : undefined} title={r.userName}>{r.userName}</span>
+              <span className={colour ? styles.strong : undefined} title={r.userName}>
+                {r.userName}
+              </span>
             </>
           ),
           cells: r.cells.map((pct) => (pct === null ? null : rampColour(pct))),
@@ -234,8 +259,13 @@ function DailyScores({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: st
         const total = rows[ri].totals[di];
         return (
           <>
-            <TipTitle>{rows[ri].userName} · {shortDate(dates[di])}</TipTitle>
-            <TipRow name={total === null ? 'Didn’t play' : 'Total'} value={total === null ? undefined : `${total}/${maxByDate[dates[di]]}`} />
+            <TipTitle>
+              {rows[ri].userName} · {shortDate(dates[di])}
+            </TipTitle>
+            <TipRow
+              name={total === null ? 'Didn’t play' : 'Total'}
+              value={total === null ? undefined : `${total}/${maxByDate[dates[di]]}`}
+            />
           </>
         );
       }}
@@ -269,18 +299,35 @@ function RoundsScatter({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: 
   return (
     <div ref={ref} className={styles.chart} onPointerLeave={() => setTip(null)}>
       {width > 0 && (
-        <svg width={size} height={height} role="img" aria-label="Average Higher or Lower score against average Top Queuer score per player">
+        <svg
+          width={size}
+          height={height}
+          role="img"
+          aria-label="Average Higher or Lower score against average Top Queuer score per player"
+        >
           {ticks.map((t) => (
             <g key={t}>
               <line x1={m.left} x2={m.left + w} y1={y(t)} y2={y(t)} className={styles.grid} />
               <line x1={x(t)} x2={x(t)} y1={m.top} y2={m.top + h} className={styles.grid} />
-              <text x={m.left - 8} y={y(t)} className={styles.axisLabel} textAnchor="end" dominantBaseline="middle">{t}%</text>
-              <text x={x(t)} y={m.top + h + 20} className={styles.axisLabel} textAnchor="middle">{t}%</text>
+              <text x={m.left - 8} y={y(t)} className={styles.axisLabel} textAnchor="end" dominantBaseline="middle">
+                {t}%
+              </text>
+              <text x={x(t)} y={m.top + h + 20} className={styles.axisLabel} textAnchor="middle">
+                {t}%
+              </text>
             </g>
           ))}
           <line x1={x(lo)} y1={y(lo)} x2={x(100)} y2={y(100)} className={styles.diagonal} />
-          <text x={m.left + w / 2} y={height - 6} className={styles.axisTitle} textAnchor="middle">Higher or Lower (knows the music) →</text>
-          <text transform={`translate(14 ${m.top + h / 2}) rotate(-90)`} className={styles.axisTitle} textAnchor="middle">Top Queuer (knows the people) →</text>
+          <text x={m.left + w / 2} y={height - 6} className={styles.axisTitle} textAnchor="middle">
+            Higher or Lower (knows the music) →
+          </text>
+          <text
+            transform={`translate(14 ${m.top + h / 2}) rotate(-90)`}
+            className={styles.axisTitle}
+            textAnchor="middle"
+          >
+            Top Queuer (knows the people) →
+          </text>
           {ordered.map((p) => {
             const colour = colourOf(p.userName);
             return (
@@ -316,8 +363,16 @@ function RoundsScatter({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: 
             );
           })}
           {labels.map(({ p, y: ly }) => (
-            <text key={p.userName} x={x(p.mainPct) + 10} y={ly} className={styles.directLabel} dominantBaseline="middle"
-              pointerEvents="none">{p.userName}</text>
+            <text
+              key={p.userName}
+              x={x(p.mainPct) + 10}
+              y={ly}
+              className={styles.directLabel}
+              dominantBaseline="middle"
+              pointerEvents="none"
+            >
+              {p.userName}
+            </text>
           ))}
         </svg>
       )}
@@ -338,11 +393,21 @@ function WeeklyBars({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: str
   return (
     <div className={styles.chart}>
       <div className={styles.weekNav}>
-        <PillButton className={styles.navBtn} onClick={() => setIdx((i) => i + 1)} disabled={idx >= weeks.length - 1} aria-label="Previous week">
+        <PillButton
+          className={styles.navBtn}
+          onClick={() => setIdx((i) => i + 1)}
+          disabled={idx >= weeks.length - 1}
+          aria-label="Previous week"
+        >
           <ChevronLeft size={16} aria-hidden="true" />
         </PillButton>
         <span className={styles.weekLabel}>{formatWeekRange(week.range)}</span>
-        <PillButton className={styles.navBtn} onClick={() => setIdx((i) => i - 1)} disabled={idx === 0} aria-label="Next week">
+        <PillButton
+          className={styles.navBtn}
+          onClick={() => setIdx((i) => i - 1)}
+          disabled={idx === 0}
+          aria-label="Next week"
+        >
           <ChevronRight size={16} aria-hidden="true" />
         </PillButton>
       </div>
@@ -442,12 +507,19 @@ export function QueuedleStatsPanel() {
             <RatingChart days={days} colourOf={colourOf} />
           </SectionCard>
 
-          <SectionCard className={styles.section} title="Daily scores" sub="Every player, every day. Brighter is better.">
+          <SectionCard
+            className={styles.section}
+            title="Daily scores"
+            sub="Every player, every day. Brighter is better."
+          >
             <DailyScores days={days} colourOf={colourOf} />
           </SectionCard>
 
           <div className={styles.twoUp}>
-            <SectionCard title="Higher or Lower vs Top Queuer" sub="Above the line, you know the people better than the music.">
+            <SectionCard
+              title="Higher or Lower vs Top Queuer"
+              sub="Above the line, you know the people better than the music."
+            >
               <RoundsScatter days={days} colourOf={colourOf} />
             </SectionCard>
             <SectionCard title="Weekly totals" sub="Points summed Monday to Sunday.">

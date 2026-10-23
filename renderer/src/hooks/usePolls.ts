@@ -50,7 +50,7 @@ export function usePolls() {
       (data ?? [])
         .filter((p) => !answeredNow.has(p.id) && !isAnswered(p.id))
         .sort((a, b) => a.liveFrom.localeCompare(b.liveFrom)),
-    [data, answeredNow],
+    [data, answeredNow]
   );
   const current = waiting[0] as PollLive | undefined;
 
@@ -73,7 +73,7 @@ export function usePolls() {
         setSubmitting(false);
       }
     },
-    [current, submitting],
+    [current, submitting]
   );
 
   return { current, remaining: waiting.length, submitting, error, answer };

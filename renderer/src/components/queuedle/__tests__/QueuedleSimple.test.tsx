@@ -82,7 +82,14 @@ describe('MyScores', () => {
 
   it('shows the standing and the note', () => {
     render(
-      <MyScores mainScore={3} bonusScore={2} maxMain={5} maxBonus={3} standing="Joint 1st of 5 today" note={<p>Come back tomorrow</p>} />
+      <MyScores
+        mainScore={3}
+        bonusScore={2}
+        maxMain={5}
+        maxBonus={3}
+        standing="Joint 1st of 5 today"
+        note={<p>Come back tomorrow</p>}
+      />
     );
     expect(screen.getByText('Joint 1st of 5 today')).toBeInTheDocument();
     expect(screen.getByText('Come back tomorrow')).toBeInTheDocument();
@@ -90,7 +97,9 @@ describe('MyScores', () => {
 
   it('summarises how the room scored for screen readers', () => {
     render(<MyScores mainScore={3} bonusScore={2} maxMain={5} maxBonus={3} mainScores={[3, 3, 1]} bonusScores={[2]} />);
-    expect(screen.getByRole('img', { name: 'Higher or lower across the room: 1 scored 1, 2 scored 3' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', { name: 'Higher or lower across the room: 1 scored 1, 2 scored 3' })
+    ).toBeInTheDocument();
   });
 });
 

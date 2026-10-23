@@ -26,4 +26,10 @@ createRoot(root).render(
 );
 
 // Quietly load face detection once the app is idle; artist heroes use it to crop photos. Not in the mini player.
-if (!location.hash.startsWith('#/mini')) requestIdleCallback(() => { void import('./lib/faceDetector').then(m => m.warmFaceDetector()); }, { timeout: 5000 });
+if (!location.hash.startsWith('#/mini'))
+  requestIdleCallback(
+    () => {
+      void import('./lib/faceDetector').then((m) => m.warmFaceDetector());
+    },
+    { timeout: 5000 }
+  );

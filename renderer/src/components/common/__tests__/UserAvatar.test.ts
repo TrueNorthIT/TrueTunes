@@ -16,7 +16,9 @@ function whiteContrast(h: number, s: number, l: number): number {
 // Enough names to land on every hue the mapping can produce.
 const names = Array.from({ length: 3000 }, (_, i) => `Person ${i}`);
 const stops = (name: string) =>
-  [...avatarGradient(name).matchAll(/hsl\((\d+),(\d+)%,(\d+)%\)/g)].map((m) => m.slice(1).map(Number) as [number, number, number]);
+  [...avatarGradient(name).matchAll(/hsl\((\d+),(\d+)%,(\d+)%\)/g)].map(
+    (m) => m.slice(1).map(Number) as [number, number, number]
+  );
 
 describe('avatar colours', () => {
   it('never lands on a purple or violet hue (250–330°)', () => {
@@ -24,7 +26,8 @@ describe('avatar colours', () => {
   });
 
   it('keeps the white initial at 4.5:1 or better on every stop', () => {
-    for (const n of names) for (const [h, s, l] of stops(n)) expect(whiteContrast(h, s, l), `${n}: hue ${h}`).toBeGreaterThanOrEqual(4.5);
+    for (const n of names)
+      for (const [h, s, l] of stops(n)) expect(whiteContrast(h, s, l), `${n}: hue ${h}`).toBeGreaterThanOrEqual(4.5);
   });
 
   it('is stable per name', () => {

@@ -27,9 +27,7 @@ export function DjUpcomingRow({ track, idle, viewer }: Props) {
   const art = useImage(track.imageUrl ?? null);
 
   return (
-    <div
-      className={[styles.row, styles.djRow, idle ? styles.djRowIdle : ''].filter(Boolean).join(' ')}
-    >
+    <div className={[styles.row, styles.djRow, idle ? styles.djRowIdle : ''].filter(Boolean).join(' ')}>
       <div className={styles.artWrap}>
         <Artwork src={art} className={styles.art} placeholderClassName={styles.artPh} lazy />
       </div>

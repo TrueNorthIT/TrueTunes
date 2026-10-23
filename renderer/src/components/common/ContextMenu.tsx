@@ -44,7 +44,11 @@ interface ProviderProps {
   onQueueNext: (item: SonosItem) => void;
 }
 
-interface SubmenuAnchor { x: number; flipX: number; y: number }
+interface SubmenuAnchor {
+  x: number;
+  flipX: number;
+  y: number;
+}
 
 interface MenuState {
   open: boolean;
@@ -81,7 +85,7 @@ function PlaylistSubmenu({
   // Favourites has its own menu item, and a playlist you own can also come back as joined.
   const favId = displayName ? favouritesId(displayName) : null;
   const allPlaylists = [...owned, ...joined].filter(
-    (pl, i, all) => pl.id !== favId && all.findIndex((p) => p.id === pl.id) === i,
+    (pl, i, all) => pl.id !== favId && all.findIndex((p) => p.id === pl.id) === i
   );
 
   async function handleAdd(playlist: PlaylistMeta) {
@@ -120,9 +124,7 @@ function PlaylistSubmenu({
       onKeyDown={onMenuKeyDown}
     >
       {isLoading && <div className={styles.emptyHint}>Loading…</div>}
-      {!isLoading && allPlaylists.length === 0 && (
-        <div className={styles.emptyHint}>No playlists yet</div>
-      )}
+      {!isLoading && allPlaylists.length === 0 && <div className={styles.emptyHint}>No playlists yet</div>}
       {allPlaylists.map((pl) => (
         <button key={pl.id} type="button" role="menuitem" className={styles.item} onClick={() => handleAdd(pl)}>
           <ListMusic className={styles.itemIcon} size={16} aria-hidden="true" />
@@ -135,13 +137,16 @@ function PlaylistSubmenu({
         type="button"
         role="menuitem"
         className={styles.item}
-        onClick={() => { onClose(); onOpenCreate(); }}
+        onClick={() => {
+          onClose();
+          onOpenCreate();
+        }}
       >
         <Plus className={styles.itemIcon} size={16} aria-hidden="true" />
         New playlist…
       </button>
     </div>,
-    document.body,
+    document.body
   );
 }
 
@@ -150,7 +155,12 @@ export function ContextMenuProvider({ children, displayName, onAddToQueue, onQue
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [menuState, setMenuState] = useState<MenuState>({
-    open: false, x: 0, y: 0, payload: null, submenuOpen: false, submenuAnchor: null,
+    open: false,
+    x: 0,
+    y: 0,
+    payload: null,
+    submenuOpen: false,
+    submenuAnchor: null,
   });
   const [createOpen, setCreateOpen] = useState(false);
   const [pendingTrack, setPendingTrack] = useState<PlaylistTrack | null>(null);
@@ -234,7 +244,11 @@ export function ContextMenuProvider({ children, displayName, onAddToQueue, onQue
     setMenuState((s) => ({
       ...s,
       submenuOpen: open ?? !s.submenuOpen,
-      submenuAnchor: { x: rect.right + 4, flipX: (menuRef.current?.getBoundingClientRect().left ?? rect.left) - 4, y: rect.top - 4 },
+      submenuAnchor: {
+        x: rect.right + 4,
+        flipX: (menuRef.current?.getBoundingClientRect().left ?? rect.left) - 4,
+        y: rect.top - 4,
+      },
     }));
   }
 
@@ -248,61 +262,63 @@ export function ContextMenuProvider({ children, displayName, onAddToQueue, onQue
   return (
     <ContextMenuContext.Provider value={{ showTrackMenu }}>
       {children}
-      {menuState.open && menuState.payload && createPortal(
-        <div
-          ref={menuRef}
-          className={`page-scale ${styles.menu}`}
-          style={{ left: menuState.x, top: menuState.y }}
-          role="menu"
-          tabIndex={-1}
-          aria-label={menuState.payload.track.trackName}
-          onMouseDown={(e) => e.stopPropagation()}
-          onKeyDown={onMenuKeyDown}
-        >
-          {menuState.payload.sonosItem && (
-            <>
-              <button type="button" role="menuitem" className={styles.item} onClick={handleQueueNext}>
-                <ListStart className={styles.itemIcon} size={16} aria-hidden="true" />
-                Queue next
-              </button>
-              <button type="button" role="menuitem" className={styles.item} onClick={handleAddToQueue}>
-                <ListPlus className={styles.itemIcon} size={16} aria-hidden="true" />
-                Add to queue
-              </button>
-              <div className={styles.separator} role="separator" />
-            </>
-          )}
-          {displayName && (
-            <button type="button" role="menuitem" className={styles.item} onClick={handleAddToFavourites}>
-              <Heart className={styles.itemIcon} size={16} aria-hidden="true" />
-              Add to Favourites
-            </button>
-          )}
-          <button
-            type="button"
-            role="menuitem"
-            aria-haspopup="menu"
-            aria-expanded={menuState.submenuOpen}
-            className={`${styles.item}${menuState.submenuOpen ? ' ' + styles.itemOpen : ''}`}
-            onMouseEnter={(e) => handleOpenPlaylistSubmenu(e, true)}
-            onClick={(e) => handleOpenPlaylistSubmenu(e)}
+      {menuState.open &&
+        menuState.payload &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className={`page-scale ${styles.menu}`}
+            style={{ left: menuState.x, top: menuState.y }}
+            role="menu"
+            tabIndex={-1}
+            aria-label={menuState.payload.track.trackName}
+            onMouseDown={(e) => e.stopPropagation()}
+            onKeyDown={onMenuKeyDown}
           >
-            <ListMusic className={styles.itemIcon} size={16} aria-hidden="true" />
-            Add to playlist
-            <ChevronRight className={styles.itemTrail} size={15} aria-hidden="true" />
-          </button>
-          {menuState.payload.track.addedBy && (
-            <>
-              <div className={styles.separator} role="separator" />
-              <button type="button" role="menuitem" className={styles.item} onClick={handleOpenProfile}>
-                <UserRound className={styles.itemIcon} size={16} aria-hidden="true" />
-                View {menuState.payload.track.addedBy}'s profile
+            {menuState.payload.sonosItem && (
+              <>
+                <button type="button" role="menuitem" className={styles.item} onClick={handleQueueNext}>
+                  <ListStart className={styles.itemIcon} size={16} aria-hidden="true" />
+                  Queue next
+                </button>
+                <button type="button" role="menuitem" className={styles.item} onClick={handleAddToQueue}>
+                  <ListPlus className={styles.itemIcon} size={16} aria-hidden="true" />
+                  Add to queue
+                </button>
+                <div className={styles.separator} role="separator" />
+              </>
+            )}
+            {displayName && (
+              <button type="button" role="menuitem" className={styles.item} onClick={handleAddToFavourites}>
+                <Heart className={styles.itemIcon} size={16} aria-hidden="true" />
+                Add to Favourites
               </button>
-            </>
-          )}
-        </div>,
-        document.body,
-      )}
+            )}
+            <button
+              type="button"
+              role="menuitem"
+              aria-haspopup="menu"
+              aria-expanded={menuState.submenuOpen}
+              className={`${styles.item}${menuState.submenuOpen ? ' ' + styles.itemOpen : ''}`}
+              onMouseEnter={(e) => handleOpenPlaylistSubmenu(e, true)}
+              onClick={(e) => handleOpenPlaylistSubmenu(e)}
+            >
+              <ListMusic className={styles.itemIcon} size={16} aria-hidden="true" />
+              Add to playlist
+              <ChevronRight className={styles.itemTrail} size={15} aria-hidden="true" />
+            </button>
+            {menuState.payload.track.addedBy && (
+              <>
+                <div className={styles.separator} role="separator" />
+                <button type="button" role="menuitem" className={styles.item} onClick={handleOpenProfile}>
+                  <UserRound className={styles.itemIcon} size={16} aria-hidden="true" />
+                  View {menuState.payload.track.addedBy}'s profile
+                </button>
+              </>
+            )}
+          </div>,
+          document.body
+        )}
       {menuState.open && menuState.submenuOpen && menuState.submenuAnchor && menuState.payload && (
         <PlaylistSubmenu
           anchor={menuState.submenuAnchor}
@@ -319,7 +335,10 @@ export function ContextMenuProvider({ children, displayName, onAddToQueue, onQue
         <CreatePlaylistDialog
           displayName={displayName}
           pendingTrack={pendingTrack}
-          onClose={() => { setCreateOpen(false); setPendingTrack(null); }}
+          onClose={() => {
+            setCreateOpen(false);
+            setPendingTrack(null);
+          }}
         />
       )}
     </ContextMenuContext.Provider>
@@ -376,11 +395,7 @@ export function CreatePlaylistDialog({
       }
     >
       <div className={dialog.stack}>
-        {pendingTrack && (
-          <p className={dialog.note}>
-            “{pendingTrack.trackName}” goes in it straight away.
-          </p>
-        )}
+        {pendingTrack && <p className={dialog.note}>“{pendingTrack.trackName}” goes in it straight away.</p>}
         <label className={dialog.field}>
           <span className={dialog.label}>Name</span>
           <input
@@ -398,7 +413,11 @@ export function CreatePlaylistDialog({
             <span className={styles.checkSub}>Anyone in the office can join it and add tracks.</span>
           </span>
         </label>
-        {errorMsg && <p className={dialog.error} role="alert">{errorMsg}</p>}
+        {errorMsg && (
+          <p className={dialog.error} role="alert">
+            {errorMsg}
+          </p>
+        )}
       </div>
     </Dialog>
   );

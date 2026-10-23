@@ -4,7 +4,7 @@ import { getPlaylistContainer } from '../lib/getContainer';
 
 export async function playlistReorderHandler(
   request: HttpRequest,
-  context: InvocationContext,
+  context: InvocationContext
 ): Promise<HttpResponseInit> {
   const id = request.params['id'];
   if (!id) {
@@ -44,7 +44,7 @@ export async function playlistReorderHandler(
         doc.tracks = tracks;
         doc.updatedAt = Date.now();
       },
-      (doc, etag) => container.item(id, id).replace(doc, { accessCondition: { type: 'IfMatch', condition: etag } }),
+      (doc, etag) => container.item(id, id).replace(doc, { accessCondition: { type: 'IfMatch', condition: etag } })
     );
 
     context.log(`[playlist-reorder] id=${id} userName=${userName} from=${fromIndex} to=${toIndex}`);

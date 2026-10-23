@@ -55,5 +55,7 @@ const KIND: Record<GameItemCategory, string> = { track: 'Track', artist: 'Artist
 
 /** "Track · Abbey Road": the kind, plus the artist for tracks and albums. */
 export function itemSubLine(item: GameItem): string {
-  return item.subtitle && item.category !== 'artist' ? `${KIND[item.category]} · ${item.subtitle}` : KIND[item.category];
+  return item.subtitle && item.category !== 'artist'
+    ? `${KIND[item.category]} · ${item.subtitle}`
+    : KIND[item.category];
 }

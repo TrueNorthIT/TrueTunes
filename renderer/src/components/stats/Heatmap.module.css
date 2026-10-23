@@ -1,10 +1,27 @@
 /* Sized in em: inside a .page-scale root. */
-.frame { position: relative; width: 100%; min-width: 0; }
-.body { display: flex; align-items: flex-start; }
-.scroll { flex: 1; min-width: 0; overflow-x: auto; padding-bottom: 0.4em; }
+.frame {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+.body {
+  display: flex;
+  align-items: flex-start;
+}
+.scroll {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 0.4em;
+}
 
 /* The names sit outside the scroller, so they stay put while the grid moves. Both columns share one row rhythm. */
-.names { display: flex; flex-direction: column; gap: 0.2em; flex-shrink: 0; }
+.names {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+  flex-shrink: 0;
+}
 .grid {
   display: grid;
   grid-template-columns: repeat(var(--cols), minmax(var(--min-cell), 1fr));
@@ -13,7 +30,10 @@
   gap: 0.2em;
 }
 
-.colHead { position: relative; height: 1.5em; }
+.colHead {
+  position: relative;
+  height: 1.5em;
+}
 /* A heading ends at its column's right edge and runs leftwards, so the last one never spills out. */
 .colHead span {
   position: absolute;
@@ -26,7 +46,12 @@
 }
 
 /* The row's height is in the page's em, so the label's smaller font goes on an inner element. */
-.rowHead { display: flex; align-items: center; height: var(--cell-h); max-width: 12em; }
+.rowHead {
+  display: flex;
+  align-items: center;
+  height: var(--cell-h);
+  max-width: 12em;
+}
 .rowName {
   display: flex;
   align-items: center;
@@ -40,9 +65,19 @@
   text-overflow: ellipsis;
 }
 
-.cell, .empty { height: var(--cell-h); border-radius: var(--r-xs); }
-.empty { background: rgba(var(--tint), 0.07); }
-.cell:hover, .empty:hover { outline: 2px solid var(--text); outline-offset: -1px; }
+.cell,
+.empty {
+  height: var(--cell-h);
+  border-radius: var(--r-xs);
+}
+.empty {
+  background: rgba(var(--tint), 0.07);
+}
+.cell:hover,
+.empty:hover {
+  outline: 2px solid var(--text);
+  outline-offset: -1px;
+}
 
 .legend {
   display: flex;
@@ -53,5 +88,15 @@
   font-size: var(--fs-small);
   color: var(--text-3);
 }
-.rampBar { width: 9em; height: 0.6em; border-radius: var(--r-pill); }
-.emptyKey { width: 1em; height: 1em; margin-left: 0.9em; border-radius: var(--r-xs); background: rgba(var(--tint), 0.07); }
+.rampBar {
+  width: 9em;
+  height: 0.6em;
+  border-radius: var(--r-pill);
+}
+.emptyKey {
+  width: 1em;
+  height: 1em;
+  margin-left: 0.9em;
+  border-radius: var(--r-xs);
+  background: rgba(var(--tint), 0.07);
+}

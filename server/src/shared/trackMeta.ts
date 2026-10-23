@@ -20,7 +20,10 @@ export function sanitiseTrackMeta(input: unknown): TrackMetaInput[] {
     const r = raw as Record<string, unknown>;
     if (typeof r.uri !== 'string' || !SAFE_ID.test(r.uri)) continue;
     const durationMs =
-      typeof r.durationMs === 'number' && Number.isFinite(r.durationMs) && r.durationMs > 0 && r.durationMs <= MAX_DURATION_MS
+      typeof r.durationMs === 'number' &&
+      Number.isFinite(r.durationMs) &&
+      r.durationMs > 0 &&
+      r.durationMs <= MAX_DURATION_MS
         ? Math.round(r.durationMs)
         : undefined;
     const explicit = typeof r.explicit === 'boolean' ? r.explicit : undefined;
@@ -38,7 +41,7 @@ export function sanitiseTrackMeta(input: unknown): TrackMetaInput[] {
 /** Fields to write: what was reported, keeping anything already stored that wasn't. */
 export function mergeTrackMeta(
   existing: { durationMs?: number | null; explicit?: boolean | null } | undefined,
-  incoming: TrackMetaInput,
+  incoming: TrackMetaInput
 ): { durationMs: number | null; explicit: boolean | null } {
   return {
     durationMs: incoming.durationMs ?? existing?.durationMs ?? null,

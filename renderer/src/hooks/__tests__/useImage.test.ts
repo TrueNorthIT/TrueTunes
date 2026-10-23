@@ -6,12 +6,16 @@ let getCached: ReturnType<typeof vi.fn>;
 let fetchImage: ReturnType<typeof vi.fn>;
 
 vi.mock('../../lib/imageCache', () => ({
-  get getCached() { return getCached; },
-  get fetchImage() { return fetchImage; },
+  get getCached() {
+    return getCached;
+  },
+  get fetchImage() {
+    return fetchImage;
+  },
 }));
 
 beforeEach(() => {
-  getCached  = vi.fn().mockReturnValue(null);
+  getCached = vi.fn().mockReturnValue(null);
   fetchImage = vi.fn().mockReturnValue(new Promise(() => {})); // pending by default
 });
 
@@ -42,7 +46,7 @@ describe('useImage', () => {
   });
 
   it('calls fetchImage and updates state when not cached', async () => {
-    getCached  = vi.fn().mockReturnValue(null);
+    getCached = vi.fn().mockReturnValue(null);
     fetchImage = vi.fn().mockResolvedValue('blob:fetched');
     const useImage = await importUseImage();
     const { result } = renderHook(() => useImage('https://example.com/art.jpg'));
@@ -52,13 +56,12 @@ describe('useImage', () => {
   });
 
   it('clears src when url changes to null', async () => {
-    getCached  = vi.fn().mockReturnValue(null);
+    getCached = vi.fn().mockReturnValue(null);
     fetchImage = vi.fn().mockResolvedValue('blob:old');
     const useImage = await importUseImage();
-    const { result, rerender } = renderHook(
-      ({ url }) => useImage(url),
-      { initialProps: { url: 'https://example.com/art.jpg' as string | null } }
-    );
+    const { result, rerender } = renderHook(({ url }) => useImage(url), {
+      initialProps: { url: 'https://example.com/art.jpg' as string | null },
+    });
     await waitFor(() => expect(result.current).toBe('blob:old'));
     rerender({ url: null });
     expect(result.current).toBeNull();

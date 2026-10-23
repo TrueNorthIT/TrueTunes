@@ -24,13 +24,13 @@ vi.mock('@/hooks/useDailyGame', () => ({
   useGameStats: (gameId: string | null) => mockUseGameStats(gameId),
   useWeeklyLeaderboard: (gameId: string | null, userName: string | null | undefined) =>
     mockUseWeeklyLeaderboard(gameId, userName),
-  computeQueuedleRating: (averagePercent: number) =>
-    Math.round(Math.max(0, Math.min(100, averagePercent)) * 30),
+  computeQueuedleRating: (averagePercent: number) => Math.round(Math.max(0, Math.min(100, averagePercent)) * 30),
   getGameRankTier: (averagePercent: number, gamesPlayed: number) => {
     if (gamesPlayed < 3) return { key: 'provisional', name: 'Provisional', isProvisional: true };
     if (averagePercent >= 85) return { key: 'playlist-prophet', name: 'Playlist Prophet', isProvisional: false };
     if (averagePercent >= 70) return { key: 'algorithm-whisperer', name: 'Algorithm Whisperer', isProvisional: false };
-    if (averagePercent >= 55) return { key: 'aux-cable-apprentice', name: 'Aux Cable Apprentice', isProvisional: false };
+    if (averagePercent >= 55)
+      return { key: 'aux-cable-apprentice', name: 'Aux Cable Apprentice', isProvisional: false };
     if (averagePercent >= 40) return { key: 'background-bopper', name: 'Background Bopper', isProvisional: false };
     return { key: 'skip-button-survivor', name: 'Skip Button Survivor', isProvisional: false };
   },
@@ -469,7 +469,7 @@ describe('QueuedlePanel', () => {
     await waitFor(() => expect(mockUseGameRankings).toHaveBeenLastCalledWith('TestUser', true));
   });
 
-  it('clicking Week shows the week\'s summed totals for the viewed game', async () => {
+  it("clicking Week shows the week's summed totals for the viewed game", async () => {
     localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
     mockUseWeeklyLeaderboard.mockReturnValue({
       data: [

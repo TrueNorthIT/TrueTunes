@@ -30,10 +30,7 @@ function scoreIdFor(gameId: string, userName: string): string {
   return `${gameId}|${userName}`;
 }
 
-export async function submitScoreHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
+export async function submitScoreHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
   const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
   const gamesCtrName = process.env['COSMOS_GAMES_CONTAINER'] ?? 'games';
@@ -124,8 +121,7 @@ export async function submitScoreHandler(
           try {
             const { resources: latest } = await scores.items
               .query<{ userName: string; total: number }>({
-                query:
-                  'SELECT c.userName, c.total FROM c WHERE c.gameId = @gameId',
+                query: 'SELECT c.userName, c.total FROM c WHERE c.gameId = @gameId',
                 parameters: [{ name: '@gameId', value: body.gameId }],
               })
               .fetchAll();

@@ -13,7 +13,7 @@ describe('HeroBand', () => {
     render(
       <HeroBand art={<img data-testid="art" alt="" src="x.jpg" />} kind="Album" title="Blue">
         <p>artist line</p>
-      </HeroBand>,
+      </HeroBand>
     );
     expect(screen.getByTestId('art')).toBeInTheDocument();
     expect(screen.getByText('Album')).toBeInTheDocument();
@@ -30,7 +30,9 @@ describe('HeroBand', () => {
 
   it('makes the title click-to-edit only when asked', () => {
     const onTitleClick = vi.fn();
-    const { rerender } = render(<HeroBand art={null} title="T" onTitleClick={onTitleClick} titleHint="Click to rename" />);
+    const { rerender } = render(
+      <HeroBand art={null} title="T" onTitleClick={onTitleClick} titleHint="Click to rename" />
+    );
     fireEvent.click(screen.getByTitle('Click to rename'));
     expect(onTitleClick).toHaveBeenCalledOnce();
     rerender(<HeroBand art={null} title="T" />);
@@ -60,7 +62,11 @@ describe('PillButton', () => {
 
   it('does not fire when disabled', () => {
     const onClick = vi.fn();
-    render(<PillButton disabled onClick={onClick}>Delete</PillButton>);
+    render(
+      <PillButton disabled onClick={onClick}>
+        Delete
+      </PillButton>
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     expect(onClick).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled();
@@ -89,7 +95,7 @@ describe('TrackRow: optional props', () => {
     render(
       <ul>
         <TrackRow title="Blue" onClick={onClick} attribution={{ user: 'Alex', onOpen: onOpenProfile }} />
-      </ul>,
+      </ul>
     );
     const who = screen.getByRole('button', { name: 'Added by Alex' });
     expect(who).toHaveAttribute('title', 'Added by Alex');
@@ -99,14 +105,22 @@ describe('TrackRow: optional props', () => {
   });
 
   it('accepts a custom attribution label', () => {
-    render(<ul><TrackRow title="Blue" attribution={{ user: 'Alex', label: 'Queued by Alex', onOpen: () => {} }} /></ul>);
+    render(
+      <ul>
+        <TrackRow title="Blue" attribution={{ user: 'Alex', label: 'Queued by Alex', onOpen: () => {} }} />
+      </ul>
+    );
     expect(screen.getByRole('button', { name: 'Queued by Alex' })).toBeInTheDocument();
   });
 
   it('onRemove fires, is titled "Remove", and does not click the row', () => {
     const onRemove = vi.fn();
     const onClick = vi.fn();
-    render(<ul><TrackRow title="Blue" onClick={onClick} onRemove={onRemove} /></ul>);
+    render(
+      <ul>
+        <TrackRow title="Blue" onClick={onClick} onRemove={onRemove} />
+      </ul>
+    );
     const btn = screen.getByTitle('Remove');
     expect(btn).toHaveAccessibleName('Remove Blue');
     fireEvent.click(btn);
@@ -115,18 +129,30 @@ describe('TrackRow: optional props', () => {
   });
 
   it('has no remove or attribution controls by default', () => {
-    render(<ul><TrackRow title="Blue" /></ul>);
+    render(
+      <ul>
+        <TrackRow title="Blue" />
+      </ul>
+    );
     expect(screen.queryByTitle('Remove')).toBeNull();
     expect(screen.queryByRole('button', { name: /^Added by/ })).toBeNull();
   });
 
   it('is draggable only with onDragStart, which fires; handle shows a grip', () => {
     const onDragStart = vi.fn();
-    const { rerender } = render(<ul><TrackRow title="Blue" /></ul>);
+    const { rerender } = render(
+      <ul>
+        <TrackRow title="Blue" />
+      </ul>
+    );
     expect(screen.getByRole('listitem')).not.toHaveAttribute('draggable');
     expect(screen.getByRole('listitem').textContent).not.toContain('⠿');
 
-    rerender(<ul><TrackRow title="Blue" onDragStart={onDragStart} handle /></ul>);
+    rerender(
+      <ul>
+        <TrackRow title="Blue" onDragStart={onDragStart} handle />
+      </ul>
+    );
     const li = screen.getByRole('listitem');
     expect(li).toHaveAttribute('draggable', 'true');
     expect(li.textContent).toContain('⠿');
@@ -135,30 +161,54 @@ describe('TrackRow: optional props', () => {
   });
 
   it('forwards dragOver, drop and dragEnd', () => {
-    const onDragOver = vi.fn(); const onDrop = vi.fn(); const onDragEnd = vi.fn();
-    render(<ul><TrackRow title="Blue" onDragStart={() => {}} onDragOver={onDragOver} onDrop={onDrop} onDragEnd={onDragEnd} /></ul>);
+    const onDragOver = vi.fn();
+    const onDrop = vi.fn();
+    const onDragEnd = vi.fn();
+    render(
+      <ul>
+        <TrackRow title="Blue" onDragStart={() => {}} onDragOver={onDragOver} onDrop={onDrop} onDragEnd={onDragEnd} />
+      </ul>
+    );
     const li = screen.getByRole('listitem');
-    fireEvent.dragOver(li); fireEvent.drop(li); fireEvent.dragEnd(li);
+    fireEvent.dragOver(li);
+    fireEvent.drop(li);
+    fireEvent.dragEnd(li);
     expect(onDragOver).toHaveBeenCalled();
     expect(onDrop).toHaveBeenCalled();
     expect(onDragEnd).toHaveBeenCalled();
   });
 
   it('marks selected and playing', () => {
-    const { rerender } = render(<ul><TrackRow title="Blue" /></ul>);
+    const { rerender } = render(
+      <ul>
+        <TrackRow title="Blue" />
+      </ul>
+    );
     expect(screen.getByRole('listitem').className).not.toContain('selected');
     expect(screen.getByRole('listitem').className).not.toContain('playing');
-    rerender(<ul><TrackRow title="Blue" selected playing /></ul>);
+    rerender(
+      <ul>
+        <TrackRow title="Blue" selected playing />
+      </ul>
+    );
     expect(screen.getByRole('listitem').className).toContain('selected');
     expect(screen.getByRole('listitem').className).toContain('playing');
   });
 
   it('onOpen is optional: without it the title is plain text, with it a named button', () => {
     const onOpen = vi.fn();
-    const { rerender } = render(<ul><TrackRow title="Blue" /></ul>);
+    const { rerender } = render(
+      <ul>
+        <TrackRow title="Blue" />
+      </ul>
+    );
     expect(screen.getByText('Blue')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Blue, open album' })).toBeNull();
-    rerender(<ul><TrackRow title="Blue" onOpen={onOpen} /></ul>);
+    rerender(
+      <ul>
+        <TrackRow title="Blue" onOpen={onOpen} />
+      </ul>
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Blue, open album' }));
     expect(onOpen).toHaveBeenCalledOnce();
   });
@@ -167,7 +217,7 @@ describe('TrackRow: optional props', () => {
     const { container } = render(
       <ul>
         <TrackRow title="Blue" lead={3} aside="Abbey Road" trailing="4:19" explicit showArt={false} />
-      </ul>,
+      </ul>
     );
     expect(screen.getByText('3')).toBeInTheDocument();
     expect(screen.getByText('Abbey Road')).toBeInTheDocument();
@@ -180,20 +230,32 @@ describe('TrackRow: optional props', () => {
 
 describe('ChartRow: optional props', () => {
   it('renders without a count, showing meta instead and no count tooltip', () => {
-    render(<ol><ChartRow rank={2} title="Blue" artists="A" meta="3:21" onOpen={() => {}} /></ol>);
+    render(
+      <ol>
+        <ChartRow rank={2} title="Blue" artists="A" meta="3:21" onOpen={() => {}} />
+      </ol>
+    );
     const meta = screen.getByText('3:21');
     expect(meta).not.toHaveAttribute('title');
   });
 
   it('rankSlot replaces the zero-padded rank', () => {
-    render(<ol><ChartRow rank={2} title="Blue" artists="A" count={1} rankSlot={<b>NOW</b>} onOpen={() => {}} /></ol>);
+    render(
+      <ol>
+        <ChartRow rank={2} title="Blue" artists="A" count={1} rankSlot={<b>NOW</b>} onOpen={() => {}} />
+      </ol>
+    );
     expect(screen.getByText('NOW')).toBeInTheDocument();
     expect(screen.queryByText('02')).toBeNull();
   });
 
   it('marks selected and playing, and fires onClick', () => {
     const onClick = vi.fn();
-    render(<ol><ChartRow rank={1} title="Blue" artists="A" count={5} selected playing onClick={onClick} onOpen={() => {}} /></ol>);
+    render(
+      <ol>
+        <ChartRow rank={1} title="Blue" artists="A" count={5} selected playing onClick={onClick} onOpen={() => {}} />
+      </ol>
+    );
     const li = screen.getByRole('listitem');
     expect(li.className).toContain('selected');
     expect(li.className).toContain('playing');
@@ -203,9 +265,17 @@ describe('ChartRow: optional props', () => {
 
   it('is draggable only with onDragStart, which fires', () => {
     const onDragStart = vi.fn();
-    const { rerender } = render(<ol><ChartRow rank={1} title="Blue" artists="A" count={5} onOpen={() => {}} /></ol>);
+    const { rerender } = render(
+      <ol>
+        <ChartRow rank={1} title="Blue" artists="A" count={5} onOpen={() => {}} />
+      </ol>
+    );
     expect(screen.getByRole('listitem')).not.toHaveAttribute('draggable');
-    rerender(<ol><ChartRow rank={1} title="Blue" artists="A" count={5} onDragStart={onDragStart} onOpen={() => {}} /></ol>);
+    rerender(
+      <ol>
+        <ChartRow rank={1} title="Blue" artists="A" count={5} onDragStart={onDragStart} onOpen={() => {}} />
+      </ol>
+    );
     fireEvent.dragStart(screen.getByRole('listitem'));
     expect(screen.getByRole('listitem')).toHaveAttribute('draggable', 'true');
     expect(onDragStart).toHaveBeenCalledOnce();

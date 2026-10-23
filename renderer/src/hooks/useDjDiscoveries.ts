@@ -48,7 +48,7 @@ const MAX_PER_ARTIST = 3;
 export function useDjDiscoveries(
   artists: DjArtist[] | undefined,
   enabled = true,
-  { queued, round }: Pick<UnheardOptions, 'queued' | 'round'> = {},
+  { queued, round }: Pick<UnheardOptions, 'queued' | 'round'> = {}
 ) {
   const acts = (artists ?? []).filter((a) => a.artistId && a.serviceId && a.accountId);
 
@@ -62,11 +62,15 @@ export function useDjDiscoveries(
 
   const isLoading = enabled && results.some((r) => r.isLoading);
 
-  const groups: DjActDiscoveries[] = groupUnheard(acts, results.map((r) => r.data?.topSongs), {
-    perAct: MAX_PER_ARTIST,
-    queued,
-    round,
-  }).map((g) => ({
+  const groups: DjActDiscoveries[] = groupUnheard(
+    acts,
+    results.map((r) => r.data?.topSongs),
+    {
+      perAct: MAX_PER_ARTIST,
+      queued,
+      round,
+    }
+  ).map((g) => ({
     ...g,
     imageUrl: results[acts.indexOf(g.act)]?.data?.imageUrl ?? g.act.imageUrl ?? null,
   }));

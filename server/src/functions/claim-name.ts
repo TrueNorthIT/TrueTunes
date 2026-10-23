@@ -13,10 +13,7 @@ import { CosmosClient } from '@azure/cosmos';
 //   400                          — missing fields
 //   500                          — Cosmos error
 
-export async function claimNameHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
+export async function claimNameHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const corsHeaders = { 'Access-Control-Allow-Origin': '*' };
 
   let body: { oid?: string; displayName?: string };
@@ -32,7 +29,7 @@ export async function claimNameHandler(
   }
 
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
-  const dbName  = process.env['COSMOS_DATABASE'] ?? 'truetunes';
+  const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
   if (!connStr) return { status: 500, jsonBody: { error: 'Cosmos not configured' }, headers: corsHeaders };
 
   const container = new CosmosClient(connStr).database(dbName).container('profiles');

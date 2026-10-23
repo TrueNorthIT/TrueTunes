@@ -7,7 +7,7 @@
 import { randomUUID } from 'crypto';
 
 type StringProps = Record<string, string>;
-type AnyProps   = Record<string, string | number | boolean>;
+type AnyProps = Record<string, string | number | boolean>;
 
 const SESSION_ID = randomUUID();
 
@@ -25,19 +25,19 @@ export function init(connectionString: string, appVersion: string): void {
     const appInsights = require('applicationinsights') as typeof import('applicationinsights');
     appInsights
       .setup(connectionString)
-      .setAutoCollectRequests(false)      // no HTTP server in Electron
+      .setAutoCollectRequests(false) // no HTTP server in Electron
       .setAutoCollectPerformance(false, false)
-      .setAutoCollectExceptions(true)     // catch process-level uncaught errors
+      .setAutoCollectExceptions(true) // catch process-level uncaught errors
       .setAutoCollectDependencies(false)
       .setAutoCollectConsole(false)
-      .setUseDiskRetryCaching(true)       // buffer events if network is down
+      .setUseDiskRetryCaching(true) // buffer events if network is down
       .start();
 
     _client = appInsights.defaultClient;
     _client.commonProperties = {
       appVersion,
       sessionId: SESSION_ID,
-      platform:  process.platform,
+      platform: process.platform,
     };
 
     console.log('[telemetry] Initialized, session:', SESSION_ID);
@@ -62,7 +62,9 @@ export function event(name: string, props?: AnyProps): void {
   for (const [k, v] of Object.entries(props ?? {})) strProps[k] = String(v);
   try {
     _client.trackEvent({ name, properties: { ..._ctx, ...strProps } });
-  } catch { /* ignore — telemetry must never crash the app */ }
+  } catch {
+    /* ignore — telemetry must never crash the app */
+  }
 }
 
 /** Track an exception. Pass any value; non-Error values are wrapped automatically. */
@@ -71,7 +73,9 @@ export function exception(err: unknown, props?: StringProps): void {
   const error = err instanceof Error ? err : new Error(String(err));
   try {
     _client.trackException({ exception: error, properties: { ..._ctx, ...props } });
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 /**
@@ -80,11 +84,17 @@ export function exception(err: unknown, props?: StringProps): void {
  */
 export function flush(): Promise<void> {
   return new Promise<void>((resolve) => {
-    if (!_client) { resolve(); return; }
+    if (!_client) {
+      resolve();
+      return;
+    }
     const timer = setTimeout(resolve, 3000);
     try {
       _client.flush({
-        callback: () => { clearTimeout(timer); resolve(); },
+        callback: () => {
+          clearTimeout(timer);
+          resolve();
+        },
       });
     } catch {
       clearTimeout(timer);

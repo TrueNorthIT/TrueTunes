@@ -8,19 +8,33 @@ import { MiniPlayerShell } from '../MiniPlayer';
 // Mock all the hooks that MiniPlayerShell pulls in
 const mockUseNowPlaying = vi.fn();
 vi.mock('../../hooks/useNowPlaying', () => ({ useNowPlaying: (...a: unknown[]) => mockUseNowPlaying(...a) }));
-vi.mock('../../hooks/useAuth',    () => ({ useAuth: () => true }));
-vi.mock('../../hooks/useGroups',  () => ({ useGroups: () => [] }));
+vi.mock('../../hooks/useAuth', () => ({ useAuth: () => true }));
+vi.mock('../../hooks/useGroups', () => ({ useGroups: () => [] }));
 const mockUseQueuer = vi.fn();
 vi.mock('../../hooks/useQueuer', () => ({ useQueuer: (...a: unknown[]) => mockUseQueuer(...a) }));
 vi.mock('../../hooks/usePlayback', () => ({
   usePlayback: () => ({
     playback: {
-      isVisible: true, trackName: '', artistName: '', artUrl: null,
-      stateIcon: '▶', timeLabel: '', progressPct: 0, durationMs: 0,
-      isPlaying: false, shuffle: false, repeat: 'none', volume: 50,
-      currentObjectId: null, currentServiceId: null, currentAccountId: null,
-      currentAlbumId: null, currentAlbumName: null, isExplicit: false,
-      queueId: null, queueVersion: null,
+      isVisible: true,
+      trackName: '',
+      artistName: '',
+      artUrl: null,
+      stateIcon: '▶',
+      timeLabel: '',
+      progressPct: 0,
+      durationMs: 0,
+      isPlaying: false,
+      shuffle: false,
+      repeat: 'none',
+      volume: 50,
+      currentObjectId: null,
+      currentServiceId: null,
+      currentAccountId: null,
+      currentAlbumId: null,
+      currentAlbumName: null,
+      isExplicit: false,
+      queueId: null,
+      queueVersion: null,
     },
   }),
 }));

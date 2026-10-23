@@ -9,10 +9,7 @@ interface ScoreDocWithGuesses {
   };
 }
 
-export async function gameStatsHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
+export async function gameStatsHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
   const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
   const scoresCtrName = process.env['COSMOS_SCORES_CONTAINER'] ?? 'scores';

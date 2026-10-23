@@ -19,15 +19,24 @@ const releases = [
   item('Smile', 'smile', 'Single'),
   item('Moaning Lisa Smile (Live)', 'live', 'Single'),
 ];
-const years = new Map([['blue', 2021], ['cool', 2015], ['visions', 2017], ['smile', 2021]]);
-const current = { albumId: 'clearing', title: 'The Clearing', trackTitles: ['Thorns', 'Bloom Baby Bloom', 'Just Two Girls'] };
-const titles = (r: { item: SonosItem }[]) => r.map(x => x.item.title);
+const years = new Map([
+  ['blue', 2021],
+  ['cool', 2015],
+  ['visions', 2017],
+  ['smile', 2021],
+]);
+const current = {
+  albumId: 'clearing',
+  title: 'The Clearing',
+  trackTitles: ['Thorns', 'Bloom Baby Bloom', 'Just Two Girls'],
+};
+const titles = (r: { item: SonosItem }[]) => r.map((x) => x.item.title);
 
 describe('moreByReleases', () => {
   it('drops this album, its versions and its singles; albums newest first, then singles', () => {
     const r = moreByReleases(releases, current, new Map(), years);
     expect(titles(r)).toEqual(['Blue Weekend', 'Visions of a Life', 'My Love Is Cool', 'Smile']);
-    expect(r.map(x => x.year)).toEqual([2021, 2017, 2015, 2021]);
+    expect(r.map((x) => x.year)).toEqual([2021, 2017, 2015, 2021]);
   });
   it('matches this album by title when the id differs (another edition of it)', () => {
     const r = moreByReleases(releases, { ...current, albumId: 'other-id' }, new Map(), years);

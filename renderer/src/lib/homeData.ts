@@ -40,7 +40,11 @@ export function statsTrackToItem(t: Omit<StatsTrack, 'count'> & { count?: number
 }
 
 export function statsArtistToItem(a: StatsArtist): SonosItem {
-  return artistItem(a.artist, { objectId: a.artistId, serviceId: a.serviceId, accountId: a.accountId }, { title: a.artist, imageUrl: a.imageUrl });
+  return artistItem(
+    a.artist,
+    { objectId: a.artistId, serviceId: a.serviceId, accountId: a.accountId },
+    { title: a.artist, imageUrl: a.imageUrl }
+  );
 }
 
 export function statsAlbumToItem(a: StatsAlbum): SonosItem {
@@ -59,7 +63,7 @@ export function statsAlbumToItem(a: StatsAlbum): SonosItem {
 export function picksByPerson(
   people: string[],
   byUser: Map<string, RecentTrack[]>,
-  opts: { perPerson?: number; maxPeople?: number } = {},
+  opts: { perPerson?: number; maxPeople?: number } = {}
 ): { user: string; tracks: RecentTrack[] }[] {
   const { perPerson = 3, maxPeople = 6 } = opts;
   const out: { user: string; tracks: RecentTrack[] }[] = [];
@@ -115,7 +119,11 @@ function domText(node: GeniusDomNode): string {
   if (typeof node === 'string') return node;
   if (node.tag === 'br') return ' ';
   // A list reads as one line, its items comma-separated (Genius bios list band members).
-  if (node.tag === 'ul' || node.tag === 'ol') return (node.children ?? []).map((c) => domText(c).trim()).filter(Boolean).join(', ');
+  if (node.tag === 'ul' || node.tag === 'ol')
+    return (node.children ?? [])
+      .map((c) => domText(c).trim())
+      .filter(Boolean)
+      .join(', ');
   return (node.children ?? []).map(domText).join('');
 }
 
@@ -151,7 +159,17 @@ export function pickReason(because: string, viewer?: string | null, fans?: { use
   const counts = names.flatMap((n) => fans?.find((f) => f.user === n)?.count ?? []);
   const least = counts.length ? Math.min(...counts) : Infinity;
   const verb =
-    least >= 5 ? (plural ? 'love' : 'loves') : least >= 2 ? (plural ? 'like' : 'likes') : plural ? 'have played' : 'has played';
+    least >= 5
+      ? plural
+        ? 'love'
+        : 'loves'
+      : least >= 2
+        ? plural
+          ? 'like'
+          : 'likes'
+        : plural
+          ? 'have played'
+          : 'has played';
   return `${subject} ${verb} ${m[3]}`;
 }
 
@@ -170,7 +188,7 @@ const contentKey = (title?: string | null, artist?: string | null) =>
  */
 export function indicesToUndo(
   queue: { track: { id: string; title: string; artist: string } }[],
-  added: { id: string; title: string; artist: string }[],
+  added: { id: string; title: string; artist: string }[]
 ): number[] {
   const wanted = new Map<string, { id: string; count: number }>();
   for (const a of added) {
@@ -181,7 +199,9 @@ export function indicesToUndo(
   }
   const out: number[] = [];
   for (const [k, { id, count }] of wanted) {
-    const hits = queue.flatMap((q, i) => (q.track.id === id || contentKey(q.track.title, q.track.artist) === k ? [i] : []));
+    const hits = queue.flatMap((q, i) =>
+      q.track.id === id || contentKey(q.track.title, q.track.artist) === k ? [i] : []
+    );
     out.push(...hits.slice(-count));
   }
   return out.sort((x, y) => x - y);

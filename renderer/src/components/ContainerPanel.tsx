@@ -5,7 +5,13 @@ import { useOpenItem } from '../hooks/useOpenItem';
 import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
 import { fmtTime, getItemArt, getName, getSub, isAlbum, resolveAlbumParams } from '../lib/itemHelpers';
-import { artistItemOf, containerSummary, groupContainerItems, KIND_COPY, type ContainerGroup } from '../lib/containerItems';
+import {
+  artistItemOf,
+  containerSummary,
+  groupContainerItems,
+  KIND_COPY,
+  type ContainerGroup,
+} from '../lib/containerItems';
 import { ImageTile } from './common/ImageTile';
 import { PillButton } from './common/PillButton';
 import { SectionCard } from './common/SectionCard';
@@ -31,7 +37,12 @@ export function ContainerPanel({ onAddToQueue }: Props) {
   const { resolveAndOpen } = useResolveAndOpen();
   const queryClient = useQueryClient();
 
-  const { albumId: containerId, serviceId, accountId, defaults } = item
+  const {
+    albumId: containerId,
+    serviceId,
+    accountId,
+    defaults,
+  } = item
     ? resolveAlbumParams(item)
     : { albumId: undefined, serviceId: undefined, accountId: undefined, defaults: undefined };
 
@@ -80,7 +91,15 @@ export function ContainerPanel({ onAddToQueue }: Props) {
     // A station opens as its track list, where songs can be added one at a time. No + here: starting a
     // station replaces the whole shared queue, which a one-click + must never do.
     if (kind === 'stations') {
-      return <ImageTile key={key} title={name} sub={getSub(child) || 'Radio'} imageUrl={getItemArt(child)} onOpen={() => openItem(child)} />;
+      return (
+        <ImageTile
+          key={key}
+          title={name}
+          sub={getSub(child) || 'Radio'}
+          imageUrl={getItemArt(child)}
+          onOpen={() => openItem(child)}
+        />
+      );
     }
     return (
       <ImageTile

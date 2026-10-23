@@ -1,7 +1,17 @@
 import { config as loadEnv } from 'dotenv';
 loadEnv(); // loads .env from cwd (repo root) in dev; no-op if file absent
 
-import { app, BrowserWindow, ipcMain, nativeImage, safeStorage, session, shell, Menu, IpcMainInvokeEvent } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  nativeImage,
+  safeStorage,
+  session,
+  shell,
+  Menu,
+  IpcMainInvokeEvent,
+} from 'electron';
 import { autoUpdater } from 'electron-updater';
 import { officePubSub } from './pubsub';
 import { EntraAuth, PRESENCE_SCOPE } from './auth-entra';
@@ -20,7 +30,9 @@ try {
   for (const [k, v] of Object.entries(baked)) {
     if (v && !process.env[k]) process.env[k] = v;
   }
-} catch { /* dev: dotenv already handled it */ }
+} catch {
+  /* dev: dotenv already handled it */
+}
 import { randomUUID } from 'crypto';
 import WebSocket from 'ws';
 import type { FetchRequest, FetchResponse } from './types';
@@ -44,30 +56,36 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 // AppUserModelID we set with sessions created before the first window).
 // Button presses mirror the existing Windows taskbar thumbar handlers (see
 // setThumbar) — both drive the same WS playback commands directly.
-smtc.init((action) => {
-  const groupId = config.groupId;
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
-  switch (action) {
-    case 'play':
-      wsSend({ namespace: 'playback', groupId, command: 'play' }, { allowTvPauseRestore: true, deviceFeedback: 'NONE' }).catch(() => {});
-      break;
-    case 'pause':
-      // Deliberately ignored. Windows sends pause for more than the user
-      // pressing pause: Teams pauses every media session on joining a call,
-      // and Bluetooth headsets send pause when they connect, switch to call
-      // mode or come off. Any of those would stop the shared office speakers
-      // for everyone, so pausing is left to the app's own controls.
-      console.log('[smtc] ignoring pause command from Windows');
-      telemetry.event('SmtcPauseIgnored');
-      break;
-    case 'next':
-      wsSend({ namespace: 'playback', groupId, command: 'skipToNextTrack' }, {}).catch(() => {});
-      break;
-    case 'previous':
-      wsSend({ namespace: 'playback', groupId, command: 'skipBack' }, {}).catch(() => {});
-      break;
-  }
-}, { displayName: 'True Tunes', appPath: app.getAppPath(), isPackaged: app.isPackaged });
+smtc.init(
+  (action) => {
+    const groupId = config.groupId;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    switch (action) {
+      case 'play':
+        wsSend(
+          { namespace: 'playback', groupId, command: 'play' },
+          { allowTvPauseRestore: true, deviceFeedback: 'NONE' }
+        ).catch(() => {});
+        break;
+      case 'pause':
+        // Deliberately ignored. Windows sends pause for more than the user
+        // pressing pause: Teams pauses every media session on joining a call,
+        // and Bluetooth headsets send pause when they connect, switch to call
+        // mode or come off. Any of those would stop the shared office speakers
+        // for everyone, so pausing is left to the app's own controls.
+        console.log('[smtc] ignoring pause command from Windows');
+        telemetry.event('SmtcPauseIgnored');
+        break;
+      case 'next':
+        wsSend({ namespace: 'playback', groupId, command: 'skipToNextTrack' }, {}).catch(() => {});
+        break;
+      case 'previous':
+        wsSend({ namespace: 'playback', groupId, command: 'skipBack' }, {}).catch(() => {});
+        break;
+    }
+  },
+  { displayName: 'True Tunes', appPath: app.getAppPath(), isPackaged: app.isPackaged }
+);
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -129,7 +147,8 @@ async function loadConfig(): Promise<void> {
     if (typeof parsed.entraName === 'string') config.entraName = parsed.entraName;
     if (typeof parsed.entraEmail === 'string') config.entraEmail = parsed.entraEmail;
     if (typeof parsed.lastSeenVersion === 'string') config.lastSeenVersion = parsed.lastSeenVersion;
-    if (typeof parsed.preferredCoordinatorId === 'string') config.preferredCoordinatorId = parsed.preferredCoordinatorId;
+    if (typeof parsed.preferredCoordinatorId === 'string')
+      config.preferredCoordinatorId = parsed.preferredCoordinatorId;
     if (typeof parsed.queueDockedWidth === 'number') config.queueDockedWidth = parsed.queueDockedWidth;
   } catch {
     // No config file yet — use defaults
@@ -480,8 +499,7 @@ async function sonosFetch(request: FetchRequest, isRetry = false): Promise<Fetch
     }
 
     const isTransient =
-      networkError !== null ||
-      (attemptResponse !== null && TRANSIENT_STATUSES.has(attemptResponse.status));
+      networkError !== null || (attemptResponse !== null && TRANSIENT_STATUSES.has(attemptResponse.status));
 
     if (isTransient && isIdempotent && attempt < RETRY_DELAYS_MS.length) {
       telemetry.event('api_retry', {
@@ -575,7 +593,7 @@ function wsSend(header: Record<string, unknown>, payload: Record<string, unknown
       wsPending.delete(corrId);
       telemetry.event('ws_timeout', {
         namespace: String(header['namespace'] ?? ''),
-        command:   String(header['command']   ?? ''),
+        command: String(header['command'] ?? ''),
       });
       reject(new Error(`WS timeout: ${JSON.stringify(header)}`));
     }, 10_000);
@@ -919,10 +937,7 @@ async function runBootstrap(): Promise<void> {
   // re-broadcast it here (same pattern as playbackExtended above).
   const activeVol = volSubResults.find((r) => r?.groupId === config.groupId);
   if (activeVol?.resp) {
-    broadcastToRenderers('ws:message', [
-      { namespace: 'groupVolume', groupId: activeVol.groupId },
-      activeVol.resp,
-    ]);
+    broadcastToRenderers('ws:message', [{ namespace: 'groupVolume', groupId: activeVol.groupId }, activeVol.resp]);
   }
 
   log('[ws] Bootstrap complete');
@@ -981,7 +996,7 @@ async function connectWebSocket(): Promise<void> {
       .then(() => {
         telemetry.event('ws_connected', {
           bootstrapMs: Date.now() - bootstrapStart,
-          groupCount:  discoveredGroups.length,
+          groupCount: discoveredGroups.length,
         });
         if (config.groupId) telemetry.setContext({ groupId: config.groupId });
       })
@@ -1044,7 +1059,10 @@ function setThumbar(win: BrowserWindow, isPlaying: boolean): void {
         const groupId = config.groupId;
         if (!ws || ws.readyState !== WebSocket.OPEN) return;
         const cmd = thumbarIsPlaying ? 'pause' : 'play';
-        wsSend({ namespace: 'playback', groupId, command: cmd }, { allowTvPauseRestore: true, deviceFeedback: 'NONE' }).catch(() => {});
+        wsSend(
+          { namespace: 'playback', groupId, command: cmd },
+          { allowTvPauseRestore: true, deviceFeedback: 'NONE' }
+        ).catch(() => {});
       },
     },
     {
@@ -1235,7 +1253,7 @@ async function lookupProfileByOid(oid: string): Promise<string | null> {
     const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/profile/lookup?oid=${encodeURIComponent(oid)}`);
     if (res.status === 404) return null;
     if (!res.ok) return null;
-    const data = await res.json() as { displayName?: string };
+    const data = (await res.json()) as { displayName?: string };
     return data.displayName ?? null;
   } catch {
     return null;
@@ -1352,7 +1370,7 @@ function createUIWindow(): void {
     },
   });
 
-  uiWin.on('maximize',   () => uiWin?.webContents.send('win:maximized', true));
+  uiWin.on('maximize', () => uiWin?.webContents.send('win:maximized', true));
   uiWin.on('unmaximize', () => uiWin?.webContents.send('win:maximized', false));
   setThumbar(uiWin, thumbarIsPlaying);
   guardNavigation(uiWin);
@@ -1463,44 +1481,61 @@ ipcMain.handle('playback:pause', (_event: IpcMainInvokeEvent) => {
   );
 });
 
-ipcMain.handle('smtc:update', (_event: IpcMainInvokeEvent, data: { title?: string; artist?: string; album?: string; artworkUrl?: string }) => {
-  smtc.setMetadata({
-    title: data.title,
-    artist: data.artist,
-    album: data.album,
-    thumbnailUrl: data.artworkUrl,
-  });
-});
+ipcMain.handle(
+  'smtc:update',
+  (_event: IpcMainInvokeEvent, data: { title?: string; artist?: string; album?: string; artworkUrl?: string }) => {
+    smtc.setMetadata({
+      title: data.title,
+      artist: data.artist,
+      album: data.album,
+      thumbnailUrl: data.artworkUrl,
+    });
+  }
+);
 
 ipcMain.handle('debug:openWsMonitor', () => openDebugWindow());
 ipcMain.handle('debug:openHttpMonitor', () => openHttpDebugWindow());
-ipcMain.handle('debug:openDevTools', () => { if (!app.isPackaged) uiWin?.webContents.openDevTools(); });
+ipcMain.handle('debug:openDevTools', () => {
+  if (!app.isPackaged) uiWin?.webContents.openDevTools();
+});
 
 ipcMain.handle('app:version', () => app.getVersion());
 ipcMain.handle('app:isNewVersion', () => isNewVersion);
 // http(s) only: the renderer never needs another scheme, and shell.openExternal
 // on file: or protocol-handler URLs can launch programs.
-ipcMain.handle('app:openExternal', async (_: IpcMainInvokeEvent, url: string) => { if (isWebUrl(url)) await shell.openExternal(url); });
+ipcMain.handle('app:openExternal', async (_: IpcMainInvokeEvent, url: string) => {
+  if (isWebUrl(url)) await shell.openExternal(url);
+});
 
-ipcMain.handle('win:minimize',     () => { uiWin?.minimize(); });
-ipcMain.handle('win:maximize',     () => { if (uiWin?.isMaximized()) uiWin.unmaximize(); else uiWin?.maximize(); });
-ipcMain.handle('win:close',        () => { uiWin?.close(); });
+ipcMain.handle('win:minimize', () => {
+  uiWin?.minimize();
+});
+ipcMain.handle('win:maximize', () => {
+  if (uiWin?.isMaximized()) uiWin.unmaximize();
+  else uiWin?.maximize();
+});
+ipcMain.handle('win:close', () => {
+  uiWin?.close();
+});
 ipcMain.handle('win:is-maximized', () => uiWin?.isMaximized() ?? false);
 
 ipcMain.handle('config:getDisplayName', () => config.displayName ?? null);
 
-ipcMain.handle('config:setDisplayName', async (_: IpcMainInvokeEvent, name: string): Promise<{ error: string } | null> => {
-  // Guard empty name (sign-out path) — skip claim check.
-  if (name && config.entraOid) {
-    const taken = await claimDisplayName(config.entraOid, name);
-    if (taken) return { error: 'taken' };
+ipcMain.handle(
+  'config:setDisplayName',
+  async (_: IpcMainInvokeEvent, name: string): Promise<{ error: string } | null> => {
+    // Guard empty name (sign-out path) — skip claim check.
+    if (name && config.entraOid) {
+      const taken = await claimDisplayName(config.entraOid, name);
+      if (taken) return { error: 'taken' };
+    }
+    config.displayName = name;
+    telemetry.setContext({ userId: name });
+    await saveConfig();
+    initPubSub().catch(console.error);
+    return null;
   }
-  config.displayName = name;
-  telemetry.setContext({ userId: name });
-  await saveConfig();
-  initPubSub().catch(console.error);
-  return null;
-});
+);
 
 ipcMain.handle('auth:getEntraUser', (): EntraUser | null => {
   if (!config.entraOid) return null;
@@ -1560,12 +1595,12 @@ ipcMain.handle('playlist:create', (_: IpcMainInvokeEvent, name: string, isPublic
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, isPublic, owner: config.displayName }),
-  }),
+  })
 );
 
 async function playlistFetch(url: string, init: RequestInit): Promise<unknown> {
   const res = await fetch(url, init);
-  const body = await res.json().catch(() => ({})) as { error?: string };
+  const body = (await res.json().catch(() => ({}))) as { error?: string };
   if (!res.ok) throw new Error(body.error ?? `Server error ${res.status}`);
   return body;
 }
@@ -1575,7 +1610,7 @@ ipcMain.handle('playlist:addTrack', (_: IpcMainInvokeEvent, playlistId: string, 
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ track, userName: config.displayName }),
-  }),
+  })
 );
 
 ipcMain.handle('playlist:join', (_: IpcMainInvokeEvent, playlistId: string, action: 'join' | 'leave') =>
@@ -1583,7 +1618,7 @@ ipcMain.handle('playlist:join', (_: IpcMainInvokeEvent, playlistId: string, acti
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userName: config.displayName, action }),
-  }),
+  })
 );
 
 ipcMain.handle('profile:ensureFavourites', async () => {
@@ -1599,15 +1634,17 @@ ipcMain.handle('playlist:delete', (_: IpcMainInvokeEvent, playlistId: string) =>
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userName: config.displayName ?? '' }),
-  }),
+  })
 );
 
-ipcMain.handle('playlist:update', (_: IpcMainInvokeEvent, playlistId: string, patch: { name?: string; isPublic?: boolean }) =>
-  playlistFetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userName: config.displayName, ...patch }),
-  }),
+ipcMain.handle(
+  'playlist:update',
+  (_: IpcMainInvokeEvent, playlistId: string, patch: { name?: string; isPublic?: boolean }) =>
+    playlistFetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userName: config.displayName, ...patch }),
+    })
 );
 
 ipcMain.handle('playlist:removeTrack', (_: IpcMainInvokeEvent, playlistId: string, uri: string) =>
@@ -1615,30 +1652,35 @@ ipcMain.handle('playlist:removeTrack', (_: IpcMainInvokeEvent, playlistId: strin
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userName: config.displayName, uri }),
-  }),
+  })
 );
 
-ipcMain.handle('playlist:reorderTracks', (_: IpcMainInvokeEvent, playlistId: string, fromIndex: number, toIndex: number) =>
-  playlistFetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/tracks`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userName: config.displayName, fromIndex, toIndex }),
-  }),
+ipcMain.handle(
+  'playlist:reorderTracks',
+  (_: IpcMainInvokeEvent, playlistId: string, fromIndex: number, toIndex: number) =>
+    playlistFetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/tracks`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userName: config.displayName, fromIndex, toIndex }),
+    })
 );
 
-ipcMain.handle('playlist:uploadImage', async (_: IpcMainInvokeEvent, playlistId: string, data: ArrayBuffer, mimeType: string, userName: string) => {
-  try {
-    const url = `${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/image?userName=${encodeURIComponent(userName)}`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': mimeType },
-      body: Buffer.from(data),
-    });
-    return await res.json();
-  } catch (err) {
-    return { error: String(err) };
+ipcMain.handle(
+  'playlist:uploadImage',
+  async (_: IpcMainInvokeEvent, playlistId: string, data: ArrayBuffer, mimeType: string, userName: string) => {
+    try {
+      const url = `${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(playlistId)}/image?userName=${encodeURIComponent(userName)}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': mimeType },
+        body: Buffer.from(data),
+      });
+      return await res.json();
+    } catch (err) {
+      return { error: String(err) };
+    }
   }
-});
+);
 
 ipcMain.handle('users:list', async (_: IpcMainInvokeEvent, includeSelf?: boolean) => {
   // HomePanel wants "other people", so excluding yourself is the default. The
@@ -1647,7 +1689,7 @@ ipcMain.handle('users:list', async (_: IpcMainInvokeEvent, includeSelf?: boolean
   const params = exclude ? `?exclude=${encodeURIComponent(exclude)}` : '';
   try {
     const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/users${params}`);
-    const body = await res.json() as unknown;
+    const body = (await res.json()) as unknown;
     return Array.isArray(body) ? body : [];
   } catch {
     return [];
@@ -1663,43 +1705,61 @@ ipcMain.handle('profile:get', async (_: IpcMainInvokeEvent, userName: string) =>
   }
 });
 
-ipcMain.handle('profile:uploadImage', async (_: IpcMainInvokeEvent, userName: string, data: ArrayBuffer, mimeType: string) => {
-  try {
-    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/profile/${encodeURIComponent(userName)}/image`, {
-      method: 'POST',
-      headers: { 'Content-Type': mimeType },
-      body: Buffer.from(data),
-    });
-    return await res.json();
-  } catch (err) {
-    return { error: String(err) };
+ipcMain.handle(
+  'profile:uploadImage',
+  async (_: IpcMainInvokeEvent, userName: string, data: ArrayBuffer, mimeType: string) => {
+    try {
+      const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/profile/${encodeURIComponent(userName)}/image`, {
+        method: 'POST',
+        headers: { 'Content-Type': mimeType },
+        body: Buffer.from(data),
+      });
+      return await res.json();
+    } catch (err) {
+      return { error: String(err) };
+    }
   }
-});
+);
 
-ipcMain.handle('profile:rename', async (_: IpcMainInvokeEvent, oldName: string, newName: string): Promise<{ ok?: boolean; error?: string }> => {
-  if (!config.entraOid) return { error: 'not-authed' };
-  try {
-    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/profile/rename`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ oid: config.entraOid, oldName, newName }),
-    });
-    if (res.status === 409) return { error: 'taken' };
-    if (res.status === 403) return { error: 'not-owner' };
-    if (!res.ok) return { error: `server error ${res.status}` };
-    config.displayName = newName;
-    telemetry.setContext({ userId: newName });
-    await saveConfig();
-    initPubSub().catch(console.error);
-    return { ok: true };
-  } catch (err) {
-    return { error: String(err) };
+ipcMain.handle(
+  'profile:rename',
+  async (_: IpcMainInvokeEvent, oldName: string, newName: string): Promise<{ ok?: boolean; error?: string }> => {
+    if (!config.entraOid) return { error: 'not-authed' };
+    try {
+      const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/profile/rename`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oid: config.entraOid, oldName, newName }),
+      });
+      if (res.status === 409) return { error: 'taken' };
+      if (res.status === 403) return { error: 'not-owner' };
+      if (!res.ok) return { error: `server error ${res.status}` };
+      config.displayName = newName;
+      telemetry.setContext({ userId: newName });
+      await saveConfig();
+      initPubSub().catch(console.error);
+      return { ok: true };
+    } catch (err) {
+      return { error: String(err) };
+    }
   }
-});
+);
 
 ipcMain.handle(
   'pubsub:publishQueued',
-  async (_: IpcMainInvokeEvent, item: { eventType: 'track' | 'album'; uri: string; trackName: string; artist: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }) => {
+  async (
+    _: IpcMainInvokeEvent,
+    item: {
+      eventType: 'track' | 'album';
+      uri: string;
+      trackName: string;
+      artist: string;
+      artistId?: string;
+      album?: string;
+      albumId?: string;
+      imageUrl?: string;
+    }
+  ) => {
     await officePubSub.publishQueued(item).catch(() => {
       /* silent */
     });
@@ -1726,7 +1786,7 @@ ipcMain.handle('stats:fetch', async (_: IpcMainInvokeEvent, period: string, user
   try {
     let url = `${PUBSUB_FUNCTION_URL}/api/stats?period=${encodeURIComponent(period)}`;
     if (userId) url += `&userId=${encodeURIComponent(userId)}`;
-    if (count)  url += `&count=${count}`;
+    if (count) url += `&count=${count}`;
     const res = await fetch(url);
     return await res.json();
   } catch (err) {
@@ -1771,21 +1831,21 @@ ipcMain.handle('presence:office', async () => {
   }
 });
 
-ipcMain.handle('dj:fetch', async (
-  _: IpcMainInvokeEvent,
-  opts: { users?: string[]; limit?: number; excludeUris?: string[] } = {},
-) => {
-  try {
-    const params = new URLSearchParams();
-    if (opts.users?.length) params.set('users', opts.users.join(','));
-    if (opts.limit) params.set('limit', String(opts.limit));
-    if (opts.excludeUris?.length) params.set('exclude', opts.excludeUris.join(','));
-    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/dj?${params}`);
-    return await res.json();
-  } catch (err) {
-    return { error: String(err) };
+ipcMain.handle(
+  'dj:fetch',
+  async (_: IpcMainInvokeEvent, opts: { users?: string[]; limit?: number; excludeUris?: string[] } = {}) => {
+    try {
+      const params = new URLSearchParams();
+      if (opts.users?.length) params.set('users', opts.users.join(','));
+      if (opts.limit) params.set('limit', String(opts.limit));
+      if (opts.excludeUris?.length) params.set('exclude', opts.excludeUris.join(','));
+      const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/dj?${params}`);
+      return await res.json();
+    } catch (err) {
+      return { error: String(err) };
+    }
   }
-});
+);
 
 ipcMain.handle('history:recent', async (_: IpcMainInvokeEvent, userId: string) => {
   try {
@@ -1796,7 +1856,6 @@ ipcMain.handle('history:recent', async (_: IpcMainInvokeEvent, userId: string) =
     return { error: String(err) };
   }
 });
-
 
 ipcMain.handle('game:fetch', async (_: IpcMainInvokeEvent, date?: string) => {
   try {
@@ -1820,7 +1879,7 @@ ipcMain.handle(
       gameId: string;
       userName: string;
       guesses: { main: Array<'left' | 'right'>; bonus: string[] };
-    },
+    }
   ) => {
     try {
       const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/score`, {
@@ -1835,7 +1894,7 @@ ipcMain.handle(
     } catch (err) {
       return { error: String(err) };
     }
-  },
+  }
 );
 
 // Weekly anonymous poll. Never throws; never logs or tracks request bodies (an answer is only
@@ -1858,30 +1917,30 @@ async function pollRequest(method: string, path: string, body?: unknown): Promis
 ipcMain.handle('polls:fetch', () => pollRequest('GET', 'polls'));
 
 ipcMain.handle('polls:answer', (_: IpcMainInvokeEvent, input: { pollId: string; choice: number }) =>
-  pollRequest('POST', 'polls/answer', { pollId: input?.pollId, choice: input?.choice }),
+  pollRequest('POST', 'polls/answer', { pollId: input?.pollId, choice: input?.choice })
 );
 
 ipcMain.handle('polls:admin-list', () => pollRequest('GET', 'polls-admin'));
 
 ipcMain.handle('polls:admin-create', (_: IpcMainInvokeEvent, input: { question: string; choices: string[] }) =>
-  pollRequest('POST', 'polls-admin', { question: input?.question, choices: input?.choices }),
+  pollRequest('POST', 'polls-admin', { question: input?.question, choices: input?.choices })
 );
 
 ipcMain.handle(
   'polls:admin-update',
   (_: IpcMainInvokeEvent, id: string, input: { question: string; choices: string[] }) =>
-    pollRequest('PUT', `polls-admin/${encodeURIComponent(id)}`, { question: input?.question, choices: input?.choices }),
+    pollRequest('PUT', `polls-admin/${encodeURIComponent(id)}`, { question: input?.question, choices: input?.choices })
 );
 
 ipcMain.handle('polls:admin-delete', (_: IpcMainInvokeEvent, id: string) =>
-  pollRequest('DELETE', `polls-admin/${encodeURIComponent(id)}`),
+  pollRequest('DELETE', `polls-admin/${encodeURIComponent(id)}`)
 );
 
 ipcMain.handle('polls:admin-reorder', (_: IpcMainInvokeEvent, orderedIds: string[]) =>
-  pollRequest('POST', 'polls-admin/reorder', { orderedIds }),
+  pollRequest('POST', 'polls-admin/reorder', { orderedIds })
 );
 
-ipcMain.handle('game:leaderboard',async (_: IpcMainInvokeEvent, date?: string) => {
+ipcMain.handle('game:leaderboard', async (_: IpcMainInvokeEvent, date?: string) => {
   try {
     const d = date && date.length ? date : 'today';
     const url = `${PUBSUB_FUNCTION_URL}/api/game-leaderboard?date=${encodeURIComponent(d)}`;
@@ -2254,13 +2313,28 @@ ipcMain.handle('genius:description', async (_: IpcMainInvokeEvent, trackName: st
   }
 
   const debugReq = (id: string, url: string, ts: number) =>
-    httpDebugWin?.webContents.send('http:req', { id, ts, operationId: 'genius', method: 'GET', url, headers: { Authorization: 'Bearer ***' } });
+    httpDebugWin?.webContents.send('http:req', {
+      id,
+      ts,
+      operationId: 'genius',
+      method: 'GET',
+      url,
+      headers: { Authorization: 'Bearer ***' },
+    });
   const debugRes = (id: string, status: number, body: string, ts: number) =>
-    httpDebugWin?.webContents.send('http:res', { id, status, statusText: String(status), headers: {}, body, durationMs: Date.now() - ts });
+    httpDebugWin?.webContents.send('http:res', {
+      id,
+      status,
+      statusText: String(status),
+      headers: {},
+      body,
+      durationMs: Date.now() - ts,
+    });
 
   try {
     const searchUrl = `https://api.genius.com/search?q=${encodeURIComponent(`${trackName} ${artistName}`)}`;
-    const searchId = randomUUID(); const searchTs = Date.now();
+    const searchId = randomUUID();
+    const searchTs = Date.now();
     debugReq(searchId, searchUrl, searchTs);
     const searchRes = await fetch(searchUrl, { headers: { Authorization: `Bearer ${key}` } });
     const searchBody = await searchRes.text();
@@ -2271,7 +2345,8 @@ ipcMain.handle('genius:description', async (_: IpcMainInvokeEvent, trackName: st
     if (!songId) return null;
 
     const songUrl = `https://api.genius.com/songs/${songId}`;
-    const songId2 = randomUUID(); const songTs = Date.now();
+    const songId2 = randomUUID();
+    const songTs = Date.now();
     debugReq(songId2, songUrl, songTs);
     const songRes = await fetch(songUrl, { headers: { Authorization: `Bearer ${key}` } });
     const songBody = await songRes.text();
@@ -2293,14 +2368,29 @@ ipcMain.handle('genius:artist', async (_: IpcMainInvokeEvent, artistName: string
   }
 
   const debugReq = (id: string, url: string, ts: number) =>
-    httpDebugWin?.webContents.send('http:req', { id, ts, operationId: 'genius:artist', method: 'GET', url, headers: { Authorization: 'Bearer ***' } });
+    httpDebugWin?.webContents.send('http:req', {
+      id,
+      ts,
+      operationId: 'genius:artist',
+      method: 'GET',
+      url,
+      headers: { Authorization: 'Bearer ***' },
+    });
   const debugRes = (id: string, status: number, body: string, ts: number) =>
-    httpDebugWin?.webContents.send('http:res', { id, status, statusText: String(status), headers: {}, body, durationMs: Date.now() - ts });
+    httpDebugWin?.webContents.send('http:res', {
+      id,
+      status,
+      statusText: String(status),
+      headers: {},
+      body,
+      durationMs: Date.now() - ts,
+    });
 
   try {
     const q = trackHint ? `${trackHint} ${artistName}` : artistName;
     const searchUrl = `https://api.genius.com/search?q=${encodeURIComponent(q)}`;
-    const searchId = randomUUID(); const searchTs = Date.now();
+    const searchId = randomUUID();
+    const searchTs = Date.now();
     debugReq(searchId, searchUrl, searchTs);
     const searchRes = await fetch(searchUrl, { headers: { Authorization: `Bearer ${key}` } });
     const searchBody = await searchRes.text();
@@ -2315,7 +2405,8 @@ ipcMain.handle('genius:artist', async (_: IpcMainInvokeEvent, artistName: string
     if (!artistId) return null;
 
     const artistUrl = `https://api.genius.com/artists/${artistId}`;
-    const artistReqId = randomUUID(); const artistTs = Date.now();
+    const artistReqId = randomUUID();
+    const artistTs = Date.now();
     debugReq(artistReqId, artistUrl, artistTs);
     const artistRes = await fetch(artistUrl, { headers: { Authorization: `Bearer ${key}` } });
     const artistBody = await artistRes.text();
@@ -2362,13 +2453,28 @@ ipcMain.handle('genius:albumYear', async (_: IpcMainInvokeEvent, albumName: stri
   }
 
   const debugReq = (id: string, url: string, ts: number) =>
-    httpDebugWin?.webContents.send('http:req', { id, ts, operationId: 'genius:albumYear', method: 'GET', url, headers: { Authorization: 'Bearer ***' } });
+    httpDebugWin?.webContents.send('http:req', {
+      id,
+      ts,
+      operationId: 'genius:albumYear',
+      method: 'GET',
+      url,
+      headers: { Authorization: 'Bearer ***' },
+    });
   const debugRes = (id: string, status: number, body: string, ts: number) =>
-    httpDebugWin?.webContents.send('http:res', { id, status, statusText: String(status), headers: {}, body, durationMs: Date.now() - ts });
+    httpDebugWin?.webContents.send('http:res', {
+      id,
+      status,
+      statusText: String(status),
+      headers: {},
+      body,
+      durationMs: Date.now() - ts,
+    });
 
   try {
     const searchUrl = `https://api.genius.com/search?q=${encodeURIComponent(`${albumName} ${artistName}`)}`;
-    const searchId = randomUUID(); const searchTs = Date.now();
+    const searchId = randomUUID();
+    const searchTs = Date.now();
     debugReq(searchId, searchUrl, searchTs);
     const searchRes = await fetch(searchUrl, { headers: { Authorization: `Bearer ${key}` } });
     const searchBody = await searchRes.text();
@@ -2395,11 +2501,19 @@ ipcMain.handle('genius:albumYear', async (_: IpcMainInvokeEvent, albumName: stri
 /** A JSON GET against genius.com/api, logged to the HTTP debug window. Throws on a non-2xx. */
 function geniusWebGet(operationId: string) {
   return async (url: string): Promise<unknown> => {
-    const id = randomUUID(); const ts = Date.now();
+    const id = randomUUID();
+    const ts = Date.now();
     httpDebugWin?.webContents.send('http:req', { id, ts, operationId, method: 'GET', url, headers: {} });
     const res = await fetch(url);
     const body = await res.text();
-    httpDebugWin?.webContents.send('http:res', { id, status: res.status, statusText: String(res.status), headers: {}, body, durationMs: Date.now() - ts });
+    httpDebugWin?.webContents.send('http:res', {
+      id,
+      status: res.status,
+      statusText: String(res.status),
+      headers: {},
+      body,
+      durationMs: Date.now() - ts,
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
     return JSON.parse(body);
   };
@@ -2410,17 +2524,23 @@ ipcMain.handle('genius:artistAlbums', async (_: IpcMainInvokeEvent, artistName: 
 
   try {
     type Search = { response: { sections: { hits: { result: { id: number; name: string } }[] }[] } };
-    const search = await get(`https://genius.com/api/search/artist?q=${encodeURIComponent(artistName)}`) as Search;
+    const search = (await get(`https://genius.com/api/search/artist?q=${encodeURIComponent(artistName)}`)) as Search;
     const hits = search.response?.sections?.[0]?.hits ?? [];
     const lower = artistName.toLowerCase();
     const artist = (hits.find((h) => h.result.name?.toLowerCase() === lower) ?? hits[0])?.result;
     if (!artist) return [];
 
-    type Albums = { response: { albums: { name: string; release_date_components: { year: number | null } | null }[]; next_page: number | null } };
+    type Albums = {
+      response: {
+        albums: { name: string; release_date_components: { year: number | null } | null }[];
+        next_page: number | null;
+      };
+    };
     const out: { name: string; year: number | null }[] = [];
     for (let page: number | null = 1, n = 0; page && n < 4; n++) {
-      const data = await get(`https://genius.com/api/artists/${artist.id}/albums?per_page=50&page=${page}`) as Albums;
-      for (const a of data.response?.albums ?? []) out.push({ name: a.name, year: a.release_date_components?.year ?? null });
+      const data = (await get(`https://genius.com/api/artists/${artist.id}/albums?per_page=50&page=${page}`)) as Albums;
+      for (const a of data.response?.albums ?? [])
+        out.push({ name: a.name, year: a.release_date_components?.year ?? null });
       page = data.response?.next_page ?? null;
     }
     return out;
@@ -2435,9 +2555,11 @@ ipcMain.handle('genius:artistAlbums', async (_: IpcMainInvokeEvent, artistName: 
 ipcMain.handle('genius:albumAbout', async (_: IpcMainInvokeEvent, albumName: string, artistName: string) => {
   const get = geniusWebGet('genius:albumAbout');
   try {
-    type Search = { response: { sections: { hits: { result: { id: number; name: string; artist: { name: string } | null } }[] }[] } };
+    type Search = {
+      response: { sections: { hits: { result: { id: number; name: string; artist: { name: string } | null } }[] }[] };
+    };
     const q = `${albumBaseTitle(albumName)} ${artistName}`;
-    const search = await get(`https://genius.com/api/search/album?q=${encodeURIComponent(q)}`) as Search;
+    const search = (await get(`https://genius.com/api/search/album?q=${encodeURIComponent(q)}`)) as Search;
     const hits = pickAlbumHits(search.response?.sections?.[0]?.hits ?? [], albumName, artistName).slice(0, 2);
 
     type Album = {
@@ -2452,7 +2574,7 @@ ipcMain.handle('genius:albumAbout', async (_: IpcMainInvokeEvent, albumName: str
     };
     let fallback: { description: null; releaseDate?: string; url: string } | null = null;
     for (const h of hits) {
-      const a = (await get(`https://genius.com/api/albums/${h.result.id}`) as Album).response?.album;
+      const a = ((await get(`https://genius.com/api/albums/${h.result.id}`)) as Album).response?.album;
       if (!a) continue;
       const releaseDate = a.release_date ?? a.release_date_for_display ?? undefined;
       const dom = a.description_annotation?.annotations?.[0]?.body?.dom;

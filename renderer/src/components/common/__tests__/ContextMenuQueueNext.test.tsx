@@ -31,7 +31,7 @@ function setup() {
       <ContextMenuProvider displayName="Rich" onAddToQueue={onAddToQueue} onQueueNext={onQueueNext}>
         <Opener />
       </ContextMenuProvider>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
   fireEvent.contextMenu(screen.getByText('row'));
   return { onAddToQueue, onQueueNext };
@@ -78,7 +78,7 @@ describe('Queue next is offered on track rows across the app', () => {
         <ContextMenuProvider displayName="Rich" onAddToQueue={vi.fn()} onQueueNext={onQueueNext}>
           {row}
         </ContextMenuProvider>
-      </QueryClientProvider>,
+      </QueryClientProvider>
     );
     fireEvent.contextMenu(screen.getByText('Come Together'));
     fireEvent.click(screen.getByText('Queue next'));
@@ -87,15 +87,32 @@ describe('Queue next is offered on track rows across the app', () => {
 
   it('album track rows', () => {
     const onQueueNext = rightClickQueueNext(
-      <AlbumTrackRow track={albumTrack} isPlaylistOrProgram={false} isSelected={false} serviceId="svc"
-        accountId="acc" onClick={noop} onDragStart={noop} onAdd={noop} />,
+      <AlbumTrackRow
+        track={albumTrack}
+        isPlaylistOrProgram={false}
+        isSelected={false}
+        serviceId="svc"
+        accountId="acc"
+        onClick={noop}
+        onDragStart={noop}
+        onAdd={noop}
+      />
     );
     expect(onQueueNext).toHaveBeenCalledWith(raw);
   });
 
   it('artist top songs', () => {
     const onQueueNext = rightClickQueueNext(
-      <TopSongRow track={albumTrack} index={0} isSelected={false} onAdd={noop} onClick={noop} onDragStart={noop} onOpenAlbum={noop} onOpenArtist={noop} />,
+      <TopSongRow
+        track={albumTrack}
+        index={0}
+        isSelected={false}
+        onAdd={noop}
+        onClick={noop}
+        onDragStart={noop}
+        onOpenAlbum={noop}
+        onOpenArtist={noop}
+      />
     );
     expect(onQueueNext).toHaveBeenCalledWith(raw);
   });

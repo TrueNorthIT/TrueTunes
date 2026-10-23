@@ -10,7 +10,12 @@ function Opener({ onSubmit }: { onSubmit?: () => void }) {
     <>
       <button onClick={() => setOpen(true)}>Open it</button>
       {open && (
-        <Dialog title="Rename" onClose={() => setOpen(false)} onSubmit={onSubmit} actions={<button type="submit">Save</button>}>
+        <Dialog
+          title="Rename"
+          onClose={() => setOpen(false)}
+          onSubmit={onSubmit}
+          actions={<button type="submit">Save</button>}
+        >
           <input aria-label="Name" />
         </Dialog>
       )}
@@ -20,7 +25,11 @@ function Opener({ onSubmit }: { onSubmit?: () => void }) {
 
 describe('Dialog', () => {
   it('is a modal dialog named by its title, portalled to body', () => {
-    render(<Dialog title="Past games" onClose={vi.fn()}>body</Dialog>);
+    render(
+      <Dialog title="Past games" onClose={vi.fn()}>
+        body
+      </Dialog>
+    );
     const dialog = screen.getByRole('dialog', { name: 'Past games' });
     expect(dialog).toHaveAttribute('open');
     expect(dialog.parentElement).toBe(document.body);
@@ -58,7 +67,11 @@ describe('Dialog', () => {
 
   it('closes on the native cancel event (backdrop click with closedby="any")', () => {
     const onClose = vi.fn();
-    render(<Dialog title="Info" onClose={onClose}>body</Dialog>);
+    render(
+      <Dialog title="Info" onClose={onClose}>
+        body
+      </Dialog>
+    );
     fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true }));
     expect(onClose).toHaveBeenCalled();
   });

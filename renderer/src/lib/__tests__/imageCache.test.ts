@@ -85,7 +85,7 @@ describe('fetchImage', () => {
 
   it('deduplicates concurrent fetches for the same URL', async () => {
     let resolve!: () => void;
-    const pending = new Promise<Response>(res => {
+    const pending = new Promise<Response>((res) => {
       resolve = () => res(okResponse());
     });
     mockFetchGlobal.mockReturnValueOnce(pending);
@@ -210,7 +210,7 @@ describe('priority', () => {
     const releases: Array<() => void> = [];
     mockFetchGlobal.mockImplementation((url: string) => {
       order.push(url);
-      return new Promise<Response>(res => releases.push(() => res(okResponse())));
+      return new Promise<Response>((res) => releases.push(() => res(okResponse())));
     });
     for (let i = 0; i < 6; i++) void fetchImage(`https://example.com/tile${i}.jpg`); // 4 run, 2 queue
     void fetchImage('https://example.com/hero.jpg', true);
@@ -224,7 +224,10 @@ describe('getCachedVariant', () => {
   it('finds the largest loaded copy of the same artwork at another size', async () => {
     const mod = await import('../imageCache');
     mockFetchGlobal.mockResolvedValue(okResponse());
-    mockCreateObjectURL.mockReturnValueOnce('blob:226').mockReturnValueOnce('blob:544').mockReturnValueOnce('blob:other');
+    mockCreateObjectURL
+      .mockReturnValueOnce('blob:226')
+      .mockReturnValueOnce('blob:544')
+      .mockReturnValueOnce('blob:other');
     await mod.fetchImage('https://lh3.example.com/abc=w226-h226-l90-rj');
     await mod.fetchImage('https://lh3.example.com/abc=w544-h544-l90-rj');
     await mod.fetchImage('https://lh3.example.com/xyz=w544-h544-l90-rj');

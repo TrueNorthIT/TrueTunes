@@ -24,7 +24,9 @@ import styles from './SearchPanel.module.css';
  */
 function arrowNav(e: React.KeyboardEvent<HTMLElement>) {
   if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
-  const stops = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('[data-search-stop], [data-search-rows] > li'));
+  const stops = Array.from(
+    e.currentTarget.querySelectorAll<HTMLElement>('[data-search-stop], [data-search-rows] > li')
+  );
   const i = stops.findIndex((el) => el.contains(document.activeElement));
   if (i < 0) return;
   e.preventDefault();
@@ -63,14 +65,22 @@ export function SearchPanel({ onAddToQueue }: { onAddToQueue: AddToQueue }) {
       <div className={`page-scale ${styles.page}`} onKeyDown={arrowNav}>
         {q && <h1 className={styles.srOnly}>Results for ‘{q}’</h1>}
         <p className={styles.srOnly} aria-live="polite">
-          {q && isError ? 'Search failed' : q && settled ? (count ? `${count} result${count === 1 ? '' : 's'}` : 'No results') : ''}
+          {q && isError
+            ? 'Search failed'
+            : q && settled
+              ? count
+                ? `${count} result${count === 1 ? '' : 's'}`
+                : 'No results'
+              : ''}
         </p>
         {!q ? (
           <SearchHome onAddToQueue={onAddToQueue} />
         ) : isError && !isFetching ? (
           <div className={styles.msg}>
             <p>Search didn’t go through. The music service may be busy.</p>
-            <PillButton className={styles.retry} onClick={() => void refetch()}>Retry</PillButton>
+            <PillButton className={styles.retry} onClick={() => void refetch()}>
+              Retry
+            </PillButton>
           </div>
         ) : !data ? (
           <ResultsSkeleton />
@@ -123,7 +133,11 @@ function SearchHome({ onAddToQueue }: { onAddToQueue: AddToQueue }) {
       {fresh.length > 0 && (
         <SectionCard>
           {/* One row at tile size that scrolls, like the result shelves, rather than six tiles stretched to fill a wide window. */}
-          <Carousel title="New to the office" gap="1.4em" actions={<SeeAll label="More in Discover" onClick={() => navigate('/discover')} />}>
+          <Carousel
+            title="New to the office"
+            gap="1.4em"
+            actions={<SeeAll label="More in Discover" onClick={() => navigate('/discover')} />}
+          >
             {fresh.map((d) => {
               const t = d.track;
               return (
@@ -157,7 +171,10 @@ function RecentSearches() {
   const [recent, setRecent] = useState(getRecentSearches);
   if (recent.length === 0) return null;
   return (
-    <SectionCard title="Recent searches" actions={<SeeAll label="Clear" onClick={() => setRecent(clearRecentSearches())} />}>
+    <SectionCard
+      title="Recent searches"
+      actions={<SeeAll label="Clear" onClick={() => setRecent(clearRecentSearches())} />}
+    >
       <ul className={styles.recents}>
         {recent.map((s) => (
           <li key={s}>

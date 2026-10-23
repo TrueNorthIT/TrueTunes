@@ -10,8 +10,7 @@ vi.mock('../../components/common/Toast', () => ({
 }));
 
 function makeWrapper(qc: QueryClient) {
-  return ({ children }: { children: React.ReactNode }) =>
-    createElement(QueryClientProvider, { client: qc }, children);
+  return ({ children }: { children: React.ReactNode }) => createElement(QueryClientProvider, { client: qc }, children);
 }
 
 function makeQc() {
@@ -68,10 +67,7 @@ describe('useFavourite', () => {
 
   it('returns isFavourited=false when playlist is not in cache', () => {
     const qc = makeQc();
-    const { result } = renderHook(
-      () => useFavourite(DISPLAY_NAME, sampleTrack),
-      { wrapper: makeWrapper(qc) },
-    );
+    const { result } = renderHook(() => useFavourite(DISPLAY_NAME, sampleTrack), { wrapper: makeWrapper(qc) });
     expect(result.current.isFavourited).toBe(false);
   });
 
@@ -80,10 +76,7 @@ describe('useFavourite', () => {
     const favId = favouritesId(DISPLAY_NAME);
     qc.setQueryData(['playlist', favId], makeFavPlaylist([makePlaylistTrack()]));
 
-    const { result } = renderHook(
-      () => useFavourite(DISPLAY_NAME, sampleTrack),
-      { wrapper: makeWrapper(qc) },
-    );
+    const { result } = renderHook(() => useFavourite(DISPLAY_NAME, sampleTrack), { wrapper: makeWrapper(qc) });
     expect(result.current.isFavourited).toBe(true);
   });
 
@@ -93,16 +86,13 @@ describe('useFavourite', () => {
     qc.setQueryData(['playlist', favId], makeFavPlaylist());
     vi.mocked(window.sonos.addTrackToPlaylist).mockResolvedValueOnce({} as PlaylistDoc);
 
-    const { result } = renderHook(
-      () => useFavourite(DISPLAY_NAME, sampleTrack),
-      { wrapper: makeWrapper(qc) },
-    );
+    const { result } = renderHook(() => useFavourite(DISPLAY_NAME, sampleTrack), { wrapper: makeWrapper(qc) });
 
     await act(() => result.current.toggle());
 
     expect(vi.mocked(window.sonos.addTrackToPlaylist)).toHaveBeenCalledWith(
       favId,
-      expect.objectContaining({ uri: TRACK_URI, addedBy: DISPLAY_NAME }),
+      expect.objectContaining({ uri: TRACK_URI, addedBy: DISPLAY_NAME })
     );
     const updated = qc.getQueryData<PlaylistDoc>(['playlist', favId]);
     expect(updated?.tracks).toHaveLength(1);
@@ -115,10 +105,7 @@ describe('useFavourite', () => {
     qc.setQueryData(['playlist', favId], makeFavPlaylist());
     vi.mocked(window.sonos.addTrackToPlaylist).mockRejectedValueOnce(new Error('network'));
 
-    const { result } = renderHook(
-      () => useFavourite(DISPLAY_NAME, sampleTrack),
-      { wrapper: makeWrapper(qc) },
-    );
+    const { result } = renderHook(() => useFavourite(DISPLAY_NAME, sampleTrack), { wrapper: makeWrapper(qc) });
 
     await act(() => result.current.toggle());
 
@@ -133,10 +120,7 @@ describe('useFavourite', () => {
     qc.setQueryData(['playlist', favId], makeFavPlaylist([makePlaylistTrack()]));
     vi.mocked(window.sonos.removeTrackFromPlaylist).mockResolvedValueOnce({} as PlaylistDoc);
 
-    const { result } = renderHook(
-      () => useFavourite(DISPLAY_NAME, sampleTrack),
-      { wrapper: makeWrapper(qc) },
-    );
+    const { result } = renderHook(() => useFavourite(DISPLAY_NAME, sampleTrack), { wrapper: makeWrapper(qc) });
 
     expect(result.current.isFavourited).toBe(true);
     await act(() => result.current.toggle());
@@ -152,10 +136,7 @@ describe('useFavourite', () => {
     qc.setQueryData(['playlist', favId], makeFavPlaylist([makePlaylistTrack()]));
     vi.mocked(window.sonos.removeTrackFromPlaylist).mockRejectedValueOnce(new Error('network'));
 
-    const { result } = renderHook(
-      () => useFavourite(DISPLAY_NAME, sampleTrack),
-      { wrapper: makeWrapper(qc) },
-    );
+    const { result } = renderHook(() => useFavourite(DISPLAY_NAME, sampleTrack), { wrapper: makeWrapper(qc) });
 
     expect(result.current.isFavourited).toBe(true);
     await act(() => result.current.toggle());

@@ -17,10 +17,7 @@ import { CosmosClient } from '@azure/cosmos';
 //   400                         — missing fields
 //   500                         — Cosmos error
 
-export async function renameUserHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
+export async function renameUserHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const corsHeaders = { 'Access-Control-Allow-Origin': '*' };
 
   let body: { oid?: string; oldName?: string; newName?: string };
@@ -35,19 +32,23 @@ export async function renameUserHandler(
     return { status: 400, jsonBody: { error: 'oid, oldName, and newName required' }, headers: corsHeaders };
   }
   if (oldName === newName) {
-    return { status: 200, jsonBody: { ok: true, counts: { events: 0, scores: 0, playlists: 0 } }, headers: corsHeaders };
+    return {
+      status: 200,
+      jsonBody: { ok: true, counts: { events: 0, scores: 0, playlists: 0 } },
+      headers: corsHeaders,
+    };
   }
 
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
-  const dbName  = process.env['COSMOS_DATABASE'] ?? 'truetunes';
+  const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
   if (!connStr) return { status: 500, jsonBody: { error: 'Cosmos not configured' }, headers: corsHeaders };
 
   const db = new CosmosClient(connStr).database(dbName);
 
   try {
-    const profiles  = db.container('profiles');
-    const events    = db.container('events');
-    const scores    = db.container('scores');
+    const profiles = db.container('profiles');
+    const events = db.container('events');
+    const scores = db.container('scores');
     const playlists = db.container('playlists');
 
     // 1. Verify OID owns oldName.
@@ -124,10 +125,10 @@ export async function renameUserHandler(
         ...pl,
         owner: pl.owner === oldName ? newName : pl.owner,
         members: Array.isArray(pl.members)
-          ? (pl.members as string[]).map(m => (m === oldName ? newName : m))
+          ? (pl.members as string[]).map((m) => (m === oldName ? newName : m))
           : pl.members,
         tracks: Array.isArray(pl.tracks)
-          ? (pl.tracks as Record<string, unknown>[]).map(t =>
+          ? (pl.tracks as Record<string, unknown>[]).map((t) =>
               t.addedBy === oldName ? { ...t, addedBy: newName } : t
             )
           : pl.tracks,
@@ -137,12 +138,15 @@ export async function renameUserHandler(
 
     context.log(
       `[rename-user] "${oldName}" → "${newName}": ` +
-      `${eventDocs.length} events, ${scoreDocs.length} scores, ${playlistDocs.length} playlists`,
+        `${eventDocs.length} events, ${scoreDocs.length} scores, ${playlistDocs.length} playlists`
     );
 
     return {
       status: 200,
-      jsonBody: { ok: true, counts: { events: eventDocs.length, scores: scoreDocs.length, playlists: playlistDocs.length } },
+      jsonBody: {
+        ok: true,
+        counts: { events: eventDocs.length, scores: scoreDocs.length, playlists: playlistDocs.length },
+      },
       headers: corsHeaders,
     };
   } catch (err) {

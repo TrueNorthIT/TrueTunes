@@ -6,12 +6,20 @@
   min-width: 0;
 }
 .row:hover,
-.row:focus-within { background: var(--row-hover); }
+.row:focus-within {
+  background: var(--row-hover);
+}
 /* Selected (multi-select) keeps its fill on hover; playing lights the title; draggable rows show the grab cursor. */
 .row.selected,
-.row.selected:hover { background: rgba(var(--tint), 0.16); }
-.draggable { cursor: grab; }
-.draggable:active { cursor: grabbing; }
+.row.selected:hover {
+  background: rgba(var(--tint), 0.16);
+}
+.draggable {
+  cursor: grab;
+}
+.draggable:active {
+  cursor: grabbing;
+}
 
 .track {
   display: flex;
@@ -26,7 +34,9 @@
   align-items: center;
   column-gap: 0.9em;
 }
-.chart { padding: 0.55em 0.6em; }
+.chart {
+  padding: 0.55em 0.6em;
+}
 
 /* Column labels over a chart: same grid as the rows. */
 .chartHead {
@@ -34,7 +44,9 @@
   font-size: var(--fs-small);
   color: var(--text-3);
 }
-.chartHead > :nth-child(4) { grid-column: 4; }
+.chartHead > :nth-child(4) {
+  grid-column: 4;
+}
 
 /* Thumbnail: a click target for mouse users only; the title button is the keyboard and screen reader path. */
 .artBtn {
@@ -56,9 +68,14 @@
   background: var(--bg-1);
 }
 /* The img stays inline (Home's rows were built with the line-box gap under it); the placeholder must be a box to have a size. */
-.artPh { display: block; }
+.artPh {
+  display: block;
+}
 
-.text { min-width: 0; flex: 1; }
+.text {
+  min-width: 0;
+  flex: 1;
+}
 .line {
   font-size: var(--fs-body);
   white-space: nowrap;
@@ -84,9 +101,16 @@
   white-space: nowrap;
 }
 .row:hover .title,
-.row:focus-within .title { color: var(--on-art); }
-.artist { font-weight: 400; color: var(--text-3); }
-.dash { white-space: pre; }
+.row:focus-within .title {
+  color: var(--on-art);
+}
+.artist {
+  font-weight: 400;
+  color: var(--text-3);
+}
+.dash {
+  white-space: pre;
+}
 .reason {
   font-size: var(--fs-small);
   color: var(--text-3);
@@ -97,11 +121,17 @@
 }
 
 /* + : out of sight until the row is hovered or has focus. */
-.add { opacity: 0; }
+.add {
+  opacity: 0;
+}
 .row:hover .add,
 .row:focus-within .add,
-.add:focus-visible { opacity: 1; }
-.addSpacer { width: 2.2em; }
+.add:focus-visible {
+  opacity: 1;
+}
+.addSpacer {
+  width: 2.2em;
+}
 
 /* Chart cells */
 .rank {
@@ -110,7 +140,12 @@
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
 }
-.titleCell { display: flex; align-items: center; gap: 0.9em; min-width: 0; }
+.titleCell {
+  display: flex;
+  align-items: center;
+  gap: 0.9em;
+  min-width: 0;
+}
 .chartTitle {
   font-size: var(--fs-body);
   font-weight: 500;
@@ -131,7 +166,9 @@
 .row:hover .chartTitle,
 .row:focus-within .chartTitle,
 .row.playing .chartTitle,
-.row.playing .title { color: var(--on-art); }
+.row.playing .title {
+  color: var(--on-art);
+}
 .chartArtist {
   min-width: 0;
   color: var(--text-3);
@@ -154,8 +191,12 @@
 }
 
 /* ── TrackRow extras: number, handle, aside, who, duration, remove ── */
-.row { position: relative; }
-.track.withHandle { padding-left: 1.5em; }
+.row {
+  position: relative;
+}
+.track.withHandle {
+  padding-left: 1.5em;
+}
 .handle {
   position: absolute;
   left: 0.3em;
@@ -168,7 +209,9 @@
   transition: opacity var(--dur-fast) var(--ease-fast);
 }
 .row:hover .handle,
-.row.selected .handle { opacity: 1; }
+.row.selected .handle {
+  opacity: 1;
+}
 
 .lead {
   flex: none;
@@ -207,7 +250,9 @@
   line-height: 0;
   transition: box-shadow var(--dur-fast) var(--ease-fast);
 }
-.who:hover { box-shadow: var(--face-ring); }
+.who:hover {
+  box-shadow: var(--face-ring);
+}
 .whoAvatar {
   width: 1.9em;
   height: 1.9em;
@@ -221,7 +266,12 @@
   overflow: hidden;
   line-height: 1;
 }
-.whoAvatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.whoAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 
 /* × : same family as the + (quiet circle), revealed with it. */
 .remove {
@@ -235,30 +285,56 @@
   background: none;
   color: var(--text-3);
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast), opacity var(--dur-fast) var(--ease-fast);
+  transition:
+    background var(--dur-fast) var(--ease-fast),
+    color var(--dur-fast) var(--ease-fast),
+    opacity var(--dur-fast) var(--ease-fast);
 }
-.remove:hover { background: rgba(var(--danger), 0.16); color: rgb(var(--danger)); }
+.remove:hover {
+  background: rgba(var(--danger), 0.16);
+  color: rgb(var(--danger));
+}
 
 /*
  * Opt-in on the list (data-rows-wrap): the whole title shows, over two lines at most, and the aside takes less room.
  * Search uses it, where a version suffix ("(CD Pro Version)", "(Live From The Royal Albert Hall)") is the whole point.
  */
-[data-rows-wrap] .aside { flex-basis: 20%; }
+[data-rows-wrap] .aside {
+  flex-basis: 20%;
+}
 [data-rows-wrap] .line {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   white-space: normal;
 }
-[data-rows-wrap] .title { display: inline; }
-[data-rows-wrap] .title button { display: inline; white-space: normal; }
+[data-rows-wrap] .title {
+  display: inline;
+}
+[data-rows-wrap] .title button {
+  display: inline;
+  white-space: normal;
+}
 
 /* Narrow page: the artist drops under the title. */
 @container (max-width: 1100px) {
-  .line { display: flex; flex-direction: column; white-space: normal; }
-  .line > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .dash { display: none; }
-  [data-rows-wrap] .line { display: flex; }
+  .line {
+    display: flex;
+    flex-direction: column;
+    white-space: normal;
+  }
+  .line > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .dash {
+    display: none;
+  }
+  [data-rows-wrap] .line {
+    display: flex;
+  }
   /* The clamp sits on the button, so the explicit badge stays beside a two-line title instead of on a third line. */
   [data-rows-wrap] .line > .title {
     display: flex;
@@ -278,5 +354,7 @@
 @media (prefers-reduced-motion: reduce) {
   .row,
   .title,
-  .chartTitle { transition: none; }
+  .chartTitle {
+    transition: none;
+  }
 }

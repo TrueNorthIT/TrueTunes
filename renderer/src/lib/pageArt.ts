@@ -25,6 +25,6 @@ export function usePageArtValue(): string | null {
       listeners.add(cb);
       return () => listeners.delete(cb);
     },
-    () => current,
+    () => current
   );
 }

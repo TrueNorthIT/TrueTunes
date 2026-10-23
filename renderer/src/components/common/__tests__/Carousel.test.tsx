@@ -10,7 +10,14 @@ const setOverflow = (on: boolean) => {
 };
 
 beforeEach(() => {
-  vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} unobserve() {} });
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    }
+  );
 });
 afterEach(() => {
   vi.restoreAllMocks();
@@ -19,7 +26,12 @@ afterEach(() => {
 
 describe('Carousel', () => {
   it('renders title, actions and children', () => {
-    render(<Carousel title="Albums" actions={<button>+ New</button>}><div>one</div><div>two</div></Carousel>);
+    render(
+      <Carousel title="Albums" actions={<button>+ New</button>}>
+        <div>one</div>
+        <div>two</div>
+      </Carousel>
+    );
     expect(screen.getByRole('heading', { name: 'Albums' })).toBeTruthy();
     expect(screen.getByText('+ New')).toBeTruthy();
     expect(screen.getByText('two')).toBeTruthy();
@@ -27,20 +39,32 @@ describe('Carousel', () => {
 
   it('labels arrows when content overflows; start arrow disabled at start', () => {
     setOverflow(true);
-    render(<Carousel title="x"><div>a</div></Carousel>);
+    render(
+      <Carousel title="x">
+        <div>a</div>
+      </Carousel>
+    );
     expect((screen.getByRole('button', { name: 'Scroll left' }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole('button', { name: 'Scroll right' }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('hides arrows when content fits', () => {
     setOverflow(false);
-    render(<Carousel title="x"><div>a</div></Carousel>);
+    render(
+      <Carousel title="x">
+        <div>a</div>
+      </Carousel>
+    );
     expect(screen.queryByRole('button', { name: 'Scroll left' })).toBeNull();
   });
 
   describe('search', () => {
     it('is absent without the prop', () => {
-      render(<Carousel title="x"><div>a</div></Carousel>);
+      render(
+        <Carousel title="x">
+          <div>a</div>
+        </Carousel>
+      );
       expect(screen.queryByRole('textbox')).toBeNull();
     });
 
@@ -48,13 +72,19 @@ describe('Carousel', () => {
       const onChange = vi.fn();
       const user = userEvent.setup();
       const { rerender } = render(
-        <Carousel title="x" search={{ value: '', onChange, placeholder: 'Find' }}><div>a</div></Carousel>,
+        <Carousel title="x" search={{ value: '', onChange, placeholder: 'Find' }}>
+          <div>a</div>
+        </Carousel>
       );
       expect(screen.queryByRole('button', { name: 'Clear search' })).toBeNull();
       await user.type(screen.getByRole('textbox', { name: 'Find' }), 'q');
       expect(onChange).toHaveBeenLastCalledWith('q');
 
-      rerender(<Carousel title="x" search={{ value: 'q', onChange, status: 'searching tracks…' }}><div>a</div></Carousel>);
+      rerender(
+        <Carousel title="x" search={{ value: 'q', onChange, status: 'searching tracks…' }}>
+          <div>a</div>
+        </Carousel>
+      );
       expect(screen.getByText('searching tracks…')).toBeTruthy();
       await user.click(screen.getByRole('button', { name: 'Clear search' }));
       expect(onChange).toHaveBeenLastCalledWith('');

@@ -13,31 +13,35 @@ function getDetector(): Promise<FaceDetector> {
   detector ??= import('@mediapipe/tasks-vision').then(({ FaceDetector }) =>
     FaceDetector.createFromOptions(
       { wasmLoaderPath, wasmBinaryPath },
-      { baseOptions: { modelAssetPath, delegate: 'CPU' }, runningMode: 'IMAGE', minDetectionConfidence: 0.5 },
-    ),
+      { baseOptions: { modelAssetPath, delegate: 'CPU' }, runningMode: 'IMAGE', minDetectionConfidence: 0.5 }
+    )
   );
   return detector;
 }
 
 /** Load the detector ahead of the first artist page, so its crop doesn't visibly ease in. */
 export function warmFaceDetector(): void {
-  getDetector().catch(() => { detector = null; });
+  getDetector().catch(() => {
+    detector = null;
+  });
 }
 
 /** The faces in `image`, normalised to its size (0–1). Rejects when MediaPipe cannot load. */
 export async function detectFaces(image: HTMLCanvasElement): Promise<DetectedFace[]> {
   const { detections } = (await getDetector()).detect(image);
   const { width: w, height: h } = image;
-  return detections.flatMap(d => {
+  return detections.flatMap((d) => {
     const b = d.boundingBox;
     if (!b) return [];
     // keypoints 0 and 1 are the eyes, already normalised
     const eyes = d.keypoints.slice(0, 2);
-    return [{
-      top: b.originY / h,
-      height: b.height / h,
-      width: b.width / w,
-      eyeY: eyes.length === 2 ? (eyes[0].y + eyes[1].y) / 2 : undefined,
-    }];
+    return [
+      {
+        top: b.originY / h,
+        height: b.height / h,
+        width: b.width / w,
+        eyeY: eyes.length === 2 ? (eyes[0].y + eyes[1].y) / 2 : undefined,
+      },
+    ];
   });
 }
