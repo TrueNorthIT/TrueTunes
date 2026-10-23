@@ -13,7 +13,7 @@
   background: none;
   color: var(--text-2);
   font: inherit;
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   font-weight: 600;
   padding: 0.45em 1em;
   cursor: pointer;

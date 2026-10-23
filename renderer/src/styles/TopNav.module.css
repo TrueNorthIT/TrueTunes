@@ -146,7 +146,7 @@
   background: none;
   border: none;
   color: var(--text);
-  font-size: 13px;
+  font-size: var(--fs-px);
   font-family: inherit;
   width: 180px;
   outline: none;
@@ -190,7 +190,7 @@
 }
 
 .groupPopoverLabel {
-  font-size: 13px;
+  font-size: var(--fs-px);
   color: var(--text-3);
   font-weight: 500;
   padding: 2px 8px 6px;
@@ -200,7 +200,7 @@
   background: none;
   border: none;
   color: var(--text-2);
-  font-size: 13px;
+  font-size: var(--fs-px);
   font-family: inherit;
   text-align: left;
   padding: 7px 10px;
@@ -238,7 +238,7 @@
   border-radius: var(--r-round);
   background: rgba(var(--tint), 0.24);
   color: var(--on-art);
-  font-size: 13px;
+  font-size: var(--fs-px);
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -247,7 +247,7 @@
 }
 
 .profileName {
-  font-size: 13px;
+  font-size: var(--fs-px);
   font-weight: 500;
   color: var(--text-2);
   white-space: nowrap;
@@ -256,7 +256,7 @@
 }
 
 .profileSignIn {
-  font-size: 13px;
+  font-size: var(--fs-px);
   font-weight: 500;
   color: var(--text-3);
   padding: 0 4px;
@@ -279,7 +279,7 @@
 }
 
 .profileChangeLabel {
-  font-size: 13px;
+  font-size: var(--fs-px);
   color: var(--text-3);
   font-weight: 500;
 }
@@ -296,7 +296,7 @@
 }
 
 .appVersion {
-  font-size: 13px;
+  font-size: var(--fs-px);
   color: var(--text-3);
 }
 

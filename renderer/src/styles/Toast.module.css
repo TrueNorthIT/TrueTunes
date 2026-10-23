@@ -17,7 +17,7 @@
   gap: 0.75em;
   padding: 9px 16px;
   border-radius: var(--r-md);
-  font-size: 13px;
+  font-size: var(--fs-px);
   font-weight: 500;
   max-width: 340px;
   color: var(--text);

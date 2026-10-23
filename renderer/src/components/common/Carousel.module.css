@@ -7,7 +7,7 @@
 }
 /* Same as a SectionCard title, so a shelf reads as a section wherever it sits. */
 .title {
-  font-size: 1.6em;
+  font-size: var(--fs-title);
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: -0.015em;
@@ -39,7 +39,7 @@
   border: none;
   outline: none;
   color: var(--text);
-  font-size: 13px;
+  font-size: var(--fs-px);
   font-family: inherit;
   padding: 0;
 }
@@ -49,13 +49,13 @@
   border: none;
   color: var(--text-3);
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--fs-px);
   line-height: 1;
   padding: 4px;
   border-radius: var(--r-round);
 }
 .searchClear:hover { color: var(--text); }
-.searchStatus { font-size: 13px; color: var(--text-3); white-space: nowrap; }
+.searchStatus { font-size: var(--fs-px); color: var(--text-3); white-space: nowrap; }
 .controls {
   margin-left: auto;
   display: flex;

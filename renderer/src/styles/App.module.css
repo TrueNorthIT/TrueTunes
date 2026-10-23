@@ -42,7 +42,7 @@
   color: var(--on-art);
   padding: 8px 16px;
   border-radius: var(--r-sm);
-  font-size: 13px;
+  font-size: var(--fs-px);
   font-weight: 500;
   z-index: 9999;
   pointer-events: none;
@@ -64,5 +64,5 @@
   align-items: center;
   justify-content: center;
   color: var(--text-2);
-  font-size: 14px;
+  font-size: var(--fs-px-lg);
 }

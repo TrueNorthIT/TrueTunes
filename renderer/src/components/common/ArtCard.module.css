@@ -57,7 +57,7 @@
   left: 1.2em;
   z-index: 1;
   max-width: calc(100% - 2.4em);
-  font-size: max(13px, 0.95em);
+  font-size: var(--fs-prose);
   font-weight: 500;
   color: var(--on-art);
   text-shadow: var(--text-shadow);
@@ -75,7 +75,7 @@
   pointer-events: none;
 }
 .title {
-  font-size: 1.5em;
+  font-size: var(--fs-title-caption);
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--on-art);
@@ -83,9 +83,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.medium .title { font-size: 1.15em; }
+.medium .title { font-size: var(--fs-title-card); }
 .sub {
-  font-size: max(13px, 0.95em);
+  font-size: var(--fs-prose);
   color: var(--on-art-2);
   white-space: nowrap;
   overflow: hidden;

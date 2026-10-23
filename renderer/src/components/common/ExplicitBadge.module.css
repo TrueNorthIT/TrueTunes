@@ -8,7 +8,7 @@
   flex-shrink: 0;
   border-radius: var(--r-sm);
   background: rgba(var(--tint), 0.16);
-  font-size: 13px;
+  font-size: var(--fs-px);
   font-weight: 700;
   color: var(--text-2);
   line-height: 1;

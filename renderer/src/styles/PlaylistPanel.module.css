@@ -74,7 +74,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: max(13px, 0.8em);
+  font-size: var(--fs-small);
   font-weight: 700;
   color: var(--on-art);
   overflow: hidden;
@@ -91,7 +91,7 @@
   border-radius: var(--r-pill);
   background: none;
   font: inherit;
-  font-size: 1.05em;
+  font-size: var(--fs-body);
   font-weight: 500;
   color: var(--text-2);
   cursor: pointer;
@@ -99,16 +99,16 @@
 }
 .face:hover,
 .face:focus-visible { background: var(--row-hover); color: var(--text); }
-.with { font-size: 1.05em; color: var(--text-3); }
+.with { font-size: var(--fs-body); color: var(--text-3); }
 .collabs { display: flex; align-items: center; flex-wrap: wrap; gap: 0.3em 0.5em; list-style: none; margin: 0; padding: 0; }
-.more { font-size: max(13px, 0.93em); color: var(--text-3); }
+.more { font-size: var(--fs-label); color: var(--text-3); }
 
 .metaLine {
   display: flex;
   align-items: center;
   gap: 0.5em;
   flex-wrap: wrap;
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
 }

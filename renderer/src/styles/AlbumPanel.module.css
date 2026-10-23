@@ -23,9 +23,9 @@
   font-size: 3em; color: var(--text-3);
 }
 
-.artist { font-size: 1.05em; color: var(--text-2); }
+.artist { font-size: var(--fs-body); color: var(--text-2); }
 .metaLine {
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
 }
@@ -70,13 +70,13 @@
 }
 .released {
   margin-bottom: 0.8em;
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
 }
 .aboutText {
   max-width: 72ch;
-  font-size: 0.95em;
+  font-size: var(--fs-prose);
   line-height: 1.55;
   color: var(--text-3);
   user-select: text;
@@ -84,7 +84,7 @@
 .aboutText p + p { margin-top: 0.7em; }
 .source {
   margin-top: 1em;
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   color: var(--text-3);
 }
 .sourceLink {

@@ -79,6 +79,24 @@
   --r-xs: 0.4em; /* skeleton lines and small chips */
   --r-pill: 2em; /* buttons and chips; also thin bars, which round fully */
   --r-round: 50%; /* icon buttons, avatars, portraits */
+  /* Type roles (DESIGN.md "Typography"). Smaller steps carry the 13px floor. */
+  --fs-display: clamp(44px, 6cqw, 96px); /* the artist name over the hero */
+  --fs-display-sm: clamp(30px, 3.4cqw, 56px); /* a long shared credit */
+  --fs-display-profile: clamp(40px, 5.2cqw, 88px); /* the Profile name */
+  --fs-headline: 2.2em; /* Home greeting */
+  --fs-title-feature: 1.9em; /* Now Playing, HeroBand, Top result */
+  --fs-title: 1.6em; /* section and shelf titles */
+  --fs-title-caption: 1.5em; /* title under an image-card scrim */
+  --fs-title-dialog: 1.3em;
+  --fs-title-card: 1.15em; /* the same on medium cards */
+  --fs-body: 1.07em; /* track and chart rows, hero sub-lines */
+  --fs-prose: max(13px, 0.95em); /* Genius "about" text, notes */
+  --fs-label: max(13px, 0.93em); /* chips, small buttons, secondary lines */
+  --fs-small: max(13px, 0.86em); /* smallest step; never below 13px */
+  /* Fixed-px surfaces (queue sidebar, skinny, mini player). */
+  --fs-px: 13px; /* meta */
+  --fs-px-lg: 14px; /* row text */
+  --fs-px-title: 16px;
   --nav-h: 64px; /* 12px top gap + 44px pill + 8px clearance */
   --player-h: 112px; /* 64px bar + 24px bottom margin + 24px clearance */
   --card-size: clamp(140px, 16vw, 320px);

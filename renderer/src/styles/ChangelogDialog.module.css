@@ -43,14 +43,14 @@
 .releaseActive,
 .releaseActive:hover { background: rgba(var(--tint), 0.16); }
 .tag {
-  font-size: max(13px, 0.95em);
+  font-size: var(--fs-prose);
   font-weight: 600;
   color: var(--title-rest);
   font-variant-numeric: tabular-nums;
 }
 .releaseActive .tag { color: var(--on-art); }
 .date {
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   color: var(--text-3);
 }
 
@@ -65,7 +65,7 @@
   margin-bottom: 1.1em;
 }
 .articleTitle {
-  font-size: 1.6em;
+  font-size: var(--fs-title);
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: -0.015em;
@@ -74,7 +74,7 @@
 }
 .meta {
   grid-column: 1;
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   color: var(--text-3);
 }
 .allLink {
@@ -85,7 +85,7 @@
   padding: 0;
   border: none;
   background: none;
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   color: var(--text-3);
   cursor: pointer;
   text-align: left;
@@ -101,7 +101,7 @@
   padding: 0;
   border: none;
   background: none;
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   color: var(--text-2);
   cursor: pointer;
   white-space: nowrap;
@@ -111,7 +111,7 @@
 /* ── Release notes (markdown from GitHub) ── */
 .notes {
   max-width: 68ch;
-  font-size: max(13px, 0.95em);
+  font-size: var(--fs-prose);
   line-height: 1.6;
   color: var(--text-2);
   overflow-wrap: break-word;
@@ -130,9 +130,9 @@
 }
 .notes > :global(:first-child) { margin-top: 0; }
 .notes :global(h1),
-.notes :global(h2) { font-size: 1.15em; }
+.notes :global(h2) { font-size: var(--fs-title-card); }
 .notes :global(h3),
-.notes :global(h4) { font-size: 1.05em; }
+.notes :global(h4) { font-size: var(--fs-body); }
 .notes :global(p),
 .notes :global(ul),
 .notes :global(ol) { margin: 0 0 0.75em; }
@@ -150,7 +150,7 @@
 .notes :global(a:hover) { text-decoration-color: currentColor; }
 .notes :global(code) {
   font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
-  font-size: max(13px, 0.9em);
+  font-size: var(--fs-label);
   background: var(--row-hover);
   border-radius: var(--r-xs);
   padding: 0.05em 0.35em;

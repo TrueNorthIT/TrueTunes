@@ -3,7 +3,7 @@
   display: inline-flex;
   align-items: center;
   align-self: flex-start;
-  font-size: max(13px, 0.86em);
+  font-size: var(--fs-small);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--text-2);

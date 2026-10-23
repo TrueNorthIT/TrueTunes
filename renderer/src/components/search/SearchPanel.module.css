@@ -31,7 +31,7 @@
   padding: 4em 0;
 }
 .msgTitle {
-  font-size: 1.3em;
+  font-size: var(--fs-title-dialog);
   font-weight: 600;
   color: var(--text);
 }
@@ -63,7 +63,7 @@
   background: rgba(var(--tint), 0.12);
   color: var(--text);
   font: inherit;
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   font-weight: 500;
   cursor: pointer;
   transition: background var(--dur-fast) var(--ease-fast);

@@ -11,7 +11,7 @@
   backdrop-filter: blur(10px);
   color: var(--text-2);
   font: inherit;
-  font-size: 0.93em;
+  font-size: var(--fs-label);
   cursor: pointer;
   transition:
     background var(--dur-fast) var(--ease-fast),
@@ -26,7 +26,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: max(13px, 0.8em);
+  font-size: var(--fs-small);
   font-weight: 700;
   overflow: hidden;
   flex-shrink: 0;

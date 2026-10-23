@@ -74,7 +74,7 @@
 .withArt .meta { text-shadow: var(--text-shadow-lg); }
 
 .heading {
-  font-size: max(13px, 0.95em);
+  font-size: var(--fs-prose);
   font-weight: 600;
   color: var(--on-art-2);
   margin-bottom: 0.45em;
@@ -87,7 +87,7 @@
   -webkit-line-clamp: 3;
   overflow: hidden;
   max-width: 100%;
-  font-size: 1.9em;
+  font-size: var(--fs-title-feature);
   font-weight: 600;
   line-height: 1.15;
   letter-spacing: -0.02em;

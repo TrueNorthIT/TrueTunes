@@ -28,7 +28,7 @@
 }
 
 .title {
-  font-size: 1.6em;
+  font-size: var(--fs-title);
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: -0.015em;
@@ -40,7 +40,7 @@
   border: none;
   padding: 0;
   font: inherit;
-  font-size: max(13px, 0.95em);
+  font-size: var(--fs-prose);
   font-weight: 500;
   color: var(--text-2);
   cursor: pointer;

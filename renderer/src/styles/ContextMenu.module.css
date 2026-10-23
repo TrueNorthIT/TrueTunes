@@ -37,7 +37,7 @@
   border-radius: var(--r-row);
   background: none;
   font: inherit;
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   color: var(--text);
   text-align: left;
   white-space: nowrap;
@@ -71,7 +71,7 @@
 }
 
 .emptyHint {
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   color: var(--text-3);
   padding: 0.5em 0.7em;
 }
@@ -107,7 +107,7 @@
   color: var(--text);
 }
 .checkSub {
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   color: var(--text-3);
 }
 

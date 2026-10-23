@@ -29,7 +29,7 @@
   color: var(--text);
   cursor: pointer;
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--fs-px);
   font-weight: 600;
   padding: 4px 8px;
   margin-right: 6px;
@@ -48,7 +48,7 @@
   color: var(--text);
   cursor: pointer;
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--fs-px);
   font-weight: 600;
   padding: 4px 8px;
   margin-right: 6px;

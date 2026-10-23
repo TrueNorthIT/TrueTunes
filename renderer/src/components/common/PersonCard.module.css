@@ -38,7 +38,7 @@
 .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .who { display: flex; flex-direction: column; min-width: 0; }
 .name { font-size: 1em; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.caption { font-size: max(13px, 0.86em); color: var(--text-3); }
+.caption { font-size: var(--fs-small); color: var(--text-3); }
 
 @media (prefers-reduced-motion: reduce) {
   .head { transition: none; }

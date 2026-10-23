@@ -25,7 +25,7 @@
   margin-bottom: 1.1em;
 }
 .title {
-  font-size: 2.2em;
+  font-size: var(--fs-headline);
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.15;
@@ -33,7 +33,7 @@
 }
 .premise {
   margin-top: 0.3em;
-  font-size: 1.07em;
+  font-size: var(--fs-body);
   color: var(--text-2);
 }
 .actions {
@@ -52,13 +52,13 @@
   gap: 0.6em 0.9em;
 }
 .forLabel {
-  font-size: 1.07em;
+  font-size: var(--fs-body);
   line-height: 2.05; /* one face pill tall (2.2em), so it sits on the first row of faces */
   font-weight: 600;
   color: var(--text);
 }
 .everyone {
-  font-size: 1.07em;
+  font-size: var(--fs-body);
   line-height: 2.05;
   color: var(--text-2);
 }
@@ -99,7 +99,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: max(13px, 0.8em);
+  font-size: var(--fs-small);
   font-weight: 700;
   color: var(--text);
   overflow: hidden;
@@ -110,7 +110,7 @@
 }
 .faceAvatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .faceName {
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   color: var(--text-2);
   white-space: nowrap;
   transition: color var(--dur-fast) var(--ease-fast);
@@ -127,7 +127,7 @@
 .link {
   border: none;
   font-family: inherit;
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
@@ -157,7 +157,7 @@
 .note {
   max-width: 70ch;
   margin-top: 0.6em;
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   color: var(--text-3);
 }
 
@@ -200,7 +200,7 @@
 }
 .retry { margin-top: 1.1em; }
 .emptyTitle {
-  font-size: 1.6em;
+  font-size: var(--fs-title);
   font-weight: 600;
   letter-spacing: -0.015em;
   color: var(--text);

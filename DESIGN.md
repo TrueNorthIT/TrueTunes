@@ -218,6 +218,8 @@ A near-monochrome navy room whose only saturated colour is borrowed, at runtime,
 
 ### Status
 - **Danger** (`danger`, `--danger: 248, 113, 113`): destructive actions (Clear, Delete), errors and Queuedle's wrong answers. A triplet like `--tint`, used tonally (a 0.16 fill under full-strength text), never as a slab.
+- **Success** (`--success: 74, 222, 128`): the success toast's status dot. A triplet, used as a dot only.
+- **Danger solid** (`--danger-solid: 220, 50, 50`): the one solid slab, the error banner, because white text needs more contrast than tonal Danger gives.
 - **Right mint** (`--right: 128, 214, 166`): local to Queuedle (its panel and its portalled calendar), for right answers and played days. It is not a global token, and no other surface uses it.
 
 ### Runtime accent (artwork-derived)
@@ -243,14 +245,17 @@ Generated colours keep the same restraint: user avatars and playlist placeholder
 
 ### Hierarchy
 Page sizes are in `em` from the page base `clamp(14px, calc(0.45vw + 8.2px), 16px)` (14px at 1280 wide, 16px from about 1730px up). Hero display sizes follow the page container (`cqw`), not the viewport.
-- **Display** (800, `clamp(44px, 6cqw, 96px)`, 1.04, -0.03em): the artist name over the hero, clamped to 2 lines. A shared credit past 28 characters steps down to `clamp(30px, 3.4cqw, 56px)`. The Profile name uses the same voice at `clamp(40px, 5.2cqw, 88px)`. Nothing else.
-- **Headline** (600, 2.2em, 1.15, -0.01em): the Home greeting.
-- **Title, feature** (600, 1.9em, 1.15, -0.02em): the Now Playing and HeroBand titles (2 lines) and the Top result title (3 lines).
-- **Title** (600, 1.6em, 1.2, -0.015em): section and shelf titles. Dialog titles sit at 1.3em, balanced.
-- **Title, caption** (600, 1.5em; 1.15em on medium cards; -0.01em): the title line under an image-card scrim.
-- **Body** (500 title / 400 artist, 1.07em): track and chart rows, hero sub-lines and the Profile facts line.
-- **Body, prose** (400, 0.95em, 1.55, max 100ch): the Genius "about" text, clamped to 4 lines. Dialog notes cap at 62ch.
-- **Label** (500, 0.93em): chips, small buttons and secondary lines. Smaller steps are written `max(13px, 0.86em)`.
+- **Display** (`--fs-display`, 800, `clamp(44px, 6cqw, 96px)`, 1.04, -0.03em): the artist name over the hero, clamped to 2 lines. A shared credit past 28 characters steps down to `clamp(30px, 3.4cqw, 56px)` (`--fs-display-sm`). The Profile name uses the same voice at `clamp(40px, 5.2cqw, 88px)` (`--fs-display-profile`). Nothing else.
+- **Headline** (`--fs-headline`, 600, 2.2em, 1.15, -0.01em): the Home greeting.
+- **Title, feature** (`--fs-title-feature`, 600, 1.9em, 1.15, -0.02em): the Now Playing and HeroBand titles (2 lines) and the Top result title (3 lines).
+- **Title** (`--fs-title`, 600, 1.6em, 1.2, -0.015em): section and shelf titles. Dialog titles sit at 1.3em (`--fs-title-dialog`), balanced.
+- **Title, caption** (`--fs-title-caption`, 600, 1.5em; 1.15em on medium cards, `--fs-title-card`; -0.01em): the title line under an image-card scrim.
+- **Body** (`--fs-body`, 500 title / 400 artist, 1.07em): track and chart rows, hero sub-lines and the Profile facts line.
+- **Body, prose** (`--fs-prose`, 400, 0.95em, 1.55, max 100ch): the Genius "about" text, clamped to 4 lines. Dialog notes cap at 62ch.
+- **Label** (`--fs-label`, 500, 0.93em): chips, small buttons and secondary lines. The smaller step is `--fs-small`, `max(13px, 0.86em)`.
+- **Fixed-px surfaces** (queue sidebar, skinny, mini player): `--fs-px` 13px for meta, `--fs-px-lg` 14px for row text, `--fs-px-title` 16px for titles.
+
+Every font size in the CSS is one of these tokens. The few that aren't are glyph and placeholder sizes (empty-art icons, big numerals) tied to their layout.
 
 ### Named Rules
 **The Sentence Case Rule.** Titles, captions, buttons and chips are sentence case. Hierarchy comes from size, weight 600 and negative tracking, not from capitals or a second face. Server strings in title case (tier names) are sentence-cased in CSS.
@@ -274,10 +279,12 @@ Pages scroll inside a panel padded 28px left and right, clearing the floating na
 Depth comes from three layers, not from shadows on content. At the back is a single, heavily blurred copy of the current artwork (`blur(120px) saturate(1.4) brightness(0.8)` at 0.22 opacity, 1s crossfade), fixed behind the whole app, skinny mode included. On top of that sits the navy ground with tonal cards a few percent lighter. Frosted shell materials and modals float above everything. Content cards are flat. Shadows appear only on artwork and on floating surfaces.
 
 ### Shadow Vocabulary
-- **Art rest** (`box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35)`, `--art-shadow`): shelf artwork at rest, paired with the inner keyline `inset 0 0 0 1px rgba(255,255,255,.06)` (`--art-keyline`) drawn by the art box's `::after`.
-- **Art lifted** (`box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4)`, `--art-lift-shadow`): album and jump tiles on hover or focus, with a 2px rise.
-- **Hero art** (`box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35)`, hover `0 14px 34px rgba(0,0,0,.45)`): the Now Playing and HeroBand artwork, the artist hero's print and the Profile face.
-- **Floating** (`box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,.06)`): nav pill, history and window pills, player bar, their dropdowns, the context menu, toasts and the Dialog. The Dialog's backdrop is `rgba(0,0,0,.55)`.
+- **Art rest** (`--art-shadow`: `0 2px 8px rgba(0, 0, 0, 0.35)`): shelf artwork at rest, paired with the inner keyline `inset 0 0 0 1px rgba(255,255,255,.06)` (`--art-keyline`) drawn by the art box's `::after`.
+- **Art lifted** (`--art-lift-shadow`: `0 8px 18px rgba(0, 0, 0, 0.4)`): album and jump tiles on hover or focus, with a 2px rise.
+- **Hero art** (`--hero-shadow`: `0 10px 28px rgba(0, 0, 0, 0.35)`; hover `--hero-lift-shadow`: `0 14px 34px rgba(0,0,0,.45)`): the Now Playing and HeroBand artwork, the artist hero's print and the Profile face.
+- **Floating** (`--float-shadow`: `0 8px 32px rgba(0, 0, 0, 0.5)` plus the `--material-edge` highlight): nav pill, history and window pills, player bar, their dropdowns, the context menu, toasts and the Dialog. The Dialog's backdrop is `--overlay` (`rgba(0,0,0,.55)`), the same dim used over art and on dark corner buttons. White text over art takes `--text-shadow` (`0 1px 6px`) or, on larger lines, `--text-shadow-lg` (`0 1px 12px`); an avatar's hover ring is `--face-ring`.
+
+Black and white appear in the CSS only as the alpha tokens declared in `global.css`: `--overlay`, `--overlay-strong`, `--well`, `--glass`, `--glass-hi`, `--glass-faint` and `--track`. A test (`__tests__/cssTokens.test.ts`) fails on a raw colour anywhere else.
 
 ### Named Rules
 **The Shadows Belong to Prints Rule.** Inside the content area only artwork casts a shadow. Cards, rows and chips are flat tonal fills.
@@ -286,7 +293,7 @@ Depth comes from three layers, not from shadows on content. At the back is a sin
 
 ## Shapes
 
-Generously rounded, never sharp. Radii scale with the type in `em`: cards and dialogs 1.2em, image cards 1em, tiles, prints and menus 0.9em, album art 0.7em, rows and fields 0.65em, row thumbnails 0.6em. Fixed-px surfaces use the global scale (`sm` 6px, `md` 10px, `lg` 16px): the skinny Now Playing card is 16px and the mini player window 18px. Floating shell pills are 22px (half their 44px height). Buttons and chips that carry a label are full pills (2em). Icon buttons, avatars, the Profile face and artist portraits are circles. Imagery is always clipped to its container's radius with `object-fit: cover`. Large photo cards set `object-position: center 25%` to keep faces in frame; the artist hero goes further and crops around the faces it finds (see Components).
+Generously rounded, never sharp. Radii scale with the type in `em`: cards and dialogs 1.2em (`--r-card`), image cards 1em (`--r-art-card`), tiles, prints and menus 0.9em (`--r-tile`), album art 0.7em (`--r-art`), rows and fields 0.65em (`--r-row`), row thumbnails 0.6em (`--r-thumb`), skeleton lines and small chips 0.4em (`--r-xs`). Fixed-px surfaces use the global scale (`--r-sm` 6px, `--r-md` 10px, `--r-lg` 16px): the skinny Now Playing card and the mini player window are 16px. Floating shell pills are 22px (`--r-shell`, half their 44px height). Buttons and chips that carry a label are full pills (`--r-pill`, 2em), as are thin bars. Icon buttons, avatars, the Profile face and artist portraits are circles (`--r-round`, 50%). Every `border-radius` in the CSS is one of these. Imagery is always clipped to its container's radius with `object-fit: cover`. Large photo cards set `object-position: center 25%` to keep faces in frame; the artist hero goes further and crops around the faces it finds (see Components).
 
 **The No-Outline Rule.** Content cards, rows, chips, tiles and fields have no border. Separation comes from a tonal step (Wall on navy), not from a line. The only 1px strokes are the frosted shell's separator edge, the artwork's inner keyline, and the shelf search box.
 

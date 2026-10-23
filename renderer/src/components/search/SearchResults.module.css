@@ -34,7 +34,7 @@
 }
 
 .note {
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   color: var(--text-3);
 }
 

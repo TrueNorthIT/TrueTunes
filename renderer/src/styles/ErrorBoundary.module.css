@@ -21,7 +21,7 @@
 }
 
 .heading {
-  font-size: 1.6em;
+  font-size: var(--fs-title);
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: -0.015em;
@@ -29,14 +29,14 @@
 }
 
 .message {
-  font-size: max(13px, 0.95em);
+  font-size: var(--fs-prose);
   line-height: 1.55;
   color: var(--text-2);
 }
 
 .details {
   width: 100%;
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   color: var(--text-3);
 }
 .details > summary {
@@ -51,7 +51,7 @@
   border-radius: var(--r-row);
   background: var(--well);
   font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   line-height: 1.5;
   color: var(--text-2);
   white-space: pre-wrap;

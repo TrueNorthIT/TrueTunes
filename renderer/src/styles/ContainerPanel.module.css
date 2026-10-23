@@ -19,7 +19,7 @@
 
 .head { margin-bottom: 1.4em; }
 .title {
-  font-size: 2.2em;
+  font-size: var(--fs-headline);
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.15;
@@ -27,7 +27,7 @@
 }
 .sub {
   margin-top: 0.3em;
-  font-size: 1.07em;
+  font-size: var(--fs-body);
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
 }
@@ -61,7 +61,7 @@
   align-items: flex-start;
   gap: 0.9em;
   padding: 1em 0;
-  font-size: 1.07em;
+  font-size: var(--fs-body);
   color: var(--text-3);
 }
 

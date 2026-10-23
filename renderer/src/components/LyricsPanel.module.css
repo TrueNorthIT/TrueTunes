@@ -26,8 +26,8 @@
   gap: 0.4em;
   text-align: center;
 }
-.emptyTitle { font-size: 1.6em; font-weight: 600; letter-spacing: -0.015em; color: var(--text); }
-.emptyText { font-size: 1.07em; color: var(--text-3); }
+.emptyTitle { font-size: var(--fs-title); font-weight: 600; letter-spacing: -0.015em; color: var(--text); }
+.emptyText { font-size: var(--fs-body); color: var(--text-3); }
 
 /* ── Now playing card (lit wall + the artwork wash, as on Home) ─────────── */
 
@@ -73,7 +73,7 @@
 
 .title {
   max-width: 100%;
-  font-size: 1.9em;
+  font-size: var(--fs-title-feature);
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.15;
@@ -105,7 +105,7 @@
   max-width: 100%;
   min-width: 0;
   white-space: nowrap;
-  font-size: 1.05em;
+  font-size: var(--fs-body);
   color: var(--text-2);
 }
 .metaArtist { flex: 0 1 auto; max-width: 60%; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -115,7 +115,7 @@
 .queuer { margin-top: 0.2em; }
 
 .label {
-  font-size: max(13px, 0.86em);
+  font-size: var(--fs-small);
   font-weight: 600;
   color: var(--text-3);
 }
@@ -136,7 +136,7 @@
 .aboutText {
   margin-top: 0.5em;
   max-width: 100ch;
-  font-size: 0.95em;
+  font-size: var(--fs-prose);
   line-height: 1.55;
   color: var(--text-3);
   user-select: text;
@@ -192,6 +192,7 @@
 .line {
   width: 91%;
   padding: 0.22em 0;
+  /* one-off, tied to this layout */
   font-size: clamp(1.7em, 3.4cqi, 2.4em);
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -210,11 +211,12 @@
   height: 1.4em;
   margin: 0.95em 0;
   border-radius: var(--r-xs);
+  /* one-off, tied to this layout */
   font-size: clamp(1.7em, 3.4cqi, 2.4em);
 }
 
 /* No lyrics (instrumental, none found): one column, Now playing leads as a wide card, art beside the text. */
-.note { margin-top: 0.4em; font-size: 1.07em; color: var(--text-3); }
+.note { margin-top: 0.4em; font-size: var(--fs-body); color: var(--text-3); }
 .pageStatus { grid-template-columns: minmax(0, 1fr); max-width: 72em; }
 .pageStatus .nowCard {
   display: grid;
@@ -243,6 +245,6 @@
   .page { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
   .nowCard { flex-direction: row; align-items: center; padding: 1em; }
   .art { width: 5.5em; }
-  .title { font-size: 1.5em; -webkit-line-clamp: 1; }
+  .title { font-size: var(--fs-title-caption); -webkit-line-clamp: 1; }
   .about { display: none; }
 }

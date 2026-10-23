@@ -114,7 +114,7 @@
   min-width: 0;
 }
 .title {
-  font-size: 15px;
+  font-size: var(--fs-px-title);
   font-weight: 600;
   color: var(--text);
   display: flex;
@@ -123,14 +123,14 @@
 }
 /* The room is context, not the title: muted, one line, ellipsised. */
 .room {
-  font-size: 13px;
+  font-size: var(--fs-px);
   color: var(--text-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .count {
-  font-size: 13px;
+  font-size: var(--fs-px);
   font-weight: 500;
   color: var(--text-2);
   background: var(--bg-2);
@@ -140,7 +140,7 @@
 }
 
 .selBadge {
-  font-size: 13px;
+  font-size: var(--fs-px);
   font-weight: 500;
   color: var(--text-2);
   background: var(--bg-2);
@@ -154,7 +154,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--fs-px);
   color: var(--text-2);
 }
 .confirmYes,
@@ -165,7 +165,7 @@
   border: none;
   border-radius: var(--r-pill);
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--fs-px);
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -232,7 +232,7 @@
   gap: 6px;
   width: 100%;
   padding: 14px 10px 6px;
-  font-size: 13px;
+  font-size: var(--fs-px);
   font-weight: 600;
   font-family: inherit;
   color: var(--text-3);
@@ -276,7 +276,7 @@ button.groupLabel:hover { color: var(--text); }
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-3);
-  font-size: 14px;
+  font-size: var(--fs-px-lg);
   opacity: 0;
   cursor: grab;
   line-height: 1;
@@ -302,7 +302,7 @@ button.groupLabel:hover { color: var(--text); }
 .artPh {
   width: 40px; height: 40px; border-radius: var(--r-sm); background: var(--bg-1);
   display: flex; align-items: center; justify-content: center;
-  color: var(--text-3); font-size: 14px;
+  color: var(--text-3); font-size: var(--fs-px-lg);
 }
 .overlay {
   position: absolute; inset: 0; border-radius: var(--r-sm);
@@ -317,7 +317,7 @@ button.groupLabel:hover { color: var(--text); }
 /* Text: title, then artist (and when it will play). */
 .text { flex: 1; min-width: 0; }
 .name {
-  font-size: 14px; font-weight: 500; color: var(--title-rest);
+  font-size: var(--fs-px-lg); font-weight: 500; color: var(--title-rest);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   transition: color var(--dur-fast) var(--ease-fast);
 }
@@ -331,7 +331,7 @@ button.groupLabel:hover { color: var(--text); }
 }
 .sub,
 .subLink {
-  font-size: 13px; color: var(--text-3);
+  font-size: var(--fs-px); color: var(--text-3);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   min-width: 0;
 }
@@ -348,7 +348,7 @@ button.groupLabel:hover { color: var(--text); }
 .timeToPlay {
   margin-left: auto;
   padding-left: 0.6em;
-  font-size: 13px;
+  font-size: var(--fs-px);
   color: var(--text-3);
   white-space: nowrap;
   flex-shrink: 0;
@@ -374,7 +374,7 @@ button.groupLabel:hover { color: var(--text); }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: var(--fs-px);
   font-weight: 700;
   color: var(--on-art);
   overflow: hidden;
@@ -401,7 +401,7 @@ button.groupLabel:hover { color: var(--text); }
   flex-shrink: 0;
 }
 
-.selBar span { font-size: 13px; color: var(--text-2); }
+.selBar span { font-size: var(--fs-px); color: var(--text-2); }
 
 .selActions {
   display: flex;
@@ -412,7 +412,7 @@ button.groupLabel:hover { color: var(--text); }
 /* ── Misc ── */
 .msg {
   padding: 28px 16px;
-  color: var(--text-3); font-size: 13px;
+  color: var(--text-3); font-size: var(--fs-px);
   text-align: center;
 }
 
@@ -442,7 +442,7 @@ button.groupLabel:hover { color: var(--text); }
   border: none;
   color: var(--text-3);
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--fs-px);
   font-weight: 600;
   cursor: pointer;
   padding: 3px 8px;
@@ -501,7 +501,7 @@ button.groupLabel:hover { color: var(--text); }
 
 .djEmpty {
   padding: 4px 10px 8px;
-  font-size: 13px;
+  font-size: var(--fs-px);
   line-height: 1.4;
   color: var(--text-3);
 }

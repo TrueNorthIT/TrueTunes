@@ -53,6 +53,7 @@
   place-items: center;
   overflow: hidden;
   border-radius: var(--r-round);
+  /* one-off, tied to this layout */
   font-size: clamp(56px, 6cqw, 96px);
   font-weight: 700;
   color: var(--on-art);
@@ -82,7 +83,7 @@
   gap: 0.4em;
   background: var(--overlay);
   color: var(--on-art);
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   font-weight: 600;
   opacity: 0;
   transition: opacity var(--dur-fast) var(--ease-fast);
@@ -103,7 +104,7 @@
 /* The artist hero's display type: a person's page names them the way an artist's does. */
 .name {
   margin: 0;
-  font-size: clamp(40px, 5.2cqw, 88px);
+  font-size: var(--fs-display-profile);
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.04;
@@ -115,7 +116,7 @@
 
 .facts {
   margin: 0.55em 0 0;
-  font-size: max(13px, 1.07em);
+  font-size: max(13px, var(--fs-body));
   font-weight: 500;
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
@@ -133,7 +134,7 @@
   margin-top: 0.9em;
 }
 .chip {
-  font-size: max(13px, 0.86em);
+  font-size: var(--fs-small);
   font-weight: 500;
   color: var(--text-2);
   background: rgba(var(--tint), 0.16);
@@ -157,6 +158,7 @@
 }
 .renameInput {
   font: inherit;
+  /* one-off, tied to this layout */
   font-size: clamp(28px, 3cqw, 44px);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -172,14 +174,14 @@
 .renameError {
   width: 100%;
   margin: 0;
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   color: rgb(var(--danger));
 }
 
 /* The Leaderboard's tier chip: the server's tierName set in sentence case by CSS, no raster tier art. */
 .tierChip {
   display: inline-block; /* ::first-letter needs a block container, not flex */
-  font-size: max(13px, 0.86em);
+  font-size: var(--fs-small);
   font-weight: 500;
   line-height: 1.5;
   color: var(--text-2);
@@ -192,7 +194,7 @@
 .tierChip::first-letter { text-transform: uppercase; }
 .tierChip.provisional { color: var(--text-3); background: rgba(var(--tint), 0.06); }
 .rankDetail {
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
 }
@@ -219,7 +221,7 @@
 .day + .day { margin-top: 1em; }
 .dayTitle {
   margin: 0 0 0.3em 0.6em;
-  font-size: max(13px, 0.93em);
+  font-size: var(--fs-label);
   font-weight: 600;
   color: var(--text-3);
 }

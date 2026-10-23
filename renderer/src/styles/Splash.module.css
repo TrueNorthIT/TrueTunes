@@ -22,7 +22,7 @@
 }
 
 .name {
-  font-size: 2.2em;
+  font-size: var(--fs-headline);
   font-weight: 600;
   line-height: 1.15;
   letter-spacing: -0.02em;

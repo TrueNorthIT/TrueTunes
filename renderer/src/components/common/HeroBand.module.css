@@ -40,9 +40,9 @@
   flex: 1;
   padding-bottom: 0.2em;
 }
-.kind { font-size: max(13px, 0.86em); font-weight: 600; color: var(--text-3); }
+.kind { font-size: var(--fs-small); font-weight: 600; color: var(--text-3); }
 .title {
-  font-size: 1.9em;
+  font-size: var(--fs-title-feature);
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.15;
