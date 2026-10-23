@@ -311,28 +311,8 @@ button.groupLabel:hover { color: var(--text); }
   pointer-events: none;
 }
 
-/* Animated equalizer bars */
-.eq {
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 14px;
-}
-.eq span {
-  display: block;
-  width: 3px;
-  border-radius: 1px;
-  background: var(--on-art);
-  animation: eqBar 0.9s ease-in-out infinite alternate;
-}
-.eq span:nth-child(1) { animation-duration: 0.7s; }
-.eq span:nth-child(2) { animation-duration: 1.0s; animation-delay: 0.15s; }
-.eq span:nth-child(3) { animation-duration: 0.8s; animation-delay: 0.05s; }
-
-@keyframes eqBar {
-  from { height: 3px;  opacity: 0.7; }
-  to   { height: 13px; opacity: 1;   }
-}
+/* Animated equalizer bars (common/EqBars) */
+.eq { color: var(--on-art); }
 
 /* Text: title, then artist (and when it will play). */
 .text { flex: 1; min-width: 0; }
@@ -527,7 +507,6 @@ button.groupLabel:hover { color: var(--text); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .eq span { animation: none; height: 9px; }
   .spinner,
   .djSpin { animation: none; }
   .row,

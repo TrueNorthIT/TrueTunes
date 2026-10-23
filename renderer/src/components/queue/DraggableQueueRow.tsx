@@ -5,6 +5,8 @@ import { useOpenItem } from '../../hooks/useOpenItem';
 import { useQueueTrack } from '../../hooks/useQueueTrack';
 import { getActiveProvider } from '../../providers';
 import { ExplicitBadge } from '../common/ExplicitBadge';
+import { Artwork } from '../common/Artwork';
+import { EqBars } from '../common/EqBars';
 import { useTrackContextMenu } from '../common/ContextMenu';
 import { UserAvatar } from '../common/UserAvatar';
 import type { NormalizedQueueItem } from '../../types/provider';
@@ -54,9 +56,7 @@ export function DraggableQueueRow({
 
   const payload = trackPayload({ ...item.track, uri: item.track.id, trackName: item.track.title });
 
-  const art = cachedArt
-    ? <img className={styles.art} src={cachedArt} alt="" />
-    : <div className={styles.artPh}>♪</div>;
+  const art = <Artwork src={cachedArt} className={styles.art} placeholderClassName={styles.artPh} />;
 
   return (
     <div
@@ -91,7 +91,7 @@ export function DraggableQueueRow({
         ) : art}
         {isPlaying && (
           <div className={styles.overlay}>
-            <div className={styles.eq}><span /><span /><span /></div>
+            <EqBars className={styles.eq} />
           </div>
         )}
       </div>

@@ -1,6 +1,7 @@
 import { useImage } from '../../hooks/useImage';
 import { ExplicitBadge } from '../common/ExplicitBadge';
 import { AddButton } from '../common/AddButton';
+import { Artwork } from '../common/Artwork';
 import { TrackHitLine } from './TrackHitLine';
 import { cardSubtitle } from '../../lib/artistSubtitle';
 import type { SonosItem } from '../../types/sonos';
@@ -35,7 +36,7 @@ export function ArtistAlbumCard({ album, onOpen, onAdd, year, artistName, trackH
       onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onOpen(album); } }}
     >
       <div className={styles.albumArt}>
-        {art ? <img src={art} alt="" /> : <div className={styles.albumArtPh}>♪</div>}
+        <Artwork src={art} placeholderClassName={styles.albumArtPh} />
         <AddButton variant="corner" className={styles.albumAdd} label={`Add ${album.title} to queue`} onClick={() => onAdd(album)} />
       </div>
       <div className={styles.albumTitle}>

@@ -9,6 +9,7 @@ import { useOpenItem } from '../hooks/useOpenItem';
 import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
 import { geniusFirstParagraph, primaryArtistName } from '../lib/homeData';
 import { withArtworkSize } from '../lib/artworkUrl';
+import { Artwork } from './common/Artwork';
 import { QueuerChip } from './common/QueuerChip';
 import type { PlaybackState } from '../hooks/usePlayback';
 import styles from './LyricsPanel.module.css';
@@ -115,7 +116,7 @@ export function LyricsPanel({ playback }: Props) {
             onMouseEnter={np.prefetchAlbum}
             aria-label={`Open album ${np.albumName ?? np.displayTrack}`}
           >
-            {art ? <img src={art} alt="" /> : <span className={styles.artPh}>♪</span>}
+            <Artwork src={art} placeholderClassName={styles.artPh} />
           </button>
           <div className={styles.info}>
             <h1 className={styles.title}>

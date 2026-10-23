@@ -57,6 +57,7 @@ import { getActiveProvider } from '../providers';
 import type { NormalizedQueueItem } from '../types/provider';
 import { withArtworkSize } from '../lib/artworkUrl';
 import { UserAvatar } from './common/UserAvatar';
+import { Artwork } from './common/Artwork';
 import { QueuerChip } from './common/QueuerChip';
 import { useTrackContextMenu } from './common/ContextMenu';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
@@ -181,7 +182,7 @@ function ArtTile({ name, imageUrl, onOpen, onAdd }: {
   const art = useImage(imageUrl ?? null);
   const inner = (
     <>
-      {art ? <img className={styles.artFill} src={art} alt="" loading="lazy" /> : <span className={styles.artPh}>♪</span>}
+      <Artwork src={art} className={styles.artFill} placeholderClassName={styles.artPh} lazy />
       <span className={styles.tileName}>{name}</span>
     </>
   );
@@ -295,7 +296,7 @@ function NowPlayingBand({ playback, imageByUser }: {
           onMouseEnter={np.prefetchAlbum}
           aria-label={`Open album ${np.albumName ?? np.displayTrack}`}
         >
-          {art ? <img src={art} alt="" /> : <span className={styles.jumpArtPh}>♪</span>}
+          <Artwork src={art} placeholderClassName={styles.jumpArtPh} />
         </button>
         <div className={styles.nowInfo}>
           <span className={styles.nowLabel}>Now playing</span>

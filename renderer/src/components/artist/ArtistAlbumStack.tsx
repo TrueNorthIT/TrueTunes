@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useImage } from '../../hooks/useImage';
+import { Artwork } from '../common/Artwork';
 import { ArtistAlbumCard } from './ArtistAlbumCard';
 import { TrackHitLine } from './TrackHitLine';
 import { cardSubtitle } from '../../lib/artistSubtitle';
@@ -39,7 +40,7 @@ export function ArtistAlbumStack({ group, onExpand, year, trackHits, searching, 
         <div className={`${styles.stackLayer} ${styles.stackLayer2}`} style={layer} />
         <div className={`${styles.stackLayer} ${styles.stackLayer1}`} style={layer} />
         <div className={styles.albumArt}>
-          {art ? <img src={art} alt="" /> : <div className={styles.albumArtPh}>♪</div>}
+          <Artwork src={art} placeholderClassName={styles.albumArtPh} />
           <span className={styles.stackPill}>
             <span>{versions.length} versions</span>
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

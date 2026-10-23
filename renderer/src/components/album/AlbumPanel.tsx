@@ -23,6 +23,7 @@ import { withArtworkSize } from '../../lib/artworkUrl';
 import { cardSubtitle } from '../../lib/artistSubtitle';
 import { moreByReleases } from '../../lib/moreBy';
 import { createDragGhost } from '../../lib/dragHelpers';
+import { Artwork } from '../common/Artwork';
 import { ExplicitBadge } from '../common/ExplicitBadge';
 import { HeroBand } from '../common/HeroBand';
 import { ImageTile } from '../common/ImageTile';
@@ -176,7 +177,7 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
       <div className={styles.page}>
         <HeroBand
           wash={dominantColor}
-          art={cachedArt ? <img src={cachedArt} alt="" /> : <div className={styles.artPh}>♪</div>}
+          art={<Artwork src={cachedArt} placeholderClassName={styles.artPh} />}
           kind={isStation ? 'Station' : isPlaylistOrProgram ? 'Playlist' : 'Album'}
           title={<>{title}{anyExplicit && <ExplicitBadge />}</>}
           corner={<OfficeChip count={queuedHere} />}

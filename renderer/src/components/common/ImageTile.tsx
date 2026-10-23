@@ -1,5 +1,6 @@
 import { useImage } from '../../hooks/useImage';
 import { AddButton } from './AddButton';
+import { Artwork } from './Artwork';
 import styles from './ImageTile.module.css';
 
 interface Props {
@@ -27,7 +28,7 @@ export function ImageTile({ title, sub, meta, imageUrl, circular, size = 'md', o
     <div className={`${styles.tile} ${size === 'sm' ? styles.sm : styles.md}`} onMouseEnter={onHover}>
       <button type="button" className={styles.main} onClick={onOpen}>
         <span className={`${styles.art} ${circular ? styles.round : ''}`} aria-hidden="true">
-          {art ? <img src={art} alt="" loading="lazy" /> : <span className={styles.ph}>♪</span>}
+          <Artwork src={art} placeholderClassName={styles.ph} lazy />
         </span>
         <span className={styles.title}>{title}</span>
         {sub && <span className={styles.sub}>{sub}</span>}

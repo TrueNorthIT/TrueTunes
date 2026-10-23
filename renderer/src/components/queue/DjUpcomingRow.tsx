@@ -1,5 +1,6 @@
 import { Disc3 } from 'lucide-react';
 import { useImage } from '../../hooks/useImage';
+import { Artwork } from '../common/Artwork';
 import styles from '../../styles/QueueSidebar.module.css';
 
 interface Props {
@@ -28,11 +29,7 @@ export function DjUpcomingRow({ track, idle }: Props) {
       title={track.because}
     >
       <div className={styles.artWrap}>
-        {art ? (
-          <img className={styles.art} src={art} alt="" loading="lazy" />
-        ) : (
-          <div className={styles.artPh}>♪</div>
-        )}
+        <Artwork src={art} className={styles.art} placeholderClassName={styles.artPh} lazy />
       </div>
       <div className={styles.text}>
         <div className={styles.name}>{track.trackName}</div>
