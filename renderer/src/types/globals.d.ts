@@ -275,6 +275,8 @@ interface DjTrack {
   score: number;
   /** Why this track was picked, e.g. "Rich and Alex queue Royal Blood". */
   because: string;
+  /** Everyone credited, with their raw all-time queue count for the artist. Absent on older servers. */
+  fans?: { user: string; count: number }[];
 }
 
 /** What the autoplay coordinator decided this round. */
@@ -330,6 +332,8 @@ interface DjArtist {
   imageUrl?: string;
   score: number;
   because: string;
+  /** Everyone credited, with their raw all-time queue count for the act. Absent on older servers. */
+  fans?: { user: string; count: number }[];
   /** "trackName||artist" for each track by this act already in the history. */
   heardTrackKeys: string[];
 }

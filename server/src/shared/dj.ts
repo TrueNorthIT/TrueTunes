@@ -45,6 +45,13 @@ export interface DjTrack {
   score: number;
   /** Human-readable reason, shown in the UI. */
   because: string;
+  /** Everyone credited, with their raw all-time queue count for this artist. Most first. */
+  fans?: DjFan[];
+}
+
+export interface DjFan {
+  user: string;
+  count: number;
 }
 
 export interface DjOptions {
@@ -96,6 +103,8 @@ export interface DjArtist {
   imageUrl?: string;
   score: number;
   because: string;
+  /** Everyone credited, with their raw all-time queue count for this act. Most first. */
+  fans?: DjFan[];
   /**
    * "trackName||artist" for every track by this act already in the history.
    * Compared on name rather than uri because Sonos re-keys objectIds over time
@@ -325,8 +334,12 @@ export function buildDjSet(events: RawEvent[], options: DjOptions = {}): DjResul
         .filter((p) => (weights[p.user]?.[artist] ?? 0) > 0)
         .sort((a, b) => (weights[b.user][artist] ?? 0) - (weights[a.user][artist] ?? 0))
         .map((p) => p.user);
+      const artistQueuers = agg.queuersByItem[itemKey('artist', artist)] ?? {};
+      const fanCounts: DjFan[] = fans
+        .map((user) => ({ user, count: artistQueuers[user] ?? 0 }))
+        .sort((a, b) => b.count - a.count || a.user.localeCompare(b.user));
       const neighbour = perUser.find((p) => p.topNeighbour[artist])?.topNeighbour[artist];
-      return { artist, score, worstUser, fans, neighbour };
+      return { artist, score, worstUser, fans, fanCounts, neighbour };
     })
     .filter((r) => r.score > 0)
     .sort((a, b) => b.score - a.score);
@@ -395,6 +408,7 @@ export function buildDjSet(events: RawEvent[], options: DjOptions = {}): DjResul
         imageUrl: track.imageUrl,
         score: Number(entry.score.toFixed(4)),
         because,
+        fans: entry.fanCounts,
       });
       seenUris.add(track.uri);
     }
@@ -420,6 +434,7 @@ export function buildDjSet(events: RawEvent[], options: DjOptions = {}): DjResul
       because: entry.fans.length
         ? creditFans(entry.fans, entry.artist)
         : 'Popular with the office',
+      fans: entry.fanCounts,
       heardTrackKeys: tracks.map((t) => t.key),
     };
     });
