@@ -131,7 +131,7 @@
   gap: 0.5em;
 }
 .scoreValue {
-  font-size: 4.6em;
+  font-size: var(--fs-stat);
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.03em;
@@ -285,7 +285,7 @@
 }
 
 /* Tall enough windows keep the short leaderboard in view beside the long answers list. */
-@media (min-height: 820px) {
+@media (height >= 820px) {
   .boardCard {
     position: sticky;
     top: calc(var(--nav-h) + 8px);
@@ -865,7 +865,7 @@ button.side:disabled {
   color: var(--text-2);
 }
 .countNum {
-  font-size: 2em;
+  font-size: var(--fs-glyph-sm);
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--text);
@@ -1146,7 +1146,7 @@ button.side:disabled {
   gap: 0.6em;
 }
 .rankNumber {
-  font-size: 4em;
+  font-size: var(--fs-glyph-lg);
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.03em;

@@ -60,7 +60,7 @@
   overflow: hidden;
   border-radius: var(--r-round);
   /* one-off, tied to this layout */
-  font-size: clamp(56px, 6cqw, 96px);
+  font-size: var(--fs-avatar-initial);
   font-weight: 700;
   color: var(--on-art);
 }
@@ -172,7 +172,7 @@
 .renameInput {
   font: inherit;
   /* one-off, tied to this layout */
-  font-size: clamp(28px, 3cqw, 44px);
+  font-size: var(--fs-rename);
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text);

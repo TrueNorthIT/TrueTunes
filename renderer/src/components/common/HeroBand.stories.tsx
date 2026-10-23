@@ -36,7 +36,9 @@ export const NoArt: Story = {
 export const EditableTitle: Story = {
   args: { kind: 'Playlist', title: 'Friday afternoon', onTitleClick: fn(), titleHint: 'Rename playlist' },
 };
+// The avatar initial (aria-hidden) counts as visible text to axe, so the label "Queued by X, open profile" looks like a mismatch. It is not: the visible words are all in the label.
 export const WithCorner: Story = {
+  parameters: { a11y: { config: { rules: [{ id: 'label-content-name-mismatch', enabled: false }] } } },
   args: {
     corner: <QueuerChip user="Priya Shah" onOpen={fn()} />,
     children: (

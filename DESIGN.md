@@ -24,7 +24,7 @@ colors:
 typography:
   display:
     fontFamily: "Manrope Variable, -apple-system, BlinkMacSystemFont, SF Pro Text, Segoe UI, sans-serif"
-    fontSize: "clamp(44px, 6cqw, 96px)"
+    fontSize: "96px" # max of clamp(44px, 6cqw, 96px); the lint format has no fluid sizes
     fontWeight: 800
     lineHeight: 1.04
     letterSpacing: "-0.03em"
@@ -75,7 +75,7 @@ rounded:
   card: "1.2em"
   pill: "2em"
   shell: "22px"
-  round: "50%"
+  round: "9999px" # a circle: --r-round is 50%
 spacing:
   page-base: "clamp(14px, calc(0.45vw + 8.2px), 16px)"
   gutter: "28px"
@@ -255,7 +255,7 @@ Page sizes are in `em` from the page base `clamp(14px, calc(0.45vw + 8.2px), 16p
 - **Label** (`--fs-label`, 500, 0.93em): chips, small buttons and secondary lines. The smaller step is `--fs-small`, `max(13px, 0.86em)`.
 - **Fixed-px surfaces** (queue sidebar, skinny, mini player): `--fs-px` 13px for meta, `--fs-px-lg` 14px for row text, `--fs-px-title` 16px for titles.
 
-Every font size in the CSS is one of these tokens. The few that aren't are glyph and placeholder sizes (empty-art icons, big numerals) tied to their layout.
+Every font size in the CSS is one of these tokens, enforced by Stylelint. Glyph, numeral and icon sizes have tokens too: `--fs-glyph-sm` 2em, `--fs-glyph-md` 2.4em, `--fs-glyph` 3em and `--fs-glyph-lg` 4em (empty-art glyphs, rank numerals), `--fs-stat` 4.6em (the Queuedle score), `--fs-avatar-initial` and `--fs-rename` (the Profile avatar initial and rename field), `--fs-lyric` and `--fs-lyric-plain` (lyric lines), `--fs-icon` 18px and `--fs-icon-sm` 16px (icon glyphs).
 
 ### Named Rules
 **The Sentence Case Rule.** Titles, captions, buttons and chips are sentence case. Hierarchy comes from size, weight 600 and negative tracking, not from capitals or a second face. Server strings in title case (tier names) are sentence-cased in CSS.
@@ -284,7 +284,7 @@ Depth comes from three layers, not from shadows on content. At the back is a sin
 - **Hero art** (`--hero-shadow`: `0 10px 28px rgba(0, 0, 0, 0.35)`; hover `--hero-lift-shadow`: `0 14px 34px rgba(0,0,0,.45)`): the Now Playing and HeroBand artwork, the artist hero's print and the Profile face.
 - **Floating** (`--float-shadow`: `0 8px 32px rgba(0, 0, 0, 0.5)` plus the `--material-edge` highlight): nav pill, history and window pills, player bar, their dropdowns, the context menu, toasts and the Dialog. The Dialog's backdrop is `--overlay` (`rgba(0,0,0,.55)`), the same dim used over art and on dark corner buttons. White text over art takes `--text-shadow` (`0 1px 6px`) or, on larger lines, `--text-shadow-lg` (`0 1px 12px`); an avatar's hover ring is `--face-ring`.
 
-Black and white appear in the CSS only as the alpha tokens declared in `global.css`: `--overlay`, `--overlay-strong`, `--well`, `--glass`, `--glass-hi`, `--glass-faint` and `--track`. A test (`__tests__/cssTokens.test.ts`) fails on a raw colour anywhere else.
+Black and white appear in the CSS only as the alpha tokens declared in `global.css`: `--overlay`, `--overlay-strong`, `--well`, `--glass`, `--glass-hi`, `--glass-faint` and `--track`. Stylelint (`npm run lint:css`, config in `stylelint.config.mjs`) fails on a raw colour, radius, font size or shadow colour anywhere else, and CI runs it.
 
 ### Named Rules
 **The Shadows Belong to Prints Rule.** Inside the content area only artwork casts a shadow. Cards, rows and chips are flat tonal fills.
@@ -370,6 +370,17 @@ Skeletons (the global `.skeleton` class: tint at 0.18, pulsing between 0.45 and 
 **The Stations Open Rule.** Stations open, never add. A station opens as its track list, where songs are added one at a time; it never carries a +.
 
 **The Not By Colour Alone Rule.** Status colour is always paired with a mark or a word: right and wrong carry a tick or cross, and played days a tick.
+
+## Token Index
+
+Every custom property declared in `global.css` or `depth.css` is named in this file, and `__tests__/designSync.test.ts` fails when the two drift. The ones not described above:
+
+- **Colour aliases:** `--bg-1` (Raised Navy), `--label` and `--text` (Gallery Light), `--label-2` (secondary label), `--title-rest`, `--on-art`, `--on-art-2`, `--separator`, `--border` and `--border-2` are the CSS names of the colours in the front matter.
+- **Chart colours:** `--series-1`, `--series-2`, `--series-3`, `--series-4`, `--series-5`, `--series-6`, `--series-7` and `--series-8` are the categorical series colours in the stats charts (the first three are the colour-blind-safe trio), and `--ramp-lo` and `--ramp-hi` the ends of the sequential ramp in the heatmaps.
+- **Scrims:** `--scrim-top` is the light top fade on image cards and heroes, `--scrim-text` the fade under the Top result's text block.
+- **Sizing and rhythm:** `--page-scale` is the fluid page base, `--card-size` the width of shelf cards.
+- **Motion:** `--dur` and `--ease` for state changes, `--dur-fast` and `--ease-fast` for hover and focus feedback.
+- **Focus ring:** `--focus-width` and `--focus-color`.
 
 ## Do's and Don'ts
 

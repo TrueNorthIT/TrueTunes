@@ -24,7 +24,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 4em;
+  font-size: var(--fs-glyph-lg);
   font-weight: 700;
   color: var(--text-2);
 }

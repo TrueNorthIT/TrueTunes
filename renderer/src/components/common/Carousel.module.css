@@ -84,7 +84,7 @@
   border: none;
   background: none;
   color: var(--text-3);
-  font-size: 18px;
+  font-size: var(--fs-icon);
   line-height: 1;
   font-family: inherit;
   cursor: pointer;

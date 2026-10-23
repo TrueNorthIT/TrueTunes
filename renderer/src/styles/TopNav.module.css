@@ -69,10 +69,6 @@
   cursor: default;
 }
 
-/* ── Main nav pill ── */
-.nav {
-}
-
 .inner {
   height: 100%;
   display: flex;
@@ -82,7 +78,9 @@
 }
 
 /* ── Icon buttons ── */
+/* position: relative anchors the small dot under the active icon. */
 .iconBtn {
+  position: relative;
   background: none;
   border: none;
   color: var(--text-3);
@@ -102,9 +100,6 @@
   background: var(--row-hover);
 }
 /* Where you are: lit icon on a tint chip, plus a small dot under it so it never relies on colour alone. */
-.iconBtn {
-  position: relative;
-}
 .iconBtn.active {
   color: var(--on-art);
   background: rgba(var(--tint), 0.16);

@@ -12,6 +12,7 @@ import { withArtworkSize } from '../../lib/artworkUrl';
 import { usePhotoState } from '../../lib/photoPlaceholder';
 import { usePageArt } from '../../lib/pageArt';
 import { heroPortrait, creditNames } from '../../lib/artistHero';
+import { createDragGhost } from '../../lib/dragHelpers';
 import { officeCountFor } from '../../lib/artistOffice';
 import { resolveArtistParams, getItemArt, albumItem } from '../../lib/itemHelpers';
 import { TopSongRow } from './TopSongRow';
@@ -143,25 +144,7 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
     }
     e.dataTransfer.effectAllowed = 'copy';
     e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(toMove.map((i) => visibleSongs[i].raw)));
-    const ghost = document.createElement('div');
-    Object.assign(ghost.style, {
-      position: 'fixed',
-      top: '-100px',
-      left: '0',
-      background: 'rgba(255,255,255,0.15)',
-      backdropFilter: 'blur(8px)',
-      color: '#fff',
-      padding: '5px 12px',
-      borderRadius: '6px',
-      fontSize: '12px',
-      fontWeight: '600',
-      pointerEvents: 'none',
-      whiteSpace: 'nowrap',
-    });
-    ghost.textContent = toMove.length > 1 ? `${toMove.length} tracks` : visibleSongs[index].title;
-    document.body.appendChild(ghost);
-    e.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, 20);
-    setTimeout(() => ghost.remove(), 0);
+    createDragGhost(toMove.length > 1 ? `${toMove.length} tracks` : visibleSongs[index].title, e.dataTransfer);
   }
 
   const releases = data?.albums ?? [];
