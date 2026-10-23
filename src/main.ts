@@ -1468,6 +1468,33 @@ function createMiniPlayerWindow(): void {
 
 // ─── IPC ──────────────────────────────────────────────────────────────────────
 
+/**
+ * Whether an IPC call comes from the app itself: the top frame of a window showing the app
+ * (main or mini player), or, in dev only, the WS/HTTP debug monitors. Anything else that
+ * reaches the preload (a page a window was navigated to, an iframe) gets nothing.
+ */
+function fromApp(event: IpcMainInvokeEvent): boolean {
+  if (
+    !app.isPackaged &&
+    [debugWin, httpDebugWin].some((w) => w && !w.isDestroyed() && w.webContents === event.sender)
+  ) {
+    return true;
+  }
+  const frame = event.senderFrame;
+  return !!frame && !frame.parent && navDecision(frame.url, APP_URL) === 'allow';
+}
+
+// Wrapped once, here, so every handler below gets the sender check without repeating it.
+const registerHandler = ipcMain.handle.bind(ipcMain);
+ipcMain.handle = (channel, listener) =>
+  registerHandler(channel, (event, ...args) => {
+    if (!fromApp(event)) {
+      console.warn(`[security] refused IPC "${channel}" from ${event.senderFrame?.url ?? 'a destroyed frame'}`);
+      throw new Error('IPC refused: not from the app');
+    }
+    return listener(event, ...args);
+  });
+
 ipcMain.handle('api:fetch', async (_event: IpcMainInvokeEvent, request: FetchRequest): Promise<FetchResponse> => {
   return sonosFetch(request);
 });
@@ -2729,6 +2756,12 @@ app.whenReady().then(async () => {
   if (config.displayName) telemetry.setContext({ userId: config.displayName });
 
   session.defaultSession.setUserAgent(SPOOF_UA);
+  // Nothing in the app asks for a browser permission (camera, mic, notifications, clipboard
+  // read, geolocation...), so no page in this session, including the Sonos sign-in, gets one.
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
+    log('[security] denied permission request:', permission);
+    callback(false);
+  });
 
   // Try to restore a previously saved session — skip auth window if still valid
   const storedToken = await loadSessionToken();
