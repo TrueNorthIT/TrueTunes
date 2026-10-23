@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { calculateWeeklyLeaderboard, isInWeek, londonDateId, previousWeekRange, weekRangeOf, weeklyWinner } from '../lib/queuedleWeek';
 import type { WeeklyStanding } from '../lib/queuedleWeek';
@@ -260,7 +261,13 @@ export function useWeeklyLeaderboard(gameId: string | null, userName: string | n
 
 /** Last week's Queuedle winner, for the gold avatar on Home all this week. */
 export function useLastWeekWinner(userName: string | null | undefined) {
-  const range = previousWeekRange(londonDateId(Date.now()));
+  // Re-read the date now and then so Monday's handover happens without a restart.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30 * 60_000);
+    return () => clearInterval(id);
+  }, []);
+  const range = previousWeekRange(londonDateId(now));
   return useQuery({
     queryKey: ['queuedle-last-week-winner', range?.from ?? ''],
     queryFn: async () => {
