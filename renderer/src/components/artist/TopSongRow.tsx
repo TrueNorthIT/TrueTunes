@@ -72,7 +72,7 @@ export function TopSongRow({
       onDragStart={e => onDragStart(index, e)}
       onAdd={() => onAdd(track.raw)}
       addLabel={`Add ${track.title} to queue`}
-      onContextMenu={e => showTrackMenu({ track: payload }, e)}
+      onContextMenu={e => showTrackMenu({ track: payload, sonosItem: track.raw }, e)}
     />
   );
 }

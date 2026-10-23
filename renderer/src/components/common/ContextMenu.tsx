@@ -41,6 +41,7 @@ interface ProviderProps {
   children: React.ReactNode;
   displayName: string | null | undefined;
   onAddToQueue: (item: SonosItem, position?: number) => void;
+  onQueueNext: (item: SonosItem) => void;
 }
 
 interface SubmenuAnchor { x: number; flipX: number; y: number }
@@ -144,7 +145,7 @@ function PlaylistSubmenu({
   );
 }
 
-export function ContextMenuProvider({ children, displayName, onAddToQueue }: ProviderProps) {
+export function ContextMenuProvider({ children, displayName, onAddToQueue, onQueueNext }: ProviderProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -195,8 +196,8 @@ export function ContextMenuProvider({ children, displayName, onAddToQueue }: Pro
     };
   }, [menuState.open, close]);
 
-  function handlePlayNext() {
-    if (menuState.payload?.sonosItem) onAddToQueue(menuState.payload.sonosItem, 0);
+  function handleQueueNext() {
+    if (menuState.payload?.sonosItem) onQueueNext(menuState.payload.sonosItem);
     close();
   }
 
@@ -260,9 +261,9 @@ export function ContextMenuProvider({ children, displayName, onAddToQueue }: Pro
         >
           {menuState.payload.sonosItem && (
             <>
-              <button type="button" role="menuitem" className={styles.item} onClick={handlePlayNext}>
+              <button type="button" role="menuitem" className={styles.item} onClick={handleQueueNext}>
                 <ListStart className={styles.itemIcon} size={16} aria-hidden="true" />
-                Play next
+                Queue next
               </button>
               <button type="button" role="menuitem" className={styles.item} onClick={handleAddToQueue}>
                 <ListPlus className={styles.itemIcon} size={16} aria-hidden="true" />

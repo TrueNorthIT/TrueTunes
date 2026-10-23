@@ -36,3 +36,61 @@ export function expandToAlbumBlock(
   }
   return result;
 }
+
+// A typical track length, used when no upcoming durations are known yet.
+export const FALLBACK_TRACK_MS = 3.5 * 60_000;
+
+export interface ProjectedTime {
+  atMs: number;
+  // True once any track before this one had to be estimated, since its error
+  // carries into every later start time.
+  estimated: boolean;
+}
+
+// Projects the wall-clock time each upcoming queue item will start, aligned to the
+// queue. Sonos queue rows rarely carry a duration and per-track lookups can fail or
+// still be loading, so an unknown duration (undefined or 0) is estimated as the mean
+// of the known upcoming durations rather than stopping the projection there.
+export function projectPlayTimes({
+  nowMs,
+  currentIdx,
+  remainingMs,
+  durations,
+}: {
+  nowMs: number;
+  currentIdx: number;
+  remainingMs: number;
+  durations: (number | undefined)[];
+}): (ProjectedTime | undefined)[] {
+  const result: (ProjectedTime | undefined)[] = new Array(durations.length).fill(undefined);
+  if (currentIdx < 0 || currentIdx >= durations.length) return result;
+
+  const known = durations.slice(currentIdx + 1).filter((d): d is number => !!d && d > 0);
+  const estimateMs = known.length ? known.reduce((a, b) => a + b, 0) / known.length : FALLBACK_TRACK_MS;
+
+  let acc = Math.max(0, remainingMs);
+  let estimated = false;
+  for (let i = currentIdx + 1; i < durations.length; i++) {
+    result[i] = { atMs: nowMs + acc, estimated };
+    const d = durations[i];
+    if (d && d > 0) {
+      acc += d;
+    } else {
+      acc += estimateMs;
+      estimated = true;
+    }
+  }
+  return result;
+}
+
+/**
+ * Where "Queue next" inserts: straight after the playing track. `queueItemId`
+ * is Sonos's 1-based position of the current track, which is the 0-based
+ * insert position after it. Falls back to the end (-1) when nothing is
+ * playing from the queue or the current track is already the last one.
+ */
+export function positionAfterCurrent(queueItemId: string | null, queueLength: number): number {
+  const current = Number(queueItemId);
+  if (!queueItemId || !Number.isInteger(current) || current < 1) return -1;
+  return current >= queueLength ? -1 : current;
+}

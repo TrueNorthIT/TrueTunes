@@ -13,6 +13,7 @@ const mockUseGameDates = vi.fn();
 const mockUseGameRankings = vi.fn();
 const mockUseMyScore = vi.fn();
 const mockUseGameStats = vi.fn();
+const mockUseWeeklyLeaderboard = vi.fn();
 vi.mock('@/hooks/useDailyGame', () => ({
   useDailyGame: (date?: string) => mockUseDailyGame(date),
   useSubmitGameScore: () => mockUseSubmitGameScore(),
@@ -21,6 +22,8 @@ vi.mock('@/hooks/useDailyGame', () => ({
   useGameRankings: (userName?: string | null, enabled?: boolean) => mockUseGameRankings(userName, enabled),
   useMyScore: (gameId: string | null, userName: string | null | undefined) => mockUseMyScore(gameId, userName),
   useGameStats: (gameId: string | null) => mockUseGameStats(gameId),
+  useWeeklyLeaderboard: (gameId: string | null, userName: string | null | undefined) =>
+    mockUseWeeklyLeaderboard(gameId, userName),
   computeQueuedleRating: (averagePercent: number) =>
     Math.round(Math.max(0, Math.min(100, averagePercent)) * 30),
   getGameRankTier: (averagePercent: number, gamesPlayed: number) => {
@@ -174,6 +177,7 @@ beforeEach(() => {
   mockUseGameRankings.mockReturnValue({ data: [], isLoading: false });
   mockUseMyScore.mockReturnValue({ data: undefined, isLoading: false });
   mockUseGameStats.mockReturnValue({ data: undefined, isLoading: false });
+  mockUseWeeklyLeaderboard.mockReturnValue({ data: [], isLoading: false });
 });
 
 describe('QueuedlePanel', () => {
@@ -463,6 +467,26 @@ describe('QueuedlePanel', () => {
     expect(screen.getByText('Provisional')).toBeInTheDocument();
     expect(screen.getByText('4.5')).toBeInTheDocument();
     await waitFor(() => expect(mockUseGameRankings).toHaveBeenLastCalledWith('TestUser', true));
+  });
+
+  it('clicking Week shows the week\'s summed totals for the viewed game', async () => {
+    localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
+    mockUseWeeklyLeaderboard.mockReturnValue({
+      data: [
+        { userName: 'carol', gamesPlayed: 3, total: 41, bestTotal: 16 },
+        { userName: 'dave', gamesPlayed: 1, total: 12, bestTotal: 12 },
+      ],
+      isLoading: false,
+    });
+    const user = userEvent.setup();
+    render(<QueuedlePanel />);
+    await user.click(await screen.findByRole('button', { name: 'Week' }));
+    // 2024-01-01 is a Monday.
+    expect(screen.getByText('Week leaderboard · 1–7 Jan')).toBeInTheDocument();
+    expect(screen.getByText('carol')).toBeInTheDocument();
+    expect(screen.getByText('41')).toBeInTheDocument();
+    expect(screen.getByText('3 games · best 16')).toBeInTheDocument();
+    expect(mockUseWeeklyLeaderboard).toHaveBeenLastCalledWith('2024-01-01', 'TestUser');
   });
 
   it('clicking Today restores the daily leaderboard', async () => {

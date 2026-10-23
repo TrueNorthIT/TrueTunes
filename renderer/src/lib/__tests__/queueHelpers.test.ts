@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applyReorderLocally, expandToAlbumBlock } from '../queueHelpers';
+import { applyReorderLocally, expandToAlbumBlock, projectPlayTimes, positionAfterCurrent, FALLBACK_TRACK_MS } from '../queueHelpers';
 
 // Using plain strings — applyReorderLocally is generic, no QueueItem needed here.
 const items = ['A', 'B', 'C', 'D', 'E'];
@@ -122,5 +122,71 @@ describe('expandToAlbumBlock', () => {
     // With a strict same-album-id match, a null between two A's stops expansion.
     const albumIds = ['A', null, 'A'];
     expect([...expandToAlbumBlock(albumIds.length, 0, albumIds)]).toEqual([0]);
+  });
+});
+
+describe('projectPlayTimes', () => {
+  const MIN = 60_000;
+  const now = 1_000_000;
+
+  it('accumulates known durations after the current track', () => {
+    const r = projectPlayTimes({ nowMs: now, currentIdx: 0, remainingMs: 1 * MIN, durations: [3 * MIN, 4 * MIN, 5 * MIN, 2 * MIN] });
+    expect(r[0]).toBeUndefined();
+    expect(r[1]).toEqual({ atMs: now + 1 * MIN, estimated: false });
+    expect(r[2]).toEqual({ atMs: now + 5 * MIN, estimated: false });
+    expect(r[3]).toEqual({ atMs: now + 10 * MIN, estimated: false });
+  });
+
+  it('keeps projecting past a track with an unknown duration, using the average of known ones', () => {
+    // Before the fix the projection stopped at the first unknown duration.
+    const r = projectPlayTimes({ nowMs: now, currentIdx: 0, remainingMs: 0, durations: [3 * MIN, 2 * MIN, undefined, 4 * MIN, 3 * MIN] });
+    expect(r[1]).toEqual({ atMs: now, estimated: false });
+    expect(r[2]).toEqual({ atMs: now + 2 * MIN, estimated: false });
+    // Unknown track is estimated at the mean of the known upcoming durations (2, 4, 3 → 3 min).
+    expect(r[3]).toEqual({ atMs: now + 5 * MIN, estimated: true });
+    expect(r[4]).toEqual({ atMs: now + 9 * MIN, estimated: true });
+  });
+
+  it('treats a zero duration as unknown', () => {
+    const r = projectPlayTimes({ nowMs: now, currentIdx: 0, remainingMs: 0, durations: [3 * MIN, 0, 4 * MIN] });
+    expect(r[2]).toEqual({ atMs: now + 4 * MIN, estimated: true });
+  });
+
+  it('falls back to a typical track length when no durations are known yet', () => {
+    const r = projectPlayTimes({ nowMs: now, currentIdx: 0, remainingMs: 0, durations: [undefined, undefined, undefined] });
+    expect(r[1]).toEqual({ atMs: now, estimated: false });
+    expect(r[2]).toEqual({ atMs: now + FALLBACK_TRACK_MS, estimated: true });
+  });
+
+  it('projects every row of a long queue even when many durations are missing', () => {
+    const durations = Array.from({ length: 150 }, (_, i) => (i % 7 === 3 ? undefined : 3 * MIN));
+    const r = projectPlayTimes({ nowMs: now, currentIdx: 10, remainingMs: 0, durations });
+    for (let i = 11; i < 150; i++) expect(r[i]).toBeDefined();
+    for (let i = 1; i < 150 - 11; i++) expect(r[11 + i]!.atMs).toBeGreaterThan(r[10 + i]!.atMs);
+  });
+
+  it('returns nothing before the current track or when the current index is out of range', () => {
+    expect(projectPlayTimes({ nowMs: now, currentIdx: 2, remainingMs: 0, durations: [MIN, MIN, MIN, MIN] }).slice(0, 3))
+      .toEqual([undefined, undefined, undefined]);
+    expect(projectPlayTimes({ nowMs: now, currentIdx: -1, remainingMs: 0, durations: [MIN, MIN] })).toEqual([undefined, undefined]);
+  });
+});
+
+describe('positionAfterCurrent', () => {
+  it('inserts straight after the playing track', () => {
+    // Track 3 of 10 is playing (1-based), so the next slot is 0-based index 3.
+    expect(positionAfterCurrent('3', 10)).toBe(3);
+    expect(positionAfterCurrent('1', 10)).toBe(1);
+  });
+
+  it('appends when the playing track is the last one', () => {
+    expect(positionAfterCurrent('10', 10)).toBe(-1);
+  });
+
+  it('appends when nothing is playing from the queue', () => {
+    expect(positionAfterCurrent(null, 10)).toBe(-1);
+    expect(positionAfterCurrent('', 10)).toBe(-1);
+    expect(positionAfterCurrent('0', 10)).toBe(-1);
+    expect(positionAfterCurrent('abc', 10)).toBe(-1);
   });
 });

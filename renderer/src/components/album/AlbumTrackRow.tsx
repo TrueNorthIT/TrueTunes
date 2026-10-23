@@ -108,7 +108,7 @@ export function AlbumTrackRow({
       playing={playing}
       onClick={onClick}
       onDragStart={onDragStart}
-      onContextMenu={e => showTrackMenu({ track: payload }, e)}
+      onContextMenu={e => showTrackMenu({ track: payload, sonosItem: track.raw }, e)}
       onAdd={onAdd}
     />
   );

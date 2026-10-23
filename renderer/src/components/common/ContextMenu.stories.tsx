@@ -35,7 +35,7 @@ function Surface() {
 const meta = {
   title: 'Common/ContextMenu',
   component: ContextMenuProvider,
-  args: { displayName: 'Priya Shah', onAddToQueue: fn(), children: <Surface /> },
+  args: { displayName: 'Priya Shah', onAddToQueue: fn(), onQueueNext: fn(), children: <Surface /> },
   decorators: [(Story) => <ToastProvider><Story /></ToastProvider>],
 } satisfies Meta<typeof ContextMenuProvider>;
 

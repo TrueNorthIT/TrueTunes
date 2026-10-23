@@ -1,4 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { calculateWeeklyLeaderboard, isInWeek, weekRangeOf } from '../lib/queuedleWeek';
+import type { WeeklyStanding } from '../lib/queuedleWeek';
+import type { QueuedleDay } from '../lib/queuedleStats';
 
 export interface GameRanking {
   userName: string;
@@ -189,33 +192,68 @@ export function useGameDates(userName: string | null | undefined) {
   });
 }
 
+/**
+ * Every ready Queuedle day with its leaderboard and question count. One fetch
+ * per day, so the rankings and the stats page share it through the cache.
+ */
+export async function fetchQueuedleHistory(userName: string): Promise<QueuedleDay[]> {
+  const datesResult = await window.sonos.fetchGameDates(userName);
+  const dates = Array.isArray(datesResult.dates) ? datesResult.dates.filter((date) => date.status === 'ready') : [];
+  const days = await Promise.all(
+    dates.map(async (date): Promise<QueuedleDay | null> => {
+      try {
+        const [leaderboard, game] = await Promise.all([
+          window.sonos.fetchGameLeaderboard(date.gameId),
+          window.sonos.fetchDailyGame(date.gameId),
+        ]);
+        if (!isReadyGameDoc(game)) return null;
+        const scores = Array.isArray(leaderboard?.scores) ? leaderboard.scores.filter(isScoreRow) : [];
+        return { gameId: date.gameId, questionCount: game.questions.length, scores };
+      } catch {
+        return null;
+      }
+    })
+  );
+  return days.filter((d): d is QueuedleDay => d !== null);
+}
+
+export function queuedleHistoryQueryOptions(userName: string | null | undefined) {
+  return {
+    queryKey: ['queuedle-history', userName ?? ''] as const,
+    queryFn: () => fetchQueuedleHistory(userName ?? ''),
+    staleTime: 5 * 60_000,
+    refetchInterval: 5 * 60_000,
+  };
+}
+
+export function useQueuedleHistory(userName: string | null | undefined, enabled = true) {
+  return useQuery({ ...queuedleHistoryQueryOptions(userName), enabled: enabled && userName !== undefined });
+}
+
 export function useGameRankings(userName: string | null | undefined, enabled: boolean) {
-  return useQuery<GameRanking[]>({
-    queryKey: ['queuedle-rankings', userName ?? ''],
+  return useQuery<QueuedleDay[], Error, GameRanking[]>({
+    ...queuedleHistoryQueryOptions(userName),
+    select: (days) =>
+      calculateGameRankings(days.map((d) => ({ leaderboard: d, maxTotal: d.questionCount * 2 }))),
+    enabled: enabled && userName !== undefined,
+  });
+}
+
+export function useWeeklyLeaderboard(gameId: string | null, userName: string | null | undefined) {
+  const range = gameId ? weekRangeOf(gameId) : null;
+  return useQuery<WeeklyStanding[]>({
+    queryKey: ['queuedle-weekly', range?.from ?? '', userName ?? ''],
     queryFn: async () => {
       const datesResult = await window.sonos.fetchGameDates(userName ?? '');
-      const dates = Array.isArray(datesResult.dates) ? datesResult.dates.filter((date) => date.status === 'ready') : [];
-      const sources: Array<GameRankingSource | null> = await Promise.all(
-        dates.map(async (date) => {
-          try {
-            const [leaderboard, game] = await Promise.all([
-              window.sonos.fetchGameLeaderboard(date.gameId),
-              window.sonos.fetchDailyGame(date.gameId),
-            ]);
-            if (!isReadyGameDoc(game)) return null;
-            return {
-              leaderboard,
-              maxTotal: game.questions.length * 2,
-            } satisfies GameRankingSource;
-          } catch {
-            return null;
-          }
-        })
+      const dates = Array.isArray(datesResult.dates) ? datesResult.dates : [];
+      const inWeek = dates.filter((d) => d.status === 'ready' && range && isInWeek(d.gameId, range));
+      const boards = await Promise.all(
+        inWeek.map((d) => window.sonos.fetchGameLeaderboard(d.gameId).catch(() => null))
       );
-      return calculateGameRankings(sources.filter((source): source is GameRankingSource => source !== null));
+      return calculateWeeklyLeaderboard(boards);
     },
-    enabled: enabled && userName !== undefined,
-    staleTime: 5 * 60_000,
+    enabled: !!range && userName !== undefined,
+    staleTime: 60_000,
     refetchInterval: 5 * 60_000,
   });
 }
@@ -266,7 +304,8 @@ export function useSubmitGameScore() {
       qc.invalidateQueries({ queryKey: ['queuedle', variables.gameId] });
       qc.invalidateQueries({ queryKey: ['queuedle', 'today'] });
       qc.invalidateQueries({ queryKey: ['queuedle-dates'] });
-      qc.invalidateQueries({ queryKey: ['queuedle-rankings'] });
+      qc.invalidateQueries({ queryKey: ['queuedle-history'] });
+      qc.invalidateQueries({ queryKey: ['queuedle-weekly'] });
       qc.invalidateQueries({ queryKey: ['queuedle-my-score', variables.gameId] });
       qc.invalidateQueries({ queryKey: ['queuedle-stats', variables.gameId] });
     },

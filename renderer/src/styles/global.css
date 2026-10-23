@@ -40,6 +40,12 @@
   --glass-hi: rgba(255, 255, 255, 0.32); /* its hover step */
   --glass-faint: rgba(255, 255, 255, 0.05); /* shelf search fill */
   --track: rgba(255, 255, 255, 0.14); /* progress and volume track behind a fill */
+  /* Chart series (Queuedle stats): you plus two picked players, colour-blind-safe as a trio and none violet; ramp is the sequential blue between its two ends. */
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --ramp-lo: #104281;
+  --ramp-hi: #86b6ef;
 
   /* Shadow vocabulary (DESIGN.md). Floating is --float-shadow in depth.css. */
   /* Art rest: tiles soft drop shadow, plus a 1px inner keyline drawn by each art box's ::after. */

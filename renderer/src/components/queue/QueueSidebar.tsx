@@ -1,7 +1,7 @@
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, Fragment, forwardRef } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { Loader2, Disc3, RotateCw, LocateFixed, ListX } from 'lucide-react';
-import { applyReorderLocally, expandToAlbumBlock } from '../../lib/queueHelpers';
+import { applyReorderLocally, expandToAlbumBlock, projectPlayTimes } from '../../lib/queueHelpers';
 import { createDragGhost } from '../../lib/dragHelpers';
 import { getActiveProvider } from '../../providers';
 import { useAttribution, resolveAttribution } from '../../hooks/useAttribution';
@@ -119,17 +119,13 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   useEffect(() => { setNowMs(Date.now()); }, [positionMs]);
 
   const timesToPlay = useMemo(() => {
-    const result: (number | undefined)[] = new Array(items.length).fill(undefined);
-    if (!currentQueueItemId || currentTrackDurationMs <= 0 || nowMs === 0) return result;
-    const currentIdx = Number(currentQueueItemId) - 1;
-    let acc = Math.max(0, currentTrackDurationMs - positionMs);
-    for (let i = currentIdx + 1; i < items.length; i++) {
-      result[i] = nowMs + acc;
-      const itemDur = trackDetailsResults[i]?.data?.durationMs ?? items[i].track.durationMs;
-      if (!itemDur) break;
-      acc += itemDur;
-    }
-    return result;
+    if (!currentQueueItemId || currentTrackDurationMs <= 0 || nowMs === 0) return [];
+    return projectPlayTimes({
+      nowMs,
+      currentIdx: Number(currentQueueItemId) - 1,
+      remainingMs: currentTrackDurationMs - positionMs,
+      durations: items.map((item, i) => trackDetailsResults[i]?.data?.durationMs || item.track.durationMs || undefined),
+    });
   }, [items, currentQueueItemId, positionMs, currentTrackDurationMs, trackDetailsResults, nowMs]);
 
   const [liveWidth, setLiveWidth] = useState<number>(dockedWidth ?? 380);
@@ -391,7 +387,8 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
                 attributionImageUrl={attr ? imageByUser.get(attr.user) : undefined}
                 isSelected={selected.has(i)}
                 played={grouped && i < playingIdx}
-                timeToPlay={timesToPlay[i]}
+                timeToPlay={timesToPlay[i]?.atMs}
+                timeEstimated={timesToPlay[i]?.estimated}
                 onRowClick={handleRowClick}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}

@@ -8,6 +8,7 @@ import {
   useGameRankings,
   useMyScore,
   useGameStats,
+  useWeeklyLeaderboard,
   computeQueuedleRating,
   getGameRankTier,
 } from '../../hooks/useDailyGame';
@@ -23,9 +24,10 @@ import { QueuedleCalendar } from './QueuedleCalendar';
 import { MyScores } from './MyScores';
 import { QueuedleLeaderboard, type LeaderboardTab } from './QueuedleLeaderboard';
 import { formatGameDate, standingLine } from './format';
+import { clearProgress, loadProgress, pruneProgress, saveProgress } from '../../lib/queuedleProgress';
 import { useUsers } from '../../hooks/useUsers';
 import { PillButton } from '../common/PillButton';
-import { ArrowLeft, CalendarDays } from 'lucide-react';
+import { ArrowLeft, CalendarDays, ChartColumn } from 'lucide-react';
 import { Dialog } from '../common/Dialog';
 import styles from '../../styles/Queuedle.module.css';
 
@@ -68,6 +70,7 @@ export function QueuedlePanel() {
   const rankings = useGameRankings(displayName ?? undefined, true);
   const myScore = useMyScore(gameId, displayName);
   const gameStats = useGameStats(gameId);
+  const weekly = useWeeklyLeaderboard(gameId, displayName);
   const { data: users } = useUsers(true, true);
   const imageByUser = useMemo(() => new Map((users ?? []).map((u) => [u.userId, u.imageUrl])), [users]);
   const alreadyPlayed = useMemo(() => {
@@ -124,6 +127,41 @@ export function QueuedlePanel() {
   // Snapshot of the user's prior ranking row, captured once before today's submission.
   // undefined = not captured yet; null = captured, user has no prior games.
   const [beforeRanking, setBeforeRanking] = useState<GameRanking | null | undefined>(undefined);
+  // The game whose saved progress has been loaded into the state above. Saving
+  // waits for this so a game's first render can't overwrite what was stored.
+  const [progressFor, setProgressFor] = useState<string | null>(null);
+
+  useEffect(() => {
+    pruneProgress();
+  }, []);
+
+  // Resume a game left part-way through, with any answered question still
+  // answered, so leaving and coming back can't be used to try again.
+  useEffect(() => {
+    if (!gameId || questionCount === 0 || progressFor === gameId) return;
+    const saved = loadProgress(gameId, questionCount);
+    if (saved) {
+      setPhase(saved.phase);
+      setCurrentIdx(saved.currentIdx);
+      setPickedSide(saved.pickedSide);
+      setRevealed(saved.pickedSide !== null);
+      setMainGuesses(saved.mainGuesses);
+      setBonusSelections(saved.bonusSelections);
+    }
+    setProgressFor(gameId);
+  }, [gameId, questionCount, progressFor]);
+
+  useEffect(() => {
+    if (!gameId || progressFor !== gameId || devReplay) return;
+    if (phase !== 'main' && phase !== 'bonus') return;
+    saveProgress(gameId, { phase, currentIdx, pickedSide, mainGuesses, bonusSelections });
+  }, [gameId, progressFor, devReplay, phase, currentIdx, pickedSide, mainGuesses, bonusSelections]);
+
+  // Once the game is finished, its score is what's kept, not the progress.
+  const finished = localPlayed !== null || alreadyPlayed !== null;
+  useEffect(() => {
+    if (gameId && finished) clearProgress(gameId);
+  }, [gameId, finished]);
 
   // Backfill localStorage from the cloud when the leaderboard shows the user has
   // played but the local key is missing (fresh install, cleared cache, new machine).
@@ -160,7 +198,9 @@ export function QueuedlePanel() {
 
   useEffect(() => {
     if (game && bonusSelections.length !== game.questions.length) {
-      setBonusSelections(new Array(game.questions.length).fill(null));
+      // Functional so it can't undo selections restored in this same commit.
+      const n = game.questions.length;
+      setBonusSelections((prev) => (prev.length === n ? prev : new Array(n).fill(null)));
     }
   }, [game, bonusSelections.length]);
 
@@ -216,6 +256,7 @@ export function QueuedlePanel() {
     setLocalScore(null);
     setDevReplay(false);
     setBeforeRanking(undefined);
+    setProgressFor(null);
   }
 
   function handleDevPlayAgain() {
@@ -300,6 +341,9 @@ export function QueuedlePanel() {
             <ArrowLeft size={15} aria-hidden="true" /> Back to today
           </PillButton>
         )}
+        <PillButton onClick={() => navigate('/queuedle/stats')}>
+          <ChartColumn size={15} aria-hidden="true" /> Stats
+        </PillButton>
         {calendarDates.length > 0 && (
           <PillButton onClick={() => setCalendarOpen(true)} aria-haspopup="dialog">
             <CalendarDays size={15} aria-hidden="true" /> Past games
@@ -363,6 +407,9 @@ export function QueuedlePanel() {
             scores={room}
             rankings={rankings.data ?? []}
             rankingsLoading={rankings.isLoading}
+            weekly={weekly.data ?? []}
+            weeklyLoading={weekly.isLoading}
+            viewedGameId={currentGame.id}
             me={displayName ?? null}
             imageByUser={imageByUser}
             onOpenProfile={(name) => navigate(`/profile/${encodeURIComponent(name)}`)}
@@ -483,6 +530,7 @@ export function QueuedlePanel() {
       scored = { main: correctMain, bonus: correctBonus };
     }
     setLocalScore(scored);
+    clearProgress(game.id);
     try {
       localStorage.setItem(
         `queuedle-played:${game.id}`,

@@ -179,6 +179,7 @@ interface GameMyScoreResult {
     mainScore: number;
     bonusScore: number;
     // get-my-score does not send total; derive it from main + bonus
+    total?: number;
     guesses?: { main: Array<'left' | 'right'>; bonus: string[] };
   };
   error?: string;

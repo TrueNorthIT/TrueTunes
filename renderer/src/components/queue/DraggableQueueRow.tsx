@@ -24,6 +24,7 @@ interface Props {
   /** Already played: shown dimmed. */
   played?: boolean;
   timeToPlay?: number;
+  timeEstimated?: boolean;
   onRowClick: (index: number, e: React.MouseEvent) => void;
   onDragStart: (index: number, e: React.DragEvent) => void;
   onDragOver: (index: number, e: React.DragEvent) => void;
@@ -41,7 +42,7 @@ function fmtClockTime(ms: number): string {
 
 export function DraggableQueueRow({
   item, index, currentObjectId, currentQueueItemId, attribution, attributionImageUrl,
-  isSelected, played, timeToPlay, onRowClick, onDragStart, onDragOver, onDrop, onDragEnd,
+  isSelected, played, timeToPlay, timeEstimated, onRowClick, onDragStart, onDragOver, onDrop, onDragEnd,
 }: Props) {
   const { artUrl, artist, albumName, albumItem, prefetchAlbum, artistItem, prefetchArtist, isPlaying: isPlayingByObjectId, explicit } =
     useQueueTrack(item, currentObjectId);
@@ -110,7 +111,12 @@ export function DraggableQueueRow({
               : <span className={styles.sub}>{artist}</span>
           )}
           {timeToPlay !== undefined && (
-            <span className={styles.timeToPlay}>{fmtClockTime(timeToPlay)}</span>
+            <span
+              className={`${styles.timeToPlay}${timeEstimated ? ` ${styles.timeEstimated}` : ''}`}
+              title={timeEstimated ? 'Approximate: an earlier track’s length is unknown' : undefined}
+            >
+              {timeEstimated ? '~' : ''}{fmtClockTime(timeToPlay)}
+            </span>
           )}
         </div>
       </div>

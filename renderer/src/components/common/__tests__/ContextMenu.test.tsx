@@ -25,7 +25,7 @@ function renderMenu(onAddToQueue = vi.fn()) {
   render(
     <QueryClientProvider client={new QueryClient()}>
       <MemoryRouter>
-        <ContextMenuProvider displayName={null} onAddToQueue={onAddToQueue}>
+        <ContextMenuProvider displayName={null} onAddToQueue={onAddToQueue} onQueueNext={vi.fn()}>
           <Row />
         </ContextMenuProvider>
       </MemoryRouter>
@@ -41,7 +41,7 @@ describe('track context menu', () => {
     const menu = screen.getByRole('menu', { name: 'Desert Rose' });
     expect(menu).toHaveFocus();
     expect(screen.getAllByRole('menuitem').map((b) => b.textContent)).toEqual([
-      'Play next', 'Add to queue', 'Add to playlist', "View Alice's profile",
+      'Queue next', 'Add to queue', 'Add to playlist', "View Alice's profile",
     ]);
   });
 
@@ -49,7 +49,7 @@ describe('track context menu', () => {
     const user = userEvent.setup();
     renderMenu();
     await user.keyboard('{ArrowDown}');
-    expect(screen.getByRole('menuitem', { name: 'Play next' })).toHaveFocus();
+    expect(screen.getByRole('menuitem', { name: 'Queue next' })).toHaveFocus();
     await user.keyboard('{ArrowUp}');
     expect(screen.getByRole('menuitem', { name: "View Alice's profile" })).toHaveFocus();
   });

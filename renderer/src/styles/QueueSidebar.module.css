@@ -354,6 +354,7 @@ button.groupLabel:hover { color: var(--text); }
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
+.timeEstimated { opacity: 0.6; }
 
 /* Who queued it: a small avatar. The name is the accessible name and the tooltip. */
 .queuer {

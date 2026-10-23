@@ -175,7 +175,7 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
         onAdd={() => onAddToQueue(r.item)}
         selected={selected.has(i)}
         onClick={(e) => { e.stopPropagation(); handleTrackClick(i, e); }}
-        onContextMenu={(e) => showTrackMenu({ track: buildTrackPayload(r) }, e)}
+        onContextMenu={(e) => showTrackMenu({ track: buildTrackPayload(r), sonosItem: r.item }, e)}
         onDragStart={(e) => handleDragStart(e, i)}
       />
     );
@@ -248,7 +248,7 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
             onAdd={() => onAddToQueue(top)}
             openItem={openItem}
             onHover={() => (isArtist(top) ? prefetchArtist(top) : prefetchAlbum(isTrack(top) ? albumItemOf(top) ?? top : top))}
-            onContextMenu={isTrack(top) ? (e) => showTrackMenu({ track: buildTrackPayload(searchTrackRow(top)) }, e) : undefined}
+            onContextMenu={isTrack(top) ? (e) => showTrackMenu({ track: buildTrackPayload(searchTrackRow(top)), sonosItem: top }, e) : undefined}
           />
         )}
         {songs.length > 0 && (
