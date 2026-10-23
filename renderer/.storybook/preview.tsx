@@ -48,6 +48,8 @@ const preview: Preview = {
   parameters: {
     layout: 'fullscreen',
     backgrounds: { disabled: true },
+    // axe runs on every story in the story tests: a violation fails the test. Narrow exceptions go on the story, with a reason.
+    a11y: { test: 'error' },
   },
 };
 

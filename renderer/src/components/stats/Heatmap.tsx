@@ -82,7 +82,13 @@ export function Heatmap({
             </div>
           ))}
         </div>
-        <div ref={scrollRef} className={styles.scroll}>
+        <div
+          ref={scrollRef}
+          className={styles.scroll}
+          tabIndex={0} // a scrollable region has to be reachable by keyboard
+          role={ariaLabel ? 'region' : undefined}
+          aria-label={ariaLabel}
+        >
           <div className={styles.grid} role={ariaLabel ? 'img' : undefined} aria-label={ariaLabel}>
             {columns.map((c, i) => (
               <div key={i} className={styles.colHead}>
@@ -96,6 +102,7 @@ export function Heatmap({
                   className={fill === null ? styles.empty : styles.cell}
                   style={fill === null ? undefined : { background: fill }}
                   onPointerEnter={(e) => show(e, ri, ci)}
+                  role="img"
                   aria-label={cellLabel(ri, ci)}
                 />
               ))
