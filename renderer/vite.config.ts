@@ -17,5 +17,9 @@ export default defineConfig({
     strictPort: true,
     // root is renderer/, but node_modules (e.g. bundled fonts) live at the repo root
     fs: { allow: [path.resolve(__dirname, '..')] },
+    // Vite 8 turns this on by default when an AI agent starts the dev server. With the HMR socket down, each failed
+    // forward is itself an unhandled rejection that gets forwarded again: an endless "send was called before
+    // connect" loop in the console. Off, so the dev server behaves the same however it was started.
+    forwardConsole: false,
   },
 });
