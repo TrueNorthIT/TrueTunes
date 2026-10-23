@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Disc3 } from 'lucide-react';
 import { useImage } from '../../hooks/useImage';
 import { PickInfoTip } from '../common/PickInfoTip';
@@ -23,7 +24,7 @@ interface Props {
  * double-click-to-play. Only the first of these is actually in the Sonos queue,
  * so offering to reorder or skip to them would be a lie.
  */
-export function DjUpcomingRow({ track, idle, viewer }: Props) {
+export const DjUpcomingRow = memo(function DjUpcomingRow({ track, idle, viewer }: Props) {
   const art = useImage(track.imageUrl ?? null);
 
   return (
@@ -52,4 +53,4 @@ export function DjUpcomingRow({ track, idle, viewer }: Props) {
       <span className={styles.srOnly}>{track.because}</span>
     </div>
   );
-}
+});

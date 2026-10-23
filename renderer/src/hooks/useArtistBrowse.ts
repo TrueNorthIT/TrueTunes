@@ -184,8 +184,8 @@ function rememberImage(artistId: string, url: string | null) {
   }
 }
 
-// A leaderboard asks for a couple of dozen photos at once. Four at a time keeps the main process answering.
-const IMAGE_BROWSES_AT_ONCE = 4;
+// A leaderboard asks for a couple of dozen photos at once. Eight at a time keeps the main process answering without stretching the load out.
+const IMAGE_BROWSES_AT_ONCE = 8;
 let imageBrowsesRunning = 0;
 const imageBrowseQueue: Array<() => void> = [];
 
@@ -202,7 +202,7 @@ async function inImageSlot<T>(fn: () => Promise<T>): Promise<T> {
 
 /**
  * Just the artist's photo, for avatar tiles. Sonos has no lighter call than the browse, so this reuses it (the same
- * cache entry the artist page reads, so opening the artist afterwards costs nothing), a few at a time, and
+ * cache entry the artist page reads, so opening the artist afterwards costs nothing), eight at a time, and
  * remembers the answer between sessions.
  */
 export function artistImageQueryOptions(

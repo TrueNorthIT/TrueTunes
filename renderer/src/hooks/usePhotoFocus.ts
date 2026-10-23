@@ -13,6 +13,14 @@ export interface PhotoFocus {
   via: 'face' | 'detail';
 }
 
+/** Resolves when the browser is idle (or, without requestIdleCallback, on the next task), so heavy work follows first paint. */
+const whenIdle = () =>
+  new Promise<void>((resolve) =>
+    typeof requestIdleCallback === 'function'
+      ? requestIdleCallback(() => resolve(), { timeout: 1500 })
+      : setTimeout(resolve, 0)
+  );
+
 export async function findFocus(src: string): Promise<PhotoFocus | null> {
   // onload, not decode(): decode() waits for a frame, and never settles while the window is hidden
   const img = new Image();
@@ -24,8 +32,10 @@ export async function findFocus(src: string): Promise<PhotoFocus | null> {
   const aspect = img.naturalWidth / img.naturalHeight;
   if (!aspect) return null;
 
-  // Faces first, on a 512px copy: the 2000px source is slower and no more accurate for this.
+  // Faces first, on a 512px copy: the 2000px source is slower and no more accurate for this. The detector blocks the
+  // main thread for 50 to 300 ms, so wait until the page has painted.
   try {
+    await whenIdle();
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = Math.round(512 / aspect);
@@ -40,7 +50,7 @@ export async function findFocus(src: string): Promise<PhotoFocus | null> {
   const canvas = document.createElement('canvas');
   canvas.width = 64;
   canvas.height = Math.round(64 / aspect);
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (!ctx) return null;
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
   const y = detailFocusY(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);

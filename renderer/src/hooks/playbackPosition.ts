@@ -41,3 +41,11 @@ export function usePlaybackPosition<T = PlaybackPosition>(
 ): T {
   return useSyncExternalStore(subscribe, () => select(snapshot));
 }
+
+// scripts/perf-trace.mjs replays the tick through this when nothing is playing. Dev server only.
+if (import.meta.env.DEV) {
+  (window as unknown as { __playbackPosition: unknown }).__playbackPosition = {
+    get: getPlaybackPosition,
+    set: setPlaybackPosition,
+  };
+}
