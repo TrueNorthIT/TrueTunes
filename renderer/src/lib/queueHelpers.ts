@@ -82,3 +82,15 @@ export function projectPlayTimes({
   }
   return result;
 }
+
+/**
+ * Where "Queue next" inserts: straight after the playing track. `queueItemId`
+ * is Sonos's 1-based position of the current track, which is the 0-based
+ * insert position after it. Falls back to the end (-1) when nothing is
+ * playing from the queue or the current track is already the last one.
+ */
+export function positionAfterCurrent(queueItemId: string | null, queueLength: number): number {
+  const current = Number(queueItemId);
+  if (!queueItemId || !Number.isInteger(current) || current < 1) return -1;
+  return current >= queueLength ? -1 : current;
+}
