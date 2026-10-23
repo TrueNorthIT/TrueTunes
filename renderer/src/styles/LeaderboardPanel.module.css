@@ -51,6 +51,12 @@
 }
 
 /* Period: one tonal track, the chosen segment lit. */
+.heroActions {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  flex-wrap: wrap;
+}
 .segments {
   display: inline-flex;
   gap: 0.2em;

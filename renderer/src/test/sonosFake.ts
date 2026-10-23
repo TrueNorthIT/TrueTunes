@@ -13,6 +13,8 @@ export const sonosDefaults: SonosPreload = {
   fetchGameLeaderboard: pending,
   fetchGameDates:     pending,
   fetchMyScore:       pending,
+  fetchMusicStats:    pending,
+  reportTrackMeta:    () => Promise.resolve({ saved: 0 }),
   fetchGameStats:     pending,
   fetchPolls:         () => Promise.resolve({ polls: [] }),
   answerPoll:         () => Promise.resolve({ ok: true }),

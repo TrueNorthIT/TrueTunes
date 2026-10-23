@@ -295,6 +295,26 @@
       }
     },
     {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+      "apiVersion": "2024-02-15-preview",
+      "name": "[concat(variables('cosmosName'), '/truetunes/tracks')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosName'), 'truetunes')]"
+      ],
+      "properties": {
+        "resource": {
+          "id": "tracks",
+          "partitionKey": {
+            "paths": [
+              "/id"
+            ],
+            "kind": "Hash"
+          },
+          "defaultTtl": -1
+        }
+      }
+    },
+    {
       "type": "Microsoft.Web/serverfarms",
       "apiVersion": "2023-01-01",
       "name": "[variables('hostingPlanName')]",
@@ -383,6 +403,10 @@
             {
               "name": "COSMOS_POLLS_CONTAINER",
               "value": "polls"
+            },
+            {
+              "name": "COSMOS_TRACKS_CONTAINER",
+              "value": "tracks"
             },
             {
               "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",

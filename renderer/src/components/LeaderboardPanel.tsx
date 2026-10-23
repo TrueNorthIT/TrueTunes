@@ -17,6 +17,7 @@ import { competitionRanks } from './queuedle/format';
 import { ChartHead, ChartRow } from './common/ChartRow';
 import { ImageTile } from './common/ImageTile';
 import { StatsArtistTile } from './common/StatsArtistTile';
+import { PillButton } from './common/PillButton';
 import { PersonCard } from './common/PersonCard';
 import { SectionCard, SeeAll } from './common/SectionCard';
 import { ArtistLinks } from './common/TrackLinks';
@@ -204,18 +205,21 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
               {summary ?? 'Who has been queuing what'}
             </p>
           </div>
-          <div className={styles.segments} role="group" aria-label="Period">
-            {PERIODS.map((p) => (
-              <button
-                key={p.value}
-                type="button"
-                className={styles.segment}
-                aria-pressed={period === p.value}
-                onClick={() => setPeriod(p.value)}
-              >
-                {p.label}
-              </button>
-            ))}
+          <div className={styles.heroActions}>
+            <div className={styles.segments} role="group" aria-label="Period">
+              {PERIODS.map((p) => (
+                <button
+                  key={p.value}
+                  type="button"
+                  className={styles.segment}
+                  aria-pressed={period === p.value}
+                  onClick={() => setPeriod(p.value)}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <PillButton onClick={() => navigate('/leaderboard/stats')}>Music stats</PillButton>
           </div>
         </header>
 

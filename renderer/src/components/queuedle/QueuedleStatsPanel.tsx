@@ -13,10 +13,13 @@ import type { QueuedleDay } from '../../lib/queuedleStats';
 import { formatWeekRange } from '../../lib/queuedleWeek';
 import styles from '../../styles/QueuedleStats.module.css';
 
-// Everyone is drawn in a recessive grey; only you and up to two players you pick
-// get a colour. Three slots is what stays colour-blind-safe when every pair can
-// sit side by side (the scatter), so the cap holds on every chart.
-const SLOT_COLOURS = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)'];
+// Everyone is drawn in a recessive grey; you and the players you pick get a
+// colour from the categorical palette, in this fixed order (it's the order that
+// keeps neighbours colour-blind-safe). There are eight distinct colours, so up
+// to eight people. Past that, colours would repeat and two people would look
+// the same. Highlighted players are always named on the charts, so identity
+// never rests on colour alone (the scatter needs that once past three).
+const SLOT_COLOURS = Array.from({ length: 8 }, (_, i) => `var(--series-${i + 1})`);
 const MAX_PICKS = SLOT_COLOURS.length - 1;
 const MUTED = 'var(--glass)';
 
@@ -409,7 +412,7 @@ function WeeklyBars({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: str
 export function QueuedleStatsPanel() {
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState<string | null | undefined>(undefined);
-  const [picks, setPicks] = useState<string[]>([]);
+  const [picks, setPicks] = useState<(string | null)[]>([]);
   useEffect(() => {
     window.sonos.getDisplayName().then(setDisplayName);
   }, []);
@@ -417,22 +420,24 @@ export function QueuedleStatsPanel() {
   const days = useMemo(() => history.data ?? [], [history.data]);
   const players = useMemo(() => listPlayers(days), [days]);
 
-  const highlighted = useMemo(() => {
-    const me = displayName && players.includes(displayName) ? [displayName] : [];
-    return [...me, ...picks.filter((p) => p !== displayName)].slice(0, SLOT_COLOURS.length);
-  }, [displayName, players, picks]);
-  // Colour follows the player, not their position in any chart.
+  // You always take the first colour. Each pick holds its own slot until it's
+  // removed, so taking someone off never repaints anyone else.
+  const meHighlighted = !!displayName && players.includes(displayName);
   const colourOf = (u: string) => {
-    const i = highlighted.indexOf(u);
-    return i === -1 ? null : SLOT_COLOURS[i];
+    if (meHighlighted && u === displayName) return SLOT_COLOURS[0];
+    const i = picks.indexOf(u);
+    return i === -1 ? null : SLOT_COLOURS[i + 1];
   };
+  const pickCount = picks.filter(Boolean).length;
 
   function togglePick(u: string) {
     if (u === displayName) return;
     setPicks((prev) => {
-      if (prev.includes(u)) return prev.filter((p) => p !== u);
-      const next = [...prev, u];
-      return next.length > MAX_PICKS ? next.slice(next.length - MAX_PICKS) : next;
+      const at = prev.indexOf(u);
+      if (at !== -1) return prev.map((p, i) => (i === at ? null : p));
+      const free = prev.indexOf(null);
+      if (free !== -1) return prev.map((p, i) => (i === free ? u : p));
+      return prev.length < MAX_PICKS ? [...prev, u] : prev;
     });
   }
 
@@ -455,7 +460,9 @@ export function QueuedleStatsPanel() {
         {days.length > 0 && (
           <>
             <div className={styles.picker} aria-label="Highlight players">
-              <span className={styles.pickerHint}>Highlight up to {MAX_PICKS} others:</span>
+              <span className={styles.pickerHint}>
+                Highlight up to {MAX_PICKS} others{pickCount > 0 ? ` (${pickCount} picked)` : ''}:
+              </span>
               {players.map((u) => {
                 const colour = colourOf(u);
                 const isMe = u === displayName;
@@ -464,7 +471,8 @@ export function QueuedleStatsPanel() {
                     key={u}
                     className={`${styles.chip}${colour ? ' ' + styles.chipOn : ''}`}
                     aria-pressed={!!colour}
-                    disabled={isMe}
+                    disabled={isMe || (!colour && pickCount >= MAX_PICKS)}
+                    title={!colour && !isMe && pickCount >= MAX_PICKS ? `Up to ${MAX_PICKS} at once` : undefined}
                     onClick={() => togglePick(u)}
                   >
                     {colour && <Swatch colour={colour} />}
@@ -472,6 +480,9 @@ export function QueuedleStatsPanel() {
                   </button>
                 );
               })}
+              {pickCount > 0 && (
+                <button className={styles.clearBtn} onClick={() => setPicks([])}>Clear</button>
+              )}
             </div>
 
             <section className={styles.section}>

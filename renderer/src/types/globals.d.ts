@@ -149,6 +149,56 @@ interface GameScoreDoc {
   completedAt: number;
 }
 
+// ── Music stats (server/src/shared/musicStats.ts is the source of truth) ──
+interface TrackMetaReport { uri: string; durationMs?: number; explicit?: boolean }
+interface MusicArtistCount { artist: string; count: number }
+interface MusicMonthTaste { month: string; queues: number; topArtists: MusicArtistCount[] }
+interface MusicPersonStats {
+  userId: string;
+  queues: number;
+  trackQueues: number;
+  uniqueArtists: number;
+  /** Distinct artists as a share of track queues, 0..1. */
+  variety: number;
+  topArtists: MusicArtistCount[];
+  mostRequeued: { trackName: string; artist: string; imageUrl: string | null; count: number } | null;
+  airtimeMs: number;
+  /** Track queues whose length is known (airtime and average cover only these). */
+  timedQueues: number;
+  avgLengthMs: number | null;
+  explicitPct: number | null;
+  tasteByMonth: MusicMonthTaste[];
+}
+interface MusicDiscoverer {
+  artist: string;
+  imageUrl: string | null;
+  firstBy: string;
+  firstAt: number;
+  totalQueues: number;
+  othersQueues: number;
+}
+interface MusicTrackLength {
+  trackName: string;
+  artist: string;
+  imageUrl: string | null;
+  durationMs: number;
+  queues: number;
+  firstBy: string;
+}
+interface MusicStatsResult {
+  generatedAt: number;
+  totalEvents: number;
+  trackEvents: number;
+  uniqueTracks: number;
+  tracksWithLength: number;
+  /** [weekday 0=Mon..6=Sun][hour 0..23] queue counts, London time. */
+  busyHours: number[][];
+  people: MusicPersonStats[];
+  discoverers: MusicDiscoverer[];
+  longest: MusicTrackLength[];
+  shortest: MusicTrackLength[];
+}
+
 interface GameLeaderboardResult {
   gameId: string;
   scores: GameScoreDoc[];
@@ -471,6 +521,8 @@ interface SonosPreload {
     guesses: { main: Array<'left' | 'right'>; bonus: string[] };
   }) => Promise<GameSubmitResult>;
   fetchGameLeaderboard: (date?: string) => Promise<GameLeaderboardResult>;
+  fetchMusicStats: () => Promise<MusicStatsResult | { error: string }>;
+  reportTrackMeta: (tracks: TrackMetaReport[]) => Promise<{ saved?: number; error?: string }>;
   fetchGameDates: (userName: string) => Promise<GameDatesResult>;
   fetchMyScore: (gameId: string, userName: string) => Promise<GameMyScoreResult>;
   fetchGameStats: (date?: string) => Promise<GameStatsResult>;
