@@ -1,5 +1,6 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { api } from '../lib/sonosApi';
+import { GC_HOUR, STALE } from '../lib/queryDefaults';
 import type { SonosItem, SonosItemId } from '../types/sonos';
 import { AlbumResponse } from '../types/AlbumResponse';
 import { decodeDefaults } from '../lib/itemHelpers';
@@ -98,8 +99,8 @@ export function albumQueryOptions(
     queryKey: albumKeys.detail(albumId),
     queryFn: async () => {
       const r = await api.browse.album(albumId!, { serviceId, accountId, defaults, muse2: true, count: 50 });
-      if (r.error) throw new Error(r.error);
-      const parsed = parseAlbum(r.data as AlbumResponse);
+      if (r.error || !r.data) throw new Error(r.error ?? 'No album data');
+      const parsed = parseAlbum(r.data);
 
       // Fetch remaining pages if the album has more than 50 tracks
       let allTracks = [...parsed.tracks];
@@ -113,8 +114,8 @@ export function albumQueryOptions(
           count: 50,
           offset,
         });
-        if (page.error) break;
-        const newItems = (page.data as AlbumResponse).tracks?.items ?? [];
+        if (page.error || !page.data) break;
+        const newItems = page.data.tracks?.items ?? [];
         if (!newItems.length) break;
         allTracks = [...allTracks, ...newItems.map(parseTrack)];
         offset += newItems.length;
@@ -122,8 +123,8 @@ export function albumQueryOptions(
 
       return { ...parsed, tracks: allTracks };
     },
-    staleTime: Infinity,
-    gcTime: 60 * 60 * 1000,
+    staleTime: STALE.forever,
+    gcTime: GC_HOUR,
   });
 }
 

@@ -1,5 +1,6 @@
 import { queryOptions, useQuery, type QueryClient } from '@tanstack/react-query';
 import { api } from '../lib/sonosApi';
+import { GC_HOUR, STALE } from '../lib/queryDefaults';
 import { fetchImage } from '../lib/imageCache';
 import { withArtworkSize } from '../lib/artworkUrl';
 import { isArtist, parseServiceSearch } from '../lib/itemHelpers';
@@ -62,7 +63,7 @@ async function fetchArtistBrowse(
   // leaderboard don't capture defaults, so the direct browse comes back
   // with no title/sections. Resolve via search to get a properly-defaulted
   // item, then retry the browse.
-  const looksEmpty = !!r.error || !(r.data as ArtistResponse | undefined)?.title;
+  const looksEmpty = !!r.error || !r.data?.title;
   if (looksEmpty && fallbackName) {
     const sResp = await api.search.serviceQuery(fallbackName, { count: 20 });
     if (!sResp.error && sResp.data) {
@@ -85,9 +86,9 @@ async function fetchArtistBrowse(
       }
     }
   }
-  if (r.error) throw new Error(r.error);
+  if (r.error || !r.data) throw new Error(r.error ?? 'No artist data');
 
-  const browse = parseArtist(r.data as ArtistResponse);
+  const browse = parseArtist(r.data);
   // Start the hero photo now, alongside top songs and Genius: the image service takes about two seconds for
   // a size it hasn't served, and waiting for the whole artist query first made the hero the last thing on the page.
   // usePhotoState asks for the same URL and joins this request.
@@ -106,8 +107,8 @@ export function artistBrowseQueryOptions(
   return queryOptions({
     queryKey: artistKeys.browse(artistId),
     queryFn: () => fetchArtistBrowse(artistId, serviceId, accountId, defaults, fallbackName),
-    staleTime: Infinity,
-    gcTime: 60 * 60 * 1000,
+    staleTime: STALE.forever,
+    gcTime: GC_HOUR,
   });
 }
 
@@ -143,8 +144,8 @@ export function artistQueryOptions(
 
       return { ...parsed, topSongs, genius };
     },
-    staleTime: Infinity,
-    gcTime: 60 * 60 * 1000,
+    staleTime: STALE.forever,
+    gcTime: GC_HOUR,
   });
 }
 
@@ -231,8 +232,8 @@ export function artistImageQueryOptions(
       }
     },
     enabled: !!(artistId && serviceId && accountId),
-    staleTime: Infinity,
-    gcTime: 60 * 60 * 1000,
+    staleTime: STALE.forever,
+    gcTime: GC_HOUR,
     retry: false,
   });
 }
