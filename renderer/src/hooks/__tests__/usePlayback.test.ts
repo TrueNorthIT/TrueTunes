@@ -622,4 +622,41 @@ describe('usePlayback — progress tick', () => {
 
     expect(result.current.playback.progressPct).toBe(initialPct);
   });
+  it('advances positionMs and timeLabel by wall-clock time while playing', () => {
+    const { result } = renderHook(() => usePlayback('g1'));
+    firePlayback(makePayload({
+      playback: { playbackState: 'PLAYBACK_STATE_PLAYING', positionMillis: 90000, queueId: 'q1', queueVersion: 'v1', playModes: {} },
+      metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
+    }));
+    act(() => { vi.advanceTimersByTime(5000); });
+    expect(result.current.playback.positionMs).toBe(95000);
+    expect(result.current.playback.timeLabel).toBe('1:35 / 3:00');
+  });
+
+  it('resyncs to the position of the next status update', () => {
+    const { result } = renderHook(() => usePlayback('g1'));
+    const at = (positionMillis: number) => makePayload({
+      playback: { playbackState: 'PLAYBACK_STATE_PLAYING', positionMillis, queueId: 'q1', queueVersion: 'v1', playModes: {} },
+      metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
+    });
+    firePlayback(at(10000));
+    act(() => { vi.advanceTimersByTime(3000); });
+    firePlayback(at(60000));
+    expect(result.current.playback.positionMs).toBe(60000);
+    act(() => { vi.advanceTimersByTime(2000); });
+    expect(result.current.playback.positionMs).toBe(62000);
+  });
+
+  it('stops ticking once a paused update arrives', () => {
+    const { result } = renderHook(() => usePlayback('g1'));
+    const withState = (playbackState: string, positionMillis: number) => makePayload({
+      playback: { playbackState, positionMillis, queueId: 'q1', queueVersion: 'v1', playModes: {} },
+      metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
+    });
+    firePlayback(withState('PLAYBACK_STATE_PLAYING', 10000));
+    act(() => { vi.advanceTimersByTime(2000); });
+    firePlayback(withState('PLAYBACK_STATE_PAUSED', 12000));
+    act(() => { vi.advanceTimersByTime(5000); });
+    expect(result.current.playback.positionMs).toBe(12000);
+  });
 });
