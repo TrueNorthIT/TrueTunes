@@ -156,3 +156,6 @@ server/dist-test/
 # Impeccable transient state
 .impeccable/questions/
 .impeccable/live/
+
+# Storybook static build
+storybook-static/
