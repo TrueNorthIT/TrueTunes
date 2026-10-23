@@ -63,7 +63,7 @@ All Sonos HTTP calls go through `src/main.ts` → `sonosFetch()` → play.sonos.
 
 ### React Query
 
-All data fetching in the renderer uses React Query (`@tanstack/react-query`). Query options factories (e.g. `trackQueryOptions`, `albumQueryOptions`) live alongside their hooks and can be called directly in tests without a QueryClient — just call `opts.queryFn()`.
+All data fetching in the renderer uses React Query (`@tanstack/react-query`). Each query is a factory wrapped in `queryOptions()` (e.g. `trackQueryOptions`), living alongside its hook with an `xxxKeys` key factory in the same file (e.g. `playlistKeys.owned(id)`). Use the key factory for every invalidation and `setQueryData`; never type a key out by hand. The QueryClient default `staleTime` is 5 minutes (`renderer/src/main.tsx`); only a query that deliberately differs sets one, using `STALE` / `GC_HOUR` from `lib/queryDefaults.ts`. The signed-in name comes from `useDisplayName()`.
 
 ### Attribution / office presence
 
@@ -90,14 +90,15 @@ npm test             # watch mode
 
 ### How to test hooks
 
-Don't use `renderHook` for data-fetching hooks. Call the query options factory directly:
+Don't use `renderHook` for data-fetching hooks. Run the query options factory through `runQueryFn` (`queryOptions` types `queryFn` as optional, so calling it directly doesn't typecheck):
 
 ```ts
 import { trackQueryOptions } from '../useTrackDetails';
+import { runQueryFn } from '../../test/queryFn';
 
 const mockFetch = vi.mocked(window.sonos.fetch);
 mockFetch.mockResolvedValueOnce({ data: { ... } });
-const result = await trackQueryOptions('id', 'serviceId', 'accountId').queryFn();
+const result = await runQueryFn(trackQueryOptions('id', 'serviceId', 'accountId'));
 expect(result?.trackName).toBe('...');
 ```
 
