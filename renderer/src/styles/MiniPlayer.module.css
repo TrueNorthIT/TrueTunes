@@ -65,7 +65,7 @@
   justify-content: center;
   /* 24 + 36 + 24 with 8px gaps: even 12px spacing between the glyphs and to the art's edges */
   gap: 8px;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--overlay);
   opacity: 0;
   transition: opacity var(--dur-fast) var(--ease-fast);
 }
@@ -91,7 +91,7 @@
     background var(--dur-fast) var(--ease-fast),
     transform var(--dur-fast) var(--ease-fast);
 }
-.btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.16); }
+.btn:hover:not(:disabled) { background: var(--glass); }
 .btn:disabled { opacity: 0.4; cursor: default; }
 /* The player bar's play button: the room inverted. */
 .playBtn {
@@ -210,14 +210,14 @@
   height: 3px;
   border-radius: 2px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--track);
   transition: transform var(--dur-fast) var(--ease-fast);
 }
 .progress:hover .progressTrack { transform: scaleY(1.67); }
 .progressFill {
   width: 100%;
   height: 100%;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--title-rest);
   transform-origin: left center;
   transition: transform 0.4s linear;
 }

@@ -47,9 +47,9 @@
 }
 /* The card clips an outer ring, so it sits inside: white, edged in black, so it shows on pale art too. */
 .cover:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--on-art);
   outline-offset: -4px;
-  box-shadow: inset 0 0 0 6px rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 0 0 6px var(--overlay);
 }
 
 /*
@@ -67,11 +67,11 @@
   pointer-events: none;
 }
 .withArt .content {
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.66) 50%, rgba(0, 0, 0, 0.42) 80%, rgba(0, 0, 0, 0) 100%);
+  background: var(--scrim-text);
 }
 .withArt .heading,
 .withArt .title,
-.withArt .meta { text-shadow: 0 1px 12px rgba(0, 0, 0, 0.5); }
+.withArt .meta { text-shadow: var(--text-shadow-lg); }
 
 .heading {
   font-size: max(13px, 0.95em);

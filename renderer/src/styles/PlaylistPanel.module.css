@@ -42,7 +42,7 @@
   align-items: center;
   justify-content: center;
   border: none;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--overlay);
   color: var(--on-art);
   cursor: pointer;
   opacity: 0;

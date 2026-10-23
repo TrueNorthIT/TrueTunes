@@ -27,20 +27,20 @@
 .art {
   width: 2.6em;
   height: 2.6em;
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--glass);
   color: var(--on-art);
 }
 .art:hover {
-  background: rgba(255, 255, 255, 0.34);
+  background: var(--glass-hi);
 }
 
 /* On a tile corner, over art that can be any colour. */
 .corner {
   width: 2em;
   height: 2em;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--overlay);
   color: var(--on-art);
 }
 .corner:hover {
-  background: rgba(0, 0, 0, 0.8);
+  background: var(--overlay-strong);
 }

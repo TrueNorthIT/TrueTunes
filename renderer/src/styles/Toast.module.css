@@ -24,7 +24,7 @@
   background: var(--material-bg);
   -webkit-backdrop-filter: var(--material-filter);
   backdrop-filter: var(--material-filter);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), var(--material-edge);
+  box-shadow: var(--float-shadow);
   animation: toastIn var(--dur) var(--ease);
   pointer-events: auto;
 }
@@ -48,8 +48,8 @@
   }
 }
 
-.error { --dot: #f87171; }
-.success { --dot: #4ade80; }
+.error { --dot: rgb(var(--danger)); }
+.success { --dot: rgb(var(--success)); }
 .info { --dot: var(--text-3); }
 
 .action {

@@ -60,7 +60,7 @@
   font-size: max(13px, 0.95em);
   font-weight: 500;
   color: var(--on-art);
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+  text-shadow: var(--text-shadow);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

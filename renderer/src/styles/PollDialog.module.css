@@ -98,13 +98,13 @@
 
 /* The board itself is black with white tiles, so the preview is too. */
 .preview {
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--well);
   border-radius: 0.65em;
   padding: 0.8em 1em;
   font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
   font-size: max(13px, 0.93em);
   letter-spacing: 0.04em;
-  color: #f5f5f5;
+  color: var(--on-art);
 }
 .previewRow {
   min-height: 1.5em;

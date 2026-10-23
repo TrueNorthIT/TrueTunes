@@ -59,14 +59,14 @@
   overflow: hidden;
   background: var(--bg-1);
   cursor: pointer;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--hero-shadow);
   transition:
     transform var(--dur-fast) var(--ease-fast),
     box-shadow var(--dur-fast) var(--ease-fast);
 }
 .art img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .art:hover,
-.art:focus-visible { transform: scale(1.02); box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45); }
+.art:focus-visible { transform: scale(1.02); box-shadow: var(--hero-lift-shadow); }
 .artPh { display: grid; place-items: center; width: 100%; height: 100%; font-size: 2.4em; color: var(--text-3); }
 
 .info { display: flex; flex-direction: column; align-items: flex-start; gap: 0.55em; min-width: 0; }

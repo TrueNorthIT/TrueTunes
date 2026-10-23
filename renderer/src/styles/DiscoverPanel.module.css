@@ -89,7 +89,7 @@
 .face:hover,
 .face:focus-visible { background: var(--row-hover); }
 .face:hover .faceAvatar,
-.face:focus-visible .faceAvatar { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55); }
+.face:focus-visible .faceAvatar { box-shadow: var(--face-ring); }
 .face:hover .faceName,
 .face:focus-visible .faceName { color: var(--text); }
 .faceAvatar {

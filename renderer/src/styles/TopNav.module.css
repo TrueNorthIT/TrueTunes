@@ -30,9 +30,7 @@
   backdrop-filter: var(--material-filter);
   will-change: backdrop-filter;
   border: 1px solid var(--separator);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.5),
-    var(--material-edge);
+  box-shadow: var(--float-shadow);
 }
 
 /* ── History pill — fixed top-left, independent of navRoot ── */
@@ -187,7 +185,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), var(--material-edge);
+  box-shadow: var(--float-shadow);
   z-index: 300;
 }
 
@@ -276,7 +274,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), var(--material-edge);
+  box-shadow: var(--float-shadow);
   z-index: 300;
 }
 

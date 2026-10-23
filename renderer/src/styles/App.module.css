@@ -37,9 +37,9 @@
   bottom: calc(var(--player-h) + 12px);
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(220, 50, 50, 0.92);
+  background: rgba(var(--danger-solid), 0.92);
   backdrop-filter: blur(8px);
-  color: #fff;
+  color: var(--on-art);
   padding: 8px 16px;
   border-radius: 6px;
   font-size: 13px;
@@ -58,7 +58,7 @@
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--overlay);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;

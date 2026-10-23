@@ -207,7 +207,7 @@
   line-height: 0;
   transition: box-shadow var(--dur-fast) var(--ease-fast);
 }
-.who:hover { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55); }
+.who:hover { box-shadow: var(--face-ring); }
 .whoAvatar {
   width: 1.9em;
   height: 1.9em;

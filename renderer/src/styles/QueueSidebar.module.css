@@ -217,12 +217,12 @@
   /* transparent border shrinks visual width while keeping 16px hit box */
   border: 2px solid transparent;
   background-clip: padding-box;
-  background-color: rgba(255, 255, 255, 0.18);
+  background-color: var(--glass);
   border-radius: 99px;
   max-height: 300px;
 }
 .content::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.32);
+  background-color: var(--glass-hi);
 }
 
 /* ── Group labels: Played, Now playing, Up next ── */
@@ -306,7 +306,7 @@ button.groupLabel:hover { color: var(--text); }
 }
 .overlay {
   position: absolute; inset: 0; border-radius: var(--r-sm);
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--overlay);
   display: flex; align-items: center; justify-content: center;
   pointer-events: none;
 }
@@ -366,7 +366,7 @@ button.groupLabel:hover { color: var(--text); }
   line-height: 0;
   transition: box-shadow var(--dur-fast) var(--ease-fast);
 }
-.queuer:hover { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55); }
+.queuer:hover { box-shadow: var(--face-ring); }
 .queuerAvatar {
   width: 26px;
   height: 26px;

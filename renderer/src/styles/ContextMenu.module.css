@@ -11,7 +11,7 @@
   border-radius: 0.9em;
   padding: 0.3em;
   min-width: 15em;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), var(--material-edge);
+  box-shadow: var(--float-shadow);
   animation: menuIn var(--dur-fast) var(--ease);
   user-select: none;
   outline: none;

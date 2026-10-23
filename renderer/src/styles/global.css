@@ -27,16 +27,43 @@
   /* Destructive actions only (Clear, Delete): a triplet like --tint, used tonally, never as a slab. */
   --danger: 248, 113, 113;
 
-  /* artwork tiles: soft drop shadow, plus a 1px inner keyline drawn by each art box's ::after */
+  /* Danger as a solid slab with white text (the error banner): the plain --danger is too pale for that. */
+  --danger-solid: 220, 50, 50;
+  /* Status dot on a success toast. Triplet, like --danger. */
+  --success: 74, 222, 128;
+
+  /* Black and white only ever appear as these alpha overlays. */
+  --overlay: rgba(0, 0, 0, 0.55); /* dim over art, modal backdrop, dark corner buttons, focus edge */
+  --overlay-strong: rgba(0, 0, 0, 0.8); /* its hover step, and chips over art */
+  --well: rgba(0, 0, 0, 0.4); /* recessed code and preview boxes */
+  --glass: rgba(255, 255, 255, 0.18); /* translucent fill on art and dark chrome, scrollbar thumbs */
+  --glass-hi: rgba(255, 255, 255, 0.32); /* its hover step */
+  --glass-faint: rgba(255, 255, 255, 0.05); /* shelf search fill */
+  --track: rgba(255, 255, 255, 0.14); /* progress and volume track behind a fill */
+
+  /* Shadow vocabulary (DESIGN.md). Floating is --float-shadow in depth.css. */
+  /* Art rest: tiles soft drop shadow, plus a 1px inner keyline drawn by each art box's ::after. */
   --art-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  /* Art lifted: tiles on hover or focus. */
   --art-lift-shadow: 0 8px 18px rgba(0, 0, 0, 0.4);
+  /* Hero art: Now Playing, HeroBand, the artist print, the Profile face; and its hover. */
+  --hero-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  --hero-lift-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
   --art-keyline: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  /* Ring on a hovered or focused avatar. */
+  --face-ring: 0 0 0 2px rgba(255, 255, 255, 0.55);
+  /* White text over art: the soft black shadow, normal and for larger lines. */
+  --text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+  --text-shadow-lg: 0 1px 12px rgba(0, 0, 0, 0.5);
   /* Image-card scrim: darker at the top for the caption, deep at the bottom for title and artist. */
+  --scrim-top: linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 22%);
   --scrim-art:
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 22%),
+    var(--scrim-top),
     linear-gradient(to top, rgba(0, 0, 0, 0.74) 0%, rgba(0, 0, 0, 0.26) 42%, rgba(0, 0, 0, 0) 70%);
   /* Tiles whose art carries its own text get a deeper, bottom-only scrim. */
   --scrim-deep: linear-gradient(to top, rgba(0, 0, 0, 0.86) 0%, rgba(0, 0, 0, 0.4) 38%, rgba(0, 0, 0, 0) 68%);
+  /* Behind the text block of a Top result, so the text holds on pale covers. */
+  --scrim-text: linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.66) 50%, rgba(0, 0, 0, 0.42) 80%, rgba(0, 0, 0, 0) 100%);
 
   --r-sm: 6px;
   --r-md: 10px;

@@ -32,7 +32,7 @@
   overflow: hidden;
   position: relative;
   background: var(--bg-1);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--art-shadow);
 }
 .art::after {
   content: '';
@@ -183,14 +183,14 @@
   height: 3px;
   border-radius: 2px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--track);
   transition: transform var(--dur-fast) var(--ease-fast);
 }
 .progress:hover .progressTrack { transform: scaleY(1.67); }
 .progressFill {
   width: 100%;
   height: 100%;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--title-rest);
   transform-origin: left center;
   transition: transform 0.4s linear;
 }

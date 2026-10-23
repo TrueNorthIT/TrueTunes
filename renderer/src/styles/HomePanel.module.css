@@ -117,7 +117,7 @@
 .face:hover,
 .face:focus-visible { background: var(--row-hover); }
 .face:hover .faceAvatar,
-.face:focus-visible .faceAvatar { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55); }
+.face:focus-visible .faceAvatar { box-shadow: var(--face-ring); }
 .face:hover .faceName,
 .face:focus-visible .faceName { color: var(--text); }
 .faceAvatar {
@@ -254,7 +254,7 @@ button.tileMain { cursor: pointer; }
   font-size: 1.05em;
   font-weight: 600;
   color: var(--on-art);
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+  text-shadow: var(--text-shadow);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -311,14 +311,14 @@ button.tileMain { cursor: pointer; }
   overflow: hidden;
   background: var(--bg-1);
   cursor: pointer;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--hero-shadow);
   transition:
     transform var(--dur-fast) var(--ease-fast),
     box-shadow var(--dur-fast) var(--ease-fast);
 }
 .nowArt img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .nowArt:hover,
-.nowArt:focus-visible { transform: scale(1.02); box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45); }
+.nowArt:focus-visible { transform: scale(1.02); box-shadow: var(--hero-lift-shadow); }
 
 .nowInfo {
   display: flex;
@@ -367,8 +367,8 @@ button.tileMain { cursor: pointer; }
 .nowProgress { display: flex; align-items: center; gap: 0.8em; margin-top: 0.3em; }
 .nowTime { font-size: max(13px, 0.86em); color: var(--text-3); font-variant-numeric: tabular-nums; min-width: 2.6em; }
 .nowTime:last-child { text-align: right; }
-.nowBar { flex: 1; height: 0.32em; border-radius: 1em; background: rgba(255, 255, 255, 0.14); overflow: hidden; }
-.nowFill { width: 100%; height: 100%; border-radius: inherit; background: rgba(255, 255, 255, 0.85); transform-origin: left center; transition: transform 0.4s linear; }
+.nowBar { flex: 1; height: 0.32em; border-radius: 1em; background: var(--track); overflow: hidden; }
+.nowFill { width: 100%; height: 100%; border-radius: inherit; background: var(--title-rest); transform-origin: left center; transition: transform 0.4s linear; }
 
 .about { display: flex; flex-direction: column; align-items: flex-start; gap: 0; width: 100%; max-width: 100ch; margin-top: 0.2em; }
 .aboutText {
