@@ -17,6 +17,8 @@ interface Props {
   showToast: (msg: string) => void;
   groups: NormalizedGroup[];
   activeGroupId: string | null;
+  /** The signed-in display name, so DJ picks can say "You". */
+  displayName?: string | null;
   /** Same DJ section as the docked queue — it's the same queue underneath. */
   autoplay?: {
     enabled: boolean;
@@ -43,6 +45,7 @@ export function SkinnyShell({
   showToast,
   groups,
   activeGroupId,
+  displayName,
 }: Props) {
   const np = useNowPlaying(playback);
 
@@ -51,6 +54,7 @@ export function SkinnyShell({
       <AmbientBackdrop nowPlayingArt={playback.artUrl} />
       <QueueSidebar
         autoplay={autoplay}
+        viewer={displayName}
         variant="skinny"
         items={queueItems}
         setItems={setQueueItems}

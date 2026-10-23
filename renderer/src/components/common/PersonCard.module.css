@@ -1,4 +1,5 @@
 .card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.9em;
@@ -24,6 +25,7 @@
 }
 .head:hover,
 .head:focus-visible { filter: brightness(1.25); }
+.action { position: absolute; top: 2em; right: 1.5em; color: var(--text-3); }
 .avatar {
   width: 2.8em;
   height: 2.8em;

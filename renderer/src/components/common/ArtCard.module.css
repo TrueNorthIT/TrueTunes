@@ -51,12 +51,22 @@
 
 .cover:focus-visible { outline-offset: -3px; } /* the card clips an outer ring */
 
-.label {
+.top {
   position: absolute;
   top: 1.1em;
   left: 1.2em;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
   max-width: calc(100% - 2.4em);
+  pointer-events: none;
+  color: var(--on-art);
+  text-shadow: var(--text-shadow);
+}
+.top > button { pointer-events: auto; }
+.label {
+  min-width: 0;
   font-size: var(--fs-prose);
   font-weight: 500;
   color: var(--on-art);

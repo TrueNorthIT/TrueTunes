@@ -492,6 +492,7 @@ useEffect(() => {
     {skinny ? (
       <SkinnyShell
         autoplay={autoplay}
+        displayName={displayName}
         isAuthed={isAuthed}
         playback={playback}
         queueItems={queueItems}
@@ -556,6 +557,7 @@ useEffect(() => {
         </main>
         <QueueSidebar
           ref={queueSidebarRef}
+          viewer={displayName}
           items={queueItems}
           setItems={setQueueItems}
           isLoading={queueLoading}

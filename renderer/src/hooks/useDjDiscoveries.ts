@@ -8,6 +8,7 @@ export interface DjDiscovery {
   artist: string;
   because: string;
   score: number;
+  fans?: DjArtist['fans'];
 }
 
 /** One act and its tracks the office has never played. `imageUrl` is the act's photo, when the browse has one. */
@@ -75,6 +76,7 @@ export function useDjDiscoveries(
     artist: act.artist,
     because: `${act.because} — never played here`,
     score: act.score,
+    fans: act.fans,
   }));
 
   return { discoveries, groups, isLoading };

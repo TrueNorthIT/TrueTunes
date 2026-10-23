@@ -469,6 +469,25 @@ describe('HomePanel', () => {
       expect(screen.queryByText(/Joe Pitts love/)).not.toBeInTheDocument();
     });
 
+    it('REQ-W1/W2/W8: the info icon explains the pick on hover and never opens or queues it', () => {
+      const add = vi.fn();
+      mockUseDjDiscoveries.mockReturnValue({
+        discoveries: [{ ...discovery(1), because: 'Rich and Alex queue Gorillaz — never played here', score: 0.82,
+          fans: [{ user: 'Rich', count: 14 }, { user: 'Alex', count: 6 }] }],
+        isLoading: false,
+      });
+      render(<HomePanel {...defaultProps} onAddToQueue={add} />, { wrapper: makeWrapper() });
+      const info = screen.getByRole('button', { name: 'Why this pick' });
+      fireEvent.mouseEnter(info);
+      const tip = screen.getByRole('tooltip');
+      expect(tip).toHaveTextContent('Rich — queued them 14 times');
+      expect(tip).toHaveTextContent('Alex — queued them 6 times');
+      expect(tip).toHaveTextContent("Good fit for who's in: 82%");
+      fireEvent.click(info);
+      expect(add).not.toHaveBeenCalled();
+      expect(mockOpenItem).not.toHaveBeenCalled();
+    });
+
     it('titles the section "Picks for you" and drops the face row when only the viewer is in', () => {
       mockUseOfficePresence.mockReturnValue({ data: { inOffice: ['Joe Pitts'] } });
       render(<HomePanel {...defaultProps} displayName="Joe Pitts" />, { wrapper: makeWrapper() });

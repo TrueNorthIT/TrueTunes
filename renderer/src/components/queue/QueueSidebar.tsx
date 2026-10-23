@@ -32,6 +32,8 @@ interface Props {
   onResizeWidthLive?: (width: number) => void;
   /** 'docked' = resizable sidebar pinned to the right; 'skinny' = full-width panel, no resize. */
   variant?: 'docked' | 'skinny';
+  /** The signed-in display name, so DJ picks can say "You". */
+  viewer?: string | null;
   /** DJ autoplay: what's coming once the queue runs dry. */
   autoplay?: {
     enabled: boolean;
@@ -68,6 +70,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     onResizeWidthLive,
     variant = 'docked',
     autoplay,
+    viewer,
   },
   ref
 ) {
@@ -429,7 +432,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
               <div className={styles.djEmpty}>Nothing to suggest just yet.</div>
             ) : (
               autoplay.upcoming.map((track) => (
-                <DjUpcomingRow key={track.uri} track={track} idle={!autoplay.enabled} />
+                <DjUpcomingRow key={track.uri} track={track} idle={!autoplay.enabled} viewer={viewer} />
               ))
             )}
           </>

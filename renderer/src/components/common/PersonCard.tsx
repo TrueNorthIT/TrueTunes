@@ -13,12 +13,14 @@ interface Props {
   onOpen: () => void;
   /** Title and accessible name of the header button. Default "Open {name}'s profile". */
   openLabel?: string;
+  /** Small control at the header's right edge (an InfoTip); a sibling of the header button, not inside it. */
+  action?: ReactNode;
   /** Whatever sits under the header: tiles, rows. */
   children?: ReactNode;
 }
 
 /** A person: avatar, name and a count, with their photo's dominant colour washed across the header. */
-export function PersonCard({ name, imageUrl, caption, onOpen, openLabel, children }: Props) {
+export function PersonCard({ name, imageUrl, caption, onOpen, openLabel, action, children }: Props) {
   const label = openLabel ?? `Open ${name}'s profile`;
   const art = useImage(imageUrl ?? null);
   const color = useDominantColor(art);
@@ -34,6 +36,7 @@ export function PersonCard({ name, imageUrl, caption, onOpen, openLabel, childre
           {caption && <span className={styles.caption}>{caption}</span>}
         </span>
       </button>
+      {action && <div className={styles.action}>{action}</div>}
       {children}
     </div>
   );

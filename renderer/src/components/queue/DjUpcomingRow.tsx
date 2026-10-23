@@ -1,5 +1,6 @@
 import { Disc3 } from 'lucide-react';
 import { useImage } from '../../hooks/useImage';
+import { PickInfoTip } from '../common/PickInfoTip';
 import { Artwork } from '../common/Artwork';
 import styles from '../../styles/QueueSidebar.module.css';
 
@@ -7,6 +8,8 @@ interface Props {
   track: DjTrack;
   /** Dimmed further while autoplay is paused — these are hypothetical then. */
   idle: boolean;
+  /** The signed-in display name, shown as "You" in the pick's explanation. */
+  viewer?: string | null;
 }
 
 /**
@@ -20,13 +23,12 @@ interface Props {
  * double-click-to-play. Only the first of these is actually in the Sonos queue,
  * so offering to reorder or skip to them would be a lie.
  */
-export function DjUpcomingRow({ track, idle }: Props) {
+export function DjUpcomingRow({ track, idle, viewer }: Props) {
   const art = useImage(track.imageUrl ?? null);
 
   return (
     <div
       className={[styles.row, styles.djRow, idle ? styles.djRowIdle : ''].filter(Boolean).join(' ')}
-      title={track.because}
     >
       <div className={styles.artWrap}>
         <Artwork src={art} className={styles.art} placeholderClassName={styles.artPh} lazy />
@@ -37,11 +39,18 @@ export function DjUpcomingRow({ track, idle }: Props) {
           <span className={styles.sub}>{track.artist}</span>
         </div>
       </div>
-      {/* Where a person's avatar sits on a real row: the DJ, with its reason as the name. */}
-      <span className={styles.djPick} title={track.because}>
-        <Disc3 size={14} aria-hidden="true" />
-        <span className={styles.srOnly}>{track.because}</span>
-      </span>
+      {/* Where a person's avatar sits on a real row: the DJ icon, which explains the pick. */}
+      <PickInfoTip
+        className={styles.djPick}
+        icon={<Disc3 size={14} aria-hidden="true" />}
+        because={track.because}
+        fans={track.fans}
+        score={track.score}
+        viewer={viewer}
+        trackName={track.trackName}
+        kind="played"
+      />
+      <span className={styles.srOnly}>{track.because}</span>
     </div>
   );
 }

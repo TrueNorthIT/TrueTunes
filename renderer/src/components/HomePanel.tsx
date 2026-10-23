@@ -63,6 +63,7 @@ import { useTrackContextMenu } from './common/ContextMenu';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
 import { artistImageQueryOptions, artistQueryOptions } from '../hooks/useArtistBrowse';
 import { Carousel } from './common/Carousel';
+import { PickInfoTip } from './common/PickInfoTip';
 import { ArtCard } from './common/ArtCard';
 import { ChartHead, ChartRow } from './common/ChartRow';
 import { ImageTile } from './common/ImageTile';
@@ -153,8 +154,9 @@ function PickRow({ t, reason, onAdd }: { t: NavTrack; reason?: string; onAdd?: (
 }
 
 /** The artwork is the card: title and artist sit on a soft scrim over the lower part. */
-function PickCard({ size, label, t, photoUrl, onAdd, className }: {
+function PickCard({ size, label, t, photoUrl, onAdd, className, why }: {
   size: 'large' | 'medium'; label: string; t: NavTrack; photoUrl?: string | null; onAdd: () => void; className?: string;
+  why: Parameters<typeof PickInfoTip>[0];
 }) {
   const nav = useContext(NavContext);
   return (
@@ -168,6 +170,7 @@ function PickCard({ size, label, t, photoUrl, onAdd, className }: {
       photoUrl={photoUrl}
       openLabel={`Open album ${t.album ?? t.title}`}
       onOpen={() => nav.openAlbum(t)}
+      info={<PickInfoTip {...why} />}
       onAdd={onAdd}
       onContextMenu={(e) => nav.menu(t, e)}
       onMouseEnter={() => nav.prefetch(t)}
@@ -578,6 +581,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
     return {
       key: d.track.id.objectId,
       because: d.because,
+      why: { because: d.because, fans: d.fans, score: d.score, viewer: displayName, trackName: d.track.title, kind: 'unheard' as const },
       item: d.track.raw,
       act,
       t: {
@@ -604,6 +608,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
         return [{
           key: t.uri,
           because: t.because,
+          why: { because: t.because, fans: t.fans, score: t.score, viewer: displayName, trackName: t.trackName, kind: 'played' as const },
           item,
           act,
           t: {
@@ -804,11 +809,11 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                   <div className={styles.msg}>Digging for something new…</div>
                 ) : (
                   <div className={styles.picksLayout}>
-                    <PickCard size="large" className={styles.picksLead} label={pickReason(lead.because, displayName)} t={lead.t} photoUrl={lead.photo} onAdd={addPick(lead)} />
+                    <PickCard size="large" className={styles.picksLead} label={pickReason(lead.because, displayName)} t={lead.t} photoUrl={lead.photo} onAdd={addPick(lead)} why={lead.why} />
                     {[featured[0], featured[1]].map((p, i) =>
                       p ? (
                         <div key={p.key} className={styles.picksCol}>
-                          <PickCard size="medium" label={pickReason(p.because, displayName)} t={p.t} photoUrl={p.photo} onAdd={addPick(p)} />
+                          <PickCard size="medium" label={pickReason(p.because, displayName)} t={p.t} photoUrl={p.photo} onAdd={addPick(p)} why={p.why} />
                           <ul className={styles.list}>{(i === 0 ? listA : listB).map(pickRow)}</ul>
                         </div>
                       ) : null,

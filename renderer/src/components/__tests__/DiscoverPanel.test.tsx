@@ -94,6 +94,15 @@ describe('DiscoverPanel', () => {
     expect(screen.queryByText(/never played here/i)).toBeNull();
   });
 
+  it('REQ-W7/W8: the info icon on an act card explains it without opening the act or queuing', async () => {
+    renderPanel();
+    const [info] = await screen.findAllByRole('button', { name: 'Why this pick' }, { timeout: 4000 });
+    await userEvent.hover(info);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Rich');
+    await userEvent.click(info);
+    expect(onAddToQueue).not.toHaveBeenCalled();
+  });
+
   /**
    * The important one. DJ picks are the algorithm's choice, not the clicker's:
    * attributing them would credit whoever pressed the button on the leaderboard,
