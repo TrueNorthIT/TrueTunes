@@ -87,7 +87,7 @@
   place-items: center;
   width: 100%;
   height: 100%;
-  font-size: 2.4em;
+  font-size: var(--fs-glyph-md);
   color: var(--text-3);
 }
 
@@ -274,7 +274,7 @@
   width: 91%;
   padding: 0.22em 0;
   /* one-off, tied to this layout */
-  font-size: clamp(1.7em, 3.4cqi, 2.4em);
+  font-size: var(--fs-lyric);
   font-weight: 600;
   letter-spacing: -0.015em;
   line-height: 1.3;
@@ -289,7 +289,7 @@
   color: var(--on-art);
 }
 .linePlain {
-  font-size: clamp(1.4em, 2.6cqi, 1.9em);
+  font-size: var(--fs-lyric-plain);
   opacity: 0.85;
 }
 .padPlain .label {
@@ -303,7 +303,7 @@
   margin: 0.95em 0;
   border-radius: var(--r-xs);
   /* one-off, tied to this layout */
-  font-size: clamp(1.7em, 3.4cqi, 2.4em);
+  font-size: var(--fs-lyric);
 }
 
 /* No lyrics (instrumental, none found): one column, Now playing leads as a wide card, art beside the text. */

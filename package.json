@@ -28,12 +28,15 @@
     "test:coverage": "vitest run --config renderer/vitest.config.ts --coverage",
     "storybook": "storybook dev -p 6006 -c renderer/.storybook",
     "build-storybook": "storybook build -c renderer/.storybook -o storybook-static",
-    "lint": "eslint .",
+    "lint": "npm run lint:eslint && npm run lint:css && npm run lint:design",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{ts,tsx,json,css}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,json,css}\"",
     "typecheck": "tsc --noEmit && tsc --noEmit --project renderer/tsconfig.json",
-    "test:main": "node --test src/**/*.test.ts"
+    "test:main": "node --test src/**/*.test.ts",
+    "lint:eslint": "eslint .",
+    "lint:css": "stylelint \"renderer/src/**/*.css\"",
+    "lint:design": "npx -y -p @google/design.md@0.4.0 designmd lint DESIGN.md"
   },
   "dependencies": {
     "@azure/msal-node": "^5.2.2",

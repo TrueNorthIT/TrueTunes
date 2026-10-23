@@ -10,7 +10,7 @@ const meta = {
   args: { name: 'Priya Shah', imageUrl: portrait, className: chip.avatar },
   decorators: [
     (Story) => (
-      <div style={{ fontSize: '2em' }}>
+      <div style={{ fontSize: 'var(--fs-glyph-sm)' }}>
         <Story />
       </div>
     ),

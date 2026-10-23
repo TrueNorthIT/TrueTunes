@@ -1,6 +1,7 @@
 /* Shared by TrackRow and ChartRow: borderless rows that fill with a tint on hover or focus. */
 
 .row {
+  position: relative;
   border-radius: var(--r-row);
   transition: background var(--dur-fast) var(--ease-fast);
   min-width: 0;
@@ -191,9 +192,6 @@
 }
 
 /* ── TrackRow extras: number, handle, aside, who, duration, remove ── */
-.row {
-  position: relative;
-}
 .track.withHandle {
   padding-left: 1.5em;
 }

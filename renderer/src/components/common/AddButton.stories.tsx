@@ -9,7 +9,14 @@ const meta = {
   args: { label: 'Add Golden Hour to queue', onClick: fn() },
   decorators: [
     (Story) => (
-      <div style={{ display: 'inline-block', padding: '1em', borderRadius: '1em', background: 'var(--bg-1)' }}>
+      <div
+        style={{
+          display: 'inline-block',
+          padding: '1em',
+          borderRadius: 'var(--r-art-card)',
+          background: 'var(--bg-1)',
+        }}
+      >
         <Story />
       </div>
     ),
