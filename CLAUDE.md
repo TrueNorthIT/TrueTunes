@@ -65,6 +65,12 @@ All Sonos HTTP calls go through `src/main.ts` → `sonosFetch()` → play.sonos.
 
 All data fetching in the renderer uses React Query (`@tanstack/react-query`). Each query is a factory wrapped in `queryOptions()` (e.g. `trackQueryOptions`), living alongside its hook with an `xxxKeys` key factory in the same file (e.g. `playlistKeys.owned(id)`). Use the key factory for every invalidation and `setQueryData`; never type a key out by hand. The QueryClient default `staleTime` is 5 minutes (`renderer/src/main.tsx`); only a query that deliberately differs sets one, using `STALE` / `GC_HOUR` from `lib/queryDefaults.ts`. The signed-in name comes from `useDisplayName()`.
 
+### Playback position (the per-second tick)
+
+`PlaybackState` (from `usePlayback`) changes only when Sonos pushes an update. The moving position (`positionMs`, `progressPct`, `timeLabel`, `trackEndsAtMs`) lives in `hooks/playbackPosition.ts`, a tiny external store: read it with `usePlaybackPosition(select)` (pick a primitive so you re-render only when it changes), or `getPlaybackPosition()` inside an effect or handler. Never add the position back into `PlaybackState`, or every page and queue row re-renders each second. `LiveSeekBar`, `PlaybackTime` and `PlaybackRemaining` in `common/SeekBar.tsx` are the ready-made readers.
+
+The queue list is virtual (`@tanstack/react-virtual`, in `QueueSidebar`): rows exist only near the viewport, so reach a row through `scrollToNowPlaying` or the virtualizer, not by querying the DOM. `EqBars` takes `paused` and only animates while audio is really playing.
+
 ### Attribution / office presence
 
 `src/pubsub.ts` connects to Azure Web PubSub. When a track is queued, the renderer calls `window.sonos.publishQueued()` → `ipcMain` → `pubsub.ts` → Azure Function (`log-event`) → Cosmos DB. The leaderboard reads from Cosmos via the `stats` Azure Function.
