@@ -299,12 +299,13 @@ function buildChain(
     ] as Array<[boolean, boolean]>) {
       for (let ci = 0; ci < shuffledPool.length; ci++) {
         const candidate = shuffledPool[ci];
-        if (usedIds.has(itemId(candidate))) continue;
-        if (candidate.albumKey && usedAlbumKeys.has(candidate.albumKey)) continue;
-        if (itemsOverlap(tail, candidate)) continue;
+        // Cheap count checks first: most of the pool fails them, and this loop dominates generation time.
         if (!validStep(tail, candidate, higher, opts)) continue;
         if (inBandOnly && !inRampBand(questionNumber, tail.count, candidate.count)) continue;
         if (!isLast && !canBridge(candidate.count)) continue;
+        if (usedIds.has(itemId(candidate))) continue;
+        if (candidate.albumKey && usedAlbumKeys.has(candidate.albumKey)) continue;
+        if (itemsOverlap(tail, candidate)) continue;
 
         chain.push(candidate);
         usedIds.add(itemId(candidate));
