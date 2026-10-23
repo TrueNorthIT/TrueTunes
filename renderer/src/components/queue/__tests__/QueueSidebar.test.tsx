@@ -482,21 +482,15 @@ describe('DJ autoplay section', () => {
 // ─── grouping: played / now playing / up next ────────────────────────────────
 
 describe('QueueSidebar — grouping', () => {
-  it('folds played tracks away, labels now playing and up next', () => {
+  it('keeps played tracks in the one list and labels played, now playing and up next', () => {
     setup({ currentQueueItemId: '2' }); // index 1 is playing
-    expect(screen.queryByTestId('row-0')).not.toBeInTheDocument();
+    expect(screen.getByTestId('row-0')).toBeInTheDocument();
     expect(screen.getByTestId('row-1')).toBeInTheDocument();
     expect(screen.getByTestId('row-2')).toBeInTheDocument();
+    expect(screen.getByText('Played')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Played/ })).not.toBeInTheDocument();
     expect(screen.getByText('Now playing')).toBeInTheDocument();
     expect(screen.getByText('Up next')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Played/ })).toHaveAttribute('aria-expanded', 'false');
-  });
-
-  it('opens the played tracks from their label', async () => {
-    const { user } = setup({ currentQueueItemId: '2' });
-    await user.click(screen.getByRole('button', { name: /Played/ }));
-    expect(screen.getByTestId('row-0')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Played/ })).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('leaves the playing track to the Now playing card in skinny mode, so it shows once', () => {
@@ -506,13 +500,13 @@ describe('QueueSidebar — grouping', () => {
     expect(screen.queryByRole('button', { name: 'Jump to now playing' })).not.toBeInTheDocument();
     expect(screen.getByText('Up next')).toBeInTheDocument();
     expect(screen.getByTestId('row-2')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Played/ })).toBeInTheDocument();
+    expect(screen.getByText('Played')).toBeInTheDocument();
   });
 
   it('is a flat list when nothing is playing', () => {
     setup();
     expect(screen.getByTestId('row-0')).toBeInTheDocument();
     expect(screen.queryByText('Now playing')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Played/ })).not.toBeInTheDocument();
+    expect(screen.queryByText('Played')).not.toBeInTheDocument();
   });
 });

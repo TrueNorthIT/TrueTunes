@@ -364,20 +364,16 @@ button.groupLabel:hover { color: var(--text); }
 }
 .subLink:hover { color: var(--text); text-decoration: underline; }
 
-/* When it will play: it would crowd the artist on every row, so it appears on hover, focus or selection
-   (and is always in the row's tooltip). */
+/* When it will play, on every upcoming row (Joe wants it at a glance, not on hover). The artist gives way first. */
 .timeToPlay {
   margin-left: auto;
+  padding-left: 0.6em;
   font-size: 13px;
   color: var(--text-3);
   white-space: nowrap;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
-  display: none;
 }
-.row:hover .timeToPlay,
-.row:focus-within .timeToPlay,
-.row.selected .timeToPlay { display: block; }
 
 /* Who queued it: a small avatar. The name is the accessible name and the tooltip. */
 .queuer {

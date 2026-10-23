@@ -1,6 +1,6 @@
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, Fragment, forwardRef } from 'react';
 import { useQueries } from '@tanstack/react-query';
-import { Loader2, Disc3, RotateCw, LocateFixed, ListX, ChevronRight } from 'lucide-react';
+import { Loader2, Disc3, RotateCw, LocateFixed, ListX } from 'lucide-react';
 import { applyReorderLocally, expandToAlbumBlock } from '../../lib/queueHelpers';
 import { createDragGhost } from '../../lib/dragHelpers';
 import { getActiveProvider } from '../../providers';
@@ -78,8 +78,6 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   const [selected, setSelected]           = useState<Set<number>>(new Set());
   const [dragOverIndex, setDragOverIndex]  = useState<number | null>(null);
   const [pendingClear, setPendingClear]    = useState(false);
-  // What has already played is folded away by default; the label above the list opens it.
-  const [showPlayed, setShowPlayed]        = useState(false);
   // Same query Home uses, so queuers' photos cost nothing extra.
   const { data: users } = useUsers(true, true);
   const imageByUser = useMemo(() => new Map((users ?? []).map(u => [u.userId, u.imageUrl])), [users]);
@@ -295,7 +293,6 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   // Played / now playing / up next, from the live queue position. Without a position the list is flat.
   const playingIdx = currentQueueItemId !== null ? Number(currentQueueItemId) - 1 : -1;
   const grouped = playingIdx >= 0 && playingIdx < items.length;
-  const firstShown = grouped && !showPlayed ? playingIdx : 0;
 
   const selCount = selected.size;
   const isSkinny = variant === 'skinny';
@@ -370,19 +367,12 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
         {!isLoading && !error && items.length === 0 && (
           <div className={styles.msg}>Queue is empty.</div>
         )}
+        {/* One list, played tracks included (Joe prefers it to folding them away); the labels mark the sections. */}
         {!isLoading && !error && grouped && playingIdx > 0 && (
-          <button
-            type="button"
-            className={styles.groupLabel}
-            aria-expanded={showPlayed}
-            onClick={e => { e.stopPropagation(); setShowPlayed(v => !v); setSelected(new Set()); }}
-          >
-            <ChevronRight size={14} style={{ transform: showPlayed ? 'rotate(90deg)' : undefined }} aria-hidden="true" />
-            Played <span className={styles.groupCount}>{playingIdx}</span>
-          </button>
+          <div className={styles.groupLabel}>Played <span className={styles.groupCount}>{playingIdx}</span></div>
         )}
         {!isLoading && !error && items.map((item, i) => {
-          if (i < firstShown || (grouped && i === playingIdx && !nowPlayingRow)) return null;
+          if (grouped && i === playingIdx && !nowPlayingRow) return null;
           const attr = resolveAttribution(attributionMap, item.track);
           return (
             <Fragment key={i}>
