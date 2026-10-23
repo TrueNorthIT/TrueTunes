@@ -26,6 +26,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+export const WithSub: Story = { args: { sub: 'A line on what this section shows.' } };
 export const WithSeeAll: Story = { args: { actions: <SeeAll onClick={fn()} /> } };
 export const WithButtonAction: Story = { args: { actions: <PillButton>New playlist</PillButton> } };
 export const WithHeadContent: Story = {

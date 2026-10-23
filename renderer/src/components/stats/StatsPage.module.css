@@ -1,0 +1,35 @@
+/* Same frame and header as the Leaderboard page; sized in em from the page base (.page-scale on .page). */
+.panel {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: calc(var(--nav-h) + 16px) 28px calc(var(--player-h) + 24px);
+}
+.page {
+  max-width: 2400px;
+  margin: 0 auto;
+  container-type: inline-size;
+}
+.hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.1em;
+  flex-wrap: wrap;
+  margin-bottom: 1.4em;
+}
+.title {
+  font-size: var(--fs-headline);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  color: var(--text);
+}
+.facts {
+  margin-top: 0.3em;
+  font-size: var(--fs-body);
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}

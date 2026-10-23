@@ -1,0 +1,44 @@
+/* A person you can pick. Same recipe as the queued-by chip: Tint Chip pill with a round avatar at the leading edge. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  max-width: 16em;
+  padding: 0.2em 0.8em 0.2em 0.2em;
+  border: none;
+  border-radius: var(--r-pill);
+  background: rgba(var(--tint), 0.08);
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--fs-label);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-fast),
+    color var(--dur-fast) var(--ease-fast);
+}
+.chip:hover:not(:disabled) { background: var(--row-hover); color: var(--text); }
+.on { background: rgba(var(--tint), 0.24); color: var(--text); font-weight: 600; }
+.on:hover:not(:disabled) { background: rgba(var(--tint), 0.3); }
+.chip:disabled { cursor: default; }
+.chip:disabled:not(.on) { opacity: 0.4; }
+
+.avatar {
+  width: 1.7em;
+  height: 1.7em;
+  border-radius: var(--r-round);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dot { width: 0.7em; height: 0.7em; border-radius: var(--r-round); flex-shrink: 0; }
+.name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+@media (prefers-reduced-motion: reduce) {
+  .chip { transition: none; }
+}

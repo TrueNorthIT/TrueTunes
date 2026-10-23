@@ -1,0 +1,57 @@
+/* Sized in em: inside a .page-scale root. */
+.frame { position: relative; width: 100%; min-width: 0; }
+.scroll { overflow-x: auto; padding-bottom: 0.4em; }
+
+.grid {
+  display: grid;
+  grid-template-columns: auto repeat(var(--cols), minmax(var(--min-cell), 1fr));
+  gap: 0.2em;
+  align-items: center;
+}
+.row { display: contents; }
+
+.colHead {
+  position: relative;
+  height: 1.5em;
+  font-size: var(--fs-small);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* A heading ends at its column's right edge and runs leftwards, so the last one never spills out. */
+.colHead span { position: absolute; right: 0; bottom: 0; }
+
+/* Opaque copy of the card colour, so cells scroll cleanly underneath. */
+.rowHead {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  height: var(--cell-h);
+  padding-right: 0.7em;
+  max-width: 12em;
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: color-mix(in srgb, rgb(var(--tint)) 6%, var(--bg));
+}
+
+.cell, .empty { height: var(--cell-h); border-radius: var(--r-xs); }
+.empty { background: rgba(var(--tint), 0.07); }
+.cell:hover, .empty:hover { outline: 2px solid var(--text); outline-offset: -1px; }
+
+.legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6em;
+  margin-top: 0.8em;
+  font-size: var(--fs-small);
+  color: var(--text-3);
+}
+.rampBar { width: 9em; height: 0.6em; border-radius: var(--r-pill); }
+.emptyKey { width: 1em; height: 1em; margin-left: 0.9em; border-radius: var(--r-xs); background: rgba(var(--tint), 0.07); }

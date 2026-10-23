@@ -4,6 +4,8 @@ import styles from './SectionCard.module.css';
 interface Props {
   /** Section heading (h2). Without one the card has no header row. */
   title?: ReactNode;
+  /** One muted line under the title: what the section shows. */
+  sub?: ReactNode;
   /** Sits right after the title, e.g. a row of faces. */
   headContent?: ReactNode;
   /** Right-aligned in the header: a button, or a SeeAll. */
@@ -18,7 +20,7 @@ interface Props {
 }
 
 /** The soft, borderless tonal card every page section sits on. Sized in em: put it inside a .page-scale root. */
-export function SectionCard({ title, headContent, actions, featured, wash, className, children }: Props) {
+export function SectionCard({ title, sub, headContent, actions, featured, wash, className, children }: Props) {
   const titleId = useId();
   return (
     <section
@@ -27,12 +29,13 @@ export function SectionCard({ title, headContent, actions, featured, wash, class
       aria-labelledby={title != null ? titleId : undefined}
     >
       {title != null && (
-        <div className={styles.head}>
+        <div className={sub != null ? `${styles.head} ${styles.headTight}` : styles.head}>
           <h2 id={titleId} className={styles.title}>{title}</h2>
           {headContent}
           {actions != null && <div className={styles.actions}>{actions}</div>}
         </div>
       )}
+      {title != null && sub != null && <p className={styles.sub}>{sub}</p>}
       {children}
     </section>
   );

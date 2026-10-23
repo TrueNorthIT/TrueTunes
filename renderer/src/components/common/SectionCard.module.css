@@ -20,6 +20,12 @@
   flex-wrap: wrap;
   margin-bottom: 1.1em;
 }
+.headTight { margin-bottom: 0.3em; }
+.sub {
+  margin-bottom: 1.1em;
+  font-size: var(--fs-label);
+  color: var(--text-3);
+}
 .actions {
   display: flex;
   align-items: center;
