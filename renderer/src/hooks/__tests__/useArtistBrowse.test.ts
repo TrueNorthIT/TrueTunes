@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { artistQueryOptions } from '../useArtistBrowse';
+import { fetchImage } from '../../lib/imageCache';
+
+vi.mock('../../lib/imageCache', () => ({ fetchImage: vi.fn(() => Promise.resolve(null)) }));
 
 const mockFetch = vi.mocked(window.sonos.fetch);
 
@@ -99,5 +102,16 @@ describe('artistQueryOptions — basic parsing', () => {
 
     const result = await artistQueryOptions('art-1', 'svc', 'acc', undefined).queryFn();
     expect(result.imageUrl).toBeNull();
+  });
+});
+
+describe('artistQueryOptions: hero photo', () => {
+  it('starts the full-size photo before top songs and Genius have finished', async () => {
+    vi.mocked(fetchImage).mockClear();
+    const art = makeArtistResponse({ images: { tile1x1: 'https://art/b=w544-h544-l90-rj' } });
+    mockFetch.mockResolvedValueOnce({ data: art });
+    mockFetch.mockReturnValueOnce(new Promise(() => {})); // top songs never settles
+    void artistQueryOptions('art-1', 'svc', 'acc', undefined).queryFn();
+    await vi.waitFor(() => expect(fetchImage).toHaveBeenCalledWith('https://art/b=w2000-h2000-l90-rj', true));
   });
 });

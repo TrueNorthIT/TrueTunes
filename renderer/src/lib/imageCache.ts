@@ -37,7 +37,36 @@ export function getCached(url: string): string | null {
   return objectUrl;
 }
 
-/** `priority` jumps the queue: for the one image a page waits on (the artist hero), not for tiles. */
+/** "https://…/abc=w226-h226-l90-rj" → "https://…/abc"; null for a URL without a size spec. */
+function artworkBase(url: string): string | null {
+  const i = url.search(/=w\d+-h\d+/);
+  return i > 0 ? url.slice(0, i) : null;
+}
+
+/** Smallest copy worth showing in a hero while the full size loads: smaller ones are a blur and too small to find faces in. */
+const MIN_VARIANT_WIDTH = 200;
+
+/**
+ * The largest copy of the same artwork already loaded at another size ("=w544-h544" while "=w2000-h2000" is asked
+ * for), or null. The image service takes about two seconds to produce any size it has not served before, so a hero
+ * shows this copy at once and sharpens when the full size arrives.
+ */
+export function getCachedVariant(url: string): string | null {
+  const base = artworkBase(url);
+  if (!base) return null;
+  let best: { w: number; objectUrl: string } | null = null;
+  for (const [key, objectUrl] of cache) {
+    if (key === url || artworkBase(key) !== base) continue;
+    const w = Number(/=w(\d+)/.exec(key)?.[1] ?? 0);
+    if (w >= MIN_VARIANT_WIDTH && (!best || w > best.w)) best = { w, objectUrl };
+  }
+  return best?.objectUrl ?? null;
+}
+
+/**
+ * `priority` starts at once, outside the concurrency cap: for the one image a page waits on (the artist hero), not
+ * for tiles. Jumping the queue alone still left it waiting for one of the four slots held by large tile downloads.
+ */
 export function fetchImage(url: string, priority = false): Promise<string | null> {
   const cached = getCached(url);
   if (cached) return Promise.resolve(cached);
@@ -79,10 +108,8 @@ export function fetchImage(url: string, priority = false): Promise<string | null
       }
     };
 
-    if (active < MAX_CONCURRENT) {
+    if (priority || active < MAX_CONCURRENT) {
       run();
-    } else if (priority) {
-      queue.unshift(run);
     } else {
       queue.push(run);
     }

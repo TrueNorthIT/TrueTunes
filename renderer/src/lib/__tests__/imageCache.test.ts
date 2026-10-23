@@ -205,7 +205,7 @@ describe('LRU eviction', () => {
 });
 
 describe('priority', () => {
-  it('a priority fetch jumps ahead of queued ones', async () => {
+  it('a priority fetch starts at once, even with every slot busy', async () => {
     const order: string[] = [];
     const releases: Array<() => void> = [];
     mockFetchGlobal.mockImplementation((url: string) => {
@@ -214,8 +214,28 @@ describe('priority', () => {
     });
     for (let i = 0; i < 6; i++) void fetchImage(`https://example.com/tile${i}.jpg`); // 4 run, 2 queue
     void fetchImage('https://example.com/hero.jpg', true);
-    releases[0]();
+    // No slot freed: the hero still goes out straight away, as the fifth request.
     await vi.waitFor(() => expect(order).toHaveLength(5));
     expect(order[4]).toBe('https://example.com/hero.jpg');
+  });
+});
+
+describe('getCachedVariant', () => {
+  it('finds the largest loaded copy of the same artwork at another size', async () => {
+    const mod = await import('../imageCache');
+    mockFetchGlobal.mockResolvedValue(okResponse());
+    mockCreateObjectURL.mockReturnValueOnce('blob:226').mockReturnValueOnce('blob:544').mockReturnValueOnce('blob:other');
+    await mod.fetchImage('https://lh3.example.com/abc=w226-h226-l90-rj');
+    await mod.fetchImage('https://lh3.example.com/abc=w544-h544-l90-rj');
+    await mod.fetchImage('https://lh3.example.com/xyz=w544-h544-l90-rj');
+    expect(mod.getCachedVariant('https://lh3.example.com/abc=w2000-h2000-l90-rj')).toBe('blob:544');
+  });
+  it('ignores tiny copies and URLs without a size', async () => {
+    const mod = await import('../imageCache');
+    mockFetchGlobal.mockResolvedValue(okResponse());
+    mockCreateObjectURL.mockReturnValueOnce('blob:60');
+    await mod.fetchImage('https://lh3.example.com/abc=w60-h60');
+    expect(mod.getCachedVariant('https://lh3.example.com/abc=w2000-h2000')).toBeNull();
+    expect(mod.getCachedVariant('https://example.com/plain.jpg')).toBeNull();
   });
 });

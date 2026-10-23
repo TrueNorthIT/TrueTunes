@@ -36,7 +36,7 @@ describe('photoStateOf', () => {
 describe('usePhotoState', () => {
   it('falls back to the no-photo treatment when the photo never loads', async () => {
     vi.resetModules();
-    vi.doMock('../imageCache', () => ({ fetchImage: () => Promise.resolve(null) }));
+    vi.doMock('../imageCache', () => ({ fetchImage: () => Promise.resolve(null), getCachedVariant: () => null }));
     const { usePhotoState } = await import('../photoPlaceholder');
     const { result } = renderHook(() => usePhotoState('https://lh3.example/a=w2000-h2000'));
     expect(result.current.state).toBe('unknown');

@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/sonosApi';
+import { fetchImage } from '../lib/imageCache';
+import { withArtworkSize } from '../lib/artworkUrl';
 import { isArtist, parseServiceSearch } from '../lib/itemHelpers';
 import type { AlbumTrack } from './useAlbumBrowse';
 import { parsePlaylistTracks } from './usePlaylistBrowse';
@@ -75,6 +77,10 @@ export function artistQueryOptions(
       if (r.error) throw new Error(r.error);
 
       const { parsed, topSongsItem } = parseArtist(r.data as ArtistResponse);
+      // Start the hero photo now, alongside top songs and Genius below: the image service takes about two seconds for
+      // a size it hasn't served, and waiting for this whole query first made the hero the last thing on the page.
+      // usePhotoState asks for the same URL and joins this request.
+      if (parsed.imageUrl) void fetchImage(withArtworkSize(parsed.imageUrl), true);
 
       const fetchTopSongs = async (): Promise<AlbumTrack[]> => {
         if (!topSongsItem) return [];
