@@ -494,3 +494,13 @@ describe('QueueSidebar — grouping', () => {
     expect(screen.queryByText('Played')).not.toBeInTheDocument();
   });
 });
+
+describe('QueueSidebar — virtual list', () => {
+  it('renders a window of a long queue, not every row', () => {
+    setup({ items: Array.from({ length: 500 }, (_, i) => makeItem(i)) });
+    const rows = screen.getAllByTestId(/^row-/);
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.length).toBeLessThan(100);
+    expect(screen.getByLabelText('500 tracks')).toBeInTheDocument();
+  });
+});

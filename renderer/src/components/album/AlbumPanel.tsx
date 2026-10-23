@@ -53,7 +53,6 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
   const item = (state as { item?: SonosItem } | null)?.item;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const openItem = useOpenItem();
   const { resolveAndOpen } = useResolveAndOpen();
 
   const isStation = item ? isProgram(item) : false;

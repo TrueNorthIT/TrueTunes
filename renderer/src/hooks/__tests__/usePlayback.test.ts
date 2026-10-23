@@ -135,7 +135,7 @@ describe('usePlayback — track name and artist', () => {
 
 describe('usePlayback — progress and timing', () => {
   it('computes progressPct as posMs / durMs * 100', () => {
-    const { result } = renderHook(() => usePlayback('g1'));
+    renderHook(() => usePlayback('g1'));
     firePlayback(
       makePayload({
         playback: { playbackState: 'PLAYING', positionMillis: 60000, queueId: 'q1', queueVersion: 'v1', playModes: {} },
@@ -146,7 +146,7 @@ describe('usePlayback — progress and timing', () => {
   });
 
   it('clamps progressPct to 100 when posMs > durMs', () => {
-    const { result } = renderHook(() => usePlayback('g1'));
+    renderHook(() => usePlayback('g1'));
     firePlayback(
       makePayload({
         playback: {
@@ -163,7 +163,7 @@ describe('usePlayback — progress and timing', () => {
   });
 
   it('sets progressPct to 0 when durMs is 0', () => {
-    const { result } = renderHook(() => usePlayback('g1'));
+    renderHook(() => usePlayback('g1'));
     firePlayback(
       makePayload({
         playback: { playbackState: 'PLAYING', positionMillis: 10000, queueId: 'q1', queueVersion: 'v1', playModes: {} },
@@ -174,7 +174,7 @@ describe('usePlayback — progress and timing', () => {
   });
 
   it('builds a timeLabel when duration is known', () => {
-    const { result } = renderHook(() => usePlayback('g1'));
+    renderHook(() => usePlayback('g1'));
     firePlayback(
       makePayload({
         playback: { playbackState: 'PLAYING', positionMillis: 65000, queueId: 'q1', queueVersion: 'v1', playModes: {} },
@@ -185,7 +185,7 @@ describe('usePlayback — progress and timing', () => {
   });
 
   it('sets empty timeLabel when duration is 0', () => {
-    const { result } = renderHook(() => usePlayback('g1'));
+    renderHook(() => usePlayback('g1'));
     firePlayback(
       makePayload({
         metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 0 } } },
@@ -578,7 +578,7 @@ describe('usePlayback — progress tick', () => {
   });
 
   it('advances progressPct over time while playing', () => {
-    const { result } = renderHook(() => usePlayback('g1'));
+    renderHook(() => usePlayback('g1'));
     // Start at 50% (90s / 180s)
     firePlayback(
       makePayload({
@@ -602,7 +602,7 @@ describe('usePlayback — progress tick', () => {
   });
 
   it('does not tick when paused', () => {
-    const { result } = renderHook(() => usePlayback('g1'));
+    renderHook(() => usePlayback('g1'));
     firePlayback(
       makePayload({
         playback: {
@@ -624,7 +624,7 @@ describe('usePlayback — progress tick', () => {
     expect(getPlaybackPosition().progressPct).toBe(initialPct);
   });
   it('advances positionMs and timeLabel by wall-clock time while playing', () => {
-    const { result } = renderHook(() => usePlayback('g1'));
+    renderHook(() => usePlayback('g1'));
     firePlayback(
       makePayload({
         playback: {
@@ -645,7 +645,7 @@ describe('usePlayback — progress tick', () => {
   });
 
   it('resyncs to the position of the next status update', () => {
-    const { result } = renderHook(() => usePlayback('g1'));
+    renderHook(() => usePlayback('g1'));
     const at = (positionMillis: number) =>
       makePayload({
         playback: {
@@ -670,7 +670,7 @@ describe('usePlayback — progress tick', () => {
   });
 
   it('stops ticking once a paused update arrives', () => {
-    const { result } = renderHook(() => usePlayback('g1'));
+    renderHook(() => usePlayback('g1'));
     const withState = (playbackState: string, positionMillis: number) =>
       makePayload({
         playback: { playbackState, positionMillis, queueId: 'q1', queueVersion: 'v1', playModes: {} },
