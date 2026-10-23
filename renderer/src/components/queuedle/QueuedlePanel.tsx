@@ -301,7 +301,9 @@ export function QueuedlePanel() {
     // Skeletons at the size of the header and the hero card, so nothing jumps when the game arrives.
     return shell(
       <>
-        <p className={styles.srOnly} role="status">Loading {isPastDay ? 'that' : "today's"} Queuedle…</p>
+        <p className={styles.srOnly} role="status">
+          Loading {isPastDay ? 'that' : "today's"} Queuedle…
+        </p>
         <div className={styles.hero} aria-hidden="true">
           <div>
             <h1 className={styles.title}>Queuedle</h1>
@@ -382,9 +384,10 @@ export function QueuedlePanel() {
     // Count yourself in straight away, before the leaderboard refetch catches up with your submission.
     const room =
       displayName && !scores.some((s) => s.userName === displayName)
-        ? [...scores, { userName: displayName, mainScore: score.mainScore, bonusScore: score.bonusScore, total: mine }].sort(
-            (a, b) => b.total - a.total
-          )
+        ? [
+            ...scores,
+            { userName: displayName, mainScore: score.mainScore, bonusScore: score.bonusScore, total: mine },
+          ].sort((a, b) => b.total - a.total)
         : scores;
     const others = room.filter((s) => s.userName !== displayName).map((s) => s.total);
     return (
@@ -433,9 +436,7 @@ export function QueuedlePanel() {
     const note = (
       <div className={styles.playedNote}>
         <span>
-          {isPastDay
-            ? 'You played this one.'
-            : "You've already played today. A new Queuedle arrives tomorrow."}
+          {isPastDay ? 'You played this one.' : "You've already played today. A new Queuedle arrives tomorrow."}
         </span>
         {import.meta.env.DEV && (
           <button type="button" className={styles.devReplay} onClick={handleDevPlayAgain}>

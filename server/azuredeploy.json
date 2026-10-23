@@ -55,9 +55,7 @@
       "name": "[variables('appInsightsName')]",
       "location": "[parameters('location')]",
       "kind": "other",
-      "dependsOn": [
-        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]"
-      ],
+      "dependsOn": ["[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]"],
       "properties": {
         "Application_Type": "other",
         "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]"
@@ -82,9 +80,7 @@
       "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
       "apiVersion": "2023-01-01",
       "name": "[concat(variables('storageName'), '/default/', variables('containerName'))]",
-      "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"
-      ],
+      "dependsOn": ["[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"],
       "properties": {
         "publicAccess": "None"
       }
@@ -93,9 +89,7 @@
       "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
       "apiVersion": "2023-01-01",
       "name": "[concat(variables('storageName'), '/default/playlist-images')]",
-      "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"
-      ],
+      "dependsOn": ["[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"],
       "properties": {
         "publicAccess": "None"
       }
@@ -118,9 +112,7 @@
       "type": "Microsoft.SignalRService/webPubSub/hubs",
       "apiVersion": "2023-02-01",
       "name": "[concat(variables('webPubSubName'), '/', variables('hubName'))]",
-      "dependsOn": [
-        "[resourceId('Microsoft.SignalRService/webPubSub', variables('webPubSubName'))]"
-      ],
+      "dependsOn": ["[resourceId('Microsoft.SignalRService/webPubSub', variables('webPubSubName'))]"],
       "properties": {
         "anonymousConnectPolicy": "deny"
       }
@@ -150,9 +142,7 @@
       "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
       "apiVersion": "2024-02-15-preview",
       "name": "[concat(variables('cosmosName'), '/truetunes')]",
-      "dependsOn": [
-        "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosName'))]"
-      ],
+      "dependsOn": ["[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosName'))]"],
       "properties": {
         "resource": {
           "id": "truetunes"
@@ -170,9 +160,7 @@
         "resource": {
           "id": "events",
           "partitionKey": {
-            "paths": [
-              "/userId"
-            ],
+            "paths": ["/userId"],
             "kind": "Hash"
           },
           "defaultTtl": -1
@@ -190,9 +178,7 @@
         "resource": {
           "id": "games",
           "partitionKey": {
-            "paths": [
-              "/id"
-            ],
+            "paths": ["/id"],
             "kind": "Hash"
           }
         }
@@ -209,9 +195,7 @@
         "resource": {
           "id": "scores",
           "partitionKey": {
-            "paths": [
-              "/gameId"
-            ],
+            "paths": ["/gameId"],
             "kind": "Hash"
           }
         }
@@ -228,9 +212,7 @@
         "resource": {
           "id": "playlists",
           "partitionKey": {
-            "paths": [
-              "/id"
-            ],
+            "paths": ["/id"],
             "kind": "Hash"
           }
         }
@@ -247,9 +229,7 @@
         "resource": {
           "id": "profiles",
           "partitionKey": {
-            "paths": [
-              "/id"
-            ],
+            "paths": ["/id"],
             "kind": "Hash"
           }
         }
@@ -266,9 +246,7 @@
         "resource": {
           "id": "sessions",
           "partitionKey": {
-            "paths": [
-              "/id"
-            ],
+            "paths": ["/id"],
             "kind": "Hash"
           },
           "defaultTtl": -1
@@ -286,9 +264,7 @@
         "resource": {
           "id": "polls",
           "partitionKey": {
-            "paths": [
-              "/id"
-            ],
+            "paths": ["/id"],
             "kind": "Hash"
           }
         }
@@ -305,9 +281,7 @@
         "resource": {
           "id": "tracks",
           "partitionKey": {
-            "paths": [
-              "/id"
-            ],
+            "paths": ["/id"],
             "kind": "Hash"
           },
           "defaultTtl": -1
@@ -420,9 +394,7 @@
           "ftpsState": "Disabled",
           "minTlsVersion": "1.2",
           "cors": {
-            "allowedOrigins": [
-              "*"
-            ],
+            "allowedOrigins": ["*"],
             "supportCredentials": false
           }
         },

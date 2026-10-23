@@ -8,8 +8,20 @@ const mockFetch = vi.fn();
 (globalThis as any).fetch = mockFetch;
 
 const releases = [
-  { tag_name: 'v1.2.0', name: 'Version 1.2.0', body: '## Changes\n- Feature A', published_at: '2024-03-01T00:00:00Z', html_url: 'https://github.com/releases/1' },
-  { tag_name: 'v1.1.0', name: 'Version 1.1.0', body: null, published_at: '2024-02-01T00:00:00Z', html_url: 'https://github.com/releases/2' },
+  {
+    tag_name: 'v1.2.0',
+    name: 'Version 1.2.0',
+    body: '## Changes\n- Feature A',
+    published_at: '2024-03-01T00:00:00Z',
+    html_url: 'https://github.com/releases/1',
+  },
+  {
+    tag_name: 'v1.1.0',
+    name: 'Version 1.1.0',
+    body: null,
+    published_at: '2024-02-01T00:00:00Z',
+    html_url: 'https://github.com/releases/2',
+  },
 ];
 
 beforeEach(() => {
@@ -78,7 +90,10 @@ describe('ChangelogDialog', () => {
   });
 
   it('opens links in the notes in the browser instead of the app window', async () => {
-    mockFetch.mockResolvedValue({ ok: true, json: async () => [{ ...releases[0], body: 'See [the PR](https://github.com/pr/9)' }] });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => [{ ...releases[0], body: 'See [the PR](https://github.com/pr/9)' }],
+    });
     const user = userEvent.setup();
     render(<ChangelogDialog onClose={vi.fn()} />);
     await user.click(await screen.findByRole('link', { name: 'the PR' }));
@@ -130,7 +145,11 @@ describe('ChangelogDialog', () => {
   });
 
   it('lists the 8 newest releases plus the installed one, and links to the rest', async () => {
-    const many = Array.from({ length: 12 }, (_, i) => ({ ...releases[1], tag_name: `v1.0.${20 - i}`, name: `1.0.${20 - i}` }));
+    const many = Array.from({ length: 12 }, (_, i) => ({
+      ...releases[1],
+      tag_name: `v1.0.${20 - i}`,
+      name: `1.0.${20 - i}`,
+    }));
     vi.mocked(window.sonos.getVersion).mockResolvedValue('1.0.10');
     mockFetch.mockResolvedValue({ ok: true, json: async () => many });
     const user = userEvent.setup();

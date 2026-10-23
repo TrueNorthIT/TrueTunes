@@ -17,7 +17,9 @@ describe('Splash', () => {
     vi.useFakeTimers();
     const { container } = render(<Splash ready={true} />);
     // After 900ms remaining + 450ms fade
-    act(() => { vi.advanceTimersByTime(1400); });
+    act(() => {
+      vi.advanceTimersByTime(1400);
+    });
     expect(container.firstChild).toBeNull();
     vi.useRealTimers();
   });

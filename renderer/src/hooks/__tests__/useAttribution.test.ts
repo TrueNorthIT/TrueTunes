@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useAttribution, attributionContentKey } from '../useAttribution';
 
-const mockOnAttributionMap   = vi.mocked(window.sonos.onAttributionMap);
+const mockOnAttributionMap = vi.mocked(window.sonos.onAttributionMap);
 const mockOnAttributionEvent = vi.mocked(window.sonos.onAttributionEvent);
 
 beforeEach(() => {
@@ -24,7 +24,10 @@ describe('useAttribution', () => {
 
   it('updates map when onAttributionMap fires', () => {
     let mapCb: ((map: AttributionMap) => void) | undefined;
-    mockOnAttributionMap.mockImplementation((cb) => { mapCb = cb; return () => {}; });
+    mockOnAttributionMap.mockImplementation((cb) => {
+      mapCb = cb;
+      return () => {};
+    });
 
     const { result } = renderHook(() => useAttribution());
     act(() => {
@@ -36,8 +39,14 @@ describe('useAttribution', () => {
   it('merges new events into existing map', () => {
     let mapCb: ((map: AttributionMap) => void) | undefined;
     let eventCb: ((event: AttributionEvent) => void) | undefined;
-    mockOnAttributionMap.mockImplementation((cb) => { mapCb = cb; return () => {}; });
-    mockOnAttributionEvent.mockImplementation((cb) => { eventCb = cb; return () => {}; });
+    mockOnAttributionMap.mockImplementation((cb) => {
+      mapCb = cb;
+      return () => {};
+    });
+    mockOnAttributionEvent.mockImplementation((cb) => {
+      eventCb = cb;
+      return () => {};
+    });
 
     const { result } = renderHook(() => useAttribution());
     act(() => {
@@ -53,7 +62,10 @@ describe('useAttribution', () => {
 
   it('calls onRemoteQueue when an attribution event fires', () => {
     let eventCb: ((event: AttributionEvent) => void) | undefined;
-    mockOnAttributionEvent.mockImplementation((cb) => { eventCb = cb; return () => {}; });
+    mockOnAttributionEvent.mockImplementation((cb) => {
+      eventCb = cb;
+      return () => {};
+    });
     const onRemoteQueue = vi.fn();
 
     renderHook(() => useAttribution(onRemoteQueue));
@@ -65,11 +77,21 @@ describe('useAttribution', () => {
 
   it('indexes live events under a title+artist content key (issue #84)', () => {
     let eventCb: ((event: AttributionEvent) => void) | undefined;
-    mockOnAttributionEvent.mockImplementation((cb) => { eventCb = cb; return () => {}; });
+    mockOnAttributionEvent.mockImplementation((cb) => {
+      eventCb = cb;
+      return () => {};
+    });
 
     const { result } = renderHook(() => useAttribution());
     act(() => {
-      eventCb?.({ type: 'queued', uri: 'obj:1', user: 'dana', timestamp: 9, trackName: 'Svefn-g-englar', artist: 'Sigur Rós' });
+      eventCb?.({
+        type: 'queued',
+        uri: 'obj:1',
+        user: 'dana',
+        timestamp: 9,
+        trackName: 'Svefn-g-englar',
+        artist: 'Sigur Rós',
+      });
     });
 
     // A re-keyed queue row (different objectId, same title+artist) still resolves.
@@ -85,7 +107,10 @@ describe('useAttribution', () => {
 
   it('does not index the persisted snapshot under content keys', () => {
     let mapCb: ((map: AttributionMap) => void) | undefined;
-    mockOnAttributionMap.mockImplementation((cb) => { mapCb = cb; return () => {}; });
+    mockOnAttributionMap.mockImplementation((cb) => {
+      mapCb = cb;
+      return () => {};
+    });
 
     const { result } = renderHook(() => useAttribution());
     act(() => {
@@ -100,7 +125,7 @@ describe('useAttribution', () => {
   });
 
   it('calls unsubscribe functions on unmount', () => {
-    const unsubMap   = vi.fn();
+    const unsubMap = vi.fn();
     const unsubEvent = vi.fn();
     mockOnAttributionMap.mockReturnValue(unsubMap);
     mockOnAttributionEvent.mockReturnValue(unsubEvent);

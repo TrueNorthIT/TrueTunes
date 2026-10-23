@@ -22,11 +22,7 @@ vi.mock('../DraggableQueueRow', () => ({
     isSelected: boolean;
     onRowClick: (index: number, e: React.MouseEvent) => void;
   }) => (
-    <div
-      data-testid={`row-${index}`}
-      data-selected={String(isSelected)}
-      onClick={(e) => onRowClick(index, e)}
-    >
+    <div data-testid={`row-${index}`} data-selected={String(isSelected)} onClick={(e) => onRowClick(index, e)}>
       Track {index}
     </div>
   ),
@@ -237,9 +233,7 @@ describe('QueueSidebar — Delete key', () => {
     const { user } = setup();
     await user.click(screen.getByTestId('row-1'));
     await user.keyboard('{Delete}');
-    await waitFor(() =>
-      expect(mockRemoveFromQueue).toHaveBeenCalledWith([1])
-    );
+    await waitFor(() => expect(mockRemoveFromQueue).toHaveBeenCalledWith([1]));
   });
 
   it('Delete key calls setItems to optimistically remove', async () => {
@@ -271,9 +265,7 @@ describe('QueueSidebar — Delete key', () => {
     const { user } = setup();
     await user.click(screen.getByTestId('row-0'));
     await user.keyboard('{Backspace}');
-    await waitFor(() =>
-      expect(mockRemoveFromQueue).toHaveBeenCalledWith([0])
-    );
+    await waitFor(() => expect(mockRemoveFromQueue).toHaveBeenCalledWith([0]));
   });
 
   it('does not fire when sidebar is closed', async () => {
@@ -296,9 +288,7 @@ describe('QueueSidebar — selection bar Delete button', () => {
     const { user } = setup();
     await user.click(screen.getByTestId('row-0'));
     await user.click(screen.getByRole('button', { name: 'Delete' }));
-    await waitFor(() =>
-      expect(mockRemoveFromQueue).toHaveBeenCalledWith([0])
-    );
+    await waitFor(() => expect(mockRemoveFromQueue).toHaveBeenCalledWith([0]));
   });
 
   it('Delete button calls onRefresh+onError on failure', async () => {
@@ -364,7 +354,6 @@ describe('QueueSidebar — header buttons', () => {
     await user.click(screen.getByTitle('Refresh'));
     expect(onRefresh).toHaveBeenCalled();
   });
-
 });
 
 // ─── items/open state ─────────────────────────────────────────────────────────
@@ -376,16 +365,11 @@ describe('QueueSidebar — items change clears selection', () => {
     expect(screen.getByTestId('row-0').dataset.selected).toBe('true');
     rerender(
       <Wrapper>
-        <QueueSidebar
-          {...defaultProps}
-          items={[makeItem(0), makeItem(1), makeItem(2), makeItem(3)]}
-        />
+        <QueueSidebar {...defaultProps} items={[makeItem(0), makeItem(1), makeItem(2), makeItem(3)]} />
       </Wrapper>
     );
     // After rerender with new items, selection should be cleared
-    await waitFor(() =>
-      expect(screen.getByTestId('row-0').dataset.selected).toBe('false')
-    );
+    await waitFor(() => expect(screen.getByTestId('row-0').dataset.selected).toBe('false'));
   });
 });
 

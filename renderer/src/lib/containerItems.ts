@@ -5,12 +5,12 @@ export type ContainerKind = 'songs' | 'albums' | 'playlists' | 'stations' | 'art
 
 /** Section title, and the singular and plural nouns for the page's count line. */
 export const KIND_COPY: Record<ContainerKind, { title: string; one: string; many: string }> = {
-  songs:     { title: 'Songs',     one: 'song',     many: 'songs' },
-  albums:    { title: 'Albums',    one: 'album',    many: 'albums' },
+  songs: { title: 'Songs', one: 'song', many: 'songs' },
+  albums: { title: 'Albums', one: 'album', many: 'albums' },
   playlists: { title: 'Playlists', one: 'playlist', many: 'playlists' },
-  stations:  { title: 'Stations',  one: 'station',  many: 'stations' },
-  artists:   { title: 'Artists',   one: 'artist',   many: 'artists' },
-  other:     { title: 'More',      one: 'item',     many: 'items' },
+  stations: { title: 'Stations', one: 'station', many: 'stations' },
+  artists: { title: 'Artists', one: 'artist', many: 'artists' },
+  other: { title: 'More', one: 'item', many: 'items' },
 };
 
 /** Program first: stations and mixes are PROGRAM resources whose item type can mention a track or album. */

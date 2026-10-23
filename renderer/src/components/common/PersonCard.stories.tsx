@@ -8,7 +8,13 @@ const meta = {
   title: 'Common/PersonCard',
   component: PersonCard,
   args: { name: 'Priya Shah', imageUrl: portrait, caption: '3 albums this week', onOpen: fn() },
-  decorators: [(Story) => <div style={{ width: '26em' }}><Story /></div>],
+  decorators: [
+    (Story) => (
+      <div style={{ width: '26em' }}>
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof PersonCard>;
 
 export default meta;
@@ -17,7 +23,9 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 export const NoPhoto: Story = { args: { imageUrl: null } };
 export const NoCaption: Story = { args: { caption: undefined } };
-export const LongName: Story = { args: { name: 'Alexandria Montgomery-Featherstonehaugh', caption: '1,204 tracks queued all time' } };
+export const LongName: Story = {
+  args: { name: 'Alexandria Montgomery-Featherstonehaugh', caption: '1,204 tracks queued all time' },
+};
 export const WithTiles: Story = {
   render: (args) => (
     <PersonCard {...args}>

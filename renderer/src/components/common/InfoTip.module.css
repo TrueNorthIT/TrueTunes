@@ -13,7 +13,9 @@
   cursor: help;
 }
 .btn:hover,
-.btn:focus-visible { opacity: 1; }
+.btn:focus-visible {
+  opacity: 1;
+}
 
 /* Floating surface: the frosted shell material, placed by InfoTip so it never clips or leaves the window. */
 .tip {
@@ -33,6 +35,12 @@
   font-weight: 400;
   pointer-events: none;
 }
-.tip p { margin: 0; }
-.heading { font-weight: 600; }
-.tip p + p { margin-top: 0.3em; }
+.tip p {
+  margin: 0;
+}
+.heading {
+  font-weight: 600;
+}
+.tip p + p {
+  margin-top: 0.3em;
+}

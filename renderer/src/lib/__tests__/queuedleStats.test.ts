@@ -1,11 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  buildHeatmap,
-  buildRatingSeries,
-  buildRoundAverages,
-  buildWeeklyTotals,
-  listPlayers,
-} from '../queuedleStats';
+import { buildHeatmap, buildRatingSeries, buildRoundAverages, buildWeeklyTotals, listPlayers } from '../queuedleStats';
 import type { QueuedleDay } from '../queuedleStats';
 
 const score = (userName: string, mainScore: number, bonusScore: number) => ({

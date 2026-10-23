@@ -24,7 +24,10 @@
 }
 
 @keyframes menuIn {
-  from { opacity: 0; transform: scale(0.97); }
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
 }
 
 .item {
@@ -46,8 +49,12 @@
 }
 .item:hover,
 .item:focus-visible,
-.itemOpen { background: var(--row-hover); }
-.item:focus-visible { outline-offset: -2px; }
+.itemOpen {
+  background: var(--row-hover);
+}
+.item:focus-visible {
+  outline-offset: -2px;
+}
 
 .itemIcon {
   flex-shrink: 0;
@@ -95,12 +102,18 @@
   cursor: pointer;
   transition: background-color var(--dur-fast) var(--ease-fast);
 }
-.check:hover > input:not(:checked) { background-color: rgba(var(--tint), 0.3); }
+.check:hover > input:not(:checked) {
+  background-color: rgba(var(--tint), 0.3);
+}
 .check > input:checked {
   background-color: var(--text);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2312131f' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
 }
-.check > span { display: flex; flex-direction: column; gap: 0.1em; }
+.check > span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1em;
+}
 .checkTitle {
   font-size: max(13px, 1em);
   font-weight: 500;
@@ -113,7 +126,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .menu,
-  .submenu { animation: none; }
+  .submenu {
+    animation: none;
+  }
   .item,
-  .check > input { transition: none; }
+  .check > input {
+    transition: none;
+  }
 }

@@ -12,7 +12,13 @@ const meta = {
       { key: 'd', name: 'Aisha Khan', value: 0.4, label: '0.4 h', sub: '6 songs' },
     ],
   },
-  decorators: [(Story) => <div style={{ maxWidth: '36em' }}><Story /></div>],
+  decorators: [
+    (Story) => (
+      <div style={{ maxWidth: '36em' }}>
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof BarList>;
 
 export default meta;

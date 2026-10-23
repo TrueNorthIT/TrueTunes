@@ -18,7 +18,7 @@ function setMin(map: Map<string, number>, key: string, year: number) {
 /** Release years by releaseKey: an exact normalised-title match first, else the earliest base-title match. */
 export function matchReleaseYears(
   releases: SonosItem[],
-  geniusAlbums: { name: string; year: number | null }[],
+  geniusAlbums: { name: string; year: number | null }[]
 ): Map<string, number> {
   const exact = new Map<string, number>();
   const base = new Map<string, number>();

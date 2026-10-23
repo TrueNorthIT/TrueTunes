@@ -37,7 +37,11 @@ export const formatPct = (pct: number) => `${Math.round(pct)}%`;
 export function monthLabel(month: string): string {
   const [y, m] = month.split('-').map(Number);
   if (!y || !m) return month;
-  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-GB', {
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
 }
 
 /** Epoch ms → "14 Jun", London time. */
@@ -102,7 +106,9 @@ export function requeuedRows(
   people: MusicPersonStats[]
 ): (MusicPersonStats & { mostRequeued: NonNullable<MusicPersonStats['mostRequeued']> })[] {
   return people
-    .filter((p): p is MusicPersonStats & { mostRequeued: NonNullable<MusicPersonStats['mostRequeued']> } => !!p.mostRequeued)
+    .filter(
+      (p): p is MusicPersonStats & { mostRequeued: NonNullable<MusicPersonStats['mostRequeued']> } => !!p.mostRequeued
+    )
     .sort((a, b) => b.mostRequeued.count - a.mostRequeued.count || byName(a, b));
 }
 

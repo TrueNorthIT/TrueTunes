@@ -37,7 +37,9 @@ function Preview({ question }: { question: string }) {
     <div className={styles.preview} role="region" aria-label="Vestaboard preview">
       <div className={styles.previewRow}>THIS WEEK&apos;S POLL</div>
       {Array.from({ length: POLL_QUESTION_ROWS }, (_, i) => (
-        <div key={i} className={styles.previewRow}>{lines[i] ?? ''}</div>
+        <div key={i} className={styles.previewRow}>
+          {lines[i] ?? ''}
+        </div>
       ))}
       <div className={styles.previewRow}>VOTE IN TRUE TUNES</div>
     </div>
@@ -86,7 +88,9 @@ function PollForm({ poll, onSaved, onCancel, onClose }: FormProps) {
       actions={
         <>
           <PillButton onClick={onCancel}>Cancel</PillButton>
-          <PillButton variant="primary" type="submit" disabled={!valid || saving}>Save poll</PillButton>
+          <PillButton variant="primary" type="submit" disabled={!valid || saving}>
+            Save poll
+          </PillButton>
         </>
       }
     >
@@ -104,7 +108,9 @@ function PollForm({ poll, onSaved, onCancel, onClose }: FormProps) {
         </label>
 
         <div className={dialog.field} role="group" aria-label="Choices">
-          <span className={dialog.label} aria-hidden="true">Choices</span>
+          <span className={dialog.label} aria-hidden="true">
+            Choices
+          </span>
           {choices.map((choice, i) => (
             <input
               key={i}
@@ -139,7 +145,11 @@ function PollForm({ poll, onSaved, onCancel, onClose }: FormProps) {
             </p>
           )}
         </div>
-        {error && <p className={dialog.error} role="status">{error}</p>}
+        {error && (
+          <p className={dialog.error} role="status">
+            {error}
+          </p>
+        )}
       </div>
     </Dialog>
   );
@@ -216,7 +226,11 @@ export function PollAdminDialog({ onClose }: PollAdminDialogProps): ReactElement
         <p className={dialog.note}>
           One poll goes live each Monday, in this order. Live polls are locked. Results are read straight from Cosmos.
         </p>
-        {isError && <p className={dialog.error} role="status">Couldn't load the polls.</p>}
+        {isError && (
+          <p className={dialog.error} role="status">
+            Couldn't load the polls.
+          </p>
+        )}
         <ul className={styles.rows}>
           {(polls ?? []).map((poll) => {
             const upcomingIndex = upcomingIds.indexOf(poll.id);
@@ -274,7 +288,11 @@ export function PollAdminDialog({ onClose }: PollAdminDialogProps): ReactElement
             );
           })}
         </ul>
-        {error && <p className={dialog.error} role="status">{error}</p>}
+        {error && (
+          <p className={dialog.error} role="status">
+            {error}
+          </p>
+        )}
       </div>
     </Dialog>
   );

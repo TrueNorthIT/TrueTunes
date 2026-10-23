@@ -1,7 +1,7 @@
 export type ProviderId = 'sonos'; // | 'spotify' — extend per new provider
 
 export interface NormalizedTrack {
-  id: string;               // provider-scoped unique ID (objectId for Sonos)
+  id: string; // provider-scoped unique ID (objectId for Sonos)
   title: string;
   artist: string;
   albumName: string | null;

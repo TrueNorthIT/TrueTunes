@@ -15,7 +15,7 @@ export function heroPortrait(
   photo: PhotoState,
   photoUrl: string | null,
   latestArt: string | null,
-  songArt: (string | null | undefined)[],
+  songArt: (string | null | undefined)[]
 ): HeroPortrait | null {
   if (photo === 'unknown') return null;
   if (photo === 'photo' && photoUrl) return { kind: 'photo', url: photoUrl };

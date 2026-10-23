@@ -4,7 +4,7 @@ import { withArtworkSize } from '../artworkUrl';
 describe('withArtworkSize', () => {
   it('rewrites the width and height, keeping the rest of the spec', () => {
     expect(withArtworkSize('https://lh3.googleusercontent.com/abc=w544-h544-l90-rj')).toBe(
-      'https://lh3.googleusercontent.com/abc=w2000-h2000-l90-rj',
+      'https://lh3.googleusercontent.com/abc=w2000-h2000-l90-rj'
     );
   });
   it('accepts a custom size', () => {

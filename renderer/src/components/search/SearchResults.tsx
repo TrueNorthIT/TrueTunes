@@ -7,11 +7,30 @@ import { useStats } from '../../hooks/useStats';
 import { albumQueryOptions } from '../../hooks/useAlbumBrowse';
 import { artistQueryOptions } from '../../hooks/useArtistBrowse';
 import {
-  canQueueWhole, fmtTime, getItemArt, getName, isAlbum, isArtist, isPlaylist, isProgram, isTrack, resolveAlbumParams,
-  resolveArtistParams, albumItem, artistItem, trackPayload,
+  canQueueWhole,
+  fmtTime,
+  getItemArt,
+  getName,
+  isAlbum,
+  isArtist,
+  isPlaylist,
+  isProgram,
+  isTrack,
+  resolveAlbumParams,
+  resolveArtistParams,
+  albumItem,
+  artistItem,
+  trackPayload,
 } from '../../lib/itemHelpers';
 import {
-  albumNameOf, albumSub, pickTopResult, playlistSub, searchTrackRow, topSongRow, withTopSongs, type SongRow,
+  albumNameOf,
+  albumSub,
+  pickTopResult,
+  playlistSub,
+  searchTrackRow,
+  topSongRow,
+  withTopSongs,
+  type SongRow,
 } from '../../lib/searchResults';
 import { officeCountFor } from '../../lib/artistOffice';
 import { withArtworkSize } from '../../lib/artworkUrl';
@@ -103,20 +122,23 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
 
   // For an artist, Songs leads with the artist's own top songs (the search's picks run to live cuts, remixes and
   // other people's tracks); the search's songs follow under See all.
-  const songs = topArtist && topArtistData?.topSongs.length
-    ? withTopSongs(topArtistData.topSongs.map(topSongRow), searchSongs)
-    : searchSongs;
+  const songs =
+    topArtist && topArtistData?.topSongs.length
+      ? withTopSongs(topArtistData.topSongs.map(topSongRow), searchSongs)
+      : searchSongs;
   // With no songs at all, the videos take the songs' place beside the top result, unfolded.
   const videosLead = songs.length === 0 && videos.length > 0;
   const rowTracks = [...songs, ...videos]; // one index space, so a selection can span both lists
 
   const prefetchAlbum = (item: SonosItem) => {
     const { albumId, serviceId, accountId, defaults } = resolveAlbumParams(item);
-    if (albumId && serviceId && accountId) void queryClient.prefetchQuery(albumQueryOptions(albumId, serviceId, accountId, defaults));
+    if (albumId && serviceId && accountId)
+      void queryClient.prefetchQuery(albumQueryOptions(albumId, serviceId, accountId, defaults));
   };
   const prefetchArtist = (item: SonosItem) => {
     const { artistId, serviceId, accountId, defaults } = resolveArtistParams(item);
-    if (artistId && serviceId && accountId) void queryClient.prefetchQuery(artistQueryOptions(artistId, serviceId, accountId, defaults));
+    if (artistId && serviceId && accountId)
+      void queryClient.prefetchQuery(artistQueryOptions(artistId, serviceId, accountId, defaults));
   };
 
   const albumKey = albums.slice(0, 3).map(objectIdOf).join(',');
@@ -135,9 +157,18 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
     if (e.shiftKey && lastSelected.current !== null) {
       const lo = Math.min(lastSelected.current, i);
       const hi = Math.max(lastSelected.current, i);
-      setSelected((prev) => { const next = new Set(prev); for (let j = lo; j <= hi; j++) next.add(j); return next; });
+      setSelected((prev) => {
+        const next = new Set(prev);
+        for (let j = lo; j <= hi; j++) next.add(j);
+        return next;
+      });
     } else if (e.ctrlKey || e.metaKey) {
-      setSelected((prev) => { const next = new Set(prev); if (next.has(i)) next.delete(i); else next.add(i); return next; });
+      setSelected((prev) => {
+        const next = new Set(prev);
+        if (next.has(i)) next.delete(i);
+        else next.add(i);
+        return next;
+      });
       lastSelected.current = i;
     } else if (selected.size === 1 && selected.has(i)) {
       setSelected(new Set());
@@ -150,13 +181,19 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
 
   function handleDragStart(e: React.DragEvent, i: number) {
     const toMove = selected.has(i) ? [...selected].sort((a, b) => a - b) : [i];
-    if (!selected.has(i)) { setSelected(new Set([i])); lastSelected.current = i; }
+    if (!selected.has(i)) {
+      setSelected(new Set([i]));
+      lastSelected.current = i;
+    }
     e.dataTransfer.effectAllowed = 'copy';
     e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(toMove.map((idx) => rowTracks[idx].item)));
     createDragGhost(toMove.length > 1 ? `${toMove.length} tracks` : rowTracks[i].title, e.dataTransfer);
   }
 
-  const clearSelection = () => { setSelected(new Set()); lastSelected.current = null; };
+  const clearSelection = () => {
+    setSelected(new Set());
+    lastSelected.current = null;
+  };
 
   const trackRow = (r: SongRow, i: number) => {
     const albumItem = rowAlbumItem(r);
@@ -174,7 +211,10 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
         onMouseEnter={albumItem ? () => prefetchAlbum(albumItem) : undefined}
         onAdd={() => onAddToQueue(r.item)}
         selected={selected.has(i)}
-        onClick={(e) => { e.stopPropagation(); handleTrackClick(i, e); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleTrackClick(i, e);
+        }}
         onContextMenu={(e) => showTrackMenu({ track: buildTrackPayload(r), sonosItem: r.item }, e)}
         onDragStart={(e) => handleDragStart(e, i)}
       />
@@ -192,7 +232,9 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
       <SectionCard className={styles.section}>
         <Carousel title={title} gap="1.1em">
           {items.map((item, i) => (
-            <div key={`${objectIdOf(item) ?? ''}-${i}`} className={styles.cell}>{tile(item)}</div>
+            <div key={`${objectIdOf(item) ?? ''}-${i}`} className={styles.cell}>
+              {tile(item)}
+            </div>
           ))}
         </Carousel>
       </SectionCard>
@@ -203,7 +245,13 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
     {
       at: results.findIndex(isArtist),
       node: shelf('Artists', artists, (a) => (
-        <ImageTile title={getName(a)} imageUrl={getItemArt(a)} circular onOpen={() => openItem(a)} onHover={() => prefetchArtist(a)} />
+        <ImageTile
+          title={getName(a)}
+          imageUrl={getItemArt(a)}
+          circular
+          onOpen={() => openItem(a)}
+          onHover={() => prefetchArtist(a)}
+        />
       )),
     },
     {
@@ -222,7 +270,13 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
     {
       at: results.findIndex(isPlaylist),
       node: shelf('Playlists', playlists, (p) => (
-        <ImageTile title={getName(p)} sub={playlistSub(p)} imageUrl={getItemArt(p)} onOpen={() => openItem(p)} onAdd={() => onAddToQueue(p)} />
+        <ImageTile
+          title={getName(p)}
+          sub={playlistSub(p)}
+          imageUrl={getItemArt(p)}
+          onOpen={() => openItem(p)}
+          onAdd={() => onAddToQueue(p)}
+        />
       )),
     },
   ]
@@ -247,8 +301,14 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
             }}
             onAdd={() => onAddToQueue(top)}
             openItem={openItem}
-            onHover={() => (isArtist(top) ? prefetchArtist(top) : prefetchAlbum(isTrack(top) ? albumItemOf(top) ?? top : top))}
-            onContextMenu={isTrack(top) ? (e) => showTrackMenu({ track: buildTrackPayload(searchTrackRow(top)), sonosItem: top }, e) : undefined}
+            onHover={() =>
+              isArtist(top) ? prefetchArtist(top) : prefetchAlbum(isTrack(top) ? (albumItemOf(top) ?? top) : top)
+            }
+            onContextMenu={
+              isTrack(top)
+                ? (e) => showTrackMenu({ track: buildTrackPayload(searchTrackRow(top)), sonosItem: top }, e)
+                : undefined
+            }
           />
         )}
         {songs.length > 0 && (
@@ -257,7 +317,10 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
             title="Songs"
             actions={
               songs.length > SONGS_SHOWN ? (
-                <SeeAll label={songsOpen ? 'Show fewer' : `See all (${songs.length})`} onClick={() => setSongsOpen((o) => !o)} />
+                <SeeAll
+                  label={songsOpen ? 'Show fewer' : `See all (${songs.length})`}
+                  onClick={() => setSongsOpen((o) => !o)}
+                />
               ) : undefined
             }
           >
@@ -271,7 +334,9 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
         )}
       </div>
 
-      {lower.map((s, i) => <div key={i}>{s.node}</div>)}
+      {lower.map((s, i) => (
+        <div key={i}>{s.node}</div>
+      ))}
 
       {videos.length > 0 && !videosLead && (
         <SectionCard
@@ -291,7 +356,14 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
 }
 
 function TopResult({
-  item, stats, radio, onOpen, onAdd, openItem, onHover, onContextMenu,
+  item,
+  stats,
+  radio,
+  onOpen,
+  onAdd,
+  openItem,
+  onHover,
+  onContextMenu,
 }: {
   item: SonosItem;
   stats: StatsResult | undefined;
@@ -319,7 +391,9 @@ function TopResult({
     meta = 'Artist';
     actions = (
       <>
-        <PillButton variant="primary" onClick={() => openItem(item)}>Open</PillButton>
+        <PillButton variant="primary" onClick={() => openItem(item)}>
+          Open
+        </PillButton>
         {radio && (
           <PillButton onClick={() => openItem(radio)}>
             <Radio size={16} aria-hidden="true" /> Radio
@@ -339,7 +413,13 @@ function TopResult({
   } else {
     // A station can only start by replacing the shared queue: open it instead, to add its songs.
     meta = [isProgram(item) ? 'Station' : 'Playlist', playlistSub(item)].filter(Boolean).join(' · ');
-    actions = canQueueWhole(item) ? add : <PillButton variant="primary" onClick={onOpen}>Open</PillButton>;
+    actions = canQueueWhole(item) ? (
+      add
+    ) : (
+      <PillButton variant="primary" onClick={onOpen}>
+        Open
+      </PillButton>
+    );
   }
 
   return (

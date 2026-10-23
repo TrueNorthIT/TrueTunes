@@ -46,11 +46,7 @@ const docId = (nowMs: number): string => `dj-day:${londonDayKey(nowMs)}`;
  * lost. Rejects on any other store failure, so a caller never believes a key was
  * reserved when it was not.
  */
-export async function reserveTrackKey(
-  store: DocStore,
-  nowMs: number,
-  key: string,
-): Promise<boolean> {
+export async function reserveTrackKey(store: DocStore, nowMs: number, key: string): Promise<boolean> {
   const id = docId(nowMs);
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const current = await store.read<DayDoc>(id);

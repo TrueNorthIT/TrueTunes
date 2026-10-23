@@ -20,18 +20,28 @@
   flex-direction: column;
   animation: dialogIn var(--dur) var(--ease);
 }
-.dialog:focus { outline: none; }
+.dialog:focus {
+  outline: none;
+}
 .dialog::backdrop {
   background: var(--overlay);
   animation: fadeIn var(--dur) var(--ease);
 }
 
-.sm { --dialog-w: 26em; }
-.md { --dialog-w: 36em; }
-.lg { --dialog-w: 64em; }
+.sm {
+  --dialog-w: 26em;
+}
+.md {
+  --dialog-w: 36em;
+}
+.lg {
+  --dialog-w: 64em;
+}
 
 /* The form wraps the body and the action row without becoming a layout box of its own. */
-.form { display: contents; }
+.form {
+  display: contents;
+}
 
 .head {
   display: flex;
@@ -62,9 +72,14 @@
   background: none;
   color: var(--text-2);
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast);
+  transition:
+    background var(--dur-fast) var(--ease-fast),
+    color var(--dur-fast) var(--ease-fast);
 }
-.close:hover { background: var(--row-hover); color: var(--text); }
+.close:hover {
+  background: var(--row-hover);
+  color: var(--text);
+}
 
 .body {
   flex: 1;
@@ -119,10 +134,19 @@
   outline: none;
   transition: background var(--dur-fast) var(--ease-fast);
 }
-.input:hover:not(:disabled) { background: rgba(var(--tint), 0.12); }
-.input:focus-visible { outline: var(--focus-width) solid var(--focus-color); outline-offset: 2px; }
-.input::placeholder { color: var(--text-3); }
-.input:disabled { opacity: 0.5; }
+.input:hover:not(:disabled) {
+  background: rgba(var(--tint), 0.12);
+}
+.input:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: 2px;
+}
+.input::placeholder {
+  color: var(--text-3);
+}
+.input:disabled {
+  opacity: 0.5;
+}
 textarea.input {
   resize: vertical;
   min-height: 7.5em;
@@ -135,14 +159,23 @@ textarea.input {
 }
 
 @keyframes dialogIn {
-  from { opacity: 0; transform: translateY(0.5em) scale(0.98); }
+  from {
+    opacity: 0;
+    transform: translateY(0.5em) scale(0.98);
+  }
 }
 @keyframes fadeIn {
-  from { opacity: 0; }
+  from {
+    opacity: 0;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .dialog[open],
-  .dialog::backdrop { animation: none; }
+  .dialog::backdrop {
+    animation: none;
+  }
   .close,
-  .input { transition: none; }
+  .input {
+    transition: none;
+  }
 }

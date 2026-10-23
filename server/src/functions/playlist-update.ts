@@ -4,7 +4,7 @@ import { getPlaylistContainer } from '../lib/getContainer';
 
 export async function playlistUpdateHandler(
   request: HttpRequest,
-  context: InvocationContext,
+  context: InvocationContext
 ): Promise<HttpResponseInit> {
   const id = request.params['id'];
   if (!id) {
@@ -47,7 +47,7 @@ export async function playlistUpdateHandler(
         if (isPublic !== undefined) doc.isPublic = isPublic;
         doc.updatedAt = Date.now();
       },
-      (doc, etag) => container.item(id, id).replace(doc, { accessCondition: { type: 'IfMatch', condition: etag } }),
+      (doc, etag) => container.item(id, id).replace(doc, { accessCondition: { type: 'IfMatch', condition: etag } })
     );
 
     context.log(`[playlist-update] id=${id} owner=${userName} name=${name} isPublic=${isPublic}`);

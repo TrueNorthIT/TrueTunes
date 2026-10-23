@@ -36,7 +36,12 @@ const track = (title: string): SonosItem =>
 const album = (title: string): SonosItem =>
   ({ title, type: 'ITEM_ALBUM', subtitle: 'Geese', resource: { type: 'ALBUM', id: { objectId: title } } }) as SonosItem;
 const station = (title: string): SonosItem =>
-  ({ title, type: 'ITEM_STATION', subtitle: `${title} Radio`, resource: { type: 'PROGRAM', id: { objectId: title } } }) as SonosItem;
+  ({
+    title,
+    type: 'ITEM_STATION',
+    subtitle: `${title} Radio`,
+    resource: { type: 'PROGRAM', id: { objectId: title } },
+  }) as SonosItem;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -79,7 +84,12 @@ describe('ContainerPanel', () => {
 
   it('lists songs as rows with a count, and adds one to the queue', async () => {
     const onAddToQueue = vi.fn();
-    mockUseContainerBrowse.mockReturnValue({ data: [track('Song A'), track('Song B')], isLoading: false, error: null, refetch: vi.fn() });
+    mockUseContainerBrowse.mockReturnValue({
+      data: [track('Song A'), track('Song B')],
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
     render(<ContainerPanel onAddToQueue={onAddToQueue} />);
     expect(screen.getByText('2 songs')).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(2);
@@ -89,18 +99,27 @@ describe('ContainerPanel', () => {
   });
 
   it('opens a song artist from the browse SRN id', async () => {
-    mockUseContainerBrowse.mockReturnValue({ data: [track('Song A')], isLoading: false, error: null, refetch: vi.fn() });
+    mockUseContainerBrowse.mockReturnValue({
+      data: [track('Song A')],
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
     render(<ContainerPanel onAddToQueue={vi.fn()} />);
     await userEvent.setup().click(screen.getByRole('button', { name: 'Daft Punk, open artist' }));
     expect(mockOpenItem).toHaveBeenCalledWith(
-      expect.objectContaining({ resource: { type: 'ARTIST', id: { objectId: 'dp', serviceId: 'svc-1', accountId: 'acc-1' } } }),
+      expect.objectContaining({
+        resource: { type: 'ARTIST', id: { objectId: 'dp', serviceId: 'svc-1', accountId: 'acc-1' } },
+      })
     );
   });
 
   it('heads each kind on a mixed shelf, in the order they first appear', () => {
     mockUseContainerBrowse.mockReturnValue({
       data: [album('Getting Killed'), track('Song A'), album('3D Country')],
-      isLoading: false, error: null, refetch: vi.fn(),
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
     });
     render(<ContainerPanel onAddToQueue={vi.fn()} />);
     expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['Albums', 'Songs']);
@@ -109,7 +128,12 @@ describe('ContainerPanel', () => {
 
   it('opens a station and never offers + on it, because starting one replaces the shared queue', async () => {
     const onAddToQueue = vi.fn();
-    mockUseContainerBrowse.mockReturnValue({ data: [station('STORM II')], isLoading: false, error: null, refetch: vi.fn() });
+    mockUseContainerBrowse.mockReturnValue({
+      data: [station('STORM II')],
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
     render(<ContainerPanel onAddToQueue={onAddToQueue} />);
     expect(screen.queryByRole('button', { name: /to queue/ })).toBeNull();
     await userEvent.setup().click(screen.getByRole('button', { name: /STORM II/ }));

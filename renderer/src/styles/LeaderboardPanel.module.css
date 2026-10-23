@@ -74,14 +74,24 @@
   color: var(--text-2);
   cursor: pointer;
   white-space: nowrap;
-  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast);
+  transition:
+    background var(--dur-fast) var(--ease-fast),
+    color var(--dur-fast) var(--ease-fast);
 }
-.segment:hover { color: var(--text); background: var(--row-hover); }
-.segment[aria-pressed='true'] { color: var(--text); background: rgba(var(--tint), 0.18); }
+.segment:hover {
+  color: var(--text);
+  background: var(--row-hover);
+}
+.segment[aria-pressed='true'] {
+  color: var(--text);
+  background: rgba(var(--tint), 0.18);
+}
 
 /* ── Bands ───────────────────────────────────────────────────────────────── */
 
-.section { margin-bottom: 1.4em; }
+.section {
+  margin-bottom: 1.4em;
+}
 
 .split {
   display: grid;
@@ -91,7 +101,9 @@
   margin-bottom: 1.4em;
 }
 /* Top albums hidden (every album queued once): the tracks take the row. */
-.split > :only-child { grid-column: 1 / -1; }
+.split > :only-child {
+  grid-column: 1 / -1;
+}
 
 /* Same face as SectionCard's title, for the people band that sits on the page itself. */
 .bandTitle {
@@ -138,9 +150,14 @@
   font-size: var(--fs-label);
   color: var(--text-2);
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast);
+  transition:
+    background var(--dur-fast) var(--ease-fast),
+    color var(--dur-fast) var(--ease-fast);
 }
-.face:hover { background: var(--row-hover); color: var(--text); }
+.face:hover {
+  background: var(--row-hover);
+  color: var(--text);
+}
 .faceRank {
   min-width: 1.2em;
   text-align: right;
@@ -159,9 +176,20 @@
   overflow: hidden;
   flex-shrink: 0;
 }
-.faceAvatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.faceName { font-weight: 500; color: var(--text); }
-.faceCount { color: var(--text-3); font-variant-numeric: tabular-nums; }
+.faceAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.faceName {
+  font-weight: 500;
+  color: var(--text);
+}
+.faceCount {
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
 
 /* A person's top three artists, three-up under their header. */
 .trio {
@@ -170,9 +198,18 @@
   gap: 0.9em;
   padding: 0 0.3em 0.2em;
 }
-.skelCircle { aspect-ratio: 1; border-radius: var(--r-round); margin-bottom: 2.6em; }
+.skelCircle {
+  aspect-ratio: 1;
+  border-radius: var(--r-round);
+  margin-bottom: 2.6em;
+}
 /* Page skeleton: a band title, PersonCard-sized cards, then a chart card. */
-.skelTitle { width: 9em; height: 1.6em; border-radius: var(--r-xs); margin-bottom: 0.7em; }
+.skelTitle {
+  width: 9em;
+  height: 1.6em;
+  border-radius: var(--r-xs);
+  margin-bottom: 0.7em;
+}
 .skelCard {
   display: flex;
   flex-direction: column;
@@ -181,13 +218,33 @@
   border-radius: var(--r-art-card);
   background: var(--surface);
 }
-.skelHead { height: 3.8em; border-radius: var(--r-tile); }
+.skelHead {
+  height: 3.8em;
+  border-radius: var(--r-tile);
+}
 
 /* Loading rows at a chart row's pitch, so the cards don't jump when the tracks arrive. */
-.skelRows { display: flex; flex-direction: column; }
-.skelRow { display: flex; align-items: center; gap: 0.9em; padding: 0.45em 0.6em; }
-.skelThumb { width: 3.2em; height: 3.2em; border-radius: var(--r-thumb); flex-shrink: 0; }
-.skelLine { height: 1em; width: 60%; border-radius: var(--r-xs); }
+.skelRows {
+  display: flex;
+  flex-direction: column;
+}
+.skelRow {
+  display: flex;
+  align-items: center;
+  gap: 0.9em;
+  padding: 0.45em 0.6em;
+}
+.skelThumb {
+  width: 3.2em;
+  height: 3.2em;
+  border-radius: var(--r-thumb);
+  flex-shrink: 0;
+}
+.skelLine {
+  height: 1em;
+  width: 60%;
+  border-radius: var(--r-xs);
+}
 
 /* ── Artists and albums ──────────────────────────────────────────────────── */
 
@@ -221,7 +278,9 @@
   transition: background var(--dur-fast) var(--ease-fast);
 }
 .standing:hover,
-.standing:focus-within { background: var(--row-hover); }
+.standing:focus-within {
+  background: var(--row-hover);
+}
 .standingRank {
   font-size: var(--fs-title-card);
   font-weight: 500;
@@ -251,7 +310,12 @@
   overflow: hidden;
   flex-shrink: 0;
 }
-.standingAvatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.standingAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .standingName {
   font-size: var(--fs-body);
   font-weight: 500;
@@ -262,7 +326,10 @@
   transition: color var(--dur-fast) var(--ease-fast);
 }
 .standingWho:hover .standingName,
-.standingWho:focus-visible .standingName { color: var(--on-art); text-decoration: underline; }
+.standingWho:focus-visible .standingName {
+  color: var(--on-art);
+  text-decoration: underline;
+}
 .tierChip {
   display: inline-block; /* ::first-letter needs a block container, not flex */
   max-width: 100%;
@@ -280,8 +347,13 @@
   /* Sentence case from the server's title-case tier names; the DOM text is unchanged. */
   text-transform: lowercase;
 }
-.tierChip::first-letter { text-transform: uppercase; }
-.tierChip.provisional { color: var(--text-3); background: rgba(var(--tint), 0.06); }
+.tierChip::first-letter {
+  text-transform: uppercase;
+}
+.tierChip.provisional {
+  color: var(--text-3);
+  background: rgba(var(--tint), 0.06);
+}
 .games {
   font-size: var(--fs-label);
   color: var(--text-3);
@@ -295,8 +367,13 @@
   font-size: var(--fs-small);
   color: var(--text-3);
 }
-.standingHead:hover { background: none; }
-.averageHead { text-align: right; white-space: nowrap; }
+.standingHead:hover {
+  background: none;
+}
+.averageHead {
+  text-align: right;
+  white-space: nowrap;
+}
 .srOnly {
   position: absolute;
   width: 1px;
@@ -342,36 +419,66 @@
   background: var(--surface);
   text-align: center;
 }
-.tierName { font-size: 1em; font-weight: 600; color: var(--text); line-height: 1.3; }
-.tierRange { font-size: var(--fs-label); color: var(--text-3); font-variant-numeric: tabular-nums; }
+.tierName {
+  font-size: 1em;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+.tierRange {
+  font-size: var(--fs-label);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
 
 /* ── Wider and narrower pages ────────────────────────────────────────────── */
 
 /* Wide: the artists become one shelf instead of two rows of giant portraits. */
 @container (min-width: 1400px) {
-  .artistGrid { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1.3em 1.1em; }
+  .artistGrid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 1.3em 1.1em;
+  }
 }
 
 @container (max-width: 1100px) {
-  .split { grid-template-columns: minmax(0, 1fr); }
-  .albumGrid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .albumGrid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
 }
 @container (max-width: 760px) {
-  .people { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .people {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .artistGrid,
-  .albumGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .standing { grid-template-columns: 2.4em minmax(0, 1fr) minmax(0, 1fr) 5.5em; }
-  .games { display: none; }
+  .albumGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .standing {
+    grid-template-columns: 2.4em minmax(0, 1fr) minmax(0, 1fr) 5.5em;
+  }
+  .games {
+    display: none;
+  }
 }
 @container (max-width: 480px) {
-  .people { grid-template-columns: minmax(0, 1fr); }
+  .people {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .artistGrid,
-  .albumGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .albumGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .segment,
   .face,
   .standing,
-  .standingName { transition: none; }
+  .standingName {
+    transition: none;
+  }
 }

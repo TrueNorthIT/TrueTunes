@@ -7,7 +7,9 @@
   overflow: hidden;
 }
 @media (prefers-reduced-transparency: reduce) {
-  .ambient { display: none; }
+  .ambient {
+    display: none;
+  }
 }
 
 .layer {
@@ -18,8 +20,12 @@
   will-change: opacity;
   animation: ambientIn 1s ease both;
 }
-.layer.out { animation: ambientOut 1s ease both; }
-.layer.settled { will-change: auto; }
+.layer.out {
+  animation: ambientOut 1s ease both;
+}
+.layer.settled {
+  will-change: auto;
+}
 
 /* The blur is on the static image, rendered once; nothing here scrolls. Over-sized so the blur has no soft edge. */
 .img {
@@ -31,10 +37,29 @@
   filter: blur(120px) saturate(1.4) brightness(0.8);
 }
 
-@keyframes ambientIn  { from { opacity: 0; } to { opacity: 0.22; } }
-@keyframes ambientOut { from { opacity: 0.22; } to { opacity: 0; } }
+@keyframes ambientIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.22;
+  }
+}
+@keyframes ambientOut {
+  from {
+    opacity: 0.22;
+  }
+  to {
+    opacity: 0;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .layer { animation: none; will-change: auto; }
-  .layer.out { display: none; }
+  .layer {
+    animation: none;
+    will-change: auto;
+  }
+  .layer.out {
+    display: none;
+  }
 }

@@ -41,7 +41,9 @@ export function TransportButtons({ disabled, isPlaying, btnClassName, playClassN
             <rect x="2" y="1" width="4" height="12" rx="1" />
             <rect x="8" y="1" width="4" height="12" rx="1" />
           </svg>
-        ) : <Play size={playSize} fill={fill} />}
+        ) : (
+          <Play size={playSize} fill={fill} />
+        )}
       </button>
       <button
         className={btnClassName}

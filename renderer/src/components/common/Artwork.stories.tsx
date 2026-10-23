@@ -8,7 +8,13 @@ const meta = {
   title: 'Common/Artwork',
   component: Artwork,
   args: { src: covers.forest, placeholderClassName: tile.ph },
-  decorators: [(Story) => <div className={tile.art} style={{ width: '12em' }}><Story /></div>],
+  decorators: [
+    (Story) => (
+      <div className={tile.art} style={{ width: '12em' }}>
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof Artwork>;
 
 export default meta;

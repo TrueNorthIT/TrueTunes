@@ -23,24 +23,44 @@ function renderDom(node: GeniusDomNode, key: number | string): React.ReactNode {
   if (typeof node === 'string') return node;
   const children = node.children?.map((c, i) => renderDom(c, i)) ?? null;
   switch (node.tag) {
-    case 'root':   return <>{children}</>;
-    case 'p':      return <p key={key}>{children}</p>;
-    case 'em':     return <em key={key}>{children}</em>;
-    case 'strong': return <strong key={key}>{children}</strong>;
+    case 'root':
+      return <>{children}</>;
+    case 'p':
+      return <p key={key}>{children}</p>;
+    case 'em':
+      return <em key={key}>{children}</em>;
+    case 'strong':
+      return <strong key={key}>{children}</strong>;
     case 'a': {
       const href = node.attributes?.href;
       return href ? (
-        <a key={key} href={href} className={styles.aboutLink} onClick={(e) => { e.preventDefault(); window.sonos.openExternal(href); }}>
+        <a
+          key={key}
+          href={href}
+          className={styles.aboutLink}
+          onClick={(e) => {
+            e.preventDefault();
+            window.sonos.openExternal(href);
+          }}
+        >
           {children}
         </a>
-      ) : <span key={key}>{children}</span>;
+      ) : (
+        <span key={key}>{children}</span>
+      );
     }
-    case 'ul':     return <ul key={key}>{children}</ul>;
-    case 'ol':     return <ol key={key}>{children}</ol>;
-    case 'li':     return <li key={key}>{children}</li>;
-    case 'blockquote': return <blockquote key={key}>{children}</blockquote>;
-    case 'br':     return <br key={key} />;
-    default:       return <span key={key}>{children}</span>;
+    case 'ul':
+      return <ul key={key}>{children}</ul>;
+    case 'ol':
+      return <ol key={key}>{children}</ol>;
+    case 'li':
+      return <li key={key}>{children}</li>;
+    case 'blockquote':
+      return <blockquote key={key}>{children}</blockquote>;
+    case 'br':
+      return <br key={key} />;
+    default:
+      return <span key={key}>{children}</span>;
   }
 }
 
@@ -71,7 +91,9 @@ export function LyricsPanel({ playback }: Props) {
   const queuer = useQueuer({ id: np.currentObjectId, title: np.displayTrack, artist: np.displayArtist });
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
@@ -120,18 +142,36 @@ export function LyricsPanel({ playback }: Props) {
           </button>
           <div className={styles.info}>
             <h1 className={styles.title}>
-              <button type="button" className={styles.link} onClick={openAlbum} onMouseEnter={np.prefetchAlbum} aria-label={`${np.displayTrack}, open album`}>
+              <button
+                type="button"
+                className={styles.link}
+                onClick={openAlbum}
+                onMouseEnter={np.prefetchAlbum}
+                aria-label={`${np.displayTrack}, open album`}
+              >
                 {np.displayTrack}
               </button>
             </h1>
             <div className={styles.meta}>
-              <button type="button" className={`${styles.link} ${styles.metaArtist}`} onClick={openArtist} aria-label={`${np.displayArtist}, open artist`}>
+              <button
+                type="button"
+                className={`${styles.link} ${styles.metaArtist}`}
+                onClick={openArtist}
+                aria-label={`${np.displayArtist}, open artist`}
+              >
                 {np.displayArtist}
               </button>
               {np.albumName && (
                 <>
-                  <span className={styles.metaDot} aria-hidden="true">·</span>
-                  <button type="button" className={`${styles.link} ${styles.metaAlbum}`} onClick={openAlbum} aria-label={`${np.albumName}, open album`}>
+                  <span className={styles.metaDot} aria-hidden="true">
+                    ·
+                  </span>
+                  <button
+                    type="button"
+                    className={`${styles.link} ${styles.metaAlbum}`}
+                    onClick={openAlbum}
+                    aria-label={`${np.albumName}, open album`}
+                  >
                     {np.albumName}
                   </button>
                 </>
@@ -156,40 +196,52 @@ export function LyricsPanel({ playback }: Props) {
         </section>
 
         {!status && (
-        <section className={styles.lyricsCard} aria-label="Lyrics" aria-busy={lyr.pending}>
-          <div
-            ref={boxRef}
-            className={`${styles.scroll} ${lyr.lines.length ? '' : styles.scrollFree}`}
-            tabIndex={lyr.lines.length ? undefined : 0}
-          >
-            {lyr.pending ? (
-              <div className={styles.pad} aria-hidden="true">
-                {SKELETON_WIDTHS.map((w, i) => (
-                  <span key={i} className={`skeleton ${styles.lineSkel}`} style={{ width: w, animationDelay: `${i * 0.1}s` }} />
-                ))}
-              </div>
-            ) : lyr.lines.length > 0 ? (
-              <div className={styles.pad}>
-                {lyr.lines.map((line, i) => (
-                  <div
-                    key={i}
-                    ref={(el) => { lineRefs.current[i] = el; }}
-                    className={`${styles.line}${i === activeLine ? ' ' + styles.lineActive : ''}`}
-                    style={activeLine >= 0 ? { opacity: Math.max(0.22, 1 - Math.abs(i - activeLine) * 0.17) } : undefined}
-                    aria-current={i === activeLine ? 'true' : undefined}
-                  >
-                    {line.text}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className={`${styles.pad} ${styles.padPlain}`}>
-                <p className={styles.label}>Not synced to the song</p>
-                {lyr.plain.map((l, i) => <div key={i} className={`${styles.line} ${styles.linePlain}`}>{l}</div>)}
-              </div>
-            )}
-          </div>
-        </section>
+          <section className={styles.lyricsCard} aria-label="Lyrics" aria-busy={lyr.pending}>
+            <div
+              ref={boxRef}
+              className={`${styles.scroll} ${lyr.lines.length ? '' : styles.scrollFree}`}
+              tabIndex={lyr.lines.length ? undefined : 0}
+            >
+              {lyr.pending ? (
+                <div className={styles.pad} aria-hidden="true">
+                  {SKELETON_WIDTHS.map((w, i) => (
+                    <span
+                      key={i}
+                      className={`skeleton ${styles.lineSkel}`}
+                      style={{ width: w, animationDelay: `${i * 0.1}s` }}
+                    />
+                  ))}
+                </div>
+              ) : lyr.lines.length > 0 ? (
+                <div className={styles.pad}>
+                  {lyr.lines.map((line, i) => (
+                    <div
+                      key={i}
+                      ref={(el) => {
+                        lineRefs.current[i] = el;
+                      }}
+                      className={`${styles.line}${i === activeLine ? ' ' + styles.lineActive : ''}`}
+                      style={
+                        activeLine >= 0 ? { opacity: Math.max(0.22, 1 - Math.abs(i - activeLine) * 0.17) } : undefined
+                      }
+                      aria-current={i === activeLine ? 'true' : undefined}
+                    >
+                      {line.text}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className={`${styles.pad} ${styles.padPlain}`}>
+                  <p className={styles.label}>Not synced to the song</p>
+                  {lyr.plain.map((l, i) => (
+                    <div key={i} className={`${styles.line} ${styles.linePlain}`}>
+                      {l}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
         )}
       </div>
     </div>

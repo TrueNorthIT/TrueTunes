@@ -17,7 +17,10 @@ export interface AudioProvider {
   refreshPlayback(): Promise<void>;
 
   // Queue
-  getQueue(params?: { count?: number; offset?: number }): Promise<{ items: NormalizedQueueItem[]; etag?: string; error?: string }>;
+  getQueue(params?: {
+    count?: number;
+    offset?: number;
+  }): Promise<{ items: NormalizedQueueItem[]; etag?: string; error?: string }>;
   removeFromQueue(indices: number[]): Promise<void>;
   reorderQueue(fromIndices: number[], toIndex: number, queueLength: number): Promise<void>;
   clearQueue(): Promise<void>;
@@ -31,7 +34,7 @@ export interface AudioProvider {
   // onState receives groupId (undefined if provider has no group concept) plus the normalized state
   subscribePlayback(
     onState: (groupId: string | undefined, state: NormalizedPlaybackState) => void,
-    onVolume: (volume: number) => void,
+    onVolume: (volume: number) => void
   ): Unsubscribe;
   subscribeGroups(onGroups: (groups: NormalizedGroup[]) => void): Unsubscribe;
 }

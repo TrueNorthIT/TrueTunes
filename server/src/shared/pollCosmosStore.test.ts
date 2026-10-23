@@ -78,12 +78,14 @@ function fakeContainer(seed: Poll[] = [], opts: { failPatchWith?: number } = {})
 }
 
 test('P-3 incrementCount: is a single atomic Cosmos patch incr on /counts/<index>', async () => {
-  const { container, calls, docs } = fakeContainer([poll('p1', '2026-10-19', { choices: ['a', 'b', 'c'], counts: [0, 0, 0] })]);
+  const { container, calls, docs } = fakeContainer([
+    poll('p1', '2026-10-19', { choices: ['a', 'b', 'c'], counts: [0, 0, 0] }),
+  ]);
   await containerPollStore(container).incrementCount('p1', 2);
   assert.deepEqual(
     calls.patches,
     [[{ op: 'incr', path: '/counts/2', value: 1 }]],
-    'Expected exactly one patch with a single incr of 1 on /counts/2',
+    'Expected exactly one patch with a single incr of 1 on /counts/2'
   );
   assert.deepEqual(docs.get('p1')?.counts, [0, 0, 1], 'Expected only counts[2] to change');
   assert.deepEqual(calls.replaced, [], 'Expected no replace (a read-modify-write would lose concurrent answers)');
@@ -101,13 +103,16 @@ test('P-3 incrementCount: a missing poll rejects with statusCode 404', async () 
   await assert.rejects(
     () => containerPollStore(container).incrementCount('ghost', 0),
     (e: unknown) => (e as { statusCode?: number }).statusCode === 404,
-    'Expected the SDK error code 404 to surface as statusCode 404',
+    'Expected the SDK error code 404 to surface as statusCode 404'
   );
 });
 
 test('P-3 incrementCount: other Cosmos failures are not swallowed', async () => {
   const { container } = fakeContainer([poll('p1', '2026-10-19')], { failPatchWith: 429 });
-  await assert.rejects(() => containerPollStore(container).incrementCount('p1', 0), 'Expected a throttling error to reject so the client can retry');
+  await assert.rejects(
+    () => containerPollStore(container).incrementCount('p1', 0),
+    'Expected a throttling error to reject so the client can retry'
+  );
 });
 
 test('P-9 read: resolves the poll, or undefined when it does not exist', async () => {
@@ -131,7 +136,7 @@ test('P-9 create: stores the document as given and rejects a duplicate id with s
   await assert.rejects(
     () => store.create(poll('p1', '2026-10-26')),
     (e: unknown) => (e as { statusCode?: number }).statusCode === 409,
-    'Expected SDK code 409 to surface as statusCode 409',
+    'Expected SDK code 409 to surface as statusCode 409'
   );
 });
 
@@ -142,5 +147,8 @@ test('P-9 replace and remove: act on the item with id as partition key', async (
   assert.equal(docs.get('p1')?.liveFrom, '2026-11-02', 'Expected the replacement to be stored');
   await store.remove('p1');
   assert.deepEqual(calls.deleted, ['p1'], 'Expected the item to be deleted');
-  assert.ok(calls.itemArgs.every(([id, pk]) => id === pk), 'Expected item(id, id) on every call');
+  assert.ok(
+    calls.itemArgs.every(([id, pk]) => id === pk),
+    'Expected item(id, id) on every call'
+  );
 });

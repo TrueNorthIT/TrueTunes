@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { applyReorderLocally, expandToAlbumBlock, projectPlayTimes, positionAfterCurrent, FALLBACK_TRACK_MS } from '../queueHelpers';
+import {
+  applyReorderLocally,
+  expandToAlbumBlock,
+  projectPlayTimes,
+  positionAfterCurrent,
+  FALLBACK_TRACK_MS,
+} from '../queueHelpers';
 
 // Using plain strings — applyReorderLocally is generic, no QueueItem needed here.
 const items = ['A', 'B', 'C', 'D', 'E'];
@@ -54,7 +60,7 @@ describe('applyReorderLocally', () => {
   });
 
   it('sorts fromIndices before moving — order of fromIndices array should not matter', () => {
-    const forward  = applyReorderLocally(items, [0, 2], 4);
+    const forward = applyReorderLocally(items, [0, 2], 4);
     const reversed = applyReorderLocally(items, [2, 0], 4);
     expect(forward).toEqual(reversed);
     expect(forward).toEqual(['B', 'D', 'A', 'C', 'E']);
@@ -130,7 +136,12 @@ describe('projectPlayTimes', () => {
   const now = 1_000_000;
 
   it('accumulates known durations after the current track', () => {
-    const r = projectPlayTimes({ nowMs: now, currentIdx: 0, remainingMs: 1 * MIN, durations: [3 * MIN, 4 * MIN, 5 * MIN, 2 * MIN] });
+    const r = projectPlayTimes({
+      nowMs: now,
+      currentIdx: 0,
+      remainingMs: 1 * MIN,
+      durations: [3 * MIN, 4 * MIN, 5 * MIN, 2 * MIN],
+    });
     expect(r[0]).toBeUndefined();
     expect(r[1]).toEqual({ atMs: now + 1 * MIN, estimated: false });
     expect(r[2]).toEqual({ atMs: now + 5 * MIN, estimated: false });
@@ -139,7 +150,12 @@ describe('projectPlayTimes', () => {
 
   it('keeps projecting past a track with an unknown duration, using the average of known ones', () => {
     // Before the fix the projection stopped at the first unknown duration.
-    const r = projectPlayTimes({ nowMs: now, currentIdx: 0, remainingMs: 0, durations: [3 * MIN, 2 * MIN, undefined, 4 * MIN, 3 * MIN] });
+    const r = projectPlayTimes({
+      nowMs: now,
+      currentIdx: 0,
+      remainingMs: 0,
+      durations: [3 * MIN, 2 * MIN, undefined, 4 * MIN, 3 * MIN],
+    });
     expect(r[1]).toEqual({ atMs: now, estimated: false });
     expect(r[2]).toEqual({ atMs: now + 2 * MIN, estimated: false });
     // Unknown track is estimated at the mean of the known upcoming durations (2, 4, 3 → 3 min).
@@ -153,7 +169,12 @@ describe('projectPlayTimes', () => {
   });
 
   it('falls back to a typical track length when no durations are known yet', () => {
-    const r = projectPlayTimes({ nowMs: now, currentIdx: 0, remainingMs: 0, durations: [undefined, undefined, undefined] });
+    const r = projectPlayTimes({
+      nowMs: now,
+      currentIdx: 0,
+      remainingMs: 0,
+      durations: [undefined, undefined, undefined],
+    });
     expect(r[1]).toEqual({ atMs: now, estimated: false });
     expect(r[2]).toEqual({ atMs: now + FALLBACK_TRACK_MS, estimated: true });
   });
@@ -166,9 +187,13 @@ describe('projectPlayTimes', () => {
   });
 
   it('returns nothing before the current track or when the current index is out of range', () => {
-    expect(projectPlayTimes({ nowMs: now, currentIdx: 2, remainingMs: 0, durations: [MIN, MIN, MIN, MIN] }).slice(0, 3))
-      .toEqual([undefined, undefined, undefined]);
-    expect(projectPlayTimes({ nowMs: now, currentIdx: -1, remainingMs: 0, durations: [MIN, MIN] })).toEqual([undefined, undefined]);
+    expect(
+      projectPlayTimes({ nowMs: now, currentIdx: 2, remainingMs: 0, durations: [MIN, MIN, MIN, MIN] }).slice(0, 3)
+    ).toEqual([undefined, undefined, undefined]);
+    expect(projectPlayTimes({ nowMs: now, currentIdx: -1, remainingMs: 0, durations: [MIN, MIN] })).toEqual([
+      undefined,
+      undefined,
+    ]);
   });
 });
 

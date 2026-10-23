@@ -8,7 +8,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color var(--dur-fast) var(--ease-fast), background var(--dur-fast) var(--ease-fast);
+  transition:
+    color var(--dur-fast) var(--ease-fast),
+    background var(--dur-fast) var(--ease-fast);
   -webkit-app-region: no-drag;
 }
 .winBtn:hover {
@@ -37,7 +39,9 @@
   transition: background var(--dur-fast) var(--ease-fast);
   -webkit-app-region: no-drag;
 }
-.titleBarUpdateBtn:hover { background: rgba(var(--tint), 0.24); }
+.titleBarUpdateBtn:hover {
+  background: rgba(var(--tint), 0.24);
+}
 
 .titleBarPollBtn {
   display: flex;
@@ -56,7 +60,9 @@
   transition: background var(--dur-fast) var(--ease-fast);
   -webkit-app-region: no-drag;
 }
-.titleBarPollBtn:hover { background: rgba(var(--tint), 0.24); }
+.titleBarPollBtn:hover {
+  background: rgba(var(--tint), 0.24);
+}
 
 /* Shakes briefly every few seconds to catch the eye, then rests. */
 .pollIcon {
@@ -65,14 +71,30 @@
 }
 
 @keyframes pollShake {
-  0%, 12%, 100% { transform: rotate(0); }
-  2% { transform: rotate(-14deg); }
-  4% { transform: rotate(12deg); }
-  6% { transform: rotate(-10deg); }
-  8% { transform: rotate(8deg); }
-  10% { transform: rotate(-4deg); }
+  0%,
+  12%,
+  100% {
+    transform: rotate(0);
+  }
+  2% {
+    transform: rotate(-14deg);
+  }
+  4% {
+    transform: rotate(12deg);
+  }
+  6% {
+    transform: rotate(-10deg);
+  }
+  8% {
+    transform: rotate(8deg);
+  }
+  10% {
+    transform: rotate(-4deg);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pollIcon { animation: none; }
+  .pollIcon {
+    animation: none;
+  }
 }

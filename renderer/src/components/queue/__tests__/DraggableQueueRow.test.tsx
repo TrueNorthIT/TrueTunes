@@ -7,7 +7,7 @@ const { mockSkipToTrack } = vi.hoisted(() => ({
   mockSkipToTrack: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('../../../hooks/useImage',    () => ({ useImage: () => null }));
+vi.mock('../../../hooks/useImage', () => ({ useImage: () => null }));
 vi.mock('../../../hooks/useOpenItem', () => ({ useOpenItem: () => vi.fn() }));
 vi.mock('../../../providers', () => ({ getActiveProvider: () => ({ skipToTrack: mockSkipToTrack }) }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));

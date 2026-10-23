@@ -18,7 +18,10 @@
     color var(--dur-fast) var(--ease-fast);
 }
 .chip:hover,
-.chip:focus-visible { background: var(--row-hover); color: var(--on-art); }
+.chip:focus-visible {
+  background: var(--row-hover);
+  color: var(--on-art);
+}
 .avatar {
   width: 1.9em;
   height: 1.9em;
@@ -31,4 +34,9 @@
   overflow: hidden;
   flex-shrink: 0;
 }
-.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}

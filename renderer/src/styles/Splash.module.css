@@ -49,11 +49,21 @@
 }
 
 @keyframes sweep {
-  from { transform: translateX(-100%); }
-  to   { transform: translateX(250%); }
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .splash { transition: none; }
-  .bar::after { animation: none; width: 100%; opacity: 0.5; }
+  .splash {
+    transition: none;
+  }
+  .bar::after {
+    animation: none;
+    width: 100%;
+    opacity: 0.5;
+  }
 }

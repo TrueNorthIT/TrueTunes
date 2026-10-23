@@ -34,17 +34,35 @@ interface Props {
 
 /** Ranked row: zero-padded rank, art, title, artists, a right-aligned count and a + on hover. Render inside an ol. */
 export function ChartRow({
-  rank, title, artists, imageUrl, count, meta, countLabel, rankSlot, selected, playing,
-  onOpen, onClick, onDragStart, onAdd, addLabel, onContextMenu, onMouseEnter,
+  rank,
+  title,
+  artists,
+  imageUrl,
+  count,
+  meta,
+  countLabel,
+  rankSlot,
+  selected,
+  playing,
+  onOpen,
+  onClick,
+  onDragStart,
+  onAdd,
+  addLabel,
+  onContextMenu,
+  onMouseEnter,
 }: Props) {
   return (
     <li
       className={[
-        styles.row, styles.chart,
+        styles.row,
+        styles.chart,
         selected ? styles.selected : '',
         playing ? styles.playing : '',
         onDragStart ? styles.draggable : '',
-      ].filter(Boolean).join(' ')}
+      ]
+        .filter(Boolean)
+        .join(' ')}
       draggable={onDragStart ? true : undefined}
       onClick={onClick}
       onDragStart={onDragStart}
@@ -54,10 +72,15 @@ export function ChartRow({
       <span className={styles.rank}>{rankSlot ?? String(rank).padStart(2, '0')}</span>
       <span className={styles.titleCell}>
         <RowThumb imageUrl={imageUrl} onOpen={onOpen} />
-        <span className={styles.chartTitle}><TitleButton title={title} onOpen={onOpen} /></span>
+        <span className={styles.chartTitle}>
+          <TitleButton title={title} onOpen={onOpen} />
+        </span>
       </span>
       <span className={styles.chartArtist}>{artists}</span>
-      <span className={styles.plays} title={meta !== undefined ? undefined : (countLabel ?? `${count ?? 0} times queued`)}>
+      <span
+        className={styles.plays}
+        title={meta !== undefined ? undefined : (countLabel ?? `${count ?? 0} times queued`)}
+      >
         {meta !== undefined ? meta : count}
       </span>
       {onAdd ? (
@@ -70,7 +93,11 @@ export function ChartRow({
 }
 
 /** Column labels above a ChartRow list; decorative, the rows carry the meaning. */
-export function ChartHead({ labels = ['#', 'Title', 'Artist', 'Plays'] }: { labels?: [string, string, string, string] }) {
+export function ChartHead({
+  labels = ['#', 'Title', 'Artist', 'Plays'],
+}: {
+  labels?: [string, string, string, string];
+}) {
   return (
     <div className={styles.chartHead} aria-hidden="true">
       <span>{labels[0]}</span>

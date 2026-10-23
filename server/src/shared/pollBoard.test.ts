@@ -31,14 +31,18 @@ const word = (ch: string, len: number): string => ch.repeat(len);
 // ---------------------------------------------------------------- wrapForBoard
 
 test('P-12 wrapForBoard: a short question is one upper-case line', () => {
-  assert.deepEqual(wrapForBoard('Best biscuit?'), ['BEST BISCUIT?'], 'Expected the question upper-cased on a single line');
+  assert.deepEqual(
+    wrapForBoard('Best biscuit?'),
+    ['BEST BISCUIT?'],
+    'Expected the question upper-cased on a single line'
+  );
 });
 
 test('P-12 wrapForBoard: wraps at word boundaries within 22 columns', () => {
   assert.deepEqual(
     wrapForBoard(`${word('A', 10)} ${word('B', 10)} CCC`),
     [`${word('A', 10)} ${word('B', 10)}`, 'CCC'],
-    'Expected the third word to wrap because 10 + 1 + 10 + 1 + 3 exceeds 22 columns',
+    'Expected the third word to wrap because 10 + 1 + 10 + 1 + 3 exceeds 22 columns'
   );
 });
 
@@ -52,12 +56,16 @@ test('P-12 wrapForBoard: a line that would be 23 characters wraps', () => {
   assert.deepEqual(
     wrapForBoard(`${word('A', 11)} ${word('B', 11)}`),
     [word('A', 11), word('B', 11)],
-    'Expected a 23 character line to wrap at the space',
+    'Expected a 23 character line to wrap at the space'
   );
 });
 
 test('P-12 wrapForBoard: repeated whitespace and newlines collapse to single spaces', () => {
-  assert.deepEqual(wrapForBoard('  Pick   a\n\n song  '), ['PICK A SONG'], 'Expected whitespace to be collapsed and trimmed');
+  assert.deepEqual(
+    wrapForBoard('  Pick   a\n\n song  '),
+    ['PICK A SONG'],
+    'Expected whitespace to be collapsed and trimmed'
+  );
 });
 
 test('P-12 wrapForBoard: unsupported characters become spaces', () => {
@@ -67,7 +75,11 @@ test('P-12 wrapForBoard: unsupported characters become spaces', () => {
 
 test('P-12 wrapForBoard: a word longer than 22 characters is kept whole on its own line', () => {
   const long = word('X', 30);
-  assert.deepEqual(wrapForBoard(`Hi ${long} ok`), ['HI', long, 'OK'], 'Expected the over-long word to sit unbroken on its own line');
+  assert.deepEqual(
+    wrapForBoard(`Hi ${long} ok`),
+    ['HI', long, 'OK'],
+    'Expected the over-long word to sit unbroken on its own line'
+  );
 });
 
 test('P-12 wrapForBoard: returns every line, including those beyond the fourth', () => {
@@ -91,7 +103,11 @@ test("P-12 renderPollBoard: row 0 is THIS WEEK'S POLL centred (starting at colum
   const { board } = renderPollBoard('Best biscuit?');
   const expected = blankRow();
   encode("THIS WEEK'S POLL").forEach((code, i) => (expected[3 + i] = code));
-  assert.deepEqual(board[0], expected, "Expected row 0 to read THIS WEEK'S POLL centred, as vestaboard.ts writeRow centres it");
+  assert.deepEqual(
+    board[0],
+    expected,
+    "Expected row 0 to read THIS WEEK'S POLL centred, as vestaboard.ts writeRow centres it"
+  );
 });
 
 test('P-12 renderPollBoard: the last row is VOTE IN TRUE TUNES centred (starting at column 2)', () => {
@@ -115,7 +131,10 @@ test('P-12 renderPollBoard: the question appears word-wrapped in rows 1 to 4', (
 test('P-12 renderPollBoard: unsupported characters are blank tiles', () => {
   const { board } = renderPollBoard('Rock~roll');
   assert.equal(decode(board[1]).trim(), 'ROCK ROLL', 'Expected ~ to be written as a blank tile');
-  assert.ok(board.every((row) => row.every((n) => Number.isInteger(n) && n >= 0)), 'Expected only valid character codes on the board');
+  assert.ok(
+    board.every((row) => row.every((n) => Number.isInteger(n) && n >= 0)),
+    'Expected only valid character codes on the board'
+  );
 });
 
 test('P-12 renderPollBoard: fits is true for a question using exactly 4 rows', () => {
@@ -129,7 +148,11 @@ test('P-12 renderPollBoard: fits is false when the question needs 5 rows, and ro
   const q = [word('A', 22), word('B', 22), word('C', 22), word('D', 22), word('E', 22)].join(' ');
   const { board, fits } = renderPollBoard(q);
   assert.equal(fits, false, 'Expected 5 rows not to fit');
-  assert.equal(decode(board[5]).trim(), 'VOTE IN TRUE TUNES', 'Expected the footer row not to be overwritten by overflow');
+  assert.equal(
+    decode(board[5]).trim(),
+    'VOTE IN TRUE TUNES',
+    'Expected the footer row not to be overwritten by overflow'
+  );
   assert.equal(decode(board[4]).trim(), word('D', 22), 'Expected only the first four lines to be written');
 });
 

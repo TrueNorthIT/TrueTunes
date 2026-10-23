@@ -12,7 +12,10 @@ const config: StorybookConfig = {
   // The renderer's root is renderer/, but the bundled font lives in the repo root's node_modules.
   viteFinal: (config) => ({
     ...config,
-    server: { ...config.server, fs: { ...config.server?.fs, allow: [fileURLToPath(new URL('../..', import.meta.url))] } },
+    server: {
+      ...config.server,
+      fs: { ...config.server?.fs, allow: [fileURLToPath(new URL('../..', import.meta.url))] },
+    },
   }),
 };
 

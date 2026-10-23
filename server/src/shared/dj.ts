@@ -136,7 +136,7 @@ export interface DjResult {
 function userArtistWeights(
   queuersByItem: Record<string, Record<string, number>>,
   artists: string[],
-  damping: number,
+  damping: number
 ): { rows: Record<string, Record<string, number>>; influence: Record<string, number> } {
   const rows: Record<string, Record<string, number>> = {};
   for (const artist of artists) {
@@ -169,7 +169,7 @@ function userArtistWeights(
  */
 function artistSimilarity(
   weights: Record<string, Record<string, number>>,
-  artists: string[],
+  artists: string[]
 ): Record<string, Record<string, number>> {
   const users = Object.keys(weights);
   const vec: Record<string, number[]> = {};
@@ -212,7 +212,7 @@ function artistSimilarity(
 function predictForUser(
   played: Record<string, number>,
   sim: Record<string, Record<string, number>>,
-  artists: string[],
+  artists: string[]
 ): { scores: Record<string, number>; topNeighbour: Record<string, string> } {
   const scores: Record<string, number> = {};
   const topNeighbour: Record<string, string> = {};
@@ -260,9 +260,7 @@ export function buildDjSet(events: RawEvent[], options: DjOptions = {}): DjResul
 
   const agg = aggregateEvents(events);
 
-  const artists = Object.keys(agg.artistMap).filter(
-    (a) => agg.artistMap[a].count >= minArtistCount,
-  );
+  const artists = Object.keys(agg.artistMap).filter((a) => agg.artistMap[a].count >= minArtistCount);
   if (artists.length === 0) {
     return { tracks: [], artists: [], listeners: [], artistsConsidered: 0 };
   }
@@ -352,7 +350,7 @@ export function buildDjSet(events: RawEvent[], options: DjOptions = {}): DjResul
   // them back to back: different strings, same band as far as the room is
   // concerned. One pool per act means spacing actually works.
   const rankedArtists = new Set(ranked.map((r) => r.artist));
-  const tracksByArtist: Record<string, typeof agg.trackMap[string][]> = {};
+  const tracksByArtist: Record<string, (typeof agg.trackMap)[string][]> = {};
   for (const track of Object.values(agg.trackMap)) {
     const primary = splitArtists(track.artist).find((k) => rankedArtists.has(k));
     if (primary) (tracksByArtist[primary] ??= []).push(track);
@@ -374,7 +372,7 @@ export function buildDjSet(events: RawEvent[], options: DjOptions = {}): DjResul
   const pools = ranked.map((entry) => ({
     entry,
     tracks: (tracksByArtist[entry.artist] ?? []).filter(
-      (t) => t.uri && !exclude.has(t.uri) && !excludeKeys.has(trackKey(t.trackName, t.artist)),
+      (t) => t.uri && !exclude.has(t.uri) && !excludeKeys.has(trackKey(t.trackName, t.artist))
     ),
     // Cursor, not the round index: a track credited to two artists ("Wet Leg,
     // The Dare") sits in both pools, and whichever pool loses the race must
@@ -429,20 +427,18 @@ export function buildDjSet(events: RawEvent[], options: DjOptions = {}): DjResul
     .filter(({ entry }) => agg.artistMap[entry.artist]?.artistId)
     .slice(0, artistLimit)
     .map(({ entry, tracks }) => {
-    const meta = agg.artistMap[entry.artist];
-    return {
-      artist: entry.artist,
-      artistId: meta?.artistId,
-      serviceId: meta?.serviceId,
-      accountId: meta?.accountId,
-      imageUrl: meta?.imageUrl,
-      score: Number(entry.score.toFixed(4)),
-      because: entry.fans.length
-        ? creditFans(entry.fans, entry.artist)
-        : 'Popular with the office',
-      fans: entry.fanCounts,
-      heardTrackKeys: tracks.map((t) => t.key),
-    };
+      const meta = agg.artistMap[entry.artist];
+      return {
+        artist: entry.artist,
+        artistId: meta?.artistId,
+        serviceId: meta?.serviceId,
+        accountId: meta?.accountId,
+        imageUrl: meta?.imageUrl,
+        score: Number(entry.score.toFixed(4)),
+        because: entry.fans.length ? creditFans(entry.fans, entry.artist) : 'Popular with the office',
+        fans: entry.fanCounts,
+        heardTrackKeys: tracks.map((t) => t.key),
+      };
     });
 
   return { tracks: picked, artists: suggestedArtists, listeners, artistsConsidered: artists.length };

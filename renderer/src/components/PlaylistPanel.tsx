@@ -36,7 +36,18 @@ function trackToSonosItem(t: PlaylistTrack): SonosItem {
 
 /** One playlist track: the shared TrackRow plus who added it, reorder and remove. Details (art, duration) load per row. */
 function PlaylistRow({
-  track, index, isOwner, canReorder, imageByUser, onAdd, onRemove, onContextMenu, onDragStart, onDragOver, onDrop, onDragEnd,
+  track,
+  index,
+  isOwner,
+  canReorder,
+  imageByUser,
+  onAdd,
+  onRemove,
+  onContextMenu,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
 }: {
   track: PlaylistTrack;
   index: number;
@@ -62,11 +73,15 @@ function PlaylistRow({
       artists={details?.artist ?? track.artist}
       imageUrl={details?.artUrl ?? track.imageUrl}
       trailing={durationS > 0 ? fmtDuration(durationS) : undefined}
-      attribution={track.addedBy ? {
-        user: track.addedBy,
-        imageUrl: imageByUser.get(track.addedBy),
-        onOpen: () => navigate(`/profile/${encodeURIComponent(track.addedBy)}`),
-      } : undefined}
+      attribution={
+        track.addedBy
+          ? {
+              user: track.addedBy,
+              imageUrl: imageByUser.get(track.addedBy),
+              onOpen: () => navigate(`/profile/${encodeURIComponent(track.addedBy)}`),
+            }
+          : undefined
+      }
       onAdd={onAdd}
       onRemove={isOwner ? onRemove : undefined}
       onContextMenu={onContextMenu}
@@ -100,21 +115,24 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const coverArtSrc = useImage(playlist?.imageUrl ?? null);
   const { data: users } = useUsers(true, true);
-  const imageByUser = new Map((users ?? []).map(u => [u.userId, u.imageUrl]));
+  const imageByUser = new Map((users ?? []).map((u) => [u.userId, u.imageUrl]));
   // Cover fallback: the first four distinct track covers.
-  const trackArts = [...new Set((playlist?.tracks ?? []).map(t => t.imageUrl).filter((u): u is string => !!u))].slice(0, 4);
+  const trackArts = [...new Set((playlist?.tracks ?? []).map((t) => t.imageUrl).filter((u): u is string => !!u))].slice(
+    0,
+    4
+  );
   const mosaic = !coverArtSrc && trackArts.length >= 4;
   const firstArt = useImage(!coverArtSrc && !mosaic ? (trackArts[0] ?? null) : null);
   const dominantColor = useDominantColor(coverArtSrc ?? firstArt);
   // Total length comes from the same per-track queries the rows use, so it is free; shown once every track has reported.
   const trackInfos = useQueries({
-    queries: (playlist?.tracks ?? []).map(t => ({
+    queries: (playlist?.tracks ?? []).map((t) => ({
       ...trackQueryOptions(t.uri, t.serviceId, t.accountId),
       enabled: !!(t.uri && t.serviceId && t.accountId),
     })),
   });
   const knownMs = trackInfos.reduce((sum, q) => sum + (q.data?.durationMs ?? 0), 0);
-  const allKnown = trackInfos.length > 0 && trackInfos.every(q => (q.data?.durationMs ?? 0) > 0);
+  const allKnown = trackInfos.length > 0 && trackInfos.every((q) => (q.data?.durationMs ?? 0) > 0);
   const totalMins = allKnown ? Math.max(1, Math.round(knownMs / 60000)) : 0;
   const dragSrcIndex = useRef<number>(-1);
   const cancelRename = useRef(false);
@@ -133,27 +151,30 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
     if (index !== dragSrcIndex.current) setDragOverIndex(index);
   }, []);
 
-  const handleDrop = useCallback(async (index: number, e: React.DragEvent) => {
-    e.preventDefault();
-    const raw = e.dataTransfer.getData('application/playlist-track-index');
-    setDragOverIndex(null);
-    if (!raw || !playlist || !id) return;
-    const from = parseInt(raw, 10);
-    if (from === index) return;
-    const snapshot = playlist;
-    const newTracks = [...playlist.tracks];
-    const [moved] = newTracks.splice(from, 1);
-    newTracks.splice(index, 0, moved);
-    queryClient.setQueryData(['playlist', id], { ...playlist, tracks: newTracks });
-    try {
-      await window.sonos.reorderPlaylistTracks(id, from, index);
-      queryClient.invalidateQueries({ queryKey: ['playlist', id] });
-      queryClient.invalidateQueries({ queryKey: ['playlists', 'owned', displayName] });
-    } catch {
-      queryClient.setQueryData(['playlist', id], snapshot);
-      showToast('Failed to reorder tracks');
-    }
-  }, [playlist, id, queryClient, displayName]);
+  const handleDrop = useCallback(
+    async (index: number, e: React.DragEvent) => {
+      e.preventDefault();
+      const raw = e.dataTransfer.getData('application/playlist-track-index');
+      setDragOverIndex(null);
+      if (!raw || !playlist || !id) return;
+      const from = parseInt(raw, 10);
+      if (from === index) return;
+      const snapshot = playlist;
+      const newTracks = [...playlist.tracks];
+      const [moved] = newTracks.splice(from, 1);
+      newTracks.splice(index, 0, moved);
+      queryClient.setQueryData(['playlist', id], { ...playlist, tracks: newTracks });
+      try {
+        await window.sonos.reorderPlaylistTracks(id, from, index);
+        queryClient.invalidateQueries({ queryKey: ['playlist', id] });
+        queryClient.invalidateQueries({ queryKey: ['playlists', 'owned', displayName] });
+      } catch {
+        queryClient.setQueryData(['playlist', id], snapshot);
+        showToast('Failed to reorder tracks');
+      }
+    },
+    [playlist, id, queryClient, displayName]
+  );
 
   const handleDragEnd = useCallback(() => {
     setDragOverIndex(null);
@@ -187,7 +208,10 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !id) return;
-    if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5 MB'); return; }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image must be under 5 MB');
+      return;
+    }
     setUploading(true);
     try {
       const buffer = await file.arrayBuffer();
@@ -227,7 +251,10 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
 
   async function commitRename() {
     const trimmed = renameValue.trim();
-    if (!trimmed || !id || !playlist || trimmed === playlist.name) { setRenaming(false); return; }
+    if (!trimmed || !id || !playlist || trimmed === playlist.name) {
+      setRenaming(false);
+      return;
+    }
     setRenaming(false);
     const snapshot = playlist;
     queryClient.setQueryData(['playlist', id], { ...playlist, name: trimmed });
@@ -254,14 +281,20 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
     }
   }
 
-  const collaborators = playlist ? playlist.members.filter(m => m !== playlist.owner) : [];
+  const collaborators = playlist ? playlist.members.filter((m) => m !== playlist.owner) : [];
   const trackCount = playlist?.tracks.length ?? 0;
-  const metaLine = [`${trackCount} track${trackCount !== 1 ? 's' : ''}`, totalMins > 0 ? `${totalMins} min` : null].filter(Boolean).join(' \u00b7 ');
+  const metaLine = [`${trackCount} track${trackCount !== 1 ? 's' : ''}`, totalMins > 0 ? `${totalMins} min` : null]
+    .filter(Boolean)
+    .join(' \u00b7 ');
 
   const cover = coverArtSrc ? (
     <img src={coverArtSrc} alt="" />
   ) : mosaic ? (
-    <div className={styles.mosaic}>{trackArts.map(u => <MosaicCell key={u} url={u} />)}</div>
+    <div className={styles.mosaic}>
+      {trackArts.map((u) => (
+        <MosaicCell key={u} url={u} />
+      ))}
+    </div>
   ) : firstArt ? (
     <img src={firstArt} alt="" />
   ) : (
@@ -309,13 +342,29 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
                   className={styles.renameInput}
                   aria-label="Playlist name"
                   value={renameValue}
-                  onChange={e => setRenameValue(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') { cancelRename.current = true; setRenaming(false); } }}
-                  onBlur={() => { if (cancelRename.current) { cancelRename.current = false; return; } commitRename(); }}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') commitRename();
+                    if (e.key === 'Escape') {
+                      cancelRename.current = true;
+                      setRenaming(false);
+                    }
+                  }}
+                  onBlur={() => {
+                    if (cancelRename.current) {
+                      cancelRename.current = false;
+                      return;
+                    }
+                    commitRename();
+                  }}
                   autoFocus
                 />
-              ) : playlist.name
-            ) : 'Playlist not found'
+              ) : (
+                playlist.name
+              )
+            ) : (
+              'Playlist not found'
+            )
           }
           onTitleClick={isOwner && playlist && !renaming ? startRename : undefined}
           titleHint="Click to rename"
@@ -329,14 +378,18 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
                   onClick={() => navigate(`/profile/${encodeURIComponent(playlist.owner)}`)}
                   aria-label={`${playlist.owner}, owner, open profile`}
                 >
-                  <UserAvatar name={playlist.owner} imageUrl={imageByUser.get(playlist.owner)} className={styles.avatar} />
+                  <UserAvatar
+                    name={playlist.owner}
+                    imageUrl={imageByUser.get(playlist.owner)}
+                    className={styles.avatar}
+                  />
                   {playlist.owner}
                 </button>
                 {collaborators.length > 0 && (
                   <>
                     <span className={styles.with}>with</span>
                     <ul className={styles.collabs} aria-label="Collaborators">
-                      {collaborators.slice(0, 4).map(m => (
+                      {collaborators.slice(0, 4).map((m) => (
                         <li key={m}>
                           <button
                             type="button"
@@ -382,16 +435,20 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
                 {playlist.isPublic && !isOwner && (
                   <PillButton onClick={handleJoin}>{isMember ? 'Leave' : 'Join'}</PillButton>
                 )}
-                {isOwner && !playlist.isFavourites && (
-                  confirmDelete ? (
+                {isOwner &&
+                  !playlist.isFavourites &&
+                  (confirmDelete ? (
                     <>
-                      <PillButton variant="danger" onClick={handleDelete}>Delete forever</PillButton>
+                      <PillButton variant="danger" onClick={handleDelete}>
+                        Delete forever
+                      </PillButton>
                       <PillButton onClick={() => setConfirmDelete(false)}>Cancel</PillButton>
                     </>
                   ) : (
-                    <PillButton variant="danger" onClick={() => setConfirmDelete(true)}>Delete</PillButton>
-                  )
-                )}
+                    <PillButton variant="danger" onClick={() => setConfirmDelete(true)}>
+                      Delete
+                    </PillButton>
+                  ))}
               </div>
             </>
           )}
@@ -404,7 +461,10 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
                 <div key={i} className={styles.skeletonRow}>
                   <span className={`skeleton ${styles.skelNum}`} />
                   <span className={`skeleton ${styles.skelArt}`} />
-                  <span className={`skeleton ${styles.skelLine}`} style={{ width: `${30 + (i % 4) * 12}%`, animationDelay: `${i * 60}ms` }} />
+                  <span
+                    className={`skeleton ${styles.skelLine}`}
+                    style={{ width: `${30 + (i % 4) * 12}%`, animationDelay: `${i * 60}ms` }}
+                  />
                 </div>
               ))}
             </div>
@@ -423,10 +483,10 @@ export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
                     imageByUser={imageByUser}
                     onAdd={() => onAddToQueue(trackToSonosItem(t), -1)}
                     onRemove={() => handleRemoveTrack(t.uri, i)}
-                    onContextMenu={e => showTrackMenu({ track: t, sonosItem: trackToSonosItem(t) }, e)}
-                    onDragStart={e => handleDragStart(i, e)}
-                    onDragOver={e => handleDragOver(i, e)}
-                    onDrop={e => handleDrop(i, e)}
+                    onContextMenu={(e) => showTrackMenu({ track: t, sonosItem: trackToSonosItem(t) }, e)}
+                    onDragStart={(e) => handleDragStart(i, e)}
+                    onDragOver={(e) => handleDragOver(i, e)}
+                    onDrop={(e) => handleDrop(i, e)}
                     onDragEnd={handleDragEnd}
                   />
                 </Fragment>

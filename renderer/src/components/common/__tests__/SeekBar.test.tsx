@@ -12,7 +12,7 @@ function setup(durationMs = 210000, progressPct = 50) {
       className="bar"
       trackClassName="track"
       fillClassName="fill"
-    />,
+    />
   );
   return screen.getByRole('slider', { name: 'Track progress' });
 }

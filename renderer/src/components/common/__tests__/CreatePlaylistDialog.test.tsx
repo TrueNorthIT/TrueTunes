@@ -45,8 +45,8 @@ function renderDialog(pendingTrack: PlaylistTrack | null, onClose = vi.fn()) {
     createElement(
       QueryClientProvider,
       { client: qc },
-      createElement(CreatePlaylistDialog, { displayName: DISPLAY_NAME, pendingTrack, onClose }),
-    ),
+      createElement(CreatePlaylistDialog, { displayName: DISPLAY_NAME, pendingTrack, onClose })
+    )
   );
   return { qc, onClose };
 }
@@ -78,10 +78,7 @@ describe('CreatePlaylistDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Create' }));
 
     await waitFor(() => {
-      expect(vi.mocked(window.sonos.addTrackToPlaylist)).toHaveBeenCalledWith(
-        NEW_PLAYLIST.id,
-        PENDING_TRACK,
-      );
+      expect(vi.mocked(window.sonos.addTrackToPlaylist)).toHaveBeenCalledWith(NEW_PLAYLIST.id, PENDING_TRACK);
     });
   });
 

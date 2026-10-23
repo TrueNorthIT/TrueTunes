@@ -40,8 +40,14 @@ describe('mergeArtists', () => {
   });
 
   it('does not mutate its input', () => {
-    const input = [{ artist: 'A', count: 1 }, { artist: 'a', count: 1 }];
+    const input = [
+      { artist: 'A', count: 1 },
+      { artist: 'a', count: 1 },
+    ];
     mergeArtists(input);
-    expect(input).toEqual([{ artist: 'A', count: 1 }, { artist: 'a', count: 1 }]);
+    expect(input).toEqual([
+      { artist: 'A', count: 1 },
+      { artist: 'a', count: 1 },
+    ]);
   });
 });

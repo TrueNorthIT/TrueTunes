@@ -18,7 +18,10 @@ export interface ArtistData {
   genius: GeniusArtistInfo | null;
 }
 
-function parseArtist(data: ArtistResponse): { parsed: Omit<ArtistData, 'topSongs' | 'genius'>; topSongsItem: SonosItem | null } {
+function parseArtist(data: ArtistResponse): {
+  parsed: Omit<ArtistData, 'topSongs' | 'genius'>;
+  topSongsItem: SonosItem | null;
+} {
   const name = data.title ?? '';
   const imageUrl = data.images?.tile1x1 ?? null;
   const allItems = (data.sections?.items?.[0]?.items ?? []) as unknown as SonosItem[];
@@ -38,7 +41,7 @@ export function artistQueryOptions(
   serviceId: string | undefined,
   accountId: string | undefined,
   defaults: string | undefined,
-  fallbackName?: string,
+  fallbackName?: string
 ) {
   return {
     queryKey: ['artist', artistId] as const,
@@ -95,10 +98,7 @@ export function artistQueryOptions(
         return pr.error ? [] : parsePlaylistTracks(pr.data);
       };
 
-      const [topSongs, genius] = await Promise.all([
-        fetchTopSongs(),
-        window.sonos.geniusArtist(parsed.name),
-      ]);
+      const [topSongs, genius] = await Promise.all([fetchTopSongs(), window.sonos.geniusArtist(parsed.name)]);
 
       return { ...parsed, topSongs, genius };
     },
@@ -112,7 +112,7 @@ export function useArtistBrowse(
   serviceId: string | undefined,
   accountId: string | undefined,
   defaults?: string,
-  fallbackName?: string,
+  fallbackName?: string
 ) {
   return useQuery({
     ...artistQueryOptions(artistId, serviceId, accountId, defaults, fallbackName),
@@ -129,7 +129,7 @@ export function artistImageQueryOptions(
   artistId: string | undefined,
   serviceId: string | undefined,
   accountId: string | undefined,
-  defaults?: string,
+  defaults?: string
 ) {
   return {
     queryKey: ['artist-image', artistId] as const,
@@ -149,7 +149,7 @@ export function useArtistImage(
   artistId: string | undefined,
   serviceId: string | undefined,
   accountId: string | undefined,
-  defaults?: string,
+  defaults?: string
 ) {
   return useQuery(artistImageQueryOptions(artistId, serviceId, accountId, defaults));
 }

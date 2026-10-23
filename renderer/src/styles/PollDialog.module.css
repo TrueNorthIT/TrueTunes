@@ -17,13 +17,18 @@
   padding: 0.75em 1em;
   text-align: left;
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast);
+  transition:
+    background var(--dur-fast) var(--ease-fast),
+    color var(--dur-fast) var(--ease-fast);
 }
 .choice:hover:not(:disabled) {
   background: rgba(var(--tint), 0.18);
   color: var(--on-art);
 }
-.choice:disabled { opacity: 0.5; cursor: default; }
+.choice:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 
 /* ── Admin: the schedule ── */
 .rows {
@@ -43,7 +48,9 @@
   transition: background var(--dur-fast) var(--ease-fast);
 }
 .row:hover,
-.row:focus-within { background: var(--row-hover); }
+.row:focus-within {
+  background: var(--row-hover);
+}
 .rowText {
   flex: 1;
   min-width: 0;
@@ -87,14 +94,28 @@
   background: none;
   color: var(--text-3);
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast);
+  transition:
+    background var(--dur-fast) var(--ease-fast),
+    color var(--dur-fast) var(--ease-fast);
 }
-.iconBtn:hover:not(:disabled) { background: rgba(var(--tint), 0.14); color: var(--text); }
-.iconBtn:disabled { opacity: 0.3; cursor: default; }
-.iconDanger:hover:not(:disabled) { background: rgba(var(--danger), 0.16); color: rgb(var(--danger)); }
+.iconBtn:hover:not(:disabled) {
+  background: rgba(var(--tint), 0.14);
+  color: var(--text);
+}
+.iconBtn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.iconDanger:hover:not(:disabled) {
+  background: rgba(var(--danger), 0.16);
+  color: rgb(var(--danger));
+}
 
 /* ── Admin: the form ── */
-.addChoice { align-self: flex-start; margin-top: 0.2em; }
+.addChoice {
+  align-self: flex-start;
+  margin-top: 0.2em;
+}
 
 /* The board itself is black with white tiles, so the preview is too. */
 .preview {
@@ -120,10 +141,16 @@
   line-height: 1.45;
   color: var(--text);
 }
-.warning > svg { flex-shrink: 0; margin-top: 0.15em; color: var(--text-2); }
+.warning > svg {
+  flex-shrink: 0;
+  margin-top: 0.15em;
+  color: var(--text-2);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .choice,
   .row,
-  .iconBtn { transition: none; }
+  .iconBtn {
+    transition: none;
+  }
 }

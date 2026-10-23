@@ -11,7 +11,18 @@ import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { PollAdminLauncher } from '../PollAdminLauncher';
 // Literal Konami code (the code the launcher must respond to).
-const KONAMI_CODE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+const KONAMI_CODE = [
+  'ArrowUp',
+  'ArrowUp',
+  'ArrowDown',
+  'ArrowDown',
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowLeft',
+  'ArrowRight',
+  'b',
+  'a',
+];
 
 function Wrapper({ children }: { children: ReactNode }) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -36,7 +47,10 @@ describe('P-8 PollAdminLauncher', () => {
   it('typing the Konami code anywhere opens the poll admin dialog', async () => {
     render(<PollAdminLauncher />, { wrapper: Wrapper });
     type(KONAMI_CODE);
-    expect(await screen.findByRole('dialog', { name: /poll admin/i }), 'Expected the Konami code to open the poll admin dialog').toBeInTheDocument();
+    expect(
+      await screen.findByRole('dialog', { name: /poll admin/i }),
+      'Expected the Konami code to open the poll admin dialog'
+    ).toBeInTheDocument();
   });
 
   it('does not open when the code is typed into a text field', async () => {
@@ -45,7 +59,7 @@ describe('P-8 PollAdminLauncher', () => {
         <input aria-label="elsewhere" />
         <PollAdminLauncher />
       </>,
-      { wrapper: Wrapper },
+      { wrapper: Wrapper }
     );
     type(KONAMI_CODE, screen.getByLabelText('elsewhere'));
     await new Promise((resolve) => setTimeout(resolve, 0));

@@ -16,7 +16,13 @@ const meta = {
     size: 14,
     playSize: 14,
   },
-  decorators: [(Story) => <div className={styles.transport}><Story /></div>],
+  decorators: [
+    (Story) => (
+      <div className={styles.transport}>
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof TransportButtons>;
 
 export default meta;

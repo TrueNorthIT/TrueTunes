@@ -17,10 +17,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { generateGame, GeneratedGame } from '../../../../server/src/shared/gameGenerator';
 import type { AggregateResult } from '../../../../server/src/shared/aggregate';
-import {
-  buildRealisticAggregate,
-  DataVariant,
-} from '../../../../server/scripts/queuedle-sim/fixture';
+import { buildRealisticAggregate, DataVariant } from '../../../../server/scripts/queuedle-sim/fixture';
 import {
   carriedWinStats,
   rampStats,
@@ -72,7 +69,7 @@ describe.each(VARIANTS)('Queuedle generator on $label', ({ variant, label }) => 
       `Q-1: expected 0 forced-answer questions, found ${forced.length} of ${asked} bridge questions ` +
         `(${((forced.length / asked) * 100).toFixed(1)}%). Count scale (floor = lowest count shown in any game, ceiling = top count in data): ${JSON.stringify(ranges)}. ` +
         `First examples (bridge count is what the player sees; "mystery-must-be-higher" means the ` +
-        `bridge sits at/near the floor so the other side cannot be lower):\n${sample(forced)}`,
+        `bridge sits at/near the floor so the other side cannot be lower):\n${sample(forced)}`
     ).toBe(0);
   });
 
@@ -82,16 +79,18 @@ describe.each(VARIANTS)('Queuedle generator on $label', ({ variant, label }) => 
   // be higher (or lower) than the revealed one.
   it(`Q-2: the carried-over item wins between 40% and 60% of questions (${label})`, () => {
     const { questions, carriedWins, carriedWinShare } = carriedWinStats(results());
-    expect(questions, 'Q-2 needs bridge questions to analyse; the generator produced almost none').toBeGreaterThan(1000);
+    expect(questions, 'Q-2 needs bridge questions to analyse; the generator produced almost none').toBeGreaterThan(
+      1000
+    );
     expect(
       carriedWinShare,
       `Q-2: expected the revealed carried item to win 40-60% of the time, but it won ${carriedWins} of ` +
-        `${questions} (${(carriedWinShare * 100).toFixed(1)}%). Players could exploit a skewed answer side.`,
+        `${questions} (${(carriedWinShare * 100).toFixed(1)}%). Players could exploit a skewed answer side.`
     ).toBeGreaterThanOrEqual(0.4);
     expect(
       carriedWinShare,
       `Q-2: expected the revealed carried item to win 40-60% of the time, but it won ${carriedWins} of ` +
-        `${questions} (${(carriedWinShare * 100).toFixed(1)}%). Players could exploit a skewed answer side.`,
+        `${questions} (${(carriedWinShare * 100).toFixed(1)}%). Players could exploit a skewed answer side.`
     ).toBeLessThanOrEqual(0.6);
   });
 
@@ -107,7 +106,7 @@ describe.each(VARIANTS)('Queuedle generator on $label', ({ variant, label }) => 
       violations.length,
       `Q-3: expected every question to pair counts at least ${RULES.MIN_GAP} plays apart with ratio ` +
         `${RULES.MIN_RATIO}-${RULES.MAX_RATIO}, but ${violations.length} of ${questions} questions broke this. ` +
-        `First examples:\n${sample(violations)}`,
+        `First examples:\n${sample(violations)}`
     ).toBe(0);
   });
 });
@@ -123,7 +122,7 @@ describe('Queuedle generator on all-time data: full games', () => {
       share,
       `Q-4: expected >= 95% of days to yield 10 questions with lowData=false, got ` +
         `${(share * 100).toFixed(1)}% (${short.length} of ${all.length} days short). ` +
-        `First short days: ${JSON.stringify(short.slice(0, 5).map((r) => ({ seed: r.seed, questions: r.game.questions.length })))}`,
+        `First short days: ${JSON.stringify(short.slice(0, 5).map((r) => ({ seed: r.seed, questions: r.game.questions.length })))}`
     ).toBeGreaterThanOrEqual(0.95);
   });
 });
@@ -145,10 +144,15 @@ describe('Queuedle generator on all-time data: difficulty ramp', () => {
   // bands: Q1-3 easy (>= 2.0), Q4-7 medium (1.5-2.0), Q8-10 hard (1.15-1.5). Bands are a preference.
   it('Q-7: mean ratio ramps down easy > medium > hard and most questions land in their band', () => {
     const st = rampStats(sims.get('allTime')!.results);
-    const ctx = JSON.stringify({ bandMeans: st.bandMeans, inBand: st.inBandShare, byQ: st.byQuestion.map((r) => +r.meanRatio.toFixed(2)) });
+    const ctx = JSON.stringify({
+      bandMeans: st.bandMeans,
+      inBand: st.inBandShare,
+      byQ: st.byQuestion.map((r) => +r.meanRatio.toFixed(2)),
+    });
     const early = st.byQuestion.slice(0, 3);
     const late = st.byQuestion.slice(7, 10);
-    const meanOf = (rows: typeof early) => rows.reduce((a, r) => a + r.meanRatio * r.n, 0) / rows.reduce((a, r) => a + r.n, 0);
+    const meanOf = (rows: typeof early) =>
+      rows.reduce((a, r) => a + r.meanRatio * r.n, 0) / rows.reduce((a, r) => a + r.n, 0);
     expect(meanOf(early), `Q-7: mean ratio of Q1-Q3 should be >= 1.8. ${ctx}`).toBeGreaterThanOrEqual(1.8);
     expect(meanOf(late), `Q-7: mean ratio of Q8-Q10 should be <= 1.5. ${ctx}`).toBeLessThanOrEqual(1.5);
     expect(st.bandMeans.easy, `Q-7: easy mean must exceed medium. ${ctx}`).toBeGreaterThan(st.bandMeans.medium);
@@ -186,24 +190,27 @@ describe('Queuedle generator: small pool (diagnostic)', () => {
   });
 
   it('Q-3: a pool containing counts 3..12 never yields a pair differing by only 1 play', () => {
-    expect(days.every((d) => d.game.questions.length > 0), 'Q-3: every seed should still yield at least one question').toBe(true);
+    expect(
+      days.every((d) => d.game.questions.length > 0),
+      'Q-3: every seed should still yield at least one question'
+    ).toBe(true);
     const violations = findPairViolations(days);
     expect(
       violations.length,
       `Q-3: expected no pair of counts differing by only 1 (e.g. 3 vs 4), found ${violations.length}. ` +
-        `First examples:\n${sample(violations)}`,
+        `First examples:\n${sample(violations)}`
     ).toBe(0);
   });
 
   it('Q-1: a pool containing counts 3..12 never shows a carried item whose count gives the answer away', () => {
     expect(
       carriedWinStats(days).questions,
-      'Q-1: the small pool should still yield bridge questions (on average at least one per day) to analyse',
+      'Q-1: the small pool should still yield bridge questions (on average at least one per day) to analyse'
     ).toBeGreaterThan(300);
     const forced = findForced(days, knownRanges(pool, days));
     expect(
       forced.length,
-      `Q-1: expected no forced-answer questions, found ${forced.length}. First examples:\n${sample(forced)}`,
+      `Q-1: expected no forced-answer questions, found ${forced.length}. First examples:\n${sample(forced)}`
     ).toBe(0);
   });
 });
@@ -221,7 +228,7 @@ describe('Queuedle generator: determinism and returned shape', () => {
       const b = generateGame(aggB, seed);
       expect(a.questions.length, `Q-5: seed ${seed} should produce some questions to compare`).toBeGreaterThan(0);
       expect(JSON.stringify(b), `Q-5: seed ${seed} produced a different game on a second run with identical data`).toBe(
-        JSON.stringify(a),
+        JSON.stringify(a)
       );
     }
   });
@@ -232,7 +239,9 @@ describe('Queuedle generator: determinism and returned shape', () => {
     const first = generateGame(agg, '2026-06-01');
     generateGame(agg, 'some-other-seed');
     const again = generateGame(agg, '2026-06-01');
-    expect(JSON.stringify(again), 'Q-5: re-running a seed after another seed changed the game').toBe(JSON.stringify(first));
+    expect(JSON.stringify(again), 'Q-5: re-running a seed after another seed changed the game').toBe(
+      JSON.stringify(first)
+    );
   });
 
   // Q-5 (shape): get-game/QueuedleQuestionCard rely on this exact structure.
@@ -247,29 +256,30 @@ describe('Queuedle generator: determinism and returned shape', () => {
       expect(Array.isArray(game.questions), `Q-5: seed ${seed} questions must be an array`).toBe(true);
       expect(game.questions.length, `Q-5: seed ${seed} must produce at most 10 questions`).toBeLessThanOrEqual(10);
       expect(game.lowData, `Q-5: seed ${seed} lowData must be true exactly when fewer than 10 questions`).toBe(
-        game.questions.length < 10,
+        game.questions.length < 10
       );
       expect(game.questions.length, `Q-5: seed ${seed} should produce at least one question`).toBeGreaterThan(0);
 
       game.questions.forEach((q, i) => {
         const where = `seed ${seed} question ${i + 1}`;
         // `carryover` is deliberately absent on question 1, so only key presence of the others is exact.
-        const presentKeys = Object.keys(q).filter((k) => (q as unknown as Record<string, unknown>)[k] !== undefined).sort();
+        const presentKeys = Object.keys(q)
+          .filter((k) => (q as unknown as Record<string, unknown>)[k] !== undefined)
+          .sort();
         const expectedKeys = i === 0 ? questionKeys.filter((k) => k !== 'carryover') : questionKeys;
         expect(presentKeys, `Q-5: ${where} must expose exactly ${expectedKeys.join(', ')}`).toEqual(expectedKeys);
         expect(q.index, `Q-5: ${where} index must equal its position`).toBe(i);
         expect(
           q.winner,
-          `Q-5: ${where} winner must be the side with the higher count (${q.left.count} vs ${q.right.count})`,
+          `Q-5: ${where} winner must be the side with the higher count (${q.left.count} vs ${q.right.count})`
         ).toBe(q.left.count > q.right.count ? 'left' : 'right');
         if (i === 0) {
           expect(q.carryover, `Q-5: ${where} (question 1) must have no carryover`).toBeUndefined();
         } else {
           expect(['left', 'right'], `Q-5: ${where} must say which side is carried over`).toContain(q.carryover);
-          expect(
-            q.bonusItem,
-            `Q-5: ${where} bonusItem must be the new (non-carried) side`,
-          ).toBe(q.carryover === 'left' ? 'right' : 'left');
+          expect(q.bonusItem, `Q-5: ${where} bonusItem must be the new (non-carried) side`).toBe(
+            q.carryover === 'left' ? 'right' : 'left'
+          );
         }
         for (const side of [q.left, q.right]) {
           for (const field of itemRequired) {
@@ -277,9 +287,11 @@ describe('Queuedle generator: determinism and returned shape', () => {
           }
           expect(
             side.queuerCandidates.length,
-            `Q-5: ${where} item "${side.name}" needs at least 2 queuer candidates`,
+            `Q-5: ${where} item "${side.name}" needs at least 2 queuer candidates`
           ).toBeGreaterThanOrEqual(2);
-          expect(side.queuerCandidates, `Q-5: ${where} candidates must contain the top queuer`).toContain(side.topQueuer);
+          expect(side.queuerCandidates, `Q-5: ${where} candidates must contain the top queuer`).toContain(
+            side.topQueuer
+          );
         }
         expect(q.left.category, `Q-5: ${where} both sides must be the same category`).toBe(q.right.category);
       });

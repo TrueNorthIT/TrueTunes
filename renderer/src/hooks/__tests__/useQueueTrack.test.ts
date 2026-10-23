@@ -39,39 +39,35 @@ beforeEach(() => {
 
 describe('useQueueTrack', () => {
   it('returns artist and artUrl from item when no track details', () => {
-    const { result } = renderHook(
-      () => useQueueTrack(baseItem, null),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useQueueTrack(baseItem, null), { wrapper });
     expect(result.current.artist).toBeDefined();
     expect(result.current.explicit).toBe(false);
   });
 
   it('prefers track details over raw item values', () => {
     mockTrackDetails.mockReturnValue({
-      data: { artist: 'Enriched Artist', artUrl: 'http://img.com/art.jpg', albumName: 'Abbey Road', albumId: null, serviceId: null, accountId: null, artistId: null },
+      data: {
+        artist: 'Enriched Artist',
+        artUrl: 'http://img.com/art.jpg',
+        albumName: 'Abbey Road',
+        albumId: null,
+        serviceId: null,
+        accountId: null,
+        artistId: null,
+      },
     });
-    const { result } = renderHook(
-      () => useQueueTrack(baseItem, null),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useQueueTrack(baseItem, null), { wrapper });
     expect(result.current.artist).toBe('Enriched Artist');
     expect(result.current.artUrl).toBe('http://img.com/art.jpg');
   });
 
   it('isPlaying is true when currentObjectId matches item objectId', () => {
-    const { result } = renderHook(
-      () => useQueueTrack(baseItem, 'obj-1'),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useQueueTrack(baseItem, 'obj-1'), { wrapper });
     expect(result.current.isPlaying).toBe(true);
   });
 
   it('isPlaying is false when currentObjectId does not match', () => {
-    const { result } = renderHook(
-      () => useQueueTrack(baseItem, 'other-obj'),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useQueueTrack(baseItem, 'other-obj'), { wrapper });
     expect(result.current.isPlaying).toBe(false);
   });
 
@@ -87,22 +83,24 @@ describe('useQueueTrack', () => {
         artistId: null,
       },
     });
-    const { result } = renderHook(
-      () => useQueueTrack(baseItem, null),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useQueueTrack(baseItem, null), { wrapper });
     expect(result.current.albumItem).not.toBeNull();
     expect(result.current.albumItem?.title).toBe('Abbey Road');
   });
 
   it('returns null albumItem when albumId is missing', () => {
     mockTrackDetails.mockReturnValue({
-      data: { artist: 'Artist', artUrl: null, albumName: null, albumId: null, serviceId: null, accountId: null, artistId: null },
+      data: {
+        artist: 'Artist',
+        artUrl: null,
+        albumName: null,
+        albumId: null,
+        serviceId: null,
+        accountId: null,
+        artistId: null,
+      },
     });
-    const { result } = renderHook(
-      () => useQueueTrack(baseItem, null),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useQueueTrack(baseItem, null), { wrapper });
     expect(result.current.albumItem).toBeNull();
   });
 
@@ -118,19 +116,13 @@ describe('useQueueTrack', () => {
         artistId: 'artist-1',
       },
     });
-    const { result } = renderHook(
-      () => useQueueTrack(baseItem, null),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useQueueTrack(baseItem, null), { wrapper });
     expect(result.current.artistItem).not.toBeNull();
     expect(result.current.artistItem?.name).toBe('The Beatles');
   });
 
   it('returns null artistItem when artistId is missing', () => {
-    const { result } = renderHook(
-      () => useQueueTrack(baseItem, null),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useQueueTrack(baseItem, null), { wrapper });
     expect(result.current.artistItem).toBeNull();
   });
 
@@ -139,10 +131,7 @@ describe('useQueueTrack', () => {
       ...baseItem,
       track: { ...baseItem.track, isExplicit: true },
     };
-    const { result } = renderHook(
-      () => useQueueTrack(explicitItem, null),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useQueueTrack(explicitItem, null), { wrapper });
     expect(result.current.explicit).toBe(true);
   });
 });

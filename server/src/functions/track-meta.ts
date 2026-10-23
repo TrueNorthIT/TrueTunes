@@ -11,10 +11,7 @@ interface TrackDoc {
 
 // Desktops report the lengths and explicit flags they already look up for the
 // queue, so the music stats can show airtime without a lookup of their own.
-export async function trackMetaHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
+export async function trackMetaHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
   const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
   const tracksName = process.env['COSMOS_TRACKS_CONTAINER'] ?? 'tracks';

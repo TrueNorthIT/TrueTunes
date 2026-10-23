@@ -29,7 +29,11 @@ vi.mock('../../hooks/useAlbumBrowse', () => ({ albumQueryOptions: () => mockAlbu
 const mockArtistPhoto = vi.fn((_id?: string): string | null => null);
 vi.mock('../../hooks/useArtistBrowse', () => ({
   artistQueryOptions: () => mockArtistQueryOptions(),
-  artistImageQueryOptions: (id?: string) => ({ queryKey: ['artist-image', id], queryFn: async () => mockArtistPhoto(id), enabled: !!id }),
+  artistImageQueryOptions: (id?: string) => ({
+    queryKey: ['artist-image', id],
+    queryFn: async () => mockArtistPhoto(id),
+    enabled: !!id,
+  }),
 }));
 
 vi.mock('../../lib/sonosApi', () => ({
@@ -38,7 +42,6 @@ vi.mock('../../lib/sonosApi', () => ({
     search: { serviceQuery: (...args: unknown[]) => mockServiceQuery(...args) },
   },
 }));
-
 
 const mockShowToast = vi.fn();
 vi.mock('../common/Toast', () => ({ useToast: () => ({ showToast: mockShowToast }) }));
@@ -112,13 +115,21 @@ const defaultRecent = {
   isLoading: false,
 };
 
-const albumItem = { type: 'ITEM_ALBUM', title: 'MM..FOOD', resource: { type: 'ALBUM', id: { objectId: 'mm', serviceId: 's', accountId: 'c' } } };
+const albumItem = {
+  type: 'ITEM_ALBUM',
+  title: 'MM..FOOD',
+  resource: { type: 'ALBUM', id: { objectId: 'mm', serviceId: 's', accountId: 'c' } },
+};
 const nowPlaying = {
   displayTrack: 'Gumbo',
   displayArtist: 'MF DOOM',
   albumName: 'MM..FOOD',
   albumItem,
-  artistItem: { type: 'ARTIST', title: 'MF DOOM', resource: { type: 'ARTIST', id: { objectId: 'mfd', serviceId: 's', accountId: 'c' } } },
+  artistItem: {
+    type: 'ARTIST',
+    title: 'MF DOOM',
+    resource: { type: 'ARTIST', id: { objectId: 'mfd', serviceId: 's', accountId: 'c' } },
+  },
   cachedArt: null,
   artUrlRaw: null,
   dominantColor: null,
@@ -156,7 +167,13 @@ beforeEach(() => {
   mockArtistPhoto.mockImplementation(() => null);
   mockUseNowPlaying.mockReturnValue(nowPlaying);
   mockUseGenius.mockReturnValue({ description: null, isLoading: false });
-  mockUseLyrics.mockReturnValue({ lines: [], plainLyrics: null, isLoading: false, isInstrumental: false, notFound: true });
+  mockUseLyrics.mockReturnValue({
+    lines: [],
+    plainLyrics: null,
+    isLoading: false,
+    isInstrumental: false,
+    notFound: true,
+  });
   mockUseAttribution.mockReturnValue({ cur: { user: 'Joe', timestamp: 1, trackName: 'Gumbo', artist: 'MF DOOM' } });
 });
 
@@ -176,26 +193,26 @@ describe('fetchYtmSections', () => {
   });
 
   it('browses Home, New releases, Charts when items are present', async () => {
-    const homeItem    = makeRootItem('Home',         'home-id');
-    const nrItem      = makeRootItem('New releases', 'nr-id');
-    const chartsItem  = makeRootItem('Charts',       'charts-id');
+    const homeItem = makeRootItem('Home', 'home-id');
+    const nrItem = makeRootItem('New releases', 'nr-id');
+    const chartsItem = makeRootItem('Charts', 'charts-id');
     mockBrowseContainer
       .mockResolvedValueOnce({ error: null, data: makeRootData([homeItem, nrItem, chartsItem]) })
       .mockResolvedValue({ error: null, data: { items: [] } });
 
     await fetchYtmSections();
 
-    expect(mockBrowseContainer).toHaveBeenCalledWith('home-id',   expect.anything());
-    expect(mockBrowseContainer).toHaveBeenCalledWith('nr-id',     expect.anything());
+    expect(mockBrowseContainer).toHaveBeenCalledWith('home-id', expect.anything());
+    expect(mockBrowseContainer).toHaveBeenCalledWith('nr-id', expect.anything());
     expect(mockBrowseContainer).toHaveBeenCalledWith('charts-id', expect.anything());
   });
 
   it('falls back to the shelves inside Home when the root has no New releases or Charts', async () => {
-    const homeItem     = makeRootItem('Home',            'home-id');
-    const libraryItem  = makeRootItem('Library',         'lib-id');
-    const supermixItem = makeRootItem('My Supermix',     'sm-id');
-    const freshShelf   = makeRootItem('Fresh new music', 'fresh-id');
-    const topShelf     = makeRootItem('Top songs',       'top-id');
+    const homeItem = makeRootItem('Home', 'home-id');
+    const libraryItem = makeRootItem('Library', 'lib-id');
+    const supermixItem = makeRootItem('My Supermix', 'sm-id');
+    const freshShelf = makeRootItem('Fresh new music', 'fresh-id');
+    const topShelf = makeRootItem('Top songs', 'top-id');
     const newTrack: SonosItem = { name: 'New Track', type: 'TRACK' } as SonosItem;
     const chartTrack: SonosItem = { name: 'Chart Track', type: 'TRACK' } as SonosItem;
     mockBrowseContainer.mockImplementation(async (id: string) => {
@@ -212,22 +229,34 @@ describe('fetchYtmSections', () => {
   });
 
   it('removes podcasts and episodes from For You, New releases and Charts but keeps tracks and albums', async () => {
-    const homeItem     = makeRootItem('Home',            'home-id');
-    const supermixItem = makeRootItem('My Supermix',     'sm-id');
-    const nrItem       = makeRootItem('New releases',    'nr-id');
-    const chartsItem   = makeRootItem('Charts',          'charts-id');
-    const podShelf     = makeRootItem('Top podcasts',    'pod-id');
+    const homeItem = makeRootItem('Home', 'home-id');
+    const supermixItem = makeRootItem('My Supermix', 'sm-id');
+    const nrItem = makeRootItem('New releases', 'nr-id');
+    const chartsItem = makeRootItem('Charts', 'charts-id');
+    const podShelf = makeRootItem('Top podcasts', 'pod-id');
     const mk = (name: string, type: string) => ({ name, type }) as SonosItem;
     mockBrowseContainer.mockImplementation(async (id: string) => {
       if (id === 'root') return { error: null, data: makeRootData([homeItem, supermixItem, nrItem, chartsItem]) };
       if (id === 'home-id') {
-        return { error: null, data: { items: [
-          mk('Home Track', 'TRACK'), mk('Home Pod', 'PODCAST'), mk('Home Ep', 'EPISODE'), podShelf,
-          { name: 'Wrapped', type: 'x', resource: { type: 'PODCAST_EPISODE' } } as unknown as SonosItem,
-        ] } };
+        return {
+          error: null,
+          data: {
+            items: [
+              mk('Home Track', 'TRACK'),
+              mk('Home Pod', 'PODCAST'),
+              mk('Home Ep', 'EPISODE'),
+              podShelf,
+              { name: 'Wrapped', type: 'x', resource: { type: 'PODCAST_EPISODE' } } as unknown as SonosItem,
+            ],
+          },
+        };
       }
       if (id === 'nr-id') return { error: null, data: { items: [mk('New Album', 'ALBUM'), mk('New Pod', 'PODCAST')] } };
-      if (id === 'charts-id') return { error: null, data: { items: [mk('Chart Track', 'TRACK'), mk('Chart Ep', 'EPISODE'), mk('Mix', 'PROGRAM')] } };
+      if (id === 'charts-id')
+        return {
+          error: null,
+          data: { items: [mk('Chart Track', 'TRACK'), mk('Chart Ep', 'EPISODE'), mk('Mix', 'PROGRAM')] },
+        };
       return { error: null, data: { items: [] } };
     });
 
@@ -246,19 +275,46 @@ describe('fetchYtmSections', () => {
     mockBrowseContainer.mockImplementation(async (id: string) => {
       if (id === 'root') return { error: null, data: makeRootData([homeItem, supermix]) };
       if (id === 'home-id') return { error: null, data: { items: [shows, mixed] } };
-      if (id === 'shows-id') return { error: null, data: { items: [{ type: 'PODCAST', resource: { type: 'PODCAST' } }, { type: 'EPISODE', resource: { type: 'PODCAST_EPISODE' } }] } };
-      if (id === 'mixed-id') return { error: null, data: { items: [{ type: 'PODCAST', resource: { type: 'PODCAST' } }, { type: 'TRACK', name: 'A Song' }] } };
-      if (id === 'sm-id') return { error: null, data: { items: [{ type: 'TRACK', name: 'First', ...art('https://img.example/first.jpg') }] } };
+      if (id === 'shows-id')
+        return {
+          error: null,
+          data: {
+            items: [
+              { type: 'PODCAST', resource: { type: 'PODCAST' } },
+              { type: 'EPISODE', resource: { type: 'PODCAST_EPISODE' } },
+            ],
+          },
+        };
+      if (id === 'mixed-id')
+        return {
+          error: null,
+          data: {
+            items: [
+              { type: 'PODCAST', resource: { type: 'PODCAST' } },
+              { type: 'TRACK', name: 'A Song' },
+            ],
+          },
+        };
+      if (id === 'sm-id')
+        return {
+          error: null,
+          data: { items: [{ type: 'TRACK', name: 'First', ...art('https://img.example/first.jpg') }] },
+        };
       return { error: null, data: { items: [] } };
     });
     const result = await fetchYtmSections();
-    expect(result.forYou.map((i) => i.title ?? i.name), 'Expected the all-podcast shelf dropped').toEqual(['My Supermix', 'Mixed for you']);
-    expect(result.forYou[0].imageUrl, 'Expected the first child art, not the app icon').toBe('https://img.example/first.jpg');
+    expect(
+      result.forYou.map((i) => i.title ?? i.name),
+      'Expected the all-podcast shelf dropped'
+    ).toEqual(['My Supermix', 'Mixed for you']);
+    expect(result.forYou[0].imageUrl, 'Expected the first child art, not the app icon').toBe(
+      'https://img.example/first.jpg'
+    );
   });
 
   it('drops a Home shelf titled as podcasts so it is never browsed as a fallback source', async () => {
-    const homeItem  = makeRootItem('Home',         'home-id');
-    const podShelf  = makeRootItem('New podcasts', 'pod-id');
+    const homeItem = makeRootItem('Home', 'home-id');
+    const podShelf = makeRootItem('New podcasts', 'pod-id');
     mockBrowseContainer.mockImplementation(async (id: string) => {
       if (id === 'root') return { error: null, data: makeRootData([homeItem]) };
       if (id === 'home-id') return { error: null, data: { items: [podShelf] } };
@@ -282,7 +338,7 @@ describe('fetchYtmSections', () => {
 
   it('prepends supermix item to forYou when present', async () => {
     const supermixItem = makeRootItem('My Supermix', 'sm-id');
-    const homeItem     = makeRootItem('Home',         'home-id');
+    const homeItem = makeRootItem('Home', 'home-id');
     const track: SonosItem = { name: 'Home Track', type: 'TRACK' } as SonosItem;
     mockBrowseContainer
       .mockResolvedValueOnce({ error: null, data: makeRootData([supermixItem, homeItem]) })
@@ -331,7 +387,14 @@ function discovery(n: number) {
 }
 
 const statsTrack = (n: number, extra: Partial<StatsTrack> = {}): StatsTrack => ({
-  trackName: `Hit ${n}`, artist: `Band ${n}`, uri: `u:${n}`, serviceId: '9', accountId: 'a', artistId: `ar${n}`, count: 20 - n, ...extra,
+  trackName: `Hit ${n}`,
+  artist: `Band ${n}`,
+  uri: `u:${n}`,
+  serviceId: '9',
+  accountId: 'a',
+  artistId: `ar${n}`,
+  count: 20 - n,
+  ...extra,
 });
 
 describe('HomePanel', () => {
@@ -350,10 +413,26 @@ describe('HomePanel', () => {
   it('gives For you mixes, stations and shelves no +, only a way in; a single song keeps its +', () => {
     const onAddToQueue = vi.fn();
     // The live shapes: the supermix is a PLAYLIST resource, a station a PROGRAM, a shelf a CONTAINER.
-    const supermix = { title: 'My Supermix', type: 'ITEM_PLAYLIST', resource: { type: 'PLAYLIST', id: { objectId: 'mix' } } } as SonosItem;
-    const station = { title: 'Jamie Woon Radio', type: 'ITEM_STATION', resource: { type: 'PROGRAM', id: { objectId: 'st' } } } as SonosItem;
-    const shelf = { title: 'Quick picks', type: 'ITEM_AUDIO', resource: { type: 'CONTAINER', id: { objectId: 'qp' } } } as SonosItem;
-    const ytm = { forYou: [supermix, station, shelf, { name: 'Song A', type: 'TRACK' } as SonosItem], newReleases: [], charts: [] };
+    const supermix = {
+      title: 'My Supermix',
+      type: 'ITEM_PLAYLIST',
+      resource: { type: 'PLAYLIST', id: { objectId: 'mix' } },
+    } as SonosItem;
+    const station = {
+      title: 'Jamie Woon Radio',
+      type: 'ITEM_STATION',
+      resource: { type: 'PROGRAM', id: { objectId: 'st' } },
+    } as SonosItem;
+    const shelf = {
+      title: 'Quick picks',
+      type: 'ITEM_AUDIO',
+      resource: { type: 'CONTAINER', id: { objectId: 'qp' } },
+    } as SonosItem;
+    const ytm = {
+      forYou: [supermix, station, shelf, { name: 'Song A', type: 'TRACK' } as SonosItem],
+      newReleases: [],
+      charts: [],
+    };
     render(<HomePanel {...defaultProps} onAddToQueue={onAddToQueue} ytm={ytm} />, { wrapper: makeWrapper() });
     for (const name of ['My Supermix', 'Jamie Woon Radio', 'Quick picks']) {
       expect(screen.queryByRole('button', { name: `Add ${name} to queue` }), name).toBeNull();
@@ -371,7 +450,10 @@ describe('HomePanel', () => {
   });
 
   it('drops New Releases, Charts, Playlists, People and Recently Played', () => {
-    mockUseRecentlyPlayed.mockReturnValue({ ...defaultRecent, artistItems: [{ type: 'ARTIST', title: 'The Beatles' } as SonosItem] });
+    mockUseRecentlyPlayed.mockReturnValue({
+      ...defaultRecent,
+      artistItems: [{ type: 'ARTIST', title: 'The Beatles' } as SonosItem],
+    });
     render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
     for (const gone of ['New Releases', 'Charts', 'Playlists', 'People', /Recently Played/]) {
       expect(screen.queryByText(gone)).not.toBeInTheDocument();
@@ -380,7 +462,13 @@ describe('HomePanel', () => {
 
   it('hides every data section when there is no data', () => {
     render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
-    for (const t of [/Picks for/, /Trending in the office/, 'Jump back in', 'What people are queuing', /Queuedle today/]) {
+    for (const t of [
+      /Picks for/,
+      /Trending in the office/,
+      'Jump back in',
+      'What people are queuing',
+      /Queuedle today/,
+    ]) {
       expect(screen.queryByText(t)).not.toBeInTheDocument();
     }
   });
@@ -394,7 +482,10 @@ describe('HomePanel', () => {
     beforeEach(() => {
       mockUseOfficePresence.mockReturnValue({ data: { inOffice: ['Rich', 'Abbie'] } });
       mockUseDjSet.mockReturnValue({ data: { artists: [], tracks: [] }, isLoading: false });
-      mockUseDjDiscoveries.mockReturnValue({ discoveries: Array.from({ length: 10 }, (_, i) => discovery(i + 1)), isLoading: false });
+      mockUseDjDiscoveries.mockReturnValue({
+        discoveries: Array.from({ length: 10 }, (_, i) => discovery(i + 1)),
+        isLoading: false,
+      });
     });
 
     it('shows up to 8 picks with reasons and the people in the office', () => {
@@ -433,10 +524,10 @@ describe('HomePanel', () => {
     it('makes the first pick whose artist has a photo the hero', async () => {
       const act = (n: number) => ({ artist: `Artist ${n}`, artistId: `a${n}`, serviceId: 's', accountId: 'c' });
       mockUseDjSet.mockReturnValue({ data: { artists: [act(1), act(2)], tracks: [] }, isLoading: false });
-      mockArtistPhoto.mockImplementation((id) => (id === 'a2' ? 'https://img.example/p2.jpg' : null));  // settles before the hero is chosen
+      mockArtistPhoto.mockImplementation((id) => (id === 'a2' ? 'https://img.example/p2.jpg' : null)); // settles before the hero is chosen
       render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
       await waitFor(() =>
-        expect(screen.getAllByRole('button', { name: /^Add Song/ })[0]).toHaveAccessibleName('Add Song 2 to queue'),
+        expect(screen.getAllByRole('button', { name: /^Add Song/ })[0]).toHaveAccessibleName('Add Song 2 to queue')
       );
     });
 
@@ -450,14 +541,19 @@ describe('HomePanel', () => {
 
       fireEvent.click(await screen.findByRole('button', { name: 'Open album Album 1' }));
       expect(mockOpenItem).toHaveBeenCalledWith(
-        expect.objectContaining({ resource: expect.objectContaining({ id: { objectId: 'alb1', serviceId: 's', accountId: 'c' } }) }),
+        expect.objectContaining({
+          resource: expect.objectContaining({ id: { objectId: 'alb1', serviceId: 's', accountId: 'c' } }),
+        })
       );
       expect(add).not.toHaveBeenCalled();
 
       mockOpenItem.mockClear();
       fireEvent.click(screen.getByRole('button', { name: 'Artist 1, open artist' }));
       expect(mockOpenItem).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'ARTIST', resource: expect.objectContaining({ id: expect.objectContaining({ objectId: 'a1' }) }) }),
+        expect.objectContaining({
+          type: 'ARTIST',
+          resource: expect.objectContaining({ id: expect.objectContaining({ objectId: 'a1' }) }),
+        })
       );
       expect(add).not.toHaveBeenCalled();
     });
@@ -475,8 +571,17 @@ describe('HomePanel', () => {
     it('REQ-W1/W2/W8: the info icon explains the pick on hover and never opens or queues it', () => {
       const add = vi.fn();
       mockUseDjDiscoveries.mockReturnValue({
-        discoveries: [{ ...discovery(1), because: 'Rich and Alex queue Gorillaz — never played here', score: 0.82,
-          fans: [{ user: 'Rich', count: 14 }, { user: 'Alex', count: 6 }] }],
+        discoveries: [
+          {
+            ...discovery(1),
+            because: 'Rich and Alex queue Gorillaz — never played here',
+            score: 0.82,
+            fans: [
+              { user: 'Rich', count: 14 },
+              { user: 'Alex', count: 6 },
+            ],
+          },
+        ],
         isLoading: false,
       });
       render(<HomePanel {...defaultProps} onAddToQueue={add} />, { wrapper: makeWrapper() });
@@ -499,7 +604,10 @@ describe('HomePanel', () => {
 
     it('shows the reason on art cards only; compact rows get just the Never played here tag', () => {
       mockUseDjDiscoveries.mockReturnValue({
-        discoveries: Array.from({ length: 6 }, (_, i) => ({ ...discovery(i + 1), because: `Rich queues Artist ${i + 1} — never played here` })),
+        discoveries: Array.from({ length: 6 }, (_, i) => ({
+          ...discovery(i + 1),
+          because: `Rich queues Artist ${i + 1} — never played here`,
+        })),
         isLoading: false,
       });
       render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
@@ -520,9 +628,13 @@ describe('HomePanel', () => {
       const act_ = (n: number) => ({ artist: `Artist ${n}`, artistId: `a${n}`, serviceId: 's', accountId: 'c' });
       mockUseDjSet.mockReturnValue({ data: { artists: [act_(1), act_(2), act_(3)], tracks: [] }, isLoading: false });
       render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper(client) });
-      await waitFor(() => expect(screen.getAllByRole('button', { name: /^Add Song/ })[0]).toHaveAccessibleName('Add Song 1 to queue'));
+      await waitFor(() =>
+        expect(screen.getAllByRole('button', { name: /^Add Song/ })[0]).toHaveAccessibleName('Add Song 1 to queue')
+      );
       // A photo for the second artist shows up afterwards: nothing may be reordered.
-      act(() => { client.setQueryData(['artist-image', 'a2'], 'https://img.example/p2.jpg'); });
+      act(() => {
+        client.setQueryData(['artist-image', 'a2'], 'https://img.example/p2.jpg');
+      });
       expect(screen.getAllByRole('button', { name: /^Add Song/ })[0]).toHaveAccessibleName('Add Song 1 to queue');
     });
 
@@ -537,13 +649,25 @@ describe('HomePanel', () => {
 
     it('Queue all shows an Undo toast, and Undo removes exactly the queued tracks', () => {
       const add = vi.fn();
-      const row = (n: number, id = `uri:${n}`) => ({ index: n, track: { id, title: `Song ${n}`, artist: `Artist ${n}` } });
+      const row = (n: number, id = `uri:${n}`) => ({
+        index: n,
+        track: { id, title: `Song ${n}`, artist: `Artist ${n}` },
+      });
       // somebody else's tracks sit around ours
-      const queue = [row(100, 'other-1'), row(1), row(101, 'other-2'), ...[2, 3, 4, 5, 6, 7, 8].map((n) => row(n))] as never[];
+      const queue = [
+        row(100, 'other-1'),
+        row(1),
+        row(101, 'other-2'),
+        ...[2, 3, 4, 5, 6, 7, 8].map((n) => row(n)),
+      ] as never[];
       render(<HomePanel {...defaultProps} onAddToQueue={add} queueItems={queue} />, { wrapper: makeWrapper() });
       fireEvent.click(screen.getByRole('button', { name: /Queue all/ }));
       expect(add).toHaveBeenCalledTimes(8);
-      expect(mockShowToast).toHaveBeenCalledWith('Queued 8 picks', 'info', expect.objectContaining({ durationMs: 6000, action: expect.objectContaining({ label: 'Undo' }) }));
+      expect(mockShowToast).toHaveBeenCalledWith(
+        'Queued 8 picks',
+        'info',
+        expect.objectContaining({ durationMs: 6000, action: expect.objectContaining({ label: 'Undo' }) })
+      );
       const { action } = mockShowToast.mock.calls[0][2];
       action.onClick();
       // positions 1 and 3..9: our eight tracks; positions 0 and 2 (others) untouched
@@ -596,7 +720,9 @@ describe('HomePanel', () => {
       render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
       fireEvent.click(screen.getByRole('button', { name: 'Hit 1, open album' }));
       expect(mockOpenItem).toHaveBeenCalledWith(
-        expect.objectContaining({ resource: expect.objectContaining({ id: { objectId: 'al1', serviceId: '9', accountId: 'a' } }) }),
+        expect.objectContaining({
+          resource: expect.objectContaining({ id: { objectId: 'al1', serviceId: '9', accountId: 'a' } }),
+        })
       );
     });
 
@@ -611,7 +737,9 @@ describe('HomePanel', () => {
 
   describe('trending cap', () => {
     it('shows at most two tracks per artist', () => {
-      mockUseStats.mockReturnValue({ data: { topTracks: [1, 2, 3].map((n) => statsTrack(n, { artist: 'Beast In Black' })) } });
+      mockUseStats.mockReturnValue({
+        data: { topTracks: [1, 2, 3].map((n) => statsTrack(n, { artist: 'Beast In Black' })) },
+      });
       render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
       expect(screen.getByText('Hit 2')).toBeInTheDocument();
       expect(screen.queryByText('Hit 3')).not.toBeInTheDocument();
@@ -626,13 +754,20 @@ describe('HomePanel', () => {
   });
 
   describe('what people are queuing', () => {
-    const album = { album: 'Hybrid Theory', artist: 'Linkin Park', albumId: 'ht', serviceId: 's', accountId: 'c', lastPlayed: Date.now() };
+    const album = {
+      album: 'Hybrid Theory',
+      artist: 'Linkin Park',
+      albumId: 'ht',
+      serviceId: 's',
+      accountId: 'c',
+      lastPlayed: Date.now(),
+    };
 
     beforeEach(() => {
       mockUseOfficePresence.mockReturnValue({ data: { inOffice: ['Rich', 'Abbie', 'Alex'] } });
     });
 
-    it('shows each person\'s recent albums, opens an album tile and the profile', () => {
+    it("shows each person's recent albums, opens an album tile and the profile", () => {
       mockUseRecentTracksByUser.mockReturnValue({
         tracksByUser: new Map(),
         albumsByUser: new Map([
@@ -650,7 +785,7 @@ describe('HomePanel', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /^Hybrid Theory/ }));
       expect(mockOpenItem).toHaveBeenCalledWith(
-        expect.objectContaining({ id: { objectId: 'ht', serviceId: 's', accountId: 'c' } }),
+        expect.objectContaining({ id: { objectId: 'ht', serviceId: 's', accountId: 'c' } })
       );
       expect(add).not.toHaveBeenCalled();
 
@@ -664,7 +799,20 @@ describe('HomePanel', () => {
     it('falls back to latest tracks as tiles when someone has no albums', () => {
       mockUseRecentTracksByUser.mockReturnValue({
         tracksByUser: new Map([
-          ['Abbie', [{ trackName: 'Numb', artist: 'Linkin Park', uri: 'u:n', albumId: 'ht', serviceId: 's', accountId: 'c', lastPlayed: 5 }]],
+          [
+            'Abbie',
+            [
+              {
+                trackName: 'Numb',
+                artist: 'Linkin Park',
+                uri: 'u:n',
+                albumId: 'ht',
+                serviceId: 's',
+                accountId: 'c',
+                lastPlayed: 5,
+              },
+            ],
+          ],
         ]),
         albumsByUser: new Map(),
       });
@@ -674,7 +822,9 @@ describe('HomePanel', () => {
       expect(screen.getByText('1 track this week')).toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: /^Numb/ }));
       expect(mockOpenItem).toHaveBeenCalledWith(
-        expect.objectContaining({ resource: expect.objectContaining({ id: { objectId: 'ht', serviceId: 's', accountId: 'c' } }) }),
+        expect.objectContaining({
+          resource: expect.objectContaining({ id: { objectId: 'ht', serviceId: 's', accountId: 'c' } }),
+        })
       );
       fireEvent.click(screen.getByRole('button', { name: 'Add Numb to queue' }));
       expect(add).toHaveBeenCalledWith(expect.objectContaining({ title: 'Numb' }));
@@ -702,7 +852,13 @@ describe('HomePanel', () => {
     it("crowns last week's winner on the card, and on their face when they're in", () => {
       mockUseDailyGame.mockReturnValue({ data: { id: 'g1', questions: [1, 2, 3] } });
       mockUseLastWeekWinner.mockReturnValue({
-        data: { userName: 'Rich', total: 65, gamesPlayed: 5, bestTotal: 18, range: { from: '2026-10-12', to: '2026-10-18' } },
+        data: {
+          userName: 'Rich',
+          total: 65,
+          gamesPlayed: 5,
+          bestTotal: 18,
+          range: { from: '2026-10-12', to: '2026-10-18' },
+        },
       });
       mockUseOfficePresence.mockReturnValue({ data: { inOffice: ['Rich', 'Abbie'] } });
       mockUseDjSet.mockReturnValue({ data: { artists: [], tracks: [] }, isLoading: false });
@@ -723,14 +879,23 @@ describe('HomePanel', () => {
 
   describe('jump back in', () => {
     const knownArtist = {
-      type: 'ARTIST', title: 'Sub Focus', name: 'Sub Focus',
+      type: 'ARTIST',
+      title: 'Sub Focus',
+      name: 'Sub Focus',
       resource: { type: 'ARTIST', id: { objectId: 'sf', serviceId: 'svc', accountId: 'acc' } },
     } as unknown as SonosItem;
     const idlessArtist = {
-      type: 'ARTIST', title: 'Inéz', name: 'Inéz',
+      type: 'ARTIST',
+      title: 'Inéz',
+      name: 'Inéz',
       resource: { type: 'ARTIST', id: { objectId: undefined, serviceId: 'svc', accountId: 'acc' } },
     } as unknown as SonosItem;
-    const album = { type: 'ITEM_ALBUM', title: 'Hybrid Theory', name: 'Hybrid Theory', id: { objectId: 'ht', serviceId: 's', accountId: 'c' } } as SonosItem;
+    const album = {
+      type: 'ITEM_ALBUM',
+      title: 'Hybrid Theory',
+      name: 'Hybrid Theory',
+      id: { objectId: 'ht', serviceId: 's', accountId: 'c' },
+    } as SonosItem;
 
     it('shows albums and artists, deduping artists by primary name', () => {
       const dup = { ...knownArtist, title: 'sub focus & Friends', name: 'sub focus & Friends' } as SonosItem;
@@ -755,7 +920,9 @@ describe('HomePanel', () => {
         error: null,
         data: {
           resourceOrder: ['ARTISTS'],
-          ARTISTS: { resources: [{ name: 'Inéz', id: { objectId: 'inez-id', serviceId: 'svc', accountId: 'acc' }, images: [] }] },
+          ARTISTS: {
+            resources: [{ name: 'Inéz', id: { objectId: 'inez-id', serviceId: 'svc', accountId: 'acc' }, images: [] }],
+          },
         },
       });
       mockUseRecentlyPlayed.mockReturnValue({ ...defaultRecent, artistItems: [idlessArtist] });
@@ -767,7 +934,10 @@ describe('HomePanel', () => {
     });
 
     it('does not navigate when an id-less artist cannot be resolved', async () => {
-      mockServiceQuery.mockResolvedValue({ error: null, data: { resourceOrder: ['ARTISTS'], ARTISTS: { resources: [] } } });
+      mockServiceQuery.mockResolvedValue({
+        error: null,
+        data: { resourceOrder: ['ARTISTS'], ARTISTS: { resources: [] } },
+      });
       mockUseRecentlyPlayed.mockReturnValue({ ...defaultRecent, artistItems: [idlessArtist] });
       render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
       fireEvent.click(screen.getByText('Inéz'));
@@ -779,7 +949,9 @@ describe('HomePanel', () => {
 
   describe('now playing band', () => {
     it('is hidden when nothing is playing', () => {
-      render(<HomePanel {...defaultProps} playback={{ isVisible: false, trackName: '' } as never} />, { wrapper: makeWrapper() });
+      render(<HomePanel {...defaultProps} playback={{ isVisible: false, trackName: '' } as never} />, {
+        wrapper: makeWrapper(),
+      });
       expect(screen.queryByRole('region', { name: 'Now playing' })).not.toBeInTheDocument();
       render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
       expect(screen.queryByRole('region', { name: 'Now playing' })).not.toBeInTheDocument();
@@ -797,7 +969,13 @@ describe('HomePanel', () => {
 
     it('shows the first paragraph of the Genius description, with no link', () => {
       mockUseGenius.mockReturnValue({
-        description: { tag: 'root', children: [{ tag: 'p', children: ['Gumbo is a ', { tag: 'em', children: ['food'] }, ' song.'] }, { tag: 'p', children: ['Second.'] }] },
+        description: {
+          tag: 'root',
+          children: [
+            { tag: 'p', children: ['Gumbo is a ', { tag: 'em', children: ['food'] }, ' song.'] },
+            { tag: 'p', children: ['Second.'] },
+          ],
+        },
         isLoading: false,
       });
       render(<HomePanel {...defaultProps} playback={playing} />, { wrapper: makeWrapper() });
@@ -823,7 +1001,13 @@ describe('HomePanel', () => {
     });
 
     it('keeps the lyrics box with skeleton lines while lyrics load, without hiding the band layout', () => {
-      mockUseLyrics.mockReturnValue({ lines: [], plainLyrics: null, isLoading: true, isInstrumental: false, notFound: false });
+      mockUseLyrics.mockReturnValue({
+        lines: [],
+        plainLyrics: null,
+        isLoading: true,
+        isInstrumental: false,
+        notFound: false,
+      });
       const { container } = render(<HomePanel {...defaultProps} playback={playing} />, { wrapper: makeWrapper() });
       expect(screen.getByLabelText('Lyrics, open full lyrics')).toHaveAttribute('aria-busy', 'true');
       expect(container.querySelectorAll('[class*=lyricSkel]')).toHaveLength(5);
@@ -832,7 +1016,9 @@ describe('HomePanel', () => {
 
     it('shows skeleton lines for the description while it loads, and hides it once settled empty', () => {
       mockUseGenius.mockReturnValue({ description: null, isLoading: true });
-      const { container, rerender } = render(<HomePanel {...defaultProps} playback={playing} />, { wrapper: makeWrapper() });
+      const { container, rerender } = render(<HomePanel {...defaultProps} playback={playing} />, {
+        wrapper: makeWrapper(),
+      });
       expect(screen.getByLabelText('About this track')).toHaveAttribute('aria-busy', 'true');
       expect(container.querySelectorAll('[class*=aboutSkel]')).toHaveLength(3);
       mockUseGenius.mockReturnValue({ description: null, isLoading: false });
@@ -848,8 +1034,14 @@ describe('HomePanel', () => {
 
     it('shows synced lines with the active one marked, and opens the lyrics page', () => {
       mockUseLyrics.mockReturnValue({
-        lines: [{ timeMs: 1000, text: 'first line' }, { timeMs: 9000, text: 'second line' }],
-        plainLyrics: null, isLoading: false, isInstrumental: false, notFound: false,
+        lines: [
+          { timeMs: 1000, text: 'first line' },
+          { timeMs: 9000, text: 'second line' },
+        ],
+        plainLyrics: null,
+        isLoading: false,
+        isInstrumental: false,
+        notFound: false,
       });
       // 28% of 50s = 14s, so the second line (9s) is active
       render(<HomePanel {...defaultProps} playback={playing} />, { wrapper: makeWrapper() });
@@ -862,7 +1054,11 @@ describe('HomePanel', () => {
 
     it('shows a static excerpt when only plain lyrics exist', () => {
       mockUseLyrics.mockReturnValue({
-        lines: [], plainLyrics: 'l1\nl2\nl3\nl4\nl5\nl6\nl7', isLoading: false, isInstrumental: false, notFound: false,
+        lines: [],
+        plainLyrics: 'l1\nl2\nl3\nl4\nl5\nl6\nl7',
+        isLoading: false,
+        isInstrumental: false,
+        notFound: false,
       });
       render(<HomePanel {...defaultProps} playback={playing} />, { wrapper: makeWrapper() });
       expect(screen.getByText('l5')).toBeInTheDocument();
@@ -877,7 +1073,9 @@ describe('HomePanel', () => {
       expect(rule('lyricActive'), 'Expected the active-line rule to exist').not.toBe('');
       expect(rule('lyricActive'), 'Expected no font-size on the active line (it reflows)').not.toMatch(/font-size/);
       expect(rule('lyricActive'), 'Expected a scale transform').toMatch(/scale\(/);
-      expect(rule('lyricLine'), 'Expected the line to transition transform and opacity only').toMatch(/transition:\s*transform[^;]*opacity/);
+      expect(rule('lyricLine'), 'Expected the line to transition transform and opacity only').toMatch(
+        /transition:\s*transform[^;]*opacity/
+      );
       expect(rule('lyricLine'), 'Expected no font-size in the transition').not.toMatch(/transition:[^;]*font-size/);
     });
 

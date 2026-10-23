@@ -33,7 +33,16 @@ interface Props {
 
 /** Row-by-column heatmap with its own hover readout and ramp legend. Sized in em: inside a .page-scale root. */
 export function Heatmap({
-  columns, rows, cellLabel, renderTip, legend, minCell = '0px', cellHeight = '1.4em', startAtEnd, ariaLabel, className,
+  columns,
+  rows,
+  cellLabel,
+  renderTip,
+  legend,
+  minCell = '0px',
+  cellHeight = '1.4em',
+  startAtEnd,
+  ariaLabel,
+  className,
 }: Props) {
   const [tip, setTip] = useState<Tip | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -56,8 +65,15 @@ export function Heatmap({
   }
 
   return (
-    <div ref={wrapRef} className={[styles.frame, className].filter(Boolean).join(' ')} onPointerLeave={() => setTip(null)}>
-      <div className={styles.body} style={{ '--cols': columns.length, '--min-cell': minCell, '--cell-h': cellHeight } as CSSProperties}>
+    <div
+      ref={wrapRef}
+      className={[styles.frame, className].filter(Boolean).join(' ')}
+      onPointerLeave={() => setTip(null)}
+    >
+      <div
+        className={styles.body}
+        style={{ '--cols': columns.length, '--min-cell': minCell, '--cell-h': cellHeight } as CSSProperties}
+      >
         <div className={styles.names}>
           <div className={styles.colHead} />
           {rows.map((r) => (
@@ -69,7 +85,9 @@ export function Heatmap({
         <div ref={scrollRef} className={styles.scroll}>
           <div className={styles.grid} role={ariaLabel ? 'img' : undefined} aria-label={ariaLabel}>
             {columns.map((c, i) => (
-              <div key={i} className={styles.colHead}>{c && <span>{c}</span>}</div>
+              <div key={i} className={styles.colHead}>
+                {c && <span>{c}</span>}
+              </div>
             ))}
             {rows.map((r, ri) =>
               r.cells.map((fill, ci) => (
@@ -80,7 +98,7 @@ export function Heatmap({
                   onPointerEnter={(e) => show(e, ri, ci)}
                   aria-label={cellLabel(ri, ci)}
                 />
-              )),
+              ))
             )}
           </div>
         </div>

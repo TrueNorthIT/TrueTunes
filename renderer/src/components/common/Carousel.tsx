@@ -71,10 +71,22 @@ export function Carousel({ title, actions, gap = '14px', className, rowStyle, se
                 aria-label={search.placeholder ?? 'Search'}
                 onChange={(e) => search.onChange(e.target.value)}
                 onFocus={search.onFocus}
-                onKeyDown={(e) => { if (e.key === 'Escape' && search.value) { e.stopPropagation(); search.onChange(''); } }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape' && search.value) {
+                    e.stopPropagation();
+                    search.onChange('');
+                  }
+                }}
               />
               {search.value && (
-                <button type="button" className={styles.searchClear} aria-label="Clear search" onClick={() => search.onChange('')}>✕</button>
+                <button
+                  type="button"
+                  className={styles.searchClear}
+                  aria-label="Clear search"
+                  onClick={() => search.onChange('')}
+                >
+                  ✕
+                </button>
               )}
             </span>
             {search.status != null && <span className={styles.searchStatus}>{search.status}</span>}
@@ -84,8 +96,24 @@ export function Carousel({ title, actions, gap = '14px', className, rowStyle, se
           {actions}
           {state.overflow && (
             <span className={styles.arrows}>
-              <button type="button" className={styles.arrow} aria-label="Scroll left" disabled={state.atStart} onClick={() => scroll(-1)}>‹</button>
-              <button type="button" className={styles.arrow} aria-label="Scroll right" disabled={state.atEnd} onClick={() => scroll(1)}>›</button>
+              <button
+                type="button"
+                className={styles.arrow}
+                aria-label="Scroll left"
+                disabled={state.atStart}
+                onClick={() => scroll(-1)}
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                className={styles.arrow}
+                aria-label="Scroll right"
+                disabled={state.atEnd}
+                onClick={() => scroll(1)}
+              >
+                ›
+              </button>
             </span>
           )}
         </div>

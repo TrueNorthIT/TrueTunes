@@ -97,7 +97,12 @@ describe('QueuedleLeaderboard', () => {
   });
 
   it('keeps your row visible when you are outside the top ten', () => {
-    const many = Array.from({ length: 12 }, (_, i) => ({ userName: `P${i}`, mainScore: 0, bonusScore: 0, total: 20 - i }));
+    const many = Array.from({ length: 12 }, (_, i) => ({
+      userName: `P${i}`,
+      mainScore: 0,
+      bonusScore: 0,
+      total: 20 - i,
+    }));
     render(<QueuedleLeaderboard {...lbProps} tab="today" scores={many} me="P11" />);
     expect(screen.getByText('P11')).toBeInTheDocument();
     expect(screen.queryByText('P10')).not.toBeInTheDocument();
@@ -125,9 +130,21 @@ describe('QueuedleLeaderboard', () => {
 describe('QueuedleBonusResults summary', () => {
   it('counts how many top queuers you knew and names the right one', () => {
     const item = (id: string, topQueuer: string): GameItem => ({
-      id, name: `Song ${id}`, category: 'track', subtitle: '', count: 3, topQueuer, queuerCandidates: [],
+      id,
+      name: `Song ${id}`,
+      category: 'track',
+      subtitle: '',
+      count: 3,
+      topQueuer,
+      queuerCandidates: [],
     });
-    render(<QueuedleBonusResults winningItems={[item('1', 'alice'), item('2', 'bob')]} bonusGuesses={['alice', 'zed']} onContinue={() => {}} />);
+    render(
+      <QueuedleBonusResults
+        winningItems={[item('1', 'alice'), item('2', 'bob')]}
+        bonusGuesses={['alice', 'zed']}
+        onContinue={() => {}}
+      />
+    );
     expect(screen.getByText(/You knew 1 of 2/)).toBeInTheDocument();
     expect(screen.getByText('It was bob')).toBeInTheDocument();
   });

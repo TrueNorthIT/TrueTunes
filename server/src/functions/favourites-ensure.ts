@@ -3,7 +3,7 @@ import { getPlaylistContainer } from '../lib/getContainer';
 
 export async function favouritesEnsureHandler(
   request: HttpRequest,
-  context: InvocationContext,
+  context: InvocationContext
 ): Promise<HttpResponseInit> {
   const userName = request.params['userName'];
   if (!userName) {

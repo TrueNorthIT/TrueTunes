@@ -9,30 +9,40 @@ import { resolveRoster, isInOffice, type GraphPresence } from './graph-presence.
  * than being tidied into shapes that happen to suit the code.
  */
 const REAL: GraphPresence[] = [
-  { id: 'o-elliot',  availability: 'Available',       workLocation: { workLocationType: 'office', source: 'scheduled' } },
-  { id: 'o-rich',    availability: 'Available',       workLocation: { workLocationType: 'office', source: 'automatic' } },
-  { id: 'o-bog',     availability: 'Available',       workLocation: { workLocationType: 'office', source: 'automatic' } },
-  { id: 'o-sam',     availability: 'Available',       workLocation: { workLocationType: 'remote', source: 'scheduled' } },
-  { id: 'o-abbie',   availability: 'Available',       workLocation: { workLocationType: 'remote', source: 'scheduled' } },
-  { id: 'o-alex',    availability: 'Available',       workLocation: { workLocationType: 'office', source: 'automatic' } },
-  { id: 'o-joe',     availability: 'Available',       workLocation: { workLocationType: 'office', source: 'automatic' } },
+  { id: 'o-elliot', availability: 'Available', workLocation: { workLocationType: 'office', source: 'scheduled' } },
+  { id: 'o-rich', availability: 'Available', workLocation: { workLocationType: 'office', source: 'automatic' } },
+  { id: 'o-bog', availability: 'Available', workLocation: { workLocationType: 'office', source: 'automatic' } },
+  { id: 'o-sam', availability: 'Available', workLocation: { workLocationType: 'remote', source: 'scheduled' } },
+  { id: 'o-abbie', availability: 'Available', workLocation: { workLocationType: 'remote', source: 'scheduled' } },
+  { id: 'o-alex', availability: 'Available', workLocation: { workLocationType: 'office', source: 'automatic' } },
+  { id: 'o-joe', availability: 'Available', workLocation: { workLocationType: 'office', source: 'automatic' } },
   // Rostered into the office but never signed in — the case that matters.
-  { id: 'o-simrah',  availability: 'Offline',         workLocation: { workLocationType: 'office', source: 'scheduled' } },
-  { id: 'o-steve',   availability: 'Available',       workLocation: { workLocationType: 'office', source: 'automatic' } },
-  { id: 'o-fergus',  availability: 'Offline',         workLocation: undefined },
-  { id: 'o-longalex',availability: 'Available',       workLocation: { workLocationType: 'remote', source: 'scheduled' } },
-  { id: 'o-aidan',   availability: 'Available',       workLocation: { workLocationType: 'office', source: 'scheduled' } },
-  { id: 'o-josh',    availability: 'Available',       workLocation: { workLocationType: 'remote', source: 'manual' } },
-  { id: 'o-kade',    availability: 'Available',       workLocation: { workLocationType: 'office', source: 'automatic' } },
+  { id: 'o-simrah', availability: 'Offline', workLocation: { workLocationType: 'office', source: 'scheduled' } },
+  { id: 'o-steve', availability: 'Available', workLocation: { workLocationType: 'office', source: 'automatic' } },
+  { id: 'o-fergus', availability: 'Offline', workLocation: undefined },
+  { id: 'o-longalex', availability: 'Available', workLocation: { workLocationType: 'remote', source: 'scheduled' } },
+  { id: 'o-aidan', availability: 'Available', workLocation: { workLocationType: 'office', source: 'scheduled' } },
+  { id: 'o-josh', availability: 'Available', workLocation: { workLocationType: 'remote', source: 'manual' } },
+  { id: 'o-kade', availability: 'Available', workLocation: { workLocationType: 'office', source: 'automatic' } },
   // No Teams licence, or never signed in. Third-heaviest queuer in the office.
   { id: 'o-muhamad', availability: 'PresenceUnknown', workLocation: undefined },
 ];
 
 const NAMES: Record<string, string> = {
-  'o-elliot': 'Elliot', 'o-rich': 'Rich', 'o-bog': 'Bog', 'o-sam': 'Sam',
-  'o-abbie': 'Abbie', 'o-alex': 'Alex', 'o-joe': 'Joe Pitts', 'o-simrah': 'Simrah',
-  'o-steve': 'Not Steve', 'o-fergus': 'Fergus Westlake', 'o-longalex': 'Long Alex',
-  'o-aidan': 'Aidan', 'o-josh': 'Josh', 'o-kade': 'Kade',
+  'o-elliot': 'Elliot',
+  'o-rich': 'Rich',
+  'o-bog': 'Bog',
+  'o-sam': 'Sam',
+  'o-abbie': 'Abbie',
+  'o-alex': 'Alex',
+  'o-joe': 'Joe Pitts',
+  'o-simrah': 'Simrah',
+  'o-steve': 'Not Steve',
+  'o-fergus': 'Fergus Westlake',
+  'o-longalex': 'Long Alex',
+  'o-aidan': 'Aidan',
+  'o-josh': 'Josh',
+  'o-kade': 'Kade',
   'o-muhamad': 'Muhamad',
 };
 
@@ -40,10 +50,7 @@ test('builds the room from sensed presence, not availability or intent', () => {
   const roster = resolveRoster(REAL, NAMES);
   assert.equal(roster.basis, 'sensed');
   // Only the six Teams actually detected on the office network.
-  assert.deepEqual(
-    roster.inOffice.sort(),
-    ['Alex', 'Bog', 'Joe Pitts', 'Kade', 'Not Steve', 'Rich'],
-  );
+  assert.deepEqual(roster.inOffice.sort(), ['Alex', 'Bog', 'Joe Pitts', 'Kade', 'Not Steve', 'Rich']);
 });
 
 test('rostered-but-never-detected is treated as absent', () => {
@@ -59,7 +66,7 @@ test('falls back to rostered intent when nothing is being sensed', () => {
   const noSensing = REAL.map((p) =>
     p.workLocation?.source === 'automatic'
       ? { ...p, workLocation: { ...p.workLocation, source: 'scheduled' as const } }
-      : p,
+      : p
   );
   const roster = resolveRoster(noSensing, NAMES);
   assert.equal(roster.basis, 'rostered');
@@ -113,10 +120,7 @@ test('falls back to availability only when nobody sets a work location', () => {
 });
 
 test('reports "none" when there is nothing to go on', () => {
-  const roster = resolveRoster(
-    [{ id: 'a', availability: 'Offline' }],
-    { a: 'Ann' },
-  );
+  const roster = resolveRoster([{ id: 'a', availability: 'Offline' }], { a: 'Ann' });
   assert.equal(roster.basis, 'none');
   assert.deepEqual(roster.inOffice, []);
 });

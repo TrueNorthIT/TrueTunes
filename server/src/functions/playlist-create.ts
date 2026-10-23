@@ -3,7 +3,7 @@ import { getPlaylistContainer } from '../lib/getContainer';
 
 export async function playlistCreateHandler(
   request: HttpRequest,
-  context: InvocationContext,
+  context: InvocationContext
 ): Promise<HttpResponseInit> {
   let body: { name?: string; isPublic?: boolean; owner?: string };
   try {

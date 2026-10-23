@@ -25,16 +25,13 @@ function call(
 }
 
 function defined(obj: Record<string, string | undefined>): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(obj).filter((e): e is [string, string] => e[1] !== undefined)
-  );
+  return Object.fromEntries(Object.entries(obj).filter((e): e is [string, string] => e[1] !== undefined));
 }
 
 // ─── API surface ──────────────────────────────────────────────────────────────
 
 function buildApi() {
   return {
-
     auth: {
       getDiscovery: () => call('getAuthDiscovery'),
     },
@@ -44,67 +41,142 @@ function buildApi() {
     },
 
     playback: {
-      getState:  (groupId?: string) => call('getPlaybackState',    { pathParams: defined({ groupId }) }),
-      play:      (groupId?: string) => call('play',                { pathParams: defined({ groupId }) }),
-      pause:     (groupId?: string) => call('pause',               { pathParams: defined({ groupId }) }),
-      skipNext:    (groupId?: string) => call('skipToNextTrack',     { pathParams: defined({ groupId }) }),
-      skipPrev:    (groupId?: string) => call('skipToPreviousTrack', { pathParams: defined({ groupId }) }),
-      setPlayMode: (body: { shuffle?: boolean; repeat?: boolean; repeatOne?: boolean; crossfade?: boolean }, groupId?: string) =>
-        call('setPlayMode', { pathParams: defined({ groupId }), body }),
+      getState: (groupId?: string) => call('getPlaybackState', { pathParams: defined({ groupId }) }),
+      play: (groupId?: string) => call('play', { pathParams: defined({ groupId }) }),
+      pause: (groupId?: string) => call('pause', { pathParams: defined({ groupId }) }),
+      skipNext: (groupId?: string) => call('skipToNextTrack', { pathParams: defined({ groupId }) }),
+      skipPrev: (groupId?: string) => call('skipToPreviousTrack', { pathParams: defined({ groupId }) }),
+      setPlayMode: (
+        body: { shuffle?: boolean; repeat?: boolean; repeatOne?: boolean; crossfade?: boolean },
+        groupId?: string
+      ) => call('setPlayMode', { pathParams: defined({ groupId }), body }),
     },
 
     queue: {
-      list: (params?: { groupId?: string; queueId?: string; serviceId?: string; accountId?: string; count?: number; offset?: number }) =>
+      list: (params?: {
+        groupId?: string;
+        queueId?: string;
+        serviceId?: string;
+        accountId?: string;
+        count?: number;
+        offset?: number;
+      }) =>
         call('getQueueResources', {
-          pathParams: defined({ groupId: params?.groupId, queueId: params?.queueId, serviceId: params?.serviceId, accountId: params?.accountId }),
+          pathParams: defined({
+            groupId: params?.groupId,
+            queueId: params?.queueId,
+            serviceId: params?.serviceId,
+            accountId: params?.accountId,
+          }),
           query: defined({ count: params?.count?.toString(), offset: params?.offset?.toString() }),
         }),
 
-      add: (body: unknown, params?: { groupId?: string; queueId?: string; serviceId?: string; accountId?: string; position?: number; ifMatch?: string }) =>
+      add: (
+        body: unknown,
+        params?: {
+          groupId?: string;
+          queueId?: string;
+          serviceId?: string;
+          accountId?: string;
+          position?: number;
+          ifMatch?: string;
+        }
+      ) =>
         call('addQueueResource', {
-          pathParams: defined({ groupId: params?.groupId, queueId: params?.queueId, serviceId: params?.serviceId, accountId: params?.accountId }),
+          pathParams: defined({
+            groupId: params?.groupId,
+            queueId: params?.queueId,
+            serviceId: params?.serviceId,
+            accountId: params?.accountId,
+          }),
           query: { position: String(params?.position ?? -1) },
           headers: params?.ifMatch ? { 'If-Match': params.ifMatch } : undefined,
           body,
         }),
 
-      remove: (items: number[], params?: { groupId?: string; queueId?: string; serviceId?: string; accountId?: string }) =>
+      remove: (
+        items: number[],
+        params?: { groupId?: string; queueId?: string; serviceId?: string; accountId?: string }
+      ) =>
         call('deleteQueueResources', {
-          pathParams: defined({ groupId: params?.groupId, queueId: params?.queueId, serviceId: params?.serviceId, accountId: params?.accountId }),
+          pathParams: defined({
+            groupId: params?.groupId,
+            queueId: params?.queueId,
+            serviceId: params?.serviceId,
+            accountId: params?.accountId,
+          }),
           query: { items: items.join(',') },
         }),
 
-      reorder: (items: number[], positions: number[], body: unknown[], params?: { groupId?: string; queueId?: string; serviceId?: string; accountId?: string }) =>
+      reorder: (
+        items: number[],
+        positions: number[],
+        body: unknown[],
+        params?: { groupId?: string; queueId?: string; serviceId?: string; accountId?: string }
+      ) =>
         call('reorderQueueResources', {
-          pathParams: defined({ groupId: params?.groupId, queueId: params?.queueId, serviceId: params?.serviceId, accountId: params?.accountId }),
+          pathParams: defined({
+            groupId: params?.groupId,
+            queueId: params?.queueId,
+            serviceId: params?.serviceId,
+            accountId: params?.accountId,
+          }),
           query: { items: items.join(','), positions: positions.join(',') },
           body,
         }),
     },
 
     browse: {
-      album: (albumId: string, params?: { serviceId?: string; accountId?: string; defaults?: string; muse2?: boolean; count?: number; offset?: number }) =>
+      album: (
+        albumId: string,
+        params?: {
+          serviceId?: string;
+          accountId?: string;
+          defaults?: string;
+          muse2?: boolean;
+          count?: number;
+          offset?: number;
+        }
+      ) =>
         call('browseAlbum', {
           pathParams: { albumId, ...defined({ serviceId: params?.serviceId, accountId: params?.accountId }) },
-          query: defined({ defaults: params?.defaults, muse2: params?.muse2 ? 'true' : undefined, count: params?.count?.toString(), offset: params?.offset?.toString() }),
+          query: defined({
+            defaults: params?.defaults,
+            muse2: params?.muse2 ? 'true' : undefined,
+            count: params?.count?.toString(),
+            offset: params?.offset?.toString(),
+          }),
         }),
 
-      artist: (artistId: string, params?: { serviceId?: string; accountId?: string; defaults?: string; muse2?: boolean }) =>
+      artist: (
+        artistId: string,
+        params?: { serviceId?: string; accountId?: string; defaults?: string; muse2?: boolean }
+      ) =>
         call('browseArtist', {
           pathParams: { artistId, ...defined({ serviceId: params?.serviceId, accountId: params?.accountId }) },
           query: defined({ defaults: params?.defaults, muse2: params?.muse2 ? 'true' : undefined }),
         }),
 
-      container: (containerId: string, params?: { serviceId?: string; accountId?: string; defaults?: string; muse2?: boolean }) =>
+      container: (
+        containerId: string,
+        params?: { serviceId?: string; accountId?: string; defaults?: string; muse2?: boolean }
+      ) =>
         call('browseContainer', {
           pathParams: { containerId, ...defined({ serviceId: params?.serviceId, accountId: params?.accountId }) },
           query: defined({ defaults: params?.defaults, muse2: params?.muse2 ? 'true' : undefined }),
         }),
 
-      playlist: (playlistId: string, params?: { serviceId?: string; accountId?: string; defaults?: string; muse2?: boolean; count?: number }) =>
+      playlist: (
+        playlistId: string,
+        params?: { serviceId?: string; accountId?: string; defaults?: string; muse2?: boolean; count?: number }
+      ) =>
         call('browsePlaylist', {
           pathParams: { playlistId, ...defined({ serviceId: params?.serviceId, accountId: params?.accountId }) },
-          query: defined({ defaults: params?.defaults, muse2: params?.muse2 ? 'true' : undefined, count: params?.count?.toString() }),
+          query: defined({
+            defaults: params?.defaults,
+            muse2: params?.muse2 ? 'true' : undefined,
+            count: params?.count?.toString(),
+          }),
         }),
 
       catalogContainer: (containerId: string, params?: { serviceId?: string; accountId?: string; count?: number }) =>
@@ -158,7 +230,6 @@ function buildApi() {
       featureFlag: (key: string) => call('getOptimizelyConfig', { pathParams: { key } }),
       metrics: (events: unknown[]) => call('postMetrics', { body: events }),
     },
-
   };
 }
 

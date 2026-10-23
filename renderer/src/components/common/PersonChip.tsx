@@ -27,7 +27,10 @@ export function PersonChip({ name, suffix = '', imageUrl, selected, colour, disa
     >
       <UserAvatar name={name} imageUrl={imageUrl} className={styles.avatar} />
       {colour && <span className={styles.dot} style={{ background: colour }} />}
-      <span className={styles.name}>{name}{suffix}</span>
+      <span className={styles.name}>
+        {name}
+        {suffix}
+      </span>
     </button>
   );
 }

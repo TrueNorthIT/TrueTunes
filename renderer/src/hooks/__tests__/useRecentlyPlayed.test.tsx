@@ -51,7 +51,7 @@ describe('useRecentlyPlayed artist tiles', () => {
       ],
     } as never);
     mockServiceQuery.mockResolvedValue(
-      searchResponse({ name: 'Inez Remix Band', id: 'wrong' }, { name: 'inéz', id: 'inez-id', img: 'inez-photo' }),
+      searchResponse({ name: 'Inez Remix Band', id: 'wrong' }, { name: 'inéz', id: 'inez-id', img: 'inez-photo' })
     );
 
     const { result } = renderHook(() => useRecentlyPlayed('Rich'), { wrapper });
@@ -61,7 +61,10 @@ describe('useRecentlyPlayed artist tiles', () => {
       expect(inez?.resource?.id).toMatchObject({ objectId: 'inez-id' });
       expect(inez?.imageUrl).toBe('inez-photo');
     });
-    expect(mockServiceQuery).toHaveBeenCalledWith('Inéz', expect.objectContaining({ serviceId: 'svc', accountId: 'acc' }));
+    expect(mockServiceQuery).toHaveBeenCalledWith(
+      'Inéz',
+      expect.objectContaining({ serviceId: 'svc', accountId: 'acc' })
+    );
     // The primary already has an id and is not searched for.
     expect(mockServiceQuery).toHaveBeenCalledTimes(1);
   });

@@ -29,7 +29,7 @@ test('D-2 reserveTrackKey: reserving a key already used today resolves false', a
   assert.equal(
     await reserveTrackKey(store, T0 + 5 * HOUR, KEY_A),
     false,
-    'Expected a second reservation of the same key on the same London day to be refused',
+    'Expected a second reservation of the same key on the same London day to be refused'
   );
 });
 
@@ -64,12 +64,12 @@ test('D-1 ledger resets at London midnight: a key used yesterday can be reserved
   assert.equal(
     (await readUsedTrackKeys(store, afterMidnight)).has(KEY_A),
     false,
-    'Expected yesterday\'s key to be absent from the new London day (23:05 UTC is 00:05 BST)',
+    "Expected yesterday's key to be absent from the new London day (23:05 UTC is 00:05 BST)"
   );
   assert.equal(
     await reserveTrackKey(store, afterMidnight, KEY_A),
     true,
-    'Expected the key to be reservable again after London midnight',
+    'Expected the key to be reservable again after London midnight'
   );
 });
 
@@ -78,12 +78,24 @@ test('D-1 ledger keeps a London day together: 23:30 UTC and 00:30 UTC in winter 
   const gmtEvening = Date.UTC(2026, 10, 1, 23, 30, 0); // 1 Nov, GMT
   const gmtMorning = Date.UTC(2026, 10, 2, 0, 30, 0); // 2 Nov, GMT
   await reserveTrackKey(store, gmtEvening, KEY_A);
-  assert.equal((await readUsedTrackKeys(store, gmtMorning)).has(KEY_A), false, 'Expected 00:30 GMT on 2 Nov to be a new day');
+  assert.equal(
+    (await readUsedTrackKeys(store, gmtMorning)).has(KEY_A),
+    false,
+    'Expected 00:30 GMT on 2 Nov to be a new day'
+  );
   const bstLate = Date.UTC(2026, 9, 20, 22, 30, 0); // 23:30 BST on the 20th
   const bstNext = Date.UTC(2026, 9, 20, 23, 30, 0); // 00:30 BST on the 21st
   await reserveTrackKey(store, bstLate, KEY_B);
-  assert.equal((await readUsedTrackKeys(store, bstNext)).has(KEY_B), false, 'Expected 00:30 BST on 21 Oct to be a new day');
-  assert.equal((await readUsedTrackKeys(store, bstLate)).has(KEY_B), true, 'Expected 23:30 BST on 20 Oct to still see its own day');
+  assert.equal(
+    (await readUsedTrackKeys(store, bstNext)).has(KEY_B),
+    false,
+    'Expected 00:30 BST on 21 Oct to be a new day'
+  );
+  assert.equal(
+    (await readUsedTrackKeys(store, bstLate)).has(KEY_B),
+    true,
+    'Expected 23:30 BST on 20 Oct to still see its own day'
+  );
 });
 
 test('D-2 reserveTrackKey: two clients racing for the same key — exactly one wins', async () => {
@@ -95,7 +107,7 @@ test('D-2 reserveTrackKey: two clients racing for the same key — exactly one w
   assert.deepEqual(
     results.filter(Boolean).length,
     1,
-    `Expected exactly one racer to be told true, got ${JSON.stringify(results)} — the write must be conditional on the ETag (or create-if-absent), not check-then-set`,
+    `Expected exactly one racer to be told true, got ${JSON.stringify(results)} — the write must be conditional on the ETag (or create-if-absent), not check-then-set`
   );
 });
 
@@ -108,7 +120,11 @@ test('D-2 reserveTrackKey: three clients racing for the same key — exactly one
     reserveTrackKey(store, T0, KEY_A),
   ]);
   store.releaseReads();
-  assert.equal(results.filter(Boolean).length, 1, `Expected exactly one winner among three, got ${JSON.stringify(results)}`);
+  assert.equal(
+    results.filter(Boolean).length,
+    1,
+    `Expected exactly one winner among three, got ${JSON.stringify(results)}`
+  );
 });
 
 test('D-2 reserveTrackKey: concurrent reservations of DIFFERENT keys all succeed and none is lost', async () => {
@@ -120,9 +136,17 @@ test('D-2 reserveTrackKey: concurrent reservations of DIFFERENT keys all succeed
     reserveTrackKey(store, T0, KEY_C),
   ]);
   store.releaseReads();
-  assert.deepEqual(results, [true, true, true], 'Expected every distinct key to be reserved despite ETag conflicts (retry, do not give up)');
+  assert.deepEqual(
+    results,
+    [true, true, true],
+    'Expected every distinct key to be reserved despite ETag conflicts (retry, do not give up)'
+  );
   const used = await readUsedTrackKeys(store, T0);
-  assert.deepEqual([...used].sort(), [KEY_A, KEY_B, KEY_C], 'Expected no reservation to be lost to a last-writer-wins overwrite');
+  assert.deepEqual(
+    [...used].sort(),
+    [KEY_A, KEY_B, KEY_C],
+    'Expected no reservation to be lost to a last-writer-wins overwrite'
+  );
 });
 
 test('D-2 reserveTrackKey: rejects when the store write fails, so nobody is told a pick was reserved', async () => {
@@ -131,6 +155,6 @@ test('D-2 reserveTrackKey: rejects when the store write fails, so nobody is told
   await assert.rejects(
     reserveTrackKey(store, T0, KEY_A),
     /Cosmos unavailable/,
-    'Expected the store outage itself to surface as a rejection rather than resolving true',
+    'Expected the store outage itself to surface as a rejection rather than resolving true'
   );
 });

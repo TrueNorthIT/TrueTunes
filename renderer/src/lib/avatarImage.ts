@@ -44,7 +44,7 @@ export async function normalizeAvatar(file: File): Promise<NormalizedImage> {
     ctx.drawImage(bitmap, sx, sy, side, side, 0, 0, target, target);
 
     const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob((b) => resolve(b), 'image/webp', WEBP_QUALITY),
+      canvas.toBlob((b) => resolve(b), 'image/webp', WEBP_QUALITY)
     );
     if (!blob) return passthrough();
     return { buffer: await blob.arrayBuffer(), mimeType: 'image/webp' };

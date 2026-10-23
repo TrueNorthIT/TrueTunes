@@ -10,21 +10,11 @@ import assert from 'node:assert/strict';
 import type { HttpRequest, InvocationContext } from '@azure/functions';
 import type { AutoplayBody, AutoplayResponse, DjAutoplayService } from './djAutoplayService';
 import { createDjAutoplayHandler, getDjAutoplayService } from '../functions/dj-autoplay';
-import {
-  asSong,
-  buildHistory,
-  djRanking,
-  makeWorld,
-  MiniRoom,
-  songKey,
-  T0,
-  USERS,
-} from './djKit.testkit';
+import { asSong, buildHistory, djRanking, makeWorld, MiniRoom, songKey, T0, USERS } from './djKit.testkit';
 
 const CONN = 'AccountEndpoint=https://x.invalid/;AccountKey=eA==;';
 const quietContext = { log() {}, error() {} } as unknown as InvocationContext;
-const requestWith = (body: unknown): HttpRequest =>
-  ({ json: async () => body }) as unknown as HttpRequest;
+const requestWith = (body: unknown): HttpRequest => ({ json: async () => body }) as unknown as HttpRequest;
 
 async function withConnString<T>(fn: () => Promise<T>): Promise<T> {
   const prev = process.env['COSMOS_CONNECTION_STRING'];
@@ -56,10 +46,7 @@ test('handler delegates to the service with the trimmed ids and returns its resp
   const handler = createDjAutoplayHandler(() => service);
 
   const res = await withConnString(() =>
-    handler(
-      requestWith({ groupId: ' g ', clientId: ' c ', queueUris: ['u1'], setEnabled: true }),
-      quietContext,
-    ),
+    handler(requestWith({ groupId: ' g ', clientId: ' c ', queueUris: ['u1'], setEnabled: true }), quietContext)
   );
 
   assert.equal(res.status, 200);
@@ -77,9 +64,7 @@ test('handler: a service failure is a 500, not a crash', async () => {
       throw new Error('boom');
     },
   }));
-  const res = await withConnString(() =>
-    handler(requestWith({ groupId: 'g', clientId: 'c' }), quietContext),
-  );
+  const res = await withConnString(() => handler(requestWith({ groupId: 'g', clientId: 'c' }), quietContext));
   assert.equal(res.status, 500);
 });
 
@@ -106,6 +91,6 @@ test('D-1 service: an "album" event is not treated as a hand-queued song, even w
   assert.equal(
     songKey(r.enqueue),
     songKey(best),
-    'Expected the favourite song to stay eligible: an album row is not a hand-queued song',
+    'Expected the favourite song to stay eligible: an album row is not a hand-queued song'
   );
 });

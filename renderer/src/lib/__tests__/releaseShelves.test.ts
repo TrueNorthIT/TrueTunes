@@ -305,7 +305,7 @@ describe('groupReleases', () => {
       const s = run(specs);
       expect(s.albums, 'Expected a single album group').toHaveLength(1);
       expect(s.albums[0].primary.title, 'Expected the earlier edition (ties by input order) to be primary').toBe(
-        'Get To Heaven (Expanded)',
+        'Get To Heaven (Expanded)'
       );
       expect(versionTitles(s.albums[0]), 'Expected primary first, then the other edition').toEqual([
         'Get To Heaven (Expanded)',
@@ -355,7 +355,7 @@ describe('groupReleases', () => {
       expect(s.albums[0].versions, 'Expected both items in the group').toHaveLength(2);
       expect(
         s.albums[0].versions.map((v) => releaseKey(v)),
-        'Expected versions to keep input order for tied primaries',
+        'Expected versions to keep input order for tied primaries'
       ).toEqual(['r0', 'r2']);
       expect(releaseKey(s.albums[0].primary), 'Expected the first identical item to be primary').toBe('r0');
     });
@@ -412,7 +412,9 @@ describe('groupReleases', () => {
   describe('REQ-13: missing track count falls back to title only', () => {
     it('REQ-13: puts a plain release with no count in albums', () => {
       const s = run([['Mystery Release']]);
-      expect(primaries(s.albums), 'Expected an unknown-count release to default to albums').toEqual(['Mystery Release']);
+      expect(primaries(s.albums), 'Expected an unknown-count release to default to albums').toEqual([
+        'Mystery Release',
+      ]);
     });
 
     it('REQ-13: puts an alternate with no count in other', () => {
@@ -424,10 +426,7 @@ describe('groupReleases', () => {
     });
 
     it('REQ-13: classifies a group by its primary when the primary has no count', () => {
-      const s = run([
-        ['Foo (Deluxe)', 16],
-        ['Foo'],
-      ]);
+      const s = run([['Foo (Deluxe)', 16], ['Foo']]);
       expect(primaries(s.albums), 'Expected the group on albums as the primary has no known count').toEqual(['Foo']);
     });
   });
@@ -520,7 +519,7 @@ describe('groupReleases', () => {
       const s = run(specs);
       const total = [...s.albums, ...s.singles, ...s.other].reduce((n, g) => n + g.versions.length, 0);
       expect(total, 'Expected every one of the input releases to appear exactly once across the shelves').toBe(
-        specs.length,
+        specs.length
       );
     });
   });

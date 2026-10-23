@@ -13,10 +13,7 @@ const BLOB = 'attribution.json';
 const TOKEN_TTL_MINUTES = 60;
 const SAS_TTL_HOURS = 8;
 
-export async function connectHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
+export async function connectHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const username = request.query.get('username') ?? 'Unknown';
   context.log(`[connect] username=${username}`);
 
@@ -32,10 +29,7 @@ export async function connectHandler(
     const wpsClient = new WebPubSubServiceClient(wpsConnStr, HUB);
     const token = await wpsClient.getClientAccessToken({
       userId: username,
-      roles: [
-        `webpubsub.sendToGroup.${HUB}`,
-        `webpubsub.joinLeaveGroup.${HUB}`,
-      ],
+      roles: [`webpubsub.sendToGroup.${HUB}`, `webpubsub.joinLeaveGroup.${HUB}`],
       expirationTimeInMinutes: TOKEN_TTL_MINUTES,
     });
 
@@ -62,7 +56,7 @@ export async function connectHandler(
         permissions: BlobSASPermissions.parse('rw'),
         expiresOn,
       },
-      sharedKeyCredential,
+      sharedKeyCredential
     ).toString();
 
     const blobSasUrl = `https://${accountName}.blob.core.windows.net/${CONTAINER}/${BLOB}?${sasToken}`;

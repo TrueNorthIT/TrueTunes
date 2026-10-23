@@ -43,7 +43,9 @@
 
 /* ── Who it's for ────────────────────────────────────────────────────────── */
 
-.room { margin-bottom: 1.4em; }
+.room {
+  margin-bottom: 1.4em;
+}
 
 .forLine {
   display: flex;
@@ -87,11 +89,17 @@
   transition: background var(--dur-fast) var(--ease-fast);
 }
 .face:hover,
-.face:focus-visible { background: var(--row-hover); }
+.face:focus-visible {
+  background: var(--row-hover);
+}
 .face:hover .faceAvatar,
-.face:focus-visible .faceAvatar { box-shadow: var(--face-ring); }
+.face:focus-visible .faceAvatar {
+  box-shadow: var(--face-ring);
+}
 .face:hover .faceName,
-.face:focus-visible .faceName { color: var(--text); }
+.face:focus-visible .faceName {
+  color: var(--text);
+}
 .faceAvatar {
   width: 1.9em;
   height: 1.9em;
@@ -108,20 +116,33 @@
     box-shadow var(--dur-fast) var(--ease-fast),
     opacity var(--dur-fast) var(--ease-fast);
 }
-.faceAvatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.faceAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .faceName {
   font-size: var(--fs-label);
   color: var(--text-2);
   white-space: nowrap;
   transition: color var(--dur-fast) var(--ease-fast);
 }
-.you { color: var(--text-3); }
+.you {
+  color: var(--text-3);
+}
 
 /* Not in the set: still a click away, just clearly not driving the picks. */
-.faceAway .faceAvatar { opacity: 0.5; }
-.faceAway .faceName { color: var(--text-3); }
+.faceAway .faceAvatar {
+  opacity: 0.5;
+}
+.faceAway .faceName {
+  color: var(--text-3);
+}
 .faceAway:hover .faceAvatar,
-.faceAway:focus-visible .faceAvatar { opacity: 1; }
+.faceAway:focus-visible .faceAvatar {
+  opacity: 1;
+}
 
 .more,
 .link {
@@ -145,14 +166,20 @@
   font-variant-numeric: tabular-nums;
 }
 .more:hover,
-.more:focus-visible { background: rgba(var(--tint), 0.22); color: var(--text); }
+.more:focus-visible {
+  background: rgba(var(--tint), 0.22);
+  color: var(--text);
+}
 .link {
   background: none;
   padding: 0;
   color: var(--text-2);
 }
 .link:hover,
-.link:focus-visible { color: var(--text); text-decoration: underline; }
+.link:focus-visible {
+  color: var(--text);
+  text-decoration: underline;
+}
 
 .note {
   max-width: 70ch;
@@ -171,7 +198,9 @@
   transition: opacity var(--dur-fast) var(--ease-fast);
 }
 /* The room changed and its picks are on the way: the old cards stay, quietly. Same as Search. */
-.stale { opacity: 0.6; }
+.stale {
+  opacity: 0.6;
+}
 .tracks {
   list-style: none;
   margin: 0;
@@ -187,10 +216,27 @@
   border-radius: var(--r-art-card);
   background: var(--surface);
 }
-.skelHead { height: 3.8em; border-radius: var(--r-tile); }
-.skelRow { display: flex; align-items: center; gap: 0.9em; padding: 0.45em 0.6em; }
-.skelThumb { width: 3.2em; height: 3.2em; border-radius: var(--r-thumb); flex-shrink: 0; }
-.skelLine { height: 1em; width: 55%; border-radius: var(--r-xs); }
+.skelHead {
+  height: 3.8em;
+  border-radius: var(--r-tile);
+}
+.skelRow {
+  display: flex;
+  align-items: center;
+  gap: 0.9em;
+  padding: 0.45em 0.6em;
+}
+.skelThumb {
+  width: 3.2em;
+  height: 3.2em;
+  border-radius: var(--r-thumb);
+  flex-shrink: 0;
+}
+.skelLine {
+  height: 1em;
+  width: 55%;
+  border-radius: var(--r-xs);
+}
 
 .empty {
   max-width: 40em;
@@ -198,7 +244,9 @@
   font-size: 1em;
   color: var(--text-3);
 }
-.retry { margin-top: 1.1em; }
+.retry {
+  margin-top: 1.1em;
+}
 .emptyTitle {
   font-size: var(--fs-title);
   font-weight: 600;
@@ -208,10 +256,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .grid { transition: none; }
+  .grid {
+    transition: none;
+  }
   .face,
   .faceAvatar,
   .faceName,
   .more,
-  .link { transition: none; }
+  .link {
+    transition: none;
+  }
 }

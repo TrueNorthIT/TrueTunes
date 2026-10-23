@@ -1,7 +1,7 @@
 {
   "name": "true-tunes-server",
   "version": "1.0.0",
-  "description": "Azure Functions \u2014 office presence features for true-tunes-2",
+  "description": "Azure Functions — office presence features for true-tunes-2",
   "main": "dist/{**/,}*.js",
   "scripts": {
     "build": "tsc",

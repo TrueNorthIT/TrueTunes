@@ -1,7 +1,7 @@
 // Shared TypeScript interfaces for Sonos API response shapes
 
 export interface GroupInfo {
-  id: string;            // full groupId with session suffix
+  id: string; // full groupId with session suffix
   coordinatorId: string; // bare RINCON ID
   name: string;
   playerIds: string[];

@@ -9,11 +9,11 @@
   overflow: hidden;
   border-radius: var(--r-card);
   /* No art: the lit wall with the tint wash from the top left, as the featured cards have. */
-  background:
-    radial-gradient(120% 110% at 15% 0%, rgba(var(--tint), 0.26), transparent 62%),
-    var(--surface-hi);
+  background: radial-gradient(120% 110% at 15% 0%, rgba(var(--tint), 0.26), transparent 62%), var(--surface-hi);
 }
-.withArt { background: var(--bg-1); }
+.withArt {
+  background: var(--bg-1);
+}
 
 .fill {
   position: absolute;
@@ -33,7 +33,14 @@
   transform: scale(1.03);
   filter: brightness(0.9);
 }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 
 /* The whole card opens; the pills sit above it. */
 .cover {
@@ -71,7 +78,9 @@
 }
 .withArt .heading,
 .withArt .title,
-.withArt .meta { text-shadow: var(--text-shadow-lg); }
+.withArt .meta {
+  text-shadow: var(--text-shadow-lg);
+}
 
 .heading {
   font-size: var(--fs-prose);
@@ -122,11 +131,20 @@
 
 /* Stacked under the songs: a print-shaped card instead of a row-height one. */
 @container (max-width: 700px) {
-  .card { min-height: 0; aspect-ratio: 4 / 3; max-height: 22em; }
+  .card {
+    min-height: 0;
+    aspect-ratio: 4 / 3;
+    max-height: 22em;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fill { animation: none; transition: none; }
+  .fill {
+    animation: none;
+    transition: none;
+  }
   .card:hover .fill,
-  .card:focus-within .fill { transform: none; }
+  .card:focus-within .fill {
+    transform: none;
+  }
 }

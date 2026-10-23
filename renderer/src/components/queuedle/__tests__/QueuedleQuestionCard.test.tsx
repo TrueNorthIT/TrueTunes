@@ -91,13 +91,29 @@ describe('QueuedleQuestionCard', () => {
     );
     expect(screen.getByRole('status')).toHaveTextContent('Nice one.');
     expect(screen.getByText(/Your pick/)).toHaveTextContent('✓ Your pick');
-    rerender(<QueuedleQuestionCard question={question} revealed={true} pickedSide="right" onPick={() => {}} onNext={() => {}} />);
+    rerender(
+      <QueuedleQuestionCard
+        question={question}
+        revealed={true}
+        pickedSide="right"
+        onPick={() => {}}
+        onNext={() => {}}
+      />
+    );
     expect(screen.getByRole('status')).toHaveTextContent('Not this time.');
     expect(screen.getByText(/Your pick/)).toHaveTextContent('✗ Your pick');
   });
 
   it('states the question being asked', () => {
-    render(<QueuedleQuestionCard question={question} revealed={false} pickedSide={null} onPick={() => {}} onNext={() => {}} />);
+    render(
+      <QueuedleQuestionCard
+        question={question}
+        revealed={false}
+        pickedSide={null}
+        onPick={() => {}}
+        onNext={() => {}}
+      />
+    );
     expect(screen.getByRole('heading', { name: 'Which has the office queued more?' })).toBeInTheDocument();
   });
 });

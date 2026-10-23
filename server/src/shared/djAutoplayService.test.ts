@@ -57,24 +57,20 @@ function office(artists = 6, tracksPerArtist = 4) {
 function poll(
   w: World,
   room: MiniRoom,
-  o: { group?: string; client?: string; enable?: boolean; svc?: World['svc']; oldClient?: boolean } = {},
+  o: { group?: string; client?: string; enable?: boolean; svc?: World['svc']; oldClient?: boolean } = {}
 ): Promise<AutoplayResponse> {
   return (o.svc ?? w.svc).handle(
     room.body(
       o.group ?? G1,
       o.client ?? CLIENT_A,
       { users: USERS, ...(o.enable ? { setEnabled: true } : {}) },
-      { oldClient: o.oldClient },
-    ),
+      { oldClient: o.oldClient }
+    )
   );
 }
 
 /** Poll; if the coordinator tells this client to enqueue, perform the add. */
-async function pollAndLand(
-  w: World,
-  room: MiniRoom,
-  o: Parameters<typeof poll>[2] = {},
-): Promise<AutoplayResponse> {
+async function pollAndLand(w: World, room: MiniRoom, o: Parameters<typeof poll>[2] = {}): Promise<AutoplayResponse> {
   const r = await poll(w, room, o);
   if (r.enqueue && r.leaseHeld) room.land(asSong(r.enqueue));
   return r;
@@ -89,7 +85,7 @@ async function pollAndLand(
 async function settle(
   w: World,
   room: MiniRoom,
-  o: { enableFirst?: boolean; svc?: World['svc']; group?: string; client?: string } = {},
+  o: { enableFirst?: boolean; svc?: World['svc']; group?: string; client?: string } = {}
 ): Promise<string[]> {
   const handedOut: string[] = [];
   for (let i = 0; i < 4; i++) {
@@ -106,8 +102,7 @@ async function settle(
   return handedOut;
 }
 
-const keyOf = (t: { trackName: string; artist: string } | null | undefined): string | null =>
-  t ? songKey(t) : null;
+const keyOf = (t: { trackName: string; artist: string } | null | undefined): string | null => (t ? songKey(t) : null);
 
 // ===========================================================================
 // D-1  Never repeat a song within the London day
@@ -125,11 +120,11 @@ test('D-1 service: a song a person hand-queued earlier today is not enqueued, ev
   assert.notEqual(
     keyOf(r.enqueue),
     songKey(top),
-    `Expected "${top.trackName}" by ${top.artist} to be skipped because a person queued it earlier today`,
+    `Expected "${top.trackName}" by ${top.artist} to be skipped because a person queued it earlier today`
   );
   assert.ok(
     !r.upcoming.some((t) => songKey(t) === songKey(top)),
-    'Expected the hand-queued song to be missing from the preview as well',
+    'Expected the hand-queued song to be missing from the preview as well'
   );
 });
 
@@ -146,10 +141,14 @@ test('D-1 service: hand-queued exclusion is by normalised name+artist (case and 
 
   const r = await poll(w, new MiniRoom(), { enable: true });
 
-  assert.notEqual(keyOf(r.enqueue), songKey(top), 'Expected a differently-cased hand-queued title to still count as the same song');
+  assert.notEqual(
+    keyOf(r.enqueue),
+    songKey(top),
+    'Expected a differently-cased hand-queued title to still count as the same song'
+  );
 });
 
-test('D-1 service: an old client (no queueKeys / nowPlayingKey / nowPlayingIndex) still gets today\'s hand-queued songs excluded', async () => {
+test("D-1 service: an old client (no queueKeys / nowPlayingKey / nowPlayingIndex) still gets today's hand-queued songs excluded", async () => {
   const { w } = office();
   const top = handQueueFavourite(w);
   w.advance(MINUTE);
@@ -157,7 +156,11 @@ test('D-1 service: an old client (no queueKeys / nowPlayingKey / nowPlayingIndex
   const r = await poll(w, new MiniRoom(), { enable: true, oldClient: true });
 
   assert.ok(r.enqueue, 'Expected a pick for an old client');
-  assert.notEqual(keyOf(r.enqueue), songKey(top), 'Expected exclusion to come from the server-side day record, not from client-supplied queue keys');
+  assert.notEqual(
+    keyOf(r.enqueue),
+    songKey(top),
+    'Expected exclusion to come from the server-side day record, not from client-supplied queue keys'
+  );
 });
 
 test('D-1 service: a song hand-queued at London midnight exactly belongs to today and is excluded', async () => {
@@ -166,7 +169,11 @@ test('D-1 service: a song hand-queued at London midnight exactly belongs to toda
 
   const r = await poll(w, new MiniRoom(), { enable: true });
 
-  assert.notEqual(keyOf(r.enqueue), songKey(top), 'Expected a song queued at 00:00 BST on the 20th to count as "today" at 10:00 BST on the 20th');
+  assert.notEqual(
+    keyOf(r.enqueue),
+    songKey(top),
+    'Expected a song queued at 00:00 BST on the 20th to count as "today" at 10:00 BST on the 20th'
+  );
 });
 
 test('D-1 service: a song hand-queued before London midnight (yesterday) is still eligible today', async () => {
@@ -175,7 +182,11 @@ test('D-1 service: a song hand-queued before London midnight (yesterday) is stil
 
   const r = await poll(w, new MiniRoom(), { enable: true });
 
-  assert.equal(keyOf(r.enqueue), songKey(top), 'Expected yesterday\'s hand-queued song (23:59:59.999 BST on the 19th) to remain a normal candidate');
+  assert.equal(
+    keyOf(r.enqueue),
+    songKey(top),
+    "Expected yesterday's hand-queued song (23:59:59.999 BST on the 19th) to remain a normal candidate"
+  );
 });
 
 test('D-1 service: a pick whose add never landed is not enqueued a second time when the failed-add timeout expires', async () => {
@@ -191,7 +202,7 @@ test('D-1 service: a pick whose add never landed is not enqueued a second time w
   assert.notEqual(
     keyOf(second.enqueue),
     keyOf(first.enqueue),
-    `Expected the already-handed-out song "${first.enqueue?.trackName}" not to be offered again after the 60s neverLanded timeout`,
+    `Expected the already-handed-out song "${first.enqueue?.trackName}" not to be offered again after the 60s neverLanded timeout`
   );
 });
 
@@ -205,11 +216,15 @@ test('D-1/D-2 service: when the lease flips to a client with a stale snapshot, t
   // Client A goes quiet. Client B's snapshot predates A's add, so it shows an empty queue.
   w.advance(31 * SEC); // lease (30s) has lapsed
   const flipped = await poll(w, new MiniRoom(), { client: CLIENT_B });
-  assert.notEqual(keyOf(flipped.enqueue), firstKey, 'Expected B not to re-issue A\'s pick on the lease flip');
+  assert.notEqual(keyOf(flipped.enqueue), firstKey, "Expected B not to re-issue A's pick on the lease flip");
 
   w.advance(35 * SEC); // now past the 60s failed-add timeout as seen from B's stale view
   const later = await poll(w, new MiniRoom(), { client: CLIENT_B });
-  assert.notEqual(keyOf(later.enqueue), firstKey, 'Expected B not to enqueue A\'s pick even after the failed-add timeout');
+  assert.notEqual(
+    keyOf(later.enqueue),
+    firstKey,
+    "Expected B not to enqueue A's pick even after the failed-add timeout"
+  );
 });
 
 test('D-1 service: a previewed song that a person then queues under a re-keyed uri is not enqueued afterwards', async () => {
@@ -233,7 +248,7 @@ test('D-1 service: a previewed song that a person then queues under a re-keyed u
   assert.notEqual(
     keyOf(next.enqueue),
     songKey(previewed),
-    `Expected the DJ not to enqueue "${previewed.trackName}", which a person already queued today`,
+    `Expected the DJ not to enqueue "${previewed.trackName}", which a person already queued today`
   );
   assert.notEqual(keyOf(next.enqueue), keyOf(first.enqueue), 'Expected the DJ not to repeat its own first pick either');
 });
@@ -247,7 +262,11 @@ test('D-1 service: a new Sonos group (regroup) does not reset the day — songs 
   const after = await poll(w, new MiniRoom(), { group: G2, enable: true });
 
   assert.ok(after.enqueue, 'Expected the new group to get a pick');
-  assert.notEqual(keyOf(after.enqueue), keyOf(before.enqueue), 'Expected the DJ to remember today\'s picks across groupIds');
+  assert.notEqual(
+    keyOf(after.enqueue),
+    keyOf(before.enqueue),
+    "Expected the DJ to remember today's picks across groupIds"
+  );
 });
 
 test('D-1 service: a restarted host (new service instance, same stores, cold cache) does not repeat earlier picks', async () => {
@@ -269,7 +288,7 @@ test('D-1 service: a restarted host (new service instance, same stores, cold cac
   assert.ok(r.enqueue, 'Expected the restarted host to still find a pick');
   assert.ok(
     !used.includes(songKey(r.enqueue)),
-    `Expected "${r.enqueue?.trackName}" not to be re-enqueued after a restart — picks made before it: ${used.join(' | ')}`,
+    `Expected "${r.enqueue?.trackName}" not to be re-enqueued after a restart — picks made before it: ${used.join(' | ')}`
   );
 });
 
@@ -284,11 +303,18 @@ test('D-1 service: after a queue clear the DJ does not return to songs it alread
     if (i % 4 === 3) room.clear(); // someone wipes the queue, taking the played history with it
   }
   const dupes = used.filter((k, i) => used.indexOf(k) !== i);
-  assert.deepEqual(dupes, [], `Expected no song to be enqueued twice in one London day, but these repeated: ${dupes.join(' | ')}`);
-  assert.ok(used.length >= 20, `D-3: expected the DJ to keep supplying songs through the clears (30 steps), got ${used.length}`);
+  assert.deepEqual(
+    dupes,
+    [],
+    `Expected no song to be enqueued twice in one London day, but these repeated: ${dupes.join(' | ')}`
+  );
+  assert.ok(
+    used.length >= 20,
+    `D-3: expected the DJ to keep supplying songs through the clears (30 steps), got ${used.length}`
+  );
 });
 
-test('D-1 service: the day resets at London midnight — yesterday\'s song is eligible again just after 00:00 BST', async () => {
+test("D-1 service: the day resets at London midnight — yesterday's song is eligible again just after 00:00 BST", async () => {
   // One song in the whole catalogue, so the midnight reset is the only way a pick can happen.
   const history = buildHistory({ now: T0, artists: 1, tracksPerArtist: 1 });
   const w = makeWorld({ events: history, now: Date.UTC(2026, 9, 19, 22, 30, 0) }); // 23:30 BST on the 19th
@@ -307,7 +333,7 @@ test('D-1 service: the day resets at London midnight — yesterday\'s song is el
   assert.equal(
     keyOf(nextDay.enqueue),
     keyOf(first.enqueue),
-    'Expected the used-song record to reset at London midnight so yesterday\'s song is eligible again at 00:05 BST',
+    "Expected the used-song record to reset at London midnight so yesterday's song is eligible again at 00:05 BST"
   );
 });
 
@@ -321,12 +347,12 @@ test('D-2 service: if the day record cannot be written, no client is told to enq
 
   const outcome = await poll(w, new MiniRoom(), { enable: true }).then(
     (r) => r,
-    () => null, // surfacing the failure (HTTP 500) is acceptable
+    () => null // surfacing the failure (HTTP 500) is acceptable
   );
 
   assert.ok(
     !outcome?.enqueue,
-    `Expected no enqueue instruction while the used-record write is failing, got "${outcome?.enqueue?.trackName}"`,
+    `Expected no enqueue instruction while the used-record write is failing, got "${outcome?.enqueue?.trackName}"`
   );
 });
 
@@ -337,7 +363,7 @@ test('D-2 service: a pick is recorded in the ledger store as part of handing it 
   const stored = [...w.ledger.docs.values()].map((d) => JSON.stringify(d)).join('\n');
   assert.ok(
     stored.includes(songKey(r.enqueue)),
-    `Expected the ledger store to contain the key "${songKey(r.enqueue)}" before/with the enqueue response; ledger holds: ${stored || '(nothing)'}`,
+    `Expected the ledger store to contain the key "${songKey(r.enqueue)}" before/with the enqueue response; ledger holds: ${stored || '(nothing)'}`
   );
 });
 
@@ -352,14 +378,18 @@ test('D-2 service: clients in different groups racing for the same pick are neve
 
   const keys = results.map((r) => keyOf(r.enqueue)).filter((k): k is string => k !== null);
   assert.ok(keys.length >= 1, 'Expected at least one racer to be given a pick');
-  assert.equal(new Set(keys).size, keys.length, `Expected distinct picks (a loser gets null or a different song), got ${keys.join(' | ')}`);
+  assert.equal(
+    new Set(keys).size,
+    keys.length,
+    `Expected distinct picks (a loser gets null or a different song), got ${keys.join(' | ')}`
+  );
 });
 
 test('D-2 service: four groups polling at the same instant are all given different songs', async () => {
   const { w } = office(8, 3);
   w.ledger.holdReadsUntil(4);
   const results = await Promise.all(
-    ['g1', 'g2', 'g3', 'g4'].map((g) => poll(w, new MiniRoom(), { group: g, client: `client-${g}`, enable: true })),
+    ['g1', 'g2', 'g3', 'g4'].map((g) => poll(w, new MiniRoom(), { group: g, client: `client-${g}`, enable: true }))
   );
   w.ledger.releaseReads();
 
@@ -392,7 +422,11 @@ test('D-2 service: previews never consume songs — enabling the DJ later starts
     w.advance(10 * SEC);
   }
   const r = await poll(w, room, { enable: true });
-  assert.equal(keyOf(r.enqueue), firstPreview, 'Expected previews not to be recorded as used: the first enqueue should be the head the office has been shown all along');
+  assert.equal(
+    keyOf(r.enqueue),
+    firstPreview,
+    'Expected previews not to be recorded as used: the first enqueue should be the head the office has been shown all along'
+  );
 });
 
 // ===========================================================================
@@ -415,8 +449,15 @@ test('D-3 service: the DJ keeps supplying fresh songs through repeated queue cle
   }
 
   assert.equal(new Set(picks).size, picks.length, 'Expected every pick to be a distinct song');
-  assert.ok(picks.length >= 40, `Expected at least one fresh pick per step for 40 steps while 60 songs remain, got ${picks.length}`);
-  assert.equal(stalledSteps, 0, `Expected the DJ never to leave the room dry while unused songs exist (stalled steps: ${stalledSteps})`);
+  assert.ok(
+    picks.length >= 40,
+    `Expected at least one fresh pick per step for 40 steps while 60 songs remain, got ${picks.length}`
+  );
+  assert.equal(
+    stalledSteps,
+    0,
+    `Expected the DJ never to leave the room dry while unused songs exist (stalled steps: ${stalledSteps})`
+  );
 });
 
 test('D-3 service: a catalogue of single-song artists keeps flowing well past the 40-candidate pool', async () => {
@@ -430,7 +471,10 @@ test('D-3 service: a catalogue of single-song artists keeps flowing well past th
     if (step % 3 === 2) room.clear();
   }
   assert.equal(new Set(picks).size, picks.length, 'Expected no song twice');
-  assert.ok(picks.length >= 90, `Expected the DJ to keep finding songs beyond the first 40 (got ${picks.length} picks in 100 steps)`);
+  assert.ok(
+    picks.length >= 90,
+    `Expected the DJ to keep finding songs beyond the first 40 (got ${picks.length} picks in 100 steps)`
+  );
 });
 
 // ===========================================================================
@@ -446,7 +490,7 @@ test('D-4 service: the heavy all-time history is not re-read on every 10-second 
   }
   assert.ok(
     w.historyCalls <= 1,
-    `Expected the all-time history to be fetched at most once across 13 polls in 2 minutes, but it was fetched ${w.historyCalls} times`,
+    `Expected the all-time history to be fetched at most once across 13 polls in 2 minutes, but it was fetched ${w.historyCalls} times`
   );
 });
 
@@ -456,7 +500,11 @@ test('D-4 service: the cached history is refreshed eventually (not held for the 
   await poll(w, room);
   w.advance(20 * MINUTE);
   await poll(w, room);
-  assert.equal(w.historyCalls, 2, 'Expected the history to be re-read once its few-minute cache has lapsed (within 20 minutes)');
+  assert.equal(
+    w.historyCalls,
+    2,
+    'Expected the history to be re-read once its few-minute cache has lapsed (within 20 minutes)'
+  );
 });
 
 test('D-4 service: hand-queued songs are read with a query bounded by London midnight', async () => {
@@ -465,10 +513,10 @@ test('D-4 service: hand-queued songs are read with a query bounded by London mid
   w.advance(10 * SEC);
   await poll(w, new MiniRoom());
 
-  assert.ok(w.sinceCalls.length >= 1, 'Expected the service to ask for today\'s events via fetchEventsSince');
+  assert.ok(w.sinceCalls.length >= 1, "Expected the service to ask for today's events via fetchEventsSince");
   assert.ok(
     w.sinceCalls.every((ms) => ms === LONDON_MIDNIGHT_20_OCT),
-    `Expected every cheap query to start at London midnight (${new Date(LONDON_MIDNIGHT_20_OCT).toISOString()}), got ${w.sinceCalls.map((m) => new Date(m).toISOString()).join(', ')}`,
+    `Expected every cheap query to start at London midnight (${new Date(LONDON_MIDNIGHT_20_OCT).toISOString()}), got ${w.sinceCalls.map((m) => new Date(m).toISOString()).join(', ')}`
   );
 });
 
@@ -480,7 +528,7 @@ test('D-4 service: the hand-queued query moves to the new London midnight on the
   assert.equal(
     w.sinceCalls[w.sinceCalls.length - 1],
     Date.UTC(2026, 9, 20, 23, 0, 0),
-    'Expected the cheap query on the 21st to start at 00:00 BST on the 21st (= 23:00 UTC on the 20th)',
+    'Expected the cheap query on the 21st to start at 00:00 BST on the 21st (= 23:00 UTC on the 20th)'
   );
 });
 
@@ -499,7 +547,7 @@ test('D-4/D-1 service: a song queued by a person seconds after the history cache
   assert.notEqual(
     keyOf(r.enqueue),
     songKey(top),
-    'Expected today\'s hand-queued songs to be read fresh on every poll, not from the cached history',
+    "Expected today's hand-queued songs to be read fresh on every poll, not from the cached history"
   );
 });
 
@@ -520,7 +568,7 @@ test('D-5 service: the response has exactly enabled, leaseHeld, enqueue, upcomin
   assert.deepEqual(
     Object.keys(r).sort(),
     ['enabled', 'enqueue', 'fillerUri', 'leaseHeld', 'upcoming'],
-    'Expected the response body keys to be unchanged for old desktop and Android clients',
+    'Expected the response body keys to be unchanged for old desktop and Android clients'
   );
   assert.equal(r.enabled, true);
   assert.equal(r.leaseHeld, true);
@@ -580,22 +628,21 @@ async function withConnString<T>(value: string | undefined, fn: () => Promise<T>
 
 test('D-5 handler: 400 when groupId or clientId is missing', async () => {
   const res = await withConnString('AccountEndpoint=https://x.invalid/;AccountKey=eA==;', () =>
-    djAutoplayHandler(requestWith({ groupId: 'g' }), quietContext),
+    djAutoplayHandler(requestWith({ groupId: 'g' }), quietContext)
   );
   assert.equal(res.status, 400, 'Expected a missing clientId to be rejected with 400');
 });
 
 test('D-5 handler: 400 for a body that is not JSON', async () => {
   const res = await withConnString('AccountEndpoint=https://x.invalid/;AccountKey=eA==;', () =>
-    djAutoplayHandler(requestWith(null, true), quietContext),
+    djAutoplayHandler(requestWith(null, true), quietContext)
   );
   assert.equal(res.status, 400, 'Expected an unparseable body to be rejected with 400');
 });
 
 test('D-5 handler: 500 when Cosmos is not configured', async () => {
   const res = await withConnString(undefined, () =>
-    djAutoplayHandler(requestWith({ groupId: 'g', clientId: 'c' }), quietContext),
+    djAutoplayHandler(requestWith({ groupId: 'g', clientId: 'c' }), quietContext)
   );
   assert.equal(res.status, 500, 'Expected the "Cosmos not configured" 500 to be unchanged');
 });
-

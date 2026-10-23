@@ -17,16 +17,33 @@
   font-weight: 600;
   padding: 0.45em 1em;
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast);
+  transition:
+    background var(--dur-fast) var(--ease-fast),
+    color var(--dur-fast) var(--ease-fast);
 }
-.segment:hover:not(:disabled) { color: var(--text); }
+.segment:hover:not(:disabled) {
+  color: var(--text);
+}
 .segmentOn,
-.segmentOn:hover:not(:disabled) { background: rgba(var(--tint), 0.2); color: var(--text); }
-.segment:disabled { cursor: default; }
+.segmentOn:hover:not(:disabled) {
+  background: rgba(var(--tint), 0.2);
+  color: var(--text);
+}
+.segment:disabled {
+  cursor: default;
+}
 
-.name { color: var(--text); font-weight: 600; }
-.optional { color: var(--text-3); font-weight: 400; }
+.name {
+  color: var(--text);
+  font-weight: 600;
+}
+.optional {
+  color: var(--text-3);
+  font-weight: 400;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .segment { transition: none; }
+  .segment {
+    transition: none;
+  }
 }

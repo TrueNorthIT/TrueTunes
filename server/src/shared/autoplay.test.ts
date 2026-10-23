@@ -1,13 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  decideAutoplay,
-  emptySession,
-  trackKey,
-  LEASE_MS,
-  ENQUEUE_TIMEOUT_MS,
-  type DjSession,
-} from './autoplay';
+import { decideAutoplay, emptySession, trackKey, LEASE_MS, ENQUEUE_TIMEOUT_MS, type DjSession } from './autoplay';
 import type { DjTrack } from './dj';
 
 const track = (uri: string, artist = 'Band'): DjTrack => ({
@@ -42,16 +35,15 @@ test('parks exactly one track when the queue has run dry', () => {
   assert.equal(d.enqueue?.uri, 'a');
   assert.equal(d.fillerUri, 'a');
   // The other two are preview only.
-  assert.deepEqual(d.upcoming.map((t) => t.uri), ['a', 'b', 'c']);
+  assert.deepEqual(
+    d.upcoming.map((t) => t.uri),
+    ['a', 'b', 'c']
+  );
 });
 
 test('does not park anything while real tracks are still waiting', () => {
   // Playhead on the first track, one still ahead of it.
-  const d = decideAutoplay(
-    enabledSession(),
-    req({ queueUris: ['now', 'user-track'], nowPlayingUri: 'now' }),
-    1000,
-  );
+  const d = decideAutoplay(enabledSession(), req({ queueUris: ['now', 'user-track'], nowPlayingUri: 'now' }), 1000);
   assert.equal(d.enqueue, null, 'something is still queued ahead — nothing to fill');
 });
 
@@ -64,17 +56,13 @@ test('ignores already-played tracks when judging whether the queue is dry', () =
       queueUris: ['p1', 'p2', 'p3', 'p4', 'p5', 'now'],
       nowPlayingUri: 'now',
     }),
-    1000,
+    1000
   );
   assert.equal(d.enqueue?.uri, 'a', 'a long history of played tracks is not a full queue');
 });
 
 test('treats a queue holding only the playing track as dry', () => {
-  const d = decideAutoplay(
-    enabledSession(),
-    req({ queueUris: ['now'], nowPlayingUri: 'now' }),
-    1000,
-  );
+  const d = decideAutoplay(enabledSession(), req({ queueUris: ['now'], nowPlayingUri: 'now' }), 1000);
   assert.equal(d.enqueue?.uri, 'a');
 });
 
@@ -87,7 +75,10 @@ test('only the lease holder is told to enqueue', () => {
   const second = decideAutoplay(first.session, req({ clientId: 'client-2', queueUris: ['a'] }), 2000);
   assert.equal(second.leaseHeld, false);
   assert.equal(second.enqueue, null, 'a second client would duplicate the filler');
-  assert.deepEqual(second.upcoming.map((t) => t.uri), ['a', 'b', 'c']);
+  assert.deepEqual(
+    second.upcoming.map((t) => t.uri),
+    ['a', 'b', 'c']
+  );
 });
 
 test('another client takes over once the lease expires', () => {
@@ -110,23 +101,18 @@ test('promotes the filler out of the preview once it starts playing', () => {
   // never removes it, the playhead just moved onto it. Judging by membership
   // said "still present", so it was never promoted and no follow-up was queued:
   // the DJ played exactly one track and stalled.
-  const playing = decideAutoplay(
-    first.session,
-    req({ queueUris: ['a'], nowPlayingUri: 'a' }),
-    2000,
-  );
+  const playing = decideAutoplay(first.session, req({ queueUris: ['a'], nowPlayingUri: 'a' }), 2000);
   assert.ok(!playing.upcoming.some((t) => t.uri === 'a'), 'should have moved out of upcoming');
   assert.equal(playing.enqueue?.uri, 'b', 'and the next pick must already be queued');
-  assert.deepEqual(playing.upcoming.map((t) => t.uri), ['b', 'c', 'd']);
+  assert.deepEqual(
+    playing.upcoming.map((t) => t.uri),
+    ['b', 'c', 'd']
+  );
 });
 
 test('a filler the playhead has moved past counts as played', () => {
   const first = decideAutoplay(enabledSession(), req(), 1000);
-  const past = decideAutoplay(
-    first.session,
-    req({ queueUris: ['a', 'later'], nowPlayingUri: 'later' }),
-    2000,
-  );
+  const past = decideAutoplay(first.session, req({ queueUris: ['a', 'later'], nowPlayingUri: 'later' }), 2000);
   assert.ok(past.session.recentlyPlayed.includes('a'));
   assert.ok(!past.upcoming.some((t) => t.uri === 'a'));
 });
@@ -169,13 +155,12 @@ test('does not offer a pick again once it has played', () => {
 test('retries when an add never lands at all', () => {
   const first = decideAutoplay(enabledSession(), req(), 1000);
   // Never appears in any snapshot — the client's add failed.
-  const retried = decideAutoplay(
-    first.session,
-    req({ queueUris: [] }),
-    1000 + ENQUEUE_TIMEOUT_MS + 1,
-  );
+  const retried = decideAutoplay(first.session, req({ queueUris: [] }), 1000 + ENQUEUE_TIMEOUT_MS + 1);
   assert.equal(retried.enqueue?.uri, 'a', 'should try the same pick again');
-  assert.deepEqual(retried.upcoming.map((t) => t.uri), ['a', 'b', 'c']);
+  assert.deepEqual(
+    retried.upcoming.map((t) => t.uri),
+    ['a', 'b', 'c']
+  );
 });
 
 test('drops a suggestion a user queued themselves', () => {
@@ -226,7 +211,7 @@ test('finds the filler again after Sonos re-keys its objectId', () => {
       nowPlayingUri: 'some-other-object-id',
       nowPlayingKey: trackKey(parked.trackName, parked.artist),
     }),
-    2000,
+    2000
   );
 
   assert.ok(!rekeyed.upcoming.some((t) => t.uri === parked.uri), 'should have moved on');
@@ -243,7 +228,7 @@ test('does not re-suggest a re-keyed track already in the queue', () => {
       nowPlayingUri: 'unknown-id',
       nowPlayingKey: trackKey('a', 'Band'),
     }),
-    1000,
+    1000
   );
   // Candidate 'a' is that same track under a different id — offering it back
   // would queue what is playing right now.
@@ -268,7 +253,7 @@ test('trusts the reported playhead position over identifier matching', () => {
       queueKeys: ['played||band', 'totally different||formatting'],
       nowPlayingIndex: 1,
     }),
-    2000,
+    2000
   );
 
   assert.equal(byIndex.enqueue, null, 'filler is not locatable, so nothing new is parked');
@@ -285,7 +270,7 @@ test('a reported playhead past the filler consumes it', () => {
       queueUris: [parked.uri, 'next-one'],
       nowPlayingIndex: 1,
     }),
-    2000,
+    2000
   );
 
   assert.ok(consumed.session.recentlyPlayed.includes(parked.uri));
@@ -294,11 +279,7 @@ test('a reported playhead past the filler consumes it', () => {
 
 test('ignores a nonsense playhead position', () => {
   const first = decideAutoplay(enabledSession(), req(), 1000);
-  const d = decideAutoplay(
-    first.session,
-    req({ queueUris: ['a'], nowPlayingIndex: 99 }),
-    2000,
-  );
+  const d = decideAutoplay(first.session, req({ queueUris: ['a'], nowPlayingIndex: 99 }), 2000);
   // Out of range, so it falls back to matching rather than trusting it.
   assert.equal(d.fillerUri, 'a');
 });

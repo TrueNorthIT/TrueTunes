@@ -24,8 +24,7 @@
   position: relative;
   background: linear-gradient(
     180deg,
-    /* Quiet Wall: washes peak at 0.3 */
-    rgba(var(--panel-color, 28, 28, 30), 0.3) 0%,
+    /* Quiet Wall: washes peak at 0.3 */ rgba(var(--panel-color, 28, 28, 30), 0.3) 0%,
     rgba(var(--panel-color, 28, 28, 30), 0.12) 20%,
     transparent 40%
   );
@@ -50,8 +49,14 @@
 }
 
 @keyframes toastIn {
-  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 .entraSigningIn {

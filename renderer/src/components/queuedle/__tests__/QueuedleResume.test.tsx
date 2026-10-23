@@ -13,9 +13,18 @@ vi.mock('../QueuedleIntro', () => ({
   QueuedleIntro: ({ onStart }: { onStart: () => void }) => <button onClick={onStart}>Start</button>,
 }));
 vi.mock('../QueuedleQuestionCard', () => ({
-  QueuedleQuestionCard: ({ question, revealed, pickedSide, onPick, onNext }: {
-    question: GameQuestion; revealed: boolean; pickedSide: 'left' | 'right' | null;
-    onPick: (s: 'left' | 'right') => void; onNext: () => void;
+  QueuedleQuestionCard: ({
+    question,
+    revealed,
+    pickedSide,
+    onPick,
+    onNext,
+  }: {
+    question: GameQuestion;
+    revealed: boolean;
+    pickedSide: 'left' | 'right' | null;
+    onPick: (s: 'left' | 'right') => void;
+    onNext: () => void;
   }) => (
     <div>
       <span>{`Question ${question.index}`}</span>
@@ -27,8 +36,14 @@ vi.mock('../QueuedleQuestionCard', () => ({
   ),
 }));
 vi.mock('../QueuedleBonusScreen', () => ({
-  QueuedleBonusScreen: ({ selections, onSelect, onSubmit }: {
-    selections: (string | null)[]; onSelect: (i: number, name: string) => void; onSubmit: () => void;
+  QueuedleBonusScreen: ({
+    selections,
+    onSelect,
+    onSubmit,
+  }: {
+    selections: (string | null)[];
+    onSelect: (i: number, name: string) => void;
+    onSubmit: () => void;
   }) => (
     <div>
       <span>{`Bonus ${selections.map((s) => s ?? '-').join(',')}`}</span>
@@ -41,14 +56,23 @@ vi.mock('../QueuedleBonusResults', () => ({
   QueuedleBonusResults: ({ onContinue }: { onContinue: () => void }) => <button onClick={onContinue}>See Score</button>,
 }));
 vi.mock('../QueuedleRankChange', () => ({
-  QueuedleRankChange: ({ onContinue }: { onContinue: () => void }) => <button onClick={onContinue}>Continue Rank</button>,
+  QueuedleRankChange: ({ onContinue }: { onContinue: () => void }) => (
+    <button onClick={onContinue}>Continue Rank</button>
+  ),
 }));
 
 const GAME_ID = '2026-10-20';
 
 function question(index: number, winner: 'left' | 'right' = 'left'): GameQuestion {
   const item = (id: string, name: string, topQueuer: string): GameItem => ({
-    id, name, category: 'track', subtitle: '', imageUrl: undefined, count: 5, topQueuer, queuerCandidates: [],
+    id,
+    name,
+    category: 'track',
+    subtitle: '',
+    imageUrl: undefined,
+    count: 5,
+    topQueuer,
+    queuerCandidates: [],
   });
   return {
     index,
@@ -75,7 +99,10 @@ const stats: GameStatsResult = {
     questionIndex: i,
     leftPct: 70,
     rightPct: 30,
-    bonusOptions: [{ name: 'alice', pct: 60 }, { name: 'bob', pct: 40 }],
+    bonusOptions: [
+      { name: 'alice', pct: 60 },
+      { name: 'bob', pct: 40 },
+    ],
   })),
 };
 
@@ -90,7 +117,7 @@ function renderPanel() {
   return render(
     <QueryClientProvider client={client}>
       <QueuedlePanel />
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
 }
 
@@ -113,7 +140,6 @@ beforeEach(() => {
   localStorage.clear();
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 });
-
 
 const KEY = `queuedle-progress:${GAME_ID}`;
 
@@ -200,9 +226,17 @@ describe('Queuedle resumes a game in progress', () => {
   });
 
   it('drops saved progress when the server says the game is already played', async () => {
-    localStorage.setItem(KEY, JSON.stringify({
-      phase: 'main', currentIdx: 1, pickedSide: null, mainGuesses: ['left'], bonusSelections: [], savedAt: Date.now(),
-    }));
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({
+        phase: 'main',
+        currentIdx: 1,
+        pickedSide: null,
+        mainGuesses: ['left'],
+        bonusSelections: [],
+        savedAt: Date.now(),
+      })
+    );
     stubServer({ leaderboard: [playedEntry], myScore: () => Promise.resolve(fullScore) });
     await mountAndSettle();
     expect(await screen.findByText('Your answers')).toBeInTheDocument();

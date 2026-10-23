@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { calculateWeeklyLeaderboard, isInWeek, londonDateId, previousWeekRange, weekRangeOf, weeklyWinner } from '../lib/queuedleWeek';
+import {
+  calculateWeeklyLeaderboard,
+  isInWeek,
+  londonDateId,
+  previousWeekRange,
+  weekRangeOf,
+  weeklyWinner,
+} from '../lib/queuedleWeek';
 import type { WeeklyStanding } from '../lib/queuedleWeek';
 import type { QueuedleDay } from '../lib/queuedleStats';
 
@@ -234,8 +241,7 @@ export function useQueuedleHistory(userName: string | null | undefined, enabled 
 export function useGameRankings(userName: string | null | undefined, enabled: boolean) {
   return useQuery<QueuedleDay[], Error, GameRanking[]>({
     ...queuedleHistoryQueryOptions(userName),
-    select: (days) =>
-      calculateGameRankings(days.map((d) => ({ leaderboard: d, maxTotal: d.questionCount * 2 }))),
+    select: (days) => calculateGameRankings(days.map((d) => ({ leaderboard: d, maxTotal: d.questionCount * 2 }))),
     enabled: enabled && userName !== undefined,
   });
 }

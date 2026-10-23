@@ -1,16 +1,16 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { getActiveProvider } from "../providers";
-import { useNowPlaying } from "../hooks/useNowPlaying";
-import { useOpenItem } from "../hooks/useOpenItem";
-import { useFavourite } from "../hooks/usePlaylists";
-import { useAttribution, resolveAttribution } from "../hooks/useAttribution";
-import { useUsers } from "../hooks/useUsers";
-import { UserAvatar } from "./common/UserAvatar";
-import { ExplicitBadge } from "./common/ExplicitBadge";
-import { SeekBar } from "./common/SeekBar";
-import { TransportButtons } from "./common/TransportButtons";
-import type React from "react";
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { getActiveProvider } from '../providers';
+import { useNowPlaying } from '../hooks/useNowPlaying';
+import { useOpenItem } from '../hooks/useOpenItem';
+import { useFavourite } from '../hooks/usePlaylists';
+import { useAttribution, resolveAttribution } from '../hooks/useAttribution';
+import { useUsers } from '../hooks/useUsers';
+import { UserAvatar } from './common/UserAvatar';
+import { ExplicitBadge } from './common/ExplicitBadge';
+import { SeekBar } from './common/SeekBar';
+import { TransportButtons } from './common/TransportButtons';
+import type React from 'react';
 import {
   Shuffle,
   Repeat,
@@ -25,9 +25,9 @@ import {
   Heart,
   ChevronUp,
   ChevronDown,
-} from "lucide-react";
-import type { PlaybackState } from "../hooks/usePlayback";
-import styles from "../styles/PlayerBar.module.css";
+} from 'lucide-react';
+import type { PlaybackState } from '../hooks/usePlayback';
+import styles from '../styles/PlayerBar.module.css';
 
 interface Props {
   isAuthed: boolean;
@@ -36,13 +36,7 @@ interface Props {
   displayName?: string | null;
 }
 
-function ScrollingText({
-  text,
-  className,
-}: {
-  text: string;
-  className: string;
-}) {
+function ScrollingText({ text, className }: { text: string; className: string }) {
   const outerRef = useRef<HTMLDivElement>(null);
   const [dist, setDist] = useState(0);
 
@@ -65,8 +59,8 @@ function ScrollingText({
         style={
           dist > 0
             ? ({
-                "--tt-dist": `-${dist}px`,
-                "--tt-dur": `${(dist / 20 + 4).toFixed(1)}s`,
+                '--tt-dist': `-${dist}px`,
+                '--tt-dur': `${(dist / 20 + 4).toFixed(1)}s`,
               } as React.CSSProperties)
             : undefined
         }
@@ -157,11 +151,7 @@ function VolumeButton({ volume }: { volume: number }) {
   const muted = localVol === 0;
 
   return (
-    <div
-      className={styles.volWrap}
-      onMouseEnter={handleEnter}
-      onMouseLeave={handleLeave}
-    >
+    <div className={styles.volWrap} onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
       {open && (
         <div className={styles.volPopover}>
           <span className={styles.volPct}>{localVol}</span>
@@ -200,8 +190,8 @@ function VolumeButton({ volume }: { volume: number }) {
       <button
         className={styles.ctrl}
         onClick={toggleMute}
-        title={muted ? "Unmute" : "Mute"}
-        aria-label={muted ? "Unmute" : "Mute"}
+        title={muted ? 'Unmute' : 'Mute'}
+        aria-label={muted ? 'Unmute' : 'Mute'}
       >
         <VolumeIconGlyph volume={localVol} />
       </button>
@@ -215,11 +205,27 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
   const lyricsActive = pathname === '/lyrics';
   const openItem = useOpenItem();
   const {
-    displayTrack, displayArtist, cachedArt, dominantColor,
-    elapsedLabel, durationLabel, progressPct, durationMs,
-    isPlaying, isVisible, shuffle, repeat, volume, isExplicit,
-    albumItem, artistItem, prefetchAlbum,
-    currentObjectId, currentServiceId, currentAccountId, artUrlRaw,
+    displayTrack,
+    displayArtist,
+    cachedArt,
+    dominantColor,
+    elapsedLabel,
+    durationLabel,
+    progressPct,
+    durationMs,
+    isPlaying,
+    isVisible,
+    shuffle,
+    repeat,
+    volume,
+    isExplicit,
+    albumItem,
+    artistItem,
+    prefetchAlbum,
+    currentObjectId,
+    currentServiceId,
+    currentAccountId,
+    artUrlRaw,
   } = useNowPlaying(playback);
 
   const { isFavourited, toggle: toggleFavourite } = useFavourite(displayName, {
@@ -241,22 +247,22 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
 
   const refresh = () => getActiveProvider().refreshPlayback();
 
-  const toggleShuffle = () =>
-    getActiveProvider().setPlayModes({ shuffle: !rawShuffle }).then(refresh).then(onShuffle);
+  const toggleShuffle = () => getActiveProvider().setPlayModes({ shuffle: !rawShuffle }).then(refresh).then(onShuffle);
 
   const toggleRepeat = () => {
-    const next = rawRepeat === "none" ? "all" : rawRepeat === "all" ? "one" : "none";
-    getActiveProvider().setPlayModes({ repeat: next as 'none' | 'one' | 'all' }).then(refresh);
+    const next = rawRepeat === 'none' ? 'all' : rawRepeat === 'all' ? 'one' : 'none';
+    getActiveProvider()
+      .setPlayModes({ repeat: next as 'none' | 'one' | 'all' })
+      .then(refresh);
   };
 
-  if (!isVisible)
-    return <div style={{ height: "var(--player-h)", flexShrink: 0 }} />;
+  if (!isVisible) return <div style={{ height: 'var(--player-h)', flexShrink: 0 }} />;
 
   return (
     <div
-      className={`${styles.bar}${dominantColor ? " " + styles.tinted : ""}`}
+      className={`${styles.bar}${dominantColor ? ' ' + styles.tinted : ''}`}
       // the artwork's colour as a triplet; the material, wash and shadow live in PlayerBar.module.css
-      style={dominantColor ? ({ "--bar-tint": dominantColor } as React.CSSProperties) : undefined}
+      style={dominantColor ? ({ '--bar-tint': dominantColor } as React.CSSProperties) : undefined}
     >
       <div className={styles.inner}>
         {/* Left — art + track info */}
@@ -267,7 +273,7 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
                 className={styles.art}
                 src={cachedArt}
                 alt=""
-                style={!albumItem ? { cursor: "default" } : undefined}
+                style={!albumItem ? { cursor: 'default' } : undefined}
                 onMouseEnter={prefetchAlbum}
                 onClick={() => albumItem && openItem(albumItem)}
               />
@@ -279,19 +285,12 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
           </div>
           <div className={styles.trackInfo}>
             <div className={styles.trackLine}>
-              <ScrollingText
-                text={displayTrack || "—"}
-                className={styles.trackName}
-              />
+              <ScrollingText text={displayTrack || '—'} className={styles.trackName} />
               {displayArtist && (
                 <>
                   <span className={styles.trackSep}>{' – '}</span>
                   {artistItem ? (
-                    <button
-                      type="button"
-                      className={styles.trackArtist}
-                      onClick={() => openItem(artistItem)}
-                    >
+                    <button type="button" className={styles.trackArtist} onClick={() => openItem(artistItem)}>
                       {displayArtist}
                     </button>
                   ) : (
@@ -331,7 +330,7 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
         {/* Centre — transport */}
         <div className={styles.transport}>
           <button
-            className={`${styles.ctrl}${shuffle ? " " + styles.active : ""}`}
+            className={`${styles.ctrl}${shuffle ? ' ' + styles.active : ''}`}
             disabled={!isAuthed}
             onClick={toggleShuffle}
             title="Shuffle"
@@ -347,18 +346,12 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
             playSize={14}
           />
           <button
-            className={`${styles.ctrl}${repeat !== "none" ? " " + styles.active : ""}`}
+            className={`${styles.ctrl}${repeat !== 'none' ? ' ' + styles.active : ''}`}
             disabled={!isAuthed}
             onClick={toggleRepeat}
-            title={
-              repeat === "one"
-                ? "Repeat one"
-                : repeat === "all"
-                  ? "Repeat all"
-                  : "Repeat off"
-            }
+            title={repeat === 'one' ? 'Repeat one' : repeat === 'all' ? 'Repeat all' : 'Repeat off'}
           >
-            {repeat === "one" ? <Repeat1 size={11} /> : <Repeat size={11} />}
+            {repeat === 'one' ? <Repeat1 size={11} /> : <Repeat size={11} />}
           </button>
         </div>
 
@@ -375,17 +368,13 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
           )}
           <VolumeButton volume={volume} />
           <button
-            className={`${styles.ctrl}${lyricsActive ? " " + styles.active : ""}`}
-            onClick={() => lyricsActive ? navigate(-1) : navigate('/lyrics')}
+            className={`${styles.ctrl}${lyricsActive ? ' ' + styles.active : ''}`}
+            onClick={() => (lyricsActive ? navigate(-1) : navigate('/lyrics'))}
             title="Lyrics"
           >
             <MicVocal size={14} />
           </button>
-          <button
-            className={styles.ctrl}
-            onClick={() => window.sonos.openMiniPlayer()}
-            title="Mini player"
-          >
+          <button className={styles.ctrl} onClick={() => window.sonos.openMiniPlayer()} title="Mini player">
             <PictureInPicture2 size={14} />
           </button>
         </div>

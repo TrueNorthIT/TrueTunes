@@ -47,13 +47,15 @@ function useTween(from: number, to: number, durationMs: number) {
 
 export function QueuedleRankChange({ before, after, onContinue }: Props) {
   const fromRating = before?.rating ?? after.rating;
-  const reduceMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduceMotion =
+    typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const display = useTween(fromRating, after.rating, reduceMotion ? 0 : ANIM_MS);
   const delta = before ? after.rating - before.rating : 0;
   const tierChanged = !!before && before.tierKey !== after.tierKey;
   const showDelta = !!before && !after.isProvisional && !before.isProvisional && delta !== 0;
   const gamesLeft = Math.max(0, 3 - after.gamesPlayed);
-  const chip = (r: RankSnapshot) => `${styles.tierChip} ${styles.rankChip}${r.isProvisional ? ' ' + styles.provisional : ''}`;
+  const chip = (r: RankSnapshot) =>
+    `${styles.tierChip} ${styles.rankChip}${r.isProvisional ? ' ' + styles.provisional : ''}`;
 
   return (
     <SectionCard className={styles.rankCard}>

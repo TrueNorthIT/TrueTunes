@@ -14,22 +14,36 @@
   margin: 0 auto;
   container-type: inline-size;
 }
-.section { margin-bottom: 1.4em; }
+.section {
+  margin-bottom: 1.4em;
+}
 
 /* ── Header band: the shared HeroBand, plus this page's lines ── */
 .artPh {
-  width: 100%; height: 100%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 3em; color: var(--text-3);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3em;
+  color: var(--text-3);
 }
 
-.artist { font-size: var(--fs-body); color: var(--text-2); }
+.artist {
+  font-size: var(--fs-body);
+  color: var(--text-2);
+}
 .metaLine {
   font-size: var(--fs-label);
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
 }
-.actions { display: flex; gap: 0.6em; margin-top: 0.4em; flex-wrap: wrap; }
+.actions {
+  display: flex;
+  gap: 0.6em;
+  margin-top: 0.4em;
+  flex-wrap: wrap;
+}
 
 /* Text links (artist, album): no chrome, take their colour from the line. */
 .link {
@@ -43,18 +57,25 @@
   transition: color var(--dur-fast) var(--ease-fast);
 }
 .link:hover,
-.link:focus-visible { color: var(--on-art); text-decoration: underline; }
+.link:focus-visible {
+  color: var(--on-art);
+  text-decoration: underline;
+}
 
 /* ── Tracks ── */
 /* ponytail: capped (68em: full width at 1280, ~1090px from 1730) so the duration stays near the title; a per-track "queued here" column
    would use the width instead, once the stats function can return per-track counts. */
-.trackCard { max-width: 68em; }
+.trackCard {
+  max-width: 68em;
+}
 
 /* About this album (Genius) beside the tracks once there is room for both: a 70/30 split of the page
    width, so the pair spans the hero band (the card never narrower than 22em). Narrower, it stacks under
    the tracks, before "More by". In the wide layout it stays in view down a long tracklist. Without a
    card the tracks keep the page as before (no .body class). */
-.about { max-width: 68em; }
+.about {
+  max-width: 68em;
+}
 @container (min-width: 92em) {
   .body {
     display: grid;
@@ -62,7 +83,9 @@
     column-gap: 1.4em;
     align-items: start;
   }
-  .body .trackCard { max-width: none; }
+  .body .trackCard {
+    max-width: none;
+  }
   .about {
     max-width: none;
     position: sticky;
@@ -84,7 +107,9 @@
   color: var(--text-3);
   user-select: text;
 }
-.aboutText p + p { margin-top: 0.7em; }
+.aboutText p + p {
+  margin-top: 0.7em;
+}
 .source {
   margin-top: 1em;
   font-size: var(--fs-label);
@@ -98,15 +123,23 @@
   transition: color var(--dur-fast) var(--ease-fast);
 }
 .sourceLink:hover,
-.sourceLink:focus-visible { color: var(--text); }
+.sourceLink:focus-visible {
+  color: var(--text);
+}
 .skelLine {
   display: block;
   height: 0.95em;
   margin-bottom: 0.6em;
   border-radius: var(--r-xs);
 }
-.tracks { min-width: 0; }
-.list { list-style: none; margin: 0; padding: 0; }
+.tracks {
+  min-width: 0;
+}
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
 
 .msg {
   color: var(--text-3);
@@ -125,8 +158,15 @@
   gap: 1em;
   padding: 0.7em 0.6em;
 }
-.skelNum { width: 2em; height: 0.9em; border-radius: var(--r-xs); }
-.skelTitle { height: 1em; border-radius: var(--r-xs); }
+.skelNum {
+  width: 2em;
+  height: 0.9em;
+  border-radius: var(--r-xs);
+}
+.skelTitle {
+  height: 1em;
+  border-radius: var(--r-xs);
+}
 
 /* ── More by the artist ── */
 .shelf {
@@ -134,4 +174,3 @@
   grid-template-columns: repeat(auto-fill, minmax(8.5em, 1fr));
   gap: 1.2em 1em;
 }
-

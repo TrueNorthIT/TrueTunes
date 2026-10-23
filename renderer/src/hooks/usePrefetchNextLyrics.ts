@@ -4,10 +4,7 @@ import { lyricsQueryOptions } from './useLyrics';
 import { geniusDescriptionQueryOptions } from './useGeniusDescription';
 import type { NormalizedQueueItem } from '../types/provider';
 
-export function usePrefetchNextLyrics(
-  items: NormalizedQueueItem[],
-  queueItemId: string | null,
-) {
+export function usePrefetchNextLyrics(items: NormalizedQueueItem[], queueItemId: string | null) {
   const queryClient = useQueryClient();
 
   useEffect(() => {

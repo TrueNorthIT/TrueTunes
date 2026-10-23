@@ -9,19 +9,28 @@ beforeEach(() => {
 
 const res = (status: number, body?: unknown) => ({ status, ok: status >= 200 && status < 300, json: async () => body });
 const lyrics = (synced: string | null, plain: string | null = null, duration?: number) => ({
-  syncedLyrics: synced, plainLyrics: plain, instrumental: false, duration,
+  syncedLyrics: synced,
+  plainLyrics: plain,
+  instrumental: false,
+  duration,
 });
 const urls = () => fetchMock.mock.calls.map((c) => String(c[0]));
 const keyOf = (t: string, a: string, album?: string | null, dur = 0) => lyricsQueryOptions(t, a, album, dur).queryKey;
 
 describe('lyrics query key: one song, one key', () => {
   it('ignores case, whitespace, album and everyone after the first artist', () => {
-    expect(keyOf('Kon Queso', 'MF DOOM', 'MM..FOOD'), 'Expected the same key').toEqual(keyOf('  kon queso ', 'mf doom, Other', null));
+    expect(keyOf('Kon Queso', 'MF DOOM', 'MM..FOOD'), 'Expected the same key').toEqual(
+      keyOf('  kon queso ', 'mf doom, Other', null)
+    );
   });
 
   it('strips remaster and bracketed suffixes from the track', () => {
-    expect(keyOf('Song (Remastered 2011)', 'A'), 'Expected a bracketed remaster suffix ignored').toEqual(keyOf('Song', 'A'));
-    expect(keyOf('Song - 2011 Remastered', 'A'), 'Expected a trailing remaster suffix ignored').toEqual(keyOf('Song', 'A'));
+    expect(keyOf('Song (Remastered 2011)', 'A'), 'Expected a bracketed remaster suffix ignored').toEqual(
+      keyOf('Song', 'A')
+    );
+    expect(keyOf('Song - 2011 Remastered', 'A'), 'Expected a trailing remaster suffix ignored').toEqual(
+      keyOf('Song', 'A')
+    );
   });
 
   it('keeps different songs apart', () => {
@@ -35,7 +44,9 @@ describe('lyrics queryFn: get, get without album, then search', () => {
     fetchMock.mockResolvedValueOnce(res(200, lyrics('[00:01.00] hi')));
     const data = await lyricsQueryOptions('T', 'A', 'Alb', 200_000).queryFn();
     expect(data?.syncedLyrics, 'Expected the first response').toBe('[00:01.00] hi');
-    expect(urls()[0], 'Expected album and duration in the first request').toMatch(/album_name=Alb.*duration=200|duration=200.*album_name=Alb/);
+    expect(urls()[0], 'Expected album and duration in the first request').toMatch(
+      /album_name=Alb.*duration=200|duration=200.*album_name=Alb/
+    );
   });
 
   it('retries without the album on a 404', async () => {
@@ -59,7 +70,13 @@ describe('lyrics queryFn: get, get without album, then search', () => {
   it('picks the closest duration among synced results, within 3 seconds', async () => {
     fetchMock
       .mockResolvedValueOnce(res(404))
-      .mockResolvedValueOnce(res(200, [lyrics('[00:00.00] far', null, 230), lyrics('[00:00.00] near', null, 201), lyrics('[00:00.00] nearer', null, 200)]));
+      .mockResolvedValueOnce(
+        res(200, [
+          lyrics('[00:00.00] far', null, 230),
+          lyrics('[00:00.00] near', null, 201),
+          lyrics('[00:00.00] nearer', null, 200),
+        ])
+      );
     const data = await lyricsQueryOptions('T', 'A', null, 200_000).queryFn();
     expect(data?.syncedLyrics, 'Expected the closest duration').toBe('[00:00.00] nearer');
   });
@@ -70,7 +87,10 @@ describe('lyrics queryFn: get, get without album, then search', () => {
       .mockResolvedValueOnce(res(404))
       .mockResolvedValueOnce(res(404))
       .mockResolvedValueOnce(res(200, [lyrics('[00:00.00] too long', null, 260)]));
-    expect(await lyricsQueryOptions('T', 'A', 'Alb', 200_000).queryFn(), 'Expected null when the only search hit is out of range').toBeNull();
+    expect(
+      await lyricsQueryOptions('T', 'A', 'Alb', 200_000).queryFn(),
+      'Expected null when the only search hit is out of range'
+    ).toBeNull();
     expect(fetchMock, 'Expected all three steps to run').toHaveBeenCalledTimes(3);
     // no album: get, then search
     fetchMock.mockReset();

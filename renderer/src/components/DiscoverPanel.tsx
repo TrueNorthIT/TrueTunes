@@ -40,7 +40,15 @@ const albumLine = (t: AlbumTrack) =>
   t.albumName && !t.albumName.toLowerCase().startsWith(t.title.toLowerCase()) ? t.albumName : undefined;
 
 /** One act: photo washed with its colour, who's behind it, and its tracks the office has never played. */
-function ActCard({ group, viewer, onAdd }: { group: DjActDiscoveries; viewer?: string | null; onAdd: (t: AlbumTrack) => void }) {
+function ActCard({
+  group,
+  viewer,
+  onAdd,
+}: {
+  group: DjActDiscoveries;
+  viewer?: string | null;
+  onAdd: (t: AlbumTrack) => void;
+}) {
   const { act } = group;
   // Just you, on every card, says nothing.
   const drivers = actDrivers(act.because, act.artist, viewer);
@@ -51,19 +59,34 @@ function ActCard({ group, viewer, onAdd }: { group: DjActDiscoveries; viewer?: s
 
   const albumItemOf = (t: AlbumTrack) =>
     t.albumId
-      ? albumItem(t.albumName ?? t.title, { objectId: t.albumId, serviceId: t.id.serviceId ?? '', accountId: t.id.accountId ?? '' })
+      ? albumItem(t.albumName ?? t.title, {
+          objectId: t.albumId,
+          serviceId: t.id.serviceId ?? '',
+          accountId: t.id.accountId ?? '',
+        })
       : null;
   const openAlbum = (t: AlbumTrack) => {
     const item = albumItemOf(t);
     if (item) openItem(item);
-    else void resolveAndOpen(t.albumName || t.title, 'album', { artist: act.artist, serviceId: act.serviceId, accountId: act.accountId });
+    else
+      void resolveAndOpen(t.albumName || t.title, 'album', {
+        artist: act.artist,
+        serviceId: act.serviceId,
+        accountId: act.accountId,
+      });
   };
   const prefetchAlbum = (t: AlbumTrack) => {
     if (t.albumId && t.id.serviceId && t.id.accountId)
       void queryClient.prefetchQuery(albumQueryOptions(t.albumId, t.id.serviceId, t.id.accountId, undefined));
   };
   const openArtist = () =>
-    openItem(artistItem(act.artist, { objectId: act.artistId, serviceId: act.serviceId, accountId: act.accountId }, { title: act.artist }));
+    openItem(
+      artistItem(
+        act.artist,
+        { objectId: act.artistId, serviceId: act.serviceId, accountId: act.accountId },
+        { title: act.artist }
+      )
+    );
 
   return (
     <PersonCard
@@ -99,7 +122,7 @@ function ActCard({ group, viewer, onAdd }: { group: DjActDiscoveries; viewer?: s
                   }),
                   sonosItem: t.raw,
                 },
-                e,
+                e
               )
             }
           />
@@ -146,7 +169,10 @@ export function DiscoverPanel({ onAddToQueue, displayName, queueItems = [] }: Pr
   const inOffice = useMemo(() => (roomKey ? roomKey.split(',') : []), [roomKey]);
   const opts = useMemo(() => ({ users: selected.length ? selected : inOffice, limit: 25 }), [selected, inOffice]);
   // Keep the current cards (dimmed) while a new room's set loads, rather than flashing back to a skeleton.
-  const { data, isLoading, isError, isPlaceholderData, refetch } = useQuery({ ...djSetQueryOptions(opts), placeholderData: keepPreviousData });
+  const { data, isLoading, isError, isPlaceholderData, refetch } = useQuery({
+    ...djSetQueryOptions(opts),
+    placeholderData: keepPreviousData,
+  });
   const queued = useMemo(() => queueItems.map((q) => ({ title: q.track.title, artist: q.track.artist })), [queueItems]);
   const { groups: fresh, isLoading: browsing } = useDjDiscoveries(data?.artists, true, { queued, round });
   // A new room's acts may all be unbrowsed at first: hold the last settled cards until some arrive.
@@ -205,7 +231,11 @@ export function DiscoverPanel({ onAddToQueue, displayName, queueItems = [] }: Pr
 
   // Undo matches Home's.
   function queueAll() {
-    const added = shown.map(({ act, track }) => ({ id: track.id.objectId ?? '', title: track.title, artist: act.artist }));
+    const added = shown.map(({ act, track }) => ({
+      id: track.id.objectId ?? '',
+      title: track.title,
+      artist: act.artist,
+    }));
     shown.forEach(({ track }) => onAddToQueue(track.raw, -1, UNATTRIBUTED));
     showToast(`Queued ${added.length} track${added.length === 1 ? '' : 's'}`, 'info', {
       durationMs: 6000,
@@ -214,7 +244,10 @@ export function DiscoverPanel({ onAddToQueue, displayName, queueItems = [] }: Pr
         onClick: () => {
           // Only what is still in the queue from this batch; anything else is left alone.
           const indices = indicesToUndo(queueRef.current, added);
-          if (indices.length) void getActiveProvider().removeFromQueue(indices).catch(() => showToast('Could not undo'));
+          if (indices.length)
+            void getActiveProvider()
+              .removeFromQueue(indices)
+              .catch(() => showToast('Could not undo'));
         },
       },
     });
@@ -253,7 +286,11 @@ export function DiscoverPanel({ onAddToQueue, displayName, queueItems = [] }: Pr
             <p className={styles.premise}>Tracks the office has never played, by acts the room already likes.</p>
           </div>
           <div className={styles.actions}>
-            <PillButton onClick={() => setRound((r) => r + 1)} disabled={groups.length === 0} title="Show other unheard songs by these acts">
+            <PillButton
+              onClick={() => setRound((r) => r + 1)}
+              disabled={groups.length === 0}
+              title="Show other unheard songs by these acts"
+            >
               <Shuffle size={14} aria-hidden="true" /> Shuffle
             </PillButton>
             <PillButton onClick={queueAll} disabled={stale || shown.length === 0} title="Add every pick to the queue">
@@ -300,7 +337,9 @@ export function DiscoverPanel({ onAddToQueue, displayName, queueItems = [] }: Pr
           <div className={styles.empty} role="alert">
             <p className={styles.emptyTitle}>Couldn&apos;t load picks right now</p>
             <p>The office history or the music service didn&apos;t answer. It&apos;s usually brief.</p>
-            <PillButton className={styles.retry} onClick={() => refetch()}>Try again</PillButton>
+            <PillButton className={styles.retry} onClick={() => refetch()}>
+              Try again
+            </PillButton>
           </div>
         ) : groups.length === 0 ? (
           <div className={styles.empty}>

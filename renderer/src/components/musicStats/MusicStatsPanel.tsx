@@ -114,7 +114,9 @@ function TrackList({ tracks }: { tracks: MusicTrackLength[] }) {
         <li key={`${i}|${t.trackName}|${t.artist}`} className={styles.item}>
           <Thumb url={t.imageUrl} />
           <div className={styles.itemText}>
-            <div className={styles.itemTitle} title={t.trackName}>{t.trackName}</div>
+            <div className={styles.itemTitle} title={t.trackName}>
+              {t.trackName}
+            </div>
             <div className={styles.itemSub} title={`${t.artist} · queued by ${t.firstBy}`}>
               {t.artist} · queued by {t.firstBy}
             </div>
@@ -141,7 +143,10 @@ function Taste({ person, mine }: { person: MusicPersonStats; mine: boolean }) {
           <div key={m.month} className={styles.month}>
             <span className={styles.monthLabel}>{monthLabel(m.month)}</span>
             <span className={styles.monthQueues} title={`${formatCount(m.queues)} queues`}>
-              <span className={styles.monthBar} style={{ width: `${Math.max(2, (m.queues / maxMonth) * 54)}px`, background: mine ? ME : MUTED }} />
+              <span
+                className={styles.monthBar}
+                style={{ width: `${Math.max(2, (m.queues / maxMonth) * 54)}px`, background: mine ? ME : MUTED }}
+              />
               <span className={styles.monthCount}>{formatCount(m.queues)}</span>
             </span>
             <span className={styles.monthArtists}>
@@ -161,7 +166,9 @@ function Taste({ person, mine }: { person: MusicPersonStats; mine: boolean }) {
           {person.topArtists.map((a, i) => (
             <li key={a.artist} className={styles.topArtist}>
               <span className={styles.rank}>{i + 1}</span>
-              <span className={styles.artistName} title={a.artist}>{a.artist}</span>
+              <span className={styles.artistName} title={a.artist}>
+                {a.artist}
+              </span>
               <span className={styles.itemMuted}>×{formatCount(a.count)}</span>
             </li>
           ))}
@@ -195,13 +202,22 @@ function Stats({ data, me }: { data: MusicStatsResult; me: string | null | undef
       <SectionCard
         className={styles.section}
         title="Busy hours"
-        sub={peak ? `When the office reaches for the queue. Peak: ${slotLabel(peak.weekday, peak.hour)}.` : 'When the office reaches for the queue.'}
+        sub={
+          peak
+            ? `When the office reaches for the queue. Peak: ${slotLabel(peak.weekday, peak.hour)}.`
+            : 'When the office reaches for the queue.'
+        }
       >
         <BusyHours grid={data.busyHours} />
       </SectionCard>
 
       <div className={styles.twoUp}>
-        <SectionCard title="Airtime" sub={coverage ? `Hours of music each person has put on. ${coverage}.` : 'Hours of music each person has put on.'}>
+        <SectionCard
+          title="Airtime"
+          sub={
+            coverage ? `Hours of music each person has put on. ${coverage}.` : 'Hours of music each person has put on.'
+          }
+        >
           {hasLengths && airtime.length > 0 ? (
             <PersonBars
               me={me}
@@ -219,7 +235,8 @@ function Stats({ data, me }: { data: MusicStatsResult; me: string | null | undef
         </SectionCard>
 
         <SectionCard
-          title="Song length" sub={`Average song length. Top of the list queues the prog epics.${coverage ? ` ${coverage}.` : ''}`}
+          title="Song length"
+          sub={`Average song length. Top of the list queues the prog epics.${coverage ? ` ${coverage}.` : ''}`}
         >
           {hasLengths && avgLength.length > 0 ? (
             <PersonBars
@@ -239,10 +256,18 @@ function Stats({ data, me }: { data: MusicStatsResult; me: string | null | undef
 
       <div className={styles.twoUp}>
         <SectionCard title="Longest songs" sub="Settle in.">
-          {hasLengths && data.longest.length > 0 ? <TrackList tracks={data.longest} /> : <Empty>{NO_LENGTHS_TEXT}</Empty>}
+          {hasLengths && data.longest.length > 0 ? (
+            <TrackList tracks={data.longest} />
+          ) : (
+            <Empty>{NO_LENGTHS_TEXT}</Empty>
+          )}
         </SectionCard>
         <SectionCard title="Shortest songs" sub="Blink and you’ll miss them.">
-          {hasLengths && data.shortest.length > 0 ? <TrackList tracks={data.shortest} /> : <Empty>{NO_LENGTHS_TEXT}</Empty>}
+          {hasLengths && data.shortest.length > 0 ? (
+            <TrackList tracks={data.shortest} />
+          ) : (
+            <Empty>{NO_LENGTHS_TEXT}</Empty>
+          )}
         </SectionCard>
       </div>
 
@@ -265,7 +290,8 @@ function Stats({ data, me }: { data: MusicStatsResult; me: string | null | undef
         </SectionCard>
 
         <SectionCard
-          title="Variety" sub={`Different artists per song queued. Only people with ${VARIETY_MIN_TRACKS}+ songs, so one-hit visitors don’t top it.`}
+          title="Variety"
+          sub={`Different artists per song queued. Only people with ${VARIETY_MIN_TRACKS}+ songs, so one-hit visitors don’t top it.`}
         >
           {variety.length > 0 ? (
             <PersonBars
@@ -292,12 +318,16 @@ function Stats({ data, me }: { data: MusicStatsResult; me: string | null | undef
                 <li key={d.artist} className={styles.item}>
                   <Thumb url={d.imageUrl} round />
                   <div className={styles.itemText}>
-                    <div className={styles.itemTitle} title={d.artist}>{d.artist}</div>
-                    <div className={styles.itemSub}>
-                      first queued by <span className={d.firstBy === me ? styles.strong : undefined}>{d.firstBy}</span> on {shortDay(d.firstAt)}
+                    <div className={styles.itemTitle} title={d.artist}>
+                      {d.artist}
                     </div>
                     <div className={styles.itemSub}>
-                      since then queued {formatCount(d.othersQueues)} {d.othersQueues === 1 ? 'time' : 'times'} by others
+                      first queued by <span className={d.firstBy === me ? styles.strong : undefined}>{d.firstBy}</span>{' '}
+                      on {shortDay(d.firstAt)}
+                    </div>
+                    <div className={styles.itemSub}>
+                      since then queued {formatCount(d.othersQueues)} {d.othersQueues === 1 ? 'time' : 'times'} by
+                      others
                     </div>
                   </div>
                 </li>
@@ -315,9 +345,15 @@ function Stats({ data, me }: { data: MusicStatsResult; me: string | null | undef
                 <li key={p.userId} className={styles.item}>
                   <Thumb url={p.mostRequeued.imageUrl} />
                   <div className={styles.itemText}>
-                    <div className={`${styles.itemPerson}${p.userId === me ? ' ' + styles.strong : ''}`}>{p.userId}</div>
-                    <div className={styles.itemTitle} title={p.mostRequeued.trackName}>{p.mostRequeued.trackName}</div>
-                    <div className={styles.itemSub} title={p.mostRequeued.artist}>{p.mostRequeued.artist}</div>
+                    <div className={`${styles.itemPerson}${p.userId === me ? ' ' + styles.strong : ''}`}>
+                      {p.userId}
+                    </div>
+                    <div className={styles.itemTitle} title={p.mostRequeued.trackName}>
+                      {p.mostRequeued.trackName}
+                    </div>
+                    <div className={styles.itemSub} title={p.mostRequeued.artist}>
+                      {p.mostRequeued.artist}
+                    </div>
                   </div>
                   <div className={styles.itemNums}>
                     <span className={styles.itemValue}>×{formatCount(p.mostRequeued.count)}</span>
@@ -331,7 +367,11 @@ function Stats({ data, me }: { data: MusicStatsResult; me: string | null | undef
         </SectionCard>
       </div>
 
-      <SectionCard className={styles.section} title="Taste over time" sub="Top artists month by month. Pick someone to nose through their history.">
+      <SectionCard
+        className={styles.section}
+        title="Taste over time"
+        sub="Top artists month by month. Pick someone to nose through their history."
+      >
         <div className={styles.picker} role="group" aria-label="Pick a person">
           {chipOrder.map((p) => (
             <PersonChip
@@ -374,7 +414,9 @@ export function MusicStatsPanel() {
       {stats.isLoading && <p className={styles.state}>Crunching every queue so far…</p>}
       {stats.isError && !data && <p className={styles.state}>Couldn’t load the music stats.</p>}
       {/* A failed background refresh keeps the last stats on screen. */}
-      {stats.isError && data && <p className={styles.staleNote}>Couldn’t refresh just now, so these may be a few minutes old.</p>}
+      {stats.isError && data && (
+        <p className={styles.staleNote}>Couldn’t refresh just now, so these may be a few minutes old.</p>
+      )}
       {data && data.people.length === 0 && <p className={styles.state}>Nothing queued yet.</p>}
       {data && data.people.length > 0 && <Stats data={data} me={displayName} />}
     </StatsPage>

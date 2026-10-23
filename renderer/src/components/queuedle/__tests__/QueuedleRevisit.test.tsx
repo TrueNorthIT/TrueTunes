@@ -28,14 +28,23 @@ vi.mock('../QueuedleBonusResults', () => ({
   QueuedleBonusResults: ({ onContinue }: { onContinue: () => void }) => <button onClick={onContinue}>See Score</button>,
 }));
 vi.mock('../QueuedleRankChange', () => ({
-  QueuedleRankChange: ({ onContinue }: { onContinue: () => void }) => <button onClick={onContinue}>Continue Rank</button>,
+  QueuedleRankChange: ({ onContinue }: { onContinue: () => void }) => (
+    <button onClick={onContinue}>Continue Rank</button>
+  ),
 }));
 
 const GAME_ID = '2026-10-20';
 
 function question(index: number, winner: 'left' | 'right' = 'left'): GameQuestion {
   const item = (id: string, name: string, topQueuer: string): GameItem => ({
-    id, name, category: 'track', subtitle: '', imageUrl: undefined, count: 5, topQueuer, queuerCandidates: [],
+    id,
+    name,
+    category: 'track',
+    subtitle: '',
+    imageUrl: undefined,
+    count: 5,
+    topQueuer,
+    queuerCandidates: [],
   });
   return {
     index,
@@ -62,7 +71,10 @@ const stats: GameStatsResult = {
     questionIndex: i,
     leftPct: 70,
     rightPct: 30,
-    bonusOptions: [{ name: 'alice', pct: 60 }, { name: 'bob', pct: 40 }],
+    bonusOptions: [
+      { name: 'alice', pct: 60 },
+      { name: 'bob', pct: 40 },
+    ],
   })),
 };
 
@@ -77,7 +89,7 @@ function renderPanel() {
   return render(
     <QueryClientProvider client={client}>
       <QueuedlePanel />
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
 }
 
@@ -154,7 +166,7 @@ describe('Queuedle revisit shows the question breakdown', () => {
   it('short local guesses (fewer than questions) fall back to the server guesses', async () => {
     localStorage.setItem(
       `queuedle-played:${GAME_ID}`,
-      JSON.stringify({ mainScore: 2, bonusScore: 1, guesses: ['left'] }),
+      JSON.stringify({ mainScore: 2, bonusScore: 1, guesses: ['left'] })
     );
     stubServer({ leaderboard: [playedEntry], myScore: () => Promise.resolve(fullScore) });
     renderPanel();
@@ -196,7 +208,7 @@ describe('Queuedle revisit shows the question breakdown', () => {
     renderPanel();
     await screen.findByText('Your answers');
     await waitFor(() =>
-      expect(JSON.parse(localStorage.getItem(`queuedle-played:${GAME_ID}`)!).guesses).toEqual(['left', 'right']),
+      expect(JSON.parse(localStorage.getItem(`queuedle-played:${GAME_ID}`)!).guesses).toEqual(['left', 'right'])
     );
   });
 
@@ -239,7 +251,9 @@ describe('Queuedle revisit shows the question breakdown', () => {
     const todayGame = gameWith(2);
     const pastGame = { ...gameWith(2), id: pastId };
     stubServer({ leaderboard: [playedEntry], myScore: () => Promise.resolve(fullScore) });
-    vi.mocked(window.sonos.fetchDailyGame).mockImplementation(async (d?: string) => (d === pastId ? pastGame : todayGame));
+    vi.mocked(window.sonos.fetchDailyGame).mockImplementation(async (d?: string) =>
+      d === pastId ? pastGame : todayGame
+    );
     vi.mocked(window.sonos.fetchGameDates).mockResolvedValue({
       dates: [{ gameId: pastId, status: 'ready', userPlayed: true }],
     } as never);

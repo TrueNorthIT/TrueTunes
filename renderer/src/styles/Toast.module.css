@@ -48,9 +48,15 @@
   }
 }
 
-.error { --dot: rgb(var(--danger)); }
-.success { --dot: rgb(var(--success)); }
-.info { --dot: var(--text-3); }
+.error {
+  --dot: rgb(var(--danger));
+}
+.success {
+  --dot: rgb(var(--success));
+}
+.info {
+  --dot: var(--text-3);
+}
 
 .action {
   flex: none;
@@ -66,5 +72,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .toast { animation: none; }
+  .toast {
+    animation: none;
+  }
 }

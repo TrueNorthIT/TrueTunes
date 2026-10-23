@@ -11,7 +11,10 @@ export function WindowControls() {
   const polls = usePolls();
 
   useEffect(() => {
-    window.sonos.isWindowMaximized().then(setIsMaximized).catch(() => {});
+    window.sonos
+      .isWindowMaximized()
+      .then(setIsMaximized)
+      .catch(() => {});
     return window.sonos.onWindowMaximized(setIsMaximized);
   }, []);
 

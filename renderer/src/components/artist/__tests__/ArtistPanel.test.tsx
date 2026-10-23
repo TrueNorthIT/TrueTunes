@@ -26,7 +26,9 @@ vi.mock('../../../hooks/useArtistBrowse', () => ({
 
 const mockStats = vi.fn();
 vi.mock('../../../hooks/useStats', () => ({ useStats: () => mockStats() }));
-vi.mock('../../../hooks/useResolveAndOpen', () => ({ useResolveAndOpen: () => ({ resolveAndOpen: mockResolveAndOpen, pending: null }) }));
+vi.mock('../../../hooks/useResolveAndOpen', () => ({
+  useResolveAndOpen: () => ({ resolveAndOpen: mockResolveAndOpen, pending: null }),
+}));
 
 const mockYears = vi.fn();
 vi.mock('../../../hooks/useReleaseYears', () => ({
@@ -135,17 +137,21 @@ describe('ArtistPanel', () => {
   });
 
   describe('hero', () => {
-    const withPhoto = () => mockUseArtistBrowse.mockReturnValue({
-      data: makeData({ imageUrl: 'https://lh3.example/a=w544-h544-l90-rj' }),
-      isLoading: false,
-    });
+    const withPhoto = () =>
+      mockUseArtistBrowse.mockReturnValue({
+        data: makeData({ imageUrl: 'https://lh3.example/a=w544-h544-l90-rj' }),
+        isLoading: false,
+      });
 
     it('loads the photo at the large size and runs it full-bleed once it is known to be real', () => {
       mockPhotoState.mockImplementation((u: string | null) => ({ state: 'photo', src: u }));
       withPhoto();
       const { container } = render(<ArtistPanel {...defaultProps} />);
       expect(mockPhotoState).toHaveBeenCalledWith('https://lh3.example/a=w2000-h2000-l90-rj');
-      expect(container.querySelector('[class*="heroMedia"] img')).toHaveAttribute('src', 'https://lh3.example/a=w2000-h2000-l90-rj');
+      expect(container.querySelector('[class*="heroMedia"] img')).toHaveAttribute(
+        'src',
+        'https://lh3.example/a=w2000-h2000-l90-rj'
+      );
       expect(container.querySelector('[class*="printImg"]')).toBeNull();
       expect(screen.getByRole('heading', { name: 'The Beatles' })).toBeInTheDocument();
     });
@@ -184,7 +190,9 @@ describe('ArtistPanel', () => {
       mockUseArtistBrowse.mockReturnValue({
         data: makeData({
           imageUrl: 'https://lh3.example/a=w544-h544-l90-rj',
-          albums: [{ title: 'Abbey Road', id: { objectId: 'alb-1' }, images: { tile1x1: 'https://lh3.example/c=w226-h226' } }],
+          albums: [
+            { title: 'Abbey Road', id: { objectId: 'alb-1' }, images: { tile1x1: 'https://lh3.example/c=w226-h226' } },
+          ],
         }),
         isLoading: false,
       });
@@ -195,14 +203,19 @@ describe('ArtistPanel', () => {
 
     it('falls back to the top song art when there is no release', () => {
       mockUseImage.mockImplementation((u: string | null) => u);
-      const topSongs = [{ name: 'Come Together', artUrl: 'https://lh3.example/s=w120-h120', id: { objectId: 'trk-1' } }];
+      const topSongs = [
+        { name: 'Come Together', artUrl: 'https://lh3.example/s=w120-h120', id: { objectId: 'trk-1' } },
+      ];
       mockUseArtistBrowse.mockReturnValue({ data: makeData({ topSongs }), isLoading: false });
       const { container } = render(<ArtistPanel {...defaultProps} />);
       expect(container.querySelector('[class*="printImg"]')).toHaveAttribute('src', 'https://lh3.example/s=w600-h600');
     });
 
     it('opens the artist radio and shuffle from pills, without queueing anything', async () => {
-      const playlists = [{ title: 'Artist Shuffle', id: { objectId: 'p1' } }, { title: 'Artist Radio', id: { objectId: 'p2' } }];
+      const playlists = [
+        { title: 'Artist Shuffle', id: { objectId: 'p1' } },
+        { title: 'Artist Radio', id: { objectId: 'p2' } },
+      ];
       mockUseArtistBrowse.mockReturnValue({ data: makeData({ playlists }), isLoading: false });
       const user = userEvent.setup();
       render(<ArtistPanel {...defaultProps} />);
@@ -223,7 +236,10 @@ describe('ArtistPanel', () => {
 
   describe('empty state', () => {
     it('offers each artist of a shared credit', async () => {
-      mockUseArtistBrowse.mockReturnValue({ data: makeData({ name: 'Sacha Baron Cohen, Johnny Depp' }), isLoading: false });
+      mockUseArtistBrowse.mockReturnValue({
+        data: makeData({ name: 'Sacha Baron Cohen, Johnny Depp' }),
+        isLoading: false,
+      });
       const user = userEvent.setup();
       render(<ArtistPanel {...defaultProps} />);
       await user.click(screen.getByRole('button', { name: 'Johnny Depp' }));
@@ -315,10 +331,17 @@ describe('ArtistPanel', () => {
       { title: 'Tiny Single (Live)', id: { objectId: 'tinylive' } },
       { title: 'Lonely (Remix)', id: { objectId: 'lonely' } },
     ];
-    mockCounts.mockReturnValue({ counts: new Map([['big', 10], ['tiny', 1], ['l', 8]]), isLoading: false });
+    mockCounts.mockReturnValue({
+      counts: new Map([
+        ['big', 10],
+        ['tiny', 1],
+        ['l', 8],
+      ]),
+      isLoading: false,
+    });
     mockUseArtistBrowse.mockReturnValue({ data: makeData({ albums }), isLoading: false });
     render(<ArtistPanel {...defaultProps} />);
-    const heads = screen.getAllByRole('heading', { level: 2 }).map(h => h.textContent);
+    const heads = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
     expect(heads).toEqual(['Albums', 'Singles & EPs', 'Other versions']);
   });
 
@@ -351,7 +374,14 @@ describe('ArtistPanel', () => {
       { title: 'Foo', id: { objectId: 'foo' } },
       { title: 'Foo (Deluxe)', id: { objectId: 'food' } },
     ];
-    mockCounts.mockReturnValue({ counts: new Map([['foo', 10], ['food', 14], ['l', 9]]), isLoading: false });
+    mockCounts.mockReturnValue({
+      counts: new Map([
+        ['foo', 10],
+        ['food', 14],
+        ['l', 9],
+      ]),
+      isLoading: false,
+    });
     mockUseArtistBrowse.mockReturnValue({ data: makeData({ albums }), isLoading: false });
     const user = userEvent.setup();
     render(<ArtistPanel {...defaultProps} />);
@@ -389,7 +419,12 @@ describe('ArtistPanel', () => {
     ];
     beforeEach(() => {
       mockCounts.mockReturnValue({
-        counts: new Map([['l', 9], ['mh', 11], ['rdf', 14], ['pb', 1]]),
+        counts: new Map([
+          ['l', 9],
+          ['mh', 11],
+          ['rdf', 14],
+          ['pb', 1],
+        ]),
         isLoading: false,
       });
       mockTracklists.mockReturnValue({

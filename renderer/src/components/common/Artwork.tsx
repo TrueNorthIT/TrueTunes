@@ -10,7 +10,9 @@ interface Props {
 
 /** Cover art, or a ♪ placeholder. Callers own the frame and the class names. */
 export function Artwork({ src, className, placeholderClassName, lazy }: Props) {
-  return src
-    ? <img className={className} src={src} alt="" loading={lazy ? 'lazy' : undefined} />
-    : <span className={placeholderClassName}>♪</span>;
+  return src ? (
+    <img className={className} src={src} alt="" loading={lazy ? 'lazy' : undefined} />
+  ) : (
+    <span className={placeholderClassName}>♪</span>
+  );
 }

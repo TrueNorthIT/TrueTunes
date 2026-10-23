@@ -9,19 +9,13 @@ export interface ShelfSearchResult {
 
 /** Lowercase, accent-free, straight apostrophes, single spaces. */
 export function norm(s: string): string {
-  return s
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[‘’ʼ]/g, "'")
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim();
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[‘’ʼ]/g, "'").toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
 export function filterShelves(
   shelves: ReleaseShelves,
   query: string,
-  tracksByRelease: Map<string, string[]>,
+  tracksByRelease: Map<string, string[]>
 ): ShelfSearchResult {
   const q = norm(query);
   const trackHits = new Map<string, string[]>();
@@ -43,7 +37,11 @@ export function filterShelves(
     });
 
   return {
-    shelves: { albums: filterShelf(shelves.albums), singles: filterShelf(shelves.singles), other: filterShelf(shelves.other) },
+    shelves: {
+      albums: filterShelf(shelves.albums),
+      singles: filterShelf(shelves.singles),
+      other: filterShelf(shelves.other),
+    },
     trackHits,
   };
 }

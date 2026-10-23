@@ -18,7 +18,9 @@ export function QueuedleIntro({ onStart, rounds, isPastDay, players = [] }: Prop
     <div className={styles.intro}>
       <SectionCard className={styles.introLead}>
         <h2 className={styles.introTitle}>{rounds} rounds on what the office has queued</h2>
-        <p className={styles.introSub}>Guess which got queued more, then who queued it most. It takes a couple of minutes.</p>
+        <p className={styles.introSub}>
+          Guess which got queued more, then who queued it most. It takes a couple of minutes.
+        </p>
         <div className={styles.introStart}>
           <PillButton variant="primary" className={styles.startBtn} onClick={onStart}>
             Start
@@ -30,7 +32,12 @@ export function QueuedleIntro({ onStart, rounds, isPastDay, players = [] }: Prop
                   <UserAvatar key={p.name} name={p.name} imageUrl={p.imageUrl} className={styles.playedAvatar} />
                 ))}
               </span>
-              <span className={styles.playedText}>{playedLine(players.map((p) => p.name), isPastDay)}</span>
+              <span className={styles.playedText}>
+                {playedLine(
+                  players.map((p) => p.name),
+                  isPastDay
+                )}
+              </span>
             </div>
           )}
         </div>

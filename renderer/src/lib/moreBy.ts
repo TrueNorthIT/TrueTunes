@@ -11,17 +11,19 @@ export function moreByReleases(
   current: { albumId?: string; title: string; trackTitles: string[] },
   trackCounts: Map<string, number>,
   years: Map<string, number>,
-  limit = 12,
+  limit = 12
 ): { item: SonosItem; year?: number }[] {
   const ownBase = baseTitle(current.title);
   const tracks = new Set(current.trackTitles.map(baseTitle));
   const shelves = sortShelvesByYear(groupReleases(releases, trackCounts), years);
   const isOwn = (versions: SonosItem[]) =>
-    versions.some(v => (!!current.albumId && releaseKey(v) === current.albumId) || baseTitle(v.title ?? '') === ownBase);
+    versions.some(
+      (v) => (!!current.albumId && releaseKey(v) === current.albumId) || baseTitle(v.title ?? '') === ownBase
+    );
   return [
-    ...shelves.albums.filter(g => !isOwn(g.versions)),
-    ...shelves.singles.filter(g => !isOwn(g.versions) && !tracks.has(baseTitle(g.primary.title ?? ''))),
+    ...shelves.albums.filter((g) => !isOwn(g.versions)),
+    ...shelves.singles.filter((g) => !isOwn(g.versions) && !tracks.has(baseTitle(g.primary.title ?? ''))),
   ]
     .slice(0, limit)
-    .map(g => ({ item: g.primary, year: years.get(releaseKey(g.primary)) }));
+    .map((g) => ({ item: g.primary, year: years.get(releaseKey(g.primary)) }));
 }

@@ -70,7 +70,9 @@ const search = (query: string, tracks: Map<string, string[]> = buildTracks(), sh
 
 /** Runs a query against one local group on the albums shelf and returns that shelf's titles. */
 const matchTitles = (query: string, ...items: SonosItem[]) =>
-  titles(filterShelves({ albums: items.map((i) => group(i)), singles: [], other: [] }, query, new Map()).shelves.albums);
+  titles(
+    filterShelves({ albums: items.map((i) => group(i)), singles: [], other: [] }, query, new Map()).shelves.albums
+  );
 
 // ─── S-2: all three shelves are filtered in one call ──────────────────────────
 
@@ -86,10 +88,13 @@ describe('S-2 All three shelves are filtered in one call', () => {
     expect(titles(shelves.albums), 'Expected the albums shelf to keep only Raw Data Feel (track match)').toEqual([
       'Raw Data Feel',
     ]);
-    expect(titles(shelves.singles), 'Expected the singles shelf to keep only the Pizza Boy group').toEqual(['Pizza Boy']);
-    expect(titles(shelves.other), 'Expected the other shelf to keep only Get to Heaven (Live at Brixton) (track match)').toEqual([
-      'Get to Heaven (Live at Brixton)',
+    expect(titles(shelves.singles), 'Expected the singles shelf to keep only the Pizza Boy group').toEqual([
+      'Pizza Boy',
     ]);
+    expect(
+      titles(shelves.other),
+      'Expected the other shelf to keep only Get to Heaven (Live at Brixton) (track match)'
+    ).toEqual(['Get to Heaven (Live at Brixton)']);
   });
 
   // Given a query that matches only the "other" shelf, the albums and singles shelves come back
@@ -131,18 +136,20 @@ describe('S-3 A version matches when its title contains the query', () => {
   });
 
   it('S-3: matches a substring from the middle of a title', () => {
-    expect(matchTitles('tainhe', mountainhead, rawDataFeel), 'Expected "tainhe" to match inside "Mountainhead"').toEqual([
-      'Mountainhead',
-    ]);
+    expect(
+      matchTitles('tainhe', mountainhead, rawDataFeel),
+      'Expected "tainhe" to match inside "Mountainhead"'
+    ).toEqual(['Mountainhead']);
   });
 
   it('S-3: ignores case in both the query and the title', () => {
     expect(matchTitles('MOUNTAINHEAD', mountainhead, rawDataFeel), 'Expected an upper-case query to match').toEqual([
       'Mountainhead',
     ]);
-    expect(matchTitles('raw data feel', mountainhead, rawDataFeel), 'Expected a lower-case query to match a title-case title').toEqual([
-      'Raw Data Feel',
-    ]);
+    expect(
+      matchTitles('raw data feel', mountainhead, rawDataFeel),
+      'Expected a lower-case query to match a title-case title'
+    ).toEqual(['Raw Data Feel']);
   });
 
   it('S-3: ignores accents, so "cafe" matches "Café"', () => {
@@ -162,20 +169,24 @@ describe('S-3 A version matches when its title contains the query', () => {
   it('S-3: a straight apostrophe in the query matches a curly apostrophe in the title', () => {
     const { shelves } = search("natural's", new Map());
 
-    expect(titles(shelves.singles), "Expected \"natural's\" to match \"Natural’s Not in It\"").toEqual(['Natural’s Not in It']);
+    expect(titles(shelves.singles), 'Expected "natural\'s" to match "Natural’s Not in It"').toEqual([
+      'Natural’s Not in It',
+    ]);
   });
 
   it('S-3: a curly apostrophe in the query matches a straight apostrophe in the title', () => {
     const straight = release("Natural's Not in It", 'naturals-straight');
-    expect(matchTitles('natural’s', straight, mountainhead), 'Expected a curly-apostrophe query to match a straight-apostrophe title').toEqual([
-      "Natural's Not in It",
-    ]);
+    expect(
+      matchTitles('natural’s', straight, mountainhead),
+      'Expected a curly-apostrophe query to match a straight-apostrophe title'
+    ).toEqual(["Natural's Not in It"]);
   });
 
   it('S-3: trims leading and trailing whitespace from the query', () => {
-    expect(matchTitles('  mountainhead  ', mountainhead, rawDataFeel), 'Expected surrounding spaces to be ignored').toEqual([
-      'Mountainhead',
-    ]);
+    expect(
+      matchTitles('  mountainhead  ', mountainhead, rawDataFeel),
+      'Expected surrounding spaces to be ignored'
+    ).toEqual(['Mountainhead']);
   });
 
   it('S-3: collapses runs of whitespace inside the query', () => {
@@ -227,7 +238,10 @@ describe('S-4/S-5 A version also matches on its track titles', () => {
       'Pizza Boy (Skream Remix)',
     ]);
     expect(trackHits.has(releaseKey(pizzaBoy)), 'Expected no trackHits entry for Pizza Boy (title match)').toBe(false);
-    expect(trackHits.has(releaseKey(pizzaBoySkream)), 'Expected no trackHits entry for the Skream Remix (title match)').toBe(false);
+    expect(
+      trackHits.has(releaseKey(pizzaBoySkream)),
+      'Expected no trackHits entry for the Skream Remix (title match)'
+    ).toBe(false);
   });
 
   it('S-5: "pizza" yields exactly one trackHits entry, for Raw Data Feel', () => {
@@ -260,21 +274,25 @@ describe('S-4/S-5 A version also matches on its track titles', () => {
   it('S-4: track matching ignores case', () => {
     const { trackHits } = search('TELETYPE');
 
-    expect(trackHits.get(releaseKey(rawDataFeel)), 'Expected "TELETYPE" to match the track "Teletype"').toEqual(['Teletype']);
+    expect(trackHits.get(releaseKey(rawDataFeel)), 'Expected "TELETYPE" to match the track "Teletype"').toEqual([
+      'Teletype',
+    ]);
   });
 
   it('S-4: track matching ignores accents', () => {
     const tracks = new Map([[releaseKey(rawDataFeel), ['Café Racer', 'Teletype']]]);
     const { trackHits } = search('cafe', tracks);
 
-    expect(trackHits.get(releaseKey(rawDataFeel)), 'Expected "cafe" to match the track "Café Racer"').toEqual(['Café Racer']);
+    expect(trackHits.get(releaseKey(rawDataFeel)), 'Expected "cafe" to match the track "Café Racer"').toEqual([
+      'Café Racer',
+    ]);
   });
 
   it('S-4: track matching treats curly and straight apostrophes the same', () => {
     const tracks = new Map([[releaseKey(rawDataFeel), ['Can’t Have It', 'Teletype']]]);
     const { trackHits } = search("can't", tracks);
 
-    expect(trackHits.get(releaseKey(rawDataFeel)), "Expected \"can't\" to match the track \"Can’t Have It\"").toEqual([
+    expect(trackHits.get(releaseKey(rawDataFeel)), 'Expected "can\'t" to match the track "Can’t Have It"').toEqual([
       'Can’t Have It',
     ]);
   });
@@ -282,21 +300,24 @@ describe('S-4/S-5 A version also matches on its track titles', () => {
   it('S-4: track matching trims and collapses whitespace in the query', () => {
     const { trackHits } = search('  i   want  a ');
 
-    expect(trackHits.get(releaseKey(rawDataFeel)), 'Expected a messy-whitespace query to match "I Want a Love Like This"').toEqual([
-      'I Want a Love Like This',
-    ]);
+    expect(
+      trackHits.get(releaseKey(rawDataFeel)),
+      'Expected a messy-whitespace query to match "I Want a Love Like This"'
+    ).toEqual(['I Want a Love Like This']);
   });
 
   // Man Alive and Man Alive (Deluxe) both have the track "Kemosabe"; neither title matches "kemosabe".
   it('S-5: trackHits is keyed by version, so each matching version gets its own entry', () => {
     const { shelves, trackHits } = search('kemosabe');
 
-    expect(versionTitles(shelves.albums[0]), 'Expected both Man Alive versions kept via tracks, in input order').toEqual([
-      'Man Alive',
-      'Man Alive (Deluxe)',
-    ]);
+    expect(
+      versionTitles(shelves.albums[0]),
+      'Expected both Man Alive versions kept via tracks, in input order'
+    ).toEqual(['Man Alive', 'Man Alive (Deluxe)']);
     expect(trackHits.get(releaseKey(manAlive)), 'Expected a trackHits entry for Man Alive').toEqual(['Kemosabe']);
-    expect(trackHits.get(releaseKey(manAliveDeluxe)), 'Expected a trackHits entry for Man Alive (Deluxe)').toEqual(['Kemosabe']);
+    expect(trackHits.get(releaseKey(manAliveDeluxe)), 'Expected a trackHits entry for Man Alive (Deluxe)').toEqual([
+      'Kemosabe',
+    ]);
   });
 });
 
@@ -311,7 +332,7 @@ describe('S-6 Groups are filtered by version', () => {
     const g = shelves.albums[0];
     expect(versionTitles(g), 'Expected the group to hold only the matching version').toEqual(['Man Alive (Deluxe)']);
     expect(g.primary.title, 'Expected Man Alive (Deluxe) to become primary (a plain card in the UI)').toBe(
-      'Man Alive (Deluxe)',
+      'Man Alive (Deluxe)'
     );
   });
 
@@ -321,14 +342,19 @@ describe('S-6 Groups are filtered by version', () => {
 
     expect(shelves.albums, 'Expected exactly one album group for "man alive"').toHaveLength(1);
     const g = shelves.albums[0];
-    expect(versionTitles(g), 'Expected both Man Alive versions, in input order').toEqual(['Man Alive', 'Man Alive (Deluxe)']);
+    expect(versionTitles(g), 'Expected both Man Alive versions, in input order').toEqual([
+      'Man Alive',
+      'Man Alive (Deluxe)',
+    ]);
     expect(g.primary.title, 'Expected Man Alive to remain primary because it still matches').toBe('Man Alive');
   });
 
   it('S-6: a group is dropped when none of its versions match', () => {
     const { shelves } = search('mountainhead', new Map());
 
-    expect(titles(shelves.albums), 'Expected the Man Alive group to be dropped for "mountainhead"').toEqual(['Mountainhead']);
+    expect(titles(shelves.albums), 'Expected the Man Alive group to be dropped for "mountainhead"').toEqual([
+      'Mountainhead',
+    ]);
   });
 
   it('S-6: when the primary does not match, the first remaining version becomes primary and order is kept', () => {
@@ -346,7 +372,7 @@ describe('S-6 Groups are filtered by version', () => {
       'Pizza Boy (Bonobo Remix)',
     ]);
     expect(g.primary.title, 'Expected the first remaining version (Skream Remix) to become primary').toBe(
-      'Pizza Boy (Skream Remix)',
+      'Pizza Boy (Skream Remix)'
     );
   });
 
@@ -366,7 +392,7 @@ describe('S-6 Groups are filtered by version', () => {
       'Pizza Boy (Bonobo Remix)',
     ]);
     expect(g.primary.title, 'Expected the Skream Remix to stay primary because it still matches').toBe(
-      'Pizza Boy (Skream Remix)',
+      'Pizza Boy (Skream Remix)'
     );
   });
 
@@ -378,11 +404,14 @@ describe('S-6 Groups are filtered by version', () => {
     const { shelves, trackHits } = search('hot coals', tracks);
 
     expect(shelves.albums, 'Expected one album group for "hot coals"').toHaveLength(1);
-    expect(versionTitles(shelves.albums[0]), 'Expected only the Deluxe version to remain').toEqual(['Man Alive (Deluxe)']);
-    expect(shelves.albums[0].primary.title, 'Expected the Deluxe to be primary').toBe('Man Alive (Deluxe)');
-    expect(trackHits.get(releaseKey(manAliveDeluxe)), 'Expected the track hit to be keyed by the Deluxe version').toEqual([
-      'Hot Coals',
+    expect(versionTitles(shelves.albums[0]), 'Expected only the Deluxe version to remain').toEqual([
+      'Man Alive (Deluxe)',
     ]);
+    expect(shelves.albums[0].primary.title, 'Expected the Deluxe to be primary').toBe('Man Alive (Deluxe)');
+    expect(
+      trackHits.get(releaseKey(manAliveDeluxe)),
+      'Expected the track hit to be keyed by the Deluxe version'
+    ).toEqual(['Hot Coals']);
     expect(trackHits.has(releaseKey(manAlive)), 'Expected no entry for the version that did not match').toBe(false);
   });
 });
@@ -421,11 +450,10 @@ describe('S-9 Group and version order follow the input; the function never re-so
   it('S-9: groups keep their input order within a shelf', () => {
     const { shelves } = search('a', new Map());
 
-    expect(titles(shelves.albums), 'Expected album groups in input order (Mountainhead, Raw Data Feel, Man Alive)').toEqual([
-      'Mountainhead',
-      'Raw Data Feel',
-      'Man Alive',
-    ]);
+    expect(
+      titles(shelves.albums),
+      'Expected album groups in input order (Mountainhead, Raw Data Feel, Man Alive)'
+    ).toEqual(['Mountainhead', 'Raw Data Feel', 'Man Alive']);
   });
 
   it('S-9: versions keep their input order within a group, even when the primary is not first alphabetically', () => {
@@ -437,14 +465,21 @@ describe('S-9 Group and version order follow the input; the function never re-so
 
     const g = filterShelves(input, 'man', new Map()).shelves.albums[0];
 
-    expect(versionTitles(g), 'Expected versions in input order (Deluxe first)').toEqual(['Man Alive (Deluxe)', 'Man Alive']);
+    expect(versionTitles(g), 'Expected versions in input order (Deluxe first)').toEqual([
+      'Man Alive (Deluxe)',
+      'Man Alive',
+    ]);
     expect(g.primary.title, 'Expected the Deluxe to stay primary because it matches').toBe('Man Alive (Deluxe)');
   });
 
   it('S-9: the shelves object still has albums, singles and other', () => {
     const { shelves } = search('pizza');
 
-    expect(Object.keys(shelves).sort(), 'Expected the result to carry the three shelves').toEqual(['albums', 'other', 'singles']);
+    expect(Object.keys(shelves).sort(), 'Expected the result to carry the three shelves').toEqual([
+      'albums',
+      'other',
+      'singles',
+    ]);
   });
 });
 
