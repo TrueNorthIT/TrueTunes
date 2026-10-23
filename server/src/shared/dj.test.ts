@@ -236,3 +236,121 @@ test('every pick carries a reason', () => {
   const { tracks } = buildDjSet(officeHistory(), { users: ['A', 'B'] });
   for (const t of tracks) assert.ok(t.because.length > 0);
 });
+
+// ─── fans: who is credited for a pick, with raw all-time counts ──────────────
+// REQ-W2 / REQ-W3: "The tooltip lists each credited person with how many times they've
+// ever queued that artist, most first" and "Every credited person is listed".
+// Production code under test: `buildDjSet` in server/src/shared/dj.ts, which should set
+// `fans` on every `DjTrack` and `DjArtist`: { user, count }[] sorted by count descending,
+// ties by user name ascending, uncapped, only listeners in `options.users`.
+
+function queued(user: string, artist: string, n: number): RawEvent[] {
+  return Array.from({ length: n }, (_, i) => ev(user, artist, `${artist}-${user}-${i}`));
+}
+
+/** Radiohead: Dee 9, Alex 5, Bea 5 (tie), Cy 2, plus Outsider 20 who is not in the room. */
+function radioheadFans(): RawEvent[] {
+  return [
+    ...queued('Dee', 'Radiohead', 9),
+    ...queued('Bea', 'Radiohead', 5),
+    ...queued('Alex', 'Radiohead', 5),
+    ...queued('Cy', 'Radiohead', 2),
+    ...queued('Outsider', 'Radiohead', 20),
+    ...queued('Alex', 'Muse', 3),
+  ];
+}
+
+const ROOM = ['Alex', 'Bea', 'Cy', 'Dee'];
+
+test('REQ-W2: a track carries each credited listener with their raw queue count, most first, ties by name', () => {
+  const { tracks } = buildDjSet(radioheadFans(), { users: ROOM });
+  const radiohead = tracks.find((t) => t.artist === 'Radiohead');
+
+  assert.ok(radiohead, 'expected a Radiohead track in the set');
+  assert.deepEqual(
+    radiohead.fans,
+    [
+      { user: 'Dee', count: 9 },
+      { user: 'Alex', count: 5 },
+      { user: 'Bea', count: 5 },
+      { user: 'Cy', count: 2 },
+    ],
+    'DjTrack.fans should hold raw counts ordered count desc, then user name asc',
+  );
+});
+
+test('REQ-W2: an act carries each credited listener with their raw queue count, most first, ties by name', () => {
+  const { artists } = buildDjSet(radioheadFans(), { users: ROOM });
+  const radiohead = artists.find((a) => a.artist === 'Radiohead');
+
+  assert.ok(radiohead, 'expected Radiohead among the ranked acts');
+  assert.deepEqual(
+    radiohead.fans,
+    [
+      { user: 'Dee', count: 9 },
+      { user: 'Alex', count: 5 },
+      { user: 'Bea', count: 5 },
+      { user: 'Cy', count: 2 },
+    ],
+    'DjArtist.fans should hold raw counts ordered count desc, then user name asc',
+  );
+});
+
+test('REQ-W2: fans only lists people in the room, not everyone who ever queued the artist', () => {
+  const { tracks, artists } = buildDjSet(radioheadFans(), { users: ROOM });
+
+  for (const f of [
+    tracks.find((t) => t.artist === 'Radiohead')?.fans,
+    artists.find((a) => a.artist === 'Radiohead')?.fans,
+  ]) {
+    assert.ok(f, 'expected fans to be present');
+    assert.ok(
+      !f.some((x) => x.user === 'Outsider'),
+      'Outsider is not in options.users so must not be credited, despite 20 queues',
+    );
+  }
+});
+
+test('REQ-W2: fans counts are the listener\'s raw count, not the damped weight', () => {
+  // One listener with a huge habit: damping would flatten this, the raw count must not be.
+  const events = [...queued('Alex', 'Radiohead', 40), ...queued('Bea', 'Radiohead', 1)];
+  const { artists } = buildDjSet(events, { users: ['Alex', 'Bea'] });
+
+  assert.deepEqual(
+    artists.find((a) => a.artist === 'Radiohead')?.fans,
+    [
+      { user: 'Alex', count: 40 },
+      { user: 'Bea', count: 1 },
+    ],
+    'expected raw counts 40 and 1 regardless of influence damping',
+  );
+});
+
+test('REQ-W3: fans is uncapped, so five fans are all listed', () => {
+  const room = ['U1', 'U2', 'U3', 'U4', 'U5'];
+  const events = room.flatMap((u, i) => queued(u, 'Radiohead', i + 1));
+  const { tracks, artists } = buildDjSet(events, { users: room });
+
+  assert.equal(
+    tracks.find((t) => t.artist === 'Radiohead')?.fans?.length,
+    5,
+    'DjTrack.fans must list all five credited listeners, not truncate',
+  );
+  assert.equal(
+    artists.find((a) => a.artist === 'Radiohead')?.fans?.length,
+    5,
+    'DjArtist.fans must list all five credited listeners, not truncate',
+  );
+});
+
+test('REQ-W6: a pick nobody in the room plays has an empty fans array, not undefined', () => {
+  // Pixies is only played by B; for a room of just A it is recommended by similarity alone.
+  const { tracks, artists } = buildDjSet(officeHistory(), { users: ['A'] });
+  const pixiesTrack = tracks.find((t) => t.artist === 'Pixies');
+  const pixiesAct = artists.find((a) => a.artist === 'Pixies');
+
+  assert.ok(pixiesTrack, 'expected a Pixies track recommended to A by similarity');
+  assert.deepEqual(pixiesTrack.fans, [], 'DjTrack.fans should be [] when nobody is credited');
+  assert.ok(pixiesAct, 'expected Pixies among the ranked acts for A');
+  assert.deepEqual(pixiesAct.fans, [], 'DjArtist.fans should be [] when nobody is credited');
+});
