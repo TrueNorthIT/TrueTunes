@@ -27,7 +27,7 @@ export async function getMyScoreHandler(request: HttpRequest, context: Invocatio
     const scoreId = scoreIdFor(gameId, userName);
     const { resource } = await container.item(scoreId, gameId).read();
     if (!resource) {
-      return { status: 404, jsonBody: { error: 'Score not found' }, headers: { 'Access-Control-Allow-Origin': '*' } };
+      return { status: 404, jsonBody: { error: 'Score not found' } };
     }
     return {
       status: 200,
@@ -38,11 +38,10 @@ export async function getMyScoreHandler(request: HttpRequest, context: Invocatio
           guesses: resource.guesses,
         },
       },
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     if (typeof err === 'object' && err !== null && 'code' in err && err.code === 404) {
-      return { status: 404, jsonBody: { error: 'Score not found' }, headers: { 'Access-Control-Allow-Origin': '*' } };
+      return { status: 404, jsonBody: { error: 'Score not found' } };
     }
     context.error('[get-my-score] failed:', err);
     return { status: 500, jsonBody: { error: String(err) } };

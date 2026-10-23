@@ -12,13 +12,12 @@ interface TimedEvent extends RawEvent {
 }
 
 export async function djHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-  const headers = { 'Access-Control-Allow-Origin': '*' };
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
   const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
   const ctrName = process.env['COSMOS_CONTAINER'] ?? 'events';
 
   if (!connStr) {
-    return { status: 500, jsonBody: { error: 'Cosmos not configured' }, headers };
+    return { status: 500, jsonBody: { error: 'Cosmos not configured' } };
   }
 
   const limit = Math.min(Number(request.query.get('limit')) || 20, 50);
@@ -61,11 +60,10 @@ export async function djHandler(request: HttpRequest, context: InvocationContext
         /** True when we guessed the room rather than being told. */
         inferredListeners: requested.length === 0,
       },
-      headers,
     };
   } catch (err) {
     context.error('[dj] failed:', err);
-    return { status: 500, jsonBody: { error: String(err) }, headers };
+    return { status: 500, jsonBody: { error: String(err) } };
   }
 }
 

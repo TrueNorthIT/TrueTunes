@@ -59,7 +59,6 @@ export async function playlistListHandler(request: HttpRequest, context: Invocat
 
     return {
       jsonBody: result,
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[playlist-list] query failed:', err);

@@ -100,6 +100,7 @@ export const sonosDefaults: SonosPreload = {
   entraReLogin: () => Promise.resolve(),
   onEntraReady: noop,
   renameUser: () => Promise.resolve({ ok: true }),
+  submitFeedback: () => Promise.resolve({ url: 'https://github.com/TrueNorthIT/TrueTunes/issues/1' }),
   updateNowPlayingSmtc: () => Promise.resolve(),
 };
 

@@ -39,7 +39,6 @@ export async function gameStatsHandler(request: HttpRequest, context: Invocation
       return {
         status: 200,
         jsonBody: { gameId, totalPlayers: 0, questions: [] },
-        headers: { 'Access-Control-Allow-Origin': '*' },
       };
     }
 
@@ -74,7 +73,6 @@ export async function gameStatsHandler(request: HttpRequest, context: Invocation
     return {
       status: 200,
       jsonBody: { gameId, totalPlayers: total, questions },
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[game-stats] failed:', err);

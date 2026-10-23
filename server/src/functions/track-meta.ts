@@ -1,4 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { requireAuth } from '../shared/auth';
 import { CosmosClient } from '@azure/cosmos';
 import { mergeTrackMeta, sanitiseTrackMeta } from '../shared/trackMeta';
 
@@ -50,5 +51,5 @@ app.http('track-meta', {
   methods: ['POST'],
   route: 'track-meta',
   authLevel: 'anonymous',
-  handler: trackMetaHandler,
+  handler: requireAuth(trackMetaHandler),
 });
