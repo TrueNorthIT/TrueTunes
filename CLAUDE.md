@@ -196,4 +196,8 @@ Resource group: `truetunes-rg` (uksouth)
 | App Insights  | `truetunes-ai`           |
 | Log Analytics | `truetunes-law`          |
 
-Deploy: `cd server && npm run deploy` — wraps `az deployment group create` and reads `VESTABOARD_API_KEY` from the root `.env`, passing it as the `vestaboardApiKey` ARM parameter so the secret is never committed.
+Deploy: `cd server && npm run deploy` — wraps `az deployment group create` and reads `VESTABOARD_API_KEY` from the root `.env`, passing it as the `vestaboardApiKey` ARM parameter so the secret is never committed. It then runs `func azure functionapp publish`, which **replaces every function** with what's in this checkout.
+
+- **Deploy from a tree that contains `origin/main`.** Deploying a feature branch that's behind main deletes main's newer functions from production (this removed `music-stats` and `track-meta` once). Merge main first, or deploy the merge from a throwaway worktree.
+- `az` and `func` use whichever Azure CLI account is active: pick the TrueNorth admin identity first (the `azswap` profiles skill).
+- A fresh worktree has no `server/node_modules`; run `npm ci` in `server/` first, or tsc falls back to the root's TypeScript 6 and fails with TS5107.
