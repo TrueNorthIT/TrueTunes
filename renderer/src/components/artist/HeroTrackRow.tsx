@@ -43,7 +43,7 @@ export function HeroTrackRow({ track, index, isSelected, onClick, onDragStart, o
       className={`${styles.heroTrackRow}${isSelected ? ' ' + styles.heroTrackSelected : ''}`}
       draggable
       onClick={e => onClick(index, e)}
-      onContextMenu={e => showTrackMenu({ track: trackPayload }, e)}
+      onContextMenu={e => showTrackMenu({ track: trackPayload, sonosItem: track.raw }, e)}
       onDragStart={e => onDragStart(index, e)}
     >
       <div className={styles.heroTrackArt}>
