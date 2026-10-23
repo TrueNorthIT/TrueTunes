@@ -39,7 +39,7 @@ export function TopSongRow({ track, index, isSelected, isCurrentTrack, isPlaybac
       className={`${styles.topSongRow}${isSelected ? ' ' + styles.topSongSelected : ''}`}
       draggable
       onClick={e => onClick(index, e)}
-      onContextMenu={e => showTrackMenu({ track: trackPayload }, e)}
+      onContextMenu={e => showTrackMenu({ track: trackPayload, sonosItem: track.raw }, e)}
       onDragStart={e => onDragStart(index, e)}
     >
       {isCurrentTrack ? (

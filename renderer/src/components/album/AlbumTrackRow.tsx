@@ -47,7 +47,7 @@ export function AlbumTrackRow({
       className={[styles.trackRow, isSelected ? styles.selected : ''].filter(Boolean).join(' ')}
       draggable
       onClick={onClick}
-      onContextMenu={e => showTrackMenu({ track: trackPayload }, e)}
+      onContextMenu={e => showTrackMenu({ track: trackPayload, sonosItem: track.raw }, e)}
       onDragStart={onDragStart}
     >
       <span className={styles.ordinal}>{track.ordinal}</span>

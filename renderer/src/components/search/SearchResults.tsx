@@ -160,7 +160,7 @@ export function SearchResults({
                   subtitle={subtitle}
                   onAdd={() => onAddToQueue(item)}
                   onClick={e => { e.stopPropagation(); handleTrackClick(i, e); }}
-                  onContextMenu={e => showTrackMenu({ track: buildTrackPayload(item) }, e)}
+                  onContextMenu={e => showTrackMenu({ track: buildTrackPayload(item), sonosItem: item }, e)}
                   draggable
                   onDragStart={e => handleDragStart(e, i)}
                 />
