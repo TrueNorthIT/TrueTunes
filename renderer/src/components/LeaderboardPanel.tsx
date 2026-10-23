@@ -190,6 +190,9 @@ export function LeaderboardPanel() {
         >
           <Info size={16} strokeWidth={2} />
         </button>
+        <button className={styles.periodBtn} onClick={() => navigate('/leaderboard/stats')}>
+          📊 Music stats
+        </button>
       </div>
 
       {isQueuedleView && rankings.isLoading && <div className={styles.state}>Loading Queuedle rankings…</div>}

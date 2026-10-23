@@ -55,6 +55,8 @@ export interface SonosAPI {
     guesses: { main: Array<'left' | 'right'>; bonus: string[] };
   }) => Promise<unknown>;
   fetchGameLeaderboard: (date?: string) => Promise<unknown>;
+  fetchMusicStats: () => Promise<unknown>;
+  reportTrackMeta: (tracks: Array<{ uri: string; durationMs?: number; explicit?: boolean }>) => Promise<unknown>;
   fetchGameDates: (userName: string) => Promise<unknown>;
   fetchMyScore: (gameId: string, userName: string) => Promise<unknown>;
   fetchGameStats: (date?: string) => Promise<unknown>;
@@ -202,6 +204,8 @@ contextBridge.exposeInMainWorld('sonos', {
   fetchDailyGame: (date?: string) => ipcRenderer.invoke('game:fetch', date),
   submitGameScore: (input) => ipcRenderer.invoke('game:submit', input),
   fetchGameLeaderboard: (date?: string) => ipcRenderer.invoke('game:leaderboard', date),
+  fetchMusicStats: () => ipcRenderer.invoke('music:stats'),
+  reportTrackMeta: (tracks) => ipcRenderer.invoke('music:track-meta', tracks),
   fetchGameDates: (userName: string) => ipcRenderer.invoke('game:dates', userName),
   fetchMyScore: (gameId: string, userName: string) => ipcRenderer.invoke('game:my-score', gameId, userName),
   fetchGameStats: (date?: string) => ipcRenderer.invoke('game:stats', date),

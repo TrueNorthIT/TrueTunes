@@ -37,6 +37,7 @@ import type { NormalizedQueueItem } from './types/provider';
 import { LeaderboardPanel } from './components/LeaderboardPanel';
 import { QueuedlePanel } from './components/queuedle/QueuedlePanel';
 import { QueuedleStatsPanel } from './components/queuedle/QueuedleStatsPanel';
+import { MusicStatsPanel } from './components/musicStats/MusicStatsPanel';
 import { QueueSidebar, type QueueSidebarHandle } from './components/queue/QueueSidebar';
 import { SkinnyShell } from './components/skinny/SkinnyShell';
 import { useSkinnyMode } from './hooks/useSkinnyMode';
@@ -572,6 +573,7 @@ useEffect(() => {
           <Route path="/artist/:id" element={<ArtistPanel onAddToQueue={handleAddToQueue} currentTrackName={playback.trackName} isPlaybackActive={playback.isPlaying} />} />
           <Route path="/container/:id" element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/leaderboard" element={<LeaderboardPanel />} />
+          <Route path="/leaderboard/stats" element={<MusicStatsPanel />} />
           <Route path="/queuedle" element={<QueuedlePanel />} />
           <Route path="/queuedle/stats" element={<QueuedleStatsPanel />} />
           <Route path="/lyrics" element={<LyricsPanel playback={playback} />} />

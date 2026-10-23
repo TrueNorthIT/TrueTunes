@@ -1827,6 +1827,28 @@ ipcMain.handle('game:leaderboard',async (_: IpcMainInvokeEvent, date?: string) =
   }
 });
 
+ipcMain.handle('music:stats', async () => {
+  try {
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/music-stats`);
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
+ipcMain.handle('music:track-meta', async (_: IpcMainInvokeEvent, tracks: unknown) => {
+  try {
+    const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/track-meta`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tracks }),
+    });
+    return await res.json();
+  } catch (err) {
+    return { error: String(err) };
+  }
+});
+
 ipcMain.handle('game:dates', async (_: IpcMainInvokeEvent, userName: string) => {
   try {
     const url = `${PUBSUB_FUNCTION_URL}/api/game-dates?userName=${encodeURIComponent(userName ?? '')}`;

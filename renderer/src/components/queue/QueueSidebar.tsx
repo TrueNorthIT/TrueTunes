@@ -2,6 +2,7 @@ import { useEffect, useImperativeHandle, useMemo, useRef, useState, Fragment, fo
 import { useQueries } from '@tanstack/react-query';
 import { Loader2, Disc3 } from 'lucide-react';
 import { applyReorderLocally, expandToAlbumBlock, projectPlayTimes } from '../../lib/queueHelpers';
+import { reportTrackMeta } from '../../lib/trackMetaReporter';
 import { createDragGhost } from '../../lib/dragHelpers';
 import { getActiveProvider } from '../../providers';
 import { useAttribution, attributionContentKey } from '../../hooks/useAttribution';
@@ -129,6 +130,14 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
       durations: items.map((item, i) => trackDetailsResults[i]?.data?.durationMs || item.track.durationMs || undefined),
     });
   }, [items, currentQueueItemId, positionMs, currentTrackDurationMs, trackDetailsResults, nowMs]);
+
+  // Feed the music stats with lengths we've already looked up anyway.
+  useEffect(() => {
+    items.forEach((item, i) => {
+      const d = trackDetailsResults[i]?.data;
+      if (d) reportTrackMeta({ uri: item.track.id, durationMs: d.durationMs, explicit: d.explicit });
+    });
+  }, [items, trackDetailsResults]);
 
   const [liveWidth, setLiveWidth] = useState<number>(dockedWidth ?? 380);
   useEffect(() => {

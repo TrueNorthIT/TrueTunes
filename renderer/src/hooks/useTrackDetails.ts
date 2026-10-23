@@ -12,6 +12,7 @@ export interface TrackDetails {
   serviceId: string | undefined;
   accountId: string | undefined;
   durationMs: number | undefined;
+  explicit: boolean | undefined;
 }
 
 function parseResponse(data: unknown): TrackDetails {
@@ -44,9 +45,14 @@ function parseResponse(data: unknown): TrackDetails {
   const artistId = defs?.['artistId'] as string | undefined;
   const albumName = defs?.['containerName'] as string | undefined;
   const albumId = defs?.['containerId'] as string | undefined;
-  const durationMs = defs?.['durationMs'] as number | undefined;
+  const itemSeconds = Number(item?.['duration']);
+  const durationMs =
+    (defs?.['durationMs'] as number | undefined) ??
+    (Number.isFinite(itemSeconds) && itemSeconds > 0 ? itemSeconds * 1000 : undefined);
+  const rawExplicit = item?.['isExplicit'] ?? defs?.['explicit'];
+  const explicit = typeof rawExplicit === 'boolean' ? rawExplicit : undefined;
 
-  return { trackName, artUrl, artist, artistId, albumName, albumId, serviceId, accountId, durationMs };
+  return { trackName, artUrl, artist, artistId, albumName, albumId, serviceId, accountId, durationMs, explicit };
 }
 
 export function trackQueryOptions(trackId: string, serviceId: string, rawAccountId: string) {
