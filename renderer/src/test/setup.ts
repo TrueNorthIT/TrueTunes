@@ -23,6 +23,8 @@ Object.defineProperty(window, 'sonos', {
     fetchDailyGame:     vi.fn(pending),
     submitGameScore:    vi.fn(pending),
     fetchGameLeaderboard: vi.fn(pending),
+    fetchMusicStats: vi.fn(pending),
+    reportTrackMeta: vi.fn().mockResolvedValue({ saved: 0 }),
     fetchGameDates:     vi.fn(pending),
     fetchMyScore:       vi.fn(pending),
     fetchGameStats:     vi.fn(pending),
