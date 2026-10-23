@@ -235,3 +235,16 @@
 .bar { display: block; height: 100%; border-radius: 0 4px 4px 0; min-width: 2px; }
 .barValue { color: var(--text); text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 .barGames { color: var(--text-3); font-size: 11px; }
+
+.clearBtn {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 4px 6px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.clearBtn:hover { color: var(--text); }
+.chip:disabled:not(.chipOn) { opacity: 0.45; }
