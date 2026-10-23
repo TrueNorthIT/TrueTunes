@@ -15,13 +15,15 @@ interface Props {
   wash?: string | null;
   /** Lines under the title: artist, meta, actions. */
   children?: ReactNode;
+  /** A chip pinned top right (e.g. "Queued here 3 times"), as Home's Now Playing card pins its queuer. */
+  corner?: ReactNode;
 }
 
 /**
  * The header band of a detail page, in Home's Now Playing language: large sharp art on a lit wall with
  * the artwork's colour washed across it. Sized in em: put it inside a .page-scale root that is a container.
  */
-export function HeroBand({ art, kind, title, onTitleClick, titleHint, wash, children }: Props) {
+export function HeroBand({ art, kind, title, onTitleClick, titleHint, wash, children, corner }: Props) {
   const style: CSSProperties | undefined = wash
     ? { background: `radial-gradient(120% 150% at 0% 0%, rgba(${wash}, 0.3), transparent 65%), var(--surface-hi)` }
     : undefined;
@@ -39,6 +41,7 @@ export function HeroBand({ art, kind, title, onTitleClick, titleHint, wash, chil
         </h1>
         {children}
       </div>
+      {corner && <div className={styles.corner}>{corner}</div>}
     </header>
   );
 }

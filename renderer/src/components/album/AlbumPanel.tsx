@@ -179,6 +179,7 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
           art={cachedArt ? <img src={cachedArt} alt="" /> : <div className={styles.artPh}>♪</div>}
           kind={isStation ? 'Station' : isPlaylistOrProgram ? 'Playlist' : 'Album'}
           title={<>{title}{anyExplicit && <ExplicitBadge />}</>}
+          corner={<OfficeChip count={queuedHere} />}
         >
             {artistParts.length > 0 && (
               <div className={styles.artist}>
@@ -202,7 +203,6 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
               </div>
             )}
             {data && <div className={styles.metaLine}>{meta}</div>}
-            <OfficeChip count={queuedHere} />
             {/* No whole-station add: it would replace the shared queue. Its songs add one at a time below. */}
             {!isStation && <div className={styles.actions}>
               <PillButton
