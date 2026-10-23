@@ -16,6 +16,8 @@ Standing rules:
 ## Batch 1: foundation and shell
 Shared tokens, `.page-scale`, the shared components in `components/common/`, and the queue sidebar, player bar and top nav. Approved.
 
+- **Joe's follow-up (2026-10-23).** The queue goes back to one list: played tracks are no longer folded away. The estimated play time shows on every row instead of on hover. The queuer avatars stay.
+
 ## Batch 2: Artist, Album, Playlist
 - **Artist hero.** A full-bleed photo with the name, a "Queued here" chip and Radio/Shuffle pills (which only navigate). Joe found the split layout "pasted on". Artists without a photo get the cover as a print over a colour wash.
 - **Hero crop.** Comes from MediaPipe BlazeFace full-range: CPU, bundled offline, warmed when the app is idle at startup. Falls back to a detail-energy band, then `center 25%`. Electron's own `FaceDetector` has no backend.
