@@ -8,6 +8,7 @@ import {
   useGameRankings,
   useMyScore,
   useGameStats,
+  useWeeklyLeaderboard,
   computeQueuedleRating,
   getGameRankTier,
 } from '../../hooks/useDailyGame';
@@ -23,10 +24,12 @@ import { QueuedleCalendar } from './QueuedleCalendar';
 import { ScoreDistribution } from './ScoreDistribution';
 import { MyScores } from './MyScores';
 import { getGameRankIcon } from '../../lib/gameRankAssets';
+import { clearProgress, loadProgress, pruneProgress, saveProgress } from '../../lib/queuedleProgress';
+import { formatWeekRange, weekRangeOf } from '../../lib/queuedleWeek';
 import styles from '../../styles/Queuedle.module.css';
 
 type Phase = 'intro' | 'main' | 'bonus' | 'bonus-results' | 'rank-change' | 'summary';
-type LeaderboardTab = 'today' | 'ranked';
+type LeaderboardTab = 'today' | 'week' | 'ranked';
 
 const MEDAL_CLASS = [styles.medalGold, styles.medalSilver, styles.medalBronze];
 
@@ -75,6 +78,7 @@ export function QueuedlePanel() {
   const rankings = useGameRankings(displayName ?? undefined, true);
   const myScore = useMyScore(gameId, displayName);
   const gameStats = useGameStats(gameId);
+  const weekly = useWeeklyLeaderboard(gameId, displayName);
   const alreadyPlayed = useMemo(() => {
     if (!displayName || !leaderboard.data || !('scores' in leaderboard.data)) return null;
     const existing = leaderboard.data.scores.find((s) => s.userName === displayName);
@@ -129,6 +133,41 @@ export function QueuedlePanel() {
   // Snapshot of the user's prior ranking row, captured once before today's submission.
   // undefined = not captured yet; null = captured, user has no prior games.
   const [beforeRanking, setBeforeRanking] = useState<GameRanking | null | undefined>(undefined);
+  // The game whose saved progress has been loaded into the state above. Saving
+  // waits for this so a game's first render can't overwrite what was stored.
+  const [progressFor, setProgressFor] = useState<string | null>(null);
+
+  useEffect(() => {
+    pruneProgress();
+  }, []);
+
+  // Resume a game left part-way through, with any answered question still
+  // answered, so leaving and coming back can't be used to try again.
+  useEffect(() => {
+    if (!gameId || questionCount === 0 || progressFor === gameId) return;
+    const saved = loadProgress(gameId, questionCount);
+    if (saved) {
+      setPhase(saved.phase);
+      setCurrentIdx(saved.currentIdx);
+      setPickedSide(saved.pickedSide);
+      setRevealed(saved.pickedSide !== null);
+      setMainGuesses(saved.mainGuesses);
+      setBonusSelections(saved.bonusSelections);
+    }
+    setProgressFor(gameId);
+  }, [gameId, questionCount, progressFor]);
+
+  useEffect(() => {
+    if (!gameId || progressFor !== gameId || devReplay) return;
+    if (phase !== 'main' && phase !== 'bonus') return;
+    saveProgress(gameId, { phase, currentIdx, pickedSide, mainGuesses, bonusSelections });
+  }, [gameId, progressFor, devReplay, phase, currentIdx, pickedSide, mainGuesses, bonusSelections]);
+
+  // Once the game is finished, its score is what's kept, not the progress.
+  const finished = localPlayed !== null || alreadyPlayed !== null;
+  useEffect(() => {
+    if (gameId && finished) clearProgress(gameId);
+  }, [gameId, finished]);
 
   // Backfill localStorage from the cloud when the leaderboard shows the user has
   // played but the local key is missing (fresh install, cleared cache, new machine).
@@ -174,7 +213,9 @@ export function QueuedlePanel() {
 
   useEffect(() => {
     if (game && bonusSelections.length !== game.questions.length) {
-      setBonusSelections(new Array(game.questions.length).fill(null));
+      // Functional so it can't undo selections restored in this same commit.
+      const n = game.questions.length;
+      setBonusSelections((prev) => (prev.length === n ? prev : new Array(n).fill(null)));
     }
   }, [game, bonusSelections.length]);
 
@@ -230,6 +271,7 @@ export function QueuedlePanel() {
     setLocalScore(null);
     setDevReplay(false);
     setBeforeRanking(undefined);
+    setProgressFor(null);
   }
 
   function handleDevPlayAgain() {
@@ -337,6 +379,11 @@ export function QueuedlePanel() {
     const rankedTabClass = `${styles.leaderboardTab}${
       leaderboardTab === 'ranked' ? ' ' + styles.leaderboardTabActive : ''
     }`;
+    const weekTabClass = `${styles.leaderboardTab}${
+      leaderboardTab === 'week' ? ' ' + styles.leaderboardTabActive : ''
+    }`;
+    const weekRange = weekRangeOf(currentGame.id);
+    const weekRows = weekly.data ?? [];
 
     return (
       <div className={styles.leaderboardSection}>
@@ -356,6 +403,14 @@ export function QueuedlePanel() {
             onClick={() => setLeaderboardTab('today')}
           >
             Today
+          </button>
+          <button
+            className={weekTabClass}
+            role="tab"
+            aria-selected={leaderboardTab === 'week'}
+            onClick={() => setLeaderboardTab('week')}
+          >
+            Week
           </button>
           <button
             className={rankedTabClass}
@@ -393,6 +448,28 @@ export function QueuedlePanel() {
               playerScore={scoreForDistributions?.bonusScore ?? -1}
               title="Top Queuer"
             />
+          </>
+        )}
+        {leaderboardTab === 'week' && (
+          <>
+            <h2 className={styles.leaderboardTitle}>
+              Week Leaderboard{weekRange ? ` · ${formatWeekRange(weekRange)}` : ''}
+            </h2>
+            {weekly.isLoading && <div className={styles.rankedState}>Loading this week...</div>}
+            {!weekly.isLoading && weekRows.length === 0 && (
+              <div className={styles.rankedState}>No scores this week yet.</div>
+            )}
+            {!weekly.isLoading &&
+              weekRows.slice(0, 10).map((row, i) => (
+                <div key={row.userName} className={styles.scoreRow}>
+                  <span className={styles.scoreRank}><RankBadge index={i} /></span>
+                  <button className={styles.scoreNameBtn} onClick={() => navigate(`/profile/${encodeURIComponent(row.userName)}`)}>{row.userName}</button>
+                  <span className={styles.scoreBreakdown}>
+                    {row.gamesPlayed} {row.gamesPlayed === 1 ? 'game' : 'games'} · best {row.bestTotal}
+                  </span>
+                  <span className={styles.scoreTotal}>{row.total}</span>
+                </div>
+              ))}
           </>
         )}
         {leaderboardTab === 'ranked' && (
@@ -584,6 +661,7 @@ export function QueuedlePanel() {
       scored = { main: correctMain, bonus: correctBonus };
     }
     setLocalScore(scored);
+    clearProgress(game.id);
     try {
       localStorage.setItem(
         `queuedle-played:${game.id}`,

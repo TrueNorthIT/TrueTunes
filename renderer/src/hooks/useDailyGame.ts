@@ -1,4 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { calculateWeeklyLeaderboard, isInWeek, weekRangeOf } from '../lib/queuedleWeek';
+import type { WeeklyStanding } from '../lib/queuedleWeek';
 
 export interface GameRanking {
   userName: string;
@@ -220,6 +222,25 @@ export function useGameRankings(userName: string | null | undefined, enabled: bo
   });
 }
 
+export function useWeeklyLeaderboard(gameId: string | null, userName: string | null | undefined) {
+  const range = gameId ? weekRangeOf(gameId) : null;
+  return useQuery<WeeklyStanding[]>({
+    queryKey: ['queuedle-weekly', range?.from ?? '', userName ?? ''],
+    queryFn: async () => {
+      const datesResult = await window.sonos.fetchGameDates(userName ?? '');
+      const dates = Array.isArray(datesResult.dates) ? datesResult.dates : [];
+      const inWeek = dates.filter((d) => d.status === 'ready' && range && isInWeek(d.gameId, range));
+      const boards = await Promise.all(
+        inWeek.map((d) => window.sonos.fetchGameLeaderboard(d.gameId).catch(() => null))
+      );
+      return calculateWeeklyLeaderboard(boards);
+    },
+    enabled: !!range && userName !== undefined,
+    staleTime: 60_000,
+    refetchInterval: 5 * 60_000,
+  });
+}
+
 export function useGameStats(gameId: string | null) {
   return useQuery<GameStatsResult>({
     queryKey: ['queuedle-stats', gameId ?? 'today'],
@@ -267,6 +288,7 @@ export function useSubmitGameScore() {
       qc.invalidateQueries({ queryKey: ['queuedle', 'today'] });
       qc.invalidateQueries({ queryKey: ['queuedle-dates'] });
       qc.invalidateQueries({ queryKey: ['queuedle-rankings'] });
+      qc.invalidateQueries({ queryKey: ['queuedle-weekly'] });
       qc.invalidateQueries({ queryKey: ['queuedle-my-score', variables.gameId] });
       qc.invalidateQueries({ queryKey: ['queuedle-stats', variables.gameId] });
     },
