@@ -37,6 +37,7 @@ The renderer is **never type-checked by Vite** (esbuild strips types). `npm run 
 ```bash
 node scripts/screenshot.mjs shot.png                    # current page
 node scripts/screenshot.mjs shot.png leaderboard        # after moving to #/leaderboard ("" for Home)
+node scripts/perf-trace.mjs perf.json love              # perf baseline <out.json> <searchTerm>: reloads, navigates and scrolls only
 ```
 
 Give the route without `#/`: Git Bash rewrites path-like arguments, so `'#/leaderboard'` arrives as `#C:/Program Files/Git/leaderboard`.
@@ -76,7 +77,7 @@ All data fetching in the renderer uses React Query (`@tanstack/react-query`). Qu
 
 ## Tests
 
-Tests live in `renderer/src/**/__tests__/`. There are no main process tests.
+Renderer tests live in `renderer/src/**/__tests__/` (Vitest). Main-process tests are `src/*.test.ts` (`node:test`, run with `npm run test:main`), and the Azure Functions have their own (`cd server && npm test`).
 
 ```bash
 npm run test:run     # run all tests once
@@ -116,7 +117,7 @@ Reset mocks between tests when a test sets up a pending promise (the default) an
 
 ### What's not tested
 
-Main process (`src/`), IPC handlers, WebSocket bootstrap, auth flow, and most hooks and components. 85% of the codebase has no tests. Prioritise `usePlayback`, `useQueue`, `useGroups`, and `useAuth` if adding coverage.
+Most of the main process (only `genius-match`, `graph-presence` and `nav-guard` have tests), IPC handlers, WebSocket bootstrap, and most components. `usePlayback`, `useQueue`, `useGroups` and `useAuth` already have tests in `renderer/src/hooks/__tests__/`: extend those files rather than writing new ones.
 
 ---
 
