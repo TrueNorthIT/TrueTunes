@@ -31,18 +31,24 @@ export interface DetectedFace {
 
 /**
  * The focus for detected faces: their eye lines, nearer the highest one (30% of the way down the spread) so the top
- * faces of a group stay clear of the floating nav. Only faces at least a quarter the size of the largest
- * count (a stray face in the crowd does not steer the crop), and only the largest five. null with no faces.
+ * faces of a group stay clear of the floating nav. The group is built around the largest face: only faces at least
+ * a quarter its size, with eye lines within GROUP_SPAN of its own, count, so a stray face elsewhere in the frame (a
+ * face on a T-shirt, a poster) cannot drag the crop off the band. Largest five. null with no faces.
  */
+/** How far (fraction of image height) a face's eyes can sit from the largest face's and still share its crop. A wide
+ * hero shows about a third of a square photo. */
+const GROUP_SPAN = 0.25;
+
 export function faceFocusY(faces: DetectedFace[]): number | null {
   const area = (f: DetectedFace) => f.width * f.height;
-  const largest = Math.max(0, ...faces.map(area));
-  if (!(largest > 0)) return null;
-  const main = faces
-    .filter(f => area(f) >= largest / 4)
-    .sort((a, b) => area(b) - area(a))
+  const eye = (f: DetectedFace) => f.eyeY ?? f.top + 0.4 * f.height;
+  const sorted = [...faces].sort((a, b) => area(b) - area(a));
+  const lead = sorted[0];
+  if (!lead || !(area(lead) > 0)) return null;
+  const main = sorted
+    .filter(f => area(f) >= area(lead) / 4 && Math.abs(eye(f) - eye(lead)) <= GROUP_SPAN)
     .slice(0, 5);
-  const eyes = main.map(f => f.eyeY ?? f.top + 0.4 * f.height);
+  const eyes = main.map(eye);
   const top = Math.min(...eyes);
   return Math.min(1, Math.max(0, top + 0.3 * (Math.max(...eyes) - top)));
 }

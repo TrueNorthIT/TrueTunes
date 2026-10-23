@@ -35,6 +35,11 @@ describe('faceFocusY', () => {
   it('ignores faces much smaller than the largest', () => {
     expect(faceFocusY([face(0.3, 0.3, 0.4), face(0.8, 0.05, 0.82)])).toBeCloseTo(0.4);
   });
+  it('ignores a stray face far from the group (Florence Road: a face low in the frame)', () => {
+    // MediaPipe's real result on Florence Road's photo: three band members near the top, one stray near the bottom.
+    const faces = [face(0.234, 0.115, 0.273), face(0.154, 0.105, 0.185), face(0.855, 0.127, 0.901), face(0.139, 0.182, 0.197)];
+    expect(faceFocusY(faces)).toBeCloseTo(0.185 + 0.3 * (0.273 - 0.185), 3);
+  });
   it('is null with no faces', () => {
     expect(faceFocusY([])).toBeNull();
   });
