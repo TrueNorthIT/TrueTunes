@@ -1,4 +1,4 @@
-import { isAlbum, isArtist, isPlaylist, isProgram, isTrack } from './itemHelpers';
+import { isAlbum, isArtist, isPlaylist, isProgram, isTrack, artistItem } from './itemHelpers';
 import type { SonosItem, SonosItemId } from '../types/sonos';
 
 export type ContainerKind = 'songs' | 'albums' | 'playlists' | 'stations' | 'artists' | 'other';
@@ -54,9 +54,9 @@ export function containerSummary(groups: ContainerGroup[]): string {
 export function artistItemOf(artist: { name: string; id?: unknown }): SonosItem | null {
   const { name, id } = artist;
   if (id && typeof id === 'object' && (id as SonosItemId).objectId) {
-    return { type: 'ARTIST', name, resource: { type: 'ARTIST', id: id as SonosItemId } } as SonosItem;
+    return artistItem(name, id as SonosItemId);
   }
   const m = typeof id === 'string' ? id.match(/^srn:content:audio:artist:([^#]+)#([^:]+):(.+)$/) : null;
   if (!m) return null;
-  return { type: 'ARTIST', name, resource: { type: 'ARTIST', id: { objectId: m[1], serviceId: m[2], accountId: m[3] } } } as SonosItem;
+  return artistItem(name, { objectId: m[1], serviceId: m[2], accountId: m[3] });
 }

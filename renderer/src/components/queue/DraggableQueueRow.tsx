@@ -1,3 +1,4 @@
+import { trackPayload } from '../../lib/itemHelpers';
 import { useNavigate } from 'react-router-dom';
 import { useImage } from '../../hooks/useImage';
 import { useOpenItem } from '../../hooks/useOpenItem';
@@ -51,17 +52,7 @@ export function DraggableQueueRow({
   const { showTrackMenu } = useTrackContextMenu();
   const name = item.track.title;
 
-  const trackPayload: PlaylistTrack = {
-    uri: item.track.id,
-    trackName: item.track.title,
-    artist: item.track.artist,
-    albumName: item.track.albumName ?? undefined,
-    imageUrl: item.track.imageUrl,
-    serviceId: item.track.serviceId ?? '',
-    accountId: item.track.accountId ?? '',
-    addedBy: '',
-    addedAt: 0,
-  };
+  const payload = trackPayload({ ...item.track, uri: item.track.id, trackName: item.track.title });
 
   const art = cachedArt
     ? <img className={styles.art} src={cachedArt} alt="" />
@@ -79,7 +70,7 @@ export function DraggableQueueRow({
       draggable
       onClick={e => onRowClick(index, e)}
       onDoubleClick={() => getActiveProvider().skipToTrack(index + 1)}
-      onContextMenu={e => showTrackMenu({ track: trackPayload }, e)}
+      onContextMenu={e => showTrackMenu({ track: payload }, e)}
       onDragStart={e => onDragStart(index, e)}
       onDragOver={e => onDragOver(index, e)}
       onDrop={onDrop}

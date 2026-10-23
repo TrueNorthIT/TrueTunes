@@ -18,6 +18,7 @@ import { PillButton } from './common/PillButton';
 import { TrackRow } from './common/TrackRow';
 import { UserAvatar } from './common/UserAvatar';
 import type { NormalizedQueueItem } from '../types/provider';
+import { albumItem, artistItem, trackPayload } from '../lib/itemHelpers';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/DiscoverPanel.module.css';
 
@@ -47,16 +48,12 @@ function ActCard({ group, viewer, onAdd }: { group: DjActDiscoveries; viewer?: s
   const { resolveAndOpen } = useResolveAndOpen();
   const { showTrackMenu } = useTrackContextMenu();
 
-  const albumItem = (t: AlbumTrack) =>
+  const albumItemOf = (t: AlbumTrack) =>
     t.albumId
-      ? ({
-          title: t.albumName ?? t.title,
-          type: 'ITEM_ALBUM',
-          resource: { type: 'ALBUM', id: { objectId: t.albumId, serviceId: t.id.serviceId ?? '', accountId: t.id.accountId ?? '' } },
-        } as SonosItem)
+      ? albumItem(t.albumName ?? t.title, { objectId: t.albumId, serviceId: t.id.serviceId ?? '', accountId: t.id.accountId ?? '' })
       : null;
   const openAlbum = (t: AlbumTrack) => {
-    const item = albumItem(t);
+    const item = albumItemOf(t);
     if (item) openItem(item);
     else void resolveAndOpen(t.albumName || t.title, 'album', { artist: act.artist, serviceId: act.serviceId, accountId: act.accountId });
   };
@@ -65,12 +62,7 @@ function ActCard({ group, viewer, onAdd }: { group: DjActDiscoveries; viewer?: s
       void queryClient.prefetchQuery(albumQueryOptions(t.albumId, t.id.serviceId, t.id.accountId, undefined));
   };
   const openArtist = () =>
-    openItem({
-      type: 'ARTIST',
-      title: act.artist,
-      name: act.artist,
-      resource: { type: 'ARTIST', id: { objectId: act.artistId, serviceId: act.serviceId, accountId: act.accountId } },
-    } as SonosItem);
+    openItem(artistItem(act.artist, { objectId: act.artistId, serviceId: act.serviceId, accountId: act.accountId }, { title: act.artist }));
 
   return (
     <PersonCard
@@ -94,17 +86,15 @@ function ActCard({ group, viewer, onAdd }: { group: DjActDiscoveries; viewer?: s
             onContextMenu={(e) =>
               showTrackMenu(
                 {
-                  track: {
+                  track: trackPayload({
                     uri: t.id.objectId ?? '',
                     trackName: t.title,
                     artist: act.artist,
-                    albumName: t.albumName ?? undefined,
+                    albumName: t.albumName,
                     imageUrl: t.artUrl ?? undefined,
-                    serviceId: t.id.serviceId ?? '',
-                    accountId: t.id.accountId ?? '',
-                    addedBy: '',
-                    addedAt: 0,
-                  },
+                    serviceId: t.id.serviceId,
+                    accountId: t.id.accountId,
+                  }),
                   sonosItem: t.raw,
                 },
                 e,

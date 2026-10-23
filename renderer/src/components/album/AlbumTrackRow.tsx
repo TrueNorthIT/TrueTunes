@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { EqBars } from '../common/EqBars';
 import { TrackRow } from '../common/TrackRow';
 import { useTrackContextMenu } from '../common/ContextMenu';
-import { fmtDuration } from '../../lib/itemHelpers';
+import { fmtDuration, trackPayload, artistItem } from '../../lib/itemHelpers';
 import type { AlbumTrack } from '../../hooks/useAlbumBrowse';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/AlbumPanel.module.css';
@@ -31,17 +31,15 @@ export function AlbumTrackRow({
   const navigate = useNavigate();
   const { showTrackMenu } = useTrackContextMenu();
 
-  const trackPayload: PlaylistTrack = {
+  const payload = trackPayload({
     uri: track.id.objectId ?? '',
     trackName: track.title,
     artist: track.artists.join(', '),
-    albumName: track.albumName ?? undefined,
+    albumName: track.albumName,
     imageUrl: track.artUrl,
     serviceId: track.id.serviceId ?? serviceId,
     accountId: track.id.accountId ?? accountId,
-    addedBy: '',
-    addedAt: 0,
-  };
+  });
 
   // Album: the artist is the page's artist, so only say so when someone else is on the track.
   const albumArtists = albumArtist ? albumArtist.split(/,\s*/).map(norm) : null;
@@ -51,11 +49,7 @@ export function AlbumTrackRow({
   // Playlist or programme: every track has its own artist and album, so those are links.
   const playlistArtists = track.artistObjects?.length
     ? track.artistObjects.map((a, ai) => {
-        const artistItem: SonosItem = {
-          type: 'ARTIST',
-          name: a.name,
-          resource: { type: 'ARTIST', id: { objectId: a.objectId, serviceId, accountId } },
-        };
+        const artist = artistItem(a.name, { objectId: a.objectId, serviceId, accountId });
         return (
           <span key={ai}>
             {ai > 0 && ', '}
@@ -66,7 +60,7 @@ export function AlbumTrackRow({
               onMouseDown={e => e.stopPropagation()}
               onClick={e => {
                 e.stopPropagation();
-                navigate(`/artist/${encodeURIComponent(a.objectId)}`, { state: { item: artistItem } });
+                navigate(`/artist/${encodeURIComponent(a.objectId)}`, { state: { item: artist } });
               }}
             >
               {a.name}
@@ -114,7 +108,7 @@ export function AlbumTrackRow({
       playing={playing}
       onClick={onClick}
       onDragStart={onDragStart}
-      onContextMenu={e => showTrackMenu({ track: trackPayload }, e)}
+      onContextMenu={e => showTrackMenu({ track: payload }, e)}
       onAdd={onAdd}
     />
   );

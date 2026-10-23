@@ -16,6 +16,9 @@ import {
   getName,
   getItemArt,
   browseSub,
+  albumItem,
+  artistItem,
+  trackPayload,
   isPodcast,
 } from '../lib/itemHelpers';
 import {
@@ -485,11 +488,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
   // the app's track context menu on right-click, and a prefetch on hover so the click is instant.
   const albumItemFor = (t: NavTrack): SonosItem | null =>
     t.albumId
-      ? ({
-          title: t.album ?? t.title,
-          type: 'ITEM_ALBUM',
-          resource: { type: 'ALBUM', id: { objectId: t.albumId, serviceId: t.serviceId ?? '', accountId: t.accountId ?? '' } },
-        } as SonosItem)
+      ? albumItem(t.album ?? t.title, { objectId: t.albumId, serviceId: t.serviceId ?? '', accountId: t.accountId ?? '' })
       : null;
   const prefetchAlbumItem = (item: SonosItem) => {
     const p = resolveAlbumParams(item);
@@ -514,19 +513,15 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
     },
     openArtist: (name, t, isFirst) =>
       openArtistWith(
-        {
-          type: 'ARTIST',
-          title: name,
+        artistItem(
           name,
-          resource: {
-            type: 'ARTIST',
-            id: {
-              objectId: isFirst ? (t.artistId ?? undefined) : undefined,
-              serviceId: t.serviceId ?? undefined,
-              accountId: t.accountId ?? undefined,
-            },
+          {
+            objectId: isFirst ? (t.artistId ?? undefined) : undefined,
+            serviceId: t.serviceId ?? undefined,
+            accountId: t.accountId ?? undefined,
           },
-        } as SonosItem,
+          { title: name },
+        ),
         openItem,
         resolveAndOpen,
       ),
@@ -546,17 +541,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
       if (!t.uri) return;
       showTrackMenu(
         {
-          track: {
-            uri: t.uri,
-            trackName: t.title,
-            artist: t.artist,
-            albumName: t.album ?? undefined,
-            imageUrl: t.imageUrl,
-            serviceId: t.serviceId ?? '',
-            accountId: t.accountId ?? '',
-            addedBy: '',
-            addedAt: 0,
-          },
+          track: trackPayload({ uri: t.uri, trackName: t.title, artist: t.artist, albumName: t.album, imageUrl: t.imageUrl, serviceId: t.serviceId, accountId: t.accountId }),
           sonosItem: t.item ?? undefined,
         },
         e,

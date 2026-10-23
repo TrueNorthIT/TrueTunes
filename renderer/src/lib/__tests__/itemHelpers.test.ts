@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   isPodcast,
+  trackPayload,
+  albumItem,
+  artistItem,
   findArtistByName,
   fmtDuration,
   fmtTime,
@@ -606,5 +609,28 @@ describe('findArtistByName', () => {
 
   it('ignores non-artists and partial matches', () => {
     expect(findArtistByName(items, 'Inez')).toBeUndefined();
+  });
+});
+
+describe('item builders', () => {
+  const id = { objectId: 'o1', serviceId: 's1', accountId: 'a1' };
+
+  it('trackPayload fills the queue fields and defaults missing ids to empty strings', () => {
+    expect(trackPayload({ uri: 'u', trackName: 'T', artist: 'A', albumName: null, serviceId: null })).toEqual({
+      uri: 'u', trackName: 'T', artist: 'A', albumName: undefined, imageUrl: undefined,
+      serviceId: '', accountId: '', addedBy: '', addedAt: 0,
+    });
+  });
+
+  it('albumItem resolves as an album', () => {
+    const item = albumItem('Hot Fuss', id);
+    expect(item).toMatchObject({ title: 'Hot Fuss', type: 'ITEM_ALBUM', resource: { type: 'ALBUM', id } });
+    expect(resolveAlbumParams(item)).toMatchObject({ albumId: 'o1', serviceId: 's1', accountId: 'a1' });
+  });
+
+  it('artistItem resolves as an artist and carries extras', () => {
+    const item = artistItem('Muse', id, { title: 'Muse' });
+    expect(item).toMatchObject({ type: 'ARTIST', name: 'Muse', title: 'Muse', resource: { type: 'ARTIST', id } });
+    expect(resolveArtistParams(item)).toMatchObject({ artistId: 'o1', name: 'Muse' });
   });
 });

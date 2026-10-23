@@ -13,7 +13,7 @@ import { usePhotoState } from '../../lib/photoPlaceholder';
 import { usePageArt } from '../../lib/pageArt';
 import { heroPortrait, creditNames } from '../../lib/artistHero';
 import { officeCountFor } from '../../lib/artistOffice';
-import { resolveArtistParams, getItemArt } from '../../lib/itemHelpers';
+import { resolveArtistParams, getItemArt, albumItem } from '../../lib/itemHelpers';
 import { TopSongRow } from './TopSongRow';
 import { LatestReleaseCard } from './LatestReleaseCard';
 import { ArtistBanner } from './ArtistBanner';
@@ -175,11 +175,7 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
   function openTrackAlbum(track: AlbumTrack) {
     const { albumId, albumName, id } = track;
     if (albumId) {
-      openItem({
-        title: albumName ?? track.title,
-        type: 'ITEM_ALBUM',
-        resource: { type: 'ALBUM', id: { objectId: albumId, serviceId: id.serviceId ?? '', accountId: id.accountId ?? '' } },
-      } as SonosItem);
+      openItem(albumItem(albumName ?? track.title, { objectId: albumId, serviceId: id.serviceId ?? '', accountId: id.accountId ?? '' }));
     } else {
       void resolveAndOpen(albumName || track.title, 'album', { artist: name, serviceId: id.serviceId, accountId: id.accountId });
     }

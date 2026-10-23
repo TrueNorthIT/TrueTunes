@@ -44,6 +44,27 @@ export function normalizeForQueue(item: SonosItem): SonosItem {
   };
 }
 
+// ─── Item builders ────────────────────────────────────────────────────────────
+
+/** The track the context menu and queue actions take. */
+export function trackPayload(t: {
+  uri: string; trackName: string; artist: string; albumName?: string | null; imageUrl?: string | null;
+  serviceId?: string | null; accountId?: string | null;
+}): PlaylistTrack {
+  return {
+    uri: t.uri, trackName: t.trackName, artist: t.artist, albumName: t.albumName ?? undefined, imageUrl: t.imageUrl,
+    serviceId: t.serviceId ?? '', accountId: t.accountId ?? '', addedBy: '', addedAt: 0,
+  };
+}
+
+/** An album page item: all `useOpenItem` and `resolveAlbumParams` need is the title and the resource id. */
+export const albumItem = (title: string, id: SonosItemId): SonosItem =>
+  ({ title, type: 'ITEM_ALBUM', resource: { type: 'ALBUM', id } }) as SonosItem;
+
+/** An artist page item. `extra` carries what only some callers set (`title`, `imageUrl`). */
+export const artistItem = (name: string, id: SonosItemId, extra: Partial<SonosItem> = {}): SonosItem =>
+  ({ type: 'ARTIST', name, ...extra, resource: { type: 'ARTIST', id } }) as SonosItem;
+
 // ─── Album param resolver ─────────────────────────────────────────────────────
 
 export function resolveAlbumParams(item: SonosItem) {

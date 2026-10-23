@@ -17,7 +17,7 @@ import { useArtistImage } from '../hooks/useArtistBrowse';
 import { createDragGhost } from '../lib/dragHelpers';
 import { normalizeAvatar } from '../lib/avatarImage';
 import { primaryArtistName, statsAlbumToItem, statsArtistToItem, statsTrackToItem } from '../lib/homeData';
-import { resolveAlbumParams } from '../lib/itemHelpers';
+import { resolveAlbumParams, albumItem, trackPayload } from '../lib/itemHelpers';
 import { groupByDay, officeRank, profileFacts, queuedCount } from '../lib/profileData';
 import { Carousel } from './common/Carousel';
 import { ChartHead, ChartRow } from './common/ChartRow';
@@ -149,11 +149,7 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
   // ── Track navigation: album on the title or art, artist on the name, the track menu on right-click ──
   const albumItemFor = (t: ProfileTrack): SonosItem | null =>
     t.albumId
-      ? ({
-          title: t.album ?? t.trackName,
-          type: 'ITEM_ALBUM',
-          resource: { type: 'ALBUM', id: { objectId: t.albumId, serviceId: t.serviceId ?? '', accountId: t.accountId ?? '' } },
-        } as SonosItem)
+      ? albumItem(t.album ?? t.trackName, { objectId: t.albumId, serviceId: t.serviceId ?? '', accountId: t.accountId ?? '' })
       : null;
   const openAlbum = (t: ProfileTrack) => {
     const item = albumItemFor(t);
@@ -178,10 +174,7 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
     if (!t.uri) return;
     showTrackMenu(
       {
-        track: {
-          uri: t.uri, trackName: t.trackName, artist: t.artist, albumName: t.album, imageUrl: t.imageUrl,
-          serviceId: t.serviceId ?? '', accountId: t.accountId ?? '', addedBy: '', addedAt: 0,
-        },
+        track: trackPayload({ ...t, uri: t.uri, albumName: t.album }),
         sonosItem: statsTrackToItem(t) ?? undefined,
       },
       e,

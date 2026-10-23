@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/sonosApi';
-import { parseServiceSearch } from '../../lib/itemHelpers';
+import { parseServiceSearch, albumItem } from '../../lib/itemHelpers';
 import { dedupeTracks } from '../../lib/searchResults';
 import { addRecentSearch, clearRecentSearches, getRecentSearches } from '../../lib/recentSearches';
 import { useOpenItem } from '../../hooks/useOpenItem';
@@ -134,7 +134,7 @@ function SearchHome({ onAddToQueue }: { onAddToQueue: AddToQueue }) {
                     imageUrl={t.artUrl}
                     onOpen={() =>
                       t.albumId
-                        ? openItem({ title: t.albumName ?? t.title, type: 'ITEM_ALBUM', resource: { type: 'ALBUM', id: { ...t.id, objectId: t.albumId } } })
+                        ? openItem(albumItem(t.albumName ?? t.title, { ...t.id, objectId: t.albumId }))
                         : openItem(t.raw)
                     }
                     onAdd={() => onAddToQueue(t.raw, -1, { attribute: false })}

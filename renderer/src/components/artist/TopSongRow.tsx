@@ -2,7 +2,7 @@ import { useTrackContextMenu } from '../common/ContextMenu';
 import { ChartRow } from '../common/ChartRow';
 import { ArtistLinks } from '../common/TrackLinks';
 import { ExplicitBadge } from '../common/ExplicitBadge';
-import { fmtDuration } from '../../lib/itemHelpers';
+import { fmtDuration, trackPayload } from '../../lib/itemHelpers';
 import type { AlbumTrack } from '../../hooks/useAlbumBrowse';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/ArtistPanel.module.css';
@@ -32,17 +32,15 @@ export function TopSongRow({
   const page = artistName?.trim().toLowerCase();
   const others = track.artists.filter(a => a.trim().toLowerCase() !== page);
 
-  const trackPayload: PlaylistTrack = {
+  const payload = trackPayload({
     uri: track.id.objectId ?? '',
     trackName: track.title,
     artist: track.artists.join(', '),
-    albumName: track.albumName ?? undefined,
+    albumName: track.albumName,
     imageUrl: track.artUrl,
-    serviceId: track.id.serviceId ?? '',
-    accountId: track.id.accountId ?? '',
-    addedBy: '',
-    addedAt: 0,
-  };
+    serviceId: track.id.serviceId,
+    accountId: track.id.accountId,
+  });
 
   const artists = (
     <>
@@ -74,7 +72,7 @@ export function TopSongRow({
       onDragStart={e => onDragStart(index, e)}
       onAdd={() => onAdd(track.raw)}
       addLabel={`Add ${track.title} to queue`}
-      onContextMenu={e => showTrackMenu({ track: trackPayload }, e)}
+      onContextMenu={e => showTrackMenu({ track: payload }, e)}
     />
   );
 }

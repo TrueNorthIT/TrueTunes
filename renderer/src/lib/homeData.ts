@@ -1,3 +1,4 @@
+import { artistItem } from './itemHelpers';
 import type { SonosItem } from '../types/sonos';
 
 // Pure data helpers behind the Home page.
@@ -39,16 +40,7 @@ export function statsTrackToItem(t: Omit<StatsTrack, 'count'> & { count?: number
 }
 
 export function statsArtistToItem(a: StatsArtist): SonosItem {
-  return {
-    type: 'ARTIST',
-    title: a.artist,
-    name: a.artist,
-    imageUrl: a.imageUrl,
-    resource: {
-      type: 'ARTIST',
-      id: { objectId: a.artistId, serviceId: a.serviceId, accountId: a.accountId },
-    },
-  };
+  return artistItem(a.artist, { objectId: a.artistId, serviceId: a.serviceId, accountId: a.accountId }, { title: a.artist, imageUrl: a.imageUrl });
 }
 
 export function statsAlbumToItem(a: StatsAlbum): SonosItem {

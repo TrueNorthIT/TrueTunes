@@ -4,6 +4,7 @@ import { useTrackDetails } from './useTrackDetails';
 import { useDominantColor } from './useDominantColor';
 import { albumQueryOptions } from './useAlbumBrowse';
 import type { PlaybackState } from './usePlayback';
+import { albumItem as buildAlbumItem } from '../lib/itemHelpers';
 import type { SonosItem } from '../types/sonos';
 
 export function useNowPlaying(playback: PlaybackState) {
@@ -40,11 +41,7 @@ export function useNowPlaying(playback: PlaybackState) {
     }
   };
 
-  const albumItem: SonosItem | null = albumId ? {
-    title: albumName ?? '',
-    type: 'ITEM_ALBUM',
-    resource: { type: 'ALBUM', id: { objectId: albumId, serviceId: svcId, accountId: accId } },
-  } as SonosItem : null;
+  const albumItem: SonosItem | null = albumId ? buildAlbumItem(albumName ?? '', { objectId: albumId, serviceId: svcId, accountId: accId }) : null;
 
   const artistId = td?.artistId;
   const artistItem: SonosItem | null = artistId ? {

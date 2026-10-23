@@ -21,6 +21,7 @@ import { PersonCard } from './common/PersonCard';
 import { SectionCard, SeeAll } from './common/SectionCard';
 import { ArtistLinks } from './common/TrackLinks';
 import { UserAvatar } from './common/UserAvatar';
+import { trackPayload } from '../lib/itemHelpers';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/LeaderboardPanel.module.css';
 
@@ -84,17 +85,7 @@ function useStatsNav(onAddToQueue?: (item: SonosItem) => void) {
         if (!t.uri) return;
         showTrackMenu(
           {
-            track: {
-              uri: t.uri,
-              trackName: t.trackName,
-              artist: t.artist,
-              albumName: t.album,
-              imageUrl: t.imageUrl,
-              serviceId: t.serviceId ?? '',
-              accountId: t.accountId ?? '',
-              addedBy: '',
-              addedAt: 0,
-            },
+            track: trackPayload({ ...t, uri: t.uri, albumName: t.album }),
             sonosItem: item ?? undefined,
           },
           e,

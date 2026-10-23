@@ -8,7 +8,7 @@ import { albumQueryOptions } from '../../hooks/useAlbumBrowse';
 import { artistQueryOptions } from '../../hooks/useArtistBrowse';
 import {
   canQueueWhole, fmtTime, getItemArt, getName, isAlbum, isArtist, isPlaylist, isProgram, isTrack, resolveAlbumParams,
-  resolveArtistParams,
+  resolveArtistParams, albumItem, artistItem, trackPayload,
 } from '../../lib/itemHelpers';
 import {
   albumNameOf, albumSub, pickTopResult, playlistSub, searchTrackRow, topSongRow, withTopSongs, type SongRow,
@@ -39,26 +39,24 @@ const artistNamesOf = (item: SonosItem): string => (item.artists ?? []).map((a) 
 function albumItemOf(track: SonosItem): SonosItem | null {
   const a = track.album as SonosAlbum | undefined;
   if (typeof a !== 'object' || !a?.id?.objectId) return null;
-  return { title: a.name, type: 'ITEM_ALBUM', resource: { type: 'ALBUM', id: a.id } };
+  return albumItem(a.name, a.id);
 }
 
 function buildTrackPayload(r: SongRow): PlaylistTrack {
-  return {
+  return trackPayload({
     uri: r.id.objectId ?? '',
     trackName: r.title,
     artist: r.artists[0]?.name ?? '',
     albumName: r.album?.name,
     imageUrl: r.imageUrl,
-    serviceId: r.id.serviceId ?? '',
-    accountId: r.id.accountId ?? '',
-    addedBy: '',
-    addedAt: 0,
-  };
+    serviceId: r.id.serviceId,
+    accountId: r.id.accountId,
+  });
 }
 
 /** The album page item for a row, when its album's id is known. */
 function rowAlbumItem(r: SongRow): SonosItem | null {
-  return r.album?.id?.objectId ? { title: r.album.name, type: 'ITEM_ALBUM', resource: { type: 'ALBUM', id: r.album.id } } : null;
+  return r.album?.id?.objectId ? albumItem(r.album.name, r.album.id) : null;
 }
 
 interface Props {
@@ -129,7 +127,7 @@ export function SearchResults({ query, results, onAddToQueue, onEngage }: Props)
 
   function openArtist(artists: SongRow['artists'], name: string) {
     const a = artists.find((x) => x.name === name);
-    if (a?.id?.objectId) openItem({ type: 'ARTIST', name, resource: { type: 'ARTIST', id: a.id } });
+    if (a?.id?.objectId) openItem(artistItem(name, a.id));
     else void resolveAndOpen(name, 'artist');
   }
 
