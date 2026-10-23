@@ -358,6 +358,9 @@ export function QueuedlePanel() {
 
   const headerActions = (
     <>
+      <button className={styles.calendarBtn} onClick={() => navigate('/queuedle/stats')}>
+        📊 Stats
+      </button>
       {selectedDate !== null && (
         <button className={styles.backToToday} onClick={handleBackToToday}>
           ← Today
@@ -523,6 +526,9 @@ export function QueuedlePanel() {
               ← Today
             </button>
           )}
+          <button className={styles.calendarBtn} onClick={() => navigate('/queuedle/stats')}>
+            📊 Stats
+          </button>
           {calendarDates.length > 0 && (
             <button className={styles.calendarBtn} onClick={() => setCalendarOpen(true)}>
               📅 Calendar

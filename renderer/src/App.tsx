@@ -36,6 +36,7 @@ import { useAutoplay } from './hooks/useAutoplay';
 import type { NormalizedQueueItem } from './types/provider';
 import { LeaderboardPanel } from './components/LeaderboardPanel';
 import { QueuedlePanel } from './components/queuedle/QueuedlePanel';
+import { QueuedleStatsPanel } from './components/queuedle/QueuedleStatsPanel';
 import { QueueSidebar, type QueueSidebarHandle } from './components/queue/QueueSidebar';
 import { SkinnyShell } from './components/skinny/SkinnyShell';
 import { useSkinnyMode } from './hooks/useSkinnyMode';
@@ -560,6 +561,7 @@ useEffect(() => {
           <Route path="/container/:id" element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/leaderboard" element={<LeaderboardPanel />} />
           <Route path="/queuedle" element={<QueuedlePanel />} />
+          <Route path="/queuedle/stats" element={<QueuedleStatsPanel />} />
           <Route path="/lyrics" element={<LyricsPanel playback={playback} />} />
           <Route path="/profile/:userName" element={<ProfilePanel onAddToQueue={handleAddToQueue} displayName={displayName} onSignOut={async () => { setDisplayName(null); setEntraLoading(true); await window.sonos.entraSignOut().catch(() => {}); await window.sonos.entraReLogin().catch(() => {}); const name = await window.sonos.getDisplayName().catch(() => null); setDisplayName(name); setEntraLoading(false); }} onChangeName={async (name) => { const result = await window.sonos.renameUser(displayName ?? '', name).catch(() => ({ error: 'network' })); if (!result?.error) setDisplayName(name); return result?.error ? { error: result.error } : null; }} />} />
           <Route path="/playlist/:id" element={<PlaylistPanel displayName={displayName} onAddToQueue={handleAddToQueue} />} />
