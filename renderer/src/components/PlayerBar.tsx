@@ -8,12 +8,11 @@ import { useAttribution, resolveAttribution } from "../hooks/useAttribution";
 import { useUsers } from "../hooks/useUsers";
 import { UserAvatar } from "./common/UserAvatar";
 import { ExplicitBadge } from "./common/ExplicitBadge";
+import { SeekBar } from "./common/SeekBar";
+import { TransportButtons } from "./common/TransportButtons";
 import type React from "react";
 import {
   Shuffle,
-  SkipBack,
-  Play,
-  SkipForward,
   Repeat,
   Repeat1,
   Volume,
@@ -178,6 +177,7 @@ function VolumeButton({ volume }: { volume: number }) {
           <input
             className={styles.volSliderV}
             type="range"
+            aria-label="Volume"
             min={0}
             max={100}
             value={localVol}
@@ -238,13 +238,6 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
   const queuerImage = queuer ? users?.find((u) => u.userId === queuer.user)?.imageUrl : undefined;
 
   const { shuffle: rawShuffle, repeat: rawRepeat } = playback;
-
-  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!durationMs) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    getActiveProvider().seek(Math.floor(pct * durationMs)).then(refresh);
-  };
 
   const refresh = () => getActiveProvider().refreshPlayback();
 
@@ -310,22 +303,15 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
             </div>
             <div className={styles.progressSection}>
               <span className={styles.time}>{elapsedLabel}</span>
-              <div
+              <SeekBar
+                progressPct={progressPct}
+                durationMs={durationMs}
+                elapsedLabel={elapsedLabel}
+                durationLabel={durationLabel}
                 className={styles.progressBar}
-                onClick={handleSeek}
-                role="progressbar"
-                aria-label="Track progress"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={progressPct}
-              >
-                <div className={styles.progressTrack}>
-                  <div
-                    className={styles.progressFill}
-                    style={{ transform: `scaleX(${Math.min(1, Math.max(0, progressPct / 100))})` }}
-                  />
-                </div>
-              </div>
+                trackClassName={styles.progressTrack}
+                fillClassName={styles.progressFill}
+              />
               <span className={styles.time}>{durationLabel}</span>
             </div>
           </div>
@@ -352,36 +338,14 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
           >
             <Shuffle size={11} />
           </button>
-          <button
-            className={styles.ctrl}
+          <TransportButtons
             disabled={!isAuthed}
-            onClick={() => getActiveProvider().skipPrev().then(refresh)}
-            title="Previous"
-          >
-            <SkipBack size={14} />
-          </button>
-          <button
-            className={`${styles.ctrl} ${styles.playBtn}`}
-            disabled={!isAuthed}
-            onClick={() =>
-              (isPlaying ? getActiveProvider().pause() : getActiveProvider().play()).then(refresh)
-            }
-          >
-            {isPlaying ? (
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
-                <rect x="2" y="1" width="4" height="12" rx="1" />
-                <rect x="8" y="1" width="4" height="12" rx="1" />
-              </svg>
-            ) : <Play size={14} />}
-          </button>
-          <button
-            className={styles.ctrl}
-            disabled={!isAuthed}
-            onClick={() => getActiveProvider().skipNext().then(refresh)}
-            title="Next"
-          >
-            <SkipForward size={14} />
-          </button>
+            isPlaying={isPlaying}
+            btnClassName={styles.ctrl}
+            playClassName={styles.playBtn}
+            size={14}
+            playSize={14}
+          />
           <button
             className={`${styles.ctrl}${repeat !== "none" ? " " + styles.active : ""}`}
             disabled={!isAuthed}

@@ -1,9 +1,10 @@
 import type React from 'react';
-import { SkipBack, Play, SkipForward, Music } from 'lucide-react';
-import { getActiveProvider } from '../../providers';
+import { Music } from 'lucide-react';
 import type { useNowPlaying } from '../../hooks/useNowPlaying';
 import { useQueuer } from '../../hooks/useQueuer';
 import { UserAvatar } from '../common/UserAvatar';
+import { SeekBar } from '../common/SeekBar';
+import { TransportButtons } from '../common/TransportButtons';
 import styles from '../../styles/SkinnyTransport.module.css';
 
 interface Props {
@@ -22,17 +23,6 @@ export function SkinnyTransport({ np, isAuthed }: Props) {
     isPlaying, elapsedLabel, durationLabel, currentObjectId,
   } = np;
   const queuer = useQueuer({ id: currentObjectId, title: displayTrack, artist: displayArtist });
-
-  const refresh = () => getActiveProvider().refreshPlayback();
-
-  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!durationMs) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    getActiveProvider().seek(Math.floor(pct * durationMs)).then(refresh);
-  };
-
-  const pct = Math.min(100, Math.max(0, progressPct || 0));
 
   return (
     <section
@@ -57,55 +47,28 @@ export function SkinnyTransport({ np, isAuthed }: Props) {
 
       <div className={styles.controls}>
         <div className={styles.transport}>
-          <button
-            className={styles.btn}
+          <TransportButtons
             disabled={!isAuthed}
-            onClick={() => getActiveProvider().skipPrev().then(refresh)}
-            title="Previous"
-            aria-label="Previous"
-          >
-            <SkipBack size={16} fill="currentColor" />
-          </button>
-          <button
-            className={`${styles.btn} ${styles.playBtn}`}
-            disabled={!isAuthed}
-            onClick={() => (isPlaying ? getActiveProvider().pause() : getActiveProvider().play()).then(refresh)}
-            title={isPlaying ? 'Pause' : 'Play'}
-            aria-label={isPlaying ? 'Pause' : 'Play'}
-          >
-            {isPlaying ? (
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
-                <rect x="2" y="1" width="4" height="12" rx="1" />
-                <rect x="8" y="1" width="4" height="12" rx="1" />
-              </svg>
-            ) : <Play size={15} fill="currentColor" />}
-          </button>
-          <button
-            className={styles.btn}
-            disabled={!isAuthed}
-            onClick={() => getActiveProvider().skipNext().then(refresh)}
-            title="Next"
-            aria-label="Next"
-          >
-            <SkipForward size={16} fill="currentColor" />
-          </button>
+            isPlaying={isPlaying}
+            btnClassName={styles.btn}
+            playClassName={styles.playBtn}
+            size={16}
+            playSize={15}
+            filled
+          />
         </div>
 
         <div className={styles.progressRow}>
           <span className={styles.time}>{elapsedLabel}</span>
-          <div
+          <SeekBar
+            progressPct={progressPct}
+            durationMs={durationMs}
+            elapsedLabel={elapsedLabel}
+            durationLabel={durationLabel}
             className={styles.progress}
-            onClick={handleSeek}
-            role="progressbar"
-            aria-label="Track progress"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(pct)}
-          >
-            <div className={styles.progressTrack}>
-              <div className={styles.progressFill} style={{ transform: `scaleX(${pct / 100})` }} />
-            </div>
-          </div>
+            trackClassName={styles.progressTrack}
+            fillClassName={styles.progressFill}
+          />
           <span className={styles.time}>{durationLabel}</span>
         </div>
       </div>
