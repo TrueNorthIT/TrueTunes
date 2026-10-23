@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useImage } from '../../hooks/useImage';
 import { withArtworkSize } from '../../lib/artworkUrl';
 import { AddButton } from './AddButton';
@@ -35,14 +35,26 @@ export function ArtCard({
   const px = size === 'large' ? 1200 : 800;
   const cover = useImage(imageUrl ? withArtworkSize(imageUrl, px) : null);
   const photo = useImage(photoUrl ? withArtworkSize(photoUrl, px) : null);
+  // The cover sits under the photo only while the photo fades in. Left stacked, the two layers can drift a pixel
+  // apart while scrolling and the cover shows through at the edges.
+  const [photoIn, setPhotoIn] = useState(false);
+  useEffect(() => setPhotoIn(false), [photo]);
   return (
     <div
       className={[styles.card, size === 'large' ? styles.large : styles.medium, className].filter(Boolean).join(' ')}
       onContextMenu={onContextMenu}
       onMouseEnter={onMouseEnter}
     >
-      {cover && <img className={styles.fill} src={cover} alt="" />}
-      {photo && <img className={`${styles.fill} ${styles.photo}`} src={photo} alt="" />}
+      {cover && !photoIn && <img className={styles.fill} src={cover} alt="" />}
+      {photo && (
+        <img
+          className={`${styles.fill} ${styles.photo}`}
+          src={photo}
+          alt=""
+          onAnimationEnd={() => setPhotoIn(true)}
+          onLoad={() => { if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) setPhotoIn(true); }}
+        />
+      )}
       <button type="button" className={styles.cover} aria-label={openLabel} onClick={onOpen} />
       <span className={styles.label}>{label}</span>
       <div className={styles.caption}>

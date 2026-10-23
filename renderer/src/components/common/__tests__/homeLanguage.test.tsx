@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 import { AddButton } from '../AddButton';
 import { ArtCard } from '../ArtCard';
 import { ChartHead, ChartRow } from '../ChartRow';
@@ -8,6 +8,7 @@ import { PersonCard } from '../PersonCard';
 import { SectionCard, SeeAll } from '../SectionCard';
 import { TrackRow } from '../TrackRow';
 import { ArtistLinks } from '../TrackLinks';
+import { useImage } from '../../../hooks/useImage';
 
 vi.mock('../../../hooks/useImage', () => ({ useImage: vi.fn(() => null) }));
 vi.mock('../../../hooks/useDominantColor', () => ({ useDominantColor: vi.fn(() => null) }));
@@ -71,6 +72,21 @@ describe('ArtCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add Blue to queue' }));
     expect(onAdd).toHaveBeenCalledOnce();
     expect(onOpen).toHaveBeenCalledOnce();
+  });
+
+  it('drops the cover once the photo has faded in, so only one image layer remains', () => {
+    vi.mocked(useImage).mockImplementation((url) => (url ? `blob:${url}` : null));
+    const { container } = render(
+      <ArtCard size="medium" label="L" title="T" openLabel="Open" onOpen={() => {}} imageUrl="cover" photoUrl="photo" />,
+    );
+    expect(container.querySelectorAll('img')).toHaveLength(2);
+    // jsdom has no AnimationEvent, so React listens for the prefixed name there; the browser fires animationend.
+    const photo = container.querySelector('img[src="blob:photo"]')!;
+    act(() => { photo.dispatchEvent(new Event('webkitAnimationEnd', { bubbles: true })); });
+    const imgs = container.querySelectorAll('img');
+    expect(imgs).toHaveLength(1);
+    expect(imgs[0].getAttribute('src')).toBe('blob:photo');
+    vi.mocked(useImage).mockImplementation(() => null);
   });
 });
 
