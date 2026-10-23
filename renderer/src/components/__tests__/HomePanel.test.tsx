@@ -480,9 +480,8 @@ describe('HomePanel', () => {
       const info = screen.getByRole('button', { name: 'Why this pick' });
       fireEvent.mouseEnter(info);
       const tip = screen.getByRole('tooltip');
-      expect(tip).toHaveTextContent('Rich — queued them 14 times');
-      expect(tip).toHaveTextContent('Alex — queued them 6 times');
-      expect(tip).toHaveTextContent("Good fit for who's in: 82%");
+      expect(tip).toHaveTextContent('Rich queued them 14 times, Alex 6 times');
+      expect(tip).not.toHaveTextContent('Good fit');
       fireEvent.click(info);
       expect(add).not.toHaveBeenCalled();
       expect(mockOpenItem).not.toHaveBeenCalled();

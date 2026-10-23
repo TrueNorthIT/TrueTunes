@@ -70,7 +70,7 @@ function ActCard({ group, viewer, onAdd }: { group: DjActDiscoveries; viewer?: s
       name={act.artist}
       imageUrl={group.imageUrl}
       caption={drivers === 'You' ? undefined : drivers}
-      action={<PickInfoTip because={act.because} fans={act.fans} score={act.score} viewer={viewer} kind="unheard" />}
+      action={<PickInfoTip because={act.because} fans={act.fans} artist={act.artist} viewer={viewer} kind="unheard" />}
       onOpen={openArtist}
       openLabel={`Open ${act.artist}`}
     >

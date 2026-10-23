@@ -45,7 +45,8 @@ export function DjUpcomingRow({ track, idle, viewer }: Props) {
         icon={<Disc3 size={14} aria-hidden="true" />}
         because={track.because}
         fans={track.fans}
-        score={track.score}
+        trackFans={track.trackFans}
+        artist={track.artist}
         viewer={viewer}
         trackName={track.trackName}
         kind="played"

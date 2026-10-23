@@ -1,10 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { explainPick } from '../pickExplanation';
 
-// Production code under test: renderer/src/lib/pickExplanation.ts (does not exist yet), `explainPick`.
-// It turns a DJ pick's server data (`because`, `fans`, `score`) into the content of the "Why this pick"
-// tooltip shown from the info icon on Home pick cards, Discover act cards and the DJ's upcoming rows.
-// Related: `pickReason` in renderer/src/lib/homeData.ts builds the "X & Y love Z" label from the same `because`.
+// explainPick turns a DJ pick's server data into the lines of the "Why this pick" tooltip.
 
 const BECAUSE = 'Rich and Alex queue HAIM — never played here';
 
@@ -13,170 +10,114 @@ function fans(n: number) {
   return Array.from({ length: n }, (_, i) => ({ user: `Person${i + 1}`, count: n - i }));
 }
 
-describe('REQ-W2: each credited person with how many times they have queued the artist, most first', () => {
-  it('lists the people from the server fans with their counts, in the order given', () => {
-    const r = explainPick({
-      because: BECAUSE,
-      fans: [{ user: 'Rich', count: 14 }, { user: 'Alex', count: 6 }],
-      kind: 'unheard',
-    });
-    expect(r.people, 'Expected Rich (14) then Alex (6), heaviest first').toEqual([
-      { name: 'Rich', count: 14 },
-      { name: 'Alex', count: 6 },
-    ]);
+const RICH_ALEX = [{ user: 'Rich', count: 14 }, { user: 'Alex', count: 6 }];
+
+describe('artist line: who queued the artist, with numbers', () => {
+  it('names the artist, then each person with their count, the first carrying the verb', () => {
+    const r = explainPick({ because: BECAUSE, fans: [{ user: 'Alex', count: 12 }, { user: 'Rich', count: 4 }], artist: 'Sugababes', kind: 'unheard' });
+    expect(r.lines).toEqual(['Sugababes: Alex queued them 12 times, Rich 4 times']);
   });
 
-  it('names the viewer "You" while keeping their count', () => {
-    const r = explainPick({
-      because: BECAUSE,
-      fans: [{ user: 'Rich', count: 14 }, { user: 'Alex', count: 6 }],
-      viewer: 'Rich',
-      kind: 'unheard',
-    });
-    expect(r.people[0], 'Expected the viewer Rich to be shown as "You" with their count of 14').toEqual({
-      name: 'You',
-      count: 14,
-    });
-    expect(
-      r.people.map((p) => p.name),
-      "Expected the viewer's own name not to appear alongside \"You\"",
-    ).toEqual(['You', 'Alex']);
+  it('says once and twice for 1 and 2', () => {
+    const r = explainPick({ because: BECAUSE, fans: [{ user: 'Alex', count: 2 }, { user: 'Rich', count: 1 }], artist: 'Sugababes', kind: 'unheard' });
+    expect(r.lines).toEqual(['Sugababes: Alex queued them twice, Rich once']);
+  });
+
+  it('names the viewer "You"', () => {
+    const r = explainPick({ because: BECAUSE, fans: RICH_ALEX, viewer: 'Rich', artist: 'Justice', kind: 'unheard' });
+    expect(r.lines).toEqual(['Justice: You queued them 14 times, Alex 6 times']);
   });
 
   it('leaves names alone when the viewer is not credited', () => {
+    const r = explainPick({ because: BECAUSE, fans: RICH_ALEX, viewer: 'Sam', artist: 'Justice', kind: 'unheard' });
+    expect(r.lines[0]).toBe('Justice: Rich queued them 14 times, Alex 6 times');
+  });
+
+  it('lists up to 6 people, then "and N more"', () => {
+    expect(explainPick({ because: BECAUSE, fans: fans(6), artist: 'X', kind: 'unheard' }).lines[0]).toBe(
+      'X: Person1 queued them 6 times, Person2 5 times, Person3 4 times, Person4 3 times, Person5 twice, Person6 once',
+    );
+    expect(explainPick({ because: BECAUSE, fans: fans(8), artist: 'X', kind: 'unheard' }).lines[0]).toBe(
+      'X: Person1 queued them 8 times, Person2 7 times, Person3 6 times, Person4 5 times, Person5 4 times, Person6 3 times, and 2 more',
+    );
+  });
+});
+
+describe('song line (played picks)', () => {
+  it('leads with "This song" ahead of the artist line', () => {
     const r = explainPick({
       because: BECAUSE,
-      fans: [{ user: 'Rich', count: 14 }, { user: 'Alex', count: 6 }],
-      viewer: 'Sam',
-      kind: 'unheard',
+      fans: RICH_ALEX,
+      trackFans: [{ user: 'Rich', count: 3 }, { user: 'Alex', count: 1 }],
+      artist: 'Justice',
+      trackName: 'Genesis',
+      kind: 'played',
     });
-    expect(r.people.map((p) => p.name), 'Expected Rich and Alex when the viewer is someone else').toEqual([
-      'Rich',
-      'Alex',
+    expect(r.lines).toEqual([
+      'This song: Rich queued it 3 times, Alex once',
+      'Justice: Rich queued them 14 times, Alex 6 times',
     ]);
   });
-});
 
-describe('REQ-W3: every credited person is listed, up to 6 plus "and N more"', () => {
-  it('lists all of 6 fans with nobody left over', () => {
-    const r = explainPick({ because: BECAUSE, fans: fans(6), kind: 'unheard' });
-    expect(r.people, 'Expected all 6 fans listed').toHaveLength(6);
-    expect(r.more, 'Expected no "and N more" for exactly 6 fans').toBe(0);
+  it('uses You for the viewer', () => {
+    const r = explainPick({ because: BECAUSE, fans: RICH_ALEX, trackFans: [{ user: 'Rich', count: 3 }, { user: 'Alex', count: 2 }], viewer: 'Rich', kind: 'played' });
+    expect(r.lines[0]).toBe('This song: You queued it 3 times, Alex twice');
   });
 
-  it('shows the heaviest 6 of 8 fans and counts the other 2 as "more"', () => {
-    const r = explainPick({ because: BECAUSE, fans: fans(8), kind: 'unheard' });
-    expect(r.people.map((p) => p.name), 'Expected the 6 heaviest fans, in order').toEqual([
-      'Person1', 'Person2', 'Person3', 'Person4', 'Person5', 'Person6',
+  it('has no song line when trackFans is empty or absent', () => {
+    expect(explainPick({ because: BECAUSE, fans: RICH_ALEX, trackFans: [], artist: 'Justice', kind: 'played' }).lines).toEqual([
+      'Justice: Rich queued them 14 times, Alex 6 times',
     ]);
-    expect(r.more, 'Expected "and 2 more" for 8 fans').toBe(2);
+    expect(explainPick({ because: BECAUSE, fans: RICH_ALEX, artist: 'Justice', kind: 'played' }).lines).toHaveLength(1);
   });
 
-  it('does not collapse a 3-fan pick into "and others"', () => {
-    const r = explainPick({
-      because: 'A, B, C and others queue Muse',
-      fans: [{ user: 'A', count: 3 }, { user: 'B', count: 2 }, { user: 'C', count: 1 }],
-      kind: 'unheard',
-    });
-    expect(r.people.map((p) => p.name), 'Expected every credited person named').toEqual(['A', 'B', 'C']);
-    expect(r.more).toBe(0);
-  });
-});
-
-describe('REQ-W4: how well the pick fits who is in, as a whole percentage', () => {
-  it('rounds the 0..1 score to a whole percent (0.8231 -> 82)', () => {
-    expect(explainPick({ because: BECAUSE, score: 0.8231, kind: 'unheard' }).fit).toBe(82);
+  it('has no song line on unheard picks, and ends with the never-played line instead', () => {
+    const r = explainPick({ because: BECAUSE, fans: RICH_ALEX, trackFans: [{ user: 'Rich', count: 3 }], artist: 'Sugababes', trackName: 'Too Lost In You', kind: 'unheard' });
+    expect(r.lines).toEqual([
+      'Sugababes: Rich queued them 14 times, Alex 6 times',
+      '"Too Lost In You" has never been played here',
+    ]);
   });
 
-  it('rounds half up (0.825 -> 83)', () => {
-    expect(explainPick({ because: BECAUSE, score: 0.825, kind: 'unheard' }).fit).toBe(83);
-  });
-
-  it('reports 0 for a score of 0 rather than treating it as missing', () => {
-    expect(explainPick({ because: BECAUSE, score: 0, kind: 'unheard' }).fit, 'A score of 0 is a real 0%').toBe(0);
-  });
-
-  it('is null when the server sent no score', () => {
-    expect(explainPick({ because: BECAUSE, kind: 'unheard' }).fit, 'Expected null so the UI hides the fit line').toBeNull();
+  it('has no never-played line on played picks or without a track name', () => {
+    expect(explainPick({ because: BECAUSE, fans: RICH_ALEX, trackName: 'Seventeen', kind: 'played' }).lines.join()).not.toContain('never been played');
+    expect(explainPick({ because: BECAUSE, fans: RICH_ALEX, kind: 'unheard' }).lines).toHaveLength(1);
   });
 });
 
-describe('REQ-W5: why this track', () => {
-  it('Home/Discover (unheard) explains it is one of their top songs, never played here', () => {
-    const r = explainPick({ because: BECAUSE, trackName: 'Seventeen', kind: 'unheard' });
-    expect(r.track).toBe('"Seventeen": one of their top songs, never played here.');
-  });
-
-  it("queue DJ picks (played) explain it is one of the office's most-played songs by them", () => {
-    const r = explainPick({ because: BECAUSE, trackName: 'Seventeen', kind: 'played' });
-    expect(r.track).toBe('"Seventeen": one of the office\'s most-played songs by them.');
-  });
-
-  it('is null without a trackName (e.g. a Discover act card)', () => {
-    const r = explainPick({ because: BECAUSE, kind: 'unheard' });
-    expect(r.track, 'Expected no track line when there is no track name').toBeNull();
-  });
-});
-
-describe('REQ-W6: picks with nobody to credit explain themselves, with no names list', () => {
+describe('picks with nobody to credit explain themselves', () => {
   it('uses the "Like {neighbour}" reason when fans is empty', () => {
-    const r = explainPick({ because: 'Like Muse, which the room plays', fans: [], kind: 'played' });
-    expect(r.people, 'Expected no names list').toEqual([]);
-    expect(r.more).toBe(0);
-    expect(r.reason, "Expected the server's reason to be passed through").toBe('Like Muse, which the room plays');
+    expect(explainPick({ because: 'Like Muse, which the room plays', fans: [], kind: 'played' }).lines).toEqual(['Like Muse, which the room plays']);
   });
 
-  it('uses "Popular with the office" when fans is empty', () => {
-    const r = explainPick({ because: 'Popular with the office', fans: [], kind: 'unheard' });
-    expect(r.people).toEqual([]);
-    expect(r.reason).toBe('Popular with the office');
+  it('uses "Popular with the office", then the never-played line for an unheard track', () => {
+    const r = explainPick({ because: 'Popular with the office', fans: [], trackName: 'Seventeen', kind: 'unheard' });
+    expect(r.lines).toEqual(['Popular with the office', '"Seventeen" has never been played here']);
   });
 
   it('has no reason when somebody is credited', () => {
     const r = explainPick({ because: BECAUSE, fans: [{ user: 'Rich', count: 3 }], kind: 'unheard' });
-    expect(r.reason, 'Expected reason to be null when there are names to show').toBeNull();
+    expect(r.lines).toEqual(['Rich queued them 3 times']);
   });
 });
 
-describe('REQ-W10: before the server is redeployed (no fans, no score), names show without counts or fit', () => {
+describe('before the server is redeployed (no fans): names only, no counts', () => {
   const OLD = 'Rich, Alex, Sam and others queue HAIM — never played here';
 
   it('parses the people out of because, dropping "others" and the " — ..." suffix', () => {
-    const r = explainPick({ because: OLD, kind: 'unheard' });
-    expect(r.people, 'Expected Rich, Alex and Sam, with no counts').toEqual([
-      { name: 'Rich' },
-      { name: 'Alex' },
-      { name: 'Sam' },
-    ]);
-    expect(r.more, 'Expected no "more" without server counts').toBe(0);
-    expect(r.reason, 'Expected no reason when names were parsed').toBeNull();
+    expect(explainPick({ because: OLD, artist: 'HAIM', kind: 'unheard' }).lines).toEqual(['HAIM: Rich, Alex and Sam queue them']);
   });
 
-  it('parses a pair ("A and B queue X")', () => {
-    const r = explainPick({ because: 'Rich and Alex queue HAIM', kind: 'unheard' });
-    expect(r.people).toEqual([{ name: 'Rich' }, { name: 'Alex' }]);
-  });
-
-  it('parses a single person ("A queues X")', () => {
-    const r = explainPick({ because: 'Rich queues HAIM', kind: 'unheard' });
-    expect(r.people).toEqual([{ name: 'Rich' }]);
+  it('parses a pair and a single person', () => {
+    expect(explainPick({ because: 'Rich and Alex queue HAIM', artist: 'Sugababes', kind: 'unheard' }).lines).toEqual(['Sugababes: Rich and Alex queue them']);
+    expect(explainPick({ because: 'Rich queues HAIM', kind: 'unheard' }).lines).toEqual(['Rich queues them']);
   });
 
   it('still shows the viewer as "You"', () => {
-    const r = explainPick({ because: OLD, viewer: 'Alex', kind: 'unheard' });
-    const names = r.people.map((p) => p.name);
-    expect(names, 'Expected the viewer Alex to appear as "You"').toContain('You');
-    expect(names, "Expected the viewer's own name to be replaced").not.toContain('Alex');
-    expect(names).toHaveLength(3);
-  });
-
-  it('has no fit when the old server sent no score', () => {
-    expect(explainPick({ because: OLD, kind: 'unheard' }).fit).toBeNull();
+    expect(explainPick({ because: OLD, viewer: 'Alex', artist: 'HAIM', kind: 'unheard' }).lines).toEqual(['HAIM: Rich, You and Sam queue them']);
   });
 
   it("falls back to the reason when the old server's because names nobody", () => {
-    const r = explainPick({ because: 'Popular with the office', kind: 'unheard' });
-    expect(r.people).toEqual([]);
-    expect(r.reason).toBe('Popular with the office');
+    expect(explainPick({ because: 'Popular with the office', kind: 'unheard' }).lines).toEqual(['Popular with the office']);
   });
 });

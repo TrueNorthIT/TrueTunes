@@ -35,6 +35,4 @@
 }
 .tip p { margin: 0; }
 .heading { font-weight: 600; }
-.people { list-style: none; margin: 0 0 0.3em; padding: 0; }
-.tip p + p,
-.tip p + .people { margin-top: 0.3em; }
+.tip p + p { margin-top: 0.3em; }

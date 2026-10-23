@@ -354,3 +354,34 @@ test('REQ-W6: a pick nobody in the room plays has an empty fans array, not undef
   assert.ok(pixiesAct, 'expected Pixies among the ranked acts for A');
   assert.deepEqual(pixiesAct.fans, [], 'DjArtist.fans should be [] when nobody is credited');
 });
+
+// ─── trackFans: who in the room has queued this very track ───────────────────
+
+function trackEvents(user: string, artist: string, trackName: string, n: number): RawEvent[] {
+  return Array.from({ length: n }, () => ev(user, artist, trackName));
+}
+
+test('trackFans lists room members who queued this track, raw count desc then name asc, excluding outsiders', () => {
+  const events = [
+    ...trackEvents('Dee', 'Radiohead', 'Creep', 3),
+    ...trackEvents('Bea', 'Radiohead', 'Creep', 1),
+    ...trackEvents('Alex', 'Radiohead', 'Creep', 1),
+    ...trackEvents('Outsider', 'Radiohead', 'Creep', 9),
+    ...trackEvents('Cy', 'Radiohead', 'Karma Police', 4),
+  ];
+  const { tracks } = buildDjSet(events, { users: ROOM, perArtistMax: 5 });
+  const creep = tracks.find((t) => t.trackName === 'Creep');
+  assert.deepEqual(creep?.trackFans, [
+    { user: 'Dee', count: 3 },
+    { user: 'Alex', count: 1 },
+    { user: 'Bea', count: 1 },
+  ]);
+  const karma = tracks.find((t) => t.trackName === 'Karma Police');
+  assert.deepEqual(karma?.trackFans, [{ user: 'Cy', count: 4 }]);
+});
+
+test('trackFans is [] when nobody in the room queued the track', () => {
+  const events = [...trackEvents('Outsider', 'Radiohead', 'Creep', 2), ...trackEvents('Alex', 'Radiohead', 'Karma Police', 2)];
+  const { tracks } = buildDjSet(events, { users: ROOM, perArtistMax: 5 });
+  assert.deepEqual(tracks.find((t) => t.trackName === 'Creep')?.trackFans, []);
+});

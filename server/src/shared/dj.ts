@@ -47,6 +47,8 @@ export interface DjTrack {
   because: string;
   /** Everyone credited, with their raw all-time queue count for this artist. Most first. */
   fans?: DjFan[];
+  /** Everyone in the room who has queued this very track, with their raw all-time count. Most first; [] when none. */
+  trackFans?: DjFan[];
 }
 
 export interface DjFan {
@@ -409,6 +411,10 @@ export function buildDjSet(events: RawEvent[], options: DjOptions = {}): DjResul
         score: Number(entry.score.toFixed(4)),
         because,
         fans: entry.fanCounts,
+        trackFans: listeners
+          .map((user) => ({ user, count: agg.queuersByItem[itemKey('track', track.key)]?.[user] ?? 0 }))
+          .filter((f) => f.count > 0)
+          .sort((a, b) => b.count - a.count || a.user.localeCompare(b.user)),
       });
       seenUris.add(track.uri);
     }

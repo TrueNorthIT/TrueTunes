@@ -17,25 +17,34 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const WithCountsAndFit: Story = {
-  args: { fans: [{ user: 'Rich', count: 14 }, { user: 'Alex', count: 6 }], score: 0.82, viewer: 'Rich' },
+export const WithCounts: Story = {
+  args: { fans: [{ user: 'Rich', count: 14 }, { user: 'Alex', count: 6 }], artist: 'Sugababes', viewer: 'Rich' },
 };
 
-/** Before the server is redeployed: names only, no counts, no fit. */
+/** A pick the room has played: the song line leads. */
+export const PlayedWithSongCounts: Story = {
+  args: {
+    kind: 'played',
+    artist: 'Justice',
+    fans: [{ user: 'Rich', count: 14 }, { user: 'Alex', count: 6 }],
+    trackFans: [{ user: 'Rich', count: 3 }, { user: 'Alex', count: 1 }],
+  },
+};
+
+/** Before the server is redeployed: names only, no counts. */
 export const OldServerNamesOnly: Story = {};
 
 export const NobodyCredited: Story = {
-  args: { because: 'Like Muse, which the room plays', fans: [], score: 0.64, kind: 'played' },
+  args: { because: 'Like Muse, which the room plays', fans: [], kind: 'played' },
 };
 
 export const EightFans: Story = {
   args: {
     because: 'A, B, C, D, E, F, G and others queue Muse',
     fans: Array.from({ length: 8 }, (_, i) => ({ user: `Person${i + 1}`, count: 20 - i * 2 })),
-    score: 0.9,
   },
 };
 
 export const CustomIcon: Story = {
-  args: { icon: <Disc3 size={14} aria-hidden="true" />, fans: [{ user: 'Sam', count: 1 }], score: 0.7, kind: 'played' },
+  args: { icon: <Disc3 size={14} aria-hidden="true" />, fans: [{ user: 'Sam', count: 1 }], kind: 'played' },
 };

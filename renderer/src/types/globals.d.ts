@@ -278,6 +278,8 @@ interface DjTrack {
   because: string;
   /** Everyone credited, with their raw all-time queue count for the artist. Absent on older servers. */
   fans?: { user: string; count: number }[];
+  /** Everyone in the room who has queued this very track, with their raw count. Absent on older servers. */
+  trackFans?: { user: string; count: number }[];
 }
 
 /** What the autoplay coordinator decided this round. */

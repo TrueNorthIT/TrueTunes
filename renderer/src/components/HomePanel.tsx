@@ -581,7 +581,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
     return {
       key: d.track.id.objectId,
       because: d.because,
-      why: { because: d.because, fans: d.fans, score: d.score, viewer: displayName, trackName: d.track.title, kind: 'unheard' as const },
+      why: { because: d.because, fans: d.fans, artist: d.artist, viewer: displayName, trackName: d.track.title, kind: 'unheard' as const },
       item: d.track.raw,
       act,
       t: {
@@ -608,7 +608,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
         return [{
           key: t.uri,
           because: t.because,
-          why: { because: t.because, fans: t.fans, score: t.score, viewer: displayName, trackName: t.trackName, kind: 'played' as const },
+          why: { because: t.because, fans: t.fans, trackFans: t.trackFans, artist: t.artist, viewer: displayName, trackName: t.trackName, kind: 'played' as const },
           item,
           act,
           t: {
