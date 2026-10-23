@@ -13,13 +13,13 @@ interface State {
 
 /** Last-resort screen when rendering crashes: plain words first, the technical message folded away for a bug report. */
 export class ErrorBoundary extends Component<Props, State> {
-  state: State = { error: null };
+  override state: State = { error: null };
 
   static getDerivedStateFromError(error: Error): State {
     return { error };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
+  override componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[ErrorBoundary]', error, info.componentStack);
     window.sonos
       .trackEvent('renderer_crash', {
@@ -29,7 +29,7 @@ export class ErrorBoundary extends Component<Props, State> {
       .catch(() => {});
   }
 
-  render() {
+  override render() {
     if (this.state.error) {
       return (
         // The crash takes the title bar with it, so the whole screen is a drag region: the window can still move.
