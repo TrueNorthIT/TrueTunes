@@ -1,4 +1,8 @@
 import { useEffect, useState } from 'react';
+import { ExternalLink } from 'lucide-react';
+import { Dialog } from './common/Dialog';
+import { PillButton } from './common/PillButton';
+import dialog from './common/Dialog.module.css';
 import styles from '../styles/FeedbackDialog.module.css';
 
 interface Props {
@@ -29,6 +33,11 @@ async function createGitHubIssue(title: string, body: string, type: IssueType) {
   return (await res.json()) as { html_url: string };
 }
 
+const TYPES: Array<{ value: IssueType; label: string }> = [
+  { value: 'bug', label: 'Bug report' },
+  { value: 'feature', label: 'Feature request' },
+];
+
 export function FeedbackDialog({ onClose }: Props) {
   const [type, setType]           = useState<IssueType>('bug');
   const [title, setTitle]         = useState('');
@@ -43,10 +52,10 @@ export function FeedbackDialog({ onClose }: Props) {
   }, []);
 
   const canSubmit = title.trim().length > 0;
+  const busy = status === 'loading';
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!canSubmit || status !== 'idle') return;
+  async function handleSubmit() {
+    if (!canSubmit || busy) return;
     setStatus('loading');
     try {
       const bodyParts = [description.trim()];
@@ -60,87 +69,97 @@ export function FeedbackDialog({ onClose }: Props) {
     }
   }
 
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Escape') onClose();
+  const noun = type === 'bug' ? 'bug report' : 'feature request';
+
+  if (status === 'success') {
+    return (
+      <Dialog
+        title="Thanks, it's on GitHub"
+        onClose={onClose}
+        size="sm"
+        actions={
+          <>
+            <PillButton onClick={() => window.sonos.openExternal(issueUrl)}>
+              View on GitHub <ExternalLink size={14} aria-hidden="true" />
+            </PillButton>
+            <PillButton variant="primary" onClick={onClose}>Done</PillButton>
+          </>
+        }
+      >
+        <p className={dialog.note}>Your {noun} has been created. You can follow it, or add more detail, on GitHub.</p>
+      </Dialog>
+    );
   }
 
   return (
-    <div className={styles.overlay} onKeyDown={handleKeyDown}>
-      <div className={styles.modal}>
-        <button className={styles.close} onClick={onClose} aria-label="Close">✕</button>
+    <Dialog
+      title="Send feedback"
+      onClose={onClose}
+      onSubmit={() => void handleSubmit()}
+      actions={
+        <>
+          <PillButton onClick={onClose}>Cancel</PillButton>
+          <PillButton variant="primary" type="submit" disabled={!canSubmit || busy}>
+            {busy ? 'Sending…' : 'Send'}
+          </PillButton>
+        </>
+      }
+    >
+      <div className={dialog.stack}>
+        <p className={dialog.note}>
+          Report a bug or ask for a feature. It goes to the True Tunes repo on GitHub
+          {displayName ? <>, signed <strong className={styles.name}>{displayName}</strong>.</> : '.'}
+        </p>
 
-        {status === 'success' ? (
-          <div className={styles.success}>
-            <div className={styles.successIcon}>✓</div>
-            <h2 className={styles.heading}>Submitted!</h2>
-            <p className={styles.sub}>
-              Your {type === 'bug' ? 'bug report' : 'feature request'} has been created.
-            </p>
-            <button className={styles.link} onClick={() => window.sonos.openExternal(issueUrl)}>
-              View on GitHub ↗
+        <div className={styles.segmented} role="group" aria-label="Type">
+          {TYPES.map((t) => (
+            <button
+              key={t.value}
+              type="button"
+              className={`${styles.segment}${type === t.value ? ' ' + styles.segmentOn : ''}`}
+              aria-pressed={type === t.value}
+              onClick={() => setType(t.value)}
+              disabled={busy}
+            >
+              {t.label}
             </button>
-            <button className={styles.btn} onClick={onClose}>Done</button>
-          </div>
-        ) : (
-          <>
-            <h2 className={styles.heading}>Send Feedback</h2>
-            <p className={styles.sub}>Report a bug or request a feature on GitHub.</p>
+          ))}
+        </div>
 
-            <div className={styles.toggle}>
-              <button
-                className={`${styles.toggleBtn} ${type === 'bug' ? styles.active : ''}`}
-                onClick={() => setType('bug')}
-                type="button"
-              >
-                Bug report
-              </button>
-              <button
-                className={`${styles.toggleBtn} ${type === 'feature' ? styles.active : ''}`}
-                onClick={() => setType('feature')}
-                type="button"
-              >
-                Feature request
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className={styles.form}>
-              <input
-                className={styles.input}
-                type="text"
-                placeholder={type === 'bug' ? 'What went wrong?' : 'What would you like?'}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                autoFocus
-                maxLength={128}
-                spellCheck
-                disabled={status === 'loading'}
-              />
-              <textarea
-                className={styles.textarea}
-                placeholder={
-                  type === 'bug'
-                    ? 'Steps to reproduce, expected vs actual behaviour…'
-                    : 'Describe the feature and why it would be useful…'
-                }
-                value={description}
-                onChange={(e) => setDesc(e.target.value)}
-                rows={5}
-                disabled={status === 'loading'}
-              />
-              {status === 'error' && (
-                <p className={styles.error}>{errorMsg}</p>
-              )}
-              <button
-                className={styles.btn}
-                type="submit"
-                disabled={!canSubmit || status !== 'idle'}
-              >
-                {status === 'loading' ? 'Submitting…' : 'Submit'}
-              </button>
-            </form>
-          </>
+        <label className={dialog.field}>
+          <span className={dialog.label}>Title</span>
+          <input
+            className={dialog.input}
+            type="text"
+            placeholder={type === 'bug' ? 'What went wrong?' : 'What would you like?'}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            maxLength={128}
+            spellCheck
+            disabled={busy}
+          />
+        </label>
+        <label className={dialog.field}>
+          <span className={dialog.label}>Details <span className={styles.optional}>(optional)</span></span>
+          <textarea
+            className={dialog.input}
+            placeholder={
+              type === 'bug'
+                ? 'Steps to reproduce, what you expected, what happened…'
+                : 'Describe the feature and why it would be useful…'
+            }
+            value={description}
+            onChange={(e) => setDesc(e.target.value)}
+            rows={5}
+            disabled={busy}
+          />
+        </label>
+        {status === 'error' && (
+          <p className={dialog.error} role="alert">
+            Couldn't send it: {errorMsg}. Your text is still here, so you can try again.
+          </p>
         )}
       </div>
-    </div>
+    </Dialog>
   );
 }

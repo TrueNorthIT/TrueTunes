@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { ExternalLink } from 'lucide-react';
+import { Dialog } from './common/Dialog';
+import { PillButton } from './common/PillButton';
+import dialog from './common/Dialog.module.css';
 import styles from '../styles/ChangelogDialog.module.css';
 
 marked.use({ async: false });
@@ -25,8 +28,14 @@ async function fetchReleases(): Promise<Release[]> {
   return res.json() as Promise<Release[]>;
 }
 
+/** Versions read the same everywhere: "1.0.50", never "v1.0.50" in one place and "1.0.50" in another. */
+const version = (r: Release) => r.tag_name.replace(/^v/, '');
+
+/** The rail lists this many recent releases (plus the installed one if older), so it never needs its own scroll. */
+const RAIL_COUNT = 8;
+
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  return new Date(iso).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 interface Props {
@@ -37,6 +46,7 @@ export function ChangelogDialog({ onClose }: Props) {
   const [releases, setReleases]     = useState<Release[]>([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [status, setStatus]         = useState<'loading' | 'ready' | 'error'>('loading');
+  const [attempt, setAttempt]       = useState(0);
   const [appVersion, setAppVersion] = useState<string | null>(null);
   const [versionLoaded, setVersionLoaded] = useState(false);
 
@@ -50,7 +60,7 @@ export function ChangelogDialog({ onClose }: Props) {
     fetchReleases()
       .then(data => { setReleases(data); setStatus('ready'); })
       .catch(() => setStatus('error'));
-  }, []);
+  }, [attempt]);
 
   useEffect(() => {
     if (!versionLoaded || status !== 'ready' || !appVersion || releases.length === 0) return;
@@ -60,91 +70,75 @@ export function ChangelogDialog({ onClose }: Props) {
     if (idx >= 0) setSelectedIdx(idx);
   }, [versionLoaded, status, appVersion, releases]);
 
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose(); }
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
+  const isInstalled = (r: Release) => !!appVersion && (r.tag_name === `v${appVersion}` || r.tag_name === appVersion);
   const selected = releases[selectedIdx];
-  const isCurrent = selected && appVersion &&
-    (selected.tag_name === `v${appVersion}` || selected.tag_name === appVersion);
+  const rail = releases.map((r, i) => ({ r, i })).filter(({ r, i }) => i < RAIL_COUNT || i === selectedIdx || isInstalled(r));
 
   return (
-    <div className={styles.overlay}>
-      <div className={styles.modal}>
-        <div className={styles.header}>
-          <span className={styles.heading}>What&apos;s New</span>
-          {appVersion && <span className={styles.currentBadge}>v{appVersion}</span>}
-          <button className={styles.close} onClick={onClose} aria-label="Close">✕</button>
+    <Dialog title="What's new" onClose={onClose} size="lg" className={styles.reader}>
+      {status === 'loading' && <p className={dialog.note}>Loading releases…</p>}
+
+      {status === 'error' && (
+        <div className={styles.empty}>
+          <p className={dialog.note}>Couldn't load the release notes from GitHub.</p>
+          <PillButton onClick={() => { setStatus('loading'); setAttempt(a => a + 1); }}>Try again</PillButton>
         </div>
+      )}
 
-        {status === 'loading' && (
-          <div className={styles.placeholder}>Loading releases…</div>
-        )}
+      {status === 'ready' && releases.length === 0 && <p className={dialog.note}>No releases yet.</p>}
 
-        {status === 'error' && (
-          <div className={styles.placeholder}>Could not load release notes.</div>
-        )}
+      {status === 'ready' && releases.length > 0 && (
+        <div className={styles.split}>
+          <nav className={styles.list} aria-label="Releases">
+            {rail.map(({ r, i }) => (
+              <button
+                key={r.tag_name}
+                type="button"
+                className={`${styles.release}${i === selectedIdx ? ' ' + styles.releaseActive : ''}`}
+                aria-current={i === selectedIdx ? 'true' : undefined}
+                onClick={() => setSelectedIdx(i)}
+              >
+                <span className={styles.tag}>{version(r)}</span>
+                <span className={styles.date}>{isInstalled(r) ? 'Installed' : formatDate(r.published_at)}</span>
+              </button>
+            ))}
+            {releases.length > rail.length && (
+              <button type="button" className={styles.allLink} onClick={() => window.sonos.openExternal(`https://github.com/${REPO}/releases`)}>
+                Older releases on GitHub <ExternalLink size={14} aria-hidden="true" />
+              </button>
+            )}
+          </nav>
 
-        {status === 'ready' && releases.length === 0 && (
-          <div className={styles.placeholder}>No releases found.</div>
-        )}
-
-        {status === 'ready' && releases.length > 0 && (
-          <div className={styles.body}>
-            <div className={styles.sidebar}>
-              {releases.map((r, i) => {
-                const isCur = appVersion &&
-                  (r.tag_name === `v${appVersion}` || r.tag_name === appVersion);
-                return (
-                  <button
-                    key={r.tag_name}
-                    className={`${styles.sidebarItem}${i === selectedIdx ? ' ' + styles.sidebarItemActive : ''}`}
-                    onClick={() => setSelectedIdx(i)}
-                  >
-                    <span className={styles.sidebarTag}>{r.tag_name}</span>
-                    {isCur && <span className={styles.currentDot} title="Current version" />}
-                    <span className={styles.sidebarDate}>{formatDate(r.published_at)}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className={styles.content}>
-              {selected && (
-                <>
-                  <div className={styles.contentHeader}>
-                    <div>
-                      <div className={styles.contentTitle}>
-                        {selected.name || selected.tag_name}
-                        {isCurrent && <span className={styles.currentLabel}>current</span>}
-                      </div>
-                      <div className={styles.contentDate}>{formatDate(selected.published_at)}</div>
-                    </div>
-                    <button
-                      className={styles.ghLink}
-                      onClick={() => window.sonos.openExternal(selected.html_url)}
-                      title="View on GitHub"
-                    >
-                      <ExternalLink size={13} />
-                    </button>
-                  </div>
-                  <div className={styles.notes}>
-                    {selected.body?.trim()
-                      ? <div
-                          className={styles.notesText}
-                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(selected.body.trim()) as string) }}
-                        />
-                      : <span className={styles.noNotes}>No release notes.</span>
-                    }
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+          {selected && (
+            <article className={styles.article} aria-labelledby="release-title">
+              <header className={styles.articleHead}>
+                <h3 id="release-title" className={styles.articleTitle}>{selected.name || version(selected)}</h3>
+                <p className={styles.meta}>
+                  {formatDate(selected.published_at)}
+                  {isInstalled(selected) && ' · the version you have'}
+                </p>
+                <button type="button" className={styles.ghLink} onClick={() => window.sonos.openExternal(selected.html_url)}>
+                  View on GitHub <ExternalLink size={14} aria-hidden="true" />
+                </button>
+              </header>
+              {selected.body?.trim()
+                ? <div
+                    className={styles.notes}
+                    // Links in the notes open in the browser; followed in place they'd replace the app window.
+                    onClick={(e) => {
+                      const a = (e.target as HTMLElement).closest('a');
+                      if (!a) return;
+                      e.preventDefault();
+                      if (a.href) void window.sonos.openExternal(a.href);
+                    }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(selected.body.trim()) as string) }}
+                  />
+                : <p className={dialog.note}>No release notes.</p>
+              }
+            </article>
+          )}
+        </div>
+      )}
+    </Dialog>
   );
 }

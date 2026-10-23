@@ -55,7 +55,7 @@ describe('AlbumTrackRow', () => {
   it('calls onAdd when + is clicked', () => {
     const onAdd = vi.fn();
     render(<AlbumTrackRow track={makeTrack()} {...baseProps} onAdd={onAdd} />);
-    fireEvent.click(screen.getByText('+'));
+    fireEvent.click(screen.getByRole('button', { name: 'Add Come Together to queue' }));
     expect(onAdd).toHaveBeenCalled();
   });
 
@@ -84,7 +84,7 @@ describe('AlbumTrackRow', () => {
         track={makeTrack({ artistObjects: [{ name: 'John Lennon', objectId: 'art-j' }] })}
         {...playlistProps}
       />);
-      const btn = screen.getByRole('button', { name: 'John Lennon' });
+      const btn = screen.getByRole('button', { name: 'John Lennon, open artist' });
       fireEvent.click(btn);
       expect(mockNavigate).toHaveBeenCalledWith(
         expect.stringMatching(/^\/artist\//),

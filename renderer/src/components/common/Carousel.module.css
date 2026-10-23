@@ -1,0 +1,98 @@
+.header {
+  position: relative; /* paint above the row's overlapping top padding so arrows stay clickable */
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  margin-bottom: 18px;
+}
+/* Same as a SectionCard title, so a shelf reads as a section wherever it sits. */
+.title {
+  font-size: var(--fs-title);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: var(--text);
+}
+.search {
+  margin-left: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.searchBox {
+  display: flex;
+  align-items: center;
+  width: 200px;
+  height: 26px;
+  box-sizing: border-box;
+  padding: 0 4px 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  background: var(--glass-faint);
+}
+.searchBox:focus-within { border-color: var(--border-2); }
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: var(--fs-px);
+  font-family: inherit;
+  padding: 0;
+}
+.searchInput::placeholder { color: var(--text-3); }
+.searchClear {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: var(--fs-px);
+  line-height: 1;
+  padding: 4px;
+  border-radius: var(--r-round);
+}
+.searchClear:hover { color: var(--text); }
+.searchStatus { font-size: var(--fs-px); color: var(--text-3); white-space: nowrap; }
+.controls {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.arrows { display: flex; gap: 4px; }
+/* Quiet circle, no stroke: the same family as the add button. The focus ring is the global one. */
+.arrow {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-round);
+  border: none;
+  background: none;
+  color: var(--text-3);
+  font-size: 18px;
+  line-height: 1;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-fast),
+    color var(--dur-fast) var(--ease-fast);
+}
+.arrow:hover:not(:disabled) { color: var(--text); background: var(--bg-2); }
+.arrow:disabled { opacity: 0.3; cursor: default; }
+
+.row {
+  display: flex;
+  overflow-x: auto;
+  /* padding absorbs hover scale + ring shadow without clipping; negative margin keeps layout unchanged */
+  /* 25px top room lets an expanded group's header sit above the cards without growing the row
+     (see .groupBox in ArtistPanel.module.css); the matching negative margin keeps layout unchanged. */
+  padding: 25px 4px 10px;
+  margin: -25px -4px -10px;
+}
+.row::-webkit-scrollbar { height: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .arrow { transition: none; }
+}

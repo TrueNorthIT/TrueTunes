@@ -1,12 +1,21 @@
 import { useQueries } from '@tanstack/react-query';
 import { artistQueryOptions } from './useArtistBrowse';
 import type { AlbumTrack } from './useAlbumBrowse';
+import { groupUnheard, interleave, type UnheardOptions } from '../lib/discover';
 
 export interface DjDiscovery {
   track: AlbumTrack;
   artist: string;
   because: string;
   score: number;
+  fans?: DjArtist['fans'];
+}
+
+/** One act and its tracks the office has never played. `imageUrl` is the act's photo, when the browse has one. */
+export interface DjActDiscoveries {
+  act: DjArtist;
+  tracks: AlbumTrack[];
+  imageUrl: string | null;
 }
 
 /**
@@ -17,11 +26,6 @@ export interface DjDiscovery {
 const MAX_DISCOVERIES = 30;
 const MAX_PER_ARTIST = 3;
 
-/** Same key shape the server builds `heardTrackKeys` from. */
-function trackKey(title: string, artist: string): string {
-  return `${title}||${artist}`;
-}
-
 /**
  * Music by the office's favourite acts that the office has never actually played.
  *
@@ -30,11 +34,22 @@ function trackKey(title: string, artist: string): string {
  * music service itself: browse each ranked act, then subtract what the history
  * already contains.
  *
+ * `groups` keeps each act's tracks together (Discover's act cards); `discoveries`
+ * is the same tracks interleaved one per act per round (Home's picks), capped at 30.
+ * Pass `queued` (the live queue) so nothing already waiting to play is offered, and
+ * `round` to step through each act's other unheard songs.
+ *
+ * `isLoading` is true while any act is still being browsed; `groups` fills in as they land.
+ *
  * Runs one browse per act, which is why the server caps how many it returns.
  * They're ordinary React Query calls, so the cache is shared with the artist
  * pages and a second visit costs nothing.
  */
-export function useDjDiscoveries(artists: DjArtist[] | undefined, enabled = true) {
+export function useDjDiscoveries(
+  artists: DjArtist[] | undefined,
+  enabled = true,
+  { queued, round }: Pick<UnheardOptions, 'queued' | 'round'> = {},
+) {
   const acts = (artists ?? []).filter((a) => a.artistId && a.serviceId && a.accountId);
 
   const results = useQueries({
@@ -47,35 +62,22 @@ export function useDjDiscoveries(artists: DjArtist[] | undefined, enabled = true
 
   const isLoading = enabled && results.some((r) => r.isLoading);
 
-  // Interleave: one unheard track per act in rank order, then go round again.
-  // Taking each act's tracks consecutively would clump the set by artist.
-  const pools = acts.map((act, i) => {
-    const heard = new Set(act.heardTrackKeys);
-    const topSongs = results[i]?.data?.topSongs ?? [];
-    return {
-      act,
-      tracks: topSongs.filter((t) => {
-        const credited = t.artists?.[0] ?? act.artist;
-        return !heard.has(trackKey(t.title, credited)) && !heard.has(trackKey(t.title, act.artist));
-      }),
-    };
-  });
+  const groups: DjActDiscoveries[] = groupUnheard(acts, results.map((r) => r.data?.topSongs), {
+    perAct: MAX_PER_ARTIST,
+    queued,
+    round,
+  }).map((g) => ({
+    ...g,
+    imageUrl: results[acts.indexOf(g.act)]?.data?.imageUrl ?? g.act.imageUrl ?? null,
+  }));
 
-  const discoveries: DjDiscovery[] = [];
-  for (let round = 0; round < MAX_PER_ARTIST; round++) {
-    for (const pool of pools) {
-      if (discoveries.length >= MAX_DISCOVERIES) break;
-      const track = pool.tracks[round];
-      if (!track) continue;
-      discoveries.push({
-        track,
-        artist: pool.act.artist,
-        because: `${pool.act.because} — never played here`,
-        score: pool.act.score,
-      });
-    }
-    if (discoveries.length >= MAX_DISCOVERIES) break;
-  }
+  const discoveries: DjDiscovery[] = interleave(groups, MAX_DISCOVERIES).map(({ act, track }) => ({
+    track,
+    artist: act.artist,
+    because: `${act.because} — never played here`,
+    score: act.score,
+    fans: act.fans,
+  }));
 
-  return { discoveries, isLoading };
+  return { discoveries, groups, isLoading };
 }

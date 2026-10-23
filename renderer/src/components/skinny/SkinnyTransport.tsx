@@ -1,7 +1,10 @@
 import type React from 'react';
-import { SkipBack, Play, Pause, SkipForward } from 'lucide-react';
-import { getActiveProvider } from '../../providers';
+import { Music } from 'lucide-react';
 import type { useNowPlaying } from '../../hooks/useNowPlaying';
+import { useQueuer } from '../../hooks/useQueuer';
+import { UserAvatar } from '../common/UserAvatar';
+import { SeekBar } from '../common/SeekBar';
+import { TransportButtons } from '../common/TransportButtons';
 import styles from '../../styles/SkinnyTransport.module.css';
 
 interface Props {
@@ -10,75 +13,65 @@ interface Props {
 }
 
 /**
- * Condensed now-playing + transport strip for skinny side-panel mode.
- * The dominant-colour glow lives on the panel background (SkinnyShell); this bar
- * keeps the full PlayerBar's neutral white now-playing look. Three core buttons:
- * prev / play-pause / next.
+ * Skinny mode's Now playing card, docked under the queue: art, title, artist and who queued it lead;
+ * the transport and progress follow. Narrow windows stack the transport under the label; from 640px
+ * the card is one row, like the player bar. The artwork's colour washes in from the art corner.
  */
 export function SkinnyTransport({ np, isAuthed }: Props) {
   const {
-    displayTrack, displayArtist, cachedArt, progressPct, durationMs,
-    isPlaying, elapsedLabel, durationLabel,
+    displayTrack, displayArtist, cachedArt, progressPct, durationMs, dominantColor,
+    isPlaying, elapsedLabel, durationLabel, currentObjectId,
   } = np;
-
-  const refresh = () => getActiveProvider().refreshPlayback();
-
-  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!durationMs) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    getActiveProvider().seek(Math.floor(pct * durationMs)).then(refresh);
-  };
+  const queuer = useQueuer({ id: currentObjectId, title: displayTrack, artist: displayArtist });
 
   return (
-    <div className={styles.bar}>
+    <section
+      className={styles.card}
+      aria-label="Now playing"
+      style={dominantColor ? ({ '--wash': dominantColor } as React.CSSProperties) : undefined}
+    >
       <div className={styles.art}>
-        {cachedArt ? <img src={cachedArt} alt="" /> : <div className={styles.artPh}>♪</div>}
+        {cachedArt ? <img src={cachedArt} alt="" /> : <div className={styles.artPh}><Music size={22} /></div>}
       </div>
 
       <div className={styles.info}>
-        <div className={styles.title}>{displayTrack || '—'}</div>
-        <div className={styles.artist}>{displayArtist || ''}</div>
-        <div
-          className={styles.progress}
-          onClick={handleSeek}
-          role="progressbar"
-          aria-valuenow={progressPct}
-        >
-          <div className={styles.progressFill} style={{ width: `${progressPct}%` }} />
-        </div>
-        <div className={styles.timeRow}>
-          <span>{elapsedLabel}</span>
-          <span>{durationLabel}</span>
-        </div>
+        <div className={styles.title} title={displayTrack || undefined}>{displayTrack || 'Nothing playing'}</div>
+        {displayArtist && <div className={styles.artist}>{displayArtist}</div>}
+        {queuer && (
+          <span className={styles.queuer}>
+            <UserAvatar name={queuer.user} imageUrl={queuer.imageUrl} className={styles.queuerAvatar} />
+            <span className={styles.queuerName}>Queued by {queuer.user}</span>
+          </span>
+        )}
       </div>
 
       <div className={styles.controls}>
-        <button
-          className={styles.btn}
-          disabled={!isAuthed}
-          onClick={() => getActiveProvider().skipPrev().then(refresh)}
-          title="Previous"
-        >
-          <SkipBack size={14} />
-        </button>
-        <button
-          className={`${styles.btn} ${styles.playBtn}`}
-          disabled={!isAuthed}
-          onClick={() => (isPlaying ? getActiveProvider().pause() : getActiveProvider().play()).then(refresh)}
-          title={isPlaying ? 'Pause' : 'Play'}
-        >
-          {isPlaying ? <Pause size={15} /> : <Play size={15} />}
-        </button>
-        <button
-          className={styles.btn}
-          disabled={!isAuthed}
-          onClick={() => getActiveProvider().skipNext().then(refresh)}
-          title="Next"
-        >
-          <SkipForward size={14} />
-        </button>
+        <div className={styles.transport}>
+          <TransportButtons
+            disabled={!isAuthed}
+            isPlaying={isPlaying}
+            btnClassName={styles.btn}
+            playClassName={styles.playBtn}
+            size={16}
+            playSize={15}
+            filled
+          />
+        </div>
+
+        <div className={styles.progressRow}>
+          <span className={styles.time}>{elapsedLabel}</span>
+          <SeekBar
+            progressPct={progressPct}
+            durationMs={durationMs}
+            elapsedLabel={elapsedLabel}
+            durationLabel={durationLabel}
+            className={styles.progress}
+            trackClassName={styles.progressTrack}
+            fillClassName={styles.progressFill}
+          />
+          <span className={styles.time}>{durationLabel}</span>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

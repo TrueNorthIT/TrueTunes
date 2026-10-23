@@ -34,6 +34,7 @@ const defaultProps = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
   mockUseLocation.mockReturnValue({ pathname: '/' });
   mockUseSearchParams.mockReturnValue([new URLSearchParams()]);
   vi.mocked(window.sonos.isWindowMaximized).mockResolvedValue(false);
@@ -66,20 +67,90 @@ describe('TopNav', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/queuedle');
   });
 
-  it('navigates to /search on Enter in search input', async () => {
+  it('navigates to /search on Enter in search input, and remembers the search', async () => {
     const user = userEvent.setup();
     render(<TopNav {...defaultProps} />);
     const input = screen.getByPlaceholderText('Search…');
     await user.type(input, 'Beatles{Enter}');
-    expect(mockNavigate).toHaveBeenCalledWith('/search?q=Beatles');
+    expect(mockNavigate).toHaveBeenCalledWith('/search?q=Beatles', { replace: false });
+    expect(JSON.parse(localStorage.getItem('tt2.recentSearches') ?? '[]')).toContain('Beatles');
   });
 
-  it('navigates to / on Escape in search input', async () => {
+  it('searches as you type: one search per pause, after 2 characters', async () => {
+    const user = userEvent.setup();
+    render(<TopNav {...defaultProps} />);
+    await user.type(screen.getByPlaceholderText('Search…'), 'Beatles');
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/search?q=Beatles', { replace: false }));
+    const searches = mockNavigate.mock.calls.filter(([to]) => String(to).startsWith('/search?q='));
+    expect(searches).toHaveLength(1);
+  });
+
+  it('does not search on a single character', async () => {
+    const user = userEvent.setup();
+    render(<TopNav {...defaultProps} />);
+    await user.type(screen.getByPlaceholderText('Search…'), 'B');
+    await new Promise((r) => setTimeout(r, 400));
+    expect(mockNavigate.mock.calls.filter(([to]) => String(to).startsWith('/search?q='))).toHaveLength(0);
+  });
+
+  it('replaces the history entry while already on the search page', async () => {
+    mockUseLocation.mockReturnValue({ pathname: '/search' });
+    mockUseSearchParams.mockReturnValue([new URLSearchParams({ q: 'Beat' })]);
     const user = userEvent.setup();
     render(<TopNav {...defaultProps} />);
     const input = screen.getByPlaceholderText('Search…');
-    await user.type(input, 'test{Escape}');
-    expect(mockNavigate).toHaveBeenCalledWith('/');
+    expect(input).toHaveValue('Beat');
+    await user.type(input, 'les');
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/search?q=Beatles', { replace: true }));
+  });
+
+  it('opens the search page when the empty box is focused', async () => {
+    const user = userEvent.setup();
+    render(<TopNav {...defaultProps} />);
+    await user.click(screen.getByPlaceholderText('Search…'));
+    expect(mockNavigate).toHaveBeenCalledWith('/search', { replace: false });
+  });
+
+  it('moves focus to the top result on Down', async () => {
+    const user = userEvent.setup();
+    const target = document.createElement('button');
+    target.setAttribute('data-search-stop', '');
+    document.body.appendChild(target);
+    render(<TopNav {...defaultProps} />);
+    await user.type(screen.getByPlaceholderText('Search…'), '{ArrowDown}');
+    expect(target).toHaveFocus();
+    target.remove();
+  });
+
+  it('on Escape, goes back to the page search was opened from', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<TopNav {...defaultProps} />);
+    await user.click(screen.getByPlaceholderText('Search…'));
+    expect(mockNavigate).toHaveBeenCalledWith('/search', { replace: false });
+    mockUseLocation.mockReturnValue({ pathname: '/search' });
+    rerender(<TopNav {...defaultProps} />);
+    await user.keyboard('{Escape}');
+    expect(mockNavigate).toHaveBeenLastCalledWith(-1);
+  });
+
+  it('on Escape, goes Home when search was not opened from this box', async () => {
+    mockUseLocation.mockReturnValue({ pathname: '/search' });
+    mockUseSearchParams.mockReturnValue([new URLSearchParams({ q: 'Beatles' })]);
+    const user = userEvent.setup();
+    render(<TopNav {...defaultProps} />);
+    await user.type(screen.getByPlaceholderText('Search…'), '{Escape}');
+    expect(mockNavigate).toHaveBeenLastCalledWith('/');
+  });
+
+  it('on Escape off the search page, only empties the box', async () => {
+    mockUseLocation.mockReturnValue({ pathname: '/album/x' });
+    const user = userEvent.setup();
+    render(<TopNav {...defaultProps} />);
+    const input = screen.getByPlaceholderText('Search…');
+    await user.type(input, 'B{Escape}');
+    expect(input).toHaveValue('');
+    expect(mockNavigate).not.toHaveBeenCalledWith('/');
+    expect(mockNavigate).not.toHaveBeenCalledWith(-1);
   });
 
   it('clears search and navigates to / on Clear button click', async () => {

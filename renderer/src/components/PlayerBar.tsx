@@ -4,13 +4,15 @@ import { getActiveProvider } from "../providers";
 import { useNowPlaying } from "../hooks/useNowPlaying";
 import { useOpenItem } from "../hooks/useOpenItem";
 import { useFavourite } from "../hooks/usePlaylists";
+import { useAttribution, resolveAttribution } from "../hooks/useAttribution";
+import { useUsers } from "../hooks/useUsers";
+import { UserAvatar } from "./common/UserAvatar";
 import { ExplicitBadge } from "./common/ExplicitBadge";
+import { SeekBar } from "./common/SeekBar";
+import { TransportButtons } from "./common/TransportButtons";
 import type React from "react";
 import {
   Shuffle,
-  SkipBack,
-  Play,
-  SkipForward,
   Repeat,
   Repeat1,
   Volume,
@@ -175,6 +177,7 @@ function VolumeButton({ volume }: { volume: number }) {
           <input
             className={styles.volSliderV}
             type="range"
+            aria-label="Volume"
             min={0}
             max={100}
             value={localVol}
@@ -228,14 +231,13 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
     accountId: currentAccountId,
   });
 
-  const { shuffle: rawShuffle, repeat: rawRepeat } = playback;
+  // Who queued what is playing: the same attribution the queue shows, as a small avatar.
+  const attribution = useAttribution();
+  const queuer = resolveAttribution(attribution, { id: currentObjectId, title: displayTrack, artist: displayArtist });
+  const { data: users } = useUsers(isAuthed, true);
+  const queuerImage = queuer ? users?.find((u) => u.userId === queuer.user)?.imageUrl : undefined;
 
-  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!durationMs) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    getActiveProvider().seek(Math.floor(pct * durationMs)).then(refresh);
-  };
+  const { shuffle: rawShuffle, repeat: rawRepeat } = playback;
 
   const refresh = () => getActiveProvider().refreshPlayback();
 
@@ -252,15 +254,9 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
 
   return (
     <div
-      className={styles.bar}
-      style={
-        dominantColor
-          ? {
-              background: `linear-gradient(105deg, rgba(${dominantColor}, 0.18) 0%, rgba(255,255,255,0.03) 60%)`,
-              boxShadow: `0 12px 48px rgba(0,0,0,0.4), 0 0 50px rgba(${dominantColor}, 0.12), 0 1px 0 rgba(255,255,255,0.08) inset, 0 -1px 0 rgba(0,0,0,0.2) inset`,
-            }
-          : undefined
-      }
+      className={`${styles.bar}${dominantColor ? " " + styles.tinted : ""}`}
+      // the artwork's colour as a triplet; the material, wash and shadow live in PlayerBar.module.css
+      style={dominantColor ? ({ "--bar-tint": dominantColor } as React.CSSProperties) : undefined}
     >
       <div className={styles.inner}>
         {/* Left — art + track info */}
@@ -307,20 +303,29 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
             </div>
             <div className={styles.progressSection}>
               <span className={styles.time}>{elapsedLabel}</span>
-              <div
+              <SeekBar
+                progressPct={progressPct}
+                durationMs={durationMs}
+                elapsedLabel={elapsedLabel}
+                durationLabel={durationLabel}
                 className={styles.progressBar}
-                onClick={handleSeek}
-                role="progressbar"
-                aria-valuenow={progressPct}
-              >
-                <div
-                  className={styles.progressFill}
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
+                trackClassName={styles.progressTrack}
+                fillClassName={styles.progressFill}
+              />
               <span className={styles.time}>{durationLabel}</span>
             </div>
           </div>
+          {queuer && (
+            <button
+              type="button"
+              className={styles.queuer}
+              aria-label={`Queued by ${queuer.user}`}
+              title={`Queued by ${queuer.user}`}
+              onClick={() => navigate(`/profile/${encodeURIComponent(queuer.user)}`)}
+            >
+              <UserAvatar name={queuer.user} imageUrl={queuerImage} className={styles.queuerAvatar} />
+            </button>
+          )}
         </div>
 
         {/* Centre — transport */}
@@ -333,36 +338,14 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
           >
             <Shuffle size={11} />
           </button>
-          <button
-            className={styles.ctrl}
+          <TransportButtons
             disabled={!isAuthed}
-            onClick={() => getActiveProvider().skipPrev().then(refresh)}
-            title="Previous"
-          >
-            <SkipBack size={14} />
-          </button>
-          <button
-            className={`${styles.ctrl} ${styles.playBtn}`}
-            disabled={!isAuthed}
-            onClick={() =>
-              (isPlaying ? getActiveProvider().pause() : getActiveProvider().play()).then(refresh)
-            }
-          >
-            {isPlaying ? (
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
-                <rect x="2" y="1" width="4" height="12" rx="1" />
-                <rect x="8" y="1" width="4" height="12" rx="1" />
-              </svg>
-            ) : <Play size={14} />}
-          </button>
-          <button
-            className={styles.ctrl}
-            disabled={!isAuthed}
-            onClick={() => getActiveProvider().skipNext().then(refresh)}
-            title="Next"
-          >
-            <SkipForward size={14} />
-          </button>
+            isPlaying={isPlaying}
+            btnClassName={styles.ctrl}
+            playClassName={styles.playBtn}
+            size={14}
+            playSize={14}
+          />
           <button
             className={`${styles.ctrl}${repeat !== "none" ? " " + styles.active : ""}`}
             disabled={!isAuthed}

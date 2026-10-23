@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueuedleBonusResults } from '../QueuedleBonusResults';
 import { QueuedleSummary } from '../QueuedleSummary';
+import { MyScores } from '../MyScores';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({ useNavigate: () => mockNavigate }));
@@ -65,25 +66,51 @@ describe('QueuedleBonusResults', () => {
   });
 });
 
-describe('QueuedleSummary', () => {
-  it('shows total score', () => {
-    render(<QueuedleSummary mainScore={3} bonusScore={2} maxMain={5} maxBonus={3} />);
-    expect(screen.getByText('5')).toBeInTheDocument();
+describe('MyScores', () => {
+  it('shows the total out of the maximum', () => {
+    render(<MyScores mainScore={3} bonusScore={2} maxMain={5} maxBonus={3} />);
+    expect(screen.getByText('out of 8').previousSibling).toHaveTextContent('5');
   });
 
-  it('shows max total', () => {
-    render(<QueuedleSummary mainScore={3} bonusScore={2} maxMain={5} maxBonus={3} />);
-    expect(screen.getByText('out of 8')).toBeInTheDocument();
-  });
-
-  it('shows breakdown rows', () => {
-    render(<QueuedleSummary mainScore={3} bonusScore={2} maxMain={5} maxBonus={3} />);
+  it('shows each round with its score', () => {
+    render(<MyScores mainScore={3} bonusScore={2} maxMain={5} maxBonus={3} />);
     expect(screen.getByText('Higher or lower')).toBeInTheDocument();
     expect(screen.getByText('Top queuer')).toBeInTheDocument();
+    expect(screen.getByText('3/5')).toBeInTheDocument();
+    expect(screen.getByText('2/3')).toBeInTheDocument();
   });
 
-  it('shows already submitted message when alreadySubmitted is true', () => {
-    render(<QueuedleSummary mainScore={3} bonusScore={2} maxMain={5} maxBonus={3} alreadySubmitted />);
-    expect(screen.getByText(/already played today/)).toBeInTheDocument();
+  it('shows the standing and the note', () => {
+    render(
+      <MyScores mainScore={3} bonusScore={2} maxMain={5} maxBonus={3} standing="Joint 1st of 5 today" note={<p>Come back tomorrow</p>} />
+    );
+    expect(screen.getByText('Joint 1st of 5 today')).toBeInTheDocument();
+    expect(screen.getByText('Come back tomorrow')).toBeInTheDocument();
+  });
+
+  it('summarises how the room scored for screen readers', () => {
+    render(<MyScores mainScore={3} bonusScore={2} maxMain={5} maxBonus={3} mainScores={[3, 3, 1]} bonusScores={[2]} />);
+    expect(screen.getByRole('img', { name: 'Higher or lower across the room: 1 scored 1, 2 scored 3' })).toBeInTheDocument();
+  });
+});
+
+describe('QueuedleSummary', () => {
+  const q: GameQuestion = {
+    index: 0,
+    left: items[0],
+    right: items[1],
+    winner: 'left',
+  };
+
+  it('renders nothing without a complete set of guesses', () => {
+    const { container } = render(<QueuedleSummary questions={[q]} mainGuesses={[]} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('marks each round right or wrong', () => {
+    render(<QueuedleSummary questions={[q, { ...q, index: 1 }]} mainGuesses={['left', 'right']} />);
+    expect(screen.getByText('Your answers')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'You got this right' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'You got this wrong' })).toBeInTheDocument();
   });
 });

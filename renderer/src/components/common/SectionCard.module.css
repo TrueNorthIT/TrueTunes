@@ -1,0 +1,59 @@
+.card {
+  min-width: 0;
+  padding: 1.5em;
+  border-radius: var(--r-card);
+  background: var(--surface);
+}
+
+/* A wash of the hero artwork's dominant colour bleeds in from the top left. */
+.featured {
+  padding: 1.7em;
+  background:
+    radial-gradient(120% 110% at 15% 0%, rgba(var(--wash, 150, 158, 255), 0.26), transparent 62%),
+    var(--surface-hi);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 1.1em;
+  flex-wrap: wrap;
+  margin-bottom: 1.1em;
+}
+.headTight { margin-bottom: 0.3em; }
+.sub {
+  margin-bottom: 1.1em;
+  font-size: var(--fs-label);
+  color: var(--text-3);
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  margin-left: auto;
+}
+
+.title {
+  font-size: var(--fs-title);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: var(--text);
+}
+
+.seeAll {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: var(--fs-prose);
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-fast);
+}
+.seeAll:hover,
+.seeAll:focus-visible {
+  color: var(--text);
+  text-decoration: underline;
+}

@@ -1,0 +1,19 @@
+/* Text links inside rows and cards: no chrome, they take their colour from the row. */
+.link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-fast);
+}
+.link:hover,
+.link:focus-visible {
+  color: var(--on-art);
+  text-decoration: underline;
+}
+.artists {
+  min-width: 0;
+}

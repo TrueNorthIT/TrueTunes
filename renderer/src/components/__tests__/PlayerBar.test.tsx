@@ -264,7 +264,7 @@ describe('PlayerBar — repeat', () => {
 describe('PlayerBar — seek bar', () => {
   it('clicking seek bar at 50% calls seek with half of durationMs', async () => {
     setup({}, { durationMs: 200000 });
-    const bar = screen.getByRole('progressbar');
+    const bar = screen.getByRole('slider', { name: 'Track progress' });
     // Simulate a click at 50% of the bar
     Object.defineProperty(bar, 'getBoundingClientRect', {
       value: () => ({ left: 0, width: 200, top: 0, height: 4, right: 200, bottom: 4 }),
@@ -280,7 +280,7 @@ describe('PlayerBar — seek bar', () => {
 
   it('clicking at 0% seeks to 0', async () => {
     setup({}, { durationMs: 100000 });
-    const bar = screen.getByRole('progressbar');
+    const bar = screen.getByRole('slider', { name: 'Track progress' });
     Object.defineProperty(bar, 'getBoundingClientRect', {
       value: () => ({ left: 50, width: 100, top: 0, height: 4, right: 150, bottom: 4 }),
     });
@@ -294,7 +294,7 @@ describe('PlayerBar — seek bar', () => {
 
   it('does not seek when durationMs is 0', async () => {
     setup({}, { durationMs: 0 });
-    const bar = screen.getByRole('progressbar');
+    const bar = screen.getByRole('slider', { name: 'Track progress' });
     Object.defineProperty(bar, 'getBoundingClientRect', {
       value: () => ({ left: 0, width: 200, top: 0, height: 4, right: 200, bottom: 4 }),
     });
@@ -312,16 +312,16 @@ describe('PlayerBar — volume button', () => {
     const { container } = setup();
     const wrap = container.querySelector('[class*="volWrap"]') as HTMLElement;
     fireEvent.mouseEnter(wrap);
-    expect(screen.getByRole('slider')).toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: 'Volume' })).toBeInTheDocument();
   });
 
   it('moving the mouse away closes the popover after a delay', async () => {
     const { container } = setup();
     const wrap = container.querySelector('[class*="volWrap"]') as HTMLElement;
     fireEvent.mouseEnter(wrap);
-    expect(screen.getByRole('slider')).toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: 'Volume' })).toBeInTheDocument();
     fireEvent.mouseLeave(wrap);
-    await waitFor(() => expect(screen.queryByRole('slider')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('slider', { name: 'Volume' })).not.toBeInTheDocument());
   });
 
   it('shows current volume percentage in popover', () => {

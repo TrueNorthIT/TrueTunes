@@ -205,7 +205,7 @@ describe('Queuedle resumes a game in progress', () => {
     }));
     stubServer({ leaderboard: [playedEntry], myScore: () => Promise.resolve(fullScore) });
     await mountAndSettle();
-    expect(await screen.findByText('Question Breakdown')).toBeInTheDocument();
+    expect(await screen.findByText('Your answers')).toBeInTheDocument();
     expect(localStorage.getItem(KEY)).toBeNull();
   });
 });

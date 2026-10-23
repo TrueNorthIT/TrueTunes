@@ -1,0 +1,30 @@
+/* Sized in em: inside a .page-scale root. */
+.bars { display: flex; flex-direction: column; gap: 0.5em; }
+.row {
+  display: grid;
+  grid-template-columns: var(--rank-col) minmax(5em, 9em) minmax(3em, 1fr) auto minmax(0, max-content);
+  align-items: center;
+  column-gap: 0.7em;
+  font-size: var(--fs-label);
+}
+.rank { color: var(--text-3); text-align: right; font-variant-numeric: tabular-nums; }
+.name { color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.strong { color: var(--text); font-weight: 600; }
+.track { height: 0.7em; min-width: 0; }
+.bar { display: block; height: 100%; border-radius: var(--r-pill); min-width: 0.15em; }
+.value {
+  color: var(--text);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: 3em;
+}
+.sub {
+  color: var(--text-3);
+  font-size: var(--fs-small);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}

@@ -1,0 +1,46 @@
+.add {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--r-round);
+  cursor: pointer;
+  transition:
+    opacity var(--dur-fast) var(--ease-fast),
+    background var(--dur-fast) var(--ease-fast),
+    color var(--dur-fast) var(--ease-fast);
+}
+
+/* Rows: invisible-ish until the row is hovered; the parent reveals it. */
+.quiet {
+  width: 2.2em;
+  height: 2.2em;
+  background: none;
+  color: var(--text-3);
+}
+.quiet:hover {
+  background: var(--bg-2);
+  color: var(--text);
+}
+
+/* Over artwork: a light disc that sits on the scrim. */
+.art {
+  width: 2.6em;
+  height: 2.6em;
+  background: var(--glass);
+  color: var(--on-art);
+}
+.art:hover {
+  background: var(--glass-hi);
+}
+
+/* On a tile corner, over art that can be any colour. */
+.corner {
+  width: 2em;
+  height: 2em;
+  background: var(--overlay);
+  color: var(--on-art);
+}
+.corner:hover {
+  background: var(--overlay-strong);
+}

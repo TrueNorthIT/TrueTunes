@@ -1,517 +1,399 @@
-import { useState, Fragment } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Info, X } from 'lucide-react';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import type { GameRankTierKey } from '../hooks/useDailyGame';
-import { useStats, StatsPeriod } from '../hooks/useStats';
+import { useStats, statsQueryOptions, type StatsPeriod } from '../hooks/useStats';
 import { useGameRankings } from '../hooks/useDailyGame';
-import { useImage } from '../hooks/useImage';
-import { useArtistImage } from '../hooks/useArtistBrowse';
-import { getGameRankIcon, getGameRankInfoImage } from '../lib/gameRankAssets';
+import { useUsers } from '../hooks/useUsers';
+import { albumQueryOptions } from '../hooks/useAlbumBrowse';
+import { useOpenItem } from '../hooks/useOpenItem';
 import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
-import { splitArtists } from '../lib/itemHelpers';
+import { mergeArtists, queuedSummary } from '../lib/leaderboard';
+import { ordinal } from '../lib/profileData';
+import { primaryArtistName, queued, statsAlbumToItem, statsArtistToItem, statsTrackToItem } from '../lib/homeData';
+import { useTrackContextMenu } from './common/ContextMenu';
+import { Dialog } from './common/Dialog';
+import { competitionRanks } from './queuedle/format';
+import { ChartHead, ChartRow } from './common/ChartRow';
+import { ImageTile } from './common/ImageTile';
+import { StatsArtistTile } from './common/StatsArtistTile';
+import { PillButton } from './common/PillButton';
+import { PersonCard } from './common/PersonCard';
+import { SectionCard, SeeAll } from './common/SectionCard';
+import { ArtistLinks } from './common/TrackLinks';
+import { UserAvatar } from './common/UserAvatar';
+import { trackPayload } from '../lib/itemHelpers';
+import type { SonosItem } from '../types/sonos';
 import styles from '../styles/LeaderboardPanel.module.css';
 
-function CachedArt({ url, className }: { url: string | undefined; className: string }) {
-  const cached = useImage(url ?? null);
-  if (!cached) return <div className={className} data-placeholder />;
-  return <img className={className} src={cached} alt="" loading="lazy" />;
+// The server's "week" is a rolling seven days, not the calendar week, so the label says so.
+const PERIODS: { value: StatsPeriod; label: string; phrase: string }[] = [
+  { value: 'today', label: 'Today', phrase: 'today' },
+  { value: 'week', label: 'Past 7 days', phrase: 'in the past 7 days' },
+  { value: 'alltime', label: 'All time', phrase: 'in all' },
+];
+
+const QUEUEDLE_RANK_INFO: Array<{ key: Exclude<GameRankTierKey, 'provisional'>; name: string; range: string }> = [
+  { key: 'skip-button-survivor', name: 'Skip button survivor', range: 'Under 40%' },
+  { key: 'background-bopper', name: 'Background bopper', range: '40% to 54.9%' },
+  { key: 'aux-cable-apprentice', name: 'Aux cable apprentice', range: '55% to 69.9%' },
+  { key: 'algorithm-whisperer', name: 'Algorithm whisperer', range: '70% to 84.9%' },
+  { key: 'playlist-prophet', name: 'Playlist prophet', range: '85% and up' },
+];
+
+/** People with a card of their own; the rest of the top 10 sit on one line under them. */
+const CARD_PEOPLE = 6;
+
+/** What every track, album and artist on the page needs to open, prefetch, queue and right-click. */
+function useStatsNav(onAddToQueue?: (item: SonosItem) => void) {
+  const openItem = useOpenItem();
+  const { resolveAndOpen } = useResolveAndOpen();
+  const queryClient = useQueryClient();
+  const { showTrackMenu } = useTrackContextMenu();
+
+  const openAlbum = (a: { album?: string; title: string; albumId?: string; artist: string; serviceId?: string; accountId?: string }) => {
+    if (a.albumId) openItem(statsAlbumToItem({ ...a, album: a.album ?? a.title, count: 0 }));
+    else
+      void resolveAndOpen(a.album || a.title, 'album', {
+        artist: primaryArtistName(a.artist),
+        serviceId: a.serviceId,
+        accountId: a.accountId,
+      });
+  };
+  // Only the first credited name can use the row's artist id.
+  const openArtist = (name: string, a: { artistId?: string; serviceId?: string; accountId?: string }, isFirst: boolean) => {
+    if (isFirst && a.artistId) openItem(statsArtistToItem({ artist: name, ...a, count: 0 }));
+    else void resolveAndOpen(name, 'artist', { serviceId: a.serviceId, accountId: a.accountId });
+  };
+  const prefetchAlbum = (a: { albumId?: string; serviceId?: string; accountId?: string }) => {
+    if (a.albumId && a.serviceId && a.accountId)
+      void queryClient.prefetchQuery(albumQueryOptions(a.albumId, a.serviceId, a.accountId, undefined));
+  };
+
+  /** A chart row's title, artist links, art, open, prefetch, + and context menu. */
+  const trackProps = (t: StatsTrack) => {
+    const item = statsTrackToItem(t);
+    return {
+      title: t.trackName,
+      artists: <ArtistLinks artist={t.artist} onOpenArtist={(name, isFirst) => openArtist(name, t, isFirst)} />,
+      imageUrl: t.imageUrl,
+      onOpen: () => openAlbum({ ...t, title: t.trackName }),
+      onMouseEnter: () => prefetchAlbum(t),
+      onAdd: item && onAddToQueue ? () => onAddToQueue(item) : undefined,
+      onContextMenu: (e: React.MouseEvent) => {
+        if (!t.uri) return;
+        showTrackMenu(
+          {
+            track: trackPayload({ ...t, uri: t.uri, albumName: t.album }),
+            sonosItem: item ?? undefined,
+          },
+          e,
+        );
+      },
+    };
+  };
+
+  return { openAlbum, openArtist, prefetchAlbum, trackProps };
 }
 
-// Tries to fetch the real artist image (so YT Music shows the artist's photo)
-// and falls back to whatever the event sent us — typically the track's album
-// art. The Sonos artist endpoint needs `defaults` we don't store in events, so
-// the fetch quietly returns null on many services; the fallback keeps the row
-// looking populated instead of empty.
-function ArtistAvatar({
-  artistId,
-  serviceId,
-  accountId,
-  fallbackUrl,
-  className,
-  placeholderClassName,
-}: {
-  artistId: string | undefined;
-  serviceId: string | undefined;
-  accountId: string | undefined;
-  fallbackUrl?: string;
-  className: string;
-  placeholderClassName: string;
-}) {
-  const { data: imageUrl } = useArtistImage(artistId, serviceId, accountId);
-  const cached = useImage(imageUrl ?? fallbackUrl ?? null);
-  if (!cached) return <div className={placeholderClassName} />;
-  return <img className={className} src={cached} alt="" loading="lazy" />;
-}
-
-// Multi-artist subtitles arrive as a single joined string (e.g. "Sonny Stitt, Kenny Garrett").
-// Rendering them as one button means resolveAndOpen searches for the whole string and never
-// matches an individual artist; for album rows the button also swallows the row click via
-// stopPropagation. Splitting on commas gives each artist its own link.
-function ArtistLinks({
-  artist,
-  artistId,
-  serviceId,
-  accountId,
-  onNavigateArtist,
-  onResolveArtist,
-}: {
-  artist: string;
-  artistId?: string;
-  serviceId?: string;
-  accountId?: string;
-  onNavigateArtist: (name: string, artistId: string, serviceId: string, accountId: string) => void;
-  onResolveArtist: (name: string) => void;
-}) {
-  const parts = splitArtists(artist);
-  if (parts.length === 0) return null;
-  const canUseDirect = parts.length === 1 && !!artistId && !!serviceId && !!accountId;
+/** Three circles at the sm tile's size while a person's artists load. */
+function TileSkeleton() {
   return (
-    <>
-      {parts.map((name, i) => (
-        <Fragment key={i}>
-          {i > 0 && ', '}
-          <button
-            className={styles.artistLink}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (canUseDirect) onNavigateArtist(name, artistId!, serviceId!, accountId!);
-              else onResolveArtist(name);
-            }}
-          >
-            {name}
-          </button>
-        </Fragment>
+    <div className={styles.trio} aria-hidden="true">
+      {[0, 1, 2].map((r) => (
+        <div key={r} className={`skeleton ${styles.skelCircle}`} />
       ))}
-    </>
+    </div>
   );
 }
 
-const PERIODS: { value: StatsPeriod; label: string }[] = [
-  { value: 'today', label: 'Today' },
-  { value: 'week', label: 'This week' },
-  { value: 'alltime', label: 'All time' },
-];
-
-const MEDAL_CLASS = [styles.medalGold, styles.medalSilver, styles.medalBronze];
-
-// Top-3 get a metallic medal disc; everyone else gets their plain rank number.
-function RankBadge({ index }: { index: number }) {
-  if (index < 3) {
-    return <span className={`${styles.medal} ${MEDAL_CLASS[index]}`}>{index + 1}</span>;
-  }
-  return <span className={styles.rankNum}>{index + 1}</span>;
+function RowSkeleton() {
+  return (
+    <div className={styles.skelRows} aria-hidden="true">
+      {[0, 1, 2].map((r) => (
+        <div key={r} className={styles.skelRow}>
+          <div className={`skeleton ${styles.skelThumb}`} />
+          <div className={`skeleton ${styles.skelLine}`} />
+        </div>
+      ))}
+    </div>
+  );
 }
 
-const QUEUEDLE_RANK_INFO: Array<{
-  key: Exclude<GameRankTierKey, 'provisional'>;
-  name: string;
-  range: string;
-}> = [
-  { key: 'skip-button-survivor', name: 'Skip Button Survivor', range: '< 40%' },
-  { key: 'background-bopper', name: 'Background Bopper', range: '40% - 54.9%' },
-  { key: 'aux-cable-apprentice', name: 'Aux Cable Apprentice', range: '55% - 69.9%' },
-  { key: 'algorithm-whisperer', name: 'Algorithm Whisperer', range: '70% - 84.9%' },
-  { key: 'playlist-prophet', name: 'Playlist Prophet', range: '85%+' },
-];
-
-function makeDragItem(t: StatsTrack) {
-  return JSON.stringify([
-    {
-      type: 'TRACK',
-      name: t.trackName,
-      artist: t.artist,
-      imageUrl: t.imageUrl,
-      id: { objectId: t.uri, serviceId: '', accountId: '' },
-    },
-  ]);
+function RankInfoDialog({ onClose }: { onClose: () => void }) {
+  return (
+    <Dialog title="Queuedle rank tiers" onClose={onClose} size="lg" closeLabel="Close rank info">
+      <p className={styles.dialogText}>
+        Rank tiers use your all-time Queuedle percentage: total points earned divided by total possible points
+        across games played. You need 3 played days before a tier unlocks; until then you're provisional.
+      </p>
+      <ul className={styles.tiers}>
+        {QUEUEDLE_RANK_INFO.map((tier) => (
+          <li key={tier.key} className={styles.tierCard}>
+            <span className={styles.tierName}>{tier.name}</span>
+            <span className={styles.tierRange}>{tier.range}</span>
+          </li>
+        ))}
+      </ul>
+    </Dialog>
+  );
 }
 
-export function LeaderboardPanel() {
+/** The page's first paint while stats load: person cards and a chart at their real size. */
+function PageSkeleton() {
+  return (
+    <div aria-hidden="true">
+      <div className={`skeleton ${styles.skelTitle}`} />
+      <div className={`${styles.people} ${styles.section}`}>
+        {Array.from({ length: CARD_PEOPLE }, (_, i) => (
+          <div key={i} className={styles.skelCard}>
+            <div className={`skeleton ${styles.skelHead}`} />
+            <TileSkeleton />
+          </div>
+        ))}
+      </div>
+      <div className={styles.skelCard}>
+        <RowSkeleton />
+      </div>
+    </div>
+  );
+}
+
+interface Props {
+  /** Queues a track or album from the charts. Without it the + buttons are hidden. */
+  onAddToQueue?: (item: SonosItem) => void;
+}
+
+export function LeaderboardPanel({ onAddToQueue }: Props) {
   const navigate = useNavigate();
+  const nav = useStatsNav(onAddToQueue);
   const [period, setPeriod] = useState<StatsPeriod>('week');
-  const [view, setView] = useState<'stats' | 'queuedle'>('stats');
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [rankInfoOpen, setRankInfoOpen] = useState(false);
-  const { data, isLoading, error, refetch } = useStats(period, selectedUser ?? undefined);
-  const rankings = useGameRankings(null, view === 'queuedle');
-  const { resolveAndOpen } = useResolveAndOpen();
+  // 50 shares Home's "Trending this week" cache; the page shows the top 10 to 12 of each list.
+  const { data, isLoading, error } = useStats(period, undefined, 50);
+  const { data: users = [] } = useUsers(true, true);
+  const imageByUser = new Map(users.map((u) => [u.userId, u.imageUrl]));
+  const rankings = useGameRankings(null, true);
 
-  const maxUserCount = data?.topUsers?.[0]?.count ?? 1;
-  const isQueuedleView = view === 'queuedle';
-  const queuedleRows = rankings.data ?? [];
-  const maxQueuedleAverage = queuedleRows[0]?.averageTotal ?? 1;
+  const topUsers = data?.topUsers ?? [];
+  const carded = topUsers.slice(0, CARD_PEOPLE);
+  const others = topUsers.slice(CARD_PEOPLE);
+  // Each carded person's own top tracks for the period: what they queued, not just how much.
+  const personStats = useQueries({ queries: carded.map((u) => statsQueryOptions(period, u.userId)) });
+
+  const profile = (user: string) => navigate(`/profile/${encodeURIComponent(user)}`);
+  const phrase = PERIODS.find((p) => p.value === period)?.phrase ?? '';
+  const loaded = data && !data.error && !isLoading;
+  const tracks = data?.topTracks.slice(0, 10) ?? [];
+  const artists = mergeArtists(data?.topArtists ?? []).slice(0, 12);
+  // When every album was queued once, the order is arbitrary: no chart.
+  const topAlbums = data?.topAlbums ?? [];
+  const albums = (topAlbums[0]?.count ?? 0) > 1 ? topAlbums.slice(0, 12) : [];
+  const summary = loaded ? queuedSummary(data.topUsers, phrase) : null;
+  const allRankings = rankings.data ?? [];
+  // Equal averages share a place (1, 1, 3), as on the Queuedle page.
+  const places = competitionRanks(allRankings.map((r) => r.averageTotal));
+  const standings = allRankings.slice(0, 5);
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <div className={styles.titleRow}>
-          {selectedUser && (
-            <button className={styles.backBtn} onClick={() => setSelectedUser(null)} title="Back">
-              ←
-            </button>
-          )}
-          <h1 className={styles.title}>{selectedUser ? selectedUser : 'Leaderboard'}</h1>
-        </div>
-        <div className={styles.periodTabs}>
-          {PERIODS.map((p) => (
-            <button
-              key={p.value}
-              className={`${styles.periodBtn}${!isQueuedleView && period === p.value ? ' ' + styles.active : ''}`}
-              onClick={() => {
-                setView('stats');
-                setPeriod(p.value);
-              }}
-            >
-              {p.label}
-            </button>
-          ))}
-          <button
-            className={`${styles.periodBtn}${isQueuedleView ? ' ' + styles.active : ''}`}
-            onClick={() => {
-              setSelectedUser(null);
-              setView('queuedle');
-            }}
-          >
-            Queuedle
-          </button>
-        </div>
-        <button
-          className={styles.refreshBtn}
-          onClick={() => (isQueuedleView ? rankings.refetch() : refetch())}
-          title="Refresh"
-        >
-          ↺
-        </button>
-        <button
-          className={styles.infoBtn}
-          onClick={() => setRankInfoOpen(true)}
-          title="Rank info"
-          aria-label="Rank info"
-        >
-          <Info size={16} strokeWidth={2} />
-        </button>
-        <button className={styles.periodBtn} onClick={() => navigate('/leaderboard/stats')}>
-          📊 Music stats
-        </button>
-      </div>
-
-      {isQueuedleView && rankings.isLoading && <div className={styles.state}>Loading Queuedle rankings…</div>}
-      {isQueuedleView && rankings.error && <div className={styles.state}>Failed to load Queuedle rankings</div>}
-      {!isQueuedleView && isLoading && <div className={styles.state}>Loading…</div>}
-      {!isQueuedleView && (error || data?.error) && (
-        <div className={styles.state}>{data?.error ?? 'Failed to load stats'}</div>
-      )}
-
-      {isQueuedleView && !rankings.isLoading && !rankings.error && (
-        <div key="queuedle" className={styles.body}>
-          <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>Queuedle all-time average</h2>
-            {queuedleRows.length === 0 ? (
-              <div className={styles.empty}>No Queuedle scores yet</div>
-            ) : (
-              queuedleRows.slice(0, 25).map((r, i) => (
-                <div key={r.userName} className={styles.queuedleRow}>
-                  <span className={styles.rank}>
-                    <RankBadge index={i} />
-                  </span>
-                  <button className={styles.userNameBtn} onClick={() => navigate(`/profile/${encodeURIComponent(r.userName)}`)}>{r.userName}</button>
-                  <div className={styles.barWrap}>
-                    <div
-                      className={styles.bar}
-                      style={{ width: `${Math.round((r.averageTotal / maxQueuedleAverage) * 100)}%` }}
-                    />
-                  </div>
-                  <span className={styles.queuedleGames}>
-                    {r.gamesPlayed} {r.gamesPlayed === 1 ? 'game' : 'games'}
-                  </span>
-                  <span
-                    className={`${styles.rankTier}${r.isProvisional ? ' ' + styles.rankTierProvisional : ''}`}
-                    title={`${r.averagePercent.toFixed(0)}% average`}
-                    data-tier={r.tierKey}
-                  >
-                    {getGameRankIcon(r.tierKey) && (
-                      <img className={styles.rankTierIcon} src={getGameRankIcon(r.tierKey)!} alt="" loading="lazy" />
-                    )}
-                    {r.tierName}
-                  </span>
-                  <span className={styles.count}>{r.averageTotal.toFixed(1)}</span>
-                </div>
-              ))
-            )}
-          </section>
-        </div>
-      )}
-
-      {!isQueuedleView && data && !data.error && !isLoading && (
-        <div key={`stats-${period}-${selectedUser ?? 'all'}`} className={styles.body}>
-          {/* ── Top queuers (leaderboard view only) ── */}
-          {!selectedUser && (
-            <section className={styles.section}>
-              <h2 className={styles.sectionTitle}>Top queuers</h2>
-              {data.topUsers.length === 0 ? (
-                <div className={styles.empty}>No data yet for this period</div>
-              ) : (
-                data.topUsers.map((u, i) => (
-                  <div
-                    key={u.userId}
-                    className={`${styles.userRow} ${styles.userRowClickable}`}
-                    onClick={() => setSelectedUser(u.userId)}
-                  >
-                    <span className={styles.rank}>
-                      <RankBadge index={i} />
-                    </span>
-                    <button className={styles.userNameBtn} onClick={e => { e.stopPropagation(); navigate(`/profile/${encodeURIComponent(u.userId)}`); }}>{u.userId}</button>
-                    <div className={styles.barWrap}>
-                      <div className={styles.bar} style={{ width: `${Math.round((u.count / maxUserCount) * 100)}%` }} />
-                    </div>
-                    <span className={styles.count}>{u.count}</span>
-                  </div>
-                ))
-              )}
-            </section>
-          )}
-
-          <div className={styles.columns}>
-            {/* ── Top tracks ── */}
-            <section className={styles.section}>
-              <h2 className={styles.sectionTitle}>Top tracks</h2>
-              {data.topTracks.length === 0 ? (
-                <div className={styles.empty}>No data yet</div>
-              ) : (
-                data.topTracks.map((t, i) => (
-                  <div
-                    key={i}
-                    className={styles.trackRow}
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.effectAllowed = 'copy';
-                      e.dataTransfer.setData('application/sonos-item-list', makeDragItem(t));
-                    }}
-                  >
-                    {t.imageUrl ? (
-                      <CachedArt url={t.imageUrl} className={styles.art} />
-                    ) : (
-                      <div className={styles.artPlaceholder} />
-                    )}
-                    <div className={styles.trackInfo}>
-                      <span className={styles.trackName}>{t.trackName}</span>
-                      <span className={styles.trackSub}>
-                        {t.artist ? (
-                          <ArtistLinks
-                            artist={t.artist}
-                            artistId={t.artistId}
-                            serviceId={t.serviceId}
-                            accountId={t.accountId}
-                            onNavigateArtist={(name, aid, sid, acc) =>
-                              navigate(`/artist/${encodeURIComponent(aid)}`, {
-                                state: {
-                                  item: {
-                                    type: 'ARTIST',
-                                    title: name,
-                                    name,
-                                    resource: {
-                                      type: 'ARTIST',
-                                      id: { objectId: aid, serviceId: sid, accountId: acc },
-                                    },
-                                  },
-                                },
-                              })
-                            }
-                            onResolveArtist={(name) => resolveAndOpen(name, 'artist', { serviceId: t.serviceId, accountId: t.accountId })}
-                          />
-                        ) : null}
-                        {t.artist && t.album ? ' · ' : null}
-                        {t.album ? (
-                          <button
-                            className={styles.artistLink}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (t.albumId && t.serviceId && t.accountId)
-                                navigate(`/album/${encodeURIComponent(t.albumId)}`, {
-                                  state: {
-                                    item: {
-                                      type: 'ALBUM',
-                                      id: { objectId: t.albumId, serviceId: t.serviceId, accountId: t.accountId },
-                                    },
-                                  },
-                                });
-                              else resolveAndOpen(t.album!, 'album', { artist: t.artist });
-                            }}
-                          >
-                            {t.album}
-                          </button>
-                        ) : null}
-                      </span>
-                    </div>
-                    <span className={styles.count}>{t.count}×</span>
-                  </div>
-                ))
-              )}
-            </section>
-
-            {/* ── Top artists ── */}
-            <section className={styles.section}>
-              <h2 className={styles.sectionTitle}>Top artists</h2>
-              {data.topArtists.length === 0 ? (
-                <div className={styles.empty}>No data yet</div>
-              ) : (
-                data.topArtists.map((a, i) => (
-                  <div key={i} className={styles.artistRow}>
-                    <span className={styles.rankNum}>{i + 1}</span>
-                    <ArtistAvatar
-                      artistId={a.artistId}
-                      serviceId={a.serviceId}
-                      accountId={a.accountId}
-                      fallbackUrl={a.imageUrl}
-                      className={styles.artistArt}
-                      placeholderClassName={styles.artistArtPh}
-                    />
-                    <button
-                      className={styles.artistLink}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (a.artistId && a.serviceId && a.accountId)
-                          navigate(`/artist/${encodeURIComponent(a.artistId)}`, {
-                            state: {
-                              item: {
-                                type: 'ARTIST',
-                                title: a.artist,
-                                name: a.artist,
-                                imageUrl: a.imageUrl,
-                                resource: {
-                                  type: 'ARTIST',
-                                  id: { objectId: a.artistId, serviceId: a.serviceId, accountId: a.accountId },
-                                },
-                              },
-                            },
-                          });
-                        else resolveAndOpen(a.artist, 'artist', { serviceId: a.serviceId, accountId: a.accountId });
-                      }}
-                    >
-                      {a.artist}
-                    </button>
-                    <span className={styles.count}>{a.count}×</span>
-                  </div>
-                ))
-              )}
-            </section>
-
-            {/* ── Top albums ── */}
-            <section className={styles.section}>
-              <h2 className={styles.sectionTitle}>Top albums</h2>
-              {data.topAlbums.length === 0 ? (
-                <div className={styles.empty}>No data yet</div>
-              ) : (
-                data.topAlbums.map((a, i) => (
-                  <div
-                    key={i}
-                    className={styles.trackRow}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => {
-                      if (a.albumId && a.serviceId && a.accountId)
-                        navigate(`/album/${encodeURIComponent(a.albumId)}`, {
-                          state: {
-                            item: {
-                              type: 'ALBUM',
-                              id: { objectId: a.albumId, serviceId: a.serviceId, accountId: a.accountId },
-                            },
-                          },
-                        });
-                      else if (a.album) resolveAndOpen(a.album, 'album', { artist: a.artist });
-                    }}
-                  >
-                    {a.imageUrl ? (
-                      <CachedArt url={a.imageUrl} className={styles.art} />
-                    ) : (
-                      <div className={styles.artPlaceholder} />
-                    )}
-                    <div className={styles.trackInfo}>
-                      <span className={styles.trackName}>{a.album}</span>
-                      <span className={styles.trackSub}>
-                        {a.artist ? (
-                          <ArtistLinks
-                            artist={a.artist}
-                            artistId={a.artistId}
-                            serviceId={a.serviceId}
-                            accountId={a.accountId}
-                            onNavigateArtist={(name, aid, sid, acc) =>
-                              navigate(`/artist/${encodeURIComponent(aid)}`, {
-                                state: {
-                                  item: {
-                                    type: 'ARTIST',
-                                    title: name,
-                                    name,
-                                    resource: {
-                                      type: 'ARTIST',
-                                      id: { objectId: aid, serviceId: sid, accountId: acc },
-                                    },
-                                  },
-                                },
-                              })
-                            }
-                            onResolveArtist={(name) => resolveAndOpen(name, 'artist', { serviceId: a.serviceId, accountId: a.accountId })}
-                          />
-                        ) : null}
-                      </span>
-                    </div>
-                    <span className={styles.count}>{a.count}×</span>
-                  </div>
-                ))
-              )}
-            </section>
-          </div>
-
-          <div className={styles.footer}>
-            {data.totalEvents} queue event{data.totalEvents !== 1 ? 's' : ''}
-            {selectedUser ? ` by ${selectedUser}` : ''}
-            {data.periodStart > 0 ? ` since ${new Date(data.periodStart).toLocaleDateString()}` : ' total'}
-          </div>
-        </div>
-      )}
-
-      {rankInfoOpen && (
-        <div className={styles.rankInfoOverlay} onClick={() => setRankInfoOpen(false)}>
-          <div
-            className={styles.rankInfoDialog}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="rank-info-title"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles.rankInfoHeader}>
-              <h2 id="rank-info-title" className={styles.rankInfoTitle}>
-                Queuedle Rank Tiers
-              </h2>
-              <button
-                className={styles.rankInfoClose}
-                onClick={() => setRankInfoOpen(false)}
-                aria-label="Close rank info"
-              >
-                <X size={16} strokeWidth={2} />
-              </button>
-            </div>
-            <p className={styles.rankInfoText}>
-              Rank tiers use your all-time Queuedle percentage: total points earned divided by total possible points
-              across games played. You need 3 played days before a tier unlocks.
+    <div className={styles.panel}>
+      <div className={`page-scale ${styles.page}`}>
+        <header className={styles.hero}>
+          <div>
+            <h1 className={styles.title}>Leaderboard</h1>
+            <p className={styles.premise}>
+              {summary ?? 'Who has been queuing what'}
             </p>
-            <div className={styles.rankInfoList}>
-              {QUEUEDLE_RANK_INFO.map((tier) => {
-                const infoImage = getGameRankInfoImage(tier.key);
+          </div>
+          <div className={styles.heroActions}>
+            <div className={styles.segments} role="group" aria-label="Period">
+              {PERIODS.map((p) => (
+                <button
+                  key={p.value}
+                  type="button"
+                  className={styles.segment}
+                  aria-pressed={period === p.value}
+                  onClick={() => setPeriod(p.value)}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <PillButton onClick={() => navigate('/leaderboard/stats')}>Music stats</PillButton>
+          </div>
+        </header>
+
+        {isLoading && <PageSkeleton />}
+        {!isLoading && (error || data?.error) && <div className={styles.msg}>{data?.error ?? 'Failed to load stats'}</div>}
+
+        {loaded && data.totalEvents === 0 && (
+          <SectionCard className={styles.section}>
+            <p className={styles.empty}>Nothing queued {phrase} yet.</p>
+          </SectionCard>
+        )}
+
+        {loaded && carded.length > 0 && (
+          <section className={styles.section} aria-labelledby="lb-people">
+            <h2 id="lb-people" className={styles.bandTitle}>Top queuers</h2>
+            <div className={styles.people}>
+              {carded.map((u, i) => {
+                const q = personStats[i];
+                // Per person a week's tracks are mostly queued once each; their artists carry the taste.
+                const theirs = mergeArtists(q?.data?.topArtists ?? []).slice(0, 3);
                 return (
-                  <div key={tier.key} className={styles.rankInfoRow} data-tier={tier.key}>
-                    {infoImage && <img className={styles.rankInfoImage} src={infoImage} alt="" loading="lazy" />}
-                    <span className={styles.rankInfoName}>{tier.name}</span>
-                    <span className={styles.rankInfoRange}>{tier.range}</span>
-                  </div>
+                  <PersonCard
+                    key={u.userId}
+                    name={u.userId}
+                    imageUrl={imageByUser.get(u.userId)}
+                    caption={`${ordinal(i + 1)} · ${queued(u.count)}`}
+                    onOpen={() => profile(u.userId)}
+                  >
+                    {q?.isPending ? (
+                      <TileSkeleton />
+                    ) : (
+                      theirs.length > 0 && (
+                        <div className={styles.trio} role="list" aria-label={`${u.userId}'s most queued artists`}>
+                          {theirs.map((a, j) => (
+                            <div key={`${a.artistId ?? a.artist}-${j}`} role="listitem">
+                              <StatsArtistTile a={a} size="sm" onOpen={() => nav.openArtist(a.artist, a, true)} />
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    )}
+                  </PersonCard>
                 );
               })}
             </div>
-            <div className={styles.rankInfoFooter}>
-              Fewer than 3 played days = Provisional (no tier)
+            {others.length > 0 && (
+              <ol className={styles.others} start={CARD_PEOPLE + 1} aria-label="Also queuing">
+                {others.map((u, i) => (
+                  <li key={u.userId}>
+                    <button type="button" className={styles.face} onClick={() => profile(u.userId)} aria-label={`${u.userId}, ${ordinal(CARD_PEOPLE + i + 1)}, ${queued(u.count)}, open profile`}>
+                      <span className={styles.faceRank}>{CARD_PEOPLE + i + 1}</span>
+                      <UserAvatar name={u.userId} imageUrl={imageByUser.get(u.userId)} className={styles.faceAvatar} />
+                      <span className={styles.faceName}>{u.userId}</span>
+                      <span className={styles.faceCount}>{u.count.toLocaleString()}</span>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+        )}
+
+        {loaded && artists.length > 0 && (
+          <SectionCard className={styles.section} title="Top artists">
+            <div className={styles.artistGrid}>
+              {artists.map((a, i) => (
+                <StatsArtistTile key={`${a.artistId ?? a.artist}-${i}`} a={a} onOpen={() => nav.openArtist(a.artist, a, true)} />
+              ))}
             </div>
+          </SectionCard>
+        )}
+
+        {loaded && (tracks.length > 0 || albums.length > 0) && (
+          <div className={styles.split}>
+            {tracks.length > 0 && (
+              <SectionCard title="Top tracks">
+                <ChartHead labels={['#', 'Title', 'Artist', 'Queued']} />
+                <ol className={styles.list}>
+                  {tracks.map((t, i) => {
+                    const item = statsTrackToItem(t);
+                    return (
+                      <ChartRow
+                        key={`${t.uri ?? t.trackName}-${i}`}
+                        rank={i + 1}
+                        count={t.count}
+                        countLabel={`Queued ${t.count === 1 ? 'once' : `${t.count} times`}`}
+                        onDragStart={
+                          item
+                            ? (e) => {
+                                e.dataTransfer.effectAllowed = 'copy';
+                                e.dataTransfer.setData('application/sonos-item-list', JSON.stringify([item]));
+                              }
+                            : undefined
+                        }
+                        {...nav.trackProps(t)}
+                      />
+                    );
+                  })}
+                </ol>
+              </SectionCard>
+            )}
+            {albums.length > 0 && (
+              <SectionCard title="Top albums">
+                <div className={styles.albumGrid}>
+                  {albums.map((a, i) => (
+                    <ImageTile
+                      key={`${a.albumId ?? a.album}-${i}`}
+                      size="sm"
+                      title={a.album}
+                      sub={a.artist}
+                      meta={queued(a.count)}
+                      imageUrl={a.imageUrl}
+                      onOpen={() => nav.openAlbum({ ...a, title: a.album })}
+                      onHover={() => nav.prefetchAlbum(a)}
+                      onAdd={a.albumId && onAddToQueue ? () => onAddToQueue(statsAlbumToItem(a)) : undefined}
+                    />
+                  ))}
+                </div>
+              </SectionCard>
+            )}
           </div>
-        </div>
-      )}
+        )}
+
+        {(rankings.isLoading || standings.length > 0) && (
+          <SectionCard
+            className={styles.section}
+            title="Queuedle"
+            headContent={<span className={styles.headNote}>All-time average</span>}
+            actions={
+              <>
+                <SeeAll label="How ranks work" onClick={() => setRankInfoOpen(true)} />
+                <SeeAll onClick={() => navigate('/queuedle')} />
+              </>
+            }
+          >
+            {rankings.isLoading ? (
+              <RowSkeleton />
+            ) : (
+              <>
+                <div className={`${styles.standing} ${styles.standingHead}`} aria-hidden="true">
+                  <span>#</span>
+                  <span>Player</span>
+                  <span>Tier</span>
+                  <span className={styles.games}>Games</span>
+                  <span className={styles.averageHead}>Avg score</span>
+                </div>
+                <ol className={styles.list}>
+                  {standings.map((r, i) => (
+                    <li key={r.userName} className={styles.standing}>
+                      <span className={styles.standingRank}>{String(places[i]).padStart(2, '0')}</span>
+                      <button type="button" className={styles.standingWho} onClick={() => profile(r.userName)} aria-label={`${r.userName}, open profile`}>
+                        <UserAvatar name={r.userName} imageUrl={imageByUser.get(r.userName)} className={styles.standingAvatar} />
+                        <span className={styles.standingName}>{r.userName}</span>
+                      </button>
+                      <span>
+                        <span className={`${styles.tierChip}${r.isProvisional ? ' ' + styles.provisional : ''}`}>{r.tierName}</span>
+                      </span>
+                      <span className={styles.games}>
+                        {r.gamesPlayed} {r.gamesPlayed === 1 ? 'game' : 'games'}
+                      </span>
+                      <span className={styles.average} title={`${r.averagePercent.toFixed(0)}% of possible points`}>
+                        {r.averageTotal.toFixed(1)}
+                        <span className={styles.srOnly}> average score</span>
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </>
+            )}
+          </SectionCard>
+        )}
+      </div>
+
+      {rankInfoOpen && <RankInfoDialog onClose={() => setRankInfoOpen(false)} />}
     </div>
   );
 }

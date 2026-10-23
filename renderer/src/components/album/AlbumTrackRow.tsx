@@ -1,16 +1,11 @@
 import { useNavigate } from 'react-router-dom';
-import { useImage } from '../../hooks/useImage';
-import { ExplicitBadge } from '../common/ExplicitBadge';
+import { EqBars } from '../common/EqBars';
+import { TrackRow } from '../common/TrackRow';
 import { useTrackContextMenu } from '../common/ContextMenu';
-import { fmtDuration } from '../../lib/itemHelpers';
+import { fmtDuration, trackPayload, artistItem } from '../../lib/itemHelpers';
 import type { AlbumTrack } from '../../hooks/useAlbumBrowse';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/AlbumPanel.module.css';
-
-function TrackArt({ url }: { url: string | null }) {
-  const src = useImage(url);
-  return src ? <img className={styles.trackArt} src={src} alt="" /> : <div className={styles.trackArtPh} />;
-}
 
 interface Props {
   track: AlbumTrack;
@@ -18,112 +13,103 @@ interface Props {
   isSelected: boolean;
   serviceId: string;
   accountId: string;
+  /** The album's artist. Track artists are only shown when they differ from it (guests, features). */
+  albumArtist?: string;
+  /** This is the track playing now. */
+  playing?: boolean;
   onClick: (e: React.MouseEvent) => void;
   onDragStart: (e: React.DragEvent) => void;
   onAdd: () => void;
 }
 
+const norm = (s: string) => s.trim().toLowerCase();
+
 export function AlbumTrackRow({
-  track, isPlaylistOrProgram, isSelected, serviceId, accountId,
+  track, isPlaylistOrProgram, isSelected, serviceId, accountId, albumArtist, playing,
   onClick, onDragStart, onAdd,
 }: Props) {
   const navigate = useNavigate();
   const { showTrackMenu } = useTrackContextMenu();
 
-  const trackPayload: PlaylistTrack = {
+  const payload = trackPayload({
     uri: track.id.objectId ?? '',
     trackName: track.title,
     artist: track.artists.join(', '),
-    albumName: track.albumName ?? undefined,
+    albumName: track.albumName,
     imageUrl: track.artUrl,
     serviceId: track.id.serviceId ?? serviceId,
     accountId: track.id.accountId ?? accountId,
-    addedBy: '',
-    addedAt: 0,
-  };
+  });
+
+  // Album: the artist is the page's artist, so only say so when someone else is on the track.
+  const albumArtists = albumArtist ? albumArtist.split(/,\s*/).map(norm) : null;
+  const hasGuest = !albumArtists || track.artists.some(a => !albumArtists.includes(norm(a)));
+  const albumArtistsText = track.artists.length && hasGuest ? track.artists.join(', ') : undefined;
+
+  // Playlist or programme: every track has its own artist and album, so those are links.
+  const playlistArtists = track.artistObjects?.length
+    ? track.artistObjects.map((a, ai) => {
+        const artist = artistItem(a.name, { objectId: a.objectId, serviceId, accountId });
+        return (
+          <span key={ai}>
+            {ai > 0 && ', '}
+            <button
+              type="button"
+              className={styles.link}
+              aria-label={`${a.name}, open artist`}
+              onMouseDown={e => e.stopPropagation()}
+              onClick={e => {
+                e.stopPropagation();
+                navigate(`/artist/${encodeURIComponent(a.objectId)}`, { state: { item: artist } });
+              }}
+            >
+              {a.name}
+            </button>
+          </span>
+        );
+      })
+    : track.artists.join(', ') || undefined;
+
+  const albumId = track.albumId;
+  const albumName = track.albumName;
+  const playlistAlbum = albumId && albumName ? (
+    <button
+      type="button"
+      className={styles.link}
+      onMouseDown={e => e.stopPropagation()}
+      onClick={e => {
+        e.stopPropagation();
+        navigate(`/album/${encodeURIComponent(albumId)}`, {
+          state: {
+            item: {
+              type: 'ALBUM',
+              name: albumName,
+              resource: { type: 'ALBUM', id: { objectId: albumId, serviceId, accountId } },
+            } as SonosItem,
+          },
+        });
+      }}
+    >
+      {albumName}
+    </button>
+  ) : (albumName ?? undefined);
 
   return (
-    <div
-      className={[styles.trackRow, isSelected ? styles.selected : ''].filter(Boolean).join(' ')}
-      draggable
+    <TrackRow
+      title={track.title}
+      lead={playing ? <EqBars /> : track.ordinal}
+      showArt={isPlaylistOrProgram}
+      imageUrl={track.artUrl}
+      explicit={track.explicit}
+      artists={isPlaylistOrProgram ? playlistArtists : albumArtistsText}
+      aside={isPlaylistOrProgram ? playlistAlbum : undefined}
+      trailing={fmtDuration(track.durationSeconds)}
+      selected={isSelected}
+      playing={playing}
       onClick={onClick}
-      onContextMenu={e => showTrackMenu({ track: trackPayload, sonosItem: track.raw }, e)}
       onDragStart={onDragStart}
-    >
-      <span className={styles.ordinal}>{track.ordinal}</span>
-      {isPlaylistOrProgram && (
-        <div className={styles.trackArtWrap}>
-          <TrackArt url={track.artUrl} />
-        </div>
-      )}
-      <div className={styles.trackName}>
-        {track.title}
-        {track.explicit && <ExplicitBadge />}
-      </div>
-      <div className={styles.trackArtist}>
-        {isPlaylistOrProgram && track.artistObjects?.length
-          ? track.artistObjects.map((a, ai) => {
-              const artistItem: SonosItem = {
-                type: 'ARTIST',
-                name: a.name,
-                resource: {
-                  type: 'ARTIST',
-                  id: { objectId: a.objectId, serviceId, accountId },
-                },
-              };
-              return (
-                <span key={ai}>
-                  {ai > 0 && ', '}
-                  <button
-                    className={styles.artistBtn}
-                    onMouseDown={e => e.stopPropagation()}
-                    onClick={e => {
-                      e.stopPropagation();
-                      navigate(`/artist/${encodeURIComponent(a.objectId)}`, { state: { item: artistItem } });
-                    }}
-                  >
-                    {a.name}
-                  </button>
-                </span>
-              );
-            })
-          : track.artists.join(', ')}
-      </div>
-      {isPlaylistOrProgram && (() => {
-        const albumId = track.albumId;
-        const albumName = track.albumName;
-        return (
-          <div className={styles.trackAlbum}>
-            {albumId && albumName
-              ? (
-                <button
-                  className={styles.artistBtn}
-                  onMouseDown={e => e.stopPropagation()}
-                  onClick={e => {
-                    e.stopPropagation();
-                    navigate(`/album/${encodeURIComponent(albumId)}`, {
-                      state: {
-                        item: {
-                          type: 'ALBUM',
-                          name: albumName,
-                          resource: {
-                            type: 'ALBUM',
-                            id: { objectId: albumId, serviceId, accountId },
-                          },
-                        } as SonosItem,
-                      },
-                    });
-                  }}
-                >
-                  {albumName}
-                </button>
-              )
-              : (albumName ?? '')}
-          </div>
-        );
-      })()}
-      <span className={styles.duration}>{fmtDuration(track.durationSeconds)}</span>
-      <button className={styles.addBtn} onClick={e => { e.stopPropagation(); onAdd(); }}>+</button>
-    </div>
+      onContextMenu={e => showTrackMenu({ track: payload, sonosItem: track.raw }, e)}
+      onAdd={onAdd}
+    />
   );
 }

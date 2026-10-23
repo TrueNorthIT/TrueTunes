@@ -1,54 +1,60 @@
 .shell {
   position: fixed;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-0, #0d0d0d);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--bg);
+  -webkit-app-region: drag;
 }
 
 .card {
-  background: var(--bg-1);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 40px 36px 32px;
-  width: 360px;
-  text-align: center;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
-}
-
-.icon {
-  font-size: 36px;
-  margin-bottom: 16px;
-  opacity: 0.7;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1em;
+  width: min(100%, 30em);
+  padding: 1.7em;
+  border-radius: var(--r-card);
+  background: var(--surface);
+  -webkit-app-region: no-drag;
 }
 
 .heading {
-  font-size: 16px;
+  font-size: var(--fs-title);
   font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
   color: var(--text);
-  margin: 0 0 8px;
 }
 
 .message {
-  font-size: 13px;
-  color: var(--text-3);
-  margin: 0 0 24px;
-  line-height: 1.5;
-  word-break: break-word;
+  font-size: var(--fs-prose);
+  line-height: 1.55;
+  color: var(--text-2);
 }
 
-.btn {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid var(--border-2);
-  border-radius: var(--r-md);
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 500;
-  padding: 10px 32px;
-  cursor: pointer;
-  transition: background 0.12s;
+.details {
+  width: 100%;
+  font-size: var(--fs-label);
+  color: var(--text-3);
 }
-.btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+.details > summary {
+  cursor: pointer;
+  width: max-content;
+  border-radius: var(--r-xs);
+}
+.details > summary:hover { color: var(--text); }
+.trace {
+  margin-top: 0.6em;
+  padding: 0.8em 1em;
+  border-radius: var(--r-row);
+  background: var(--well);
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: var(--fs-label);
+  line-height: 1.5;
+  color: var(--text-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
 }

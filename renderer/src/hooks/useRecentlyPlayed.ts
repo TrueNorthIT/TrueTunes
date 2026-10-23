@@ -3,7 +3,7 @@ import { api } from '../lib/sonosApi';
 import type { SonosItem } from '../types/sonos';
 import type { ArtistResponse } from '../types/ArtistResponse';
 import type { ServiceSearch } from '../types/ServiceSearch';
-import { findArtistByName, getItemArt, parseServiceSearch, resolveArtistParams } from '../lib/itemHelpers';
+import { findArtistByName, getItemArt, parseServiceSearch, resolveArtistParams, artistItem } from '../lib/itemHelpers';
 
 interface ResolvedArtist {
   artistId?: string;
@@ -23,20 +23,15 @@ function relativeDate(ts: number): string {
 }
 
 function toArtistItem(a: RecentArtist, resolved?: ResolvedArtist | null): SonosItem {
-  return {
-    type: 'ARTIST',
-    title: a.artist,
-    name: a.artist,
-    imageUrl: resolved?.imageUrl ?? a.imageUrl,
-    resource: {
-      type: 'ARTIST',
-      id: {
-        objectId: a.artistId ?? resolved?.artistId,
-        serviceId: a.serviceId ?? resolved?.serviceId,
-        accountId: a.accountId ?? resolved?.accountId,
-      },
+  return artistItem(
+    a.artist,
+    {
+      objectId: a.artistId ?? resolved?.artistId,
+      serviceId: a.serviceId ?? resolved?.serviceId,
+      accountId: a.accountId ?? resolved?.accountId,
     },
-  };
+    { title: a.artist, imageUrl: resolved?.imageUrl ?? a.imageUrl },
+  );
 }
 
 function toAlbumItem(a: RecentAlbum): SonosItem {

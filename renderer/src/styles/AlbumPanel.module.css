@@ -1,219 +1,137 @@
+/*
+ * Album (and playlist or programme) page: decide whether to queue it, or which tracks from it.
+ * A header band in Home's Now Playing language (large art, artwork wash), the tracks as shared rows on a
+ * Wall card, and a shelf of more by the artist. Sized in em from the page base (.page-scale).
+ */
 .panel {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-bottom: calc(var(--player-h) + 24px);
+  padding: calc(var(--nav-h) + 16px) 28px calc(var(--player-h) + 24px);
 }
-
-/* ── Header ── */
-.header {
-  padding: calc(var(--nav-h) + 24px) 28px 24px;
-  /* background applied via inline style from dominant colour */
+.page {
+  max-width: 2400px;
+  margin: 0 auto;
+  container-type: inline-size;
 }
+.section { margin-bottom: 1.4em; }
 
-
-.headerContent {
-  display: flex;
-  gap: 24px;
-  align-items: flex-end;
-}
-
-.artWrap {
-  width: 200px; height: 200px;
-  border-radius: var(--r-md);
-  overflow: hidden; flex-shrink: 0;
-  background: var(--bg-1);
-}
-.art { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* ── Header band: the shared HeroBand, plus this page's lines ── */
 .artPh {
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 48px; color: var(--text-3);
+  font-size: 3em; color: var(--text-3);
 }
 
-.meta {
-  display: flex; flex-direction: column;
-  gap: 6px; padding-bottom: 4px; min-width: 0;
+.artist { font-size: var(--fs-body); color: var(--text-2); }
+.metaLine {
+  font-size: var(--fs-label);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
 }
-.albumTitle {
-  font-size: 28px; font-weight: 700;
-  letter-spacing: -0.5px; color: var(--text); line-height: 1.1;
-}
-.artist { font-size: 15px; font-weight: 500; color: var(--text-2); }
-.artistLink { cursor: pointer; }
-.artistLink:hover { color: var(--text); text-decoration: underline; }
-.metaLine { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+.actions { display: flex; gap: 0.6em; margin-top: 0.4em; flex-wrap: wrap; }
 
-.actions { display: flex; gap: 8px; margin-top: 10px; }
-
-.addAlbumBtn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid var(--border-2);
-  color: var(--text);
-  font-size: 12px; font-weight: 600;
-  font-family: inherit;
-  padding: 7px 16px;
-  border-radius: 20px;
+/* Text links (artist, album): no chrome, take their colour from the line. */
+.link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-  letter-spacing: 0.1px;
+  transition: color var(--dur-fast) var(--ease-fast);
 }
-.addAlbumBtn:hover {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.3);
-}
+.link:hover,
+.link:focus-visible { color: var(--on-art); text-decoration: underline; }
 
-/* ── Track list / table ── */
-.tracks { padding: 0 28px 8px; }
+/* ── Tracks ── */
+/* ponytail: capped (68em: full width at 1280, ~1090px from 1730) so the duration stays near the title; a per-track "queued here" column
+   would use the width instead, once the stats function can return per-track counts. */
+.trackCard { max-width: 68em; }
 
-.tableHeader {
-  display: grid;
-  grid-template-columns: var(--track-cols);
-  align-items: center;
-  gap: 12px;
-  padding: 6px 8px 8px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 4px;
-  font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
-  color: var(--text-3); text-transform: uppercase;
+/* About this album (Genius) beside the tracks once there is room for both: a 70/30 split of the page
+   width, so the pair spans the hero band (the card never narrower than 22em). Narrower, it stacks under
+   the tracks, before "More by". In the wide layout it stays in view down a long tracklist. Without a
+   card the tracks keep the page as before (no .body class). */
+.about { max-width: 68em; }
+@container (min-width: 92em) {
+  .body {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(22em, 3fr);
+    column-gap: 1.4em;
+    align-items: start;
+  }
+  .body .trackCard { max-width: none; }
+  .about {
+    max-width: none;
+    position: sticky;
+    top: calc(var(--nav-h) + 16px);
+    max-height: calc(100vh - var(--nav-h) - var(--player-h) - 48px);
+    overflow-y: auto;
+  }
 }
-
-.trackRow {
-  display: grid;
-  grid-template-columns: var(--track-cols);
-  align-items: center; gap: 12px;
-  padding: 6px 8px; border-radius: var(--r-sm);
-  transition: background 0.12s; cursor: grab;
+.released {
+  margin-bottom: 0.8em;
+  font-size: var(--fs-label);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
 }
-.trackRow:active { cursor: grabbing; }
-.trackRow:hover { background: var(--bg-2); }
-.trackRow.selected { background: rgba(255,255,255,0.08); }
-.trackRow.selected:hover { background: rgba(255,255,255,0.12); }
-
-.ordinal {
-  text-align: right;
-  font-size: 13px; color: var(--text-3);
+.aboutText {
+  max-width: 72ch;
+  font-size: var(--fs-prose);
+  line-height: 1.55;
+  color: var(--text-3);
+  user-select: text;
 }
-
-.trackArtWrap {
-  width: 38px; height: 38px;
-  border-radius: 4px;
-  overflow: hidden;
-  background: var(--bg-1);
+.aboutText p + p { margin-top: 0.7em; }
+.source {
+  margin-top: 1em;
+  font-size: var(--fs-label);
+  color: var(--text-3);
 }
-.trackArt { width: 100%; height: 100%; object-fit: cover; display: block; }
-.trackArtPh { width: 100%; height: 100%; background: var(--bg-2); }
-
-.trackName {
-  font-size: 13px; font-weight: 500; color: var(--text);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  display: flex; align-items: center; gap: 4px; min-width: 0;
+.sourceLink {
+  color: var(--text-2);
+  text-decoration: underline;
+  text-decoration-color: rgba(var(--tint), 0.4);
+  text-underline-offset: 0.15em;
+  transition: color var(--dur-fast) var(--ease-fast);
 }
-.trackArtist {
-  font-size: 12px; color: var(--text-2);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+.sourceLink:hover,
+.sourceLink:focus-visible { color: var(--text); }
+.skelLine {
+  display: block;
+  height: 0.95em;
+  margin-bottom: 0.6em;
+  border-radius: var(--r-xs);
 }
-.trackAlbum {
-  font-size: 12px; color: var(--text-3);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
-}
-
-.artistBtn {
-  background: none; border: none; padding: 0;
-  font-size: inherit; color: var(--text-2);
-  cursor: pointer; font-family: inherit;
-  transition: color 0.12s;
-}
-.artistBtn:hover { color: var(--text); text-decoration: underline; }
-
-.duration { font-size: 12px; color: var(--text-3); text-align: right; }
-
-.addBtn {
-  width: 26px; height: 26px; background: none;
-  border: 1px solid var(--border); border-radius: 50%;
-  color: var(--text-3); cursor: pointer;
-  font-size: 16px; line-height: 1;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.15s; opacity: 0;
-}
-.trackRow:hover .addBtn { opacity: 1; }
-.addBtn:hover { border-color: var(--border-2); color: var(--text-2); background: var(--bg-2); }
+.tracks { min-width: 0; }
+.list { list-style: none; margin: 0; padding: 0; }
 
 .msg {
-  color: var(--text-3); font-size: 14px;
-  text-align: center; padding: 40px 0;
+  color: var(--text-3);
+  font-size: 1em;
+  text-align: center;
+  padding: 3em 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1em;
 }
 
-/* ── Spinner ── */
-.spinnerWrap {
-  display: flex; justify-content: center; padding: 16px 0 8px;
-}
-.spinner {
-  width: 20px; height: 20px;
-  border: 2px solid var(--border);
-  border-top-color: var(--text-2);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* ── Skeleton tracks ── */
-@keyframes pulse {
-  0%, 100% { opacity: 0.3; }
-  50%       { opacity: 0.6; }
-}
 .skeletonRow {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  padding: 0.7em 0.6em;
+}
+.skelNum { width: 2em; height: 0.9em; border-radius: var(--r-xs); }
+.skelTitle { height: 1em; border-radius: var(--r-xs); }
+
+/* ── More by the artist ── */
+.shelf {
   display: grid;
-  grid-template-columns: var(--track-cols);
-  align-items: center; gap: 12px;
-  padding: 6px 8px; border-radius: var(--r-sm);
-}
-.skeletonOrdinal {
-  height: 12px;
-  background: var(--bg-2); border-radius: 3px;
-  animation: pulse 1.8s ease-in-out infinite;
-}
-.skeletonArt {
-  width: 38px; height: 38px;
-  background: var(--bg-2); border-radius: 4px;
-  animation: pulse 1.8s ease-in-out infinite;
-}
-.skeletonTitle {
-  height: 12px; background: var(--bg-2); border-radius: 3px;
-  animation: pulse 1.8s ease-in-out infinite;
-}
-.skeletonSub {
-  height: 10px; background: var(--bg-2); border-radius: 3px;
-  animation: pulse 1.8s ease-in-out infinite;
-}
-.skeletonDur {
-  height: 10px;
-  background: var(--bg-2); border-radius: 3px;
-  animation: pulse 1.8s ease-in-out infinite;
+  grid-template-columns: repeat(auto-fill, minmax(8.5em, 1fr));
+  gap: 1.2em 1em;
 }
 
-.selBar {
-  position: sticky; bottom: 0;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 28px;
-  background: var(--bg-1);
-  border-top: 1px solid var(--border);
-  font-size: 13px; color: var(--text-2);
-}
-.selAddBtn {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid var(--border-2);
-  color: var(--text);
-  font-size: 12px; font-weight: 600;
-  font-family: inherit;
-  padding: 6px 14px;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-.selAddBtn:hover {
-  background: rgba(255,255,255,0.18);
-  border-color: rgba(255,255,255,0.3);
-}

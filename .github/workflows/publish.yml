@@ -28,6 +28,9 @@ jobs:
 
       - run: npm ci
 
+      # The `stories` Vitest project renders every Storybook story in real Chromium.
+      - run: npx playwright install --with-deps chromium
+
       - run: npm run lint
 
       - run: npm run typecheck

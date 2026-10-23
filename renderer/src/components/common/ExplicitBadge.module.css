@@ -1,17 +1,17 @@
+/* A quiet "E" chip: tonal, no stroke, text at the 13px floor. */
 .badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 2px;
-  font-size: 9px;
+  border-radius: var(--r-sm);
+  background: rgba(var(--tint), 0.16);
+  font-size: var(--fs-px);
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--text-2);
   line-height: 1;
-  letter-spacing: 0;
   vertical-align: middle;
-  margin-left: 4px;
+  margin-left: 6px;
 }

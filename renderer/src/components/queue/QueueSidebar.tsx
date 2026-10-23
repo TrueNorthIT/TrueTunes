@@ -1,11 +1,12 @@
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, Fragment, forwardRef } from 'react';
 import { useQueries } from '@tanstack/react-query';
-import { Loader2, Disc3 } from 'lucide-react';
+import { Loader2, Disc3, RotateCw, LocateFixed, ListX } from 'lucide-react';
 import { applyReorderLocally, expandToAlbumBlock, projectPlayTimes } from '../../lib/queueHelpers';
 import { reportTrackMeta } from '../../lib/trackMetaReporter';
 import { createDragGhost } from '../../lib/dragHelpers';
 import { getActiveProvider } from '../../providers';
-import { useAttribution, attributionContentKey } from '../../hooks/useAttribution';
+import { useAttribution, resolveAttribution } from '../../hooks/useAttribution';
+import { useUsers } from '../../hooks/useUsers';
 import { trackQueryOptions } from '../../hooks/useTrackDetails';
 import { DraggableQueueRow } from './DraggableQueueRow';
 import { DjUpcomingRow } from './DjUpcomingRow';
@@ -13,19 +14,6 @@ import { WindowControls } from '../WindowControls';
 import type { NormalizedQueueItem } from '../../types/provider';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/QueueSidebar.module.css';
-
-// Match attribution by the track's objectId first; fall back to a title+artist
-// content key so a lone track keeps its badge after Sonos re-keys it in the
-// queue (see issue #84 and attributionContentKey).
-function resolveAttribution(
-  map: AttributionMap,
-  track: NormalizedQueueItem['track'],
-): AttributionEntry | undefined {
-  const byId = map[track.id ?? ''];
-  if (byId) return byId;
-  const ck = attributionContentKey(track.title, track.artist);
-  return ck ? map[ck] : undefined;
-}
 
 interface Props {
   items: NormalizedQueueItem[];
@@ -45,6 +33,8 @@ interface Props {
   onResizeWidthLive?: (width: number) => void;
   /** 'docked' = resizable sidebar pinned to the right; 'skinny' = full-width panel, no resize. */
   variant?: 'docked' | 'skinny';
+  /** The signed-in display name, so DJ picks can say "You". */
+  viewer?: string | null;
   /** DJ autoplay: what's coming once the queue runs dry. */
   autoplay?: {
     enabled: boolean;
@@ -81,6 +71,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     onResizeWidthLive,
     variant = 'docked',
     autoplay,
+    viewer,
   },
   ref
 ) {
@@ -91,19 +82,26 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   const [selected, setSelected]           = useState<Set<number>>(new Set());
   const [dragOverIndex, setDragOverIndex]  = useState<number | null>(null);
   const [pendingClear, setPendingClear]    = useState(false);
+  // Same query Home uses, so queuers' photos cost nothing extra.
+  const { data: users } = useUsers(true, true);
+  const imageByUser = useMemo(() => new Map((users ?? []).map(u => [u.userId, u.imageUrl])), [users]);
   const lastSelected = useRef<number | null>(null);
   const draggingSet  = useRef<Set<number>>(new Set());
 
-  const trackDetailsResults = useQueries({
-    queries: items.map(item => ({
-      ...trackQueryOptions(
-        item.track.id || '',
-        item.track.serviceId ?? '',
-        item.track.accountId ?? '',
-      ),
-      enabled: !!(item.track.id && item.track.serviceId && item.track.accountId),
+  // One query per track id: a track queued twice would put the same ['track', id] key in useQueries twice,
+  // which it warns about ("Duplicate Queries found") on every render. Results are mapped back per item.
+  const uniqueTracks = [...new Map(items.map(item => [item.track.id || '', item.track])).values()];
+  const uniqueTrackResults = useQueries({
+    queries: uniqueTracks.map(track => ({
+      ...trackQueryOptions(track.id || '', track.serviceId ?? '', track.accountId ?? ''),
+      enabled: !!(track.id && track.serviceId && track.accountId),
     })),
   });
+  const trackDetailsResults = useMemo(() => {
+    const ids = [...new Set(items.map(item => item.track.id || ''))]; // same order as uniqueTracks
+    const byId = new Map(ids.map((id, i) => [id, uniqueTrackResults[i]]));
+    return items.map(item => byId.get(item.track.id || ''));
+  }, [items, uniqueTrackResults]);
 
   // Album ids per item, resolved from useTrackDetails (the same data the queue row
   // uses to render the album link) with the raw NormalizedTrack value as fallback.
@@ -300,8 +298,14 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     lastSelected.current = null;
   }
 
+  // Played / now playing / up next, from the live queue position. Without a position the list is flat.
+  const playingIdx = currentQueueItemId !== null ? Number(currentQueueItemId) - 1 : -1;
+  const grouped = playingIdx >= 0 && playingIdx < items.length;
+
   const selCount = selected.size;
   const isSkinny = variant === 'skinny';
+  // Skinny docks its own Now playing card under the list, so the row here would show the track twice.
+  const nowPlayingRow = !isSkinny;
   const sidebarClass = isSkinny ? `${styles.sidebar} ${styles.skinny}` : styles.sidebar;
   const sidebarStyle = isSkinny ? undefined : { width: liveWidth };
 
@@ -323,10 +327,14 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
         </div>
       </div>
       <div className={styles.header}>
-        <span className={styles.title}>
-          Queue{groupName ? ` · ${groupName}` : ''}{items.length > 0 ? ` · ${items.length}` : ''}
-          {selCount > 0 && <span className={styles.selBadge}>{selCount} selected</span>}
-        </span>
+        <div className={styles.titleBlock}>
+          <span className={styles.title}>
+            Queue
+            {items.length > 0 && <span className={styles.count} aria-label={`${items.length} tracks`}>{items.length}</span>}
+            {selCount > 0 && <span className={styles.selBadge}>{selCount} selected</span>}
+          </span>
+          {groupName && <span className={styles.room}>{groupName}</span>}
+        </div>
         {pendingClear ? (
           <div className={styles.clearConfirm}>
             <span>Clear all {items.length} tracks?</span>
@@ -339,10 +347,10 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
           </div>
         ) : (
           <div className={styles.headerActions}>
-            <button className={styles.iconBtn} onClick={onRefresh} title="Refresh">↺</button>
-            <button className={styles.iconBtn} onClick={scrollToNowPlaying} title="Jump to now playing">⊙</button>
+            <button className={styles.iconBtn} onClick={onRefresh} title="Refresh" aria-label="Refresh"><RotateCw size={15} /></button>
+            {nowPlayingRow && <button className={styles.iconBtn} onClick={scrollToNowPlaying} title="Jump to now playing" aria-label="Jump to now playing"><LocateFixed size={15} /></button>}
             {items.length > 0 && (
-              <button className={styles.iconBtn} title="Clear queue" onClick={() => setPendingClear(true)}>⊘</button>
+              <button className={styles.iconBtn} title="Clear queue" aria-label="Clear queue" onClick={() => setPendingClear(true)}><ListX size={15} /></button>
             )}
           </div>
         )}
@@ -351,7 +359,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
       <div
         className={styles.content}
         ref={contentRef}
-onClick={handleContentClick}
+        onClick={handleContentClick}
         onDragOver={e => {
           e.preventDefault();
           e.dataTransfer.dropEffect = e.dataTransfer.types.includes('application/sonos-item-list') ? 'copy' : 'move';
@@ -367,26 +375,38 @@ onClick={handleContentClick}
         {!isLoading && !error && items.length === 0 && (
           <div className={styles.msg}>Queue is empty.</div>
         )}
-        {!isLoading && !error && items.map((item, i) => (
-          <Fragment key={i}>
-            {dragOverIndex === i && <div className={styles.dropLine} />}
-            <DraggableQueueRow
-              item={item}
-              index={i}
-              currentObjectId={currentObjectId}
-              currentQueueItemId={currentQueueItemId}
-              attribution={resolveAttribution(attributionMap, item.track)}
-              isSelected={selected.has(i)}
-              timeToPlay={timesToPlay[i]?.atMs}
-              timeEstimated={timesToPlay[i]?.estimated}
-              onRowClick={handleRowClick}
-              onDragStart={handleDragStart}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              onDragEnd={handleDragEnd}
-            />
-          </Fragment>
-        ))}
+        {/* One list, played tracks included (Joe prefers it to folding them away); the labels mark the sections. */}
+        {!isLoading && !error && grouped && playingIdx > 0 && (
+          <div className={styles.groupLabel}>Played <span className={styles.groupCount}>{playingIdx}</span></div>
+        )}
+        {!isLoading && !error && items.map((item, i) => {
+          if (grouped && i === playingIdx && !nowPlayingRow) return null;
+          const attr = resolveAttribution(attributionMap, item.track);
+          return (
+            <Fragment key={i}>
+              {grouped && i === playingIdx && nowPlayingRow && <div className={styles.groupLabel}>Now playing</div>}
+              {grouped && i === playingIdx + 1 && <div className={styles.groupLabel}>Up next <span className={styles.groupCount}>{items.length - playingIdx - 1}</span></div>}
+              {dragOverIndex === i && <div className={styles.dropLine} />}
+              <DraggableQueueRow
+                item={item}
+                index={i}
+                currentObjectId={currentObjectId}
+                currentQueueItemId={currentQueueItemId}
+                attribution={attr}
+                attributionImageUrl={attr ? imageByUser.get(attr.user) : undefined}
+                isSelected={selected.has(i)}
+                played={grouped && i < playingIdx}
+                timeToPlay={timesToPlay[i]?.atMs}
+                timeEstimated={timesToPlay[i]?.estimated}
+                onRowClick={handleRowClick}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onDragEnd={handleDragEnd}
+              />
+            </Fragment>
+          );
+        })}
         {dragOverIndex === items.length && <div className={styles.dropLine} />}
 
         {/* Always rendered, even with nothing queued up yet: it's the room's
@@ -405,7 +425,7 @@ onClick={handleContentClick}
                     : 'Let the DJ keep the music going'
                 }
               >
-                <Disc3 size={11} className={autoplay.enabled ? styles.djSpin : undefined} />
+                <Disc3 size={14} className={autoplay.enabled ? styles.djSpin : undefined} />
                 {autoplay.enabled ? 'DJ takes over' : 'DJ paused'}
               </button>
               <span className={styles.djBreakLine} />
@@ -418,7 +438,7 @@ onClick={handleContentClick}
               <div className={styles.djEmpty}>Nothing to suggest just yet.</div>
             ) : (
               autoplay.upcoming.map((track) => (
-                <DjUpcomingRow key={track.uri} track={track} idle={!autoplay.enabled} />
+                <DjUpcomingRow key={track.uri} track={track} idle={!autoplay.enabled} viewer={viewer} />
               ))
             )}
           </>

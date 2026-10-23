@@ -1,0 +1,38 @@
+.btn {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 1.6em;
+  height: 1.6em;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-round);
+  background: none;
+  color: inherit;
+  opacity: 0.75;
+  cursor: help;
+}
+.btn:hover,
+.btn:focus-visible { opacity: 1; }
+
+/* Floating surface: the frosted shell material, placed by InfoTip so it never clips or leaves the window. */
+.tip {
+  position: fixed;
+  z-index: 10001;
+  max-width: 22em;
+  padding: 0.7em 0.9em;
+  background: var(--material-bg);
+  backdrop-filter: var(--material-filter);
+  border: 1px solid var(--separator);
+  border-radius: var(--r-tile);
+  box-shadow: var(--float-shadow);
+  color: var(--text);
+  font-size: var(--fs-label);
+  line-height: 1.4;
+  text-align: left;
+  font-weight: 400;
+  pointer-events: none;
+}
+.tip p { margin: 0; }
+.heading { font-weight: 600; }
+.tip p + p { margin-top: 0.3em; }

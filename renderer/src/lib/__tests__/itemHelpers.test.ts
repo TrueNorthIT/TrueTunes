@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   isPodcast,
+  trackPayload,
+  albumItem,
+  artistItem,
   findArtistByName,
   fmtDuration,
   fmtTime,
@@ -14,6 +17,7 @@ import {
   isArtist,
   isPlaylist,
   isProgram,
+  canQueueWhole,
   extractItems,
   parseServiceSearch,
   resolveAlbumParams,
@@ -167,6 +171,24 @@ describe('isPlaylist', () => {
 
   it('rejects non-playlist types', () => {
     expect(isPlaylist({ type: 'ALBUM' } as SonosItem)).toBe(false);
+  });
+});
+
+describe('canQueueWhole', () => {
+  it('refuses stations, which Sonos can only start by replacing the shared queue', () => {
+    expect(canQueueWhole({ type: 'ITEM_STATION', resource: { type: 'PROGRAM' } } as SonosItem)).toBe(false);
+    expect(canQueueWhole({ type: 'PROGRAM' } as SonosItem)).toBe(false);
+  });
+
+  it('refuses shelves, which have nothing to queue', () => {
+    expect(canQueueWhole({ type: 'CONTAINER' } as SonosItem)).toBe(false);
+    expect(canQueueWhole({ type: 'ITEM_PLAYLIST' } as SonosItem)).toBe(false);
+  });
+
+  it('allows tracks, albums and playlists', () => {
+    expect(canQueueWhole({ type: 'TRACK' } as SonosItem)).toBe(true);
+    expect(canQueueWhole({ type: 'ALBUM' } as SonosItem)).toBe(true);
+    expect(canQueueWhole({ type: 'PLAYLIST' } as SonosItem)).toBe(true);
   });
 });
 
@@ -369,6 +391,31 @@ describe('parseServiceSearch', () => {
   });
 });
 
+describe('parseServiceSearch: track album and duration', () => {
+  const b64 = (o: object) => btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(o))));
+  const data = (resource: object) =>
+    ({ resourceOrder: ['TRACKS'], TRACKS: { resources: [{ name: 'Mr. Brightside', id: { objectId: 't', serviceId: 's', accountId: 'c' }, ...resource }] } }) as unknown as ServiceSearch;
+
+  it('reads the album name and id from the container', () => {
+    const [t] = parseServiceSearch(data({ durationMs: 223000, container: { name: 'Hot Fuss', id: { objectId: 'alb', serviceId: 's', accountId: 'c' } } }));
+    expect(t.album).toEqual({ name: 'Hot Fuss', id: { objectId: 'alb', serviceId: 's', accountId: 'c' } });
+    expect(t.durationMs).toBe(223000);
+  });
+
+  it('falls back to containerName and durationMs in the defaults blob, accents intact', () => {
+    const [t] = parseServiceSearch(data({ defaults: b64({ containerName: 'Les Misérables', containerId: 'alb2', durationMs: 220000 }) }));
+    expect(t.album).toEqual({ name: 'Les Misérables', id: { objectId: 'alb2', serviceId: 's', accountId: 'c' } });
+    expect(t.durationMs).toBe(220000);
+    expect(t.resource?.defaults).toBeTruthy();
+  });
+
+  it('leaves album undefined for a video or upload with no container', () => {
+    const [t] = parseServiceSearch(data({ durationMs: 224000, defaults: b64({ durationMs: 224000 }) }));
+    expect(t.album).toBeUndefined();
+  });
+});
+
+
 // ─── resolveAlbumParams ───────────────────────────────────────────────────────
 
 describe('resolveAlbumParams', () => {
@@ -512,6 +559,20 @@ describe('decodeDefaults', () => {
   it('returns null for invalid base64', () => {
     expect(decodeDefaults('!!!not-base64!!!')).toBeNull();
   });
+
+  // Sonos encodes defaults as UTF-8 JSON; atob alone yields "MisÃ©rables" for "Misérables".
+  const utf8b64 = (o: unknown) => Buffer.from(JSON.stringify(o), 'utf8').toString('base64');
+
+  it('decodes accented UTF-8 text without mojibake', () => {
+    const payload = { name: 'Les Misérables', artist: 'Björk, ROSALÍA', summary: 'Single • Café' };
+    expect(decodeDefaults(utf8b64(payload))).toEqual(payload);
+  });
+
+  it('decodes base64url (- and _) with missing padding', () => {
+    const payload = { name: 'Les Misérables ??>>' };
+    const url = utf8b64(payload).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    expect(decodeDefaults(url)).toEqual(payload);
+  });
 });
 
 describe('isPodcast', () => {
@@ -548,5 +609,28 @@ describe('findArtistByName', () => {
 
   it('ignores non-artists and partial matches', () => {
     expect(findArtistByName(items, 'Inez')).toBeUndefined();
+  });
+});
+
+describe('item builders', () => {
+  const id = { objectId: 'o1', serviceId: 's1', accountId: 'a1' };
+
+  it('trackPayload fills the queue fields and defaults missing ids to empty strings', () => {
+    expect(trackPayload({ uri: 'u', trackName: 'T', artist: 'A', albumName: null, serviceId: null })).toEqual({
+      uri: 'u', trackName: 'T', artist: 'A', albumName: undefined, imageUrl: undefined,
+      serviceId: '', accountId: '', addedBy: '', addedAt: 0,
+    });
+  });
+
+  it('albumItem resolves as an album', () => {
+    const item = albumItem('Hot Fuss', id);
+    expect(item).toMatchObject({ title: 'Hot Fuss', type: 'ITEM_ALBUM', resource: { type: 'ALBUM', id } });
+    expect(resolveAlbumParams(item)).toMatchObject({ albumId: 'o1', serviceId: 's1', accountId: 'a1' });
+  });
+
+  it('artistItem resolves as an artist and carries extras', () => {
+    const item = artistItem('Muse', id, { title: 'Muse' });
+    expect(item).toMatchObject({ type: 'ARTIST', name: 'Muse', title: 'Muse', resource: { type: 'ARTIST', id } });
+    expect(resolveArtistParams(item)).toMatchObject({ artistId: 'o1', name: 'Muse' });
   });
 });

@@ -19,8 +19,9 @@ npm run dev          # build main + start Vite + Electron concurrently
 npm run build:main   # tsc only (main process)
 npm run build        # main + renderer
 npm run typecheck    # tsc --noEmit for both main AND renderer (run this before committing)
-npm run test:run     # full test suite once
+npm run test:run     # full test suite once: the jsdom suite AND the story tests
 npm run lint         # ESLint
+npm run storybook    # component workshop on :6006
 ```
 
 The renderer is **never type-checked by Vite** (esbuild strips types). `npm run typecheck` is the only way to catch renderer type errors — always run it.
@@ -29,25 +30,18 @@ The renderer is **never type-checked by Vite** (esbuild strips types). `npm run 
 
 ## Visual verification (Claude Code)
 
-The app supports visual feedback via Chrome DevTools Protocol during development.
+**The live app drives the office speakers.** Never press (or script a click on) add, queue, play next, station, transport or seek controls, and never play or submit Queuedle, feedback or polls. Navigate and hover only. To see a control's states, use its story in Storybook (below), where nothing reaches Sonos.
 
-### Verify and connect
+`npm run dev` enables Chrome DevTools Protocol on port 9333 (`curl -s http://localhost:9333/json/version` to check).
 
 ```bash
-curl -s http://localhost:9333/json/version   # should return Electron/Chrome JSON
-agent-browser connect 9333
-agent-browser screenshot /tmp/screenshot.png
-agent-browser snapshot -i                   # DOM inspection
+node scripts/screenshot.mjs shot.png                    # current page
+node scripts/screenshot.mjs shot.png leaderboard        # after moving to #/leaderboard ("" for Home)
 ```
 
-### Workflow
+Give the route without `#/`: Git Bash rewrites path-like arguments, so `'#/leaderboard'` arrives as `#C:/Program Files/Git/leaderboard`.
 
-After making UI changes:
-
-1. `npm run dev` (CDP already enabled)
-2. `agent-browser connect 9333`
-3. `agent-browser screenshot /tmp/tt2-screenshot.png`
-4. Inspect the screenshot and fix any rendering issues before committing
+Live data (now playing, queue, picks) changes between shots, so for before/after comparisons of a component prefer its stories. If Vite serves stale modules after big edits, stop dev and delete `node_modules/.vite`.
 
 ---
 
@@ -91,7 +85,7 @@ npm test             # watch mode
 
 ### Setup
 
-`renderer/src/test/setup.ts` mocks all of `window.sonos`. Every mock is a `vi.fn()`. If you add a method to `SonosPreload` you must also add it here or tests that import anything using `window.sonos` will fail.
+`renderer/src/test/setup.ts` mocks all of `window.sonos`, wrapping each method of `renderer/src/test/sonosFake.ts` in a `vi.fn()`. If you add a method to `SonosPreload` add it to `sonosFake.ts` (typecheck fails until you do), not to setup.ts.
 
 ### How to test hooks
 
@@ -116,11 +110,45 @@ Use `@testing-library/react` with `render`. The `window.sonos` mock in setup.ts 
 
 Reset mocks between tests when a test sets up a pending promise (the default) and a later test needs a resolved one — use `vi.mocked(window.sonos.X).mockReset()` in `beforeEach`.
 
+### Story tests
+
+`npm run test:run` also runs every story in real Chromium (Playwright) as the second Vitest project, `stories`; a story that throws on render fails, named by its title. First run on a machine needs `npx playwright install chromium`. Run just them with `npx vitest run --config renderer/vitest.config.ts --project stories`.
+
 ### What's not tested
 
 Main process (`src/`), IPC handlers, WebSocket bootstrap, auth flow, and most hooks and components. 85% of the codebase has no tests. Prioritise `usePlayback`, `useQueue`, `useGroups`, and `useAuth` if adding coverage.
 
 ---
+
+## UI: design system and shared components
+
+**DESIGN.md is the spec** ("After-Hours Gallery"): colours, type roles, shadow vocabulary, radius scale, components and the do/don't rules (no text under 13px, shadows only on artwork and floating surfaces, no purple/neon/glow). Read it before UI work. If you change a design rule, update DESIGN.md in the same commit.
+
+**Tokens, not values.** Every colour, shadow, border radius and font size in renderer CSS comes from a token in `renderer/src/styles/global.css` (`:root`) or `depth.css` (shell materials), so one edit retunes the app.
+
+- Colours: `var(--text*)`, `--on-art*`, `--glass*`, `--overlay*`, and tints as `rgba(var(--tint), a)`. Shadows: `--art-shadow`, `--hero-shadow`, `--float-shadow` and friends. Radii: `--r-*`. Type: `--fs-*` (smaller steps are already `max(13px, …)`).
+- `renderer/src/__tests__/cssTokens.test.ts` fails on any raw hex/rgb/hsl/named colour outside those two files (mask gradients exempt). Radii and font sizes aren't test-enforced, so use the tokens anyway.
+- Need a value no token covers? Use the nearest token first. If it is a genuinely new role, add it beside its siblings in `global.css` with a one-line comment, and name it in DESIGN.md.
+
+**Reuse before you build.** Shared components live in `renderer/src/components/common/`, and Storybook is the catalogue of what exists and its states. Before writing a card, tile, row, button, chip, dialog, menu, artwork or seek/transport control, check there.
+
+- Extend a shared component with a prop rather than copying it. Promote a page-local component to `common/` once a second page needs it.
+- Data helpers too: `lib/itemHelpers.ts` has `trackPayload()` (context-menu track), `albumItem()` and `artistItem()` (navigable `SonosItem`s). Don't hand-build those objects.
+- A new shared component gets a story (see below).
+
+## Storybook
+
+```bash
+npm run storybook         # http://localhost:6006; config in renderer/.storybook/
+npm run build-storybook   # static build to storybook-static/ (gitignored)
+```
+
+Stories sit beside the component as `Foo.stories.tsx` (CSF, `args` for controls, `fn()` for callbacks) and are typechecked and linted with the rest of `renderer/`. Use them to tweak a component in isolation and to screenshot a deterministic state: the live app's data changes under you, and its transport controls play on the office speakers.
+
+- **Nothing in Storybook may reach Sonos.** There is no Electron, so `renderer/.storybook/preview.tsx` installs a fake `window.sonos` built from `renderer/src/test/sonosFake.ts`; every call is logged in the Actions panel and does nothing else. `getActiveProvider()` goes through it, so `TransportButtons` and `SeekBar` only log. Never point a story at a real bridge or URL.
+- Art comes from the SVG data URIs in `renderer/.storybook/fixtures.ts`, so stories render the same offline. They go through the real `useImage` cache.
+- The preview loads `global.css`, `depth.css` and the Manrope font, wraps each story in a fresh `QueryClient` (retries off), a `MemoryRouter` and a `page-scale` root on `--bg`.
+- Add a story when you add a shared component in `common/`, covering its real states (default, no art, long title, disabled, playing and so on).
 
 ## Adding a new feature — checklist
 
@@ -129,7 +157,7 @@ Main process (`src/`), IPC handlers, WebSocket bootstrap, auth flow, and most ho
    - Add to `contextBridge.exposeInMainWorld` in `src/preload.ts`
    - Add `ipcMain.handle(...)` in `src/main.ts`
    - Add to `SonosPreload` interface in `renderer/src/types/globals.d.ts`
-   - Add mock to `renderer/src/test/setup.ts`
+   - Add to `renderer/src/test/sonosFake.ts` (the one shared `window.sonos` fake: `setup.ts` wraps it in `vi.fn()`, the Storybook preview logs it as actions)
 
 2. If it makes Sonos API calls:
    - Add the method to `renderer/src/lib/sonosApi.ts`
@@ -138,7 +166,9 @@ Main process (`src/`), IPC handlers, WebSocket bootstrap, auth flow, and most ho
    - Add the resource to `server/azuredeploy.json`
    - Redeploy: `az deployment group create --resource-group truetunes-rg --template-file server/azuredeploy.json --mode Incremental`
 
-4. Run `npm run typecheck && npm run test:run` before committing.
+4. If it has UI: reuse `common/` components, style with tokens only (see "UI: design system and shared components"), and add a `Foo.stories.tsx` for any new shared component in `renderer/src/components/common/`.
+
+5. Run `npm run typecheck && npm run test:run` before committing.
 
 ---
 
@@ -166,4 +196,8 @@ Resource group: `truetunes-rg` (uksouth)
 | App Insights  | `truetunes-ai`           |
 | Log Analytics | `truetunes-law`          |
 
-Deploy: `cd server && npm run deploy` — wraps `az deployment group create` and reads `VESTABOARD_API_KEY` from the root `.env`, passing it as the `vestaboardApiKey` ARM parameter so the secret is never committed.
+Deploy: `cd server && npm run deploy` — wraps `az deployment group create` and reads `VESTABOARD_API_KEY` from the root `.env`, passing it as the `vestaboardApiKey` ARM parameter so the secret is never committed. It then runs `func azure functionapp publish`, which **replaces every function** with what's in this checkout.
+
+- **Deploy from a tree that contains `origin/main`.** Deploying a feature branch that's behind main deletes main's newer functions from production (this removed `music-stats` and `track-meta` once). Merge main first, or deploy the merge from a throwaway worktree.
+- `az` and `func` use whichever Azure CLI account is active: pick the TrueNorth admin identity first (the `azswap` profiles skill).
+- A fresh worktree has no `server/node_modules`; run `npm ci` in `server/` first, or tsc falls back to the root's TypeScript 6 and fails with TS5107.

@@ -9,6 +9,15 @@ interface GeniusArtistInfo {
   headerImageUrl: string | null;
   instagram: string | null;
   twitter: string | null;
+  /** The artist's Genius page. */
+  url?: string | null;
+}
+
+/** The album's Genius page: its description (null when nobody has written one), release date (ISO, or as Genius shows it) and URL. */
+interface GeniusAlbumAbout {
+  description: GeniusDomNode | null;
+  releaseDate?: string;
+  url?: string;
 }
 
 interface AttributionEntry {
@@ -219,7 +228,8 @@ interface GameMyScoreResult {
   score?: {
     mainScore: number;
     bonusScore: number;
-    total: number;
+    // get-my-score does not send total; derive it from main + bonus
+    total?: number;
     guesses?: { main: Array<'left' | 'right'>; bonus: string[] };
   };
   error?: string;
@@ -316,6 +326,10 @@ interface DjTrack {
   score: number;
   /** Why this track was picked, e.g. "Rich and Alex queue Royal Blood". */
   because: string;
+  /** Everyone credited, with their raw all-time queue count for the artist. Absent on older servers. */
+  fans?: { user: string; count: number }[];
+  /** Everyone in the room who has queued this very track, with their raw count. Absent on older servers. */
+  trackFans?: { user: string; count: number }[];
 }
 
 /** What the autoplay coordinator decided this round. */
@@ -371,6 +385,8 @@ interface DjArtist {
   imageUrl?: string;
   score: number;
   because: string;
+  /** Everyone credited, with their raw all-time queue count for the act. Absent on older servers. */
+  fans?: { user: string; count: number }[];
   /** "trackName||artist" for each track by this act already in the history. */
   heardTrackKeys: string[];
 }
@@ -525,6 +541,10 @@ interface SonosPreload {
   geniusDescription: (trackName: string, artistName: string) => Promise<GeniusDomNode | null>;
   geniusArtist: (artistName: string, trackHint?: string) => Promise<GeniusArtistInfo | null>;
   geniusAlbumYear: (albumName: string, artistName: string) => Promise<number | null>;
+  /** Every album/single Genius lists for the artist, with its release year. [] on any failure. */
+  geniusArtistAlbums: (artistName: string) => Promise<Array<{ name: string; year: number | null }>>;
+  /** This artist's album on Genius (exact title, else another edition of it). Null when Genius has no such album. */
+  geniusAlbumAbout: (albumName: string, artistName: string) => Promise<GeniusAlbumAbout | null>;
   /** Fire-and-forget telemetry event routed through the main process. No-op when App Insights is not configured. */
   trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
   minimizeWindow:    () => Promise<void>;

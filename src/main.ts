@@ -6,10 +6,13 @@ import { autoUpdater } from 'electron-updater';
 import { officePubSub } from './pubsub';
 import { EntraAuth, PRESENCE_SCOPE } from './auth-entra';
 import { fetchPresences, resolveRoster } from './graph-presence';
+import { albumBaseTitle, geniusHasText, pickAlbumHits, pickArtistHit } from './genius-match';
+import { navDecision, isWebUrl } from './nav-guard';
 import type { EntraUser } from './auth-entra';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { readFileSync } from 'fs';
+import { pathToFileURL } from 'url';
 
 // Load secrets baked in at build time — fills gaps that dotenv didn't cover (packaged app has no .env)
 try {
@@ -360,7 +363,7 @@ function buildUrl(
 
 // ─── HTTP fetch helper ────────────────────────────────────────────────────────
 
-async function sonosFetch(request: FetchRequest): Promise<FetchResponse> {
+async function sonosFetch(request: FetchRequest, isRetry = false): Promise<FetchResponse> {
   if (!sessionToken) {
     return { error: 'No session token — please log in first' };
   }
@@ -388,6 +391,11 @@ async function sonosFetch(request: FetchRequest): Promise<FetchResponse> {
       return { error: msg };
     }
   }
+
+  // The default serviceId this URL was built with (undefined if the caller
+  // passed one explicitly or the operation has none) — used by the self-heal.
+  const defaultServiceId =
+    operation.path.includes(':serviceId') && !request.pathParams?.serviceId ? config.serviceId : undefined;
 
   // Build headers once so we can log them before sending
   const reqHeaders: Record<string, string> = {
@@ -506,6 +514,21 @@ async function sonosFetch(request: FetchRequest): Promise<FetchResponse> {
       createAuthWindow();
     }
     return { error: '401 Unauthorized — re-authenticating' };
+  }
+
+  // Self-heal a bad default service: re-select and retry once. Only for
+  // requests that relied on config.serviceId (discovery probes pass explicit
+  // IDs, so they never get here), and the retry itself can't heal again.
+  if (!response.ok && !isRetry && defaultServiceId && bodyText.includes('ERROR_SERVICE_NOT_CONFIGURED')) {
+    log(`[config] serviceId ${defaultServiceId} not configured (${request.operationId}) — re-selecting service`);
+    // Only clear if nobody has already replaced it, so concurrent failures
+    // coalesce onto one selection instead of discarding a fresh choice.
+    if (config.serviceId === defaultServiceId) {
+      config.serviceId = undefined;
+      config.accountId = undefined;
+    }
+    await discoverServiceCredentials();
+    return sonosFetch(request, true);
   }
 
   if (!response.ok) {
@@ -749,8 +772,10 @@ function parseIntegrationsCreds(data: unknown): ServiceCreds[] {
   return results;
 }
 
-/** Called after bootstrap (and lazily from sonosFetch) when serviceId isn't
- *  in config. Uses /integrations/registrations (only needs householdId).
+/** Chooses the default music service when serviceId isn't in config: called
+ *  at bootstrap, after a new sign-in, and lazily from sonosFetch. Lists
+ *  /integrations/registrations (only needs householdId), drops the platform
+ *  service, and keeps the first candidate whose root container browses OK.
  *  Coalesces concurrent callers onto a single in-flight request. */
 let _discoverInFlight: Promise<void> | null = null;
 function discoverServiceCredentials(): Promise<void> {
@@ -764,21 +789,37 @@ function discoverServiceCredentials(): Promise<void> {
         return;
       }
 
-      const allCreds = parseIntegrationsCreds(r.data);
+      const candidates = parseIntegrationsCreds(r.data).filter((c) => c.serviceId !== PLATFORM_SERVICE_ID);
       log(
-        '[config] Found services:',
-        allCreds.map((c) => `${c.serviceId}/${c.accountId}`)
+        '[config] Candidate services:',
+        candidates.map((c) => `${c.serviceId}/${c.accountId}`)
       );
 
-      // Use the first service the API returns — Sonos places the primary
-      // content service first (the one that owns the user's queue, favorites,
-      // and history).
-      const primary = allCreds[0];
-      if (primary) {
-        config.serviceId = primary.serviceId;
-        config.accountId = primary.accountId;
-        saveConfig();
-        log('[config] Using serviceId:', config.serviceId, 'accountId:', config.accountId);
+      // Probe in API order with explicit IDs (so sonosFetch's self-heal never
+      // fires for these). First root browse that succeeds wins.
+      let chosen: ServiceCreds | undefined;
+      let reason = 'root browse OK';
+      for (const c of candidates) {
+        const probe = await sonosFetch({
+          operationId: 'browseContainer',
+          pathParams: { containerId: 'root', serviceId: c.serviceId, accountId: c.accountId },
+          query: { muse2: 'true' },
+        });
+        if (!probe.error) {
+          chosen = c;
+          break;
+        }
+        log(`[config] Probe ${c.serviceId}/${c.accountId} failed: ${probe.error.slice(0, 160)}`);
+      }
+      if (!chosen && candidates[0]) {
+        chosen = candidates[0];
+        reason = 'no probe succeeded, falling back to first candidate';
+      }
+
+      if (chosen) {
+        config.serviceId = chosen.serviceId;
+        config.accountId = chosen.accountId;
+        log(`[config] Using serviceId ${chosen.serviceId}/${chosen.accountId} (${reason})`);
       } else {
         log('[config] No service credentials found — content APIs will fail until configured');
       }
@@ -1089,20 +1130,17 @@ function createAuthWindow(): void {
     if (match) {
       const token = match[1];
       if (token !== sessionToken) {
+        const isSignIn = sessionToken === null; // first launch or after a 401, not a cookie refresh
         sessionToken = token;
         void saveSessionToken(token);
         log('[auth] Session token captured:', token.slice(0, 20) + '…');
-      }
-    }
-
-    // Auto-discover serviceId/accountId from content API URLs the first time
-    if (!config.serviceId) {
-      const svcMatch = details.url.match(/\/services\/([^/]+)\/accounts\/([^/]+)\//);
-      if (svcMatch && svcMatch[1] !== SEARCH_SERVICE_ID) {
-        config.serviceId = svcMatch[1];
-        config.accountId = svcMatch[2];
-        log('[config] Discovered serviceId:', config.serviceId, 'accountId:', config.accountId);
-        saveConfig();
+        if (isSignIn) {
+          // The old service choice may belong to another account. Without a
+          // householdId yet (first launch), bootstrap selects instead.
+          config.serviceId = undefined;
+          config.accountId = undefined;
+          if (config.householdId) void discoverServiceCredentials();
+        }
       }
     }
 
@@ -1272,6 +1310,28 @@ async function onAuthReady(): Promise<void> {
   initPubSub().catch(console.error);
 }
 
+const APP_INDEX = path.join(__dirname, '..', 'renderer', 'dist', 'index.html');
+const APP_URL = app.isPackaged ? pathToFileURL(APP_INDEX).href : 'http://localhost:5173';
+
+/**
+ * Keep an app window on the app. A stray link (changelog markdown, lyrics
+ * credits) would otherwise replace the whole UI: web links go to the system
+ * browser instead, anything else is refused. Not for the auth window, which
+ * navigates through the Sonos sign-in on purpose.
+ */
+function guardNavigation(win: BrowserWindow): void {
+  win.webContents.on('will-navigate', (event) => {
+    const decision = navDecision(event.url, APP_URL);
+    if (decision === 'allow') return;
+    event.preventDefault();
+    if (decision === 'external') void shell.openExternal(event.url);
+  });
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (navDecision(url, APP_URL) === 'external') void shell.openExternal(url);
+    return { action: 'deny' };
+  });
+}
+
 function createUIWindow(): void {
   uiWin = new BrowserWindow({
     width: 1280,
@@ -1295,9 +1355,10 @@ function createUIWindow(): void {
   uiWin.on('maximize',   () => uiWin?.webContents.send('win:maximized', true));
   uiWin.on('unmaximize', () => uiWin?.webContents.send('win:maximized', false));
   setThumbar(uiWin, thumbarIsPlaying);
+  guardNavigation(uiWin);
 
   if (app.isPackaged) {
-    uiWin.loadFile(path.join(__dirname, '..', 'renderer', 'dist', 'index.html'));
+    uiWin.loadFile(APP_INDEX);
   } else {
     uiWin.loadURL('http://localhost:5173');
   }
@@ -1338,8 +1399,10 @@ function createMiniPlayerWindow(): void {
     },
   });
 
+  guardNavigation(miniWin);
+
   if (app.isPackaged) {
-    miniWin.loadFile(path.join(__dirname, '..', 'renderer', 'dist', 'index.html'), { hash: '/mini' });
+    miniWin.loadFile(APP_INDEX, { hash: '/mini' });
   } else {
     miniWin.loadURL('http://localhost:5173/#/mini');
   }
@@ -1415,7 +1478,9 @@ ipcMain.handle('debug:openDevTools', () => { if (!app.isPackaged) uiWin?.webCont
 
 ipcMain.handle('app:version', () => app.getVersion());
 ipcMain.handle('app:isNewVersion', () => isNewVersion);
-ipcMain.handle('app:openExternal', (_: IpcMainInvokeEvent, url: string) => shell.openExternal(url));
+// http(s) only: the renderer never needs another scheme, and shell.openExternal
+// on file: or protocol-handler URLs can launch programs.
+ipcMain.handle('app:openExternal', async (_: IpcMainInvokeEvent, url: string) => { if (isWebUrl(url)) await shell.openExternal(url); });
 
 ipcMain.handle('win:minimize',     () => { uiWin?.minimize(); });
 ipcMain.handle('win:maximize',     () => { if (uiWin?.isMaximized()) uiWin.unmaximize(); else uiWin?.maximize(); });
@@ -2245,9 +2310,8 @@ ipcMain.handle('genius:artist', async (_: IpcMainInvokeEvent, artistName: string
     type SearchHit = { result: { primary_artist: { id: number; name: string } } };
     const searchData = JSON.parse(searchBody) as { response: { hits: SearchHit[] } };
     const hits = searchData.response?.hits ?? [];
-    const artistNameLower = artistName.toLowerCase();
-    const hit = hits.find((h) => h.result.primary_artist.name.toLowerCase().includes(artistNameLower)) ?? hits[0];
-    const artistId = hit?.result?.primary_artist?.id;
+    // A near miss is worse than nothing: Genius once handed back Wiley's names and bio for another artist.
+    const artistId = pickArtistHit(hits, artistName)?.result.primary_artist.id;
     if (!artistId) return null;
 
     const artistUrl = `https://api.genius.com/artists/${artistId}`;
@@ -2267,6 +2331,7 @@ ipcMain.handle('genius:artist', async (_: IpcMainInvokeEvent, artistName: string
           header_image_url: string | null;
           instagram_name: string | null;
           twitter_name: string | null;
+          url: string | null;
         };
       };
     };
@@ -2281,6 +2346,7 @@ ipcMain.handle('genius:artist', async (_: IpcMainInvokeEvent, artistName: string
       headerImageUrl: a.header_image_url ?? null,
       instagram: a.instagram_name ?? null,
       twitter: a.twitter_name ?? null,
+      url: a.url ?? null,
     };
   } catch (err) {
     log(`[genius] artist error: ${err}`);
@@ -2311,17 +2377,92 @@ ipcMain.handle('genius:albumYear', async (_: IpcMainInvokeEvent, albumName: stri
 
     type Hit = {
       result: {
-        primary_artist: { name: string } | null;
+        primary_artist: { name: string };
         release_date_components: { year: number | null } | null;
       };
     };
     const searchData = JSON.parse(searchBody) as { response: { hits: Hit[] } };
-    const hits = searchData.response?.hits ?? [];
-    const lower = artistName.toLowerCase();
-    const hit = hits.find((h) => h.result.primary_artist?.name?.toLowerCase().includes(lower)) ?? hits[0];
-    return hit?.result?.release_date_components?.year ?? null;
+    const hits = (searchData.response?.hits ?? []).filter((h) => h.result.primary_artist);
+    // Only this artist's hit: falling back to the first hit gave a stranger's song year (Adele's live single as 2000).
+    return pickArtistHit(hits, artistName)?.result?.release_date_components?.year ?? null;
   } catch (err) {
     log(`[genius] albumYear error: ${err}`);
+    return null;
+  }
+});
+
+// ponytail: genius.com/api is Genius's unofficial web API (no token); it may change or vanish without notice.
+/** A JSON GET against genius.com/api, logged to the HTTP debug window. Throws on a non-2xx. */
+function geniusWebGet(operationId: string) {
+  return async (url: string): Promise<unknown> => {
+    const id = randomUUID(); const ts = Date.now();
+    httpDebugWin?.webContents.send('http:req', { id, ts, operationId, method: 'GET', url, headers: {} });
+    const res = await fetch(url);
+    const body = await res.text();
+    httpDebugWin?.webContents.send('http:res', { id, status: res.status, statusText: String(res.status), headers: {}, body, durationMs: Date.now() - ts });
+    if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+    return JSON.parse(body);
+  };
+}
+
+ipcMain.handle('genius:artistAlbums', async (_: IpcMainInvokeEvent, artistName: string) => {
+  const get = geniusWebGet('genius:artistAlbums');
+
+  try {
+    type Search = { response: { sections: { hits: { result: { id: number; name: string } }[] }[] } };
+    const search = await get(`https://genius.com/api/search/artist?q=${encodeURIComponent(artistName)}`) as Search;
+    const hits = search.response?.sections?.[0]?.hits ?? [];
+    const lower = artistName.toLowerCase();
+    const artist = (hits.find((h) => h.result.name?.toLowerCase() === lower) ?? hits[0])?.result;
+    if (!artist) return [];
+
+    type Albums = { response: { albums: { name: string; release_date_components: { year: number | null } | null }[]; next_page: number | null } };
+    const out: { name: string; year: number | null }[] = [];
+    for (let page: number | null = 1, n = 0; page && n < 4; n++) {
+      const data = await get(`https://genius.com/api/artists/${artist.id}/albums?per_page=50&page=${page}`) as Albums;
+      for (const a of data.response?.albums ?? []) out.push({ name: a.name, year: a.release_date_components?.year ?? null });
+      page = data.response?.next_page ?? null;
+    }
+    return out;
+  } catch (err) {
+    log(`[genius] artistAlbums error: ${err}`);
+    return [];
+  }
+});
+
+// The album's own Genius page, by album search (the song search ranks strangers first and its hits carry no album).
+// Exact title first, then another edition of it; only this artist's albums. Null when none matches.
+ipcMain.handle('genius:albumAbout', async (_: IpcMainInvokeEvent, albumName: string, artistName: string) => {
+  const get = geniusWebGet('genius:albumAbout');
+  try {
+    type Search = { response: { sections: { hits: { result: { id: number; name: string; artist: { name: string } | null } }[] }[] } };
+    const q = `${albumBaseTitle(albumName)} ${artistName}`;
+    const search = await get(`https://genius.com/api/search/album?q=${encodeURIComponent(q)}`) as Search;
+    const hits = pickAlbumHits(search.response?.sections?.[0]?.hits ?? [], albumName, artistName).slice(0, 2);
+
+    type Album = {
+      response: {
+        album: {
+          url: string;
+          release_date: string | null;
+          release_date_for_display: string | null;
+          description_annotation: { annotations?: { body?: { dom?: unknown } }[] } | null;
+        };
+      };
+    };
+    let fallback: { description: null; releaseDate?: string; url: string } | null = null;
+    for (const h of hits) {
+      const a = (await get(`https://genius.com/api/albums/${h.result.id}`) as Album).response?.album;
+      if (!a) continue;
+      const releaseDate = a.release_date ?? a.release_date_for_display ?? undefined;
+      const dom = a.description_annotation?.annotations?.[0]?.body?.dom;
+      // An edition's page is often blank; then the original's description stands in, with its own date and link.
+      if (geniusHasText(dom)) return { description: dom, releaseDate, url: a.url };
+      fallback ??= { description: null, releaseDate, url: a.url };
+    }
+    return fallback;
+  } catch (err) {
+    log(`[genius] albumAbout error: ${err}`);
     return null;
   }
 });

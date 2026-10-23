@@ -1,0 +1,148 @@
+/* The one modal surface (Dialog.tsx). Matches the batch 4 dialogs (Queuedle's Past games, the rank tiers):
+   raised navy, 1.2em radius, the floating-shell shadow, a 2.2em round close button. */
+.dialog {
+  --dialog-w: 36em;
+  width: min(calc(100vw - 32px), var(--dialog-w));
+  max-width: none;
+  max-height: calc(100vh - 56px);
+  margin: auto;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-card);
+  background: var(--bg-1);
+  color: var(--text);
+  box-shadow: var(--float-shadow);
+  overflow: hidden;
+  -webkit-app-region: no-drag;
+}
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+  animation: dialogIn var(--dur) var(--ease);
+}
+.dialog:focus { outline: none; }
+.dialog::backdrop {
+  background: var(--overlay);
+  animation: fadeIn var(--dur) var(--ease);
+}
+
+.sm { --dialog-w: 26em; }
+.md { --dialog-w: 36em; }
+.lg { --dialog-w: 64em; }
+
+/* The form wraps the body and the action row without becoming a layout box of its own. */
+.form { display: contents; }
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  padding: 1.2em 1.1em 0 1.5em;
+  flex-shrink: 0;
+}
+.title {
+  font-size: var(--fs-title-dialog);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2.2em;
+  height: 2.2em;
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-round);
+  background: none;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast);
+}
+.close:hover { background: var(--row-hover); color: var(--text); }
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.9em 1.5em 1.5em;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.6em;
+  padding: 0 1.5em 1.5em;
+  flex-shrink: 0;
+}
+
+/* ── Shared dialog content: import these classes from this module ── */
+
+/* A short explanation under the title. */
+.note {
+  font-size: var(--fs-prose);
+  line-height: 1.55;
+  color: var(--text-2);
+  max-width: 62ch;
+}
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+/* A labelled field: <label class="field"><span class="label">…</span><input class="input"></label> */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+}
+.label {
+  font-size: var(--fs-label);
+  font-weight: 500;
+  color: var(--text-2);
+}
+/* Borderless tonal field; focus shows the global ring. */
+.input {
+  width: 100%;
+  font: inherit;
+  font-size: max(13px, 1em);
+  color: var(--text);
+  background: var(--row-hover);
+  border: none;
+  border-radius: var(--r-row);
+  padding: 0.65em 0.85em;
+  outline: none;
+  transition: background var(--dur-fast) var(--ease-fast);
+}
+.input:hover:not(:disabled) { background: rgba(var(--tint), 0.12); }
+.input:focus-visible { outline: var(--focus-width) solid var(--focus-color); outline-offset: 2px; }
+.input::placeholder { color: var(--text-3); }
+.input:disabled { opacity: 0.5; }
+textarea.input {
+  resize: vertical;
+  min-height: 7.5em;
+  line-height: 1.5;
+}
+.error {
+  font-size: var(--fs-label);
+  line-height: 1.45;
+  color: rgb(var(--danger));
+}
+
+@keyframes dialogIn {
+  from { opacity: 0; transform: translateY(0.5em) scale(0.98); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dialog[open],
+  .dialog::backdrop { animation: none; }
+  .close,
+  .input { transition: none; }
+}

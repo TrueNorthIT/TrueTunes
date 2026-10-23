@@ -1,9 +1,11 @@
-/* Full-window skinny side-panel layout: queue fills the height, condensed
-   transport strip pinned at the bottom. */
+/* Full-window skinny layout: the queue fills the height, the Now playing card docks at the bottom.
+   The blurred artwork (AmbientBackdrop) sits behind both, as in the full layout. */
 .shell {
+  position: relative;
   height: 100vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: var(--bg);
+  container: skinny / inline-size;
 }

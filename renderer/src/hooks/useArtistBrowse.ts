@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/sonosApi';
+import { fetchImage } from '../lib/imageCache';
+import { withArtworkSize } from '../lib/artworkUrl';
 import { isArtist, parseServiceSearch } from '../lib/itemHelpers';
 import type { AlbumTrack } from './useAlbumBrowse';
 import { parsePlaylistTracks } from './usePlaylistBrowse';
@@ -75,6 +77,10 @@ export function artistQueryOptions(
       if (r.error) throw new Error(r.error);
 
       const { parsed, topSongsItem } = parseArtist(r.data as ArtistResponse);
+      // Start the hero photo now, alongside top songs and Genius below: the image service takes about two seconds for
+      // a size it hasn't served, and waiting for this whole query first made the hero the last thing on the page.
+      // usePhotoState asks for the same URL and joins this request.
+      if (parsed.imageUrl) void fetchImage(withArtworkSize(parsed.imageUrl), true);
 
       const fetchTopSongs = async (): Promise<AlbumTrack[]> => {
         if (!topSongsItem) return [];
@@ -119,13 +125,13 @@ export function useArtistBrowse(
  * full artistQueryOptions (top songs + Genius bio) would be wasteful. Cached
  * under a distinct key so it doesn't conflict with the full browse cache.
  */
-export function useArtistImage(
+export function artistImageQueryOptions(
   artistId: string | undefined,
   serviceId: string | undefined,
   accountId: string | undefined,
   defaults?: string,
 ) {
-  return useQuery({
+  return {
     queryKey: ['artist-image', artistId] as const,
     queryFn: async (): Promise<string | null> => {
       const r = await api.browse.artist(artistId!, { serviceId, accountId, defaults, muse2: true });
@@ -136,5 +142,14 @@ export function useArtistImage(
     staleTime: Infinity,
     gcTime: 60 * 60 * 1000,
     retry: false,
-  });
+  };
+}
+
+export function useArtistImage(
+  artistId: string | undefined,
+  serviceId: string | undefined,
+  accountId: string | undefined,
+  defaults?: string,
+) {
+  return useQuery(artistImageQueryOptions(artistId, serviceId, accountId, defaults));
 }

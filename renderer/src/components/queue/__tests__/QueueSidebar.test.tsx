@@ -40,7 +40,9 @@ vi.mock('../../../providers', () => ({
   }),
 }));
 
-vi.mock('../../../hooks/useAttribution', () => ({
+vi.mock('../../../hooks/useAttribution', async (importOriginal) => ({
+  // keep the real pure resolveAttribution (moved here from QueueSidebar); stub only the hook
+  ...(await importOriginal<typeof import('../../../hooks/useAttribution')>()),
   useAttribution: () => ({}),
   attributionContentKey: () => null,
 }));
@@ -107,7 +109,9 @@ beforeEach(() => {
 describe('QueueSidebar — rendering', () => {
   it('renders item count in header', () => {
     setup();
-    expect(screen.getByText(/Queue · Living Room · 3/)).toBeInTheDocument();
+    expect(screen.getByText('Queue')).toBeInTheDocument();
+    expect(screen.getByText('Living Room')).toBeInTheDocument();
+    expect(screen.getByLabelText('3 tracks')).toHaveTextContent('3');
   });
 
   it('shows empty message when no items', () => {
@@ -472,5 +476,37 @@ describe('DJ autoplay section', () => {
     setup({});
     expect(screen.queryByText(/DJ paused/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/DJ takes over/i)).not.toBeInTheDocument();
+  });
+});
+
+// ─── grouping: played / now playing / up next ────────────────────────────────
+
+describe('QueueSidebar — grouping', () => {
+  it('keeps played tracks in the one list and labels played, now playing and up next', () => {
+    setup({ currentQueueItemId: '2' }); // index 1 is playing
+    expect(screen.getByTestId('row-0')).toBeInTheDocument();
+    expect(screen.getByTestId('row-1')).toBeInTheDocument();
+    expect(screen.getByTestId('row-2')).toBeInTheDocument();
+    expect(screen.getByText('Played')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Played/ })).not.toBeInTheDocument();
+    expect(screen.getByText('Now playing')).toBeInTheDocument();
+    expect(screen.getByText('Up next')).toBeInTheDocument();
+  });
+
+  it('leaves the playing track to the Now playing card in skinny mode, so it shows once', () => {
+    setup({ currentQueueItemId: '2', variant: 'skinny' });
+    expect(screen.queryByTestId('row-1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Now playing')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Jump to now playing' })).not.toBeInTheDocument();
+    expect(screen.getByText('Up next')).toBeInTheDocument();
+    expect(screen.getByTestId('row-2')).toBeInTheDocument();
+    expect(screen.getByText('Played')).toBeInTheDocument();
+  });
+
+  it('is a flat list when nothing is playing', () => {
+    setup();
+    expect(screen.getByTestId('row-0')).toBeInTheDocument();
+    expect(screen.queryByText('Now playing')).not.toBeInTheDocument();
+    expect(screen.queryByText('Played')).not.toBeInTheDocument();
   });
 });

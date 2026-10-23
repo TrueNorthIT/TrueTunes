@@ -26,12 +26,14 @@ import type { SonosItem, SonosItemId } from './types/sonos';
 
 import { TopNav } from './components/TopNav';
 import { PlayerBar } from './components/PlayerBar';
+import { AmbientBackdrop } from './components/AmbientBackdrop';
 import { HomePanel, fetchYtmSections } from './components/HomePanel';
 import type { YtmSections } from './components/HomePanel';
 import { AlbumPanel } from './components/album/AlbumPanel';
 import { ArtistPanel } from './components/artist/ArtistPanel';
 import { ContainerPanel } from './components/ContainerPanel';
 import { DiscoverPanel } from './components/DiscoverPanel';
+import { SearchPanel } from './components/search/SearchPanel';
 import { useAutoplay } from './hooks/useAutoplay';
 import type { NormalizedQueueItem } from './types/provider';
 import { LeaderboardPanel } from './components/LeaderboardPanel';
@@ -55,6 +57,7 @@ import { usePrefetchNextLyrics } from './hooks/usePrefetchNextLyrics';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Splash } from './components/Splash';
 import { getName } from './lib/itemHelpers';
+import { effectiveDockedWidth } from './lib/queueWidth';
 
 import styles from './styles/App.module.css';
 
@@ -101,7 +104,13 @@ function MainApp() {
   const [displayName, setDisplayName] = useState<string | null | undefined>(undefined); // undefined = not yet loaded
   const [entraLoading, setEntraLoading] = useState(false);
   useEnsureFavourites(displayName);
-  const [queueDockedWidth, setQueueDockedWidth] = useState<number>(380);
+  // The saved width is the user's preference; the state is what this window can give it
+  // (effectiveDockedWidth), re-derived on every resize and never written back as the preference.
+  const queueWidthPrefRef = useRef(380);
+  const [queueDockedWidth, setQueueDockedWidth] = useState<number>(() => effectiveDockedWidth(380, window.innerWidth));
+  const fitQueueWidth = useCallback(() => {
+    setQueueDockedWidth(effectiveDockedWidth(queueWidthPrefRef.current, window.innerWidth));
+  }, []);
   const queueSidebarRef = useRef<QueueSidebarHandle>(null);
   // Read inside handleAddToQueue without making it depend on queue contents —
   // it's passed to most of the tree, and rebuilding it on every queue tick would
@@ -116,26 +125,26 @@ function MainApp() {
 
 useEffect(() => {
     window.sonos.getDisplayName().then(setDisplayName);
-    window.sonos.getQueueDockedWidth().then(setQueueDockedWidth).catch(() => {});
+    window.sonos.getQueueDockedWidth().then((w) => {
+      queueWidthPrefRef.current = w;
+      fitQueueWidth();
+    }).catch(() => {});
     return window.sonos.onEntraReady(() => {
       window.sonos.getDisplayName().then(setDisplayName).catch(() => {});
     });
-  }, []);
+  }, [fitQueueWidth]);
 
   useEffect(() => {
-    function clamp() {
-      const max = window.innerWidth - (800 + 64);
-      setQueueDockedWidth((w) => (w > max ? max : w));
-    }
-    window.addEventListener('resize', clamp);
-    clamp();
-    return () => window.removeEventListener('resize', clamp);
-  }, []);
+    window.addEventListener('resize', fitQueueWidth);
+    fitQueueWidth();
+    return () => window.removeEventListener('resize', fitQueueWidth);
+  }, [fitQueueWidth]);
 
   const handleSetQueueDockedWidth = useCallback((width: number) => {
-    setQueueDockedWidth(width);
+    queueWidthPrefRef.current = width;
+    fitQueueWidth();
     window.sonos.setQueueDockedWidth(width).catch(() => {});
-  }, []);
+  }, [fitQueueWidth]);
 
   const splashReadyRef = useRef(false);
   useEffect(() => {
@@ -299,23 +308,10 @@ useEffect(() => {
       // hand Queuedle wrong answers for "who queued this?", and feed the
       // recommender its own output until the corpus is mostly self-generated.
       const attribute = opts?.attribute !== false;
+      // Sonos can only start a station by replacing the whole queue, and this queue is the office's.
+      // Every caller routes through here, so refuse it once: a station opens as its track list instead.
       if (isProgram(item)) {
-        const rid = item.resource?.id as SonosItemId | undefined;
-        const iid = typeof item.id === 'object' ? (item.id as SonosItemId) : undefined;
-        const r = (await window.sonos.loadContent({
-          type: item.resource?.type ?? item.type ?? 'PROGRAM',
-          id: {
-            objectId: rid?.objectId ?? iid?.objectId,
-            accountId: rid?.accountId ?? iid?.accountId,
-            serviceId: rid?.serviceId ?? iid?.serviceId,
-          },
-          playbackAction: 'PLAY',
-          playModes: { shuffle: false },
-          defaults: item.resource?.defaults ?? undefined,
-          queueAction: 'REPLACE',
-        })) as { error?: string } | null;
-        if (r && 'error' in r && r.error) showToast('Play failed: ' + r.error);
-        else reloadQueue();
+        showToast('Open the station to add its songs');
         return;
       }
 
@@ -510,6 +506,7 @@ useEffect(() => {
     {skinny ? (
       <SkinnyShell
         autoplay={autoplay}
+        displayName={displayName}
         isAuthed={isAuthed}
         playback={playback}
         queueItems={queueItems}
@@ -542,7 +539,9 @@ useEffect(() => {
         }}
         onChangelogOpen={() => setChangelogOpen(true)}
       />
+      <AmbientBackdrop nowPlayingArt={playback.artUrl} />
       <div className={styles.body}>
+        <main className={styles.main}>
         <Routes>
           <Route
             path="/"
@@ -553,26 +552,17 @@ useEffect(() => {
                 ytm={ytm}
                 ytmLoading={ytmLoading}
                 displayName={displayName}
+                playback={playback}
+                queueItems={queueItems}
               />
             }
           />
-          <Route
-            path="/search"
-            element={
-              <HomePanel
-                isAuthed={isAuthed}
-                onAddToQueue={handleAddToQueue}
-                ytm={ytm}
-                ytmLoading={ytmLoading}
-                displayName={displayName}
-              />
-            }
-          />
-          <Route path="/discover" element={<DiscoverPanel onAddToQueue={handleAddToQueue} displayName={displayName} />} />
-          <Route path="/album/:id" element={<AlbumPanel onAddToQueue={handleAddToQueue} />} />
+          <Route path="/search" element={<SearchPanel onAddToQueue={handleAddToQueue} />} />
+          <Route path="/discover" element={<DiscoverPanel onAddToQueue={handleAddToQueue} displayName={displayName} queueItems={queueItems} />} />
+          <Route path="/album/:id" element={<AlbumPanel onAddToQueue={handleAddToQueue} playback={playback} />} />
           <Route path="/artist/:id" element={<ArtistPanel onAddToQueue={handleAddToQueue} currentTrackName={playback.trackName} isPlaybackActive={playback.isPlaying} />} />
           <Route path="/container/:id" element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
-          <Route path="/leaderboard" element={<LeaderboardPanel />} />
+          <Route path="/leaderboard" element={<LeaderboardPanel onAddToQueue={handleAddToQueue} />} />
           <Route path="/leaderboard/stats" element={<MusicStatsPanel />} />
           <Route path="/queuedle" element={<QueuedlePanel />} />
           <Route path="/queuedle/stats" element={<QueuedleStatsPanel />} />
@@ -580,8 +570,10 @@ useEffect(() => {
           <Route path="/profile/:userName" element={<ProfilePanel onAddToQueue={handleAddToQueue} displayName={displayName} onSignOut={async () => { setDisplayName(null); setEntraLoading(true); await window.sonos.entraSignOut().catch(() => {}); await window.sonos.entraReLogin().catch(() => {}); const name = await window.sonos.getDisplayName().catch(() => null); setDisplayName(name); setEntraLoading(false); }} onChangeName={async (name) => { const result = await window.sonos.renameUser(displayName ?? '', name).catch(() => ({ error: 'network' })); if (!result?.error) setDisplayName(name); return result?.error ? { error: result.error } : null; }} />} />
           <Route path="/playlist/:id" element={<PlaylistPanel displayName={displayName} onAddToQueue={handleAddToQueue} />} />
         </Routes>
+        </main>
         <QueueSidebar
           ref={queueSidebarRef}
+          viewer={displayName}
           items={queueItems}
           setItems={setQueueItems}
           isLoading={queueLoading}

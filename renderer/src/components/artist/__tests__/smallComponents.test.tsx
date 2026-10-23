@@ -1,48 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { RadioCard } from '../RadioCard';
 import { TopSongRow } from '../TopSongRow';
-import { HeroTrackRow } from '../HeroTrackRow';
 import { ArtistAlbumCard } from '../ArtistAlbumCard';
 import { LatestReleaseCard } from '../LatestReleaseCard';
 import type { SonosItem } from '../../../types/sonos';
 import type { AlbumTrack } from '../../../hooks/useAlbumBrowse';
 
 vi.mock('../../../hooks/useImage', () => ({ useImage: () => null }));
-
-// ─── RadioCard ────────────────────────────────────────────────────────────────
-
-describe('RadioCard', () => {
-  const item: SonosItem = { title: 'Beatles Radio', type: 'ITEM_PLAYLIST' };
-
-  it('renders Artist Radio label', () => {
-    render(<RadioCard item={item} artUrl={null} onOpen={vi.fn()} />);
-    expect(screen.getByText('Artist Radio')).toBeInTheDocument();
-  });
-
-  it('renders item title', () => {
-    render(<RadioCard item={item} artUrl={null} onOpen={vi.fn()} />);
-    expect(screen.getByText('Beatles Radio')).toBeInTheDocument();
-  });
-
-  it('calls onOpen when clicked', () => {
-    const onOpen = vi.fn();
-    render(<RadioCard item={item} artUrl={null} onOpen={onOpen} />);
-    fireEvent.click(screen.getByText('Beatles Radio'));
-    expect(onOpen).toHaveBeenCalledWith(item);
-  });
-
-  it('renders subtitle when present', () => {
-    const withSub = { ...item, subtitle: 'Radio based on The Beatles' };
-    render(<RadioCard item={withSub} artUrl={null} onOpen={vi.fn()} />);
-    expect(screen.getByText('Radio based on The Beatles')).toBeInTheDocument();
-  });
-
-  it('renders art image when artUrl is set', () => {
-    const { container } = render(<RadioCard item={item} artUrl="https://art.jpg" onOpen={vi.fn()} />);
-    expect(container.querySelector('img')).toHaveAttribute('src', 'https://art.jpg');
-  });
-});
 
 // ─── TopSongRow ───────────────────────────────────────────────────────────────
 
@@ -62,37 +26,56 @@ function makeAlbumTrack(overrides: Partial<AlbumTrack> = {}): AlbumTrack {
   };
 }
 
+const rowProps = { onOpenAlbum: vi.fn(), onOpenArtist: vi.fn() };
+const inList = (ui: React.ReactElement) => render(<ol>{ui}</ol>);
+
 describe('TopSongRow', () => {
   it('renders track title', () => {
-    render(<TopSongRow track={makeAlbumTrack()} index={0} isSelected={false} onAdd={vi.fn()} onClick={vi.fn()} onDragStart={vi.fn()} />);
+    inList(<TopSongRow track={makeAlbumTrack()} index={0} isSelected={false} onAdd={vi.fn()} onClick={vi.fn()} onDragStart={vi.fn()} {...rowProps} />);
     expect(screen.getByText('Come Together')).toBeInTheDocument();
   });
 
   it('renders 1-based index number', () => {
-    render(<TopSongRow track={makeAlbumTrack()} index={2} isSelected={false} onAdd={vi.fn()} onClick={vi.fn()} onDragStart={vi.fn()} />);
-    expect(screen.getByText('3')).toBeInTheDocument();
+    inList(<TopSongRow track={makeAlbumTrack()} index={2} isSelected={false} onAdd={vi.fn()} onClick={vi.fn()} onDragStart={vi.fn()} {...rowProps} />);
+    expect(screen.getByText('03')).toBeInTheDocument();
   });
 
   it('renders formatted duration', () => {
-    render(<TopSongRow track={makeAlbumTrack({ durationSeconds: 259 })} index={0} isSelected={false} onAdd={vi.fn()} onClick={vi.fn()} onDragStart={vi.fn()} />);
+    inList(<TopSongRow track={makeAlbumTrack({ durationSeconds: 259 })} index={0} isSelected={false} onAdd={vi.fn()} onClick={vi.fn()} onDragStart={vi.fn()} {...rowProps} />);
     expect(screen.getByText('4:19')).toBeInTheDocument();
   });
 
   it('calls onAdd with raw item when + is clicked', () => {
     const onAdd = vi.fn();
     const raw = { name: 'CT', type: 'TRACK' } as SonosItem;
-    render(<TopSongRow track={makeAlbumTrack({ raw })} index={0} isSelected={false} onAdd={onAdd} onClick={vi.fn()} onDragStart={vi.fn()} />);
-    fireEvent.click(screen.getByText('+'));
+    inList(<TopSongRow track={makeAlbumTrack({ raw })} index={0} isSelected={false} onAdd={onAdd} onClick={vi.fn()} onDragStart={vi.fn()} {...rowProps} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Add Come Together to queue' }));
     expect(onAdd).toHaveBeenCalledWith(raw);
   });
 
+  it('opens the album from the title and a collaborator from the artist cell', () => {
+    const onOpenAlbum = vi.fn();
+    const onOpenArtist = vi.fn();
+    const track = makeAlbumTrack({ artists: ['The Beatles', 'Billy Preston'] });
+    inList(<TopSongRow track={track} index={0} isSelected={false} artistName="The Beatles" onAdd={vi.fn()} onClick={vi.fn()} onDragStart={vi.fn()} onOpenAlbum={onOpenAlbum} onOpenArtist={onOpenArtist} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Come Together, open album' }));
+    expect(onOpenAlbum).toHaveBeenCalledWith(track);
+    expect(screen.queryByRole('button', { name: 'The Beatles, open artist' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Billy Preston, open artist' }));
+    expect(onOpenArtist).toHaveBeenCalledWith('Billy Preston');
+  });
+
+  it('swaps the rank for the now-playing indicator on the current track', () => {
+    inList(<TopSongRow track={makeAlbumTrack()} index={0} isSelected={false} isCurrentTrack isPlaybackActive onAdd={vi.fn()} onClick={vi.fn()} onDragStart={vi.fn()} {...rowProps} />);
+    expect(screen.getByRole('img', { name: 'Now playing' })).toBeInTheDocument();
+    expect(screen.queryByText('01')).not.toBeInTheDocument();
+  });
+
   it('shows ExplicitBadge when explicit is true', () => {
-    render(<TopSongRow track={makeAlbumTrack({ explicit: true })} index={0} isSelected={false} onAdd={vi.fn()} onClick={vi.fn()} onDragStart={vi.fn()} />);
+    inList(<TopSongRow track={makeAlbumTrack({ explicit: true })} index={0} isSelected={false} onAdd={vi.fn()} onClick={vi.fn()} onDragStart={vi.fn()} {...rowProps} />);
     expect(screen.getByTitle('Explicit')).toBeInTheDocument();
   });
 });
-
-// ─── HeroTrackRow ─────────────────────────────────────────────────────────────
 
 // ─── ArtistAlbumCard ──────────────────────────────────────────────────────────
 
@@ -129,9 +112,14 @@ describe('ArtistAlbumCard', () => {
 describe('LatestReleaseCard', () => {
   const album: SonosItem = { title: 'Now and Then', type: 'ITEM_ALBUM' };
 
-  it('renders Latest Release label', () => {
+  it('renders the Latest release label', () => {
     render(<LatestReleaseCard album={album} onOpen={vi.fn()} />);
-    expect(screen.getByText('Latest Release')).toBeInTheDocument();
+    expect(screen.getByText('Latest release')).toBeInTheDocument();
+  });
+
+  it('puts the year on the label', () => {
+    render(<LatestReleaseCard album={album} onOpen={vi.fn()} year={2023} />);
+    expect(screen.getByText('Latest release · 2023')).toBeInTheDocument();
   });
 
   it('renders album title', () => {
@@ -142,7 +130,8 @@ describe('LatestReleaseCard', () => {
   it('calls onOpen when clicked', () => {
     const onOpen = vi.fn();
     render(<LatestReleaseCard album={album} onOpen={onOpen} />);
-    fireEvent.click(screen.getByText('Now and Then'));
+    // the caption text is click-through (pointer-events: none); the card's open button sits under it
+    fireEvent.click(screen.getByRole('button', { name: 'Open Now and Then' }));
     expect(onOpen).toHaveBeenCalledWith(album);
   });
 
@@ -150,59 +139,5 @@ describe('LatestReleaseCard', () => {
     const withSub = { ...album, subtitle: 'Single' };
     render(<LatestReleaseCard album={withSub} onOpen={vi.fn()} />);
     expect(screen.getByText('Single')).toBeInTheDocument();
-  });
-});
-
-import type { HeroTrack } from '../HeroTrackRow';
-
-function makeHeroTrack(overrides: Partial<HeroTrack> = {}): HeroTrack {
-  return {
-    title: 'Hey Jude',
-    durationSeconds: 431,
-    artUrl: null,
-    explicit: false,
-    raw: { name: 'Hey Jude', type: 'TRACK' } as SonosItem,
-    ...overrides,
-  };
-}
-
-describe('HeroTrackRow', () => {
-  it('renders track title', () => {
-    render(
-      <HeroTrackRow track={makeHeroTrack()} index={0} isSelected={false} onClick={vi.fn()} onDragStart={vi.fn()} onAdd={vi.fn()} />
-    );
-    expect(screen.getByText('Hey Jude')).toBeInTheDocument();
-  });
-
-  it('calls onClick when row is clicked', () => {
-    const onClick = vi.fn();
-    render(
-      <HeroTrackRow track={makeHeroTrack()} index={3} isSelected={false} onClick={onClick} onDragStart={vi.fn()} onAdd={vi.fn()} />
-    );
-    fireEvent.click(screen.getByText('Hey Jude'));
-    expect(onClick).toHaveBeenCalledWith(3, expect.any(Object));
-  });
-
-  it('calls onAdd when + button is clicked', () => {
-    const onAdd = vi.fn();
-    render(
-      <HeroTrackRow track={makeHeroTrack()} index={0} isSelected={false} onClick={vi.fn()} onDragStart={vi.fn()} onAdd={onAdd} />
-    );
-    fireEvent.click(screen.getByText('+'));
-    expect(onAdd).toHaveBeenCalled();
-  });
-
-  it('renders formatted duration', () => {
-    render(
-      <HeroTrackRow track={makeHeroTrack({ durationSeconds: 431 })} index={0} isSelected={false} onClick={vi.fn()} onDragStart={vi.fn()} onAdd={vi.fn()} />
-    );
-    expect(screen.getByText('7:11')).toBeInTheDocument();
-  });
-
-  it('shows ExplicitBadge when explicit is true', () => {
-    render(
-      <HeroTrackRow track={makeHeroTrack({ explicit: true })} index={0} isSelected={false} onClick={vi.fn()} onDragStart={vi.fn()} onAdd={vi.fn()} />
-    );
-    expect(screen.getByTitle('Explicit')).toBeInTheDocument();
   });
 });

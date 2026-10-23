@@ -97,4 +97,17 @@ describe('CreatePlaylistDialog', () => {
     await waitFor(() => screen.getByText('Name too long'));
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  it('says the pending track goes in, and Enter in the name field creates it', async () => {
+    const user = userEvent.setup();
+    vi.mocked(window.sonos.createPlaylist).mockResolvedValueOnce(NEW_PLAYLIST);
+    vi.mocked(window.sonos.addTrackToPlaylist).mockResolvedValueOnce({} as PlaylistDoc);
+
+    renderDialog(PENDING_TRACK);
+
+    expect(screen.getByRole('dialog', { name: 'New playlist' })).toBeInTheDocument();
+    expect(screen.getByText(/Desert Rose/)).toBeInTheDocument();
+    await user.type(screen.getByRole('textbox', { name: 'Name' }), 'Road Trip{Enter}');
+    await waitFor(() => expect(vi.mocked(window.sonos.createPlaylist)).toHaveBeenCalledWith('Road Trip', false));
+  });
 });

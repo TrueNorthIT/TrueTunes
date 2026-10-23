@@ -1,102 +1,88 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
+import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { ContextMenuProvider, useTrackContextMenu } from '../ContextMenu';
 import type { SonosItem } from '../../../types/sonos';
-import { AlbumTrackRow } from '../../album/AlbumTrackRow';
-import { TopSongRow } from '../../artist/TopSongRow';
-import type { AlbumTrack } from '../../../hooks/useAlbumBrowse';
 
-vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
+const PLAYLISTS = Array.from({ length: 8 }, (_, i) => ({ id: `p${i}`, name: `Playlist ${i}`, owner: 'Alice', isPublic: true }));
 vi.mock('../../../hooks/usePlaylists', () => ({
-  useMyPlaylists: () => ({ owned: [], joined: [], isLoading: false }),
-  favouritesId: (n: string) => `fav:${n}`,
+  useMyPlaylists: () => ({ owned: PLAYLISTS, joined: [PLAYLISTS[0]], isLoading: false }),
+  favouritesId: (name: string) => `fav-${name}`,
 }));
-vi.mock('../../../hooks/useImage', () => ({ useImage: () => null }));
-vi.mock('../Toast', () => ({ useToast: () => ({ showToast: vi.fn() }) }));
 
-const sonosItem = { type: 'ITEM_TRACK', title: 'Come Together' } as unknown as SonosItem;
-const track = { uri: 'u', trackName: 'Come Together', artist: 'The Beatles' } as PlaylistTrack;
+const TRACK: PlaylistTrack = {
+  uri: 'u', trackName: 'Desert Rose', artist: 'Sting', serviceId: 's', accountId: 'a', addedBy: 'Alice', addedAt: 0,
+};
 
-function Opener() {
+function Row() {
   const { showTrackMenu } = useTrackContextMenu();
-  return <div onContextMenu={(e) => showTrackMenu({ track, sonosItem }, e)}>row</div>;
+  return <div onContextMenu={(e) => showTrackMenu({ track: TRACK, sonosItem: {} as SonosItem }, e)}>Row</div>;
 }
 
-function setup() {
-  const onAddToQueue = vi.fn();
-  const onQueueNext = vi.fn();
+function renderMenu(onAddToQueue = vi.fn()) {
   render(
     <QueryClientProvider client={new QueryClient()}>
-      <ContextMenuProvider displayName="Rich" onAddToQueue={onAddToQueue} onQueueNext={onQueueNext}>
-        <Opener />
-      </ContextMenuProvider>
+      <MemoryRouter>
+        <ContextMenuProvider displayName={null} onAddToQueue={onAddToQueue} onQueueNext={vi.fn()}>
+          <Row />
+        </ContextMenuProvider>
+      </MemoryRouter>
     </QueryClientProvider>,
   );
-  fireEvent.contextMenu(screen.getByText('row'));
-  return { onAddToQueue, onQueueNext };
+  fireEvent.contextMenu(screen.getByText('Row'), { clientX: 10, clientY: 10 });
+  return onAddToQueue;
 }
 
 describe('track context menu', () => {
-  it('"Queue next" queues the item after the current song', () => {
-    const { onAddToQueue, onQueueNext } = setup();
-    fireEvent.click(screen.getByText('Queue next'));
-    expect(onQueueNext).toHaveBeenCalledWith(sonosItem);
-    expect(onAddToQueue).not.toHaveBeenCalled();
-    expect(screen.queryByText('Queue next')).not.toBeInTheDocument();
+  it('is a menu of buttons, focused with nothing pre-selected', () => {
+    renderMenu();
+    const menu = screen.getByRole('menu', { name: 'Desert Rose' });
+    expect(menu).toHaveFocus();
+    expect(screen.getAllByRole('menuitem').map((b) => b.textContent)).toEqual([
+      'Queue next', 'Add to queue', 'Add to playlist', "View Alice's profile",
+    ]);
   });
 
-  it('"Add to queue" still adds to the end', () => {
-    const { onAddToQueue, onQueueNext } = setup();
-    fireEvent.click(screen.getByText('Add to queue'));
-    expect(onAddToQueue).toHaveBeenCalledWith(sonosItem, -1);
-    expect(onQueueNext).not.toHaveBeenCalled();
+  it('arrow keys move between items and wrap', async () => {
+    const user = userEvent.setup();
+    renderMenu();
+    await user.keyboard('{ArrowDown}');
+    expect(screen.getByRole('menuitem', { name: 'Queue next' })).toHaveFocus();
+    await user.keyboard('{ArrowUp}');
+    expect(screen.getByRole('menuitem', { name: "View Alice's profile" })).toHaveFocus();
+  });
+
+  it('Enter straight after opening does not queue anything', async () => {
+    const user = userEvent.setup();
+    const onAddToQueue = renderMenu();
+    await user.keyboard('{Enter}');
+    expect(onAddToQueue).not.toHaveBeenCalled();
+  });
+
+  it('Escape closes it', async () => {
+    const user = userEvent.setup();
+    renderMenu();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('menu')).toBeNull();
   });
 });
 
-describe('Queue next is offered on track rows across the app', () => {
-  const raw = { name: 'Come Together', type: 'TRACK' } as SonosItem;
-  const albumTrack: AlbumTrack = {
-    title: 'Come Together',
-    ordinal: 1,
-    durationSeconds: 259,
-    artUrl: null,
-    id: { objectId: 'trk-1', serviceId: 'svc', accountId: 'acc' },
-    artists: ['The Beatles'],
-    artistObjects: undefined,
-    albumName: null,
-    albumId: null,
-    explicit: false,
-    raw,
-  };
-  const noop = vi.fn();
+describe('playlist submenu placement', () => {
+  afterEach(() => vi.restoreAllMocks());
 
-  function rightClickQueueNext(row: React.ReactElement) {
-    const onQueueNext = vi.fn();
-    render(
-      <QueryClientProvider client={new QueryClient()}>
-        <ContextMenuProvider displayName="Rich" onAddToQueue={vi.fn()} onQueueNext={onQueueNext}>
-          {row}
-        </ContextMenuProvider>
-      </QueryClientProvider>,
-    );
-    fireEvent.contextMenu(screen.getByText('Come Together'));
-    fireEvent.click(screen.getByText('Queue next'));
-    return onQueueNext;
-  }
-
-  it('album track rows', () => {
-    const onQueueNext = rightClickQueueNext(
-      <AlbumTrackRow track={albumTrack} isPlaylistOrProgram={false} isSelected={false} serviceId="svc"
-        accountId="acc" onClick={noop} onDragStart={noop} onAdd={noop} />,
-    );
-    expect(onQueueNext).toHaveBeenCalledWith(raw);
-  });
-
-  it('artist top songs', () => {
-    const onQueueNext = rightClickQueueNext(
-      <TopSongRow track={albumTrack} index={0} isSelected={false} onAdd={noop} onClick={noop} onDragStart={noop} />,
-    );
-    expect(onQueueNext).toHaveBeenCalledWith(raw);
+  it('stays inside the window: lifted off the bottom and flipped left off the right', () => {
+    // Every box reports 500px tall and 240px wide, with the "Add to playlist" item low and near the right edge.
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      top: 600, bottom: 1100, left: 860, right: 1100, width: 240, height: 500, x: 860, y: 600, toJSON: () => ({}),
+    });
+    renderMenu();
+    fireEvent.mouseEnter(screen.getByRole('menuitem', { name: 'Add to playlist' }));
+    const sub = screen.getByRole('menu', { name: 'Add to playlist' });
+    // innerHeight 768 - 500 - 8 = 260; anchor x 1104 + 240 overflows 1280, so it opens left of the menu: 856 - 240.
+    expect(sub.style.top).toBe('260px');
+    expect(sub.style.left).toBe('616px');
+    expect(screen.getAllByRole('menuitem', { name: /^Playlist 0$/ })).toHaveLength(1);
   });
 });

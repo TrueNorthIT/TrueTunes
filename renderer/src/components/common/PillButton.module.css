@@ -1,0 +1,30 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  border: none;
+  border-radius: var(--r-pill);
+  font-family: inherit;
+  font-size: var(--fs-label);
+  font-weight: 600;
+  padding: 0.55em 1.1em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    opacity var(--dur-fast) var(--ease-fast),
+    background var(--dur-fast) var(--ease-fast);
+}
+.pill:disabled { opacity: 0.4; cursor: default; }
+
+.primary { background: var(--text); color: var(--bg); }
+.primary:hover:not(:disabled) { opacity: 0.78; }
+
+.ghost { background: rgba(var(--tint), 0.12); color: var(--text); }
+.ghost:hover:not(:disabled) { background: rgba(var(--tint), 0.22); }
+
+.danger { background: rgba(var(--danger), 0.16); color: rgb(var(--danger)); }
+.danger:hover:not(:disabled) { background: rgba(var(--danger), 0.28); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pill { transition: none; }
+}

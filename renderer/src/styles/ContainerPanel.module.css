@@ -1,113 +1,75 @@
+/* A music service shelf in full. Sized in em from the page base (the global .page-scale class on .page). */
+
 .panel {
   flex: 1;
+  min-width: 0;
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: var(--nav-h) 28px calc(var(--player-h) + 24px);
+  padding: calc(var(--nav-h) + 16px) 28px calc(var(--player-h) + 24px);
 }
 
-/* ── Header ── */
-.header {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 28px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--border);
+.page {
+  max-width: 2400px;
+  margin: 0 auto;
+  container-type: inline-size;
 }
 
-.artWrap {
-  width: 80px;
-  height: 80px;
-  border-radius: var(--r-md);
-  overflow: hidden;
-  background: var(--bg-1);
-  flex-shrink: 0;
-}
-.artWrap img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.artPh {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  color: var(--text-3);
-}
+/* ── Header: the shelf's name and what's in it ───────────────────────────── */
 
+.head { margin-bottom: 1.4em; }
 .title {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: var(--fs-headline);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
   color: var(--text);
-  letter-spacing: -0.4px;
 }
 .sub {
-  font-size: 13px;
+  margin-top: 0.3em;
+  font-size: var(--fs-body);
   color: var(--text-3);
-  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
 }
 
-/* ── Grid ── */
+.sections { display: flex; flex-direction: column; gap: 1.4em; }
+
+/* Songs: rows in as many 28em columns as fit, so a long shelf isn't one tall list. */
+.songs {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 28em), 1fr));
+  column-gap: 1.4em;
+  row-gap: 0.15em;
+}
+/* Each row is its own container, so the shared row puts the artist under the title (its narrow layout)
+   at every width: two even lines per row, each ellipsised, instead of a title wrapping onto three. */
+.songs > li { container-type: inline-size; }
+
+/* Albums, playlists, stations: tiles at the Jump back in size. */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--card-size), 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(10.5em, 1fr));
+  gap: 1.4em 1.1em;
 }
 
-/* ── States ── */
+/* ── States ──────────────────────────────────────────────────────────────── */
+
 .msg {
-  color: var(--text-3);
-  font-size: 14px;
-  padding: 48px 0;
-  text-align: center;
-}
-
-/* ── Skeleton ── */
-.skeleton {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--card-size), 1fr));
-  gap: 14px;
-}
-.skeletonCard {
-  width: var(--card-size);
-}
-.skeletonArt {
-  width: var(--card-size);
-  height: var(--card-size);
-  border-radius: var(--r-md);
-  background: var(--bg-1);
-  animation: pulse 1.8s ease-in-out infinite;
-}
-.skeletonInfo {
-  padding: 9px 2px 0;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  align-items: flex-start;
+  gap: 0.9em;
+  padding: 1em 0;
+  font-size: var(--fs-body);
+  color: var(--text-3);
 }
-.skeletonName {
-  height: 13px;
-  width: 70%;
-  border-radius: 4px;
-  background: var(--bg-1);
-  animation: pulse 1.8s ease-in-out infinite 0.1s;
-}
-.skeletonSub {
-  height: 11px;
-  width: 45%;
-  border-radius: 4px;
-  background: var(--bg-1);
-  animation: pulse 1.8s ease-in-out infinite 0.2s;
-}
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 0.35;
-  }
-  50% {
-    opacity: 0.6;
-  }
+
+/* Skeleton tiles at the real tile size (square art, then the title line). */
+.skelTile { display: flex; flex-direction: column; gap: 0.6em; min-width: 0; }
+.skelArt { display: block; width: 100%; aspect-ratio: 1; border-radius: var(--r-tile); }
+.skelLine { display: block; width: 70%; height: 1em; border-radius: var(--r-xs); animation-delay: 0.1s; }
+
+@container (max-width: 700px) {
+  .grid { grid-template-columns: repeat(auto-fill, minmax(9em, 1fr)); }
 }

@@ -1,90 +1,119 @@
-.menu {
+/* Track context menu and its playlist submenu: floating shell material, like the nav and player menus. */
+.menu,
+.submenu {
   position: fixed;
   z-index: 9999;
-  background: var(--bg-glass, rgba(22, 22, 24, 0.92));
-  backdrop-filter: blur(24px) saturate(160%);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  padding: 4px;
-  min-width: 190px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.3);
-  animation: menuIn 0.1s ease-out;
+  display: flex;
+  flex-direction: column;
+  background: var(--material-bg);
+  backdrop-filter: var(--material-filter);
+  border: 1px solid var(--separator);
+  border-radius: var(--r-tile);
+  padding: 0.3em;
+  min-width: 15em;
+  box-shadow: var(--float-shadow);
+  animation: menuIn var(--dur-fast) var(--ease);
   user-select: none;
+  outline: none;
+}
+.submenu {
+  z-index: 10000;
+  max-width: 20em;
+  max-height: 20em;
+  overflow-y: auto;
 }
 
 @keyframes menuIn {
   from { opacity: 0; transform: scale(0.97); }
-  to   { opacity: 1; transform: scale(1); }
 }
 
 .item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  border-radius: var(--r-sm);
-  cursor: pointer;
-  font-size: 13px;
-  color: var(--text-2);
-  position: relative;
-  white-space: nowrap;
-  transition: background 0.08s, color 0.08s;
-}
-.item:hover {
-  background: var(--bg-2);
+  gap: 0.6em;
+  width: 100%;
+  padding: 0.5em 0.7em;
+  border: none;
+  border-radius: var(--r-row);
+  background: none;
+  font: inherit;
+  font-size: var(--fs-label);
   color: var(--text);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-fast);
 }
+.item:hover,
+.item:focus-visible,
+.itemOpen { background: var(--row-hover); }
+.item:focus-visible { outline-offset: -2px; }
 
 .itemIcon {
-  font-size: 12px;
-  width: 16px;
-  text-align: center;
   flex-shrink: 0;
-  color: var(--text-3);
+  color: var(--text-2);
 }
-
-.itemArrow {
+.itemLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.itemTrail {
+  flex-shrink: 0;
   margin-left: auto;
-  font-size: 10px;
   color: var(--text-3);
-  padding-left: 8px;
 }
 
 .separator {
   height: 1px;
-  background: var(--border);
-  margin: 4px 2px;
-}
-
-/* Submenu */
-.submenuWrap {
-  position: relative;
-}
-
-.submenu {
-  position: fixed;
-  z-index: 10000;
-  background: var(--bg-glass, rgba(22, 22, 24, 0.92));
-  backdrop-filter: blur(24px) saturate(160%);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  padding: 4px;
-  min-width: 190px;
-  max-height: 280px;
-  overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
-  animation: menuIn 0.1s ease-out;
-}
-
-.submenu::-webkit-scrollbar { width: 6px; }
-.submenu::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.15);
-  border-radius: 3px;
+  background: var(--separator);
+  margin: 0.3em 0.5em;
 }
 
 .emptyHint {
-  font-size: 12px;
+  font-size: var(--fs-label);
   color: var(--text-3);
-  padding: 6px 10px;
-  pointer-events: none;
+  padding: 0.5em 0.7em;
+}
+
+/* New playlist dialog: the public checkbox with its explanation */
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7em;
+  cursor: pointer;
+}
+/* Drawn, not native: Chromium's unchecked box is a bright white square on the navy card. */
+.check > input {
+  appearance: none;
+  flex-shrink: 0;
+  width: 1.15em;
+  height: 1.15em;
+  margin-top: 0.15em;
+  border-radius: var(--r-xs);
+  background: rgba(var(--tint), 0.2) center / 75% no-repeat;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-fast);
+}
+.check:hover > input:not(:checked) { background-color: rgba(var(--tint), 0.3); }
+.check > input:checked {
+  background-color: var(--text);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2312131f' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+}
+.check > span { display: flex; flex-direction: column; gap: 0.1em; }
+.checkTitle {
+  font-size: max(13px, 1em);
+  font-weight: 500;
+  color: var(--text);
+}
+.checkSub {
+  font-size: var(--fs-label);
+  color: var(--text-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu,
+  .submenu { animation: none; }
+  .item,
+  .check > input { transition: none; }
 }

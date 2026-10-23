@@ -122,17 +122,19 @@ describe('DraggableQueueRow', () => {
     expect(screen.getByRole('button', { name: 'The Beatles' })).toBeInTheDocument();
   });
 
-  it('shows album name as button when albumItem is provided', () => {
+  it('opens the album from the art when albumItem is provided', () => {
     const albumItem = { type: 'ITEM_ALBUM', title: 'Abbey Road' };
     mockUseQueueTrack.mockReturnValue(makeQTResult({ albumItem, albumName: 'Abbey Road' }));
     render(<DraggableQueueRow {...baseProps} />);
-    expect(screen.getByRole('button', { name: 'Abbey Road' })).toBeInTheDocument();
+    // The album is the art's link now (and the row tooltip), not a third line of text.
+    expect(screen.getByRole('button', { name: 'Open album Abbey Road' })).toBeInTheDocument();
   });
 
   it('shows attribution when provided', () => {
     const attribution: AttributionEntry = { user: 'alice', timestamp: 0, trackName: 'T', artist: 'A' };
     render(<DraggableQueueRow {...baseProps} attribution={attribution} />);
-    expect(screen.getByRole('button', { name: 'alice' })).toBeInTheDocument();
+    // The queuer is an avatar now; the name is its accessible name and tooltip.
+    expect(screen.getByRole('button', { name: 'Queued by alice' })).toHaveAttribute('title', 'Queued by alice');
   });
 
   it('shows art placeholder when no image is cached', () => {

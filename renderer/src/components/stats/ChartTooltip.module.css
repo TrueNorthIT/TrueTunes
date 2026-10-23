@@ -1,0 +1,20 @@
+/* A floating surface, so it takes the shell material and the float shadow. Sized in em: inside a .page-scale root. */
+.tooltip {
+  position: absolute;
+  z-index: 5;
+  width: max-content;
+  min-width: 11em;
+  max-width: 18em;
+  padding: 0.6em 0.8em;
+  background: var(--material-bg);
+  -webkit-backdrop-filter: var(--material-filter);
+  backdrop-filter: var(--material-filter);
+  border-radius: var(--r-row);
+  box-shadow: var(--float-shadow);
+  pointer-events: none;
+  font-size: var(--fs-small);
+}
+.title { color: var(--text); font-weight: 600; margin-bottom: 0.25em; font-variant-numeric: tabular-nums; }
+.row { display: flex; align-items: center; gap: 0.5em; color: var(--text-2); line-height: 1.6; }
+.name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.value { color: var(--text); font-variant-numeric: tabular-nums; }

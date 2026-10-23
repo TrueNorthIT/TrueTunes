@@ -1,0 +1,132 @@
+/* A print with its label: the art is the card, the text sits on it bottom left. */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-width: 0;
+  min-height: 20em;
+  overflow: hidden;
+  border-radius: var(--r-card);
+  /* No art: the lit wall with the tint wash from the top left, as the featured cards have. */
+  background:
+    radial-gradient(120% 110% at 15% 0%, rgba(var(--tint), 0.26), transparent 62%),
+    var(--surface-hi);
+}
+.withArt { background: var(--bg-1); }
+
+.fill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%; /* keep faces in frame */
+  display: block;
+  animation: fadeIn 0.4s ease both;
+  transition:
+    transform var(--dur-fast) var(--ease-fast),
+    filter var(--dur-fast) var(--ease-fast);
+}
+.card:hover .fill,
+.card:focus-within .fill {
+  transform: scale(1.03);
+  filter: brightness(0.9);
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* The whole card opens; the pills sit above it. */
+.cover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+/* The card clips an outer ring, so it sits inside: white, edged in black, so it shows on pale art too. */
+.cover:focus-visible {
+  outline: 2px solid var(--on-art);
+  outline-offset: -4px;
+  box-shadow: inset 0 0 0 6px var(--overlay);
+}
+
+/*
+ * The scrim belongs to the text block, not the card, so it is as tall as the text whatever the card's height: dark
+ * enough under the title and pills for a pale cover (Hot Fuss), fading out above the heading. --scrim-deep is sized
+ * to the card and leaves the heading on a 0.3 scrim when the card is short, so it is not used here.
+ */
+.content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 4.5em 1.7em 1.6em;
+  pointer-events: none;
+}
+.withArt .content {
+  background: var(--scrim-text);
+}
+.withArt .heading,
+.withArt .title,
+.withArt .meta { text-shadow: var(--text-shadow-lg); }
+
+.heading {
+  font-size: var(--fs-prose);
+  font-weight: 600;
+  color: var(--on-art-2);
+  margin-bottom: 0.45em;
+}
+
+/* Upload titles run long ("… | A Musical Bus Ride For Toddler | …"): three lines at most. */
+.title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  max-width: 100%;
+  font-size: var(--fs-title-feature);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--on-art);
+  overflow-wrap: anywhere;
+}
+/* The explicit badge, inline after the last word. */
+.title > span {
+  margin-left: 0.4em;
+  vertical-align: 0.3em;
+  text-shadow: none;
+}
+
+.meta {
+  margin-top: 0.35em;
+  max-width: 100%;
+  font-size: 1em;
+  color: var(--on-art-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.7em;
+  margin-top: 1.2em;
+  pointer-events: auto;
+}
+
+/* Stacked under the songs: a print-shaped card instead of a row-height one. */
+@container (max-width: 700px) {
+  .card { min-height: 0; aspect-ratio: 4 / 3; max-height: 22em; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fill { animation: none; transition: none; }
+  .card:hover .fill,
+  .card:focus-within .fill { transform: none; }
+}

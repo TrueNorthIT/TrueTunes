@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -105,6 +105,13 @@ function renderApp() {
 }
 
 beforeEach(() => {
+  // handleAddToQueue schedules a delayed `setTimeout(reloadQueue, 1500)` after
+  // retries and non-track adds, plus a 4s toast-hide timer. With real timers
+  // those outlive the test: under load the 1500ms reload from a "retry" test
+  // fires during the next test, hits the shared fetch mock, bumps its list count
+  // and overwrites mockQueueVersionRef. Fake clocks that still advance in real
+  // time behave the same within a test; afterEach drops whatever is left.
+  vi.useFakeTimers({ shouldAdvanceTime: true });
   capturedAddToQueue = null;
   mockQueueVersionRef.current = null;
   mockQueueIdRef.current = 'q1';
@@ -121,6 +128,11 @@ beforeEach(() => {
   vi.mocked(window.sonos.getActiveGroup).mockResolvedValue(null);
   vi.mocked(window.sonos.refreshAttribution).mockResolvedValue(undefined);
   vi.mocked(window.sonos.trackEvent).mockResolvedValue(undefined);
+});
+
+afterEach(() => {
+  vi.clearAllTimers();
+  vi.useRealTimers();
 });
 
 /** Wait for initial mount: component captured + initial queue load fired onEtag */

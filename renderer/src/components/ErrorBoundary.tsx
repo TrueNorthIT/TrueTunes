@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import type { ReactNode, ErrorInfo } from 'react';
+import { PillButton } from './common/PillButton';
 import styles from '../styles/ErrorBoundary.module.css';
 
 interface Props {
@@ -10,6 +11,7 @@ interface State {
   error: Error | null;
 }
 
+/** Last-resort screen when rendering crashes: plain words first, the technical message folded away for a bug report. */
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { error: null };
 
@@ -30,14 +32,21 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.error) {
       return (
-        <div className={styles.shell}>
-          <div className={styles.card}>
-            <div className={styles.icon}>⚠</div>
-            <h2 className={styles.heading}>Something went wrong</h2>
-            <p className={styles.message}>{this.state.error.message}</p>
-            <button className={styles.btn} onClick={() => window.location.reload()}>
+        // The crash takes the title bar with it, so the whole screen is a drag region: the window can still move.
+        <div className={`page-scale ${styles.shell}`}>
+          <div className={styles.card} role="alert">
+            <h1 className={styles.heading}>Something went wrong</h1>
+            <p className={styles.message}>
+              True Tunes hit a problem and stopped drawing this screen. Reloading usually fixes it. The music keeps
+              playing either way.
+            </p>
+            <details className={styles.details}>
+              <summary>Error details</summary>
+              <pre className={styles.trace}>{this.state.error.message}</pre>
+            </details>
+            <PillButton variant="primary" onClick={() => window.location.reload()}>
               Reload
-            </button>
+            </PillButton>
           </div>
         </div>
       );

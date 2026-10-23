@@ -6,7 +6,12 @@ import type { NormalizedQueueItem } from '../types/provider';
 
 export function decodeDefaults(defaults: string | undefined): Record<string, unknown> | null {
   if (!defaults) return null;
-  try { return JSON.parse(atob(defaults)); } catch { return null; }
+  try {
+    // Base64 (or base64url) of UTF-8 JSON. atob() returns raw bytes as Latin-1 chars, so decode them
+    // as UTF-8 or accented names come out as mojibake ("MisÃ©rables").
+    const bin = atob(defaults.replace(/-/g, '+').replace(/_/g, '/'));
+    return JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0))));
+  } catch { return null; }
 }
 
 // ─── Optimistic queue normaliser ─────────────────────────────────────────────
@@ -38,6 +43,27 @@ export function normalizeForQueue(item: SonosItem): SonosItem {
     },
   };
 }
+
+// ─── Item builders ────────────────────────────────────────────────────────────
+
+/** The track the context menu and queue actions take. */
+export function trackPayload(t: {
+  uri: string; trackName: string; artist: string; albumName?: string | null; imageUrl?: string | null;
+  serviceId?: string | null; accountId?: string | null;
+}): PlaylistTrack {
+  return {
+    uri: t.uri, trackName: t.trackName, artist: t.artist, albumName: t.albumName ?? undefined, imageUrl: t.imageUrl,
+    serviceId: t.serviceId ?? '', accountId: t.accountId ?? '', addedBy: '', addedAt: 0,
+  };
+}
+
+/** An album page item: all `useOpenItem` and `resolveAlbumParams` need is the title and the resource id. */
+export const albumItem = (title: string, id: SonosItemId): SonosItem =>
+  ({ title, type: 'ITEM_ALBUM', resource: { type: 'ALBUM', id } }) as SonosItem;
+
+/** An artist page item. `extra` carries what only some callers set (`title`, `imageUrl`). */
+export const artistItem = (name: string, id: SonosItemId, extra: Partial<SonosItem> = {}): SonosItem =>
+  ({ type: 'ARTIST', name, ...extra, resource: { type: 'ARTIST', id } }) as SonosItem;
 
 // ─── Album param resolver ─────────────────────────────────────────────────────
 
@@ -174,10 +200,18 @@ export function isContainer(item: SonosItem): boolean {
       || t === 'CONTAINER' || t === 'SECTION';
 }
 
-/** Items played via WS loadContent (stations, radio mixes, programs). */
+/** Stations, radio mixes and supermixes. Sonos only plays one by replacing the whole queue. */
 export function isProgram(item: SonosItem): boolean {
   const type = (item.resource?.type ?? item.type ?? '') as string;
   return type.toUpperCase() === 'PROGRAM';
+}
+
+/**
+ * Whether a one-click "+" may queue the item whole. Not a station: the queue is shared, so a
+ * station opens as its track list and songs go in one at a time. Not a shelf: it has no queueable id.
+ */
+export function canQueueWhole(item: SonosItem): boolean {
+  return !isProgram(item) && !isContainer(item);
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -282,17 +316,25 @@ export function parseServiceSearch(data: ServiceSearch): SonosItem[] {
         break;
       case 'TRACKS':
         for (const r of data.TRACKS?.resources ?? []) {
+          // The album tells versions apart (Hot Fuss vs a live set). Tracks with none are videos and uploads.
+          const defs = decodeDefaults(r.defaults);
+          const albumName = r.container?.name ?? (defs?.['containerName'] as string | undefined);
+          const albumId = r.container?.id?.objectId ?? (defs?.['containerId'] as string | undefined);
           result.push({
             type: 'TRACK',
             name: r.name,
             images: r.images,
             artists: r.artists?.map(a => ({ name: a.name, id: a.id })),
             explicit: r.explicit,
-            durationMs: r.durationMs,
+            durationMs: r.durationMs ?? (defs?.['durationMs'] as number | undefined),
+            ...(albumName
+              ? { album: { name: albumName, id: albumId ? { objectId: albumId, serviceId: r.id.serviceId, accountId: r.id.accountId } : undefined } }
+              : {}),
             id: { objectId: r.id.objectId, serviceId: r.id.serviceId, accountId: r.id.accountId },
             resource: {
               type: 'TRACK',
               id: { objectId: r.id.objectId, serviceId: r.id.serviceId, accountId: r.id.accountId },
+              defaults: r.defaults,
             },
           });
         }

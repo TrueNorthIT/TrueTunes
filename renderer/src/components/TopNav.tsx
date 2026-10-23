@@ -17,6 +17,9 @@ import {
   SquareMousePointer,
 } from 'lucide-react';
 import type { NormalizedGroup } from '../types/provider';
+import { addRecentSearch } from '../lib/recentSearches';
+import { PillButton } from './common/PillButton';
+import dialog from './common/Dialog.module.css';
 import styles from '../styles/TopNav.module.css';
 
 interface Props {
@@ -100,23 +103,62 @@ export function TopNav({
     }
   }
 
+  const isInSearch = location.pathname === '/search';
+  const urlQuery = isInSearch ? (searchParams.get('q') ?? '').trim() : '';
+
+  // The box empties when search is left, and follows the URL when ?q= changes (back, forward, a recent search),
+  // but never rewrites what is being typed: "mr " is the same query as "mr", and arriving at an empty /search
+  // (focusing the box) changes nothing.
+  const prevUrlQuery = useRef(urlQuery);
   useEffect(() => {
-    if (location.pathname === '/search') {
-      setSearchText(searchParams.get('q') ?? '');
-    } else {
-      setSearchText('');
-    }
-  }, [location.pathname, searchParams]);
+    if (!isInSearch) setSearchText('');
+    else if (urlQuery !== prevUrlQuery.current) setSearchText((t) => (t.trim() === urlQuery ? t : urlQuery));
+    prevUrlQuery.current = urlQuery;
+  }, [isInSearch, urlQuery]);
+
+  // Search as you type: one search per pause. The first keystroke pushes /search and the rest replace it,
+  // so Back leaves search in one step instead of walking back through every prefix.
+  // Whether this box pushed the search page on top of another page, so leaving search can go back to it.
+  const pushedSearch = useRef(false);
+  const openSearch = (to: string) => {
+    if (!isInSearch) pushedSearch.current = true;
+    navigate(to, { replace: isInSearch });
+  };
+  const runSearch = (q: string) => openSearch(q ? `/search?q=${encodeURIComponent(q)}` : '/search');
+  useEffect(() => {
+    const q = searchText.trim();
+    if (q === urlQuery || (!isInSearch && !q) || q.length === 1) return;
+    const t = setTimeout(() => runSearch(q), 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runSearch reads only isInSearch, already a dep
+  }, [searchText, urlQuery, isInSearch]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       const q = searchText.trim();
-      if (q) navigate(`/search?q=${encodeURIComponent(q)}`);
+      if (q) {
+        addRecentSearch(q);
+        if (q !== urlQuery) runSearch(q);
+      }
     }
-    if (e.key === 'Escape') {
-      setSearchText('');
-      navigate('/');
+    if (e.key === 'ArrowDown') {
+      const first = document.querySelector<HTMLElement>('[data-search-stop]');
+      if (first) {
+        e.preventDefault();
+        first.focus();
+      }
     }
+    if (e.key === 'Escape') leaveSearch();
+  };
+
+  // Esc and ×: back to the page search was opened from, or Home when search was arrived at some other way
+  // (Back or Forward, a restart). Off the search page they only empty the box.
+  const leaveSearch = () => {
+    setSearchText('');
+    if (!isInSearch) return;
+    if (pushedSearch.current) navigate(-1);
+    else navigate('/');
+    pushedSearch.current = false;
   };
 
   const handleClear = () => {
@@ -125,7 +167,6 @@ export function TopNav({
   };
 
   const isAtRoot = location.pathname === '/';
-  const isInSearch = location.pathname === '/search';
   const isLeaderboard = location.pathname === '/leaderboard';
   const isQueuedle = location.pathname === '/queuedle';
   const isDiscover = location.pathname === '/discover';
@@ -151,6 +192,7 @@ export function TopNav({
           <div className={styles.inner}>
             <button
               className={`${styles.iconBtn}${isAtRoot ? ' ' + styles.active : ''}`}
+              aria-current={isAtRoot ? 'page' : undefined}
               onClick={handleClear}
               title="Home"
             >
@@ -158,6 +200,7 @@ export function TopNav({
             </button>
             <button
               className={`${styles.iconBtn}${isLeaderboard ? ' ' + styles.active : ''}`}
+              aria-current={isLeaderboard ? 'page' : undefined}
               onClick={() => navigate('/leaderboard')}
               title="Leaderboard"
             >
@@ -165,6 +208,7 @@ export function TopNav({
             </button>
             <button
               className={`${styles.iconBtn}${isQueuedle ? ' ' + styles.active : ''}`}
+              aria-current={isQueuedle ? 'page' : undefined}
               onClick={() => navigate('/queuedle')}
               title="Queuedle — daily game"
             >
@@ -173,6 +217,7 @@ export function TopNav({
 
             <button
               className={`${styles.iconBtn}${isDiscover ? ' ' + styles.active : ''}`}
+              aria-current={isDiscover ? 'page' : undefined}
               onClick={() => navigate('/discover')}
               title="Discover — music for the room"
             >
@@ -190,11 +235,17 @@ export function TopNav({
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onFocus={() => {
+                  // An empty box opens the search page, where the recent searches are.
+                  if (!isInSearch && !searchText) openSearch('/search');
+                }}
+                aria-label="Search songs, artists and albums"
+                data-search-input=""
                 disabled={!isAuthed}
               />
               <button
                 className={styles.clearBtn}
-                onClick={handleClear}
+                onClick={leaveSearch}
                 title="Clear"
                 style={{ visibility: isInSearch || searchText ? 'visible' : 'hidden' }}
               >
@@ -234,7 +285,8 @@ export function TopNav({
                       <div className={styles.profilePopover}>
                         <div className={styles.profileChangeLabel}>Enter your name to get started</div>
                         <input
-                          className={styles.nameInput}
+                          className={dialog.input}
+                          aria-label="Your name"
                           value={nameValue}
                           placeholder="Your name"
                           onChange={(e) => setNameValue(e.target.value)}
@@ -246,13 +298,14 @@ export function TopNav({
                           spellCheck={false}
                           autoFocus
                         />
-                        <button
-                          className={styles.nameSaveBtn}
+                        <PillButton
+                          variant="primary"
+                          className={styles.signInBtn}
                           onClick={submitName}
                           disabled={!nameValue.trim()}
                         >
                           Sign in
-                        </button>
+                        </PillButton>
                         <div className={styles.versionRow}>
                           {appVersion && <div className={styles.appVersion}>v{appVersion}</div>}
                         </div>

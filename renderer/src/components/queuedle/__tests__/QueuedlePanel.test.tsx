@@ -92,11 +92,13 @@ vi.mock('../QueuedleRankChange', () => ({
     </div>
   ),
 }));
-vi.mock('../QueuedleSummary', () => ({
-  QueuedleSummary: ({ mainScore, bonusScore }: { mainScore: number; bonusScore: number }) => (
+vi.mock('../MyScores', () => ({
+  MyScores: ({ mainScore, bonusScore }: { mainScore: number; bonusScore: number }) => (
     <div>Score: {mainScore + bonusScore}</div>
   ),
 }));
+vi.mock('../QueuedleSummary', () => ({ QueuedleSummary: () => <div>Answers</div> }));
+vi.mock('@/hooks/useUsers', () => ({ useUsers: () => ({ data: [] }) }));
 vi.mock('../QueuedleCalendar', () => ({
   QueuedleCalendar: ({
     dates,
@@ -236,7 +238,7 @@ describe('QueuedlePanel', () => {
     render(<QueuedlePanel />);
     await flushPromises();
     expect(screen.getByText('Queuedle')).toBeInTheDocument();
-    expect(screen.getByText('2024-01-01')).toBeInTheDocument();
+    expect(screen.getByText('Monday 1 January 2024')).toBeInTheDocument();
   });
 
   it('picking an answer reveals the result', async () => {
@@ -319,7 +321,7 @@ describe('QueuedlePanel', () => {
     await user.click(screen.getByText('See Score'));
     await user.click(screen.getByText('Continue Rank'));
     expect(screen.getByText('Score: 2')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Ranked' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ranked', pressed: false })).toBeInTheDocument();
   });
 
   it('uses result.existing score when no result.score', async () => {
@@ -425,14 +427,14 @@ describe('QueuedlePanel', () => {
       isLoading: false,
     });
     render(<QueuedlePanel />);
-    await waitFor(() => expect(screen.getByText("Today's Leaderboard")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Today's leaderboard")).toBeInTheDocument());
     expect(screen.getByText('alice')).toBeInTheDocument();
   });
 
   it('shows ranked tab after the user has played', async () => {
     localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
     render(<QueuedlePanel />);
-    await waitFor(() => expect(screen.getByRole('tab', { name: 'Ranked' })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Ranked', pressed: false })).toBeInTheDocument());
     // Rankings are now always enabled so the post-game rank-change screen has the
     // user's prior totals available without a tab switch.
     await waitFor(() => expect(mockUseGameRankings).toHaveBeenLastCalledWith('TestUser', true));
@@ -459,8 +461,8 @@ describe('QueuedlePanel', () => {
     });
     const user = userEvent.setup();
     render(<QueuedlePanel />);
-    await user.click(await screen.findByRole('tab', { name: 'Ranked' }));
-    expect(screen.getByText('Ranked Leaderboard')).toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: 'Ranked' }));
+    expect(screen.getByText('Ranked leaderboard')).toBeInTheDocument();
     expect(screen.getByText('alice')).toBeInTheDocument();
     expect(screen.getByText('Provisional')).toBeInTheDocument();
     expect(screen.getByText('4.5')).toBeInTheDocument();
@@ -478,9 +480,9 @@ describe('QueuedlePanel', () => {
     });
     const user = userEvent.setup();
     render(<QueuedlePanel />);
-    await user.click(await screen.findByRole('tab', { name: 'Week' }));
+    await user.click(await screen.findByRole('button', { name: 'Week' }));
     // 2024-01-01 is a Monday.
-    expect(screen.getByText('Week Leaderboard · 1–7 Jan')).toBeInTheDocument();
+    expect(screen.getByText('Week leaderboard · 1–7 Jan')).toBeInTheDocument();
     expect(screen.getByText('carol')).toBeInTheDocument();
     expect(screen.getByText('41')).toBeInTheDocument();
     expect(screen.getByText('3 games · best 16')).toBeInTheDocument();
@@ -517,10 +519,10 @@ describe('QueuedlePanel', () => {
     });
     const user = userEvent.setup();
     render(<QueuedlePanel />);
-    await user.click(await screen.findByRole('tab', { name: 'Ranked' }));
+    await user.click(await screen.findByRole('button', { name: 'Ranked' }));
     expect(screen.getByText('ranked-player')).toBeInTheDocument();
-    await user.click(screen.getByRole('tab', { name: 'Today' }));
-    expect(screen.getByText("Today's Leaderboard")).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Today' }));
+    expect(screen.getByText("Today's leaderboard")).toBeInTheDocument();
     expect(screen.getByText('daily-player')).toBeInTheDocument();
     expect(screen.queryByText('ranked-player')).not.toBeInTheDocument();
   });
@@ -550,11 +552,27 @@ describe('QueuedlePanel', () => {
     const user = userEvent.setup();
     render(<QueuedlePanel />);
     // Calendar is not rendered inline — it's hidden until the button is clicked.
-    await waitFor(() => expect(screen.getByText('📅 Calendar')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Past games')).toBeInTheDocument());
     expect(screen.queryByText('cal-2023-12-31')).not.toBeInTheDocument();
-    await user.click(screen.getByText('📅 Calendar'));
+    await user.click(screen.getByText('Past games'));
     expect(screen.getByText('cal-2023-12-31')).toBeInTheDocument();
     expect(screen.getByText('cal-2024-01-01-played')).toBeInTheDocument();
+  });
+
+  it('opens Past games as a modal dialog and gives focus back to its button on close', async () => {
+    localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
+    mockUseGameDates.mockReturnValue({
+      data: { dates: [{ gameId: '2023-12-31', status: 'ready', userPlayed: false }] },
+      isLoading: false,
+    });
+    const user = userEvent.setup();
+    render(<QueuedlePanel />);
+    const opener = await screen.findByRole('button', { name: 'Past games' });
+    await user.click(opener);
+    expect(screen.getByRole('dialog', { name: 'Past games' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Close calendar' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(opener).toHaveFocus();
   });
 
   it('hides the calendar button when there are no game-dates entries', async () => {
@@ -562,7 +580,7 @@ describe('QueuedlePanel', () => {
     mockUseGameDates.mockReturnValue({ data: { dates: [] }, isLoading: false });
     render(<QueuedlePanel />);
     await waitFor(() => expect(screen.getByText('Score: 3')).toBeInTheDocument());
-    expect(screen.queryByText('📅 Calendar')).not.toBeInTheDocument();
+    expect(screen.queryByText('Past games')).not.toBeInTheDocument();
   });
 
   it('selecting a past date in the calendar closes the popup and resets to the intro screen', async () => {
@@ -580,10 +598,10 @@ describe('QueuedlePanel', () => {
     }));
     const user = userEvent.setup();
     render(<QueuedlePanel />);
-    await user.click(await screen.findByText('📅 Calendar'));
+    await user.click(await screen.findByText('Past games'));
     await user.click(screen.getByText('cal-2023-12-31'));
     expect(await screen.findByText('Intro screen')).toBeInTheDocument();
-    expect(screen.getByText('← Today')).toBeInTheDocument();
+    expect(screen.getByText('Back to today')).toBeInTheDocument();
     // Popup no longer mounted after selection.
     expect(screen.queryByText('cal-2023-12-31')).not.toBeInTheDocument();
   });
@@ -601,10 +619,10 @@ describe('QueuedlePanel', () => {
     }));
     const user = userEvent.setup();
     render(<QueuedlePanel />);
-    await user.click(await screen.findByText('📅 Calendar'));
+    await user.click(await screen.findByText('Past games'));
     await user.click(await screen.findByText('cal-2023-12-31'));
     expect(await screen.findByText('Intro screen')).toBeInTheDocument();
-    await user.click(screen.getByText('← Today'));
+    await user.click(screen.getByText('Back to today'));
     // After back-to-today, the localStorage short-circuit re-fires for today's id.
     await waitFor(() => expect(screen.getByText('Score: 3')).toBeInTheDocument());
   });

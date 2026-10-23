@@ -1,0 +1,34 @@
+/* The queued-by chip (DESIGN.md, Chips). Sized in em: inside a .page-scale root. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.2em 0.7em 0.2em 0.2em;
+  border: none;
+  border-radius: var(--r-pill);
+  background: rgba(var(--tint), 0.16);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--fs-label);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-fast),
+    color var(--dur-fast) var(--ease-fast);
+}
+.chip:hover,
+.chip:focus-visible { background: var(--row-hover); color: var(--on-art); }
+.avatar {
+  width: 1.9em;
+  height: 1.9em;
+  border-radius: var(--r-round);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }

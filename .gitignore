@@ -152,3 +152,10 @@ native/smtc/build/
 # entries (incl. credential-reading commands); must never be committed.
 .claude/settings.local.json
 server/dist-test/
+
+# Impeccable transient state
+.impeccable/questions/
+.impeccable/live/
+
+# Storybook static build
+storybook-static/

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { DjUpcomingRow } from '../DjUpcomingRow';
 
 // The real hook resolves a cached blob URL asynchronously; echoing the input
@@ -27,6 +28,21 @@ describe('DjUpcomingRow', () => {
     expect(screen.getByText('Loser')).toBeInTheDocument();
     expect(screen.getByText('Tame Impala')).toBeInTheDocument();
     expect(screen.getByText('Rich and Alex queue Tame Impala')).toBeInTheDocument();
+  });
+
+  it('REQ-W7: the DJ icon is the info trigger and explains the pick', async () => {
+    render(
+      <DjUpcomingRow
+        track={track({ fans: [{ user: 'Rich', count: 14 }, { user: 'Alex', count: 6 }], trackFans: [{ user: 'Rich', count: 3 }, { user: 'Alex', count: 1 }] })}
+        idle={false}
+        viewer="Rich"
+      />,
+    );
+    await userEvent.hover(screen.getByRole('button', { name: 'Why this pick' }));
+    const tip = screen.getByRole('tooltip');
+    expect(tip).toHaveTextContent('This song: You queued it 3 times, Alex once');
+    expect(tip).toHaveTextContent('Tame Impala: You queued them 14 times, Alex 6 times');
+    expect(tip).not.toHaveTextContent('Good fit');
   });
 
   it('falls back to the note placeholder when a track has no art', () => {

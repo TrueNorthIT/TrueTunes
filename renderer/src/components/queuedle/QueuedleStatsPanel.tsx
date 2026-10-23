@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQueuedleHistory } from '../../hooks/useDailyGame';
 import {
@@ -11,6 +11,15 @@ import {
 } from '../../lib/queuedleStats';
 import type { QueuedleDay } from '../../lib/queuedleStats';
 import { formatWeekRange } from '../../lib/queuedleWeek';
+import { PersonChip } from '../common/PersonChip';
+import { PillButton } from '../common/PillButton';
+import { SectionCard } from '../common/SectionCard';
+import { BarList } from '../stats/BarList';
+import { ChartTooltip, TipRow, TipTitle } from '../stats/ChartTooltip';
+import type { Tip } from '../stats/ChartTooltip';
+import { Heatmap } from '../stats/Heatmap';
+import { RAMP } from '../stats/ramp';
+import { StatsPage } from '../stats/StatsPage';
 import styles from '../../styles/QueuedleStats.module.css';
 
 // Everyone is drawn in a recessive grey; you and the players you pick get a
@@ -19,12 +28,10 @@ import styles from '../../styles/QueuedleStats.module.css';
 // to eight people. Past that, colours would repeat and two people would look
 // the same. Highlighted players are always named on the charts, so identity
 // never rests on colour alone (the scatter needs that once past three).
-const SLOT_COLOURS = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767'];
+const SLOT_COLOURS = Array.from({ length: 8 }, (_, i) => `var(--series-${i + 1})`);
 const MAX_PICKS = SLOT_COLOURS.length - 1;
-const MUTED = 'rgba(255, 255, 255, 0.2)';
+const MUTED = 'var(--glass)';
 
-// Sequential blue, dark surface: low scores recede towards the surface.
-const RAMP = ['#104281', '#184f95', '#1c5cab', '#256abf', '#2a78d6', '#3987e5', '#5598e7', '#6da7ec', '#86b6ef'];
 const rampColour = (pct: number) => RAMP[Math.min(RAMP.length - 1, Math.max(0, Math.floor((pct / 100) * RAMP.length)))];
 
 function shortDate(id: string): string {
@@ -45,7 +52,7 @@ const tickRange = (lo: number) => {
 };
 
 /** Pushes label y positions apart so none sit closer than `gap`. */
-function spreadLabels<T extends { y: number }>(labels: T[], gap = 14): T[] {
+function spreadLabels<T extends { y: number }>(labels: T[], gap = 18): T[] {
   const sorted = [...labels].sort((a, b) => a.y - b.y);
   for (let i = 1; i < sorted.length; i++) {
     if (sorted[i].y - sorted[i - 1].y < gap) sorted[i] = { ...sorted[i], y: sorted[i - 1].y + gap };
@@ -68,21 +75,6 @@ function useWidth<T extends HTMLElement>(): [React.RefObject<T | null>, number] 
   return [ref, width];
 }
 
-interface Tip {
-  x: number;
-  y: number;
-  content: ReactNode;
-}
-
-function Tooltip({ tip }: { tip: Tip | null }) {
-  if (!tip) return null;
-  return (
-    <div className={styles.tooltip} style={{ left: tip.x, top: tip.y }} role="tooltip">
-      {tip.content}
-    </div>
-  );
-}
-
 function Swatch({ colour }: { colour: string }) {
   return <span className={styles.swatch} style={{ background: colour }} />;
 }
@@ -94,7 +86,7 @@ function RatingChart({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: st
   const [hover, setHover] = useState<number | null>(null);
   const { dates, series } = useMemo(() => buildRatingSeries(days), [days]);
   const height = 260;
-  const m = { top: 12, right: 110, bottom: 26, left: 40 };
+  const m = { top: 12, right: 150, bottom: 32, left: 50 };
   const w = Math.max(0, width - m.left - m.right);
   const h = height - m.top - m.bottom;
   const x = (i: number) => m.left + (dates.length <= 1 ? w / 2 : (i / (dates.length - 1)) * w);
@@ -111,7 +103,7 @@ function RatingChart({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: st
   const highlighted = series.filter((s) => colourOf(s.userName));
   const muted = series.filter((s) => !colourOf(s.userName));
   const ticks = tickRange(lo);
-  const labelEvery = Math.max(1, Math.ceil(dates.length / Math.max(1, Math.floor(w / 70))));
+  const labelEvery = Math.max(1, Math.ceil(dates.length / Math.max(1, Math.floor(w / 80))));
 
   // Direct labels at the right edge, nudged apart so they never overlap.
   const endLabels = spreadLabels(
@@ -155,7 +147,7 @@ function RatingChart({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: st
           ))}
           {dates.map((d, i) =>
             i % labelEvery === 0 ? (
-              <text key={d} x={x(i)} y={height - 6} className={styles.axisLabel} textAnchor="middle">{shortDate(d)}</text>
+              <text key={d} x={x(i)} y={height - 8} className={styles.axisLabel} textAnchor="middle">{shortDate(d)}</text>
             ) : null
           )}
           {muted.map((s) => (
@@ -183,7 +175,7 @@ function RatingChart({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: st
           )}
         </svg>
       )}
-      <Tooltip
+      <ChartTooltip
         tip={
           hover === null || shownRows.length === 0
             ? null
@@ -192,13 +184,14 @@ function RatingChart({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: st
                 y: m.top,
                 content: (
                   <>
-                    <div className={styles.tipTitle}>{shortDate(dates[hover])}</div>
+                    <TipTitle>{shortDate(dates[hover])}</TipTitle>
                     {shownRows.map(({ s, v }) => (
-                      <div key={s.userName} className={styles.tipRow}>
-                        <Swatch colour={colourOf(s.userName) ?? MUTED} />
-                        <span className={styles.tipName}>{s.userName}{s.played[hover] ? '' : ' (no game)'}</span>
-                        <span className={styles.tipValue}>{v.toFixed(1)}%</span>
-                      </div>
+                      <TipRow
+                        key={s.userName}
+                        swatch={<Swatch colour={colourOf(s.userName) ?? MUTED} />}
+                        name={`${s.userName}${s.played[hover] ? '' : ' (no game)'}`}
+                        value={`${v.toFixed(1)}%`}
+                      />
                     ))}
                   </>
                 ),
@@ -211,79 +204,43 @@ function RatingChart({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: st
 
 // ── Daily scores heatmap ─────────────────────────────────────────────────────
 
-function Heatmap({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: string) => string | null }) {
+function DailyScores({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: string) => string | null }) {
   const { dates, rows } = useMemo(() => buildHeatmap(days), [days]);
-  const [tip, setTip] = useState<Tip | null>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
   const maxByDate = useMemo(() => days.reduce<Record<string, number>>((acc, d) => ({ ...acc, [d.gameId]: d.questionCount * 2 }), {}), [days]);
-
-  // Start scrolled to the latest days.
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (el) el.scrollLeft = el.scrollWidth;
-  }, [dates.length]);
-
-  function show(e: React.PointerEvent, userName: string, di: number, total: number | null) {
-    const wrap = wrapRef.current?.getBoundingClientRect();
-    const cell = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    if (!wrap) return;
-    setTip({
-      x: Math.min(cell.left - wrap.left + 18, wrap.width - 180),
-      y: cell.top - wrap.top - 6,
-      content: (
-        <>
-          <div className={styles.tipTitle}>{userName} · {shortDate(dates[di])}</div>
-          <div className={styles.tipRow}>
-            <span className={styles.tipName}>{total === null ? 'Didn’t play' : 'Total'}</span>
-            {total !== null && <span className={styles.tipValue}>{total}/{maxByDate[dates[di]]}</span>}
-          </div>
-        </>
-      ),
-    });
-  }
+  // A label every seventh day, counting back from the latest, so the newest day is always named.
+  const columns = dates.map((d, i) => ((dates.length - 1 - i) % 7 === 0 ? shortDate(d) : ''));
 
   return (
-    <div ref={wrapRef} className={styles.chart} onPointerLeave={() => setTip(null)}>
-      <div className={styles.heatmap}>
-        <div className={styles.heatNames}>
-          <div className={styles.heatCorner} />
-          {rows.map((r) => (
-            <div key={r.userName} className={styles.heatName} title={r.userName}>
-              {colourOf(r.userName) && <Swatch colour={colourOf(r.userName)!} />}
-              <span className={colourOf(r.userName) ? styles.heatNameStrong : undefined}>{r.userName}</span>
-            </div>
-          ))}
-        </div>
-        <div ref={scrollRef} className={styles.heatScroll}>
-          <div className={styles.heatDates}>
-            {dates.map((d, i) => (
-              <div key={d} className={styles.heatDate}>{i % 7 === 0 || i === dates.length - 1 ? shortDate(d) : ''}</div>
-            ))}
-          </div>
-          {rows.map((r) => (
-            <div key={r.userName} className={styles.heatRow}>
-              {r.cells.map((pct, di) => (
-                <div
-                  key={dates[di]}
-                  className={pct === null ? styles.heatEmpty : styles.heatCell}
-                  style={pct === null ? undefined : { background: rampColour(pct) }}
-                  onPointerEnter={(e) => show(e, r.userName, di, r.totals[di])}
-                  aria-label={`${r.userName} ${dates[di]}: ${r.totals[di] ?? 'no game'}`}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className={styles.rampLegend} aria-hidden="true">
-        <span>0%</span>
-        <span className={styles.rampBar} style={{ background: `linear-gradient(to right, ${RAMP.join(',')})` }} />
-        <span>100% of the day’s points</span>
-        <span className={styles.heatEmptyKey} /> <span>didn’t play</span>
-      </div>
-      <Tooltip tip={tip} />
-    </div>
+    <Heatmap
+      columns={columns}
+      minCell="1.4em"
+      cellHeight="1.4em"
+      startAtEnd
+      rows={rows.map((r) => {
+        const colour = colourOf(r.userName);
+        return {
+          key: r.userName,
+          label: (
+            <>
+              {colour && <Swatch colour={colour} />}
+              <span className={colour ? styles.strong : undefined} title={r.userName}>{r.userName}</span>
+            </>
+          ),
+          cells: r.cells.map((pct) => (pct === null ? null : rampColour(pct))),
+        };
+      })}
+      cellLabel={(ri, di) => `${rows[ri].userName} ${dates[di]}: ${rows[ri].totals[di] ?? 'no game'}`}
+      renderTip={(ri, di) => {
+        const total = rows[ri].totals[di];
+        return (
+          <>
+            <TipTitle>{rows[ri].userName} · {shortDate(dates[di])}</TipTitle>
+            <TipRow name={total === null ? 'Didn’t play' : 'Total'} value={total === null ? undefined : `${total}/${maxByDate[dates[di]]}`} />
+          </>
+        );
+      }}
+      legend={{ lo: '0%', hi: '100% of the day’s points', empty: 'didn’t play' }}
+    />
   );
 }
 
@@ -294,9 +251,9 @@ function RoundsScatter({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: 
   const [tip, setTip] = useState<Tip | null>(null);
   const points = useMemo(() => buildRoundAverages(days), [days]);
   const size = Math.min(width, 520);
-  const m = { top: 14, right: 16, bottom: 40, left: 46 };
+  const m = { top: 14, right: 16, bottom: 48, left: 58 };
   const w = Math.max(0, size - m.left - m.right);
-  const h = Math.max(0, size * 0.8 - m.top - m.bottom);
+  const h = Math.max(0, size * 0.95 - m.top - m.bottom);
   const height = h + m.top + m.bottom;
   // One shared floor for both axes keeps the diagonal at 45 degrees.
   const lo = axisFloor(points.flatMap((p) => [p.mainPct, p.bonusPct]));
@@ -305,7 +262,7 @@ function RoundsScatter({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: 
   const ticks = tickRange(lo);
   const labels = spreadLabels(
     points.filter((p) => colourOf(p.userName)).map((p) => ({ p, y: y(p.bonusPct) })),
-    13
+    17
   );
   const ordered = [...points].sort((a, b) => Number(!!colourOf(a.userName)) - Number(!!colourOf(b.userName)));
 
@@ -318,12 +275,12 @@ function RoundsScatter({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: 
               <line x1={m.left} x2={m.left + w} y1={y(t)} y2={y(t)} className={styles.grid} />
               <line x1={x(t)} x2={x(t)} y1={m.top} y2={m.top + h} className={styles.grid} />
               <text x={m.left - 8} y={y(t)} className={styles.axisLabel} textAnchor="end" dominantBaseline="middle">{t}%</text>
-              <text x={x(t)} y={m.top + h + 16} className={styles.axisLabel} textAnchor="middle">{t}%</text>
+              <text x={x(t)} y={m.top + h + 20} className={styles.axisLabel} textAnchor="middle">{t}%</text>
             </g>
           ))}
           <line x1={x(lo)} y1={y(lo)} x2={x(100)} y2={y(100)} className={styles.diagonal} />
-          <text x={m.left + w / 2} y={height - 4} className={styles.axisTitle} textAnchor="middle">Higher or Lower (knows the music) →</text>
-          <text transform={`translate(12 ${m.top + h / 2}) rotate(-90)`} className={styles.axisTitle} textAnchor="middle">Top Queuer (knows the people) →</text>
+          <text x={m.left + w / 2} y={height - 6} className={styles.axisTitle} textAnchor="middle">Higher or Lower (knows the music) →</text>
+          <text transform={`translate(14 ${m.top + h / 2}) rotate(-90)`} className={styles.axisTitle} textAnchor="middle">Top Queuer (knows the people) →</text>
           {ordered.map((p) => {
             const colour = colourOf(p.userName);
             return (
@@ -332,7 +289,7 @@ function RoundsScatter({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: 
                   cx={x(p.mainPct)}
                   cy={y(p.bonusPct)}
                   r={colour ? 6 : 5}
-                  fill={colour ?? 'rgba(255,255,255,0.35)'}
+                  fill={colour ?? 'var(--glass-hi)'}
                   className={styles.ring}
                 />
                 <circle
@@ -346,10 +303,10 @@ function RoundsScatter({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: 
                       y: y(p.bonusPct) - 10,
                       content: (
                         <>
-                          <div className={styles.tipTitle}>{p.userName}</div>
-                          <div className={styles.tipRow}><span className={styles.tipName}>Higher or Lower</span><span className={styles.tipValue}>{p.mainPct.toFixed(0)}%</span></div>
-                          <div className={styles.tipRow}><span className={styles.tipName}>Top Queuer</span><span className={styles.tipValue}>{p.bonusPct.toFixed(0)}%</span></div>
-                          <div className={styles.tipRow}><span className={styles.tipName}>Games</span><span className={styles.tipValue}>{p.games}</span></div>
+                          <TipTitle>{p.userName}</TipTitle>
+                          <TipRow name="Higher or Lower" value={`${p.mainPct.toFixed(0)}%`} />
+                          <TipRow name="Top Queuer" value={`${p.bonusPct.toFixed(0)}%`} />
+                          <TipRow name="Games" value={p.games} />
                         </>
                       ),
                     })
@@ -364,7 +321,7 @@ function RoundsScatter({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: 
           ))}
         </svg>
       )}
-      <Tooltip tip={tip} />
+      <ChartTooltip tip={tip} />
     </div>
   );
 }
@@ -381,26 +338,27 @@ function WeeklyBars({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: str
   return (
     <div className={styles.chart}>
       <div className={styles.weekNav}>
-        <button className={styles.navBtn} onClick={() => setIdx((i) => i + 1)} disabled={idx >= weeks.length - 1} aria-label="Previous week">‹</button>
+        <PillButton className={styles.navBtn} onClick={() => setIdx((i) => i + 1)} disabled={idx >= weeks.length - 1} aria-label="Previous week">
+          <ChevronLeft size={16} aria-hidden="true" />
+        </PillButton>
         <span className={styles.weekLabel}>{formatWeekRange(week.range)}</span>
-        <button className={styles.navBtn} onClick={() => setIdx((i) => i - 1)} disabled={idx === 0} aria-label="Next week">›</button>
+        <PillButton className={styles.navBtn} onClick={() => setIdx((i) => i - 1)} disabled={idx === 0} aria-label="Next week">
+          <ChevronRight size={16} aria-hidden="true" />
+        </PillButton>
       </div>
-      <div className={styles.bars}>
-        {week.standings.map((s, i) => {
-          const colour = colourOf(s.userName);
-          return (
-            <div key={s.userName} className={styles.barRow} title={`${s.userName}: ${s.total} points from ${s.gamesPlayed} games`}>
-              <span className={styles.barRank}>{i + 1}</span>
-              <span className={`${styles.barName}${colour ? ' ' + styles.heatNameStrong : ''}`}>{s.userName}</span>
-              <span className={styles.barTrack}>
-                <span className={styles.bar} style={{ width: `${(s.total / max) * 100}%`, background: colour ?? MUTED }} />
-              </span>
-              <span className={styles.barValue}>{s.total}</span>
-              <span className={styles.barGames}>{s.gamesPlayed}g</span>
-            </div>
-          );
-        })}
-      </div>
+      <BarList
+        ranked
+        max={max}
+        rows={week.standings.map((s) => ({
+          key: s.userName,
+          name: s.userName,
+          value: s.total,
+          label: s.total,
+          sub: `${s.gamesPlayed}g`,
+          title: `${s.userName}: ${s.total} points from ${s.gamesPlayed} games`,
+          colour: colourOf(s.userName),
+        }))}
+      />
     </div>
   );
 }
@@ -440,76 +398,64 @@ export function QueuedleStatsPanel() {
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Queuedle Stats</h1>
-        <span className={styles.sub}>
-          {days.length > 0 ? `${days.length} games · ${players.length} players` : ''}
-        </span>
-        <div className={styles.spacer} />
-        <button className={styles.backBtn} onClick={() => navigate('/queuedle')}>← Queuedle</button>
-      </div>
-      <div className={styles.body}>
-        {(history.isLoading || displayName === undefined) && <div className={styles.state}>Loading every game so far…</div>}
-        {history.isError && <div className={styles.state}>Couldn’t load the Queuedle history.</div>}
-        {!history.isLoading && displayName !== undefined && !history.isError && days.length === 0 && (
-          <div className={styles.state}>No Queuedle games yet.</div>
-        )}
-        {days.length > 0 && (
-          <>
-            <div className={styles.picker} aria-label="Highlight players">
-              <span className={styles.pickerHint}>
-                Highlight up to {MAX_PICKS} others{pickCount > 0 ? ` (${pickCount} picked)` : ''}:
-              </span>
-              {players.map((u) => {
-                const colour = colourOf(u);
-                const isMe = u === displayName;
-                return (
-                  <button
-                    key={u}
-                    className={`${styles.chip}${colour ? ' ' + styles.chipOn : ''}`}
-                    aria-pressed={!!colour}
-                    disabled={isMe || (!colour && pickCount >= MAX_PICKS)}
-                    title={!colour && !isMe && pickCount >= MAX_PICKS ? `Up to ${MAX_PICKS} at once` : undefined}
-                    onClick={() => togglePick(u)}
-                  >
-                    {colour && <Swatch colour={colour} />}
-                    {u}{isMe ? ' (you)' : ''}
-                  </button>
-                );
-              })}
-              {pickCount > 0 && (
-                <button className={styles.clearBtn} onClick={() => setPicks([])}>Clear</button>
-              )}
-            </div>
+    <StatsPage
+      title="Queuedle stats"
+      facts={days.length > 0 ? `${days.length} games · ${players.length} players` : undefined}
+      backLabel="Queuedle"
+      onBack={() => navigate('/queuedle')}
+    >
+      {(history.isLoading || displayName === undefined) && <p className={styles.state}>Loading every game so far…</p>}
+      {history.isError && <p className={styles.state}>Couldn’t load the Queuedle history.</p>}
+      {!history.isLoading && displayName !== undefined && !history.isError && days.length === 0 && (
+        <p className={styles.state}>No Queuedle games yet.</p>
+      )}
+      {days.length > 0 && (
+        <>
+          <div className={styles.picker} role="group" aria-label="Highlight players">
+            <span className={styles.pickerHint}>
+              Highlight up to {MAX_PICKS} others{pickCount > 0 ? ` (${pickCount} picked)` : ''}:
+            </span>
+            {players.map((u) => {
+              const colour = colourOf(u);
+              const isMe = u === displayName;
+              return (
+                <PersonChip
+                  key={u}
+                  name={u}
+                  suffix={isMe ? ' (you)' : ''}
+                  selected={!!colour}
+                  colour={colour}
+                  disabled={isMe || (!colour && pickCount >= MAX_PICKS)}
+                  title={!colour && !isMe && pickCount >= MAX_PICKS ? `Up to ${MAX_PICKS} at once` : undefined}
+                  onClick={() => togglePick(u)}
+                />
+              );
+            })}
+            {pickCount > 0 && <PillButton onClick={() => setPicks([])}>Clear</PillButton>}
+          </div>
 
-            <section className={styles.section}>
-              <h2 className={styles.sectionTitle}>Rating over time</h2>
-              <p className={styles.sectionHint}>Each player’s running average, as a % of every point they could have scored.</p>
-              <RatingChart days={days} colourOf={colourOf} />
-            </section>
+          <SectionCard
+            className={styles.section}
+            title="Rating over time"
+            sub="Each player’s running average, as a % of every point they could have scored."
+          >
+            <RatingChart days={days} colourOf={colourOf} />
+          </SectionCard>
 
-            <section className={styles.section}>
-              <h2 className={styles.sectionTitle}>Daily scores</h2>
-              <p className={styles.sectionHint}>Every player, every day. Brighter is better.</p>
-              <Heatmap days={days} colourOf={colourOf} />
-            </section>
+          <SectionCard className={styles.section} title="Daily scores" sub="Every player, every day. Brighter is better.">
+            <DailyScores days={days} colourOf={colourOf} />
+          </SectionCard>
 
-            <div className={styles.twoUp}>
-              <section className={styles.section}>
-                <h2 className={styles.sectionTitle}>Higher or Lower vs Top Queuer</h2>
-                <p className={styles.sectionHint}>Above the line, you know the people better than the music.</p>
-                <RoundsScatter days={days} colourOf={colourOf} />
-              </section>
-              <section className={styles.section}>
-                <h2 className={styles.sectionTitle}>Weekly totals</h2>
-                <p className={styles.sectionHint}>Points summed Monday to Sunday.</p>
-                <WeeklyBars days={days} colourOf={colourOf} />
-              </section>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+          <div className={styles.twoUp}>
+            <SectionCard title="Higher or Lower vs Top Queuer" sub="Above the line, you know the people better than the music.">
+              <RoundsScatter days={days} colourOf={colourOf} />
+            </SectionCard>
+            <SectionCard title="Weekly totals" sub="Points summed Monday to Sunday.">
+              <WeeklyBars days={days} colourOf={colourOf} />
+            </SectionCard>
+          </div>
+        </>
+      )}
+    </StatsPage>
   );
 }

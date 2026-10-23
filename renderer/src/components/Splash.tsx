@@ -7,6 +7,7 @@ interface Props {
 
 const MIN_MS = 900;
 
+/** Covers the window while sign-in, the speaker groups and Home load, so the shell never flashes empty. */
 export function Splash({ ready }: Props) {
   const [fading,  setFading]  = useState(false);
   const [gone,    setGone]    = useState(false);
@@ -25,13 +26,10 @@ export function Splash({ ready }: Props) {
   if (gone) return null;
 
   return (
-    <div className={`${styles.splash}${fading ? ' ' + styles.fading : ''}`}>
+    <div className={`page-scale ${styles.splash}${fading ? ' ' + styles.fading : ''}`} role="status" aria-label="Loading True Tunes">
       <div className={styles.inner}>
-        <div className={styles.icon}>♫</div>
         <div className={styles.name}>True Tunes</div>
-        <div className={styles.dots}>
-          <span /><span /><span />
-        </div>
+        <div className={styles.bar} aria-hidden="true" />
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 // Revisit flow with the REAL query hooks and the REAL QueuedleSummary (only the
 // interactive play screens are stubbed). Covers leaving the Queuedle page and
-// coming back: the left pane must show the "Question Breakdown", not just the
+// coming back: the page must show "Your answers", not just the
 // "You've already played today" footer.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
@@ -69,7 +69,7 @@ const stats: GameStatsResult = {
 const playedEntry = { userName: 'Rich', mainScore: 2, bonusScore: 1, total: 3 } as GameScoreDoc;
 
 const fullScore: GameMyScoreResult = {
-  score: { mainScore: 2, bonusScore: 1, total: 3, guesses: { main: ['left', 'right'], bonus: ['alice', 'bob'] } },
+  score: { mainScore: 2, bonusScore: 1, guesses: { main: ['left', 'right'], bonus: ['alice', 'bob'] } },
 };
 
 let client: QueryClient;
@@ -92,6 +92,7 @@ function stubServer(opts: {
   sonos.fetchGameLeaderboard.mockResolvedValue({ gameId: GAME_ID, scores: opts.leaderboard ?? [] });
   sonos.fetchGameDates.mockResolvedValue({ dates: [] } as never);
   sonos.fetchGameStats.mockResolvedValue(stats);
+  sonos.fetchUsers.mockResolvedValue([]);
   sonos.fetchMyScore.mockImplementation(opts.myScore ?? (() => Promise.resolve({})));
 }
 
@@ -105,7 +106,10 @@ describe('Queuedle revisit shows the question breakdown', () => {
   it('after finishing, leaving the page and coming back (same QueryClient, localStorage kept)', async () => {
     stubServer({ game: gameWith(1), myScore: () => Promise.resolve({}) });
     vi.mocked(window.sonos.submitGameScore).mockResolvedValue({ score: { mainScore: 1, bonusScore: 1 } } as never);
-    const user = userEvent.setup();
+    // Six clicks through a whole game: the default delay:0 puts a real setTimeout
+    // between every pointer sub-event, and under a loaded CPU each of those waits
+    // for a scheduler slice. delay:null drops them (~600ms -> ~400ms alone).
+    const user = userEvent.setup({ delay: null });
 
     const first = renderPanel();
     await act(async () => {
@@ -121,7 +125,7 @@ describe('Queuedle revisit shows the question breakdown', () => {
 
     // The server now has the score; the my-score cached before submission must not stick.
     vi.mocked(window.sonos.fetchMyScore).mockResolvedValue({
-      score: { mainScore: 1, bonusScore: 1, total: 2, guesses: { main: ['left'], bonus: ['alice'] } },
+      score: { mainScore: 1, bonusScore: 1, guesses: { main: ['left'], bonus: ['alice'] } },
     });
     vi.mocked(window.sonos.fetchGameLeaderboard).mockResolvedValue({
       gameId: GAME_ID,
@@ -129,7 +133,7 @@ describe('Queuedle revisit shows the question breakdown', () => {
     });
     renderPanel();
 
-    expect(await screen.findByText('Question Breakdown')).toBeInTheDocument();
+    expect(await screen.findByText('Your answers')).toBeInTheDocument();
     expect(screen.getByText(/already played today/)).toBeInTheDocument();
   });
 
@@ -137,14 +141,14 @@ describe('Queuedle revisit shows the question breakdown', () => {
     localStorage.setItem(`queuedle-played:${GAME_ID}`, JSON.stringify({ mainScore: 2, bonusScore: 1 }));
     stubServer({ leaderboard: [playedEntry], myScore: () => Promise.resolve(fullScore) });
     renderPanel();
-    expect(await screen.findByText('Question Breakdown')).toBeInTheDocument();
+    expect(await screen.findByText('Your answers')).toBeInTheDocument();
   });
 
   it('local guesses [] do not block the server guesses', async () => {
     localStorage.setItem(`queuedle-played:${GAME_ID}`, JSON.stringify({ mainScore: 2, bonusScore: 1, guesses: [] }));
     stubServer({ leaderboard: [playedEntry], myScore: () => Promise.resolve(fullScore) });
     renderPanel();
-    expect(await screen.findByText('Question Breakdown')).toBeInTheDocument();
+    expect(await screen.findByText('Your answers')).toBeInTheDocument();
   });
 
   it('short local guesses (fewer than questions) fall back to the server guesses', async () => {
@@ -154,7 +158,7 @@ describe('Queuedle revisit shows the question breakdown', () => {
     );
     stubServer({ leaderboard: [playedEntry], myScore: () => Promise.resolve(fullScore) });
     renderPanel();
-    expect(await screen.findByText('Question Breakdown')).toBeInTheDocument();
+    expect(await screen.findByText('Your answers')).toBeInTheDocument();
   });
 
   it('a failed my-score fetch is retried and the breakdown appears', async () => {
@@ -163,7 +167,7 @@ describe('Queuedle revisit shows the question breakdown', () => {
     stubServer({ leaderboard: [playedEntry], myScore });
     renderPanel();
     expect(await screen.findByText(/already played today/)).toBeInTheDocument();
-    expect(await screen.findByText('Question Breakdown', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(await screen.findByText('Your answers', {}, { timeout: 5000 })).toBeInTheDocument();
     expect(myScore).toHaveBeenCalledTimes(2);
   }, 10_000);
 
@@ -177,20 +181,20 @@ describe('Queuedle revisit shows the question breakdown', () => {
 
     vi.mocked(window.sonos.fetchMyScore).mockResolvedValue(fullScore);
     renderPanel();
-    expect(await screen.findByText('Question Breakdown')).toBeInTheDocument();
+    expect(await screen.findByText('Your answers')).toBeInTheDocument();
   });
 
   it('no local entry but on the leaderboard: breakdown from server guesses', async () => {
     stubServer({ leaderboard: [playedEntry], myScore: () => Promise.resolve(fullScore) });
     renderPanel();
-    expect(await screen.findByText('Question Breakdown')).toBeInTheDocument();
+    expect(await screen.findByText('Your answers')).toBeInTheDocument();
   });
 
   it('upgrades the local entry with the guesses once fetched from the server', async () => {
     localStorage.setItem(`queuedle-played:${GAME_ID}`, JSON.stringify({ mainScore: 2, bonusScore: 1 }));
     stubServer({ leaderboard: [playedEntry], myScore: () => Promise.resolve(fullScore) });
     renderPanel();
-    await screen.findByText('Question Breakdown');
+    await screen.findByText('Your answers');
     await waitFor(() =>
       expect(JSON.parse(localStorage.getItem(`queuedle-played:${GAME_ID}`)!).guesses).toEqual(['left', 'right']),
     );
@@ -207,7 +211,7 @@ describe('Queuedle revisit shows the question breakdown', () => {
     renderPanel();
     expect(await screen.findByText(/already played today/)).toBeInTheDocument();
     await waitFor(() => expect(window.sonos.fetchMyScore).toHaveBeenCalled());
-    expect(screen.queryByText('Question Breakdown')).not.toBeInTheDocument();
+    expect(screen.queryByText('Your answers')).not.toBeInTheDocument();
   });
 
   it("shows my bonus picks with right/wrong marks next to the others' percentages", async () => {
@@ -224,7 +228,7 @@ describe('Queuedle revisit shows the question breakdown', () => {
         }),
     });
     renderPanel();
-    await screen.findByText('Question Breakdown');
+    await screen.findByText('Your answers');
     expect(await screen.findByText(/✓ alice/)).toBeInTheDocument();
     expect(screen.getByText(/✗ zed/)).toBeInTheDocument();
     expect(screen.getAllByText(/alice 60% · bob 40%/)).toHaveLength(2);
@@ -245,9 +249,9 @@ describe('Queuedle revisit shows the question breakdown', () => {
     }));
     const user = userEvent.setup();
     renderPanel();
-    await user.click(await screen.findByText(/Calendar/));
+    await user.click(await screen.findByText('Past games'));
     await user.click(await screen.findByRole('button', { name: /19/ }));
-    expect(await screen.findByText('Question Breakdown')).toBeInTheDocument();
+    expect(await screen.findByText('Your answers')).toBeInTheDocument();
     expect(window.sonos.fetchMyScore).toHaveBeenCalledWith(pastId, 'Rich');
   });
 });

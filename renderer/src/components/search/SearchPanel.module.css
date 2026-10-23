@@ -1,0 +1,104 @@
+.panel {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: calc(var(--nav-h) + 16px) 28px calc(var(--player-h) + 24px);
+}
+
+.page {
+  max-width: 2400px;
+  margin: 0 auto;
+  container-type: inline-size;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4em;
+  transition: opacity var(--dur-fast) var(--ease-fast);
+}
+/* The previous query's results while the next load: still readable, clearly not current. */
+.stale { opacity: 0.6; }
+
+.msg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5em;
+  color: var(--text-3);
+  font-size: 1em;
+  text-align: center;
+  padding: 4em 0;
+}
+.msgTitle {
+  font-size: var(--fs-title-dialog);
+  font-weight: 600;
+  color: var(--text);
+}
+.retry { margin-top: 0.6em; }
+
+/* Read by screen readers only: the page heading and the live result count. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Recent searches: quiet tonal pills. */
+.recents {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em;
+}
+.recent {
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 0.5em 1.05em;
+  background: rgba(var(--tint), 0.12);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-label);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-fast);
+}
+.recent:hover { background: rgba(var(--tint), 0.22); }
+
+/* Home's tile size (Jump back in is minmax(8.5em, 1fr)), in one scrolling row. */
+.freshCell {
+  flex: none;
+  width: 9.5em;
+  min-width: 0;
+}
+
+/* Loading: the results layout at its real size. */
+.skelLead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 1.4em;
+}
+.skelCard { height: 22em; border-radius: var(--r-card); }
+.skelRows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9em;
+  padding: 1.5em;
+  border-radius: var(--r-card);
+  background: var(--surface);
+}
+.skelRow { height: 3.2em; border-radius: var(--r-row); }
+
+@container (max-width: 700px) {
+  .skelLead { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .body,
+  .recent { transition: none; }
+}

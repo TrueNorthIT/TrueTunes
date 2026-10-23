@@ -1,0 +1,13 @@
+/* Office layer: a quiet tonal chip (Tint Chip), only when the room has queued this before. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  font-size: var(--fs-small);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+  background: rgba(var(--tint), 0.16);
+  padding: 0.2em 0.8em;
+  border-radius: var(--r-pill);
+}
