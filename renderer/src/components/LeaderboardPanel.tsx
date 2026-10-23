@@ -5,18 +5,18 @@ import type { GameRankTierKey } from '../hooks/useDailyGame';
 import { useStats, statsQueryOptions, type StatsPeriod } from '../hooks/useStats';
 import { useGameRankings } from '../hooks/useDailyGame';
 import { useUsers } from '../hooks/useUsers';
-import { useArtistImage } from '../hooks/useArtistBrowse';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
 import { useOpenItem } from '../hooks/useOpenItem';
 import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
 import { mergeArtists, queuedSummary } from '../lib/leaderboard';
 import { ordinal } from '../lib/profileData';
-import { primaryArtistName, statsAlbumToItem, statsArtistToItem, statsTrackToItem } from '../lib/homeData';
+import { primaryArtistName, queued, statsAlbumToItem, statsArtistToItem, statsTrackToItem } from '../lib/homeData';
 import { useTrackContextMenu } from './common/ContextMenu';
 import { Dialog } from './common/Dialog';
 import { competitionRanks } from './queuedle/format';
 import { ChartHead, ChartRow } from './common/ChartRow';
 import { ImageTile } from './common/ImageTile';
+import { StatsArtistTile } from './common/StatsArtistTile';
 import { PersonCard } from './common/PersonCard';
 import { SectionCard, SeeAll } from './common/SectionCard';
 import { ArtistLinks } from './common/TrackLinks';
@@ -42,8 +42,6 @@ const QUEUEDLE_RANK_INFO: Array<{ key: Exclude<GameRankTierKey, 'provisional'>; 
 
 /** People with a card of their own; the rest of the top 10 sit on one line under them. */
 const CARD_PEOPLE = 6;
-
-const queued = (n: number) => `${n.toLocaleString()} queued`;
 
 /** What every track, album and artist on the page needs to open, prefetch, queue and right-click. */
 function useStatsNav(onAddToQueue?: (item: SonosItem) => void) {
@@ -95,23 +93,6 @@ function useStatsNav(onAddToQueue?: (item: SonosItem) => void) {
   };
 
   return { openAlbum, openArtist, prefetchAlbum, trackProps };
-}
-
-type StatsNav = ReturnType<typeof useStatsNav>;
-
-/** A circular artist tile: the artist's own photo when the service has one, else the art the events carried. */
-function ArtistTile({ a, nav, size }: { a: StatsArtist; nav: StatsNav; size?: 'md' | 'sm' }) {
-  const { data: photo } = useArtistImage(a.artistId, a.serviceId, a.accountId);
-  return (
-    <ImageTile
-      circular
-      size={size}
-      title={a.artist}
-      sub={queued(a.count)}
-      imageUrl={photo ?? a.imageUrl}
-      onOpen={() => nav.openArtist(a.artist, a, true)}
-    />
-  );
 }
 
 /** Three circles at the sm tile's size while a person's artists load. */
@@ -270,7 +251,7 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
                         <div className={styles.trio} role="list" aria-label={`${u.userId}'s most queued artists`}>
                           {theirs.map((a, j) => (
                             <div key={`${a.artistId ?? a.artist}-${j}`} role="listitem">
-                              <ArtistTile a={a} nav={nav} size="sm" />
+                              <StatsArtistTile a={a} size="sm" onOpen={() => nav.openArtist(a.artist, a, true)} />
                             </div>
                           ))}
                         </div>
@@ -301,7 +282,7 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
           <SectionCard className={styles.section} title="Top artists">
             <div className={styles.artistGrid}>
               {artists.map((a, i) => (
-                <ArtistTile key={`${a.artistId ?? a.artist}-${i}`} a={a} nav={nav} />
+                <StatsArtistTile key={`${a.artistId ?? a.artist}-${i}`} a={a} onOpen={() => nav.openArtist(a.artist, a, true)} />
               ))}
             </div>
           </SectionCard>

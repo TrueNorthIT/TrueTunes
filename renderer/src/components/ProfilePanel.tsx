@@ -13,16 +13,16 @@ import { useDominantColor } from '../hooks/useDominantColor';
 import { useOpenItem } from '../hooks/useOpenItem';
 import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
-import { useArtistImage } from '../hooks/useArtistBrowse';
 import { createDragGhost } from '../lib/dragHelpers';
 import { normalizeAvatar } from '../lib/avatarImage';
-import { primaryArtistName, statsAlbumToItem, statsArtistToItem, statsTrackToItem } from '../lib/homeData';
+import { primaryArtistName, queued as queuedLabel, statsAlbumToItem, statsArtistToItem, statsTrackToItem } from '../lib/homeData';
 import { resolveAlbumParams, albumItem, trackPayload } from '../lib/itemHelpers';
 import { groupByDay, officeRank, profileFacts, queuedCount } from '../lib/profileData';
 import { Carousel } from './common/Carousel';
 import { ChartHead, ChartRow } from './common/ChartRow';
 import { CreatePlaylistDialog, useTrackContextMenu } from './common/ContextMenu';
 import { ImageTile } from './common/ImageTile';
+import { StatsArtistTile } from './common/StatsArtistTile';
 import { PillButton } from './common/PillButton';
 import { SectionCard } from './common/SectionCard';
 import { TrackRow } from './common/TrackRow';
@@ -46,16 +46,6 @@ export function ProfilePanel(props: Props) {
   const { userName } = useParams<{ userName: string }>();
   if (!userName) return null;
   return <Profile key={userName} userName={userName} {...props} />;
-}
-
-/** Artist tile with the artist's photo: the stats carry no artist image of their own. */
-function ArtistTile({ a, onOpen }: { a: StatsArtist; onOpen: () => void }) {
-  const { data: photo } = useArtistImage(a.artistId, a.serviceId, a.accountId);
-  return (
-    <div className={styles.shelfTile}>
-      <ImageTile circular title={a.artist} sub={`${a.count} queued`} imageUrl={photo ?? a.imageUrl} onOpen={onOpen} />
-    </div>
-  );
 }
 
 function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName }: Props & { userName: string }) {
@@ -365,7 +355,7 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
       {topArtists.length > 0 && (
         <Carousel title="Top artists" className={styles.band} gap="1.2em">
           {topArtists.map((a, i) => (
-            <ArtistTile key={`${a.artistId ?? a.artist}-${i}`} a={a} onOpen={() => openArtist(a.artist, a)} />
+            <div key={`${a.artistId ?? a.artist}-${i}`} className={styles.shelfTile}><StatsArtistTile a={a} onOpen={() => openArtist(a.artist, a)} /></div>
           ))}
         </Carousel>
       )}
@@ -379,7 +369,7 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
                 <ImageTile
                   title={a.album}
                   sub={a.artist}
-                  meta={`${a.count} queued`}
+                  meta={queuedLabel(a.count)}
                   imageUrl={a.imageUrl}
                   onOpen={() => (a.albumId ? openItem(item) : void resolveAndOpen(a.album, 'album', { artist: primaryArtistName(a.artist) }))}
                 />

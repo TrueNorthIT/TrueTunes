@@ -178,3 +178,6 @@ export function indicesToUndo(
   }
   return out.sort((x, y) => x - y);
 }
+
+/** "12 queued". */
+export const queued = (n: number) => `${n.toLocaleString()} queued`;
