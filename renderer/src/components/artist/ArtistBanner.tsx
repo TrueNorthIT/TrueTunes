@@ -62,11 +62,11 @@ export function ArtistBanner({
     return () => ro.disconnect();
   }, []);
   // Hold the photo back until the focal point is known, but never longer than FOCUS_WAIT_MS.
-  const [waited, setWaited] = useState(false);
+  const [waitedFor, setWaitedFor] = useState<string | null>(null);
+  const waited = photoSrc !== null && waitedFor === photoSrc;
   useEffect(() => {
-    setWaited(false);
     if (!photoSrc) return;
-    const t = setTimeout(() => setWaited(true), FOCUS_WAIT_MS);
+    const t = setTimeout(() => setWaitedFor(photoSrc), FOCUS_WAIT_MS);
     return () => clearTimeout(t);
   }, [photoSrc]);
   const shown = waited || !focus.isPending;

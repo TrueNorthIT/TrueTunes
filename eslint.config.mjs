@@ -36,7 +36,6 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       // React Compiler compatibility check — we don't use the compiler, valid pattern
       'react-hooks/react-compiler': 'off',
-      'react-hooks/set-state-in-effect': 'off',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       // Design system: inline styles take tokens (var(--…)), never literal colours, px font sizes or radii.
       // Runtime-derived values (template literals, variables such as the artwork accent) are not literals, so pass.
