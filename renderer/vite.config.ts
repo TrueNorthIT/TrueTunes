@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from 'vite';
-import react from '@vitejs/plugin-react';
+import react, { reactCompilerPreset } from '@vitejs/plugin-react';
+import babel from '@rolldown/plugin-babel';
 import path from 'path';
 
 /**
@@ -20,7 +21,7 @@ const devCsp = (): Plugin => ({
 
 export default defineConfig({
   root: path.resolve(__dirname),
-  plugins: [react(), devCsp()],
+  plugins: [react(), babel({ presets: [reactCompilerPreset()] }), devCsp()],
   base: './',
   build: {
     outDir: path.resolve(__dirname, 'dist'),
