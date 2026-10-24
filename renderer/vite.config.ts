@@ -9,10 +9,13 @@ import path from 'path';
 const devCsp = (): Plugin => ({
   name: 'dev-csp',
   apply: 'serve',
+  // Only inside the meta tag's content="...": index.html's explanatory comment uses the same words.
   transformIndexHtml: (html) =>
-    html
-      .replace(/script-src [^;]*/, "script-src 'self' 'unsafe-inline' 'unsafe-eval'")
-      .replace(/connect-src /, 'connect-src ws://localhost:5173 '),
+    html.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>/, (meta) =>
+      meta
+        .replace(/script-src [^;"]*/, "script-src 'self' 'unsafe-inline' 'unsafe-eval'")
+        .replace(/connect-src /, 'connect-src ws://localhost:5173 ')
+    ),
 });
 
 export default defineConfig({
