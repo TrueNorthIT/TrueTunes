@@ -20,6 +20,7 @@ import type { NormalizedGroup } from '../types/provider';
 import { addRecentSearch } from '../lib/recentSearches';
 import { PillButton } from './common/PillButton';
 import dialog from './common/Dialog.module.css';
+import { useDisplayName } from '../hooks/useDisplayName';
 import styles from '../styles/TopNav.module.css';
 
 interface Props {
@@ -28,7 +29,6 @@ interface Props {
   activeGroupId: string | null;
   onGroupChange: (groupId: string) => void;
   onResync: () => void;
-  displayName: string | null | undefined;
   onSaveName: (name: string) => void;
   onChangelogOpen: () => void;
 }
@@ -39,10 +39,10 @@ export function TopNav({
   activeGroupId,
   onGroupChange,
   onResync,
-  displayName,
   onSaveName,
   onChangelogOpen,
 }: Props) {
+  const displayName = useDisplayName();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();

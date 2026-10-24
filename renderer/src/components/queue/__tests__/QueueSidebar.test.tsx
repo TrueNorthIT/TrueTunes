@@ -75,7 +75,6 @@ const defaultProps = {
   groupName: 'Living Room',
   onRefresh: vi.fn(),
   onError: vi.fn(),
-  onAddToQueue: vi.fn(),
 };
 
 function makeQueryClient() {

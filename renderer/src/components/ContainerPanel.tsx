@@ -19,10 +19,7 @@ import { TrackRow } from './common/TrackRow';
 import { ArtistLinks } from './common/TrackLinks';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/ContainerPanel.module.css';
-
-interface Props {
-  onAddToQueue: (item: SonosItem) => void;
-}
+import { useQueueActions } from '../hooks/useQueueActions';
 
 const SKELETON_TILES = 12;
 
@@ -30,7 +27,8 @@ const SKELETON_TILES = 12;
  * A music service shelf opened in full (a For you section on Home: "Quick picks", "Albums for you", an
  * artist's mix). Songs are a list, everything else is a grid of tiles, one section per kind.
  */
-export function ContainerPanel({ onAddToQueue }: Props) {
+export function ContainerPanel() {
+  const { addToQueue: onAddToQueue } = useQueueActions();
   const { state } = useLocation();
   const item = (state as { item?: SonosItem } | null)?.item;
   const openItem = useOpenItem();

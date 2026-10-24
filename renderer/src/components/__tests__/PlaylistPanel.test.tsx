@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createElement } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { seedDisplayName } from '../../test/queueActions';
+import { QueueActionsProvider } from '../../hooks/useQueueActions';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PlaylistPanel } from '../PlaylistPanel';
-import type { SonosItem } from '../../types/sonos';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({
@@ -64,14 +65,16 @@ function makePlaylist(tracks: PlaylistTrack[] = []): PlaylistDoc {
 }
 
 function renderPanel(qc: QueryClient) {
+  seedDisplayName(qc, OWNER);
   return render(
     createElement(
       QueryClientProvider,
       { client: qc },
-      createElement(PlaylistPanel, {
-        displayName: OWNER,
-        onAddToQueue: vi.fn() as (item: SonosItem, position?: number) => void,
-      })
+      createElement(
+        QueueActionsProvider,
+        { value: { addToQueue: vi.fn(), queueNext: vi.fn() } },
+        createElement(PlaylistPanel)
+      )
     )
   );
 }

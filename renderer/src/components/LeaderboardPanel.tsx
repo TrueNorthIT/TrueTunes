@@ -25,6 +25,7 @@ import { UserAvatar } from './common/UserAvatar';
 import { trackPayload } from '../lib/itemHelpers';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/LeaderboardPanel.module.css';
+import { useQueueActions } from '../hooks/useQueueActions';
 
 // The server's "week" is a rolling seven days, not the calendar week, so the label says so.
 const PERIODS: { value: StatsPeriod; label: string; phrase: string }[] = [
@@ -170,12 +171,8 @@ function PageSkeleton() {
   );
 }
 
-interface Props {
-  /** Queues a track or album from the charts. Without it the + buttons are hidden. */
-  onAddToQueue?: (item: SonosItem) => void;
-}
-
-export function LeaderboardPanel({ onAddToQueue }: Props) {
+export function LeaderboardPanel() {
+  const { addToQueue: onAddToQueue } = useQueueActions();
   const navigate = useNavigate();
   const nav = useStatsNav(onAddToQueue);
   const [period, setPeriod] = useState<StatsPeriod>('week');

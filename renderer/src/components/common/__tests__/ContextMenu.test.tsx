@@ -1,5 +1,7 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { seedDisplayName } from '../../../test/queueActions';
+import { QueueActionsProvider } from '../../../hooks/useQueueActions';
 import { MemoryRouter } from 'react-router-dom';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -33,12 +35,16 @@ function Row() {
 }
 
 function renderMenu(onAddToQueue = vi.fn()) {
+  const client = new QueryClient();
+  seedDisplayName(client, null);
   render(
-    <QueryClientProvider client={new QueryClient()}>
+    <QueryClientProvider client={client}>
       <MemoryRouter>
-        <ContextMenuProvider displayName={null} onAddToQueue={onAddToQueue} onQueueNext={vi.fn()}>
-          <Row />
-        </ContextMenuProvider>
+        <QueueActionsProvider value={{ addToQueue: onAddToQueue, queueNext: vi.fn() }}>
+          <ContextMenuProvider>
+            <Row />
+          </ContextMenuProvider>
+        </QueueActionsProvider>
       </MemoryRouter>
     </QueryClientProvider>
   );

@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createElement, type ReactNode } from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { AddToQueue } from '../../hooks/useQueueActions';
+import { queueActionsWrapper } from '../../test/queueActions';
 import { LeaderboardPanel } from '../LeaderboardPanel';
 
 interface AlbumResource {
@@ -124,11 +126,11 @@ function mockLoaded(data: StatsResult = mockData) {
   mockUseStats.mockReturnValue({ data, isLoading: false, error: null } as unknown as ReturnType<typeof useStats>);
 }
 
-function renderPanel(props: Parameters<typeof LeaderboardPanel>[0] = {}) {
+function renderPanel({ onAddToQueue }: { onAddToQueue?: AddToQueue } = {}) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client: qc }, children);
-  return render(<LeaderboardPanel {...props} />, { wrapper });
+  return render(<LeaderboardPanel />, { wrapper: queueActionsWrapper(onAddToQueue, wrapper) });
 }
 
 const ranking = (over: Record<string, unknown> = {}) => ({
@@ -279,17 +281,12 @@ describe('LeaderboardPanel', () => {
       expect(screen.getByText('A Night at the Opera')).toBeInTheDocument();
     });
 
-    it('queues a track with +, and hides + without a uri or a queue handler', () => {
+    it('queues a track with +, and hides + without a uri', () => {
       const onAddToQueue = vi.fn();
       renderPanel({ onAddToQueue });
       fireEvent.click(screen.getByRole('button', { name: 'Add Bohemian Rhapsody to queue' }));
       expect(onAddToQueue).toHaveBeenCalledWith(expect.objectContaining({ type: 'TRACK', title: 'Bohemian Rhapsody' }));
       expect(screen.queryByRole('button', { name: 'Add Hotel California to queue' })).toBeNull();
-    });
-
-    it('shows no + buttons when the page cannot queue', () => {
-      renderPanel();
-      expect(screen.queryByRole('button', { name: /to queue$/ })).toBeNull();
     });
 
     it('merges artists whose names differ only in case', () => {
