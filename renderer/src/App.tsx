@@ -68,9 +68,10 @@ const MainApp = memo(function MainApp() {
   const { showToast } = useToast();
   const { playback, applyGroupCache, queueIdRef, queueVersionRef } = usePlayback(activeGroupId);
   useMediaSession(playback);
+  // useQueue refetches on a new queueVersion (external adds/removes/reorders); the attribution
+  // badges refresh alongside it.
   const {
     items: queueItems,
-    setItems: setQueueItems,
     isLoading: queueLoading,
     error: queueError,
     reload: reloadQueueRaw,
@@ -81,7 +82,8 @@ const MainApp = memo(function MainApp() {
     (etag) => {
       queueVersionRef.current = etag;
     },
-    (msg) => showToast(`Queue refresh failed: ${msg}`)
+    (msg) => showToast(`Queue refresh failed: ${msg}`),
+    playback.queueVersion
   );
   usePrefetchNextLyrics(queueItems, playback.queueItemId);
 
@@ -90,14 +92,9 @@ const MainApp = memo(function MainApp() {
     window.sonos.refreshAttribution().catch(() => {});
   }, [reloadQueueRaw]);
 
-  // Reload whenever Sonos reports a new queue version — catches external adds/removes/reorders
-  const seenQueueVersionRef = useRef<string | null>(null);
   useEffect(() => {
-    const v = playback.queueVersion;
-    if (!v || v === seenQueueVersionRef.current) return;
-    seenQueueVersionRef.current = v;
-    reloadQueue();
-  }, [playback.queueVersion, reloadQueue]);
+    if (playback.queueVersion) window.sonos.refreshAttribution().catch(() => {});
+  }, [playback.queueVersion]);
 
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [changelogOpen, setChangelogOpen] = useState(false);
@@ -216,7 +213,7 @@ const MainApp = memo(function MainApp() {
 
   const queueActions = useCreateQueueActions({
     queueItems,
-    setQueueItems,
+    groupId: activeGroupId,
     reloadQueue,
     reloadQueueRaw,
     queueIdRef,
@@ -270,7 +267,6 @@ const MainApp = memo(function MainApp() {
             isAuthed={isAuthed}
             playback={playback}
             queueItems={queueItems}
-            setQueueItems={setQueueItems}
             queueLoading={queueLoading}
             queueError={queueError}
             reloadQueue={reloadQueue}
@@ -343,7 +339,7 @@ const MainApp = memo(function MainApp() {
                 ref={queueSidebarRef}
                 viewer={displayName}
                 items={queueItems}
-                setItems={setQueueItems}
+                groupId={activeGroupId}
                 isLoading={queueLoading}
                 error={queueError}
                 currentObjectId={playback.currentObjectId}

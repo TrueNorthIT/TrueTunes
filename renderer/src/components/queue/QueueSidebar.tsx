@@ -26,10 +26,11 @@ import type { NormalizedQueueItem } from '../../types/provider';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/QueueSidebar.module.css';
 import { useQueueActions } from '../../hooks/useQueueActions';
+import { useEditQueue } from '../../hooks/useQueue';
 
 interface Props {
   items: NormalizedQueueItem[];
-  setItems: (updater: NormalizedQueueItem[] | ((prev: NormalizedQueueItem[]) => NormalizedQueueItem[])) => void;
+  groupId: string | null;
   isLoading: boolean;
   error: string | null;
   currentObjectId: string | null;
@@ -74,7 +75,7 @@ const PLAYER_BAR_PADDING = 64; // 32px breathing room each side
 export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function QueueSidebar(
   {
     items,
-    setItems,
+    groupId,
     isLoading,
     error,
     currentObjectId,
@@ -95,6 +96,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
 ) {
   const isActive = true;
   const { addToQueue: onAddToQueue } = useQueueActions();
+  const editQueue = useEditQueue(groupId);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const attributionMap = useAttribution(onRefresh);
@@ -243,18 +245,19 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
       if (selected.size === 0) return;
       e.preventDefault();
       const indices = [...selected];
-      setItems((prev) => prev.filter((_, i) => !selected.has(i)));
+      const undo = editQueue((prev) => prev.filter((_, i) => !selected.has(i)));
       setSelected(new Set());
       await getActiveProvider()
         .removeFromQueue(indices)
         .catch(() => {
+          undo();
           onRefresh();
           onError('Failed to remove track');
         });
     }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [isActive, selected, setItems, onRefresh, onError]);
+  }, [isActive, selected, editQueue, onRefresh, onError]);
 
   function handleResizePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     e.preventDefault();
@@ -368,10 +371,11 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     const targetIndex = dragOverIndex;
     setDragOverIndex(null);
     setSelected(new Set());
-    setItems(applyReorderLocally(items, fromIndices, targetIndex));
+    const undo = editQueue(applyReorderLocally(items, fromIndices, targetIndex));
     await getActiveProvider()
       .reorderQueue(fromIndices, targetIndex, currentLength)
       .catch(() => {
+        undo();
         onRefresh();
         onError('Failed to reorder queue');
       });
@@ -439,10 +443,11 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
               className={styles.confirmYes}
               onClick={async () => {
                 setPendingClear(false);
-                setItems([]);
+                const undo = editQueue([]);
                 await getActiveProvider()
                   .clearQueue()
                   .catch(() => {
+                    undo();
                     onRefresh();
                     onError('Failed to clear queue');
                   });
@@ -628,11 +633,12 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
               className={styles.selDelBtn}
               onClick={async () => {
                 const indices = [...selected];
-                setItems((prev) => prev.filter((_, i) => !selected.has(i)));
+                const undo = editQueue((prev) => prev.filter((_, i) => !selected.has(i)));
                 setSelected(new Set());
                 await getActiveProvider()
                   .removeFromQueue(indices)
                   .catch(() => {
+                    undo();
                     onRefresh();
                     onError('Failed to remove tracks');
                   });

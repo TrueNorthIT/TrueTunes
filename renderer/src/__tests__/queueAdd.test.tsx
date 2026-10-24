@@ -510,7 +510,7 @@ describe('handleAddToQueue — optimistic insert', () => {
     await act(async () => {
       await capturedAddToQueue!(makeTrackItem());
     });
-    expect(capturedQueueItems.map((q) => q.track.id)).toEqual(['q-a', 'obj1']);
+    await waitFor(() => expect(capturedQueueItems.map((q) => q.track.id)).toEqual(['q-a', 'obj1']));
   });
 
   it('inserts at the requested position', async () => {
@@ -520,7 +520,7 @@ describe('handleAddToQueue — optimistic insert', () => {
     await act(async () => {
       await capturedAddToQueue!(makeTrackItem(), 1);
     });
-    expect(capturedQueueItems.map((q) => q.track.id)).toEqual(['q-a', 'obj1', 'q-b']);
+    await waitFor(() => expect(capturedQueueItems.map((q) => q.track.id)).toEqual(['q-a', 'obj1', 'q-b']));
   });
 });
 

@@ -1,16 +1,8 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  type Dispatch,
-  type SetStateAction,
-} from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import type { MutableRefObject } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { trackQueryOptions } from './useTrackDetails';
+import { useEditQueue } from './useQueue';
 import { albumQueryOptions, type AlbumTrack } from './useAlbumBrowse';
 import { playlistQueryOptions } from './usePlaylistBrowse';
 import { useToast } from '../components/common/Toast';
@@ -57,7 +49,7 @@ export function useQueueActions() {
 
 interface Deps {
   queueItems: NormalizedQueueItem[];
-  setQueueItems: Dispatch<SetStateAction<NormalizedQueueItem[]>>;
+  groupId: string | null;
   /** Reload and tell Sonos attribution to refresh. */
   reloadQueue: () => void;
   /** Reload only; resolves once the new etag is in `queueVersionRef`. */
@@ -76,7 +68,7 @@ interface Deps {
  */
 export function useCreateQueueActions({
   queueItems,
-  setQueueItems,
+  groupId,
   reloadQueue,
   reloadQueueRaw,
   queueIdRef,
@@ -86,6 +78,7 @@ export function useCreateQueueActions({
 }: Deps): QueueActions {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const editQueue = useEditQueue(groupId);
 
   // Read inside addToQueue without making it depend on queue contents: it is handed to most of
   // the tree, and rebuilding it on every queue tick would churn every consumer.
@@ -197,7 +190,7 @@ export function useCreateQueueActions({
           normalized,
           insertIndex === Infinity ? 0 : insertIndex
         );
-        setQueueItems((prev) => {
+        editQueue((prev) => {
           if (insertIndex === Infinity || insertIndex >= prev.length) {
             return [...prev, { ...normalizedQueueItem, index: prev.length }];
           }
@@ -321,7 +314,7 @@ export function useCreateQueueActions({
     },
     [
       queryClient,
-      setQueueItems,
+      editQueue,
       reloadQueue,
       reloadQueueRaw,
       queueIdRef,
