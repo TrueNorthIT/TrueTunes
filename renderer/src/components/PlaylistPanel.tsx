@@ -18,11 +18,8 @@ import { UserAvatar } from './common/UserAvatar';
 import { getPlaylistColor } from '../lib/playlistColor';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/PlaylistPanel.module.css';
-
-interface Props {
-  displayName: string | null | undefined;
-  onAddToQueue: (item: SonosItem, position?: number) => void;
-}
+import { useDisplayName } from '../hooks/useDisplayName';
+import { useQueueActions } from '../hooks/useQueueActions';
 
 function trackToSonosItem(t: PlaylistTrack): SonosItem {
   return {
@@ -100,7 +97,9 @@ function MosaicCell({ url }: { url: string }) {
   return src ? <img src={src} alt="" /> : <span />;
 }
 
-export function PlaylistPanel({ displayName, onAddToQueue }: Props) {
+export function PlaylistPanel() {
+  const { addToQueue: onAddToQueue } = useQueueActions();
+  const displayName = useDisplayName();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();

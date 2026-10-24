@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createElement } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { queueActionsWrapper, seedDisplayName } from '../../test/queueActions';
+import type { QueueActions } from '../../hooks/useQueueActions';
 import { render, screen, waitFor, fireEvent, within, act } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -90,10 +92,12 @@ vi.mock('../../hooks/useRecentlyPlayed', () => ({
   useRecentlyPlayed: (...args: unknown[]) => mockUseRecentlyPlayed(...args),
 }));
 
-function makeWrapper(client?: QueryClient) {
+function makeWrapper(client?: QueryClient, extra: { add?: QueueActions['addToQueue']; displayName?: string } = {}) {
   const shared = client ?? new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return ({ children }: { children: React.ReactNode }) =>
+  if (extra.displayName) seedDisplayName(shared, extra.displayName);
+  const Outer = ({ children }: { children: React.ReactNode }) =>
     createElement(QueryClientProvider, { client: shared }, children);
+  return queueActionsWrapper(extra.add, Outer);
 }
 
 function makeRootData(rootItems: SonosItem[]) {
@@ -141,7 +145,6 @@ const nowPlaying = {
 const playing = { isVisible: true, trackName: 'Gumbo' } as unknown as import('../../hooks/usePlayback').PlaybackState;
 const defaultProps = {
   isAuthed: true,
-  onAddToQueue: vi.fn(),
   ytm: { forYou: [], newReleases: [], charts: [] },
   ytmLoading: false,
 };
@@ -438,7 +441,7 @@ describe('HomePanel', () => {
       newReleases: [],
       charts: [],
     };
-    render(<HomePanel {...defaultProps} onAddToQueue={onAddToQueue} ytm={ytm} />, { wrapper: makeWrapper() });
+    render(<HomePanel {...defaultProps} ytm={ytm} />, { wrapper: makeWrapper(undefined, { add: onAddToQueue }) });
     for (const name of ['My Supermix', 'Jamie Woon Radio', 'Quick picks']) {
       expect(screen.queryByRole('button', { name: `Add ${name} to queue` }), name).toBeNull();
       expect(screen.getByRole('button', { name }), name).toBeInTheDocument();
@@ -479,7 +482,7 @@ describe('HomePanel', () => {
   });
 
   it('greets the user by first name', () => {
-    render(<HomePanel {...defaultProps} displayName="Joe Pitts" />, { wrapper: makeWrapper() });
+    render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper(undefined, { displayName: 'Joe Pitts' }) });
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/^Good (morning|afternoon|evening), Joe$/);
   });
 
@@ -504,14 +507,14 @@ describe('HomePanel', () => {
 
     it('queues one pick with a labelled + button', () => {
       const add = vi.fn();
-      render(<HomePanel {...defaultProps} onAddToQueue={add} />, { wrapper: makeWrapper() });
+      render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper(undefined, { add: add }) });
       fireEvent.click(screen.getByRole('button', { name: 'Add Song 1 to queue' }));
       expect(add).toHaveBeenCalledWith(expect.objectContaining({ title: 'Song 1' }), -1, { attribute: false });
     });
 
     it('Queue all queues each pick without attribution', () => {
       const add = vi.fn();
-      render(<HomePanel {...defaultProps} onAddToQueue={add} />, { wrapper: makeWrapper() });
+      render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper(undefined, { add: add }) });
       fireEvent.click(screen.getByRole('button', { name: /Queue all/ }));
       expect(add).toHaveBeenCalledTimes(8);
       expect(add).toHaveBeenLastCalledWith(expect.objectContaining({ title: 'Song 8' }), -1, { attribute: false });
@@ -542,7 +545,7 @@ describe('HomePanel', () => {
         data: { artists: [{ artist: 'Artist 1', artistId: 'a1', serviceId: 's', accountId: 'c' }], tracks: [] },
         isLoading: false,
       });
-      render(<HomePanel {...defaultProps} onAddToQueue={add} />, { wrapper: makeWrapper() });
+      render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper(undefined, { add: add }) });
 
       fireEvent.click(await screen.findByRole('button', { name: 'Open album Album 1' }));
       expect(mockOpenItem).toHaveBeenCalledWith(
@@ -568,7 +571,7 @@ describe('HomePanel', () => {
         discoveries: [{ ...discovery(1), because: 'Joe Pitts queues Gorillaz — never played here' }],
         isLoading: false,
       });
-      render(<HomePanel {...defaultProps} displayName="Joe Pitts" />, { wrapper: makeWrapper() });
+      render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper(undefined, { displayName: 'Joe Pitts' }) });
       expect(screen.getByText('You love Gorillaz')).toBeInTheDocument();
       expect(screen.queryByText(/Joe Pitts love/)).not.toBeInTheDocument();
     });
@@ -589,7 +592,7 @@ describe('HomePanel', () => {
         ],
         isLoading: false,
       });
-      render(<HomePanel {...defaultProps} onAddToQueue={add} />, { wrapper: makeWrapper() });
+      render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper(undefined, { add: add }) });
       const info = screen.getByRole('button', { name: 'Why this pick' });
       fireEvent.mouseEnter(info);
       const tip = screen.getByRole('tooltip');
@@ -602,7 +605,7 @@ describe('HomePanel', () => {
 
     it('titles the section "Picks for you" and drops the face row when only the viewer is in', () => {
       mockUseOfficePresence.mockReturnValue({ data: { inOffice: ['Joe Pitts'] } });
-      render(<HomePanel {...defaultProps} displayName="Joe Pitts" />, { wrapper: makeWrapper() });
+      render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper(undefined, { displayName: 'Joe Pitts' }) });
       expect(screen.getByText('Picks for you')).toBeInTheDocument();
       expect(screen.queryByLabelText('In the office')).not.toBeInTheDocument();
     });
@@ -645,7 +648,7 @@ describe('HomePanel', () => {
 
     it('clicking + queues the pick and does not navigate', () => {
       const add = vi.fn();
-      render(<HomePanel {...defaultProps} onAddToQueue={add} />, { wrapper: makeWrapper() });
+      render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper(undefined, { add: add }) });
       fireEvent.click(screen.getByRole('button', { name: 'Add Song 1 to queue' }));
       expect(add).toHaveBeenCalledTimes(1);
       expect(mockOpenItem).not.toHaveBeenCalled();
@@ -665,7 +668,7 @@ describe('HomePanel', () => {
         row(101, 'other-2'),
         ...[2, 3, 4, 5, 6, 7, 8].map((n) => row(n)),
       ] as never[];
-      render(<HomePanel {...defaultProps} onAddToQueue={add} queueItems={queue} />, { wrapper: makeWrapper() });
+      render(<HomePanel {...defaultProps} queueItems={queue} />, { wrapper: makeWrapper(undefined, { add: add }) });
       fireEvent.click(screen.getByRole('button', { name: /Queue all/ }));
       expect(add).toHaveBeenCalledTimes(8);
       expect(mockShowToast).toHaveBeenCalledWith(
@@ -700,7 +703,7 @@ describe('HomePanel', () => {
       tracks[1] = statsTrack(2, { uri: undefined });
       mockUseStats.mockReturnValue({ data: { topTracks: tracks } });
       const add = vi.fn();
-      render(<HomePanel {...defaultProps} onAddToQueue={add} />, { wrapper: makeWrapper() });
+      render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper(undefined, { add: add }) });
 
       expect(screen.getByText(/Trending in the office/)).toBeInTheDocument();
       expect(screen.getByText('Hit 10')).toBeInTheDocument();
@@ -781,7 +784,7 @@ describe('HomePanel', () => {
         ]),
       });
       const add = vi.fn();
-      render(<HomePanel {...defaultProps} onAddToQueue={add} />, { wrapper: makeWrapper() });
+      render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper(undefined, { add: add }) });
 
       expect(screen.getByText('What people are queuing')).toBeInTheDocument();
       expect(screen.getByText('2 albums this week')).toBeInTheDocument();
@@ -822,7 +825,7 @@ describe('HomePanel', () => {
         albumsByUser: new Map(),
       });
       const add = vi.fn();
-      render(<HomePanel {...defaultProps} onAddToQueue={add} />, { wrapper: makeWrapper() });
+      render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper(undefined, { add: add }) });
 
       expect(screen.getByText('1 track this week')).toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: /^Numb/ }));

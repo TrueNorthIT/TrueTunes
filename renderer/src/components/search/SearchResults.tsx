@@ -46,6 +46,7 @@ import { TrackRow } from '../common/TrackRow';
 import { ArtistLinks } from '../common/TrackLinks';
 import type { SonosItem, SonosAlbum } from '../../types/sonos';
 import styles from './SearchResults.module.css';
+import { useQueueActions } from '../../hooks/useQueueActions';
 
 const SONGS_SHOWN = 5;
 
@@ -82,7 +83,6 @@ interface Props {
   /** The query these results are for (not the one being typed). */
   query: string;
   results: SonosItem[];
-  onAddToQueue: (item: SonosItem) => void;
   /** Any click in the results: the query found something worth remembering. */
   onEngage?: () => void;
 }
@@ -91,7 +91,8 @@ interface Props {
  * Search results for finding music you already know: the likeliest hit beside the songs (with album and length, so
  * the right version is obvious), then the service's other sections in its own order, then videos and uploads, folded.
  */
-export function SearchResults({ query, results, onAddToQueue, onEngage }: Props) {
+export function SearchResults({ query, results, onEngage }: Props) {
+  const { addToQueue: onAddToQueue } = useQueueActions();
   const openItem = useOpenItem();
   const { resolveAndOpen } = useResolveAndOpen();
   const queryClient = useQueryClient();

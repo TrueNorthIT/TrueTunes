@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { seedDisplayName } from '../../test/queueActions';
+import { QueueActionsProvider } from '../../hooks/useQueueActions';
 import { MemoryRouter } from 'react-router-dom';
 import { DiscoverPanel } from '../DiscoverPanel';
 import type { DjActDiscoveries } from '../../hooks/useDjDiscoveries';
@@ -66,13 +68,19 @@ const djSet: DjSetResult = {
   inferredListeners: true,
 };
 
-function renderPanel(props: Partial<React.ComponentProps<typeof DiscoverPanel>> = {}) {
+function renderPanel({
+  displayName,
+  ...props
+}: Partial<React.ComponentProps<typeof DiscoverPanel>> & { displayName?: string } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  if (displayName) seedDisplayName(client, displayName);
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
-        <DiscoverPanel onAddToQueue={onAddToQueue} {...props} />
-      </MemoryRouter>
+      <QueueActionsProvider value={{ addToQueue: onAddToQueue, queueNext: vi.fn() }}>
+        <MemoryRouter>
+          <DiscoverPanel {...props} />
+        </MemoryRouter>
+      </QueueActionsProvider>
     </QueryClientProvider>
   );
 }

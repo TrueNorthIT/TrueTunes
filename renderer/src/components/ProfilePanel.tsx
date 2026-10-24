@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Camera } from 'lucide-react';
 import { useStats } from '../hooks/useStats';
+import { useDisplayName, useDisplayNameActions } from '../hooks/useDisplayName';
+import { useQueueActions } from '../hooks/useQueueActions';
 import { recentlyPlayedQueryOptions } from '../hooks/useRecentlyPlayed';
 import { useGameRankings } from '../hooks/useDailyGame';
 import { useMyPlaylists } from '../hooks/usePlaylists';
@@ -41,21 +43,18 @@ import styles from '../styles/ProfilePanel.module.css';
 /** StatsTrack and RecentTrack carry the same navigation fields. */
 type ProfileTrack = Omit<StatsTrack, 'count'>;
 
-interface Props {
-  onAddToQueue: (item: SonosItem) => void;
-  displayName?: string | null;
-  onSignOut?: () => void;
-  onChangeName?: (name: string) => Promise<{ error: string } | null>;
-}
-
 /** Keyed on the person, so moving from one profile to another starts at the top with nothing selected. */
-export function ProfilePanel(props: Props) {
+export function ProfilePanel() {
   const { userName } = useParams<{ userName: string }>();
   if (!userName) return null;
-  return <Profile key={userName} userName={userName} {...props} />;
+  return <Profile key={userName} userName={userName} />;
 }
 
-function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName }: Props & { userName: string }) {
+function Profile({ userName }: { userName: string }) {
+  const { addToQueue: onAddToQueue } = useQueueActions();
+  const displayName = useDisplayName();
+  const displayNameActions = useDisplayNameActions();
+  const [signingIn, setSigningIn] = useState(false);
   const navigate = useNavigate();
   const openItem = useOpenItem();
   const { resolveAndOpen } = useResolveAndOpen();
@@ -122,13 +121,22 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
     }
   }
 
+  async function handleSignOut() {
+    displayNameActions.set(null);
+    setSigningIn(true);
+    await window.sonos.entraSignOut().catch(() => {});
+    await window.sonos.entraReLogin().catch(() => {});
+    await displayNameActions.refresh();
+    setSigningIn(false);
+  }
+
   async function handleRenameSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = renameValue.trim();
-    if (!trimmed || !onChangeName) return;
+    if (!trimmed) return;
     setRenameSaving(true);
     setRenameError(null);
-    const result = await onChangeName(trimmed);
+    const result = await displayNameActions.rename(displayName, trimmed);
     setRenameSaving(false);
     if (result?.error === 'taken') {
       setRenameError('That name is already taken.');
@@ -347,19 +355,17 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
               )}
             </div>
           )}
-          {isOwnProfile && !renaming && (onChangeName || onSignOut) && (
+          {isOwnProfile && !renaming && (
             <div className={styles.heroActions}>
-              {onChangeName && (
-                <PillButton
-                  onClick={() => {
-                    setRenameValue(userName);
-                    setRenaming(true);
-                  }}
-                >
-                  Change name
-                </PillButton>
-              )}
-              {onSignOut && <PillButton onClick={onSignOut}>Sign out</PillButton>}
+              <PillButton
+                onClick={() => {
+                  setRenameValue(userName);
+                  setRenaming(true);
+                }}
+              >
+                Change name
+              </PillButton>
+              <PillButton onClick={handleSignOut}>Sign out</PillButton>
             </div>
           )}
         </div>
@@ -509,6 +515,11 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
         </Carousel>
       )}
 
+      {signingIn && (
+        <div className={styles.signingIn}>
+          <span>Signing in with your organisation account…</span>
+        </div>
+      )}
       {createPlaylistOpen && (
         <CreatePlaylistDialog
           displayName={displayName}

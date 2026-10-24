@@ -14,9 +14,9 @@ import { ImageTile } from '../common/ImageTile';
 import { PillButton } from '../common/PillButton';
 import { SectionCard, SeeAll } from '../common/SectionCard';
 import { SearchResults } from './SearchResults';
-import type { SonosItem } from '../../types/sonos';
 import styles from './SearchPanel.module.css';
 import { STALE } from '../../lib/queryDefaults';
+import { useQueueActions } from '../../hooks/useQueueActions';
 
 /**
  * Up and down move between the top result, the recent searches and the song rows (a row's first control takes focus).
@@ -36,8 +36,6 @@ function arrowNav(e: React.KeyboardEvent<HTMLElement>) {
   else if (!next && e.key === 'ArrowUp') document.querySelector<HTMLElement>('[data-search-input]')?.focus();
 }
 
-type AddToQueue = (item: SonosItem, position?: number, opts?: { attribute?: boolean }) => void;
-
 export const searchKeys = {
   query: (q: string) => ['search', q] as const,
 };
@@ -56,7 +54,7 @@ export const searchQueryOptions = (q: string) =>
   });
 
 /** Search runs from the nav's search box, which writes ?q= as you type. This page reads it. */
-export function SearchPanel({ onAddToQueue }: { onAddToQueue: AddToQueue }) {
+export function SearchPanel() {
   const [params] = useSearchParams();
   const q = (params.get('q') ?? '').trim();
 
@@ -83,7 +81,7 @@ export function SearchPanel({ onAddToQueue }: { onAddToQueue: AddToQueue }) {
               : ''}
         </p>
         {!q ? (
-          <SearchHome onAddToQueue={onAddToQueue} />
+          <SearchHome />
         ) : isError && !isFetching ? (
           <div className={styles.msg}>
             <p>Search didn’t go through. The music service may be busy.</p>
@@ -110,7 +108,6 @@ export function SearchPanel({ onAddToQueue }: { onAddToQueue: AddToQueue }) {
                 key={data.query}
                 query={data.query}
                 results={data.items}
-                onAddToQueue={onAddToQueue}
                 onEngage={() => addRecentSearch(data.query)}
               />
             )}
@@ -122,7 +119,8 @@ export function SearchPanel({ onAddToQueue }: { onAddToQueue: AddToQueue }) {
 }
 
 /** Before anything is typed: this viewer's recent searches, and a few things the office has never played. */
-function SearchHome({ onAddToQueue }: { onAddToQueue: AddToQueue }) {
+function SearchHome() {
+  const { addToQueue: onAddToQueue } = useQueueActions();
   const navigate = useNavigate();
   const openItem = useOpenItem();
   const [recentCount] = useState(() => getRecentSearches().length);

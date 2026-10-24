@@ -38,6 +38,7 @@ import {
 import type { AlbumTrack } from '../../hooks/useAlbumBrowse';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/ArtistPanel.module.css';
+import { useQueueActions } from '../../hooks/useQueueActions';
 
 // "Man Alive (Deluxe)" -> "Man Alive"
 function baseName(title = ''): string {
@@ -68,12 +69,12 @@ function extractBio(description: GeniusDomNode | null): string {
 const SNAP_ROW = { scrollSnapType: 'x mandatory', scrollPaddingInline: '4px' } as const;
 
 interface Props {
-  onAddToQueue: (item: SonosItem) => void;
   currentTrackName: string;
   isPlaybackActive: boolean;
 }
 
-export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }: Props) {
+export function ArtistPanel({ currentTrackName, isPlaybackActive }: Props) {
+  const { addToQueue: onAddToQueue } = useQueueActions();
   const { state } = useLocation();
   const item = (state as { item?: SonosItem } | null)?.item;
   const openItem = useOpenItem();

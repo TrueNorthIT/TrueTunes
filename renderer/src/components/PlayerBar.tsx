@@ -27,13 +27,13 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import type { PlaybackState } from '../hooks/usePlayback';
+import { useDisplayName } from '../hooks/useDisplayName';
 import styles from '../styles/PlayerBar.module.css';
 
 interface Props {
   isAuthed: boolean;
   playback: PlaybackState;
   onShuffle: () => void;
-  displayName?: string | null;
 }
 
 function ScrollingText({ text, className }: { text: string; className: string }) {
@@ -199,7 +199,8 @@ function VolumeButton({ volume }: { volume: number }) {
   );
 }
 
-export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props) {
+export function PlayerBar({ isAuthed, playback, onShuffle }: Props) {
+  const displayName = useDisplayName();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const lyricsActive = pathname === '/lyrics';

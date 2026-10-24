@@ -25,6 +25,7 @@ import { WindowControls } from '../WindowControls';
 import type { NormalizedQueueItem } from '../../types/provider';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/QueueSidebar.module.css';
+import { useQueueActions } from '../../hooks/useQueueActions';
 
 interface Props {
   items: NormalizedQueueItem[];
@@ -39,7 +40,6 @@ interface Props {
   groupName: string | null;
   onRefresh: () => void;
   onError: (msg: string) => void;
-  onAddToQueue: (item: SonosItem, position: number) => void;
   dockedWidth?: number;
   onResizeWidth?: (width: number) => void;
   onResizeWidthLive?: (width: number) => void;
@@ -84,7 +84,6 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     groupName,
     onRefresh,
     onError,
-    onAddToQueue,
     dockedWidth,
     onResizeWidth,
     onResizeWidthLive,
@@ -95,6 +94,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   ref
 ) {
   const isActive = true;
+  const { addToQueue: onAddToQueue } = useQueueActions();
 
   const contentRef = useRef<HTMLDivElement>(null);
   const attributionMap = useAttribution(onRefresh);
