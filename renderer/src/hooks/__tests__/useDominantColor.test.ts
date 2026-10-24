@@ -60,11 +60,12 @@ describe('useDominantColor', () => {
   });
 
   it('resets to null when src becomes null', () => {
-    const { result, rerender } = renderHook(
-      ({ src }: { src: string | null }) => useDominantColor(src),
-      { initialProps: { src: 'http://example.com/art.jpg' } }
-    );
-    act(() => { imageOnLoad?.(); });
+    const { result, rerender } = renderHook(({ src }: { src: string | null }) => useDominantColor(src), {
+      initialProps: { src: 'http://example.com/art.jpg' },
+    });
+    act(() => {
+      imageOnLoad?.();
+    });
     expect(result.current).not.toBeNull();
 
     rerender({ src: null as unknown as string });
@@ -72,9 +73,13 @@ describe('useDominantColor', () => {
   });
 
   it('returns null when canvas context is unavailable', () => {
-    mockGetContext.mockReturnValueOnce(null as unknown as { drawImage: typeof mockDrawImage; getImageData: typeof mockGetImageData });
+    mockGetContext.mockReturnValueOnce(
+      null as unknown as { drawImage: typeof mockDrawImage; getImageData: typeof mockGetImageData }
+    );
     const { result } = renderHook(() => useDominantColor('http://example.com/art.jpg'));
-    act(() => { imageOnLoad?.(); });
+    act(() => {
+      imageOnLoad?.();
+    });
     expect(result.current).toBeNull();
   });
 });

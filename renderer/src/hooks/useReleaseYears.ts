@@ -1,17 +1,22 @@
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { queryOptions, useQueries, useQuery } from '@tanstack/react-query';
 import { geniusAlbumYearQueryOptions } from './useGeniusAlbumYear';
 import { releaseKey } from '../lib/releaseShelves';
 import { matchReleaseYears } from '../lib/releaseYears';
 import type { SonosItem } from '../types/sonos';
+import { STALE } from '../lib/queryDefaults';
+
+export const releaseYearKeys = {
+  artistAlbums: (artistName: string | null | undefined) => ['genius-artist-albums', artistName] as const,
+};
 
 export function geniusArtistAlbumsQueryOptions(artistName: string | null | undefined) {
-  return {
-    queryKey: ['genius-artist-albums', artistName] as const,
+  return queryOptions({
+    queryKey: releaseYearKeys.artistAlbums(artistName),
     queryFn: () => window.sonos.geniusArtistAlbums(artistName ?? ''),
-    staleTime: Infinity,
+    staleTime: STALE.forever,
     retry: false,
     enabled: !!artistName,
-  };
+  });
 }
 
 /**

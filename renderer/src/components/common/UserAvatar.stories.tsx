@@ -8,7 +8,13 @@ const meta = {
   component: UserAvatar,
   // Sizing and shape come from the caller's class; here, the queuer chip's.
   args: { name: 'Priya Shah', imageUrl: portrait, className: chip.avatar },
-  decorators: [(Story) => <div style={{ fontSize: '2em' }}><Story /></div>],
+  decorators: [
+    (Story) => (
+      <div style={{ fontSize: 'var(--fs-glyph-sm)' }}>
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof UserAvatar>;
 
 export default meta;

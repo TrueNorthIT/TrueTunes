@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
+import { setPlaybackPosition, ZERO_POSITION } from '../../hooks/playbackPosition';
 import { LyricsPanel } from '../LyricsPanel';
 import type { PlaybackState } from '../../hooks/usePlayback';
 
@@ -27,7 +28,6 @@ const playing = {
   displayArtist: 'Muse',
   albumName: 'Black Holes and Revelations',
   durationMs: 200_000,
-  progressPct: 50,
   cachedArt: null,
   artUrlRaw: null,
   dominantColor: null,
@@ -59,8 +59,13 @@ describe('LyricsPanel', () => {
     mockUseLyrics.mockReturnValue({
       ...noLyrics,
       notFound: false,
-      lines: [{ timeMs: 0, text: 'First' }, { timeMs: 90_000, text: 'Now' }, { timeMs: 150_000, text: 'Later' }],
+      lines: [
+        { timeMs: 0, text: 'First' },
+        { timeMs: 90_000, text: 'Now' },
+        { timeMs: 150_000, text: 'Later' },
+      ],
     });
+    act(() => setPlaybackPosition({ ...ZERO_POSITION, durationMs: 200_000, progressPct: 50 }));
     render(<LyricsPanel playback={playback} />);
     expect(screen.getByText('Now')).toHaveAttribute('aria-current', 'true');
     expect(screen.getByText('Later')).not.toHaveAttribute('aria-current');
@@ -104,7 +109,9 @@ describe('LyricsPanel', () => {
     mockGenius.mockReturnValue({ description: { tag: 'root', children: [{ tag: 'p', children: ['?'] }] } });
     const { rerender } = render(<LyricsPanel playback={playback} />);
     expect(screen.queryByText('About this song')).toBeNull();
-    mockGenius.mockReturnValue({ description: { tag: 'root', children: [{ tag: 'p', children: ['A song about aliens.'] }] } });
+    mockGenius.mockReturnValue({
+      description: { tag: 'root', children: [{ tag: 'p', children: ['A song about aliens.'] }] },
+    });
     rerender(<LyricsPanel playback={playback} />);
     expect(screen.getByLabelText('About this song')).toHaveTextContent('A song about aliens.');
   });

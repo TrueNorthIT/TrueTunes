@@ -98,7 +98,13 @@ export interface PollService {
 }
 
 function toAdmin(poll: Poll, nowMs: number): AdminPoll {
-  return { id: poll.id, question: poll.question, choices: poll.choices, liveFrom: poll.liveFrom, live: isLive(poll, nowMs) };
+  return {
+    id: poll.id,
+    question: poll.question,
+    choices: poll.choices,
+    liveFrom: poll.liveFrom,
+    live: isLive(poll, nowMs),
+  };
 }
 
 const byOrder = (a: Poll, b: Poll): number => a.order - b.order;
@@ -129,17 +135,22 @@ export function createPollService(deps: PollServiceDeps): PollService {
 
   return {
     async listLive() {
-      const polls = visiblePolls(await store.list(), now(), NO_ANSWERS).map(
-        ({ id, question, choices, liveFrom }) => ({ id, question, choices, liveFrom: liveFrom as string }),
-      );
+      const polls = visiblePolls(await store.list(), now(), NO_ANSWERS).map(({ id, question, choices, liveFrom }) => ({
+        id,
+        question,
+        choices,
+        liveFrom: liveFrom as string,
+      }));
       return { status: 200, body: { polls } };
     },
 
     async answer(body) {
-      if (typeof body !== 'object' || body === null || Array.isArray(body)) return { status: 400, body: { error: 'Invalid body' } };
+      if (typeof body !== 'object' || body === null || Array.isArray(body))
+        return { status: 400, body: { error: 'Invalid body' } };
       const { pollId, choice } = body as { pollId?: unknown; choice?: unknown };
       if (typeof pollId !== 'string' || !pollId) return { status: 400, body: { error: 'pollId is required' } };
-      if (typeof choice !== 'number' || !Number.isInteger(choice)) return { status: 400, body: { error: 'choice must be an integer' } };
+      if (typeof choice !== 'number' || !Number.isInteger(choice))
+        return { status: 400, body: { error: 'choice must be an integer' } };
 
       const poll = await store.read(pollId);
       if (!poll || !isLive(poll, now())) return { status: 404, body: { error: 'Poll not found' } };

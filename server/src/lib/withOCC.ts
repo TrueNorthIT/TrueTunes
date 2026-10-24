@@ -11,7 +11,7 @@ export async function withOCC<T extends WithEtag>(
   readFn: () => Promise<{ resource?: T }>,
   mutateFn: (doc: T) => void,
   replaceFn: (doc: T, etag: string) => Promise<unknown>,
-  maxRetries = 3,
+  maxRetries = 3
 ): Promise<T> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     const { resource } = await readFn();
@@ -22,9 +22,7 @@ export async function withOCC<T extends WithEtag>(
       await replaceFn(resource, etag);
       return resource;
     } catch (err) {
-      const code =
-        (err as { statusCode?: number }).statusCode ??
-        (err as { code?: number }).code;
+      const code = (err as { statusCode?: number }).statusCode ?? (err as { code?: number }).code;
       if (code === 412 && attempt < maxRetries - 1) continue;
       throw err;
     }

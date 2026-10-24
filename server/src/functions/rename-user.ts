@@ -1,4 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { authenticate } from '../shared/auth';
 import { CosmosClient } from '@azure/cosmos';
 
 // POST /api/profile/rename
@@ -17,37 +18,39 @@ import { CosmosClient } from '@azure/cosmos';
 //   400                         — missing fields
 //   500                         — Cosmos error
 
-export async function renameUserHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
-  const corsHeaders = { 'Access-Control-Allow-Origin': '*' };
-
+export async function renameUserHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   let body: { oid?: string; oldName?: string; newName?: string };
   try {
     body = (await request.json()) as { oid?: string; oldName?: string; newName?: string };
   } catch {
-    return { status: 400, jsonBody: { error: 'Invalid JSON' }, headers: corsHeaders };
+    return { status: 400, jsonBody: { error: 'Invalid JSON' } };
   }
 
-  const { oid, oldName, newName } = body;
+  const { oldName, newName } = body;
+  const auth = await authenticate(request, context);
+  if ('response' in auth) return auth.response;
+  // The token's oid wins; the body's is trusted only from clients that send no token.
+  const oid = auth.oid ?? body.oid;
   if (!oid || !oldName || !newName) {
-    return { status: 400, jsonBody: { error: 'oid, oldName, and newName required' }, headers: corsHeaders };
+    return { status: 400, jsonBody: { error: 'oid, oldName, and newName required' } };
   }
   if (oldName === newName) {
-    return { status: 200, jsonBody: { ok: true, counts: { events: 0, scores: 0, playlists: 0 } }, headers: corsHeaders };
+    return {
+      status: 200,
+      jsonBody: { ok: true, counts: { events: 0, scores: 0, playlists: 0 } },
+    };
   }
 
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
-  const dbName  = process.env['COSMOS_DATABASE'] ?? 'truetunes';
-  if (!connStr) return { status: 500, jsonBody: { error: 'Cosmos not configured' }, headers: corsHeaders };
+  const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
+  if (!connStr) return { status: 500, jsonBody: { error: 'Cosmos not configured' } };
 
   const db = new CosmosClient(connStr).database(dbName);
 
   try {
-    const profiles  = db.container('profiles');
-    const events    = db.container('events');
-    const scores    = db.container('scores');
+    const profiles = db.container('profiles');
+    const events = db.container('events');
+    const scores = db.container('scores');
     const playlists = db.container('playlists');
 
     // 1. Verify OID owns oldName.
@@ -59,7 +62,7 @@ export async function renameUserHandler(
       if ((err as { code?: number }).code !== 404) throw err;
     }
     if (!oldProfile?.entraOid || oldProfile.entraOid !== oid) {
-      return { status: 403, jsonBody: { error: 'not-owner' }, headers: corsHeaders };
+      return { status: 403, jsonBody: { error: 'not-owner' } };
     }
 
     // 2. Check newName isn't taken by a different OID.
@@ -71,7 +74,7 @@ export async function renameUserHandler(
       if ((err as { code?: number }).code !== 404) throw err;
     }
     if (newProfile?.entraOid && newProfile.entraOid !== oid) {
-      return { status: 409, jsonBody: { error: 'taken' }, headers: corsHeaders };
+      return { status: 409, jsonBody: { error: 'taken' } };
     }
 
     // 3. Migrate events.
@@ -124,10 +127,10 @@ export async function renameUserHandler(
         ...pl,
         owner: pl.owner === oldName ? newName : pl.owner,
         members: Array.isArray(pl.members)
-          ? (pl.members as string[]).map(m => (m === oldName ? newName : m))
+          ? (pl.members as string[]).map((m) => (m === oldName ? newName : m))
           : pl.members,
         tracks: Array.isArray(pl.tracks)
-          ? (pl.tracks as Record<string, unknown>[]).map(t =>
+          ? (pl.tracks as Record<string, unknown>[]).map((t) =>
               t.addedBy === oldName ? { ...t, addedBy: newName } : t
             )
           : pl.tracks,
@@ -137,17 +140,19 @@ export async function renameUserHandler(
 
     context.log(
       `[rename-user] "${oldName}" → "${newName}": ` +
-      `${eventDocs.length} events, ${scoreDocs.length} scores, ${playlistDocs.length} playlists`,
+        `${eventDocs.length} events, ${scoreDocs.length} scores, ${playlistDocs.length} playlists`
     );
 
     return {
       status: 200,
-      jsonBody: { ok: true, counts: { events: eventDocs.length, scores: scoreDocs.length, playlists: playlistDocs.length } },
-      headers: corsHeaders,
+      jsonBody: {
+        ok: true,
+        counts: { events: eventDocs.length, scores: scoreDocs.length, playlists: playlistDocs.length },
+      },
     };
   } catch (err) {
     context.error('[rename-user] failed:', err);
-    return { status: 500, jsonBody: { error: String(err) }, headers: corsHeaders };
+    return { status: 500, jsonBody: { error: String(err) } };
   }
 }
 

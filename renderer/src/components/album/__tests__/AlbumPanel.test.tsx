@@ -5,6 +5,7 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AlbumPanel } from '../AlbumPanel';
 import type { SonosItem } from '../../../types/sonos';
+import { queueActionsWrapper } from '../../../test/queueActions';
 
 const mockUseLocation = vi.fn();
 const mockNavigate = vi.fn();
@@ -17,9 +18,13 @@ const mockUseImage = vi.fn();
 vi.mock('../../../hooks/useImage', () => ({ useImage: (...a: unknown[]) => mockUseImage(...a) }));
 
 const mockUseDominantColor = vi.fn();
-vi.mock('../../../hooks/useDominantColor', () => ({ useDominantColor: (...a: unknown[]) => mockUseDominantColor(...a) }));
+vi.mock('../../../hooks/useDominantColor', () => ({
+  useDominantColor: (...a: unknown[]) => mockUseDominantColor(...a),
+}));
 
-vi.mock('../../../hooks/useArtistBrowse', () => ({ artistQueryOptions: vi.fn(() => ({ queryKey: [], queryFn: async () => null })) }));
+vi.mock('../../../hooks/useArtistBrowse', () => ({
+  artistBrowseQueryOptions: vi.fn(() => ({ queryKey: [], queryFn: async () => null })),
+}));
 
 const mockUseAlbumBrowse = vi.fn();
 vi.mock('../../../hooks/useAlbumBrowse', () => ({
@@ -43,13 +48,16 @@ vi.mock('../AlbumTrackRow', () => ({
     onClick: (e: React.MouseEvent) => void;
     onAdd: () => void;
   }) => (
-    <div
-      data-testid={track.id.objectId}
-      data-selected={isSelected}
-      onClick={onClick}
-    >
+    <div data-testid={track.id.objectId} data-selected={isSelected} onClick={onClick}>
       {track.title}
-      <button onClick={(e) => { e.stopPropagation(); onAdd(); }}>Add</button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onAdd();
+        }}
+      >
+        Add
+      </button>
     </div>
   ),
 }));
@@ -101,7 +109,11 @@ function makeAlbumData(overrides = {}) {
 }
 
 function wrapper({ children }: { children: React.ReactNode }) {
-  return createElement(QueryClientProvider, { client: new QueryClient({ defaultOptions: { queries: { retry: false } } }) }, children);
+  return createElement(
+    QueryClientProvider,
+    { client: new QueryClient({ defaultOptions: { queries: { retry: false } } }) },
+    children
+  );
 }
 
 beforeEach(() => {
@@ -118,57 +130,65 @@ describe('AlbumPanel', () => {
 
   it('returns nothing when no item in state', () => {
     mockUseLocation.mockReturnValue({ state: null });
-    const { container } = render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    const { container } = render(<AlbumPanel />, { wrapper });
     expect(container.firstChild).toBeNull();
   });
 
   it('shows album title', () => {
-    render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    render(<AlbumPanel />, { wrapper });
     expect(screen.getByText('Abbey Road')).toBeInTheDocument();
   });
 
   it('shows artist name', () => {
-    render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    render(<AlbumPanel />, { wrapper });
     expect(screen.getByText('The Beatles')).toBeInTheDocument();
   });
 
   it('renders track list', () => {
-    render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    render(<AlbumPanel />, { wrapper });
     expect(screen.getByText('Come Together')).toBeInTheDocument();
     expect(screen.getByText('Something')).toBeInTheDocument();
   });
 
   it('shows loading skeletons while loading', () => {
     mockUseAlbumBrowse.mockReturnValue({ data: undefined, isLoading: true, error: null });
-    const { container } = render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    const { container } = render(<AlbumPanel />, { wrapper });
     expect(container.querySelectorAll('[class*="skeletonRow"]').length).toBeGreaterThan(0);
   });
 
   it('shows error message when fetch fails, with a retry', () => {
     const refetch = vi.fn();
     mockUseAlbumBrowse.mockReturnValue({ data: undefined, isLoading: false, error: new Error('fail'), refetch });
-    render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    render(<AlbumPanel />, { wrapper });
     expect(screen.getByText('Failed to load tracks.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(refetch).toHaveBeenCalled();
   });
 
   it('shows no tracks message when empty', () => {
-    mockUseAlbumBrowse.mockReturnValue({ data: makeAlbumData({ tracks: [], totalTracks: 0 }), isLoading: false, error: null });
-    render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    mockUseAlbumBrowse.mockReturnValue({
+      data: makeAlbumData({ tracks: [], totalTracks: 0 }),
+      isLoading: false,
+      error: null,
+    });
+    render(<AlbumPanel />, { wrapper });
     expect(screen.getByText('No tracks found.')).toBeInTheDocument();
   });
 
   it('shows track count and duration', () => {
-    render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    render(<AlbumPanel />, { wrapper });
     expect(screen.getByText(/2 songs/)).toBeInTheDocument();
     expect(screen.getByText(/7 min/)).toBeInTheDocument();
   });
 
   it('shows only song count when total duration is 0', () => {
     const tracks = [makeTrack('Song A', 0, 0), makeTrack('Song B', 1, 0)];
-    mockUseAlbumBrowse.mockReturnValue({ data: makeAlbumData({ tracks, totalTracks: 2 }), isLoading: false, error: null });
-    render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    mockUseAlbumBrowse.mockReturnValue({
+      data: makeAlbumData({ tracks, totalTracks: 2 }),
+      isLoading: false,
+      error: null,
+    });
+    render(<AlbumPanel />, { wrapper });
     const metaLine = screen.getByText(/2 songs/);
     expect(metaLine.textContent).not.toContain('min');
   });
@@ -177,13 +197,13 @@ describe('AlbumPanel', () => {
 
   it('shows art image when useImage returns a URL', () => {
     mockUseImage.mockReturnValue('http://img.com/art.jpg');
-    const { container } = render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    const { container } = render(<AlbumPanel />, { wrapper });
     expect(container.querySelector('img[src="http://img.com/art.jpg"]')).toBeTruthy();
   });
 
   it('applies gradient background when dominant color is set', () => {
     mockUseDominantColor.mockReturnValue('200, 100, 50');
-    const { container } = render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    const { container } = render(<AlbumPanel />, { wrapper });
     const header = container.querySelector('[class*="header"]') as HTMLElement;
     expect(header?.style.background).toContain('200, 100, 50');
   });
@@ -193,7 +213,7 @@ describe('AlbumPanel', () => {
   it('add to queue button calls onAddToQueue once with the album item (handler fans out per-track)', async () => {
     const onAdd = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
-    render(<AlbumPanel onAddToQueue={onAdd} />, { wrapper });
+    render(<AlbumPanel />, { wrapper: queueActionsWrapper(onAdd, wrapper) });
     await user.click(screen.getByRole('button', { name: 'Add to queue' }));
     await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(1));
     expect(onAdd).toHaveBeenCalledWith(albumItem);
@@ -201,7 +221,7 @@ describe('AlbumPanel', () => {
 
   it('clicking Add on a track row calls onAddToQueue with that track raw', () => {
     const onAdd = vi.fn();
-    render(<AlbumPanel onAddToQueue={onAdd} />, { wrapper });
+    render(<AlbumPanel />, { wrapper: queueActionsWrapper(onAdd, wrapper) });
     fireEvent.click(screen.getAllByText('Add')[0]);
     expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ name: 'Come Together' }));
   });
@@ -209,21 +229,21 @@ describe('AlbumPanel', () => {
   // ── track selection ───────────────────────────────────────────────────────
 
   it('single-clicking a track selects it', () => {
-    render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    render(<AlbumPanel />, { wrapper });
     fireEvent.click(screen.getByTestId('trk-0'));
     expect(screen.getByTestId('trk-0')).toHaveAttribute('data-selected', 'true');
     expect(screen.getByTestId('trk-1')).toHaveAttribute('data-selected', 'false');
   });
 
   it('clicking a selected track deselects it', () => {
-    render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    render(<AlbumPanel />, { wrapper });
     fireEvent.click(screen.getByTestId('trk-0'));
     fireEvent.click(screen.getByTestId('trk-0'));
     expect(screen.getByTestId('trk-0')).toHaveAttribute('data-selected', 'false');
   });
 
   it('ctrl+click adds another track to selection', () => {
-    render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    render(<AlbumPanel />, { wrapper });
     fireEvent.click(screen.getByTestId('trk-0'));
     fireEvent.click(screen.getByTestId('trk-1'), { ctrlKey: true });
     expect(screen.getByTestId('trk-0')).toHaveAttribute('data-selected', 'true');
@@ -231,7 +251,7 @@ describe('AlbumPanel', () => {
   });
 
   it('ctrl+click on a selected track removes it from selection', () => {
-    render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    render(<AlbumPanel />, { wrapper });
     fireEvent.click(screen.getByTestId('trk-0'));
     fireEvent.click(screen.getByTestId('trk-1'), { ctrlKey: true });
     fireEvent.click(screen.getByTestId('trk-0'), { ctrlKey: true });
@@ -241,8 +261,12 @@ describe('AlbumPanel', () => {
 
   it('shift+click range-selects from last to target', () => {
     const tracks = Array.from({ length: 4 }, (_, i) => makeTrack(`Song ${i}`, i));
-    mockUseAlbumBrowse.mockReturnValue({ data: makeAlbumData({ tracks, totalTracks: 4 }), isLoading: false, error: null });
-    render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    mockUseAlbumBrowse.mockReturnValue({
+      data: makeAlbumData({ tracks, totalTracks: 4 }),
+      isLoading: false,
+      error: null,
+    });
+    render(<AlbumPanel />, { wrapper });
     fireEvent.click(screen.getByTestId('trk-0'));
     fireEvent.click(screen.getByTestId('trk-2'), { shiftKey: true });
     expect(screen.getByTestId('trk-0')).toHaveAttribute('data-selected', 'true');
@@ -252,7 +276,7 @@ describe('AlbumPanel', () => {
   });
 
   it('clicking the outer tracks div clears selection', () => {
-    const { container } = render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    const { container } = render(<AlbumPanel />, { wrapper });
     fireEvent.click(screen.getByTestId('trk-0'));
     expect(screen.getByTestId('trk-0')).toHaveAttribute('data-selected', 'true');
     fireEvent.click(container.querySelector('[class*="tracks"]')!);
@@ -269,7 +293,7 @@ describe('AlbumPanel', () => {
     } as SonosItem;
     mockUseAlbumBrowse.mockReturnValue({ data: makeAlbumData({ artistItem }), isLoading: false, error: null });
     const user = userEvent.setup();
-    render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    render(<AlbumPanel />, { wrapper });
     await user.click(screen.getByText('The Beatles'));
     expect(mockNavigate).toHaveBeenCalledWith('/artist/art-1', expect.anything());
   });
@@ -280,7 +304,7 @@ describe('AlbumPanel', () => {
       isLoading: false,
       error: null,
     });
-    render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    render(<AlbumPanel />, { wrapper });
     expect(screen.getByRole('button', { name: 'Sonny Stitt' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Kenny Garrett' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Sonny Stitt, Kenny Garrett' })).toBeNull();
@@ -307,7 +331,7 @@ describe('AlbumPanel', () => {
       },
     } as never);
     const user = userEvent.setup();
-    render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    render(<AlbumPanel />, { wrapper });
     await user.click(screen.getByRole('button', { name: 'Kenny Garrett' }));
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/^\/artist\//), expect.anything());
@@ -321,7 +345,7 @@ describe('AlbumPanel', () => {
     const tracks = [makeTrack('Track One', 0), makeTrack('Track Two', 1)];
     mockUsePlaylistBrowse.mockReturnValue({ data: tracks, isLoading: false, error: null });
     mockUseAlbumBrowse.mockReturnValue({ data: undefined, isLoading: false, error: null });
-    render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    render(<AlbumPanel />, { wrapper });
     expect(screen.getByText('Track One')).toBeInTheDocument();
     expect(screen.getByText('Track Two')).toBeInTheDocument();
   });
@@ -330,14 +354,14 @@ describe('AlbumPanel', () => {
     mockUseLocation.mockReturnValue({ state: { item: playlistItem } });
     mockUsePlaylistBrowse.mockReturnValue({ data: undefined, isLoading: true, error: null });
     mockUseAlbumBrowse.mockReturnValue({ data: undefined, isLoading: false, error: null });
-    const { container } = render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    const { container } = render(<AlbumPanel />, { wrapper });
     expect(container.querySelectorAll('[class*="skeletonRow"]').length).toBeGreaterThan(0);
   });
 
   it('shows playlist title from location item when no data title', () => {
     mockUseLocation.mockReturnValue({ state: { item: playlistItem } });
     mockUsePlaylistBrowse.mockReturnValue({ data: undefined, isLoading: false, error: null });
-    render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+    render(<AlbumPanel />, { wrapper });
     expect(screen.getByText('My Playlist')).toBeInTheDocument();
   });
 
@@ -356,7 +380,7 @@ describe('AlbumPanel', () => {
         releaseDate: '1969-09-26',
         url: 'https://genius.com/albums/The-beatles/Abbey-road',
       });
-      render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+      render(<AlbumPanel />, { wrapper });
       expect(await screen.findByText('The final Beatles album recorded.')).toBeInTheDocument();
       expect(screen.getByRole('heading', { name: 'About this album' })).toBeInTheDocument();
       expect(screen.getByText('Released 26 September 1969')).toBeInTheDocument();
@@ -367,12 +391,19 @@ describe('AlbumPanel', () => {
     });
 
     it("falls back to the artist's Genius bio when the album has no description", async () => {
-      vi.mocked(window.sonos.geniusAlbumAbout).mockResolvedValue({ description: para('?'), url: 'https://genius.com/albums/x' });
+      vi.mocked(window.sonos.geniusAlbumAbout).mockResolvedValue({
+        description: para('?'),
+        url: 'https://genius.com/albums/x',
+      });
       vi.mocked(window.sonos.geniusArtist).mockResolvedValue({
         description: para('A band from Liverpool.'),
-        alternateNames: [], imageUrl: null, headerImageUrl: null, instagram: null, twitter: null,
+        alternateNames: [],
+        imageUrl: null,
+        headerImageUrl: null,
+        instagram: null,
+        twitter: null,
       });
-      render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+      render(<AlbumPanel />, { wrapper });
       expect(await screen.findByText('A band from Liverpool.')).toBeInTheDocument();
       expect(screen.getByRole('heading', { name: 'About The Beatles' })).toBeInTheDocument();
       expect(screen.queryByText(/^Released/)).toBeNull();
@@ -380,14 +411,14 @@ describe('AlbumPanel', () => {
 
     it('shows a skeleton, not "Loading…", while Genius answers', () => {
       vi.mocked(window.sonos.geniusAlbumAbout).mockReturnValue(new Promise(() => {}));
-      const { container } = render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+      const { container } = render(<AlbumPanel />, { wrapper });
       expect(screen.getByRole('heading', { name: 'About this album' })).toBeInTheDocument();
       expect(container.querySelectorAll('[class*="skelLine"]').length).toBeGreaterThan(0);
       expect(screen.queryByText(/Loading/)).toBeNull();
     });
 
     it('renders no card when Genius has nothing for the album or the artist', async () => {
-      render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+      render(<AlbumPanel />, { wrapper });
       await waitFor(() => expect(window.sonos.geniusArtist).toHaveBeenCalledWith('The Beatles'));
       await waitFor(() => expect(screen.queryByRole('heading', { name: /^About/ })).toBeNull());
       expect(screen.getByText('Come Together')).toBeInTheDocument();
@@ -396,7 +427,7 @@ describe('AlbumPanel', () => {
     it('asks Genius nothing for a playlist', () => {
       mockUseLocation.mockReturnValue({ state: { item: playlistItem } });
       mockUsePlaylistBrowse.mockReturnValue({ data: [], isLoading: false, error: null });
-      render(<AlbumPanel onAddToQueue={vi.fn()} />, { wrapper });
+      render(<AlbumPanel />, { wrapper });
       expect(window.sonos.geniusAlbumAbout).not.toHaveBeenCalled();
       expect(screen.queryByRole('heading', { name: /^About/ })).toBeNull();
     });

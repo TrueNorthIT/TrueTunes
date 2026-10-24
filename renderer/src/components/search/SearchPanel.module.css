@@ -18,7 +18,9 @@
   transition: opacity var(--dur-fast) var(--ease-fast);
 }
 /* The previous query's results while the next load: still readable, clearly not current. */
-.stale { opacity: 0.6; }
+.stale {
+  opacity: 0.6;
+}
 
 .msg {
   display: flex;
@@ -35,7 +37,9 @@
   font-weight: 600;
   color: var(--text);
 }
-.retry { margin-top: 0.6em; }
+.retry {
+  margin-top: 0.6em;
+}
 
 /* Read by screen readers only: the page heading and the live result count. */
 .srOnly {
@@ -68,7 +72,9 @@
   cursor: pointer;
   transition: background var(--dur-fast) var(--ease-fast);
 }
-.recent:hover { background: rgba(var(--tint), 0.22); }
+.recent:hover {
+  background: rgba(var(--tint), 0.22);
+}
 
 /* Home's tile size (Jump back in is minmax(8.5em, 1fr)), in one scrolling row. */
 .freshCell {
@@ -83,7 +89,10 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
   gap: 1.4em;
 }
-.skelCard { height: 22em; border-radius: var(--r-card); }
+.skelCard {
+  height: 22em;
+  border-radius: var(--r-card);
+}
 .skelRows {
   display: flex;
   flex-direction: column;
@@ -92,13 +101,20 @@
   border-radius: var(--r-card);
   background: var(--surface);
 }
-.skelRow { height: 3.2em; border-radius: var(--r-row); }
+.skelRow {
+  height: 3.2em;
+  border-radius: var(--r-row);
+}
 
 @container (max-width: 700px) {
-  .skelLead { grid-template-columns: minmax(0, 1fr); }
+  .skelLead {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .body,
-  .recent { transition: none; }
+  .recent {
+    transition: none;
+  }
 }

@@ -1,9 +1,10 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { callerName } from '../lib/caller';
 import { getPlaylistContainer } from '../lib/getContainer';
 
 export async function playlistDeleteHandler(
   request: HttpRequest,
-  context: InvocationContext,
+  context: InvocationContext
 ): Promise<HttpResponseInit> {
   const id = request.params['id'];
   if (!id) {
@@ -17,7 +18,9 @@ export async function playlistDeleteHandler(
     return { status: 400, jsonBody: { error: 'Invalid JSON body' } };
   }
 
-  const { userName } = body;
+  const caller = await callerName(request, context, body.userName);
+  if ('response' in caller) return caller.response;
+  const userName = caller.name;
   if (!userName) {
     return { status: 400, jsonBody: { error: 'userName required' } };
   }
@@ -43,7 +46,6 @@ export async function playlistDeleteHandler(
     return {
       status: 200,
       jsonBody: { ok: true },
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[playlist-delete] failed:', err);

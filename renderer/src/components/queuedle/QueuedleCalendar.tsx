@@ -11,8 +11,18 @@ interface Props {
 }
 
 const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -54,7 +64,13 @@ export function QueuedleCalendar({ dates, selectedDate, todayId, onSelectDate }:
   // Day-of-week for the 1st, in Monday-first ordering (0..6).
   const firstOffset = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
 
-  const cells: Array<{ day: number | null; gameId: string | null; entry: GameDateEntry | null; isToday: boolean; isFuture: boolean }> = [];
+  const cells: Array<{
+    day: number | null;
+    gameId: string | null;
+    entry: GameDateEntry | null;
+    isToday: boolean;
+    isFuture: boolean;
+  }> = [];
   for (let i = 0; i < firstOffset; i++) {
     cells.push({ day: null, gameId: null, entry: null, isToday: false, isFuture: false });
   }
@@ -69,24 +85,25 @@ export function QueuedleCalendar({ dates, selectedDate, todayId, onSelectDate }:
     });
   }
 
-  const canGoPrev = !earliestEntry || (
+  const canGoPrev =
+    !earliestEntry ||
     viewYear > earliestEntry.year ||
-    (viewYear === earliestEntry.year && viewMonth > earliestEntry.monthIdx)
-  );
-  const canGoNext = !today || (
-    viewYear < today.year ||
-    (viewYear === today.year && viewMonth < today.monthIdx)
-  );
+    (viewYear === earliestEntry.year && viewMonth > earliestEntry.monthIdx);
+  const canGoNext = !today || viewYear < today.year || (viewYear === today.year && viewMonth < today.monthIdx);
 
   function goPrev() {
     if (!canGoPrev) return;
-    if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1); }
-    else setViewMonth((m) => m - 1);
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear((y) => y - 1);
+    } else setViewMonth((m) => m - 1);
   }
   function goNext() {
     if (!canGoNext) return;
-    if (viewMonth === 11) { setViewMonth(0); setViewYear((y) => y + 1); }
-    else setViewMonth((m) => m + 1);
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear((y) => y + 1);
+    } else setViewMonth((m) => m + 1);
   }
 
   return (
@@ -116,7 +133,9 @@ export function QueuedleCalendar({ dates, selectedDate, todayId, onSelectDate }:
       </div>
       <div className={styles.calendarDayRow}>
         {DAY_LABELS.map((l, i) => (
-          <span key={i} className={styles.calendarDayLabel}>{l}</span>
+          <span key={i} className={styles.calendarDayLabel}>
+            {l}
+          </span>
         ))}
       </div>
       <div className={styles.calendarGrid}>
@@ -135,20 +154,28 @@ export function QueuedleCalendar({ dates, selectedDate, todayId, onSelectDate }:
             unavailable && !played && styles.calendarCellUnavailable,
             c.isToday && styles.calendarCellToday,
             isSelected && styles.calendarCellSelected,
-          ].filter(Boolean).join(' ');
+          ]
+            .filter(Boolean)
+            .join(' ');
           return (
             <button
               key={i}
               type="button"
               className={cls}
               disabled={!playable && !played}
-              onClick={() => { if ((playable || played) && c.gameId) onSelectDate(c.gameId); }}
+              onClick={() => {
+                if ((playable || played) && c.gameId) onSelectDate(c.gameId);
+              }}
               aria-label={`${formatGameDate(c.gameId)}, ${played ? 'played' : playable ? 'available' : 'not available'}`}
               aria-current={c.isToday ? 'date' : undefined}
               data-autofocus={isSelected || undefined}
             >
               {c.day}
-              {played && <span className={styles.calendarTick} aria-hidden="true">✓</span>}
+              {played && (
+                <span className={styles.calendarTick} aria-hidden="true">
+                  ✓
+                </span>
+              )}
             </button>
           );
         })}

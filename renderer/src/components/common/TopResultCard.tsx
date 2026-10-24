@@ -26,7 +26,18 @@ interface Props {
  * the card falls back to the lit wall with the tint wash, same layout. The whole card opens it; its open button carries
  * data-search-stop so the search box and arrow keys can focus it.
  */
-export function TopResultCard({ title, meta, imageUrl, explicit, onOpen, openLabel, onMouseEnter, onContextMenu, children, className }: Props) {
+export function TopResultCard({
+  title,
+  meta,
+  imageUrl,
+  explicit,
+  onOpen,
+  openLabel,
+  onMouseEnter,
+  onContextMenu,
+  children,
+  className,
+}: Props) {
   const headingId = useId();
   // One pixel check through the shared cache: a flat grey placeholder is no art at all.
   const { state, src } = usePhotoState(imageUrl ?? null);
@@ -41,7 +52,9 @@ export function TopResultCard({ title, meta, imageUrl, explicit, onOpen, openLab
       {art && <img className={styles.fill} src={art} alt="" />}
       <button type="button" className={styles.cover} onClick={onOpen} aria-label={openLabel} data-search-stop="" />
       <div className={styles.content}>
-        <h2 id={headingId} className={styles.heading}>Top result</h2>
+        <h2 id={headingId} className={styles.heading}>
+          Top result
+        </h2>
         <div className={styles.title}>
           {title}
           {explicit && <ExplicitBadge />}

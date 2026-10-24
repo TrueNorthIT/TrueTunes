@@ -186,8 +186,7 @@ export function buildHistory(o: {
   return events;
 }
 
-export const songKey = (s: { trackName: string; artist: string }): string =>
-  trackKey(s.trackName, s.artist);
+export const songKey = (s: { trackName: string; artist: string }): string => trackKey(s.trackName, s.artist);
 
 /** What today's DJ would put first, with no exclusions (uses the existing buildDjSet). */
 export function djRanking(history: TimedEvent[], users: string[] = USERS): DjTrack[] {
@@ -211,19 +210,14 @@ export function createLegacyService(deps: DjAutoplayDeps): DjAutoplayService {
       const clientId = body.clientId as string;
       const queueUris = Array.isArray(body.queueUris) ? body.queueUris : [];
       const queueKeys = Array.isArray(body.queueKeys) ? body.queueKeys : [];
-      const nowPlayingIndex =
-        typeof body.nowPlayingIndex === 'number' ? body.nowPlayingIndex : null;
+      const nowPlayingIndex = typeof body.nowPlayingIndex === 'number' ? body.nowPlayingIndex : null;
 
       // The real handler runs a 90-day query on EVERY call.
-      const events = (await deps.fetchHistory()).filter(
-        (e) => (e.timestamp ?? 0) >= now - LEGACY_WINDOW_DAYS * DAY,
-      );
+      const events = (await deps.fetchHistory()).filter((e) => (e.timestamp ?? 0) >= now - LEGACY_WINDOW_DAYS * DAY);
       let users = body.users?.filter(Boolean) ?? [];
       if (users.length === 0) {
         const since = now - LEGACY_ACTIVE_HOURS * HOUR;
-        users = [
-          ...new Set(events.filter((e) => (e.timestamp ?? 0) >= since && e.userId).map((e) => e.userId)),
-        ];
+        users = [...new Set(events.filter((e) => (e.timestamp ?? 0) >= since && e.userId).map((e) => e.userId))];
       }
       const { tracks: candidates } = buildDjSet(events, {
         users,
@@ -248,7 +242,7 @@ export function createLegacyService(deps: DjAutoplayDeps): DjAutoplayService {
               candidates,
               ...(body.setEnabled !== undefined ? { setEnabled: body.setEnabled } : {}),
             },
-            now,
+            now
           );
           return decision.session;
         })();
@@ -276,7 +270,7 @@ export function createLegacyService(deps: DjAutoplayDeps): DjAutoplayService {
 /** `DJ_IMPL=legacy` points every service-level test at today's behaviour. */
 export function createServiceUnderTest(
   deps: DjAutoplayDeps,
-  impl: 'legacy' | 'service' | undefined = process.env['DJ_IMPL'] === 'legacy' ? 'legacy' : 'service',
+  impl: 'legacy' | 'service' | undefined = process.env['DJ_IMPL'] === 'legacy' ? 'legacy' : 'service'
 ): DjAutoplayService {
   return impl === 'legacy' ? createLegacyService(deps) : createDjAutoplayService(deps);
 }
@@ -389,7 +383,7 @@ export class MiniRoom {
     groupId: string,
     clientId: string,
     extra: Partial<AutoplayBody> = {},
-    opts: { oldClient?: boolean } = {},
+    opts: { oldClient?: boolean } = {}
   ): AutoplayBody {
     const playing = this.nowIndex === null ? null : this.queue[this.nowIndex];
     const body: AutoplayBody = {
@@ -418,10 +412,7 @@ export class MiniRoom {
  * exclusion logic. `logAs` lets the person's event differ from the DJ's candidate
  * (different uri, different case).
  */
-export function handQueueFavourite(
-  w: World,
-  o: { logAs?: (s: Song) => Song; at?: number } = {},
-): Song {
+export function handQueueFavourite(w: World, o: { logAs?: (s: Song) => Song; at?: number } = {}): Song {
   const logAs = o.logAs ?? ((s: Song) => s);
   const at = o.at ?? w.now;
   for (const cand of djRanking(w.events).slice(0, 8)) {

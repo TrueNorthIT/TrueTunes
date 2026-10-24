@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { seedDisplayName } from '../../test/queueActions';
+import { QueueActionsProvider } from '../../hooks/useQueueActions';
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ProfilePanel } from '../ProfilePanel';
 
 const track = (trackName: string, count: number) => ({
-  trackName, artist: 'Muse', album: 'Absolution', albumId: 'al1', serviceId: 's', accountId: 'a', uri: `uri:${trackName}`, count,
+  trackName,
+  artist: 'Muse',
+  album: 'Absolution',
+  albumId: 'al1',
+  serviceId: 's',
+  accountId: 'a',
+  uri: `uri:${trackName}`,
+  count,
 });
 
 function stats(over: Partial<StatsResult> = {}): StatsResult {
@@ -14,17 +23,17 @@ function stats(over: Partial<StatsResult> = {}): StatsResult {
 
 function renderProfile(userName: string, displayName = 'Joe') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  seedDisplayName(client, displayName);
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[`/profile/${encodeURIComponent(userName)}`]}>
-        <Routes>
-          <Route
-            path="/profile/:userName"
-            element={<ProfilePanel onAddToQueue={vi.fn()} displayName={displayName} onSignOut={vi.fn()} onChangeName={vi.fn(async () => null)} />}
-          />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
+      <QueueActionsProvider value={{ addToQueue: vi.fn(), queueNext: vi.fn() }}>
+        <MemoryRouter initialEntries={[`/profile/${encodeURIComponent(userName)}`]}>
+          <Routes>
+            <Route path="/profile/:userName" element={<ProfilePanel />} />
+          </Routes>
+        </MemoryRouter>
+      </QueueActionsProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -32,10 +41,21 @@ describe('ProfilePanel', () => {
   beforeEach(() => {
     vi.mocked(window.sonos.fetchStats).mockReset();
     vi.mocked(window.sonos.fetchStats).mockImplementation(async (period, userId) => {
-      if (!userId) return stats({ topUsers: [{ userId: 'Alex', count: 90 }, { userId: 'Rich', count: 50 }], totalEvents: 140 });
+      if (!userId)
+        return stats({
+          topUsers: [
+            { userId: 'Alex', count: 90 },
+            { userId: 'Rich', count: 50 },
+          ],
+          totalEvents: 140,
+        });
       if (period === 'week') return stats({ topUsers: [{ userId: userId, count: 7 }], totalEvents: 9 });
       // totalEvents counts album-add events too; the queued count is the topUsers one, as on the Leaderboard.
-      return stats({ topUsers: [{ userId: userId, count: 967 }], topTracks: [track('Hysteria', 9), track('Time Is Running Out', 4)], totalEvents: 1035 });
+      return stats({
+        topUsers: [{ userId: userId, count: 967 }],
+        topTracks: [track('Hysteria', 9), track('Time Is Running Out', 4)],
+        totalEvents: 1035,
+      });
     });
     vi.mocked(window.sonos.fetchRecentlyPlayed).mockResolvedValue({
       tracks: [{ trackName: 'Starlight', artist: 'Muse', lastPlayed: Date.now() }],
@@ -76,7 +96,9 @@ describe('ProfilePanel', () => {
 
   it('moves "last queued" into the facts and drops Lately when nothing is from the past week', async () => {
     vi.mocked(window.sonos.fetchRecentlyPlayed).mockResolvedValue({ tracks: [], artists: [], albums: [] });
-    vi.mocked(window.sonos.fetchUsers).mockResolvedValue([{ userId: 'Rich', lastQueued: Date.now() - 21 * 86_400_000 }]);
+    vi.mocked(window.sonos.fetchUsers).mockResolvedValue([
+      { userId: 'Rich', lastQueued: Date.now() - 21 * 86_400_000 },
+    ]);
     renderProfile('Rich');
     expect(await screen.findByText('Last queued 3 weeks ago')).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Lately' })).toBeNull();

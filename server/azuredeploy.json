@@ -23,6 +23,35 @@
       "metadata": {
         "description": "Vestaboard Read/Write API key. Pulled from .env by `npm run deploy`. Leave blank to disable Vestaboard messages."
       }
+    },
+    "githubIssuesToken": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Fine-grained GitHub token, Issues read/write on TrueNorthIT/TrueTunes only, for the feedback function. Pulled from .env (GITHUB_ISSUES_TOKEN) by `npm run deploy`. Blank disables feedback."
+      }
+    },
+    "entraTenantId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Entra tenant the desktop app signs in to (ENTRA_TENANT_ID in .env). The functions verify the caller's token against it."
+      }
+    },
+    "entraClientId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The desktop app's Entra app registration (ENTRA_CLIENT_ID in .env): the audience of the tokens the functions accept."
+      }
+    },
+    "authEnforce": {
+      "type": "string",
+      "defaultValue": "false",
+      "allowedValues": ["false", "true"],
+      "metadata": {
+        "description": "Transitional. 'false' still lets requests without a token through (logged), for clients released before tokens. Set AUTH_ENFORCE=true in .env and redeploy once every client sends one."
+      }
     }
   },
   "variables": {
@@ -55,9 +84,7 @@
       "name": "[variables('appInsightsName')]",
       "location": "[parameters('location')]",
       "kind": "other",
-      "dependsOn": [
-        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]"
-      ],
+      "dependsOn": ["[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]"],
       "properties": {
         "Application_Type": "other",
         "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]"
@@ -79,12 +106,29 @@
       }
     },
     {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2023-01-01",
+      "name": "[concat(variables('storageName'), '/default')]",
+      "dependsOn": ["[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"],
+      "properties": {
+        "cors": {
+          "corsRules": [
+            {
+              "allowedOrigins": ["*"],
+              "allowedMethods": ["GET", "HEAD"],
+              "allowedHeaders": ["*"],
+              "exposedHeaders": ["*"],
+              "maxAgeInSeconds": 86400
+            }
+          ]
+        }
+      }
+    },
+    {
       "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
       "apiVersion": "2023-01-01",
       "name": "[concat(variables('storageName'), '/default/', variables('containerName'))]",
-      "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"
-      ],
+      "dependsOn": ["[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"],
       "properties": {
         "publicAccess": "None"
       }
@@ -93,9 +137,7 @@
       "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
       "apiVersion": "2023-01-01",
       "name": "[concat(variables('storageName'), '/default/playlist-images')]",
-      "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"
-      ],
+      "dependsOn": ["[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"],
       "properties": {
         "publicAccess": "None"
       }
@@ -118,9 +160,7 @@
       "type": "Microsoft.SignalRService/webPubSub/hubs",
       "apiVersion": "2023-02-01",
       "name": "[concat(variables('webPubSubName'), '/', variables('hubName'))]",
-      "dependsOn": [
-        "[resourceId('Microsoft.SignalRService/webPubSub', variables('webPubSubName'))]"
-      ],
+      "dependsOn": ["[resourceId('Microsoft.SignalRService/webPubSub', variables('webPubSubName'))]"],
       "properties": {
         "anonymousConnectPolicy": "deny"
       }
@@ -150,9 +190,7 @@
       "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
       "apiVersion": "2024-02-15-preview",
       "name": "[concat(variables('cosmosName'), '/truetunes')]",
-      "dependsOn": [
-        "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosName'))]"
-      ],
+      "dependsOn": ["[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosName'))]"],
       "properties": {
         "resource": {
           "id": "truetunes"
@@ -170,9 +208,7 @@
         "resource": {
           "id": "events",
           "partitionKey": {
-            "paths": [
-              "/userId"
-            ],
+            "paths": ["/userId"],
             "kind": "Hash"
           },
           "defaultTtl": -1
@@ -190,9 +226,7 @@
         "resource": {
           "id": "games",
           "partitionKey": {
-            "paths": [
-              "/id"
-            ],
+            "paths": ["/id"],
             "kind": "Hash"
           }
         }
@@ -209,9 +243,7 @@
         "resource": {
           "id": "scores",
           "partitionKey": {
-            "paths": [
-              "/gameId"
-            ],
+            "paths": ["/gameId"],
             "kind": "Hash"
           }
         }
@@ -228,9 +260,7 @@
         "resource": {
           "id": "playlists",
           "partitionKey": {
-            "paths": [
-              "/id"
-            ],
+            "paths": ["/id"],
             "kind": "Hash"
           }
         }
@@ -247,9 +277,7 @@
         "resource": {
           "id": "profiles",
           "partitionKey": {
-            "paths": [
-              "/id"
-            ],
+            "paths": ["/id"],
             "kind": "Hash"
           }
         }
@@ -266,9 +294,7 @@
         "resource": {
           "id": "sessions",
           "partitionKey": {
-            "paths": [
-              "/id"
-            ],
+            "paths": ["/id"],
             "kind": "Hash"
           },
           "defaultTtl": -1
@@ -286,9 +312,7 @@
         "resource": {
           "id": "polls",
           "partitionKey": {
-            "paths": [
-              "/id"
-            ],
+            "paths": ["/id"],
             "kind": "Hash"
           }
         }
@@ -305,9 +329,7 @@
         "resource": {
           "id": "tracks",
           "partitionKey": {
-            "paths": [
-              "/id"
-            ],
+            "paths": ["/id"],
             "kind": "Hash"
           },
           "defaultTtl": -1
@@ -415,14 +437,28 @@
             {
               "name": "VESTABOARD_API_KEY",
               "value": "[parameters('vestaboardApiKey')]"
+            },
+            {
+              "name": "GITHUB_ISSUES_TOKEN",
+              "value": "[parameters('githubIssuesToken')]"
+            },
+            {
+              "name": "ENTRA_TENANT_ID",
+              "value": "[parameters('entraTenantId')]"
+            },
+            {
+              "name": "ENTRA_CLIENT_ID",
+              "value": "[parameters('entraClientId')]"
+            },
+            {
+              "name": "AUTH_ENFORCE",
+              "value": "[parameters('authEnforce')]"
             }
           ],
           "ftpsState": "Disabled",
           "minTlsVersion": "1.2",
           "cors": {
-            "allowedOrigins": [
-              "*"
-            ],
+            "allowedOrigins": [],
             "supportCredentials": false
           }
         },

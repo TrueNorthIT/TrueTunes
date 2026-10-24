@@ -9,10 +9,23 @@ const meta = {
   title: 'Common/StatsArtistTile',
   component: StatsArtistTile,
   args: {
-    a: { artist: 'Maya Rowan', artistId: 'artist-1', serviceId: '51463', accountId: 'account-1', imageUrl: portrait, count: 412 },
+    a: {
+      artist: 'Maya Rowan',
+      artistId: 'artist-1',
+      serviceId: '51463',
+      accountId: 'account-1',
+      imageUrl: portrait,
+      count: 412,
+    },
     onOpen: fn(),
   },
-  decorators: [(Story) => <div style={{ width: '12em' }}><Story /></div>],
+  decorators: [
+    (Story) => (
+      <div style={{ width: '12em' }}>
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof StatsArtistTile>;
 
 export default meta;
@@ -21,4 +34,6 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 export const Small: Story = { args: { size: 'sm' } };
 export const NoArt: Story = { args: { a: { artist: 'Maya Rowan', count: 3 } } };
-export const LongName: Story = { args: { a: { artist: 'Alexandria Montgomery-Featherstonehaugh and the Orchestra', imageUrl: portrait, count: 1204 } } };
+export const LongName: Story = {
+  args: { a: { artist: 'Alexandria Montgomery-Featherstonehaugh and the Orchestra', imageUrl: portrait, count: 1204 } },
+};

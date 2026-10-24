@@ -30,7 +30,12 @@ import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { WindowControls } from '../WindowControls';
 
-const BISCUIT: PollLive = { id: 'p1', question: 'Best biscuit?', choices: ['Hobnob', 'Digestive', 'Rich Tea'], liveFrom: '2026-10-19' };
+const BISCUIT: PollLive = {
+  id: 'p1',
+  question: 'Best biscuit?',
+  choices: ['Hobnob', 'Digestive', 'Rich Tea'],
+  liveFrom: '2026-10-19',
+};
 const DRINK: PollLive = { id: 'p2', question: 'Tea or coffee?', choices: ['Tea', 'Coffee'], liveFrom: '2026-10-26' };
 const USER_NAME = 'Richard Kelsey';
 
@@ -72,7 +77,10 @@ describe('P-1 Poll button in the title bar', () => {
     await screen.findByText('Poll');
     const button = screen.getByRole('button', { name: /^poll\b/i });
     expect(button, 'Expected a Poll button when one unanswered live poll exists').toBeInTheDocument();
-    expect(button.querySelector('svg.lucide-vote'), 'Expected the lucide-react Vote icon inside the Poll button').not.toBeNull();
+    expect(
+      button.querySelector('svg.lucide-vote'),
+      'Expected the lucide-react Vote icon inside the Poll button'
+    ).not.toBeNull();
     expect(button, 'Expected the visible label "Poll"').toHaveTextContent('Poll');
   });
 
@@ -98,8 +106,12 @@ describe('P-1 Poll button in the title bar', () => {
 
   it('styles: has a shake keyframe animation and honours prefers-reduced-motion', () => {
     const css = readFileSync(resolve(__dirname, '../../styles/WindowControls.module.css'), 'utf8');
-    expect(css, 'Expected an @keyframes rule with "shake" in its name in WindowControls.module.css').toMatch(/@keyframes\s+[\w-]*shake[\w-]*/i);
-    expect(css, 'Expected a prefers-reduced-motion media query in WindowControls.module.css').toMatch(/@media\s*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)/i);
+    expect(css, 'Expected an @keyframes rule with "shake" in its name in WindowControls.module.css').toMatch(
+      /@keyframes\s+[\w-]*shake[\w-]*/i
+    );
+    expect(css, 'Expected a prefers-reduced-motion media query in WindowControls.module.css').toMatch(
+      /@media\s*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)/i
+    );
   });
 });
 
@@ -112,7 +124,10 @@ describe('P-2 answering from the dialog', () => {
     const dialog = await screen.findByRole('dialog');
     expect(dialog, 'Expected the poll question in the dialog').toHaveTextContent('Best biscuit?');
     for (const choice of BISCUIT.choices) {
-      expect(screen.getByRole('button', { name: choice }), `Expected a button for the choice "${choice}"`).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: choice }),
+        `Expected a button for the choice "${choice}"`
+      ).toBeInTheDocument();
     }
   });
 
@@ -123,7 +138,9 @@ describe('P-2 answering from the dialog', () => {
     await user.click(await screen.findByRole('button', { name: /^poll\b/i }));
     await user.click(await screen.findByRole('button', { name: 'Digestive' }));
     await waitFor(() => expect(window.sonos.answerPoll).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(screen.queryByRole('dialog'), 'Expected the dialog to close when no polls remain').toBeNull());
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog'), 'Expected the dialog to close when no polls remain').toBeNull()
+    );
     expect(pollButton(), 'Expected the Poll button to disappear once nothing is waiting').toBeNull();
   });
 
@@ -134,7 +151,9 @@ describe('P-2 answering from the dialog', () => {
     await user.click(await screen.findByRole('button', { name: /^poll\b/i }));
     await user.click(await screen.findByRole('button', { name: 'Hobnob' }));
     const dialog = await screen.findByRole('dialog');
-    await waitFor(() => expect(dialog, 'Expected the second poll to be shown next').toHaveTextContent('Tea or coffee?'));
+    await waitFor(() =>
+      expect(dialog, 'Expected the second poll to be shown next').toHaveTextContent('Tea or coffee?')
+    );
     expect(pollButton(), 'Expected the Poll button to stay while another poll waits').not.toBeNull();
     await user.click(screen.getByRole('button', { name: 'Coffee' }));
     await waitFor(() => expect(pollButton(), 'Expected the button to go after the last poll is answered').toBeNull());
@@ -147,7 +166,10 @@ describe('P-6 catch-up order', () => {
     const user = userEvent.setup();
     renderControls();
     await user.click(await screen.findByRole('button', { name: /^poll\b/i }));
-    expect(await screen.findByRole('dialog'), 'Expected the poll live from 2026-10-19 before the one live from 2026-10-26').toHaveTextContent('Best biscuit?');
+    expect(
+      await screen.findByRole('dialog'),
+      'Expected the poll live from 2026-10-19 before the one live from 2026-10-26'
+    ).toHaveTextContent('Best biscuit?');
   });
 });
 
@@ -159,7 +181,10 @@ describe('P-3 anonymity', () => {
     await user.click(await screen.findByRole('button', { name: /^poll\b/i }));
     await user.click(await screen.findByRole('button', { name: 'Digestive' }));
     await waitFor(() => expect(window.sonos.answerPoll).toHaveBeenCalled());
-    expect(window.sonos.answerPoll, 'Expected only pollId and choice (index 1 = Digestive), no user or timestamp').toHaveBeenCalledWith({ pollId: 'p1', choice: 1 });
+    expect(
+      window.sonos.answerPoll,
+      'Expected only pollId and choice (index 1 = Digestive), no user or timestamp'
+    ).toHaveBeenCalledWith({ pollId: 'p1', choice: 1 });
   });
 
   it('no telemetry event mentions the user or the chosen answer', async () => {
@@ -182,8 +207,13 @@ describe('P-4 answered is remembered locally only', () => {
     renderControls();
     await user.click(await screen.findByRole('button', { name: /^poll\b/i }));
     await user.click(await screen.findByRole('button', { name: 'Rich Tea' }));
-    await waitFor(() => expect(localStorage.getItem('poll-answered:p1'), 'Expected the answered flag for poll p1').not.toBeNull());
-    expect(localStorage.getItem('poll-answered:p1') ?? '', 'Expected the stored value not to reveal which choice was picked').not.toContain('Rich Tea');
+    await waitFor(() =>
+      expect(localStorage.getItem('poll-answered:p1'), 'Expected the answered flag for poll p1').not.toBeNull()
+    );
+    expect(
+      localStorage.getItem('poll-answered:p1') ?? '',
+      'Expected the stored value not to reveal which choice was picked'
+    ).not.toContain('Rich Tea');
   });
 
   it('a poll already answered locally is not offered after a restart', async () => {
@@ -201,7 +231,9 @@ describe('P-4 answered is remembered locally only', () => {
     const user = userEvent.setup();
     renderControls();
     await user.click(await screen.findByRole('button', { name: /^poll\b/i }));
-    expect(await screen.findByRole('dialog'), 'Expected the unanswered poll p2 to be offered').toHaveTextContent('Tea or coffee?');
+    expect(await screen.findByRole('dialog'), 'Expected the unanswered poll p2 to be offered').toHaveTextContent(
+      'Tea or coffee?'
+    );
   });
 
   it('a failed submission is not remembered and the poll stays available to retry', async () => {
@@ -212,7 +244,12 @@ describe('P-4 answered is remembered locally only', () => {
     await user.click(await screen.findByRole('button', { name: /^poll\b/i }));
     await user.click(await screen.findByRole('button', { name: 'Hobnob' }));
     await waitFor(() => expect(window.sonos.answerPoll).toHaveBeenCalled());
-    expect(localStorage.getItem('poll-answered:p1'), 'Expected nothing remembered when the server rejected the answer').toBeNull();
-    expect(screen.getByRole('dialog'), 'Expected the question to remain so the user can retry').toHaveTextContent('Best biscuit?');
+    expect(
+      localStorage.getItem('poll-answered:p1'),
+      'Expected nothing remembered when the server rejected the answer'
+    ).toBeNull();
+    expect(screen.getByRole('dialog'), 'Expected the question to remain so the user can retry').toHaveTextContent(
+      'Best biscuit?'
+    );
   });
 });

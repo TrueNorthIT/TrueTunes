@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { seedDisplayName } from '../../test/queueActions';
+import { QueueActionsProvider } from '../../hooks/useQueueActions';
 import { MemoryRouter } from 'react-router-dom';
 import { DiscoverPanel } from '../DiscoverPanel';
 import type { DjActDiscoveries } from '../../hooks/useDjDiscoveries';
@@ -36,10 +38,20 @@ const track = (title: string): AlbumTrack => ({
   raw: { title, type: 'ITEM_TRACK' } as never,
 });
 const act = (artist: string, because: string): DjArtist => ({
-  artist, artistId: artist, serviceId: '72711', accountId: '13', score: 1, because, heardTrackKeys: [],
+  artist,
+  artistId: artist,
+  serviceId: '72711',
+  accountId: '13',
+  score: 1,
+  because,
+  heardTrackKeys: [],
 });
 const groups: DjActDiscoveries[] = [
-  { act: act('Muse', 'Rich, Alex and others queue Muse'), tracks: [track('Hysteria'), track('Madness')], imageUrl: null },
+  {
+    act: act('Muse', 'Rich, Alex and others queue Muse'),
+    tracks: [track('Hysteria'), track('Madness')],
+    imageUrl: null,
+  },
   { act: act('Jungle', 'Alex queues Jungle'), tracks: [track('Back On 74')], imageUrl: null },
 ];
 const discoveries = [
@@ -56,14 +68,20 @@ const djSet: DjSetResult = {
   inferredListeners: true,
 };
 
-function renderPanel(props: Partial<React.ComponentProps<typeof DiscoverPanel>> = {}) {
+function renderPanel({
+  displayName,
+  ...props
+}: Partial<React.ComponentProps<typeof DiscoverPanel>> & { displayName?: string } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  if (displayName) seedDisplayName(client, displayName);
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
-        <DiscoverPanel onAddToQueue={onAddToQueue} {...props} />
-      </MemoryRouter>
-    </QueryClientProvider>,
+      <QueueActionsProvider value={{ addToQueue: onAddToQueue, queueNext: vi.fn() }}>
+        <MemoryRouter>
+          <DiscoverPanel {...props} />
+        </MemoryRouter>
+      </QueueActionsProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -72,7 +90,10 @@ beforeEach(() => {
   mockDiscoveries.mockReturnValue({ discoveries, groups, isLoading: false });
   vi.mocked(window.sonos.fetchDjSet).mockResolvedValue(djSet);
   vi.mocked(window.sonos.fetchOfficePresence).mockResolvedValue({
-    inOffice: [], basis: 'none', observed: 0, detail: [],
+    inOffice: [],
+    basis: 'none',
+    observed: 0,
+    detail: [],
   });
   vi.mocked(window.sonos.fetchUsers).mockResolvedValue([
     { userId: 'Rich', lastQueued: 1, imageUrl: 'https://example.test/rich.png' },
@@ -84,7 +105,8 @@ beforeEach(() => {
 describe('DiscoverPanel', () => {
   it('groups the unheard tracks by act, with who is behind each act', async () => {
     renderPanel();
-    const muse = (await screen.findByRole('button', { name: 'Open Muse' }, { timeout: 4000 })).parentElement as HTMLElement;
+    const muse = (await screen.findByRole('button', { name: 'Open Muse' }, { timeout: 4000 }))
+      .parentElement as HTMLElement;
     expect(within(muse).getByText('Rich, Alex and others')).toBeInTheDocument();
     expect(within(muse).getByText('Hysteria')).toBeInTheDocument();
     expect(within(muse).getByText('Madness')).toBeInTheDocument();
@@ -130,7 +152,11 @@ describe('DiscoverPanel', () => {
     expect(onAddToQueue.mock.calls.map((c) => c[0].title)).toEqual(['Hysteria', 'Back On 74', 'Madness']);
     for (const call of onAddToQueue.mock.calls) expect(call[2]).toEqual({ attribute: false });
 
-    expect(showToast).toHaveBeenCalledWith('Queued 3 tracks', 'info', expect.objectContaining({ action: expect.objectContaining({ label: 'Undo' }) }));
+    expect(showToast).toHaveBeenCalledWith(
+      'Queued 3 tracks',
+      'info',
+      expect.objectContaining({ action: expect.objectContaining({ label: 'Undo' }) })
+    );
     showToast.mock.calls[0][2].action.onClick();
     expect(removeFromQueue).toHaveBeenCalledWith([0, 1, 2]);
   });
@@ -145,9 +171,11 @@ describe('DiscoverPanel', () => {
     expect(alex.textContent).toContain('A');
   });
 
-  it("says so in one line when presence detects nobody, rather than calling everyone away", async () => {
+  it('says so in one line when presence detects nobody, rather than calling everyone away', async () => {
     renderPanel();
-    expect(await screen.findByText(/Nobody's been detected in the office, so this is for whoever's been queueing today/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Nobody's been detected in the office, so this is for whoever's been queueing today/)
+    ).toBeInTheDocument();
     expect(screen.queryByText(/not in today/i)).toBeNull();
     // The two who've been queueing lead; Sam waits behind +1.
     expect(await screen.findByRole('button', { name: /^Rich/, pressed: true })).toBeInTheDocument();
@@ -175,14 +203,17 @@ describe('DiscoverPanel', () => {
 
   it('lets you choose who it is for, starting from who is in', async () => {
     vi.mocked(window.sonos.fetchOfficePresence).mockResolvedValue({
-      inOffice: ['Rich'], basis: 'sensed', observed: 1, detail: [],
+      inOffice: ['Rich'],
+      basis: 'sensed',
+      observed: 1,
+      detail: [],
     });
     renderPanel();
     await userEvent.click(await screen.findByRole('button', { name: '+2' }));
     await userEvent.click(screen.getByTitle('Alex — no Teams presence'));
 
     await waitFor(() =>
-      expect(window.sonos.fetchDjSet).toHaveBeenLastCalledWith(expect.objectContaining({ users: ['Rich', 'Alex'] })),
+      expect(window.sonos.fetchDjSet).toHaveBeenLastCalledWith(expect.objectContaining({ users: ['Rich', 'Alex'] }))
     );
     expect(screen.getByTitle('Alex — no Teams presence')).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: "Back to who's in" })).toBeInTheDocument();
@@ -190,7 +221,10 @@ describe('DiscoverPanel', () => {
 
   it('keeps the cards, dimmed, while a new room loads instead of flashing a skeleton', async () => {
     vi.mocked(window.sonos.fetchOfficePresence).mockResolvedValue({
-      inOffice: ['Rich'], basis: 'sensed', observed: 1, detail: [],
+      inOffice: ['Rich'],
+      basis: 'sensed',
+      observed: 1,
+      detail: [],
     });
     renderPanel();
     await screen.findByRole('button', { name: 'Open Muse' }, { timeout: 4000 });
@@ -199,15 +233,25 @@ describe('DiscoverPanel', () => {
     await userEvent.click(screen.getByTitle('Alex — no Teams presence'));
 
     expect(screen.getByRole('button', { name: 'Open Muse' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Open Muse' }).closest('[aria-busy]')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('button', { name: 'Open Muse' }).closest('[aria-busy]')).toHaveAttribute(
+      'aria-busy',
+      'true'
+    );
     // Don't bulk-queue a set that's about to change.
     expect(screen.getByTitle('Add every pick to the queue')).toBeDisabled();
   });
 
   it('collapses a big room to eight faces and +N', async () => {
     const names = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
-    vi.mocked(window.sonos.fetchUsers).mockResolvedValue(names.map((userId) => ({ userId, lastQueued: 1, imageUrl: null })) as UserSummary[]);
-    vi.mocked(window.sonos.fetchOfficePresence).mockResolvedValue({ inOffice: names, basis: 'sensed', observed: 10, detail: [] });
+    vi.mocked(window.sonos.fetchUsers).mockResolvedValue(
+      names.map((userId) => ({ userId, lastQueued: 1, imageUrl: null })) as UserSummary[]
+    );
+    vi.mocked(window.sonos.fetchOfficePresence).mockResolvedValue({
+      inOffice: names,
+      basis: 'sensed',
+      observed: 10,
+      detail: [],
+    });
     renderPanel();
     expect(await screen.findByRole('button', { name: '+2' })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { pressed: true })).toHaveLength(8);
@@ -220,11 +264,10 @@ describe('DiscoverPanel', () => {
     const queueItems = [{ index: 0, track: { id: 'q1', title: 'Explorer', artist: 'Connan Mockasin' } }] as never;
     renderPanel({ queueItems });
     await waitFor(() =>
-      expect(mockDiscoveries).toHaveBeenLastCalledWith(
-        djSet.artists,
-        true,
-        { queued: [{ title: 'Explorer', artist: 'Connan Mockasin' }], round: 0 },
-      ),
+      expect(mockDiscoveries).toHaveBeenLastCalledWith(djSet.artists, true, {
+        queued: [{ title: 'Explorer', artist: 'Connan Mockasin' }],
+        round: 0,
+      })
     );
     await userEvent.click(screen.getByRole('button', { name: /Shuffle/ }));
     expect(mockDiscoveries).toHaveBeenLastCalledWith(djSet.artists, true, expect.objectContaining({ round: 1 }));

@@ -40,15 +40,15 @@ interface AttributionEvent {
 }
 
 interface FetchRequest {
-  operationId: string;
+  operationId: import('../lib/sonosApi').OperationId;
   pathParams?: Record<string, string>;
   query?: Record<string, string | undefined>;
   body?: unknown;
   headers?: Record<string, string>;
 }
 
-interface FetchResponse {
-  data?: unknown;
+interface FetchResponse<T = unknown> {
+  data?: T;
   error?: string;
   etag?: string;
 }
@@ -150,9 +150,20 @@ interface GameScoreDoc {
 }
 
 // ── Music stats (server/src/shared/musicStats.ts is the source of truth) ──
-interface TrackMetaReport { uri: string; durationMs?: number; explicit?: boolean }
-interface MusicArtistCount { artist: string; count: number }
-interface MusicMonthTaste { month: string; queues: number; topArtists: MusicArtistCount[] }
+interface TrackMetaReport {
+  uri: string;
+  durationMs?: number;
+  explicit?: boolean;
+}
+interface MusicArtistCount {
+  artist: string;
+  count: number;
+}
+interface MusicMonthTaste {
+  month: string;
+  queues: number;
+  topArtists: MusicArtistCount[];
+}
 interface MusicPersonStats {
   userId: string;
   queues: number;
@@ -547,9 +558,9 @@ interface SonosPreload {
   geniusAlbumAbout: (albumName: string, artistName: string) => Promise<GeniusAlbumAbout | null>;
   /** Fire-and-forget telemetry event routed through the main process. No-op when App Insights is not configured. */
   trackEvent: (name: string, properties?: Record<string, string>) => Promise<void>;
-  minimizeWindow:    () => Promise<void>;
-  maximizeWindow:    () => Promise<void>;
-  closeWindow:       () => Promise<void>;
+  minimizeWindow: () => Promise<void>;
+  maximizeWindow: () => Promise<void>;
+  closeWindow: () => Promise<void>;
   isWindowMaximized: () => Promise<boolean>;
   onWindowMaximized: (cb: (maximized: boolean) => void) => Unsubscribe;
   onUpdateDownloaded: (cb: (version: string) => void) => Unsubscribe;
@@ -564,16 +575,35 @@ interface SonosPreload {
   removeTrackFromPlaylist: (playlistId: string, uri: string) => Promise<PlaylistDoc>;
   reorderPlaylistTracks: (playlistId: string, fromIndex: number, toIndex: number) => Promise<PlaylistDoc>;
   joinPlaylist: (playlistId: string, action: 'join' | 'leave') => Promise<PlaylistMeta>;
-  uploadPlaylistImage: (playlistId: string, data: ArrayBuffer, mimeType: string, userName: string) => Promise<{ imageUrl: string } | { error: string }>;
+  uploadPlaylistImage: (
+    playlistId: string,
+    data: ArrayBuffer,
+    mimeType: string,
+    userName: string
+  ) => Promise<{ imageUrl: string } | { error: string }>;
   fetchUsers: (includeSelf?: boolean) => Promise<UserSummary[]>;
   fetchUserProfile: (userName: string) => Promise<UserProfile | null>;
-  uploadProfileImage: (userName: string, data: ArrayBuffer, mimeType: string) => Promise<{ imageUrl: string } | { error: string }>;
+  uploadProfileImage: (
+    userName: string,
+    data: ArrayBuffer,
+    mimeType: string
+  ) => Promise<{ imageUrl: string } | { error: string }>;
   getEntraUser: () => Promise<EntraUser | null>;
   entraSignOut: () => Promise<void>;
   entraReLogin: () => Promise<void>;
   onEntraReady: (cb: (user: EntraUser) => void) => Unsubscribe;
   renameUser: (oldName: string, newName: string) => Promise<{ ok?: boolean; error?: string }>;
-  updateNowPlayingSmtc: (data: { title?: string; artist?: string; album?: string; artworkUrl?: string }) => Promise<void>;
+  submitFeedback: (
+    type: 'bug' | 'feature',
+    title: string,
+    description: string
+  ) => Promise<{ url: string } | { error: string }>;
+  updateNowPlayingSmtc: (data: {
+    title?: string;
+    artist?: string;
+    album?: string;
+    artworkUrl?: string;
+  }) => Promise<void>;
 }
 
 interface Window {

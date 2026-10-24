@@ -17,7 +17,9 @@
 
 /* ── Header: the shelf's name and what's in it ───────────────────────────── */
 
-.head { margin-bottom: 1.4em; }
+.head {
+  margin-bottom: 1.4em;
+}
 .title {
   font-size: var(--fs-headline);
   font-weight: 600;
@@ -32,7 +34,11 @@
   font-variant-numeric: tabular-nums;
 }
 
-.sections { display: flex; flex-direction: column; gap: 1.4em; }
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4em;
+}
 
 /* Songs: rows in as many 28em columns as fit, so a long shelf isn't one tall list. */
 .songs {
@@ -44,7 +50,9 @@
 }
 /* Each row is its own container, so the shared row puts the artist under the title (its narrow layout)
    at every width: two even lines per row, each ellipsised, instead of a title wrapping onto three. */
-.songs > li { container-type: inline-size; }
+.songs > li {
+  container-type: inline-size;
+}
 
 /* Albums, playlists, stations: tiles at the Jump back in size. */
 .grid {
@@ -66,10 +74,28 @@
 }
 
 /* Skeleton tiles at the real tile size (square art, then the title line). */
-.skelTile { display: flex; flex-direction: column; gap: 0.6em; min-width: 0; }
-.skelArt { display: block; width: 100%; aspect-ratio: 1; border-radius: var(--r-tile); }
-.skelLine { display: block; width: 70%; height: 1em; border-radius: var(--r-xs); animation-delay: 0.1s; }
+.skelTile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+  min-width: 0;
+}
+.skelArt {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--r-tile);
+}
+.skelLine {
+  display: block;
+  width: 70%;
+  height: 1em;
+  border-radius: var(--r-xs);
+  animation-delay: 0.1s;
+}
 
 @container (max-width: 700px) {
-  .grid { grid-template-columns: repeat(auto-fill, minmax(9em, 1fr)); }
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(9em, 1fr));
+  }
 }

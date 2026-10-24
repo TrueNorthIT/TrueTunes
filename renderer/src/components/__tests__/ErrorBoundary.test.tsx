@@ -51,8 +51,11 @@ describe('ErrorBoundary', () => {
         <Boom />
       </ErrorBoundary>
     );
-    expect(window.sonos.trackEvent).toHaveBeenCalledWith('renderer_crash', expect.objectContaining({
-      message: 'Test crash',
-    }));
+    expect(window.sonos.trackEvent).toHaveBeenCalledWith(
+      'renderer_crash',
+      expect.objectContaining({
+        message: 'Test crash',
+      })
+    );
   });
 });

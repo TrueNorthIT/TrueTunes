@@ -35,23 +35,15 @@ describe('useContainerBrowse', () => {
     };
     mockFetch.mockResolvedValueOnce({ data: mockData });
 
-    const { result } = renderHook(
-      () => useContainerBrowse('cont-1', 'svc', 'acc'),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useContainerBrowse('cont-1', 'svc', 'acc'), { wrapper });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.data).toBeInstanceOf(Array);
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.objectContaining({ operationId: 'browseContainer' })
-    );
+    expect(mockFetch).toHaveBeenCalledWith(expect.objectContaining({ operationId: 'browseContainer' }));
   });
 
   it('returns error when response has error field', async () => {
     mockFetch.mockResolvedValueOnce({ data: null, error: 'Not found' });
-    const { result } = renderHook(
-      () => useContainerBrowse('cont-1', 'svc', 'acc'),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useContainerBrowse('cont-1', 'svc', 'acc'), { wrapper });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.error).toBeTruthy();
   });

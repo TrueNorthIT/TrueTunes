@@ -30,9 +30,27 @@ import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { PollAdminDialog } from '../PollAdminDialog';
 
-const LIVE: PollAdminItem = { id: 'l1', question: 'Old live question?', choices: ['a', 'b'], liveFrom: '2026-10-12', live: true };
-const U1: PollAdminItem = { id: 'u1', question: 'First upcoming?', choices: ['Yes', 'No'], liveFrom: '2026-10-26', live: false };
-const U2: PollAdminItem = { id: 'u2', question: 'Second upcoming?', choices: ['Red', 'Blue', 'Green'], liveFrom: '2026-11-02', live: false };
+const LIVE: PollAdminItem = {
+  id: 'l1',
+  question: 'Old live question?',
+  choices: ['a', 'b'],
+  liveFrom: '2026-10-12',
+  live: true,
+};
+const U1: PollAdminItem = {
+  id: 'u1',
+  question: 'First upcoming?',
+  choices: ['Yes', 'No'],
+  liveFrom: '2026-10-26',
+  live: false,
+};
+const U2: PollAdminItem = {
+  id: 'u2',
+  question: 'Second upcoming?',
+  choices: ['Red', 'Blue', 'Green'],
+  liveFrom: '2026-11-02',
+  live: false,
+};
 const ALL = [LIVE, U1, U2];
 
 function Wrapper({ children }: { children: ReactNode }) {
@@ -56,7 +74,13 @@ const unavailable = (name: string) => {
 };
 
 beforeEach(() => {
-  for (const fn of [window.sonos.pollAdminList, window.sonos.pollAdminCreate, window.sonos.pollAdminUpdate, window.sonos.pollAdminDelete, window.sonos.pollAdminReorder]) {
+  for (const fn of [
+    window.sonos.pollAdminList,
+    window.sonos.pollAdminCreate,
+    window.sonos.pollAdminUpdate,
+    window.sonos.pollAdminDelete,
+    window.sonos.pollAdminReorder,
+  ]) {
     vi.mocked(fn).mockReset();
   }
   vi.mocked(window.sonos.pollAdminCreate).mockResolvedValue({ poll: U1 });
@@ -69,16 +93,26 @@ beforeEach(() => {
 describe('P-9 poll list', () => {
   it('is a dialog named Poll admin', async () => {
     await openDialog();
-    expect(screen.getByRole('dialog', { name: /poll admin/i }), 'Expected role=dialog with the name "Poll admin"').toBeInTheDocument();
+    expect(
+      screen.getByRole('dialog', { name: /poll admin/i }),
+      'Expected role=dialog with the name "Poll admin"'
+    ).toBeInTheDocument();
   });
 
   it('lists polls in schedule order with their liveFrom', async () => {
     await openDialog();
     const text = document.body.textContent ?? '';
     const positions = [LIVE, U1, U2].map((p) => text.indexOf(p.question));
-    expect(positions.every((p) => p >= 0), 'Expected every poll question to be listed').toBe(true);
-    expect(positions, 'Expected the schedule order: live poll, then First upcoming, then Second upcoming').toEqual([...positions].sort((a, b) => a - b));
-    expect(text, 'Expected the Monday of each poll to be shown (ISO or formatted)').toMatch(/2026-10-26|26 Oct(ober)? 2026|Oct(ober)? 26,? 2026/);
+    expect(
+      positions.every((p) => p >= 0),
+      'Expected every poll question to be listed'
+    ).toBe(true);
+    expect(positions, 'Expected the schedule order: live poll, then First upcoming, then Second upcoming').toEqual(
+      [...positions].sort((a, b) => a - b)
+    );
+    expect(text, 'Expected the Monday of each poll to be shown (ISO or formatted)').toMatch(
+      /2026-10-26|26 Oct(ober)? 2026|Oct(ober)? 26,? 2026/
+    );
     expect(text).toMatch(/2026-11-02|2 Nov(ember)? 2026|02 Nov(ember)? 2026|Nov(ember)? 2,? 2026/);
   });
 
@@ -94,29 +128,42 @@ describe('P-10 live polls are locked', () => {
     await openDialog();
     expect(screen.getByText(/^live$/i), 'Expected the live poll row to be marked "Live"').toBeInTheDocument();
     for (const action of ['Edit poll', 'Delete poll', 'Move up', 'Move down']) {
-      expect(unavailable(`${action}: ${LIVE.question}`), `Expected "${action}" to be unavailable for the live poll`).toBe(true);
+      expect(
+        unavailable(`${action}: ${LIVE.question}`),
+        `Expected "${action}" to be unavailable for the live poll`
+      ).toBe(true);
     }
   });
 
   it('upcoming polls can be edited and deleted', async () => {
     await openDialog();
     expect(unavailable(`Edit poll: ${U1.question}`), 'Expected Edit to be available for an upcoming poll').toBe(false);
-    expect(unavailable(`Delete poll: ${U1.question}`), 'Expected Delete to be available for an upcoming poll').toBe(false);
+    expect(unavailable(`Delete poll: ${U1.question}`), 'Expected Delete to be available for an upcoming poll').toBe(
+      false
+    );
   });
 });
 
 describe('P-9 reorder', () => {
   it('the first upcoming poll cannot move up (the live poll above is locked) and the last cannot move down', async () => {
     await openDialog();
-    expect(unavailable(`Move up: ${U1.question}`), 'Expected Move up to be unavailable for the first upcoming poll').toBe(true);
-    expect(unavailable(`Move down: ${U2.question}`), 'Expected Move down to be unavailable for the last poll').toBe(true);
+    expect(
+      unavailable(`Move up: ${U1.question}`),
+      'Expected Move up to be unavailable for the first upcoming poll'
+    ).toBe(true);
+    expect(unavailable(`Move down: ${U2.question}`), 'Expected Move down to be unavailable for the last poll').toBe(
+      true
+    );
   });
 
   it('Move down on the first upcoming poll sends the new order of upcoming ids', async () => {
     const { user } = await openDialog();
     await user.click(button(`Move down: ${U1.question}`));
     await waitFor(() => expect(window.sonos.pollAdminReorder).toHaveBeenCalledTimes(1));
-    expect(window.sonos.pollAdminReorder, 'Expected only the upcoming ids, in the new order').toHaveBeenCalledWith(['u2', 'u1']);
+    expect(window.sonos.pollAdminReorder, 'Expected only the upcoming ids, in the new order').toHaveBeenCalledWith([
+      'u2',
+      'u1',
+    ]);
   });
 
   it('Move up on the second upcoming poll sends the new order of upcoming ids', async () => {
@@ -132,7 +179,12 @@ describe('P-9 delete', () => {
     const before = vi.mocked(window.sonos.pollAdminList).mock.calls.length;
     await user.click(button(`Delete poll: ${U2.question}`));
     await waitFor(() => expect(window.sonos.pollAdminDelete).toHaveBeenCalledWith('u2'));
-    await waitFor(() => expect(vi.mocked(window.sonos.pollAdminList).mock.calls.length, 'Expected the list to be reloaded after deleting').toBeGreaterThan(before));
+    await waitFor(() =>
+      expect(
+        vi.mocked(window.sonos.pollAdminList).mock.calls.length,
+        'Expected the list to be reloaded after deleting'
+      ).toBeGreaterThan(before)
+    );
   });
 
   it('does nothing when the confirmation is declined', async () => {
@@ -197,7 +249,10 @@ describe('P-9 add a poll', () => {
     expect(button('Save poll'), 'Expected Save to be enabled for a valid poll').toBeEnabled();
     await user.click(button('Save poll'));
     await waitFor(() => expect(window.sonos.pollAdminCreate).toHaveBeenCalledTimes(1));
-    expect(window.sonos.pollAdminCreate).toHaveBeenCalledWith({ question: 'Best biscuit?', choices: ['Hobnob', 'Digestive'] });
+    expect(window.sonos.pollAdminCreate).toHaveBeenCalledWith({
+      question: 'Best biscuit?',
+      choices: ['Hobnob', 'Digestive'],
+    });
   });
 
   it('blank choice rows are ignored when saving', async () => {
@@ -208,13 +263,21 @@ describe('P-9 add a poll', () => {
     await user.click(button('Add choice'));
     expect(screen.getByRole('textbox', { name: 'Choice 3' }), 'Expected a third choice field').toBeInTheDocument();
     await user.click(button('Save poll'));
-    await waitFor(() => expect(window.sonos.pollAdminCreate).toHaveBeenCalledWith({ question: 'Best biscuit?', choices: ['Hobnob', 'Digestive'] }));
+    await waitFor(() =>
+      expect(window.sonos.pollAdminCreate).toHaveBeenCalledWith({
+        question: 'Best biscuit?',
+        choices: ['Hobnob', 'Digestive'],
+      })
+    );
   });
 
   it('allows at most six choices', async () => {
     const { user } = await openForm();
     for (let i = 0; i < 4; i++) await user.click(button('Add choice'));
-    expect(screen.getByRole('textbox', { name: 'Choice 6' }), 'Expected six choice fields after four additions').toBeInTheDocument();
+    expect(
+      screen.getByRole('textbox', { name: 'Choice 6' }),
+      'Expected six choice fields after four additions'
+    ).toBeInTheDocument();
     expect(button('Add choice'), 'Expected Add choice to be disabled at six choices').toBeDisabled();
     expect(screen.queryByRole('textbox', { name: 'Choice 7' })).toBeNull();
   });
@@ -231,7 +294,7 @@ describe('P-12 Vestaboard preview', () => {
   it('shows the board header, the question in upper case and the footer', async () => {
     const { user } = await openForm();
     await user.type(screen.getByRole('textbox', { name: 'Question' }), 'Best biscuit?');
-    expect(preview(), "Expected the board title").toHaveTextContent("THIS WEEK'S POLL");
+    expect(preview(), 'Expected the board title').toHaveTextContent("THIS WEEK'S POLL");
     expect(preview(), 'Expected the question in upper case').toHaveTextContent('BEST BISCUIT?');
     expect(preview(), 'Expected the board footer').toHaveTextContent('VOTE IN TRUE TUNES');
   });
@@ -240,8 +303,14 @@ describe('P-12 Vestaboard preview', () => {
     const { user } = await openForm();
     await user.type(screen.getByRole('textbox', { name: 'Question' }), 'AAAAAAAAAA BBBBBBBBBB CCC');
     const region = preview();
-    expect(within(region).getByText('AAAAAAAAAA BBBBBBBBBB'), 'Expected the first wrapped line as its own element').toBeInTheDocument();
-    expect(within(region).getByText('CCC'), 'Expected the overflow word on the next line as its own element').toBeInTheDocument();
+    expect(
+      within(region).getByText('AAAAAAAAAA BBBBBBBBBB'),
+      'Expected the first wrapped line as its own element'
+    ).toBeInTheDocument();
+    expect(
+      within(region).getByText('CCC'),
+      'Expected the overflow word on the next line as its own element'
+    ).toBeInTheDocument();
   });
 
   it('shows no warning for a question that fits', async () => {
@@ -255,12 +324,18 @@ describe('P-12 Vestaboard preview', () => {
     const five = ['A', 'B', 'C', 'D', 'E'].map((c) => c.repeat(22)).join(' ');
     await user.click(screen.getByRole('textbox', { name: 'Question' }));
     await user.paste(five);
-    expect(await screen.findByRole('alert'), 'Expected a warning that the question does not fit the board').toHaveTextContent(/fit/i);
+    expect(
+      await screen.findByRole('alert'),
+      'Expected a warning that the question does not fit the board'
+    ).toHaveTextContent(/fit/i);
   });
 
   it('warns when a single word is longer than 22 characters', async () => {
     const { user } = await openForm();
     await user.type(screen.getByRole('textbox', { name: 'Question' }), `Is ${'Z'.repeat(23)} good`);
-    expect(await screen.findByRole('alert'), 'Expected a warning for a word that cannot fit on one row').toHaveTextContent(/fit/i);
+    expect(
+      await screen.findByRole('alert'),
+      'Expected a warning for a word that cannot fit on one row'
+    ).toHaveTextContent(/fit/i);
   });
 });

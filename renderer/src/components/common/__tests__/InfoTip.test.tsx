@@ -14,7 +14,7 @@ function setup(props: Partial<React.ComponentProps<typeof InfoTip>> = {}) {
   render(
     <InfoTip label="Why this pick" {...props}>
       <p>Rich — queued them 14 times</p>
-    </InfoTip>,
+    </InfoTip>
   );
   return { button: screen.getByRole('button', { name: 'Why this pick' }), user: userEvent.setup() };
 }
@@ -30,7 +30,7 @@ describe('InfoTip', () => {
     const { button, user } = setup();
     await user.hover(button);
     expect(screen.getByRole('tooltip'), 'Expected hover (mouseenter) to show the tooltip').toHaveTextContent(
-      'Rich — queued them 14 times',
+      'Rich — queued them 14 times'
     );
   });
 
@@ -46,7 +46,7 @@ describe('InfoTip', () => {
     await user.tab();
     expect(button, 'Expected Tab to move focus to the info button').toHaveFocus();
     expect(screen.getByRole('tooltip'), 'Expected keyboard focus to show the tooltip').toHaveTextContent(
-      'Rich — queued them 14 times',
+      'Rich — queued them 14 times'
     );
   });
 
@@ -89,10 +89,13 @@ describe('InfoTip', () => {
         <InfoTip label="Why this pick">
           <p>Why</p>
         </InfoTip>
-      </div>,
+      </div>
     );
     await userEvent.setup().click(screen.getByRole('button', { name: 'Why this pick' }));
-    expect(onCardClick, 'Expected clicking the info icon not to open the card or queue anything').not.toHaveBeenCalled();
+    expect(
+      onCardClick,
+      'Expected clicking the info icon not to open the card or queue anything'
+    ).not.toHaveBeenCalled();
   });
 
   it('shows the default info icon inside the button', () => {
@@ -103,7 +106,10 @@ describe('InfoTip', () => {
 
   it('REQ-W7: a custom icon replaces the default one (the DJ icon becomes the trigger)', () => {
     const { button } = setup({ icon: <svg data-testid="custom-icon" /> });
-    expect(button.querySelector('[data-testid="custom-icon"]'), 'Expected the custom icon inside the button').not.toBeNull();
+    expect(
+      button.querySelector('[data-testid="custom-icon"]'),
+      'Expected the custom icon inside the button'
+    ).not.toBeNull();
     expect(button.querySelectorAll('svg'), 'Expected only the custom icon, not the default as well').toHaveLength(1);
   });
 
@@ -111,8 +117,11 @@ describe('InfoTip', () => {
     const { container } = render(
       <InfoTip label="Why this pick" className="my-tip">
         <p>Why</p>
-      </InfoTip>,
+      </InfoTip>
     );
-    expect(container.querySelector('.my-tip'), 'Expected className to be applied to an element in the InfoTip').not.toBeNull();
+    expect(
+      container.querySelector('.my-tip'),
+      'Expected className to be applied to an element in the InfoTip'
+    ).not.toBeNull();
   });
 });

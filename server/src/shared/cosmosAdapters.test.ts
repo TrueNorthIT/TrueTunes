@@ -25,7 +25,7 @@ interface Doc {
 }
 
 function fakeContainer(
-  opts: { errorShape?: 'code' | 'statusCode'; throwOnMissingRead?: boolean; failReadWith?: number } = {},
+  opts: { errorShape?: 'code' | 'statusCode'; throwOnMissingRead?: boolean; failReadWith?: number } = {}
 ) {
   const docs = new Map<string, Doc>();
   let seq = 0;
@@ -37,7 +37,7 @@ function fakeContainer(
   const err = (status: number) =>
     Object.assign(
       new Error(`HTTP ${status}`),
-      opts.errorShape === 'statusCode' ? { statusCode: status } : { code: status },
+      opts.errorShape === 'statusCode' ? { statusCode: status } : { code: status }
     );
 
   const container = {
@@ -87,13 +87,17 @@ for (const shape of ['code', 'statusCode'] as const) {
     assert.equal(
       await containerDocStore(container).read('nope'),
       undefined,
-      'Expected a missing item (resource undefined, 404) to read as undefined',
+      'Expected a missing item (resource undefined, 404) to read as undefined'
     );
   });
 
   test(`D-2 containerDocStore (SDK errors reported in .${shape}): a thrown 404 on read is also treated as missing`, async () => {
     const { container } = fakeContainer({ errorShape: shape, throwOnMissingRead: true });
-    assert.equal(await containerDocStore(container).read('nope'), undefined, 'Expected a thrown 404 to read as undefined');
+    assert.equal(
+      await containerDocStore(container).read('nope'),
+      undefined,
+      'Expected a thrown 404 to read as undefined'
+    );
   });
 
   test(`D-2 containerDocStore (SDK errors reported in .${shape}): replace with a stale etag rejects with statusCode 412`, async () => {
@@ -104,7 +108,7 @@ for (const shape of ['code', 'statusCode'] as const) {
     await assert.rejects(
       store.replace<Doc>({ id: 'd1', n: 3 }, created._etag as string),
       (e: unknown) => statusOf(e) === 412,
-      'Expected the stale-etag failure to surface as statusCode 412 so callers can retry',
+      'Expected the stale-etag failure to surface as statusCode 412 so callers can retry'
     );
   });
 
@@ -115,7 +119,7 @@ for (const shape of ['code', 'statusCode'] as const) {
     await assert.rejects(
       store.create<Doc>({ id: 'd1' }),
       (e: unknown) => statusOf(e) === 409,
-      'Expected a create conflict to surface as statusCode 409',
+      'Expected a create conflict to surface as statusCode 409'
     );
   });
 }
@@ -137,7 +141,7 @@ test('D-2 containerDocStore: replace is conditional (IfMatch on the supplied eta
   assert.deepEqual(
     calls.replaceOptions[0],
     { accessCondition: { type: 'IfMatch', condition: created._etag } },
-    'Expected replace to send accessCondition IfMatch with the etag read earlier',
+    'Expected replace to send accessCondition IfMatch with the etag read earlier'
   );
   assert.notEqual(replaced._etag, created._etag, 'Expected the returned document to carry the new etag');
   assert.equal(replaced.n, 2);
@@ -147,18 +151,35 @@ test('D-2 containerDocStore: documents are addressed by id with the id as partit
   const { container, calls } = fakeContainer();
   const store = containerDocStore(container);
   await store.read('group-9');
-  assert.deepEqual(calls.itemArgs[0], ['group-9', 'group-9'], 'Expected item(id, id): the sessions container is partitioned on /id');
+  assert.deepEqual(
+    calls.itemArgs[0],
+    ['group-9', 'group-9'],
+    'Expected item(id, id): the sessions container is partitioned on /id'
+  );
 });
 
 test('D-2 containerDocStore: other read failures (e.g. 503) are not swallowed as "missing"', async () => {
   const { container } = fakeContainer({ failReadWith: 503 });
-  await assert.rejects(containerDocStore(container).read('x'), 'Expected a 503 on read to reject, not read as undefined');
+  await assert.rejects(
+    containerDocStore(container).read('x'),
+    'Expected a 503 on read to reject, not read as undefined'
+  );
 });
 
 // --- queries ----------------------------------------------------------------
 const NEEDED_FIELDS = [
-  'userId', 'eventType', 'trackName', 'artist', 'artistId', 'album',
-  'albumId', 'imageUrl', 'uri', 'serviceId', 'accountId', 'timestamp',
+  'userId',
+  'eventType',
+  'trackName',
+  'artist',
+  'artistId',
+  'album',
+  'albumId',
+  'imageUrl',
+  'uri',
+  'serviceId',
+  'accountId',
+  'timestamp',
 ];
 
 function assertSelectsNeededFields(query: string): void {
@@ -166,7 +187,7 @@ function assertSelectsNeededFields(query: string): void {
   for (const f of NEEDED_FIELDS) {
     assert.ok(
       new RegExp(`c\\.${f}\\b`).test(query),
-      `Expected the query to select c.${f}, which buildDjSet and the service need. Query: ${query}`,
+      `Expected the query to select c.${f}, which buildDjSet and the service need. Query: ${query}`
     );
   }
 }
@@ -176,7 +197,7 @@ test('D-4 historyQuery: reads every event with no timestamp lower bound (all tim
   assert.deepEqual(spec.parameters ?? [], [], 'Expected no parameters: an all-time query has nothing to bind');
   assert.ok(
     !/timestamp\s*(>=|>)/i.test(spec.query),
-    `Expected no timestamp lower bound (the 90-day window is gone). Query: ${spec.query}`,
+    `Expected no timestamp lower bound (the 90-day window is gone). Query: ${spec.query}`
   );
   assertSelectsNeededFields(spec.query);
 });

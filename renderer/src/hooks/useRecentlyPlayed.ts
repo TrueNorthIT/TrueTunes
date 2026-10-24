@@ -1,9 +1,9 @@
-import { useQuery, useQueries } from '@tanstack/react-query';
+import { queryOptions, useQuery, useQueries } from '@tanstack/react-query';
 import { api } from '../lib/sonosApi';
 import type { SonosItem } from '../types/sonos';
-import type { ArtistResponse } from '../types/ArtistResponse';
-import type { ServiceSearch } from '../types/ServiceSearch';
 import { findArtistByName, getItemArt, parseServiceSearch, resolveArtistParams, artistItem } from '../lib/itemHelpers';
+import { STALE, GC_HOUR } from '../lib/queryDefaults';
+import { useDisplayName } from './useDisplayName';
 
 interface ResolvedArtist {
   artistId?: string;
@@ -30,7 +30,7 @@ function toArtistItem(a: RecentArtist, resolved?: ResolvedArtist | null): SonosI
       serviceId: a.serviceId ?? resolved?.serviceId,
       accountId: a.accountId ?? resolved?.accountId,
     },
-    { title: a.artist, imageUrl: resolved?.imageUrl ?? a.imageUrl },
+    { title: a.artist, imageUrl: resolved?.imageUrl ?? a.imageUrl }
   );
 }
 
@@ -46,61 +46,69 @@ function toAlbumItem(a: RecentAlbum): SonosItem {
   };
 }
 
-export function useRecentlyPlayed(selectedUserId?: string) {
-  const { data: currentUserId } = useQuery({
-    queryKey: ['displayName'],
-    queryFn: () => window.sonos.getDisplayName(),
-    staleTime: Infinity,
-  });
+export const recentlyPlayedKeys = {
+  user: (userId: string | null) => ['recentlyPlayed', userId] as const,
+  artist: (a: RecentArtist) =>
+    ['recent-artist', a.artistId ?? null, a.artist.toLowerCase(), a.serviceId ?? null, a.accountId ?? null] as const,
+};
 
-  const userId = selectedUserId ?? currentUserId ?? null;
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['recentlyPlayed', userId],
+/** One person's recent tracks, albums and artists. Shared by Profile, Home and the DJ views. */
+export const recentlyPlayedQueryOptions = (userId: string | null) =>
+  queryOptions({
+    queryKey: recentlyPlayedKeys.user(userId),
     queryFn: async () => {
       if (!userId) return null;
       return window.sonos.fetchRecentlyPlayed(userId);
     },
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
   });
+
+// Tiles with an artistId just need their photo. Tiles without one (featured
+// artists, or old events) are resolved by name via search to get the real id
+// and photo; if nothing matches exactly the tile stays id-less and the click
+// handler falls back to resolveAndOpen.
+export const recentArtistQueryOptions = (a: RecentArtist) =>
+  queryOptions({
+    queryKey: recentlyPlayedKeys.artist(a),
+    queryFn: async (): Promise<ResolvedArtist | null> => {
+      if (a.artistId) {
+        if (!a.serviceId || !a.accountId) return null;
+        const r = await api.browse.artist(a.artistId, {
+          serviceId: a.serviceId,
+          accountId: a.accountId,
+          muse2: true,
+        });
+        if (r.error) return null;
+        const imageUrl = r.data?.images?.tile1x1;
+        return imageUrl ? { imageUrl } : null;
+      }
+      const r = await api.search.serviceQuery(a.artist, {
+        count: 20,
+        serviceId: a.serviceId,
+        accountId: a.accountId,
+      });
+      if (r.error || !r.data) return null;
+      const match = findArtistByName(parseServiceSearch(r.data), a.artist);
+      if (!match) return null;
+      const { artistId, serviceId, accountId } = resolveArtistParams(match);
+      if (!artistId) return null;
+      return { artistId, serviceId, accountId, imageUrl: getItemArt(match) ?? undefined };
+    },
+    staleTime: STALE.forever,
+    gcTime: GC_HOUR,
+  });
+
+export function useRecentlyPlayed(selectedUserId?: string) {
+  const currentUserId = useDisplayName();
+
+  const userId = selectedUserId ?? currentUserId ?? null;
+
+  const { data, isLoading } = useQuery(recentlyPlayedQueryOptions(userId));
 
   const rawArtists = data?.artists ?? [];
 
-  // Tiles with an artistId just need their photo. Tiles without one (featured
-  // artists, or old events) are resolved by name via search to get the real id
-  // and photo; if nothing matches exactly the tile stays id-less and the click
-  // handler falls back to resolveAndOpen.
   const artistImageQueries = useQueries({
-    queries: rawArtists.slice(0, 9).map((a) => ({
-      queryKey: ['recent-artist', a.artistId ?? null, a.artist.toLowerCase(), a.serviceId ?? null, a.accountId ?? null],
-      queryFn: async (): Promise<ResolvedArtist | null> => {
-        if (a.artistId) {
-          if (!a.serviceId || !a.accountId) return null;
-          const r = await api.browse.artist(a.artistId, {
-            serviceId: a.serviceId,
-            accountId: a.accountId,
-            muse2: true,
-          });
-          if (r.error) return null;
-          const imageUrl = (r.data as ArtistResponse).images?.tile1x1;
-          return imageUrl ? { imageUrl } : null;
-        }
-        const r = await api.search.serviceQuery(a.artist, {
-          count: 20,
-          serviceId: a.serviceId,
-          accountId: a.accountId,
-        });
-        if (r.error) return null;
-        const match = findArtistByName(parseServiceSearch(r.data as ServiceSearch), a.artist);
-        if (!match) return null;
-        const { artistId, serviceId, accountId } = resolveArtistParams(match);
-        if (!artistId) return null;
-        return { artistId, serviceId, accountId, imageUrl: getItemArt(match) ?? undefined };
-      },
-      staleTime: Infinity,
-      gcTime: 60 * 60 * 1000,
-    })),
+    queries: rawArtists.slice(0, 9).map(recentArtistQueryOptions),
   });
 
   return {
@@ -108,7 +116,7 @@ export function useRecentlyPlayed(selectedUserId?: string) {
       const q = artistImageQueries[i];
       return toArtistItem(a, q?.isSuccess ? q.data : undefined);
     }),
-    albumItems:  (data?.albums ?? []).map(toAlbumItem),
+    albumItems: (data?.albums ?? []).map(toAlbumItem),
     availableUsers: data?.availableUsers ?? [],
     currentUserId: currentUserId ?? null,
     isLoading: !!userId && isLoading,

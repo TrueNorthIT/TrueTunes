@@ -26,8 +26,18 @@ export function queuedCount(stats: StatsResult | undefined, userName: string): n
  * The line under a profile's name: queued all time, in the past 7 days, place in the office, and (when nothing is
  * recent) when they last queued. Zeroes and unknowns are left out.
  */
-export function profileFacts({ queued, recentQueued, rank, lastQueued, now = Date.now() }: {
-  queued: number; recentQueued: number; rank: number | null; lastQueued?: number | null; now?: number;
+export function profileFacts({
+  queued,
+  recentQueued,
+  rank,
+  lastQueued,
+  now = Date.now(),
+}: {
+  queued: number;
+  recentQueued: number;
+  rank: number | null;
+  lastQueued?: number | null;
+  now?: number;
 }): string[] {
   const facts: string[] = [];
   if (queued > 0) facts.push(`${queued.toLocaleString('en-GB')} queued`);
@@ -39,7 +49,10 @@ export function profileFacts({ queued, recentQueued, rank, lastQueued, now = Dat
 }
 
 /** Newest-first plays in runs by day ("Today", "Yesterday", "3 days ago"), for day headings over a list. */
-export function groupByDay<T extends { lastPlayed: number }>(items: T[], now = Date.now()): Array<{ day: string; items: T[] }> {
+export function groupByDay<T extends { lastPlayed: number }>(
+  items: T[],
+  now = Date.now()
+): Array<{ day: string; items: T[] }> {
   const groups: Array<{ day: string; items: T[] }> = [];
   for (const item of items) {
     const day = relativeDay(item.lastPlayed, now);

@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createElement, type ReactNode } from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { AddToQueue } from '../../hooks/useQueueActions';
+import { queueActionsWrapper } from '../../test/queueActions';
 import { LeaderboardPanel } from '../LeaderboardPanel';
 
 interface AlbumResource {
@@ -25,7 +27,11 @@ function mockSearchResolves(opts: {
         resources: opts.artist
           ? [
               {
-                id: { objectId: opts.artist.objectId, serviceId: opts.artist.serviceId, accountId: opts.artist.accountId },
+                id: {
+                  objectId: opts.artist.objectId,
+                  serviceId: opts.artist.serviceId,
+                  accountId: opts.artist.accountId,
+                },
                 name: opts.artist.name,
                 images: [],
               },
@@ -38,7 +44,12 @@ function mockSearchResolves(opts: {
           name: a.name,
           images: [],
           artists: a.artistName
-            ? [{ name: a.artistName, id: { objectId: `${a.objectId}-artist`, serviceId: a.serviceId, accountId: a.accountId } }]
+            ? [
+                {
+                  name: a.artistName,
+                  id: { objectId: `${a.objectId}-artist`, serviceId: a.serviceId, accountId: a.accountId },
+                },
+              ]
             : [],
         })),
       },
@@ -80,7 +91,15 @@ const mockData: StatsResult = {
     { userId: 'bob', count: 7 },
   ],
   topTracks: [
-    { trackName: 'Bohemian Rhapsody', artist: 'Queen', count: 5, artistId: 'art1', serviceId: 'svc1', accountId: 'acc1', uri: 'uri-bo' },
+    {
+      trackName: 'Bohemian Rhapsody',
+      artist: 'Queen',
+      count: 5,
+      artistId: 'art1',
+      serviceId: 'svc1',
+      accountId: 'acc1',
+      uri: 'uri-bo',
+    },
     { trackName: 'Hotel California', artist: 'Eagles', count: 3 },
   ],
   topArtists: [
@@ -94,16 +113,24 @@ const mockData: StatsResult = {
   periodStart: 0,
 };
 
-const empty: StatsResult = { topUsers: [], topTracks: [], topArtists: [], topAlbums: [], totalEvents: 0, periodStart: 0 };
+const empty: StatsResult = {
+  topUsers: [],
+  topTracks: [],
+  topArtists: [],
+  topAlbums: [],
+  totalEvents: 0,
+  periodStart: 0,
+};
 
 function mockLoaded(data: StatsResult = mockData) {
   mockUseStats.mockReturnValue({ data, isLoading: false, error: null } as unknown as ReturnType<typeof useStats>);
 }
 
-function renderPanel(props: Parameters<typeof LeaderboardPanel>[0] = {}) {
+function renderPanel({ onAddToQueue }: { onAddToQueue?: AddToQueue } = {}) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const wrapper = ({ children }: { children: ReactNode }) => createElement(QueryClientProvider, { client: qc }, children);
-  return render(<LeaderboardPanel {...props} />, { wrapper });
+  const wrapper = ({ children }: { children: ReactNode }) =>
+    createElement(QueryClientProvider, { client: qc }, children);
+  return render(<LeaderboardPanel />, { wrapper: queueActionsWrapper(onAddToQueue, wrapper) });
 }
 
 const ranking = (over: Record<string, unknown> = {}) => ({
@@ -132,14 +159,20 @@ beforeEach(() => {
 describe('LeaderboardPanel', () => {
   describe('states', () => {
     it('shows skeleton cards, not a loading message, while fetching', () => {
-      mockUseStats.mockReturnValue({ data: undefined, isLoading: true, error: null } as unknown as ReturnType<typeof useStats>);
+      mockUseStats.mockReturnValue({ data: undefined, isLoading: true, error: null } as unknown as ReturnType<
+        typeof useStats
+      >);
       const { container } = renderPanel();
       expect(container.querySelectorAll('.skeleton').length).toBeGreaterThan(6);
       expect(screen.queryByText(/Loading/)).toBeNull();
     });
 
     it('shows an error message on fetch failure', () => {
-      mockUseStats.mockReturnValue({ data: undefined, isLoading: false, error: new Error('x') } as unknown as ReturnType<typeof useStats>);
+      mockUseStats.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: new Error('x'),
+      } as unknown as ReturnType<typeof useStats>);
       renderPanel();
       expect(screen.getByText('Failed to load stats')).toBeInTheDocument();
     });
@@ -207,9 +240,15 @@ describe('LeaderboardPanel', () => {
       vi.mocked(window.sonos.fetchStats).mockImplementation((_p, userId) =>
         Promise.resolve(
           userId === 'alice'
-            ? { ...empty, topArtists: [{ artist: 'Muse', count: 24 }, { artist: 'Kanye West', count: 27 }] }
-            : empty,
-        ),
+            ? {
+                ...empty,
+                topArtists: [
+                  { artist: 'Muse', count: 24 },
+                  { artist: 'Kanye West', count: 27 },
+                ],
+              }
+            : empty
+        )
       );
       renderPanel();
       const list = await screen.findByRole('list', { name: "alice's most queued artists" });
@@ -242,17 +281,12 @@ describe('LeaderboardPanel', () => {
       expect(screen.getByText('A Night at the Opera')).toBeInTheDocument();
     });
 
-    it('queues a track with +, and hides + without a uri or a queue handler', () => {
+    it('queues a track with +, and hides + without a uri', () => {
       const onAddToQueue = vi.fn();
       renderPanel({ onAddToQueue });
       fireEvent.click(screen.getByRole('button', { name: 'Add Bohemian Rhapsody to queue' }));
       expect(onAddToQueue).toHaveBeenCalledWith(expect.objectContaining({ type: 'TRACK', title: 'Bohemian Rhapsody' }));
       expect(screen.queryByRole('button', { name: 'Add Hotel California to queue' })).toBeNull();
-    });
-
-    it('shows no + buttons when the page cannot queue', () => {
-      renderPanel();
-      expect(screen.queryByRole('button', { name: /to queue$/ })).toBeNull();
     });
 
     it('merges artists whose names differ only in case', () => {
@@ -271,7 +305,13 @@ describe('LeaderboardPanel', () => {
     });
 
     it('hides Top albums when every album was queued once, since the order would be arbitrary', () => {
-      mockLoaded({ ...mockData, topAlbums: [{ album: 'Once', artist: 'Band', count: 1 }, { album: 'Also once', artist: 'Band', count: 1 }] });
+      mockLoaded({
+        ...mockData,
+        topAlbums: [
+          { album: 'Once', artist: 'Band', count: 1 },
+          { album: 'Also once', artist: 'Band', count: 1 },
+        ],
+      });
       renderPanel();
       expect(screen.queryByText('Top albums')).toBeNull();
       expect(screen.getByText('Top tracks')).toBeInTheDocument();
@@ -280,7 +320,9 @@ describe('LeaderboardPanel', () => {
     it('shows art when an album has an imageUrl', () => {
       mockLoaded({
         ...mockData,
-        topAlbums: [{ album: 'Pictured', artist: 'Band', albumId: 'alb2', count: 2, imageUrl: 'http://img.com/art.jpg' }],
+        topAlbums: [
+          { album: 'Pictured', artist: 'Band', albumId: 'alb2', count: 2, imageUrl: 'http://img.com/art.jpg' },
+        ],
       });
       const { container } = renderPanel();
       expect(container.querySelector('img[src="http://img.com/art.jpg"]')).toBeTruthy();
@@ -310,9 +352,20 @@ describe('LeaderboardPanel', () => {
     it('links each credited artist separately and resolves the one clicked', async () => {
       mockLoaded({
         ...mockData,
-        topTracks: [{ trackName: 'Diz', artist: 'Sonny Stitt, Kenny Garrett', count: 2, artistId: 'ss', serviceId: 'svc1', accountId: 'acc1' }],
+        topTracks: [
+          {
+            trackName: 'Diz',
+            artist: 'Sonny Stitt, Kenny Garrett',
+            count: 2,
+            artistId: 'ss',
+            serviceId: 'svc1',
+            accountId: 'acc1',
+          },
+        ],
       });
-      mockSearchResolves({ artist: { name: 'Kenny Garrett', objectId: 'kg-id', serviceId: 'svc1', accountId: 'acc1' } });
+      mockSearchResolves({
+        artist: { name: 'Kenny Garrett', objectId: 'kg-id', serviceId: 'svc1', accountId: 'acc1' },
+      });
       renderPanel();
       expect(screen.getByRole('button', { name: 'Sonny Stitt, open artist' })).toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: 'Kenny Garrett, open artist' }));
@@ -324,7 +377,17 @@ describe('LeaderboardPanel', () => {
     it("opens a track's album when it has an albumId", () => {
       mockLoaded({
         ...mockData,
-        topTracks: [{ trackName: 'My Song', artist: 'Artist', count: 5, serviceId: 'svc1', accountId: 'acc1', album: 'Great Album', albumId: 'alb9' }],
+        topTracks: [
+          {
+            trackName: 'My Song',
+            artist: 'Artist',
+            count: 5,
+            serviceId: 'svc1',
+            accountId: 'acc1',
+            album: 'Great Album',
+            albumId: 'alb9',
+          },
+        ],
       });
       renderPanel();
       fireEvent.click(screen.getByRole('button', { name: 'My Song, open album' }));
@@ -333,7 +396,9 @@ describe('LeaderboardPanel', () => {
 
     it("resolves a track's album by search when it has no albumId", async () => {
       mockLoaded({ ...mockData, topTracks: [{ trackName: 'Track', artist: 'Artist', count: 1, album: 'Rare Album' }] });
-      mockSearchResolves({ album: { name: 'Rare Album', objectId: 'rare-id', serviceId: 'svc1', accountId: 'acc1', artistName: 'Artist' } });
+      mockSearchResolves({
+        album: { name: 'Rare Album', objectId: 'rare-id', serviceId: 'svc1', accountId: 'acc1', artistName: 'Artist' },
+      });
       renderPanel();
       fireEvent.click(screen.getByRole('button', { name: 'Track, open album' }));
       await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/album/rare-id', expect.anything()));
@@ -349,7 +414,13 @@ describe('LeaderboardPanel', () => {
       mockLoaded({ ...mockData, topAlbums: [{ album: 'Greatest Hits', artist: 'Queen', count: 3 }] });
       mockSearchResolves({
         albums: [
-          { name: 'Greatest Hits', objectId: 'eagles-album', serviceId: 'svc1', accountId: 'acc1', artistName: 'Eagles' },
+          {
+            name: 'Greatest Hits',
+            objectId: 'eagles-album',
+            serviceId: 'svc1',
+            accountId: 'acc1',
+            artistName: 'Eagles',
+          },
           { name: 'Greatest Hits', objectId: 'queen-album', serviceId: 'svc1', accountId: 'acc1', artistName: 'Queen' },
         ],
       });
@@ -375,18 +446,26 @@ describe('LeaderboardPanel', () => {
       expect(container.querySelector('img[class*="tier"]')).toBeNull();
       // The score is labelled: a column head, and in the cell for screen readers.
       expect(screen.getByText('Avg score')).toBeInTheDocument();
-      expect([...container.querySelectorAll('li [class*="average"]')].map((e) => e.textContent)).toEqual(Array(5).fill('4.7 average score'));
+      expect([...container.querySelectorAll('li [class*="average"]')].map((e) => e.textContent)).toEqual(
+        Array(5).fill('4.7 average score')
+      );
       expect(screen.queryByText('f')).toBeNull();
     });
 
     it('gives equal averages a shared place (1, 1, 3)', () => {
       mockUseGameRankings.mockReturnValue({
-        data: [ranking({ userName: 'a', averageTotal: 16 }), ranking({ userName: 'b', averageTotal: 16 }), ranking({ userName: 'c', averageTotal: 15 })],
+        data: [
+          ranking({ userName: 'a', averageTotal: 16 }),
+          ranking({ userName: 'b', averageTotal: 16 }),
+          ranking({ userName: 'c', averageTotal: 15 }),
+        ],
         isLoading: false,
         error: null,
       });
       const { container } = renderPanel();
-      const places = [...container.querySelectorAll('li[class*="standing"] > span:first-child')].map((e) => e.textContent);
+      const places = [...container.querySelectorAll('li[class*="standing"] > span:first-child')].map(
+        (e) => e.textContent
+      );
       expect(places).toEqual(['01', '01', '03']);
     });
 

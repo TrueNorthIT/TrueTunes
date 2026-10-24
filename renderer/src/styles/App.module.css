@@ -24,45 +24,9 @@
   position: relative;
   background: linear-gradient(
     180deg,
-    /* Quiet Wall: washes peak at 0.3 */
-    rgba(var(--panel-color, 28, 28, 30), 0.3) 0%,
+    /* Quiet Wall: washes peak at 0.3 */ rgba(var(--panel-color, 28, 28, 30), 0.3) 0%,
     rgba(var(--panel-color, 28, 28, 30), 0.12) 20%,
     transparent 40%
   );
   transition: background 0.8s ease;
-}
-
-.toast {
-  position: fixed;
-  bottom: calc(var(--player-h) + 12px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(var(--danger-solid), 0.92);
-  backdrop-filter: blur(8px);
-  color: var(--on-art);
-  padding: 8px 16px;
-  border-radius: var(--r-sm);
-  font-size: var(--fs-px);
-  font-weight: 500;
-  z-index: 9999;
-  pointer-events: none;
-  animation: toastIn 0.2s ease;
-}
-
-@keyframes toastIn {
-  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-}
-
-.entraSigningIn {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  background: var(--overlay);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-2);
-  font-size: var(--fs-px-lg);
 }

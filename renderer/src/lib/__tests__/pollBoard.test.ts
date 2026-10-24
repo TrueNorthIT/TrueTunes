@@ -38,12 +38,18 @@ describe('P-12 renderer wrapForBoard', () => {
 
 describe('P-12 renderer fitsOnBoard', () => {
   it('is true for up to four lines', () => {
-    expect(fitsOnBoard([word('A', 22), word('B', 22), word('C', 22), word('D', 22)].join(' ')), 'Expected 4 rows to fit').toBe(true);
+    expect(
+      fitsOnBoard([word('A', 22), word('B', 22), word('C', 22), word('D', 22)].join(' ')),
+      'Expected 4 rows to fit'
+    ).toBe(true);
     expect(fitsOnBoard('Which office snack is the best?')).toBe(true);
   });
 
   it('is false for five lines', () => {
-    expect(fitsOnBoard([word('A', 22), word('B', 22), word('C', 22), word('D', 22), word('E', 22)].join(' ')), 'Expected 5 rows not to fit').toBe(false);
+    expect(
+      fitsOnBoard([word('A', 22), word('B', 22), word('C', 22), word('D', 22), word('E', 22)].join(' ')),
+      'Expected 5 rows not to fit'
+    ).toBe(false);
   });
 
   it('is false when a word is longer than 22 characters', () => {
@@ -67,10 +73,14 @@ describe('P-12 renderer and server wrap logic agree', () => {
   ];
 
   it.each(vectors.map((v) => [JSON.stringify(v), v]))('wraps %s identically', (_label, question) => {
-    expect(wrapForBoard(question), 'Expected the renderer copy to wrap exactly as server wrapForBoard does').toEqual(serverWrap(question));
+    expect(wrapForBoard(question), 'Expected the renderer copy to wrap exactly as server wrapForBoard does').toEqual(
+      serverWrap(question)
+    );
   });
 
   it.each(vectors.map((v) => [JSON.stringify(v), v]))('reports the same fit for %s', (_label, question) => {
-    expect(fitsOnBoard(question), 'Expected the preview warning to match the server fits flag').toBe(renderPollBoard(question).fits);
+    expect(fitsOnBoard(question), 'Expected the preview warning to match the server fits flag').toBe(
+      renderPollBoard(question).fits
+    );
   });
 });

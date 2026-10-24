@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
-import { getActiveProvider } from "../providers";
-import { useTrackDetails } from "./useTrackDetails";
-import type { PlaybackState } from "./usePlayback";
+import { useEffect, useRef } from 'react';
+import { getActiveProvider } from '../providers';
+import { useTrackDetails } from './useTrackDetails';
+import type { PlaybackState } from './usePlayback';
+import { getPlaybackPosition } from './playbackPosition';
 
 /**
  * Publishes the current track to the OS media overlay (Windows System Media
@@ -27,7 +28,7 @@ export function useMediaSession(playback: PlaybackState) {
   const { data: td } = useTrackDetails(
     playback.currentObjectId ?? undefined,
     playback.currentServiceId ?? undefined,
-    playback.currentAccountId ?? undefined,
+    playback.currentAccountId ?? undefined
   );
   const trackName = td?.trackName ?? playback.trackName;
   const artistName = td?.artist ?? playback.artistName;
@@ -36,7 +37,7 @@ export function useMediaSession(playback: PlaybackState) {
 
   const ensureSilentLoop = () => {
     if (audioCtxRef.current) return audioElRef.current;
-    if (typeof window === "undefined" || !("AudioContext" in window)) return null;
+    if (typeof window === 'undefined' || !('AudioContext' in window)) return null;
     const ctx = new AudioContext();
     const oscillator = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -57,7 +58,7 @@ export function useMediaSession(playback: PlaybackState) {
 
   // Keep the silent session alive/suspended in step with whether anything is "now playing".
   useEffect(() => {
-    if (!("mediaSession" in navigator)) return;
+    if (!('mediaSession' in navigator)) return;
 
     if (playback.isVisible) {
       const audio = ensureSilentLoop();
@@ -67,7 +68,7 @@ export function useMediaSession(playback: PlaybackState) {
       audioElRef.current?.pause();
       audioCtxRef.current?.suspend().catch(() => {});
       navigator.mediaSession.metadata = null;
-      navigator.mediaSession.playbackState = "none";
+      navigator.mediaSession.playbackState = 'none';
     }
   }, [playback.isVisible]);
 
@@ -78,16 +79,18 @@ export function useMediaSession(playback: PlaybackState) {
     // actually registers with GlobalSystemMediaTransportControlsSessionManager;
     // the navigator.mediaSession calls below only cover in-browser/Chromium
     // behavior and cannot reach the OS on their own (Electron limitation).
-    window.sonos?.updateNowPlayingSmtc?.({
-      title: trackName || "True Tunes",
-      artist: artistName || undefined,
-      album: albumName || undefined,
-      artworkUrl: artUrl || undefined,
-    }).catch(() => {});
+    window.sonos
+      ?.updateNowPlayingSmtc?.({
+        title: trackName || 'True Tunes',
+        artist: artistName || undefined,
+        album: albumName || undefined,
+        artworkUrl: artUrl || undefined,
+      })
+      .catch(() => {});
 
-    if (!("mediaSession" in navigator)) return;
+    if (!('mediaSession' in navigator)) return;
     navigator.mediaSession.metadata = new MediaMetadata({
-      title: trackName || "True Tunes",
+      title: trackName || 'True Tunes',
       artist: artistName || undefined,
       album: albumName || undefined,
       artwork: artUrl ? [{ src: artUrl }] : [],
@@ -96,55 +99,70 @@ export function useMediaSession(playback: PlaybackState) {
 
   // Playback state — drives the play/pause glyph in the OS overlay
   useEffect(() => {
-    if (!("mediaSession" in navigator) || !playback.isVisible) return;
-    navigator.mediaSession.playbackState = playback.isPlaying ? "playing" : "paused";
+    if (!('mediaSession' in navigator) || !playback.isVisible) return;
+    navigator.mediaSession.playbackState = playback.isPlaying ? 'playing' : 'paused';
   }, [playback.isVisible, playback.isPlaying]);
 
   // Position/duration — drives the scrub bar in the OS overlay
   useEffect(() => {
-    if (!("mediaSession" in navigator) || !playback.isVisible) return;
+    if (!('mediaSession' in navigator) || !playback.isVisible) return;
     if (!playback.durationMs || playback.durationMs <= 0) return;
     try {
       navigator.mediaSession.setPositionState({
         duration: playback.durationMs / 1000,
         playbackRate: playback.isPlaying ? 1 : 0,
-        position: Math.min(playback.positionMs, playback.durationMs) / 1000,
+        position: Math.min(getPlaybackPosition().positionMs, playback.durationMs) / 1000,
       });
     } catch {
       // Some OS/browser combinations reject transient states (e.g. mid-seek) — safe to ignore.
     }
     // Re-sync on track change / play-pause toggle / manual seek, not on every progress tick.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playback.isVisible, playback.currentObjectId, playback.isPlaying, playback.durationMs]);
 
   // Transport action handlers — wired once, always delegate to the active provider
   useEffect(() => {
-    if (!("mediaSession" in navigator)) return;
+    if (!('mediaSession' in navigator)) return;
 
     const provider = () => getActiveProvider();
-    navigator.mediaSession.setActionHandler("play", () => { provider().play().catch(() => {}); });
+    navigator.mediaSession.setActionHandler('play', () => {
+      provider()
+        .play()
+        .catch(() => {});
+    });
     // On Windows, OS pause commands come from Teams joining a call and from
     // Bluetooth headsets as well as the user, and would stop the shared
     // speakers for everyone — so they're swallowed (a no-op handler, not null,
     // which would let Chromium apply its default). See the SMTC handler in main.ts.
-    const ignoreOsPause = navigator.userAgent.includes("Windows");
-    navigator.mediaSession.setActionHandler("pause", () => {
+    const ignoreOsPause = navigator.userAgent.includes('Windows');
+    navigator.mediaSession.setActionHandler('pause', () => {
       if (ignoreOsPause) return;
-      provider().pause().catch(() => {});
+      provider()
+        .pause()
+        .catch(() => {});
     });
-    navigator.mediaSession.setActionHandler("previoustrack", () => { provider().skipPrev().catch(() => {}); });
-    navigator.mediaSession.setActionHandler("nexttrack", () => { provider().skipNext().catch(() => {}); });
-    navigator.mediaSession.setActionHandler("seekto", (details) => {
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+      provider()
+        .skipPrev()
+        .catch(() => {});
+    });
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+      provider()
+        .skipNext()
+        .catch(() => {});
+    });
+    navigator.mediaSession.setActionHandler('seekto', (details) => {
       if (details.seekTime == null) return;
-      provider().seek(Math.floor(details.seekTime * 1000)).catch(() => {});
+      provider()
+        .seek(Math.floor(details.seekTime * 1000))
+        .catch(() => {});
     });
 
     return () => {
-      navigator.mediaSession.setActionHandler("play", null);
-      navigator.mediaSession.setActionHandler("pause", null);
-      navigator.mediaSession.setActionHandler("previoustrack", null);
-      navigator.mediaSession.setActionHandler("nexttrack", null);
-      navigator.mediaSession.setActionHandler("seekto", null);
+      navigator.mediaSession.setActionHandler('play', null);
+      navigator.mediaSession.setActionHandler('pause', null);
+      navigator.mediaSession.setActionHandler('previoustrack', null);
+      navigator.mediaSession.setActionHandler('nexttrack', null);
+      navigator.mediaSession.setActionHandler('seekto', null);
     };
   }, []);
 

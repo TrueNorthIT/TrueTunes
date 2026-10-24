@@ -48,10 +48,27 @@
   border-radius: var(--r-art-card);
   background: var(--surface);
 }
-.queuedleText { display: flex; flex-direction: column; gap: 1px; }
-.queuedleLabel { font-size: var(--fs-small); font-weight: 600; color: var(--text-3); }
-.queuedleState { font-size: var(--fs-body); font-weight: 500; color: var(--text); font-variant-numeric: tabular-nums; }
-.queuedleChamp { font-size: var(--fs-small); color: var(--text-3); font-variant-numeric: tabular-nums; }
+.queuedleText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.queuedleLabel {
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--text-3);
+}
+.queuedleState {
+  font-size: var(--fs-body);
+  font-weight: 500;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.queuedleChamp {
+  font-size: var(--fs-small);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
 
 .pillBtn {
   display: inline-flex;
@@ -69,7 +86,9 @@
   white-space: nowrap;
   transition: opacity var(--dur-fast) var(--ease-fast);
 }
-.pillBtn:hover { opacity: 0.78; }
+.pillBtn:hover {
+  opacity: 0.78;
+}
 /* Secondary: loud office actions should not be the loudest thing on the page. */
 .ghostBtn {
   display: inline-flex;
@@ -87,12 +106,16 @@
   white-space: nowrap;
   transition: background var(--dur-fast) var(--ease-fast);
 }
-.ghostBtn:hover { background: rgba(var(--tint), 0.22); }
+.ghostBtn:hover {
+  background: rgba(var(--tint), 0.22);
+}
 
 /* ── Sections ────────────────────────────────────────────────────────────── */
 
 /* Page rhythm: the SectionCard owns its surface, the page owns the gap between bands. */
-.section { margin-bottom: 1.4em; }
+.section {
+  margin-bottom: 1.4em;
+}
 
 .faces {
   display: flex;
@@ -116,11 +139,17 @@
   transition: background var(--dur-fast) var(--ease-fast);
 }
 .face:hover,
-.face:focus-visible { background: var(--row-hover); }
+.face:focus-visible {
+  background: var(--row-hover);
+}
 .face:hover .faceAvatar,
-.face:focus-visible .faceAvatar { box-shadow: var(--face-ring); }
+.face:focus-visible .faceAvatar {
+  box-shadow: var(--face-ring);
+}
 .face:hover .faceName,
-.face:focus-visible .faceName { color: var(--text); }
+.face:focus-visible .faceName {
+  color: var(--text);
+}
 .faceAvatar {
   width: 1.9em;
   height: 1.9em;
@@ -135,8 +164,17 @@
   flex-shrink: 0;
   transition: box-shadow var(--dur-fast) var(--ease-fast);
 }
-.faceAvatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.faceName { font-size: var(--fs-label); color: var(--text-2); transition: color var(--dur-fast) var(--ease-fast); }
+.faceAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.faceName {
+  font-size: var(--fs-label);
+  color: var(--text-2);
+  transition: color var(--dur-fast) var(--ease-fast);
+}
 
 /* ── Picks ───────────────────────────────────────────────────────────────── */
 
@@ -146,7 +184,12 @@
   gap: 1.4em;
   align-items: stretch;
 }
-.picksCol { display: flex; flex-direction: column; gap: 0.9em; min-width: 0; }
+.picksCol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9em;
+  min-width: 0;
+}
 .list {
   list-style: none;
   margin: 0;
@@ -162,14 +205,22 @@
   align-items: start;
   margin-bottom: 1.4em; /* same gap as every other band */
 }
-.split .section { margin-bottom: 0; }
+.split .section {
+  margin-bottom: 0;
+}
 
 .jumpGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(8.5em, 1fr));
   gap: 1.2em 1em;
 }
-.jumpArtPh { display: grid; place-items: center; width: 100%; height: 100%; color: var(--text-3); }
+.jumpArtPh {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--text-3);
+}
 
 /* ── Clickable title and artist (Now playing) ────────────────────────────── */
 
@@ -187,7 +238,10 @@
 .titleBtn:hover,
 .titleBtn:focus-visible,
 .artistBtn:hover,
-.artistBtn:focus-visible { color: var(--on-art); text-decoration: underline; }
+.artistBtn:focus-visible {
+  color: var(--on-art);
+  text-decoration: underline;
+}
 
 /* ── People: recent albums per person ────────────────────────────────────── */
 
@@ -207,7 +261,12 @@
 
 /* ── For You tiles ───────────────────────────────────────────────────────── */
 
-.artTile { position: relative; width: 11.5em; height: 11.5em; flex-shrink: 0; }
+.artTile {
+  position: relative;
+  width: 11.5em;
+  height: 11.5em;
+  flex-shrink: 0;
+}
 .artFill {
   position: absolute;
   inset: 0;
@@ -221,7 +280,10 @@
     filter var(--dur-fast) var(--ease-fast);
 }
 .artTile:hover .artFill,
-.artTile:focus-within .artFill { transform: scale(1.03); filter: brightness(0.88); }
+.artTile:focus-within .artFill {
+  transform: scale(1.03);
+  filter: brightness(0.88);
+}
 .tileMain {
   position: relative;
   display: block;
@@ -235,7 +297,9 @@
   font-family: inherit;
   text-align: left;
 }
-button.tileMain { cursor: pointer; }
+button.tileMain {
+  cursor: pointer;
+}
 /* Tile captions sit on art that often carries its own text, so the scrim is deeper than on cards. */
 .tileMain::after {
   content: '';
@@ -244,8 +308,16 @@ button.tileMain { cursor: pointer; }
   background: var(--scrim-deep);
   pointer-events: none;
 }
-.tileMain:focus-visible { outline-offset: -3px; } /* the tile clips an outer ring */
-.artPh { position: absolute; inset: 0; display: grid; place-items: center; color: var(--text-3); }
+.tileMain:focus-visible {
+  outline-offset: -3px;
+} /* the tile clips an outer ring */
+.artPh {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+}
 .tileName {
   position: absolute;
   left: 0.9em;
@@ -270,7 +342,9 @@ button.tileMain { cursor: pointer; }
 }
 .artTile:hover .tileAdd,
 .artTile:focus-within .tileAdd,
-.tileAdd:focus-visible { opacity: 1; }
+.tileAdd:focus-visible {
+  opacity: 1;
+}
 .tileSkel {
   width: 11.5em;
   height: 11.5em;
@@ -287,7 +361,9 @@ button.tileMain { cursor: pointer; }
   gap: 1.4em;
   margin-bottom: 1.4em;
 }
-.bandSolo { grid-template-columns: minmax(0, 1fr); }
+.bandSolo {
+  grid-template-columns: minmax(0, 1fr);
+}
 
 .nowCard {
   position: relative;
@@ -298,8 +374,7 @@ button.tileMain { cursor: pointer; }
   padding: 1.4em;
   border-radius: var(--r-card);
   background:
-    radial-gradient(120% 150% at 0% 0%, rgba(var(--wash, 150, 158, 255), 0.3), transparent 65%),
-    var(--surface-hi);
+    radial-gradient(120% 150% at 0% 0%, rgba(var(--wash, 150, 158, 255), 0.3), transparent 65%), var(--surface-hi);
 }
 .nowArt {
   flex: none;
@@ -317,9 +392,17 @@ button.tileMain { cursor: pointer; }
     transform var(--dur-fast) var(--ease-fast),
     box-shadow var(--dur-fast) var(--ease-fast);
 }
-.nowArt img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.nowArt img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .nowArt:hover,
-.nowArt:focus-visible { transform: scale(1.02); box-shadow: var(--hero-lift-shadow); }
+.nowArt:focus-visible {
+  transform: scale(1.02);
+  box-shadow: var(--hero-lift-shadow);
+}
 
 .nowInfo {
   display: flex;
@@ -345,18 +428,47 @@ button.tileMain { cursor: pointer; }
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.nowTitle .titleBtn { color: inherit; }
-.nowMeta { display: flex; align-items: baseline; gap: 0.4em; min-width: 0; white-space: nowrap; font-size: var(--fs-body); color: var(--text-2); }
-.metaArtist { flex: 0 1 auto; max-width: 60%; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.metaAlbum { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.metaDot { flex: none; }
+.nowTitle .titleBtn {
+  color: inherit;
+}
+.nowMeta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4em;
+  min-width: 0;
+  white-space: nowrap;
+  font-size: var(--fs-body);
+  color: var(--text-2);
+}
+.metaArtist {
+  flex: 0 1 auto;
+  max-width: 60%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.metaAlbum {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.metaDot {
+  flex: none;
+}
 /* Only the text rows at the top reserve room for the queuer chip; the bar and description run full width. */
 .nowLabel,
 .nowTitle,
-.nowMeta { padding-right: 9em; }
-.nowMeta .artistBtn { color: inherit; }
+.nowMeta {
+  padding-right: 9em;
+}
+.nowMeta .artistBtn {
+  color: inherit;
+}
 .nowMeta .artistBtn:hover,
-.nowMeta .artistBtn:focus-visible { color: var(--on-art); }
+.nowMeta .artistBtn:focus-visible {
+  color: var(--on-art);
+}
 
 .queuerChip {
   position: absolute;
@@ -365,13 +477,46 @@ button.tileMain { cursor: pointer; }
   z-index: 1;
 }
 
-.nowProgress { display: flex; align-items: center; gap: 0.8em; margin-top: 0.3em; }
-.nowTime { font-size: var(--fs-small); color: var(--text-3); font-variant-numeric: tabular-nums; min-width: 2.6em; }
-.nowTime:last-child { text-align: right; }
-.nowBar { flex: 1; height: 0.32em; border-radius: var(--r-art-card); background: var(--track); overflow: hidden; }
-.nowFill { width: 100%; height: 100%; border-radius: inherit; background: var(--title-rest); transform-origin: left center; transition: transform 0.4s linear; }
+.nowProgress {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  margin-top: 0.3em;
+}
+.nowTime {
+  font-size: var(--fs-small);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  min-width: 2.6em;
+}
+.nowTime:last-child {
+  text-align: right;
+}
+.nowBar {
+  flex: 1;
+  height: 0.32em;
+  border-radius: var(--r-art-card);
+  background: var(--track);
+  overflow: hidden;
+}
+.nowFill {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--title-rest);
+  transform-origin: left center;
+  transition: transform 0.4s linear;
+}
 
-.about { display: flex; flex-direction: column; align-items: flex-start; gap: 0; width: 100%; max-width: 100ch; margin-top: 0.2em; }
+.about {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  width: 100%;
+  max-width: 100ch;
+  margin-top: 0.2em;
+}
 .aboutText {
   font-size: var(--fs-prose);
   line-height: 1.55;
@@ -395,7 +540,9 @@ button.tileMain { cursor: pointer; }
   overflow: hidden;
   transition: background var(--dur-fast) var(--ease-fast);
 }
-.lyricsBox:hover { background: var(--surface-hi); }
+.lyricsBox:hover {
+  background: var(--surface-hi);
+}
 .lyricsOpen {
   position: absolute;
   top: 0.8em;
@@ -415,7 +562,10 @@ button.tileMain { cursor: pointer; }
     color var(--dur-fast) var(--ease-fast);
 }
 .lyricsOpen:hover,
-.lyricsOpen:focus-visible { background: var(--bg-2); color: var(--text); }
+.lyricsOpen:focus-visible {
+  background: var(--bg-2);
+  color: var(--text);
+}
 .lyricsScroll {
   /* Out of flow so the lyrics never set the band height; the now playing card does. */
   position: absolute;
@@ -427,7 +577,10 @@ button.tileMain { cursor: pointer; }
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 22%, #000 70%, transparent 100%);
   mask-image: linear-gradient(to bottom, transparent 0, #000 22%, #000 70%, transparent 100%);
 }
-.lyricsPad { padding: 8em 0 16em; max-width: 46em; }
+.lyricsPad {
+  padding: 8em 0 16em;
+  max-width: 46em;
+}
 /* One fixed line box: the active line scales up inside it (transform only), so nothing reflows.
    Lines wrap at 1/1.2 of the width so the scaled line still fits. */
 .lyricLine {
@@ -438,58 +591,122 @@ button.tileMain { cursor: pointer; }
   line-height: 1.35;
   color: var(--text);
   transform-origin: left center;
-  transition: transform 0.3s, opacity 0.3s;
+  transition:
+    transform 0.3s,
+    opacity 0.3s;
 }
-.lyricActive { transform: scale(1.2); color: var(--on-art); }
-.lyricPlain { opacity: 0.7; }
+.lyricActive {
+  transform: scale(1.2);
+  color: var(--on-art);
+}
+.lyricPlain {
+  opacity: 0.7;
+}
 
 /* Loading: skeleton lines (global .skeleton) at the real line pitch, so the box never changes size. */
-.lyricsSkel { padding-top: 3em; max-width: 46em; }
+.lyricsSkel {
+  padding-top: 3em;
+  max-width: 46em;
+}
 .lyricSkel,
 .aboutSkel {
   display: block;
   border-radius: var(--r-xs);
 }
-.lyricSkel { height: 1.1em; margin: 0.65em 0; }
-.aboutSkel { height: 0.95em; margin: 0.3em 0; }
-.aboutSkel:nth-child(2) { animation-delay: 0.15s; }
-.aboutSkel:nth-child(3) { animation-delay: 0.3s; }
-.lyricSkel:nth-child(2) { animation-delay: 0.1s; }
-.lyricSkel:nth-child(3) { animation-delay: 0.2s; }
-.lyricSkel:nth-child(4) { animation-delay: 0.3s; }
-.lyricSkel:nth-child(5) { animation-delay: 0.4s; }
+.lyricSkel {
+  height: 1.1em;
+  margin: 0.65em 0;
+}
+.aboutSkel {
+  height: 0.95em;
+  margin: 0.3em 0;
+}
+.aboutSkel:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.aboutSkel:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.lyricSkel:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.lyricSkel:nth-child(3) {
+  animation-delay: 0.2s;
+}
+.lyricSkel:nth-child(4) {
+  animation-delay: 0.3s;
+}
+.lyricSkel:nth-child(5) {
+  animation-delay: 0.4s;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .nowArt,
   .nowFill,
   .lyricLine,
-  .lyricsBox { transition: none; }
-  .artFill { transition: none; }
+  .lyricsBox {
+    transition: none;
+  }
+  .artFill {
+    transition: none;
+  }
   .artTile:hover .artFill,
-  .artTile:focus-within .artFill { transform: none; }
+  .artTile:focus-within .artFill {
+    transform: none;
+  }
   .nowArt:hover,
-  .nowArt:focus-visible { transform: none; }
+  .nowArt:focus-visible {
+    transform: none;
+  }
 }
 
 /* ── Narrower: stack ─────────────────────────────────────────────────────── */
 
 /* Keep three picks columns but squarer, so Trending starts in the first screen. */
 @container (max-width: 1100px) {
-  .picksLayout { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr); gap: 1.1em; }
-  .split { grid-template-columns: minmax(0, 1fr); }
-  .hero { margin-bottom: 1.4em; }
-  .band { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
-  .nowArt { width: 12.5em; height: 12.5em; }
-  .nowCard { gap: 1.2em; padding: 1.1em; }
-  .queuerChip { position: static; align-self: flex-start; }
+  .picksLayout {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1.1em;
+  }
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hero {
+    margin-bottom: 1.4em;
+  }
+  .band {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  }
+  .nowArt {
+    width: 12.5em;
+    height: 12.5em;
+  }
+  .nowCard {
+    gap: 1.2em;
+    padding: 1.1em;
+  }
+  .queuerChip {
+    position: static;
+    align-self: flex-start;
+  }
   .nowLabel,
   .nowTitle,
-  .nowMeta { padding-right: 0; }
+  .nowMeta {
+    padding-right: 0;
+  }
 }
 
 @container (max-width: 700px) {
-  .picksLayout { grid-template-columns: 1fr 1fr; }
-  .picksLead { grid-column: 1 / -1; }
-  .band { grid-template-columns: minmax(0, 1fr); }
-  .lyricsBox { height: 16em; }
+  .picksLayout {
+    grid-template-columns: 1fr 1fr;
+  }
+  .picksLead {
+    grid-column: 1 / -1;
+  }
+  .band {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lyricsBox {
+    height: 16em;
+  }
 }

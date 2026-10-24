@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import { primaryArtistName } from '../lib/homeData';
+import { STALE } from '../lib/queryDefaults';
 
 export interface LyricLine {
   timeMs: number;
@@ -57,7 +58,9 @@ async function getLyrics(params: URLSearchParams): Promise<LyricsResult | null> 
 
 /** Best search hit: synced first, then closest duration (within 3s when the duration is known). */
 async function searchLyrics(track: string, artist: string, durationMs: number): Promise<LyricsResult | null> {
-  const res = await fetch(`https://lrclib.net/api/search?${new URLSearchParams({ track_name: track, artist_name: artist })}`);
+  const res = await fetch(
+    `https://lrclib.net/api/search?${new URLSearchParams({ track_name: track, artist_name: artist })}`
+  );
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`LRCLIB ${res.status}`);
   const hits = ((await res.json()) as (LyricsResult & { duration?: number })[]).filter(hasLyrics);
@@ -72,16 +75,21 @@ async function searchLyrics(track: string, artist: string, durationMs: number): 
  * Album and duration are hints only, not part of the key: the queue, the player and track
  * details spell one song differently, and each distinct key used to cache its own 404.
  */
+export const lyricsKeys = {
+  track: (trackName: string | null | undefined, artist: string) =>
+    ['lyrics', normTrack(trackName), artist.toLowerCase()] as const,
+};
+
 export function lyricsQueryOptions(
   trackName: string | null | undefined,
   artistName: string | null | undefined,
   albumName: string | null | undefined,
-  durationMs: number,
+  durationMs: number
 ) {
   const track = trackName ?? '';
   const artist = primaryArtistName(artistName ?? '');
-  return {
-    queryKey: ['lyrics', normTrack(trackName), artist.toLowerCase()] as const,
+  return queryOptions({
+    queryKey: lyricsKeys.track(trackName, artist),
     queryFn: async (): Promise<LyricsData> => {
       const p = new URLSearchParams({ track_name: track, artist_name: artist });
       if (durationMs) p.set('duration', String(Math.round(durationMs / 1000)));
@@ -93,21 +101,20 @@ export function lyricsQueryOptions(
       }
       return (await getLyrics(p)) ?? (await searchLyrics(track, artist, durationMs));
     },
-    staleTime: Infinity,
+    staleTime: STALE.forever,
     // LRCLIB has brief outages (503) and rate-limits (429). Retry those and network errors with
     // backoff so one blip doesn't hide a song's lyrics; other 4xx won't change, so don't retry.
-    retry: (failures: number, err: Error) =>
-      failures < 3 && !/LRCLIB 4(?!29)\d\d/.test(err.message),
+    retry: (failures: number, err: Error) => failures < 3 && !/LRCLIB 4(?!29)\d\d/.test(err.message),
     retryDelay: (attempt: number) => Math.min(1000 * 2 ** attempt, 8000),
     enabled: !!normTrack(trackName) && !!artist,
-  };
+  });
 }
 
 export function useLyrics(
   trackName: string | null | undefined,
   artistName: string | null | undefined,
   albumName: string | null | undefined,
-  durationMs: number,
+  durationMs: number
 ) {
   const { data, isLoading } = useQuery(lyricsQueryOptions(trackName, artistName, albumName, durationMs));
 

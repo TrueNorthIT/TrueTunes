@@ -1,10 +1,11 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { callerName } from '../lib/caller';
 import { withOCC } from '../lib/withOCC';
 import { getPlaylistContainer } from '../lib/getContainer';
 
 export async function playlistReorderHandler(
   request: HttpRequest,
-  context: InvocationContext,
+  context: InvocationContext
 ): Promise<HttpResponseInit> {
   const id = request.params['id'];
   if (!id) {
@@ -18,7 +19,10 @@ export async function playlistReorderHandler(
     return { status: 400, jsonBody: { error: 'Invalid JSON body' } };
   }
 
-  const { userName, fromIndex, toIndex } = body;
+  const { fromIndex, toIndex } = body;
+  const caller = await callerName(request, context, body.userName);
+  if ('response' in caller) return caller.response;
+  const userName = caller.name;
   if (!userName || fromIndex === undefined || toIndex === undefined) {
     return { status: 400, jsonBody: { error: 'userName, fromIndex, toIndex required' } };
   }
@@ -44,14 +48,13 @@ export async function playlistReorderHandler(
         doc.tracks = tracks;
         doc.updatedAt = Date.now();
       },
-      (doc, etag) => container.item(id, id).replace(doc, { accessCondition: { type: 'IfMatch', condition: etag } }),
+      (doc, etag) => container.item(id, id).replace(doc, { accessCondition: { type: 'IfMatch', condition: etag } })
     );
 
     context.log(`[playlist-reorder] id=${id} userName=${userName} from=${fromIndex} to=${toIndex}`);
 
     return {
       jsonBody: resource,
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     const code = (err as { statusCode?: number }).statusCode;

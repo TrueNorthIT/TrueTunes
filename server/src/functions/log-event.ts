@@ -1,4 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { callerName } from '../lib/caller';
 import { CosmosClient } from '@azure/cosmos';
 
 interface QueueEvent {
@@ -17,10 +18,7 @@ interface QueueEvent {
   timestamp: number;
 }
 
-export async function logEventHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
+export async function logEventHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
   const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
   const ctrName = process.env['COSMOS_CONTAINER'] ?? 'events';
@@ -39,6 +37,10 @@ export async function logEventHandler(
   if (!body?.user || !body?.uri || body?.type !== 'queued') {
     return { status: 400, jsonBody: { error: 'Missing required fields' } };
   }
+
+  const caller = await callerName(request, context, body.user);
+  if ('response' in caller) return caller.response;
+  body.user = caller.name;
 
   try {
     const client = new CosmosClient(connStr);
@@ -64,7 +66,7 @@ export async function logEventHandler(
     });
 
     context.log(`[log-event] ${id} user=${body.user} track=${body.trackName}`);
-    return { status: 201, jsonBody: { id }, headers: { 'Access-Control-Allow-Origin': '*' } };
+    return { status: 201, jsonBody: { id } };
   } catch (err) {
     context.error('[log-event] Cosmos write failed:', err);
     return { status: 500, jsonBody: { error: String(err) } };

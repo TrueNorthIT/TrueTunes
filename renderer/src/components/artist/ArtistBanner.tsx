@@ -36,7 +36,17 @@ interface Props {
  * name over a scrim; without one the cover hangs as a print on the right over its colour. Either way the hero
  * fades into the page with no edge. While the photo is being checked, the hero shows neither.
  */
-export function ArtistBanner({ name, altNames, portrait, portraitSrc, wash, officeCount, radio, shuffle, onOpen }: Props) {
+export function ArtistBanner({
+  name,
+  altNames,
+  portrait,
+  portraitSrc,
+  wash,
+  officeCount,
+  radio,
+  shuffle,
+  onOpen,
+}: Props) {
   const isPhoto = portrait?.kind === 'photo';
   const photoSrc = isPhoto ? portraitSrc : null;
 
@@ -52,17 +62,18 @@ export function ArtistBanner({ name, altNames, portrait, portraitSrc, wash, offi
     return () => ro.disconnect();
   }, []);
   // Hold the photo back until the focal point is known, but never longer than FOCUS_WAIT_MS.
-  const [waited, setWaited] = useState(false);
+  const [waitedFor, setWaitedFor] = useState<string | null>(null);
+  const waited = photoSrc !== null && waitedFor === photoSrc;
   useEffect(() => {
-    setWaited(false);
     if (!photoSrc) return;
-    const t = setTimeout(() => setWaited(true), FOCUS_WAIT_MS);
+    const t = setTimeout(() => setWaitedFor(photoSrc), FOCUS_WAIT_MS);
     return () => clearTimeout(t);
   }, [photoSrc]);
   const shown = waited || !focus.isPending;
-  const position = focus.data && heroAspect
-    ? `center ${objectPositionY(focus.data.y, focus.data.aspect, heroAspect, focus.data.anchor)}%`
-    : undefined; // the stylesheet's centre 25%
+  const position =
+    focus.data && heroAspect
+      ? `center ${objectPositionY(focus.data.y, focus.data.aspect, heroAspect, focus.data.anchor)}%`
+      : undefined; // the stylesheet's centre 25%
 
   return (
     <header ref={heroRef} className={styles.hero} style={wash ? ({ '--wash': wash } as CSSProperties) : undefined}>

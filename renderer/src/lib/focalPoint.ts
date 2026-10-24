@@ -46,7 +46,7 @@ export function faceFocusY(faces: DetectedFace[]): number | null {
   const lead = sorted[0];
   if (!lead || !(area(lead) > 0)) return null;
   const main = sorted
-    .filter(f => area(f) >= area(lead) / 4 && Math.abs(eye(f) - eye(lead)) <= GROUP_SPAN)
+    .filter((f) => area(f) >= area(lead) / 4 && Math.abs(eye(f) - eye(lead)) <= GROUP_SPAN)
     .slice(0, 5);
   const eyes = main.map(eye);
   const top = Math.min(...eyes);
@@ -80,10 +80,14 @@ export function detailFocusY(rgba: ArrayLike<number>, w: number, h: number, band
   }
   const span = Math.max(1, Math.round(band * h));
   let sum = rows.slice(0, span).reduce((a, b) => a + b, 0);
-  let best = sum, bestStart = 0;
+  let best = sum,
+    bestStart = 0;
   for (let s = 1; s + span <= h; s++) {
     sum += rows[s + span - 1] - rows[s - 1];
-    if (sum > best) { best = sum; bestStart = s; }
+    if (sum > best) {
+      best = sum;
+      bestStart = s;
+    }
   }
   if (best <= 0) return null;
   return (bestStart + span / 2) / h;

@@ -12,6 +12,7 @@ import { withArtworkSize } from '../../lib/artworkUrl';
 import { usePhotoState } from '../../lib/photoPlaceholder';
 import { usePageArt } from '../../lib/pageArt';
 import { heroPortrait, creditNames } from '../../lib/artistHero';
+import { createDragGhost } from '../../lib/dragHelpers';
 import { officeCountFor } from '../../lib/artistOffice';
 import { resolveArtistParams, getItemArt, albumItem } from '../../lib/itemHelpers';
 import { TopSongRow } from './TopSongRow';
@@ -27,14 +28,26 @@ import { useReleaseTrackCounts } from '../../hooks/useReleaseTrackCounts';
 import { useReleaseYears } from '../../hooks/useReleaseYears';
 import { useReleaseTracklists } from '../../hooks/useReleaseTracklists';
 import { filterShelves } from '../../lib/shelfSearch';
-import { groupReleases, latestRelease, releaseKey, sortShelvesByYear, type ReleaseGroup } from '../../lib/releaseShelves';
+import {
+  groupReleases,
+  latestRelease,
+  releaseKey,
+  sortShelvesByYear,
+  type ReleaseGroup,
+} from '../../lib/releaseShelves';
 import type { AlbumTrack } from '../../hooks/useAlbumBrowse';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/ArtistPanel.module.css';
+import { useQueueActions } from '../../hooks/useQueueActions';
 
 // "Man Alive (Deluxe)" -> "Man Alive"
 function baseName(title = ''): string {
-  return title.replace(/\s*[([][^)\]]*[)\]]\s*$/, '').replace(/ - .*$/, '').trim() || title;
+  return (
+    title
+      .replace(/\s*[([][^)\]]*[)\]]\s*$/, '')
+      .replace(/ - .*$/, '')
+      .trim() || title
+  );
 }
 
 function domToText(node: GeniusDomNode): string {
@@ -45,11 +58,9 @@ function domToText(node: GeniusDomNode): string {
 function extractBio(description: GeniusDomNode | null): string {
   if (!description || typeof description === 'string') return '';
   const root = description as { tag: string; children?: GeniusDomNode[] };
-  const paras = (root.children ?? []).filter(
-    c => typeof c !== 'string' && (c as { tag: string }).tag === 'p',
-  );
+  const paras = (root.children ?? []).filter((c) => typeof c !== 'string' && (c as { tag: string }).tag === 'p');
   return paras
-    .map(p => domToText(p as GeniusDomNode).trim())
+    .map((p) => domToText(p as GeniusDomNode).trim())
     .filter(Boolean)
     .join('\n\n');
 }
@@ -58,37 +69,39 @@ function extractBio(description: GeniusDomNode | null): string {
 const SNAP_ROW = { scrollSnapType: 'x mandatory', scrollPaddingInline: '4px' } as const;
 
 interface Props {
-  onAddToQueue: (item: SonosItem) => void;
   currentTrackName: string;
   isPlaybackActive: boolean;
 }
 
-export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }: Props) {
+export function ArtistPanel({ currentTrackName, isPlaybackActive }: Props) {
+  const { addToQueue: onAddToQueue } = useQueueActions();
   const { state } = useLocation();
   const item = (state as { item?: SonosItem } | null)?.item;
   const openItem = useOpenItem();
   const navigate = useNavigate();
   const { resolveAndOpen } = useResolveAndOpen();
 
-  const { artistId, serviceId, accountId, defaults, name: fallbackName } =
-    item
-      ? resolveArtistParams(item)
-      : { artistId: undefined, serviceId: undefined, accountId: undefined, defaults: undefined, name: undefined };
+  const {
+    artistId,
+    serviceId,
+    accountId,
+    defaults,
+    name: fallbackName,
+  } = item
+    ? resolveArtistParams(item)
+    : { artistId: undefined, serviceId: undefined, accountId: undefined, defaults: undefined, name: undefined };
 
   const { data, isLoading } = useArtistBrowse(
     artistId,
     serviceId,
     accountId,
     defaults,
-    fallbackName ?? (item?.title as string | undefined) ?? (item?.name as string | undefined),
+    fallbackName ?? (item?.title as string | undefined) ?? (item?.name as string | undefined)
   );
 
   const name = data?.name ?? fallbackName ?? item?.title ?? item?.name ?? '';
   const imageUrl =
-    data?.imageUrl ??
-    (item?.images as Record<string, string> | undefined)?.['tile1x1'] ??
-    item?.imageUrl ??
-    null;
+    data?.imageUrl ?? (item?.images as Record<string, string> | undefined)?.['tile1x1'] ?? item?.imageUrl ?? null;
 
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const lastSelected = useRef<number | null>(null);
@@ -100,13 +113,13 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
     if (e.shiftKey && lastSelected.current !== null) {
       const lo = Math.min(lastSelected.current, index);
       const hi = Math.max(lastSelected.current, index);
-      setSelected(prev => {
+      setSelected((prev) => {
         const next = new Set(prev);
         for (let i = lo; i <= hi; i++) next.add(i);
         return next;
       });
     } else if (e.ctrlKey || e.metaKey) {
-      setSelected(prev => {
+      setSelected((prev) => {
         const next = new Set(prev);
         if (next.has(index)) next.delete(index);
         else next.add(index);
@@ -126,20 +139,13 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
 
   function handleDragStart(index: number, e: React.DragEvent) {
     const toMove = selected.has(index) ? [...selected].sort((a, b) => a - b) : [index];
-    if (!selected.has(index)) { setSelected(new Set([index])); lastSelected.current = index; }
+    if (!selected.has(index)) {
+      setSelected(new Set([index]));
+      lastSelected.current = index;
+    }
     e.dataTransfer.effectAllowed = 'copy';
-    e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(toMove.map(i => visibleSongs[i].raw)));
-    const ghost = document.createElement('div');
-    Object.assign(ghost.style, {
-      position: 'fixed', top: '-100px', left: '0',
-      background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
-      color: '#fff', padding: '5px 12px', borderRadius: '6px',
-      fontSize: '12px', fontWeight: '600', pointerEvents: 'none', whiteSpace: 'nowrap',
-    });
-    ghost.textContent = toMove.length > 1 ? `${toMove.length} tracks` : visibleSongs[index].title;
-    document.body.appendChild(ghost);
-    e.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, 20);
-    setTimeout(() => ghost.remove(), 0);
+    e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(toMove.map((i) => visibleSongs[i].raw)));
+    createDragGhost(toMove.length > 1 ? `${toMove.length} tracks` : visibleSongs[index].title, e.dataTransfer);
   }
 
   const releases = data?.albums ?? [];
@@ -148,7 +154,12 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
   const sortedShelves = sortShelvesByYear(groupReleases(releases, counts), years);
   const latestAlbum = latestRelease(sortedShelves, years) ?? releases[0] ?? null;
   const latestId = latestAlbum?.resource?.id;
-  const { data: latestData } = useAlbumBrowse(latestId?.objectId, latestId?.serviceId, latestId?.accountId, latestAlbum?.resource?.defaults);
+  const { data: latestData } = useAlbumBrowse(
+    latestId?.objectId,
+    latestId?.serviceId,
+    latestId?.accountId,
+    latestAlbum?.resource?.defaults
+  );
 
   const { data: stats } = useStats('alltime', undefined, 100);
   const officeCount = officeCountFor(stats?.topArtists, artistId, name);
@@ -162,22 +173,32 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
     photoState,
     photoUrl,
     latestArt && withArtworkSize(latestArt, 600),
-    visibleSongs.map(s => s.artUrl && withArtworkSize(s.artUrl, 600)),
+    visibleSongs.map((s) => s.artUrl && withArtworkSize(s.artUrl, 600))
   );
   const printSrc = useImage(portrait?.kind === 'print' ? portrait.url : null);
   const portraitSrc = portrait?.kind === 'photo' ? photoSrc : printSrc;
   const wash = useDominantColor(portraitSrc, { setGlobal: true });
   usePageArt(portraitSrc);
   // These open the playlist pages: navigation only, nothing is queued from the hero.
-  const radio = data?.playlists.find(p => /radio/i.test(p.title ?? ''));
-  const shuffle = data?.playlists.find(p => /shuffle/i.test(p.title ?? ''));
+  const radio = data?.playlists.find((p) => /radio/i.test(p.title ?? ''));
+  const shuffle = data?.playlists.find((p) => /shuffle/i.test(p.title ?? ''));
 
   function openTrackAlbum(track: AlbumTrack) {
     const { albumId, albumName, id } = track;
     if (albumId) {
-      openItem(albumItem(albumName ?? track.title, { objectId: albumId, serviceId: id.serviceId ?? '', accountId: id.accountId ?? '' }));
+      openItem(
+        albumItem(albumName ?? track.title, {
+          objectId: albumId,
+          serviceId: id.serviceId ?? '',
+          accountId: id.accountId ?? '',
+        })
+      );
     } else {
-      void resolveAndOpen(albumName || track.title, 'album', { artist: name, serviceId: id.serviceId, accountId: id.accountId });
+      void resolveAndOpen(albumName || track.title, 'album', {
+        artist: name,
+        serviceId: id.serviceId,
+        accountId: id.accountId,
+      });
     }
   }
   const openArtistByName = (artist: string) => void resolveAndOpen(artist, 'artist');
@@ -189,8 +210,8 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
   const searching = query.trim() !== '';
   // expanded state is keyed by the unfiltered group's primary, so filtering never collapses a group
   const groupKeyOf = new Map<string, string>();
-  [...sortedShelves.albums, ...sortedShelves.singles, ...sortedShelves.other].forEach(g =>
-    g.versions.forEach(v => groupKeyOf.set(releaseKey(v), releaseKey(g.primary))),
+  [...sortedShelves.albums, ...sortedShelves.singles, ...sortedShelves.other].forEach((g) =>
+    g.versions.forEach((v) => groupKeyOf.set(releaseKey(v), releaseKey(g.primary)))
   );
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   // Expanding unmounts the focused stack and collapsing unmounts the focused ✕, so hand focus on explicitly.
@@ -209,7 +230,7 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
   }, [expanded, stackEls, closeEls]);
   const toggleGroup = (key: string) => {
     pendingFocus.current = { key, to: expanded.has(key) ? 'stack' : 'close' };
-    setExpanded(prev => {
+    setExpanded((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
@@ -226,7 +247,7 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
           key={key}
           album={group.primary}
           onOpen={openItem}
-          onAdd={onAddToQueue}
+          onAdd={(item) => void onAddToQueue(item)}
           year={years.get(primaryKey)}
           artistName={name}
           trackHits={trackHits.get(primaryKey)}
@@ -257,7 +278,7 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
         closeRef={refFor(closeEls, key)}
         artistName={name}
         onOpen={openItem}
-        onAdd={onAddToQueue}
+        onAdd={(item) => void onAddToQueue(item)}
         years={years}
         trackHits={trackHits}
         searching={searching}
@@ -265,9 +286,9 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
     );
   }
 
-  const genius          = data?.genius ?? null;
-  const blurb           = genius ? extractBio(genius.description) : '';
-  const altNames        = genius?.alternateNames?.filter(Boolean).slice(0, 4) ?? [];
+  const genius = data?.genius ?? null;
+  const blurb = genius ? extractBio(genius.description) : '';
+  const altNames = genius?.alternateNames?.filter(Boolean).slice(0, 4) ?? [];
   if (!item) return null;
 
   const isEmpty = !isLoading && visibleSongs.length === 0 && releases.length === 0;
@@ -295,14 +316,18 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
               : 'Nothing is filed under this name yet.'}
           </p>
           <div className={styles.emptyActions}>
-            {credits.length > 1
-              ? credits.slice(0, 6).map(n => <PillButton key={n} onClick={() => openArtistByName(n)}>{n}</PillButton>)
-              : (
-                <PillButton onClick={() => navigate(`/search?q=${encodeURIComponent(name)}`)}>
-                  <Search size={16} aria-hidden="true" />
-                  Search for {name}
+            {credits.length > 1 ? (
+              credits.slice(0, 6).map((n) => (
+                <PillButton key={n} onClick={() => openArtistByName(n)}>
+                  {n}
                 </PillButton>
-              )}
+              ))
+            ) : (
+              <PillButton onClick={() => void navigate(`/search?q=${encodeURIComponent(name)}`)}>
+                <Search size={16} aria-hidden="true" />
+                Search for {name}
+              </PillButton>
+            )}
           </div>
         </div>
       ) : (
@@ -311,7 +336,9 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
             <>
               <div className={`skeleton ${styles.skeletonTile}`} />
               <div className={styles.songsSkeleton}>
-                {Array.from({ length: 5 }).map((_, i) => <div key={i} className={`skeleton ${styles.skeletonRow}`} />)}
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className={`skeleton ${styles.skeletonRow}`} />
+                ))}
               </div>
             </>
           ) : (
@@ -320,7 +347,7 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
                 <LatestReleaseCard
                   album={latestAlbum}
                   onOpen={openItem}
-                  onAdd={onAddToQueue}
+                  onAdd={(item) => void onAddToQueue(item)}
                   artistName={name}
                   year={years.get(releaseKey(latestAlbum))}
                   songCount={latestData?.totalTracks}
@@ -339,7 +366,7 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
                           isSelected={selected.has(i)}
                           isCurrentTrack={track.title === currentTrackName}
                           isPlaybackActive={isPlaybackActive}
-                          onAdd={onAddToQueue}
+                          onAdd={(item) => void onAddToQueue(item)}
                           onClick={handleTrackClick}
                           onDragStart={handleDragStart}
                           onOpenAlbum={openTrackAlbum}
@@ -357,47 +384,56 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
       )}
 
       {/* Shelves sit on the page (Carousel rows on the 28px gutter), not in cards. */}
-      {releases.length > 1 && (countsLoading ? (
-        <div className={`${styles.band} ${styles.shelfSkeleton}`}>
-          {Array.from({ length: 6 }).map((_, i) => <div key={i} className={`skeleton ${styles.skeletonCard}`} />)}
-        </div>
-      ) : (
-        <>
-          {(() => {
-            const defs = [
-              ['Albums', 'albums'],
-              ['Singles & EPs', 'singles'],
-              ['Other versions', 'other'],
-            ] as const;
-            // the search box lives on the first shelf that has releases before filtering, so it never disappears
-            const boxShelf = defs.find(([, k]) => sortedShelves[k].length > 0)?.[1];
-            return defs.map(([title, k]) => {
-              const groups = shelves[k];
-              const hasBox = k === boxShelf;
-              if (groups.length === 0 && !hasBox) return null;
-              return (
-                <Carousel
-                  key={title}
-                  title={title}
-                  className={`${styles.band} ${styles.shelf}`}
-                  search={hasBox ? {
-                    value: query,
-                    onChange: setQuery,
-                    placeholder: 'Search releases and tracks',
-                    onFocus: () => setTracksEnabled(true),
-                    status: searching && tracksLoading ? 'searching tracks…' : undefined,
-                  } : undefined}
-                >
-                  {groups.map(renderGroup)}
-                </Carousel>
-              );
-            });
-          })()}
-          {searching && !shelves.albums.length && !shelves.singles.length && !shelves.other.length && (
-            <div className={`${styles.band} ${styles.noMatch}`}>{tracksLoading ? 'Still searching tracks…' : <>No releases match “{query.trim()}”</>}</div>
-          )}
-        </>
-      ))}
+      {releases.length > 1 &&
+        (countsLoading ? (
+          <div className={`${styles.band} ${styles.shelfSkeleton}`}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className={`skeleton ${styles.skeletonCard}`} />
+            ))}
+          </div>
+        ) : (
+          <>
+            {(() => {
+              const defs = [
+                ['Albums', 'albums'],
+                ['Singles & EPs', 'singles'],
+                ['Other versions', 'other'],
+              ] as const;
+              // the search box lives on the first shelf that has releases before filtering, so it never disappears
+              const boxShelf = defs.find(([, k]) => sortedShelves[k].length > 0)?.[1];
+              return defs.map(([title, k]) => {
+                const groups = shelves[k];
+                const hasBox = k === boxShelf;
+                if (groups.length === 0 && !hasBox) return null;
+                return (
+                  <Carousel
+                    key={title}
+                    title={title}
+                    className={`${styles.band} ${styles.shelf}`}
+                    search={
+                      hasBox
+                        ? {
+                            value: query,
+                            onChange: setQuery,
+                            placeholder: 'Search releases and tracks',
+                            onFocus: () => setTracksEnabled(true),
+                            status: searching && tracksLoading ? 'searching tracks…' : undefined,
+                          }
+                        : undefined
+                    }
+                  >
+                    {groups.map(renderGroup)}
+                  </Carousel>
+                );
+              });
+            })()}
+            {searching && !shelves.albums.length && !shelves.singles.length && !shelves.other.length && (
+              <div className={`${styles.band} ${styles.noMatch}`}>
+                {tracksLoading ? 'Still searching tracks…' : <>No releases match “{query.trim()}”</>}
+              </div>
+            )}
+          </>
+        ))}
 
       <ArtistAbout name={name} blurb={blurb} instagram={genius?.instagram} twitter={genius?.twitter} />
     </div>

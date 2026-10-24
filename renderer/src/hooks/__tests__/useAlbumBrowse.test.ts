@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { albumQueryOptions } from '../useAlbumBrowse';
+import { runQueryFn } from '../../test/queryFn';
 
 const mockFetch = vi.mocked(window.sonos.fetch);
 
@@ -39,7 +40,7 @@ function makeAlbumResponse(overrides: Record<string, unknown> = {}) {
 describe('albumQueryOptions — basic parsing', () => {
   it('parses album title, artist, and artUrl from response', async () => {
     mockFetch.mockResolvedValueOnce({ data: makeAlbumResponse() });
-    const result = await albumQueryOptions('alb-1', 'gm', 'acc', undefined).queryFn();
+    const result = await runQueryFn(albumQueryOptions('alb-1', 'gm', 'acc', undefined));
     expect(result.title).toBe('Abbey Road');
     expect(result.artist).toBe('The Beatles');
     expect(result.artUrl).toBe('http://art/album.jpg');
@@ -47,14 +48,14 @@ describe('albumQueryOptions — basic parsing', () => {
 
   it('returns the correct track count', async () => {
     mockFetch.mockResolvedValueOnce({ data: makeAlbumResponse() });
-    const result = await albumQueryOptions('alb-1', 'gm', 'acc', undefined).queryFn();
+    const result = await runQueryFn(albumQueryOptions('alb-1', 'gm', 'acc', undefined));
     expect(result.tracks).toHaveLength(2);
     expect(result.totalTracks).toBe(2);
   });
 
   it('maps track title, ordinal, and duration', async () => {
     mockFetch.mockResolvedValueOnce({ data: makeAlbumResponse() });
-    const result = await albumQueryOptions('alb-1', 'gm', 'acc', undefined).queryFn();
+    const result = await runQueryFn(albumQueryOptions('alb-1', 'gm', 'acc', undefined));
     expect(result.tracks[0].title).toBe('Come Together');
     expect(result.tracks[0].ordinal).toBe(1);
     expect(result.tracks[0].durationSeconds).toBe(180);
@@ -62,7 +63,7 @@ describe('albumQueryOptions — basic parsing', () => {
 
   it('maps track artists array', async () => {
     mockFetch.mockResolvedValueOnce({ data: makeAlbumResponse() });
-    const result = await albumQueryOptions('alb-1', 'gm', 'acc', undefined).queryFn();
+    const result = await runQueryFn(albumQueryOptions('alb-1', 'gm', 'acc', undefined));
     expect(result.tracks[0].artists).toEqual(['The Beatles']);
   });
 
@@ -72,7 +73,7 @@ describe('albumQueryOptions — basic parsing', () => {
     mockFetch.mockResolvedValueOnce({
       data: makeAlbumResponse({ tracks: { items: [explicit], total: 1 } }),
     });
-    const result = await albumQueryOptions('alb-1', 'gm', 'acc', undefined).queryFn();
+    const result = await runQueryFn(albumQueryOptions('alb-1', 'gm', 'acc', undefined));
     expect(result.tracks[0].explicit).toBe(true);
   });
 });
@@ -87,14 +88,14 @@ describe('artistItem construction', () => {
         resource: { id: { objectId: 'alb-1', serviceId: 'gm', accountId: 'acc' }, defaults },
       }),
     });
-    const result = await albumQueryOptions('alb-1', 'gm', 'acc', undefined).queryFn();
+    const result = await runQueryFn(albumQueryOptions('alb-1', 'gm', 'acc', undefined));
     expect(result.artistItem).not.toBeNull();
     expect(result.artistItem?.resource?.id?.objectId).toBe('art-beatles');
   });
 
   it('returns null artistItem when defaults has no artistId', async () => {
     mockFetch.mockResolvedValueOnce({ data: makeAlbumResponse() });
-    const result = await albumQueryOptions('alb-1', 'gm', 'acc', undefined).queryFn();
+    const result = await runQueryFn(albumQueryOptions('alb-1', 'gm', 'acc', undefined));
     expect(result.artistItem).toBeNull();
   });
 });
@@ -114,7 +115,7 @@ describe('pagination', () => {
         data: { tracks: { items: page2Tracks, total: 51 } },
       });
 
-    const result = await albumQueryOptions('alb-1', 'gm', 'acc', undefined).queryFn();
+    const result = await runQueryFn(albumQueryOptions('alb-1', 'gm', 'acc', undefined));
     expect(result.tracks).toHaveLength(51);
     expect(result.tracks[50].title).toBe('Track 51');
     expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -126,7 +127,7 @@ describe('pagination', () => {
       data: makeAlbumResponse({ tracks: { items: tracks, total: 3 } }),
     });
 
-    await albumQueryOptions('alb-1', 'gm', 'acc', undefined).queryFn();
+    await runQueryFn(albumQueryOptions('alb-1', 'gm', 'acc', undefined));
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
@@ -140,7 +141,7 @@ describe('pagination', () => {
       })
       .mockResolvedValueOnce({ data: { tracks: { items: [], total: 10 } } });
 
-    const result = await albumQueryOptions('alb-1', 'gm', 'acc', undefined).queryFn();
+    const result = await runQueryFn(albumQueryOptions('alb-1', 'gm', 'acc', undefined));
     expect(result.tracks).toHaveLength(3);
   });
 
@@ -153,7 +154,7 @@ describe('pagination', () => {
       })
       .mockResolvedValueOnce({ data: null, error: 'server error' });
 
-    const result = await albumQueryOptions('alb-1', 'gm', 'acc', undefined).queryFn();
+    const result = await runQueryFn(albumQueryOptions('alb-1', 'gm', 'acc', undefined));
     expect(result.tracks).toHaveLength(3);
   });
 });
@@ -163,6 +164,6 @@ describe('pagination', () => {
 describe('error handling', () => {
   it('throws when the first fetch returns an error', async () => {
     mockFetch.mockResolvedValueOnce({ data: null, error: 'not found' });
-    await expect(albumQueryOptions('alb-1', 'gm', 'acc', undefined).queryFn()).rejects.toThrow('not found');
+    await expect(runQueryFn(albumQueryOptions('alb-1', 'gm', 'acc', undefined))).rejects.toThrow('not found');
   });
 });

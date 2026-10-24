@@ -12,7 +12,9 @@ const meta = {
     title: 'Remove this playlist?',
     onClose: fn(),
     size: 'sm',
-    children: <p className={styles.note}>“Friday afternoon” and its 14 tracks will be gone for everyone who joined it.</p>,
+    children: (
+      <p className={styles.note}>“Friday afternoon” and its 14 tracks will be gone for everyone who joined it.</p>
+    ),
     actions: (
       <>
         <PillButton>Cancel</PillButton>
@@ -34,8 +36,14 @@ export const Large: Story = {
     headContent: <span className={styles.note}>v1.0.50</span>,
     children: (
       <div className={styles.stack}>
-        {['Albums split the page 70/30', 'Colours and shadows come from tokens', 'Seek bar shared by the three players'].map((t) => (
-          <p key={t} className={styles.note}>{t}</p>
+        {[
+          'Albums split the page 70/30',
+          'Colours and shadows come from tokens',
+          'Seek bar shared by the three players',
+        ].map((t) => (
+          <p key={t} className={styles.note}>
+            {t}
+          </p>
         ))}
       </div>
     ),
@@ -58,7 +66,9 @@ export const Form: Story = {
     actions: (
       <>
         <PillButton>Cancel</PillButton>
-        <PillButton variant="primary" type="submit">Create</PillButton>
+        <PillButton variant="primary" type="submit">
+          Create
+        </PillButton>
       </>
     ),
   },
@@ -72,7 +82,9 @@ export const FormWithError: Story = {
           <span className={styles.label}>Name</span>
           <input className={styles.input} type="text" defaultValue="Friday afternoon" />
         </label>
-        <p className={styles.error} role="alert">You already have a playlist with that name.</p>
+        <p className={styles.error} role="alert">
+          You already have a playlist with that name.
+        </p>
       </div>
     ),
   },

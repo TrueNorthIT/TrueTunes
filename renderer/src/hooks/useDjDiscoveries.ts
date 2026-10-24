@@ -2,6 +2,7 @@ import { useQueries } from '@tanstack/react-query';
 import { artistQueryOptions } from './useArtistBrowse';
 import type { AlbumTrack } from './useAlbumBrowse';
 import { groupUnheard, interleave, type UnheardOptions } from '../lib/discover';
+import { STALE } from '../lib/queryDefaults';
 
 export interface DjDiscovery {
   track: AlbumTrack;
@@ -48,7 +49,7 @@ const MAX_PER_ARTIST = 3;
 export function useDjDiscoveries(
   artists: DjArtist[] | undefined,
   enabled = true,
-  { queued, round }: Pick<UnheardOptions, 'queued' | 'round'> = {},
+  { queued, round }: Pick<UnheardOptions, 'queued' | 'round'> = {}
 ) {
   const acts = (artists ?? []).filter((a) => a.artistId && a.serviceId && a.accountId);
 
@@ -56,17 +57,21 @@ export function useDjDiscoveries(
     queries: acts.map((act) => ({
       ...artistQueryOptions(act.artistId, act.serviceId, act.accountId, undefined, act.artist),
       enabled,
-      staleTime: 30 * 60_000,
+      staleTime: STALE.halfHour,
     })),
   });
 
   const isLoading = enabled && results.some((r) => r.isLoading);
 
-  const groups: DjActDiscoveries[] = groupUnheard(acts, results.map((r) => r.data?.topSongs), {
-    perAct: MAX_PER_ARTIST,
-    queued,
-    round,
-  }).map((g) => ({
+  const groups: DjActDiscoveries[] = groupUnheard(
+    acts,
+    results.map((r) => r.data?.topSongs),
+    {
+      perAct: MAX_PER_ARTIST,
+      queued,
+      round,
+    }
+  ).map((g) => ({
     ...g,
     imageUrl: results[acts.indexOf(g.act)]?.data?.imageUrl ?? g.act.imageUrl ?? null,
   }));

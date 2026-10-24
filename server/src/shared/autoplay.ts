@@ -135,8 +135,7 @@ function leadArtist(artist: string): string {
   return (splitArtists(artist)[0] ?? artist).trim().toLowerCase();
 }
 
-const artistOfKey = (key: string | null | undefined): string =>
-  key ? leadArtist(key.split('||')[1] ?? '') : '';
+const artistOfKey = (key: string | null | undefined): string => (key ? leadArtist(key.split('||')[1] ?? '') : '');
 
 export function emptySession(id: string): DjSession {
   return {
@@ -158,11 +157,7 @@ export function emptySession(id: string): DjSession {
  * Decide what happens this round. Pure — the caller persists `session` and
  * relays the rest. `now` is injected so the lease behaviour is testable.
  */
-export function decideAutoplay(
-  session: DjSession,
-  req: AutoplayRequest,
-  now: number = Date.now(),
-): AutoplayDecision {
+export function decideAutoplay(session: DjSession, req: AutoplayRequest, now: number = Date.now()): AutoplayDecision {
   const next: DjSession = {
     ...session,
     upcoming: [...session.upcoming],
@@ -216,8 +211,7 @@ export function decideAutoplay(
     // The playhead has reached or gone past it, so it's had its turn.
     const played = fillerIndex >= 0 && nowIndex >= fillerIndex;
     const removed = fillerIndex === -1 && next.enqueuedSeen;
-    const neverLanded =
-      fillerIndex === -1 && !next.enqueuedSeen && now - next.enqueuedAt > ENQUEUE_TIMEOUT_MS;
+    const neverLanded = fillerIndex === -1 && !next.enqueuedSeen && now - next.enqueuedAt > ENQUEUE_TIMEOUT_MS;
 
     if (played || removed) {
       // It belongs to the normal queue now, not the preview. Remember it so it
@@ -247,18 +241,12 @@ export function decideAutoplay(
   next.upcoming = next.upcoming.filter((t) => {
     if (t.uri === next.enqueuedUri) return true;
     const key = trackKey(t.trackName, t.artist);
-    return (
-      !inQueue.has(t.uri) && t.uri !== req.nowPlayingUri && !queuedKeys.has(key) && !used.has(key)
-    );
+    return !inQueue.has(t.uri) && t.uri !== req.nowPlayingUri && !queuedKeys.has(key) && !used.has(key);
   });
 
   // Top up, skipping anything already queued, previewed, or playing right now —
   // re-suggesting the track currently coming out of the speaker looks broken.
-  const seen = new Set([
-    ...next.upcoming.map((t) => t.uri),
-    ...req.queueUris,
-    ...next.recentlyPlayed,
-  ]);
+  const seen = new Set([...next.upcoming.map((t) => t.uri), ...req.queueUris, ...next.recentlyPlayed]);
   if (req.nowPlayingUri) seen.add(req.nowPlayingUri);
 
   // Same guard by name, so a re-keyed queue entry isn't offered as if it were
@@ -289,8 +277,7 @@ export function decideAutoplay(
     // "Dry" means nothing waits AFTER the playhead. Counting queue length would
     // be wrong — every track played today is still sitting in the queue behind
     // the pointer, so the queue is never empty once music has been on.
-    const waitingAfterPlayhead =
-      nowIndex >= 0 ? req.queueUris.length - 1 - nowIndex : req.queueUris.length;
+    const waitingAfterPlayhead = nowIndex >= 0 ? req.queueUris.length - 1 - nowIndex : req.queueUris.length;
     if (head && waitingAfterPlayhead === 0) {
       // A preview entry stored before the queue changed can now share an act with
       // the track it would follow; bring forward one that doesn't.

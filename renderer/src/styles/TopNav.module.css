@@ -56,7 +56,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color var(--dur-fast) var(--ease-fast), background var(--dur-fast) var(--ease-fast);
+  transition:
+    color var(--dur-fast) var(--ease-fast),
+    background var(--dur-fast) var(--ease-fast);
 }
 .historyBtn:hover:not(:disabled) {
   color: var(--text);
@@ -67,9 +69,6 @@
   cursor: default;
 }
 
-/* ── Main nav pill ── */
-.nav {}
-
 .inner {
   height: 100%;
   display: flex;
@@ -79,7 +78,9 @@
 }
 
 /* ── Icon buttons ── */
+/* position: relative anchors the small dot under the active icon. */
 .iconBtn {
+  position: relative;
   background: none;
   border: none;
   color: var(--text-3);
@@ -89,7 +90,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color var(--dur-fast) var(--ease-fast), background var(--dur-fast) var(--ease-fast);
+  transition:
+    color var(--dur-fast) var(--ease-fast),
+    background var(--dur-fast) var(--ease-fast);
   flex-shrink: 0;
 }
 .iconBtn:hover {
@@ -97,7 +100,6 @@
   background: var(--row-hover);
 }
 /* Where you are: lit icon on a tint chip, plus a small dot under it so it never relies on colour alone. */
-.iconBtn { position: relative; }
 .iconBtn.active {
   color: var(--on-art);
   background: rgba(var(--tint), 0.16);
@@ -152,8 +154,12 @@
   outline: none;
   padding: 4px 0;
 }
-.searchInput::placeholder { color: var(--text-3); }
-.searchInput:disabled { opacity: 0.35; }
+.searchInput::placeholder {
+  color: var(--text-3);
+}
+.searchInput:disabled {
+  opacity: 0.35;
+}
 
 .clearBtn {
   background: none;
@@ -167,10 +173,14 @@
   transition: color var(--dur-fast) var(--ease-fast);
   flex-shrink: 0;
 }
-.clearBtn:hover { color: var(--text); }
+.clearBtn:hover {
+  color: var(--text);
+}
 
 /* ── Group selector ── */
-.groupWrap { position: relative; }
+.groupWrap {
+  position: relative;
+}
 
 .groupPopover {
   position: absolute;
@@ -206,14 +216,24 @@
   padding: 7px 10px;
   border-radius: var(--r-sm);
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast);
+  transition:
+    background var(--dur-fast) var(--ease-fast),
+    color var(--dur-fast) var(--ease-fast);
   white-space: nowrap;
 }
-.groupOption:hover { background: var(--bg-2); color: var(--text); }
-.groupOption.groupOptionActive { color: var(--text); font-weight: 600; }
+.groupOption:hover {
+  background: var(--bg-2);
+  color: var(--text);
+}
+.groupOption.groupOptionActive {
+  color: var(--text);
+  font-weight: 600;
+}
 
 /* ── Profile chip + popover ── */
-.profileWrap { position: relative; }
+.profileWrap {
+  position: relative;
+}
 
 .profileChip {
   display: flex;
@@ -228,9 +248,13 @@
   flex-shrink: 0;
   max-width: 140px;
 }
-.profileChip:hover { background: var(--row-hover); }
+.profileChip:hover {
+  background: var(--row-hover);
+}
 .profileChipOpen,
-.profileChipActive { background: rgba(var(--tint), 0.16); }
+.profileChipActive {
+  background: rgba(var(--tint), 0.16);
+}
 
 .profileAvatar {
   width: 22px;
@@ -285,7 +309,9 @@
 }
 
 /* Sign-in popover button: full width, label centred. */
-.signInBtn { justify-content: center; }
+.signInBtn {
+  justify-content: center;
+}
 
 .versionRow {
   display: flex;
@@ -299,4 +325,3 @@
   font-size: var(--fs-px);
   color: var(--text-3);
 }
-

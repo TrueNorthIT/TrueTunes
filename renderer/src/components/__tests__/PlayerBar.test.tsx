@@ -7,6 +7,7 @@ import type { PlaybackState } from '../../hooks/usePlayback';
 
 // ─── module mocks ────────────────────────────────────────────────────────────
 
+import { setPlaybackPosition } from '../../hooks/playbackPosition';
 vi.mock('react-router-dom', () => ({
   useNavigate: () => vi.fn(),
   useLocation: () => ({ pathname: '/' }),
@@ -31,9 +32,6 @@ function makePlayback(overrides: Partial<PlaybackState> = {}): PlaybackState {
     artistName: 'Test Artist',
     artUrl: null,
     stateIcon: '▶',
-    timeLabel: '1:00 / 3:00',
-    progressPct: 33,
-    positionMs: 60000,
     durationMs: 180000,
     isPlaying: true,
     shuffle: false,
@@ -60,9 +58,6 @@ function makeNowPlaying(overrides: Partial<ReturnType<typeof useNowPlaying>> = {
     albumId: null,
     cachedArt: null,
     dominantColor: null,
-    elapsedLabel: '1:00',
-    durationLabel: '3:00',
-    progressPct: 33,
     durationMs: 180000,
     isPlaying: true,
     isVisible: true,
@@ -100,6 +95,13 @@ function setup(
 }
 
 beforeEach(() => {
+  setPlaybackPosition({
+    trackEndsAtMs: 0,
+    positionMs: 60000,
+    durationMs: 180000,
+    progressPct: 33,
+    timeLabel: '1:00 / 3:00',
+  });
   vi.clearAllMocks();
   vi.mocked(window.sonos.fetch).mockResolvedValue({ data: null });
   vi.mocked(window.sonos.refreshPlayback).mockResolvedValue(undefined);
@@ -117,17 +119,11 @@ beforeEach(() => {
 
 describe('PlayerBar — visibility', () => {
   it('renders nothing visible when isVisible is false', () => {
-    vi.mocked(useNowPlaying).mockReturnValue(
-      makeNowPlaying({ isVisible: false }) as ReturnType<typeof useNowPlaying>
-    );
+    vi.mocked(useNowPlaying).mockReturnValue(makeNowPlaying({ isVisible: false }) as ReturnType<typeof useNowPlaying>);
     const qc = new QueryClient();
     const { container } = render(
       <QueryClientProvider client={qc}>
-        <PlayerBar
-          isAuthed={true}
-          playback={makePlayback()}
-          onShuffle={vi.fn()}
-        />
+        <PlayerBar isAuthed={true} playback={makePlayback()} onShuffle={vi.fn()} />
       </QueryClientProvider>
     );
     expect(container.querySelector('[class*="bar"]')).toBeNull();
@@ -210,17 +206,13 @@ describe('PlayerBar — shuffle', () => {
   it('clicking Shuffle calls setPlayModes with toggled value', async () => {
     const { user } = setup({ shuffle: false });
     await user.click(screen.getByTitle('Shuffle'));
-    await waitFor(() =>
-      expect(window.sonos.setPlayModes).toHaveBeenCalledWith({ shuffle: true })
-    );
+    await waitFor(() => expect(window.sonos.setPlayModes).toHaveBeenCalledWith({ shuffle: true }));
   });
 
   it('toggling shuffle off calls setPlayModes with false', async () => {
     const { user } = setup({ shuffle: true });
     await user.click(screen.getByTitle('Shuffle'));
-    await waitFor(() =>
-      expect(window.sonos.setPlayModes).toHaveBeenCalledWith({ shuffle: false })
-    );
+    await waitFor(() => expect(window.sonos.setPlayModes).toHaveBeenCalledWith({ shuffle: false }));
   });
 
   it('shuffle button calls onShuffle prop', async () => {
@@ -237,25 +229,19 @@ describe('PlayerBar — repeat', () => {
   it('clicking Repeat when off sets to all', async () => {
     const { user } = setup({ repeat: 'none' });
     await user.click(screen.getByTitle('Repeat off'));
-    await waitFor(() =>
-      expect(window.sonos.setPlayModes).toHaveBeenCalledWith({ repeat: true, repeatOne: false })
-    );
+    await waitFor(() => expect(window.sonos.setPlayModes).toHaveBeenCalledWith({ repeat: true, repeatOne: false }));
   });
 
   it('clicking Repeat when all sets to one', async () => {
     const { user } = setup({ repeat: 'all' }, { repeat: 'all' });
     await user.click(screen.getByTitle('Repeat all'));
-    await waitFor(() =>
-      expect(window.sonos.setPlayModes).toHaveBeenCalledWith({ repeat: false, repeatOne: true })
-    );
+    await waitFor(() => expect(window.sonos.setPlayModes).toHaveBeenCalledWith({ repeat: false, repeatOne: true }));
   });
 
   it('clicking Repeat when one sets to none', async () => {
     const { user } = setup({ repeat: 'one' }, { repeat: 'one' });
     await user.click(screen.getByTitle('Repeat one'));
-    await waitFor(() =>
-      expect(window.sonos.setPlayModes).toHaveBeenCalledWith({ repeat: false, repeatOne: false })
-    );
+    await waitFor(() => expect(window.sonos.setPlayModes).toHaveBeenCalledWith({ repeat: false, repeatOne: false }));
   });
 });
 
@@ -272,9 +258,7 @@ describe('PlayerBar — seek bar', () => {
     act(() => {
       bar.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 100 }));
     });
-    await waitFor(() =>
-      expect(window.sonos.seek).toHaveBeenCalledWith(100000)
-    );
+    await waitFor(() => expect(window.sonos.seek).toHaveBeenCalledWith(100000));
     expect(window.sonos.refreshPlayback).toHaveBeenCalled();
   });
 
@@ -287,9 +271,7 @@ describe('PlayerBar — seek bar', () => {
     act(() => {
       bar.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 50 }));
     });
-    await waitFor(() =>
-      expect(window.sonos.seek).toHaveBeenCalledWith(0)
-    );
+    await waitFor(() => expect(window.sonos.seek).toHaveBeenCalledWith(0));
   });
 
   it('does not seek when durationMs is 0', async () => {

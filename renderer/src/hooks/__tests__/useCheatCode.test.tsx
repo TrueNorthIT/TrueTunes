@@ -9,7 +9,18 @@ import { fireEvent, renderHook } from '@testing-library/react';
 import { useCheatCode } from '../useCheatCode';
 
 // Literal copy of the agreed sequence so these tests do not depend on the constant under test.
-const KONAMI_CODE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+const KONAMI_CODE = [
+  'ArrowUp',
+  'ArrowUp',
+  'ArrowDown',
+  'ArrowDown',
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowLeft',
+  'ArrowRight',
+  'b',
+  'a',
+];
 
 function press(keys: readonly string[], target: Element = document.body) {
   for (const key of keys) fireEvent.keyDown(target, { key });
@@ -45,7 +56,19 @@ describe('P-8 useCheatCode', () => {
     const onMatch = vi.fn();
     renderHook(() => useCheatCode(KONAMI_CODE, onMatch));
     // Up Up Down, a stray "x", then the remainder: must NOT complete.
-    press(['ArrowUp', 'ArrowUp', 'ArrowDown', 'x', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a']);
+    press([
+      'ArrowUp',
+      'ArrowUp',
+      'ArrowDown',
+      'x',
+      'ArrowDown',
+      'ArrowLeft',
+      'ArrowRight',
+      'ArrowLeft',
+      'ArrowRight',
+      'b',
+      'a',
+    ]);
     expect(onMatch, 'Expected the stray key to reset progress so the code does not complete').not.toHaveBeenCalled();
     press(KONAMI_CODE);
     expect(onMatch, 'Expected a clean run after the reset to trigger').toHaveBeenCalledTimes(1);
@@ -85,7 +108,10 @@ describe('P-8 useCheatCode', () => {
     press(KONAMI_CODE.slice(0, 4));
     press(['x', 'y'], input);
     press(KONAMI_CODE.slice(4));
-    expect(onMatch, 'Expected typing in an input mid-sequence to be ignored, not to reset the sequence').toHaveBeenCalledTimes(1);
+    expect(
+      onMatch,
+      'Expected typing in an input mid-sequence to be ignored, not to reset the sequence'
+    ).toHaveBeenCalledTimes(1);
   });
 
   it('supports a custom sequence', () => {

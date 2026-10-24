@@ -127,9 +127,7 @@ export function createDjAutoplayService(deps: DjAutoplayDeps): DjAutoplayService
 
     // An 'album' row carries the album name as its trackName, so it would look
     // like a hand-queued song. The album's tracks are logged as their own rows.
-    const used = new Set(
-      today.filter((e) => e.eventType !== 'album').map((e) => trackKey(e.trackName, e.artist)),
-    );
+    const used = new Set(today.filter((e) => e.eventType !== 'album').map((e) => trackKey(e.trackName, e.artist)));
     for (const key of await readUsedTrackKeys(deps.ledger, now)) used.add(key);
 
     // Same room inference the DJ panel uses when the caller doesn't say who's in.
@@ -138,11 +136,7 @@ export function createDjAutoplayService(deps: DjAutoplayDeps): DjAutoplayService
     if (users.length === 0) {
       const activeSince = now - ACTIVE_MS;
       const recent = dayStart > activeSince ? events : today;
-      users = [
-        ...new Set(
-          recent.filter((e) => (e.timestamp ?? 0) >= activeSince && e.userId).map((e) => e.userId),
-        ),
-      ];
+      users = [...new Set(recent.filter((e) => (e.timestamp ?? 0) >= activeSince && e.userId).map((e) => e.userId))];
     }
 
     const base = { users, excludeUris: queueUris, excludeTrackKeys: used };
@@ -178,7 +172,7 @@ export function createDjAutoplayService(deps: DjAutoplayDeps): DjAutoplayService
           usedKeys: used,
           ...(body.setEnabled !== undefined ? { setEnabled: body.setEnabled } : {}),
         },
-        now,
+        now
       );
 
       // Reserve BEFORE the session write and before telling anyone to enqueue.

@@ -1,4 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { callerName } from '../lib/caller';
 import { CosmosClient } from '@azure/cosmos';
 import { londonDate } from './generate-game';
 import { sendScoreAnnouncement, sendLeaderboard } from '../shared/vestaboard';
@@ -30,10 +31,7 @@ function scoreIdFor(gameId: string, userName: string): string {
   return `${gameId}|${userName}`;
 }
 
-export async function submitScoreHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
+export async function submitScoreHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
   const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
   const gamesCtrName = process.env['COSMOS_GAMES_CONTAINER'] ?? 'games';
@@ -50,7 +48,9 @@ export async function submitScoreHandler(
     return { status: 400, jsonBody: { error: 'Invalid JSON body' } };
   }
 
-  const userName = (body.userName ?? '').trim();
+  const caller = await callerName(request, context, (body.userName ?? '').trim());
+  if ('response' in caller) return caller.response;
+  const userName = caller.name;
   if (!body.gameId || !userName || !body.guesses) {
     return { status: 400, jsonBody: { error: 'Missing required fields' } };
   }
@@ -72,7 +72,6 @@ export async function submitScoreHandler(
         return {
           status: 409,
           jsonBody: { error: 'Already submitted', existing },
-          headers: { 'Access-Control-Allow-Origin': '*' },
         };
       }
     } catch (err: unknown) {
@@ -124,8 +123,7 @@ export async function submitScoreHandler(
           try {
             const { resources: latest } = await scores.items
               .query<{ userName: string; total: number }>({
-                query:
-                  'SELECT c.userName, c.total FROM c WHERE c.gameId = @gameId',
+                query: 'SELECT c.userName, c.total FROM c WHERE c.gameId = @gameId',
                 parameters: [{ name: '@gameId', value: body.gameId }],
               })
               .fetchAll();
@@ -141,7 +139,6 @@ export async function submitScoreHandler(
     return {
       status: 201,
       jsonBody: scoreDoc,
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[submit-score] failed:', err);

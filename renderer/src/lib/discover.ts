@@ -29,7 +29,7 @@ export interface UnheardOptions {
 export function groupUnheard<T extends { title: string }>(
   acts: DjArtist[],
   songs: (T[] | undefined)[],
-  { perAct, queued = [], round = 0 }: UnheardOptions,
+  { perAct, queued = [], round = 0 }: UnheardOptions
 ): ActGroup<T>[] {
   const taken = new Set<string>();
   return acts.flatMap((act, i) => {
@@ -87,7 +87,7 @@ export type RoomBasis = 'chosen' | 'presence' | 'queueing' | 'everyone';
  */
 export function splitRoom<U extends { userId: string }>(
   users: U[],
-  { selected, inOffice, listeners }: { selected: string[]; inOffice: string[]; listeners: string[] },
+  { selected, inOffice, listeners }: { selected: string[]; inOffice: string[]; listeners: string[] }
 ): { present: U[]; away: U[]; basis: RoomBasis } {
   const [ids, basis]: [string[], RoomBasis] = selected.length
     ? [selected, 'chosen']

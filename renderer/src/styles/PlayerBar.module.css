@@ -18,9 +18,7 @@
 }
 /* The playing artwork's colour, layered over the material and never replacing it. */
 .bar.tinted {
-  background:
-    linear-gradient(105deg, rgba(var(--bar-tint), 0.18) 0%, rgba(var(--tint), 0.03) 60%),
-    var(--material-bg);
+  background: linear-gradient(105deg, rgba(var(--bar-tint), 0.18) 0%, rgba(var(--tint), 0.03) 60%), var(--material-bg);
 }
 
 .inner {
@@ -71,7 +69,7 @@
   align-items: center;
   justify-content: center;
   color: var(--text-3);
-  font-size: 16px;
+  font-size: var(--fs-icon-sm);
 }
 
 /* ── Track info ── */
@@ -157,7 +155,9 @@ button.trackArtist:hover {
   line-height: 0;
   transition: box-shadow var(--dur-fast) var(--ease-fast);
 }
-.queuer:hover { box-shadow: var(--face-ring); }
+.queuer:hover {
+  box-shadow: var(--face-ring);
+}
 .queuerAvatar {
   width: 26px;
   height: 26px;
@@ -171,7 +171,12 @@ button.trackArtist:hover {
   overflow: hidden;
   line-height: 1;
 }
-.queuerAvatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.queuerAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 
 /* ── Progress ── */
 .progressSection {
@@ -312,7 +317,7 @@ button.trackArtist:hover {
 
 /* Invisible bridge so hover stays continuous between icon and popover */
 .volPopover::after {
-  content: "";
+  content: '';
   position: absolute;
   left: 0;
   right: 0;
@@ -391,12 +396,18 @@ button.trackArtist:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .scrolling,
-  .volPopover { animation: none; }
+  .volPopover {
+    animation: none;
+  }
   .art,
   .progressTrack,
   .progressFill,
   .ctrl,
-  .playBtn { transition: none; }
+  .playBtn {
+    transition: none;
+  }
   .progressBar:hover .progressTrack,
-  .playBtn:hover:not(:disabled) { transform: none; }
+  .playBtn:hover:not(:disabled) {
+    transform: none;
+  }
 }

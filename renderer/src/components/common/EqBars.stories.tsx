@@ -11,4 +11,13 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
-export const Coloured: Story = { decorators: [(Story) => <div style={{ color: 'var(--on-art)' }}><Story /></div>] };
+export const Coloured: Story = {
+  decorators: [
+    (Story) => (
+      <div style={{ color: 'var(--on-art)' }}>
+        <Story />
+      </div>
+    ),
+  ],
+};
+export const Paused: Story = { args: { paused: true } };

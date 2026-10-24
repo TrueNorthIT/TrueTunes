@@ -1,9 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { activeLyricIndex, lyricElapsedMs, useLyrics } from './useLyrics';
+import { usePlaybackPosition } from './playbackPosition';
 
 /** Unsynced lyrics as display lines: trimmed, blank lines dropped. */
 export function plainLyricLines(plain: string | null | undefined): string[] {
-  return (plain ?? '').split('\n').map((l) => l.trim()).filter(Boolean);
+  return (plain ?? '')
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
 }
 
 /** scrollTop that puts the line's centre `at` (0 to 1) of the way down a box `boxHeight` tall. */
@@ -20,10 +24,12 @@ export function useLiveLyrics(np: {
   displayArtist: string | null | undefined;
   albumName: string | null | undefined;
   durationMs: number;
-  progressPct: number;
 }) {
   const lyr = useLyrics(np.displayTrack, np.displayArtist, np.albumName, np.durationMs);
-  const activeLine = activeLyricIndex(lyr.lines, lyricElapsedMs(np.progressPct, np.durationMs));
+  // Selects the line index, so the caller re-renders when the line changes, not every second.
+  const activeLine = usePlaybackPosition((p) =>
+    activeLyricIndex(lyr.lines, lyricElapsedMs(p.progressPct, np.durationMs))
+  );
   const plain = lyr.lines.length ? [] : plainLyricLines(lyr.plainLyrics);
   const hasLyrics = lyr.lines.length > 0 || plain.length > 0;
   return { ...lyr, activeLine, plain, hasLyrics, pending: lyr.isLoading && !hasLyrics };

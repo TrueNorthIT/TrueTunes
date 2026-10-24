@@ -17,12 +17,35 @@ const CHAR_MAP: Record<string, number> = (() => {
   const m: Record<string, number> = { ' ': 0 };
   for (let i = 0; i < 26; i++) m[String.fromCharCode(65 + i)] = i + 1;
   // Vestaboard digit codes: 1→27, 2→28, …, 9→35, 0→36.
-  m['1'] = 27; m['2'] = 28; m['3'] = 29; m['4'] = 30; m['5'] = 31;
-  m['6'] = 32; m['7'] = 33; m['8'] = 34; m['9'] = 35; m['0'] = 36;
-  m['!'] = 37; m['@'] = 38; m['#'] = 39; m['$'] = 40; m['('] = 41;
-  m[')'] = 42; m['-'] = 44; m['+'] = 46; m['&'] = 47; m['='] = 48;
-  m[';'] = 49; m[':'] = 50; m["'"] = 52; m['"'] = 53; m['%'] = 54;
-  m[','] = 55; m['.'] = 56; m['/'] = 59; m['?'] = 60;
+  m['1'] = 27;
+  m['2'] = 28;
+  m['3'] = 29;
+  m['4'] = 30;
+  m['5'] = 31;
+  m['6'] = 32;
+  m['7'] = 33;
+  m['8'] = 34;
+  m['9'] = 35;
+  m['0'] = 36;
+  m['!'] = 37;
+  m['@'] = 38;
+  m['#'] = 39;
+  m['$'] = 40;
+  m['('] = 41;
+  m[')'] = 42;
+  m['-'] = 44;
+  m['+'] = 46;
+  m['&'] = 47;
+  m['='] = 48;
+  m[';'] = 49;
+  m[':'] = 50;
+  m["'"] = 52;
+  m['"'] = 53;
+  m['%'] = 54;
+  m[','] = 55;
+  m['.'] = 56;
+  m['/'] = 59;
+  m['?'] = 60;
   return m;
 })();
 
@@ -41,7 +64,12 @@ export function sanitize(text: string, maxLen: number): string {
   return out;
 }
 
-export function writeRow(board: number[][], row: number, text: string, align: 'left' | 'center' | 'right' = 'left'): void {
+export function writeRow(
+  board: number[][],
+  row: number,
+  text: string,
+  align: 'left' | 'center' | 'right' = 'left'
+): void {
   if (row < 0 || row >= ROWS) return;
   const sanitized = sanitize(text, COLS);
   let start = 0;
@@ -78,7 +106,7 @@ export async function sendScoreAnnouncement(
   mainScore: number,
   bonusScore: number,
   maxPerRound: number,
-  log: (msg: string, ...args: unknown[]) => void = console.log,
+  log: (msg: string, ...args: unknown[]) => void = console.log
 ): Promise<void> {
   const total = mainScore + bonusScore;
   const maxTotal = maxPerRound * 2;
@@ -92,7 +120,7 @@ export async function sendScoreAnnouncement(
 
 export async function sendLeaderboard(
   scores: Array<{ userName: string; total: number }>,
-  log: (msg: string, ...args: unknown[]) => void = console.log,
+  log: (msg: string, ...args: unknown[]) => void = console.log
 ): Promise<void> {
   const board = emptyBoard();
   writeRow(board, 0, "TODAY'S TOP 5", 'center');
@@ -112,7 +140,7 @@ export async function sendLeaderboard(
 
 export async function sendPollAnnouncement(
   board: number[][],
-  log: (msg: string, ...args: unknown[]) => void = console.log,
+  log: (msg: string, ...args: unknown[]) => void = console.log
 ): Promise<void> {
   await postBoard(board, log);
 }

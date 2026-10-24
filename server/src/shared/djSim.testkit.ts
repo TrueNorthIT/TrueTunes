@@ -125,7 +125,10 @@ export function buildOfficeHistory(opts: { seed: number; now: number; stats?: St
     let assigned = names.reduce((a, b) => a + b.count, 0);
     for (let s = names.length; assigned < act.count; s++) {
       const left = act.count - assigned;
-      const n = Math.min(left, Math.max(1, Math.min(maxPerSong, Math.round((songCount > 0 ? act.count / songCount : 1) * (0.5 + rand())))));
+      const n = Math.min(
+        left,
+        Math.max(1, Math.min(maxPerSong, Math.round((songCount > 0 ? act.count / songCount : 1) * (0.5 + rand()))))
+      );
       names.push({ trackName: `${act.artist} Song ${s + 1}`, count: n });
       assigned += n;
     }
@@ -181,7 +184,10 @@ class SimRoom {
   onStart?: (e: QEntry, t: number) => void;
   onIdleEnd?: (gapMs: number, t: number) => void;
 
-  constructor(private rand: () => number, startT: number) {
+  constructor(
+    private rand: () => number,
+    startT: number
+  ) {
     this.idleSince = startT;
     this.snaps.push({ t: startT, queue: [], playhead: null });
   }
@@ -345,7 +351,12 @@ export async function runOfficeDay(opts: SimOptions): Promise<SimReport> {
   const listeners = data.users.slice(0, 4);
 
   // ---- bookkeeping --------------------------------------------------------
-  interface Instruction { t: number; key: string; day: string; artist: string }
+  interface Instruction {
+    t: number;
+    key: string;
+    day: string;
+    artist: string;
+  }
   const instructions: Instruction[] = [];
   const handByDay = new Map<string, Map<string, number>>();
   const heardByDay = new Map<string, Map<string, QEntry[]>>();
@@ -386,7 +397,15 @@ export async function runOfficeDay(opts: SimOptions): Promise<SimReport> {
   }
   const clients: Client[] = [
     { id: 'client-A', offset: 0, offlineFrom: 0, offlineUntil: 0, busyUntil: 0, pendingEnable: true, seenGroup: '' },
-    { id: 'client-B', offset: 5 * SEC, offlineFrom: 0, offlineUntil: 0, busyUntil: 0, pendingEnable: false, seenGroup: '' },
+    {
+      id: 'client-B',
+      offset: 5 * SEC,
+      offlineFrom: 0,
+      offlineUntil: 0,
+      busyUntil: 0,
+      pendingEnable: false,
+      seenGroup: '',
+    },
   ];
   const offline = (c: Client, from: number, forMs: number): { from: number; until: number } => ({
     from,
@@ -414,7 +433,10 @@ export async function runOfficeDay(opts: SimOptions): Promise<SimReport> {
     }
     if (r < 0.7) {
       // A house favourite: one of the room's biggest songs.
-      const top = data.catalogue.slice().sort((a, b) => b.weight - a.weight).slice(0, 60);
+      const top = data.catalogue
+        .slice()
+        .sort((a, b) => b.weight - a.weight)
+        .slice(0, 60);
       return top[Math.floor(rand() * top.length)];
     }
     const total = data.catalogue.reduce((a, b) => a + b.weight, 0);
@@ -477,13 +499,22 @@ export async function runOfficeDay(opts: SimOptions): Promise<SimReport> {
   schedule.sort((a, b) => a.at - b.at);
 
   // ---- the polling loop ---------------------------------------------------
-  const inFlight: Array<{ instrAt: number; landAt: number; client: Client; entryUri: string; trackName: string; artist: string; drop: boolean }> = [];
+  const inFlight: Array<{
+    instrAt: number;
+    landAt: number;
+    client: Client;
+    entryUri: string;
+    trackName: string;
+    artist: string;
+    drop: boolean;
+  }> = [];
   let rekeySeq = 0;
 
   const bodyFor = (c: Client, now: number): AutoplayBody => {
     const out = outages.find((o) => o.client === clients.indexOf(c) && now >= o.until && now < o.until + 15 * SEC);
     let lag = 0;
-    if (out) lag = now - out.from + 5 * SEC; // first poll after waking: a snapshot from before it slept
+    if (out)
+      lag = now - out.from + 5 * SEC; // first poll after waking: a snapshot from before it slept
     else if (rand() < 0.2) lag = (5 + Math.floor(rand() * 20)) * SEC; // plain staleness
     const snap = room.snapshotAt(now - lag);
     const playing = snap.playhead === null ? null : snap.queue[snap.playhead];
@@ -558,18 +589,33 @@ export async function runOfficeDay(opts: SimOptions): Promise<SimReport> {
           if (!f.drop) {
             const rekeyed = rand() < 0.4;
             const uri = rekeyed ? `${f.entryUri}~rk${++rekeySeq}` : f.entryUri;
-            room.append({ uri, trackName: f.trackName, artist: f.artist, key: trackKey(f.trackName, f.artist), by: 'dj', queuedAt: f.instrAt }, t);
+            room.append(
+              {
+                uri,
+                trackName: f.trackName,
+                artist: f.artist,
+                key: trackKey(f.trackName, f.artist),
+                by: 'dj',
+                queuedAt: f.instrAt,
+              },
+              t
+            );
             adds.landed++;
           }
         }
       }
       room.tick(t);
       // polls
-      const due = clients.filter((c) => (t - startMs - c.offset) % (10 * SEC) === 0 && !outages.some((o) => o.client === clients.indexOf(c) && t >= o.from && t < o.until));
+      const due = clients.filter(
+        (c) =>
+          (t - startMs - c.offset) % (10 * SEC) === 0 &&
+          !outages.some((o) => o.client === clients.indexOf(c) && t >= o.from && t < o.until)
+      );
       if (due.length === 1 && rand() < 0.1) {
         // Occasionally the other client polls in the very same instant.
         const other = clients.find((c) => c !== due[0]);
-        if (other && !outages.some((o) => o.client === clients.indexOf(other) && t >= o.from && t < o.until)) due.push(other);
+        if (other && !outages.some((o) => o.client === clients.indexOf(other) && t >= o.from && t < o.until))
+          due.push(other);
       }
       if (due.length > 0) await Promise.all(due.map((c) => doPoll(c, t)));
       if (t >= nextReport) {
@@ -593,7 +639,11 @@ export async function runOfficeDay(opts: SimOptions): Promise<SimReport> {
     const to = opts.rolloverEndMs ?? bstNext(0, 30);
     // A couple of people queue songs either side of midnight.
     schedule.length = 0;
-    schedule.push({ at: bst(23, 55), run: handQueue }, { at: bstNext(0, 10), run: handQueue }, { at: bstNext(0, 20), run: handQueue });
+    schedule.push(
+      { at: bst(23, 55), run: handQueue },
+      { at: bstNext(0, 10), run: handQueue },
+      { at: bstNext(0, 20), run: handQueue }
+    );
     room.idleSince = from;
     await runWindow(from, to, 'night');
 
@@ -665,10 +715,16 @@ export function formatReport(r: SimReport): string {
     lines.push(`    DJ songs heard a second time         ${d.heardTwice}`);
     lines.push(`    distinct artists / distinct songs    ${d.distinctArtists} / ${d.distinctSongs}`);
     lines.push(`    back-to-back picks by the same act   ${d.backToBackSameArtist}`);
-    lines.push(`    stalls (> ${STALL_SEC}s of silence)           ${d.stalls}${d.stalls ? ` (longest ${d.longestStallSec}s)` : ''}   [silences > 60s: ${d.gapsOver60s}]`);
+    lines.push(
+      `    stalls (> ${STALL_SEC}s of silence)           ${d.stalls}${d.stalls ? ` (longest ${d.longestStallSec}s)` : ''}   [silences > 60s: ${d.gapsOver60s}]`
+    );
   }
-  lines.push(`  adds told/landed/dropped/late          ${r.adds.told}/${r.adds.landed}/${r.adds.dropped}/${r.adds.late}`);
-  lines.push(`  songs repeated across midnight         ${r.rolloverRepeats === null ? 'n/a' : r.rolloverRepeats} (allowed, informational: the day resets)`);
+  lines.push(
+    `  adds told/landed/dropped/late          ${r.adds.told}/${r.adds.landed}/${r.adds.dropped}/${r.adds.late}`
+  );
+  lines.push(
+    `  songs repeated across midnight         ${r.rolloverRepeats === null ? 'n/a' : r.rolloverRepeats} (allowed, informational: the day resets)`
+  );
   lines.push(`  coordinator calls / mean ms per call   ${r.calls} / ${r.meanCallMs.toFixed(1)}`);
   lines.push(`  heavy all-time history fetches         ${r.heavyHistoryFetches}`);
   lines.push(`  documents at end (sessions/ledger)     ${r.docs.sessions}/${r.docs.ledger}`);

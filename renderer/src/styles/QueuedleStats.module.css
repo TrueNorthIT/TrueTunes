@@ -7,7 +7,10 @@
   text-align: center;
 }
 
-.strong { color: var(--text); font-weight: 600; }
+.strong {
+  color: var(--text);
+  font-weight: 600;
+}
 
 /* ── Player picker ── */
 .picker {
@@ -32,7 +35,9 @@
 }
 
 /* ── Sections ── */
-.section { margin-bottom: 1.4em; }
+.section {
+  margin-bottom: 1.4em;
+}
 .twoUp {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(26em, 1fr));
@@ -45,15 +50,51 @@
 }
 
 /* ── SVG anatomy ── */
-.grid { stroke: var(--glass-faint); stroke-width: 1; }
-.axisLabel { fill: var(--text-3); font-size: var(--fs-small); }
-.axisTitle { fill: var(--text-3); font-size: var(--fs-small); }
-.directLabel { fill: var(--text); font-size: var(--fs-small); font-weight: 600; }
-.crosshair { stroke: var(--glass-hi); stroke-width: 1; }
-.diagonal { stroke: var(--track); stroke-width: 1; stroke-dasharray: 4 4; }
-.ring { stroke: var(--bg); stroke-width: 2; }
+.grid {
+  stroke: var(--glass-faint);
+  stroke-width: 1;
+}
+.axisLabel {
+  fill: var(--text-3);
+  font-size: var(--fs-small);
+}
+.axisTitle {
+  fill: var(--text-3);
+  font-size: var(--fs-small);
+}
+.directLabel {
+  fill: var(--text);
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+.crosshair {
+  stroke: var(--glass-hi);
+  stroke-width: 1;
+}
+.diagonal {
+  stroke: var(--track);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+.ring {
+  stroke: var(--bg);
+  stroke-width: 2;
+}
 
 /* ── Weekly bars ── */
-.weekNav { display: flex; align-items: center; gap: 0.8em; margin-bottom: 0.9em; }
-.weekLabel { font-size: var(--fs-label); color: var(--text); font-weight: 600; min-width: 9em; text-align: center; }
-.navBtn { padding: 0.5em; }
+.weekNav {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  margin-bottom: 0.9em;
+}
+.weekLabel {
+  font-size: var(--fs-label);
+  color: var(--text);
+  font-weight: 600;
+  min-width: 9em;
+  text-align: center;
+}
+.navBtn {
+  padding: 0.5em;
+}

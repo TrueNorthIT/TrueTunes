@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { GC_HOUR } from '../lib/queryDefaults';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { ExternalLink } from 'lucide-react';
@@ -18,12 +20,17 @@ interface Release {
 }
 
 const REPO = 'TrueNorthIT/TrueTunes';
-const PAT = import.meta.env.VITE_GITHUB_PAT as string | undefined;
+/**
+ * Unauthenticated, so GitHub allows 60 requests an hour per IP, and the whole office shares one.
+ * Keep the releases for an hour, open or closed, rather than refetching on every open.
+ */
+const RELEASES_TTL = GC_HOUR;
+const NO_RELEASES: Release[] = [];
 
 async function fetchReleases(): Promise<Release[]> {
-  const headers: Record<string, string> = { Accept: 'application/vnd.github+json' };
-  if (PAT) headers['Authorization'] = `Bearer ${PAT}`;
-  const res = await fetch(`https://api.github.com/repos/${REPO}/releases`, { headers });
+  const res = await fetch(`https://api.github.com/repos/${REPO}/releases`, {
+    headers: { Accept: 'application/vnd.github+json' },
+  });
   if (!res.ok) throw new Error(`GitHub API error ${res.status}`);
   return res.json() as Promise<Release[]>;
 }
@@ -43,36 +50,45 @@ interface Props {
 }
 
 export function ChangelogDialog({ onClose }: Props) {
-  const [releases, setReleases]     = useState<Release[]>([]);
-  const [selectedIdx, setSelectedIdx] = useState(0);
-  const [status, setStatus]         = useState<'loading' | 'ready' | 'error'>('loading');
-  const [attempt, setAttempt]       = useState(0);
+  const [pickedIdx, setSelectedIdx] = useState<number | null>(null);
+  const {
+    data: releases = NO_RELEASES,
+    isSuccess,
+    isError,
+    isFetching,
+    refetch,
+  } = useQuery({
+    queryKey: ['github-releases'],
+    queryFn: fetchReleases,
+    staleTime: RELEASES_TTL,
+    gcTime: RELEASES_TTL,
+  });
+  const status: 'loading' | 'ready' | 'error' = isSuccess ? 'ready' : isError && !isFetching ? 'error' : 'loading';
   const [appVersion, setAppVersion] = useState<string | null>(null);
   const [versionLoaded, setVersionLoaded] = useState(false);
 
   useEffect(() => {
-    window.sonos.getVersion()
-      .then(v => { setAppVersion(v); setVersionLoaded(true); })
+    window.sonos
+      .getVersion()
+      .then((v) => {
+        setAppVersion(v);
+        setVersionLoaded(true);
+      })
       .catch(() => setVersionLoaded(true));
   }, []);
 
-  useEffect(() => {
-    fetchReleases()
-      .then(data => { setReleases(data); setStatus('ready'); })
-      .catch(() => setStatus('error'));
-  }, [attempt]);
-
-  useEffect(() => {
-    if (!versionLoaded || status !== 'ready' || !appVersion || releases.length === 0) return;
-    const idx = releases.findIndex(r =>
-      r.tag_name === `v${appVersion}` || r.tag_name === appVersion
-    );
-    if (idx >= 0) setSelectedIdx(idx);
-  }, [versionLoaded, status, appVersion, releases]);
+  // Open on the installed release until the reader picks another.
+  const installedIdx =
+    versionLoaded && status === 'ready' && appVersion
+      ? releases.findIndex((r) => r.tag_name === `v${appVersion}` || r.tag_name === appVersion)
+      : -1;
+  const selectedIdx = pickedIdx ?? Math.max(installedIdx, 0);
 
   const isInstalled = (r: Release) => !!appVersion && (r.tag_name === `v${appVersion}` || r.tag_name === appVersion);
   const selected = releases[selectedIdx];
-  const rail = releases.map((r, i) => ({ r, i })).filter(({ r, i }) => i < RAIL_COUNT || i === selectedIdx || isInstalled(r));
+  const rail = releases
+    .map((r, i) => ({ r, i }))
+    .filter(({ r, i }) => i < RAIL_COUNT || i === selectedIdx || isInstalled(r));
 
   return (
     <Dialog title="What's new" onClose={onClose} size="lg" className={styles.reader}>
@@ -81,7 +97,7 @@ export function ChangelogDialog({ onClose }: Props) {
       {status === 'error' && (
         <div className={styles.empty}>
           <p className={dialog.note}>Couldn't load the release notes from GitHub.</p>
-          <PillButton onClick={() => { setStatus('loading'); setAttempt(a => a + 1); }}>Try again</PillButton>
+          <PillButton onClick={() => void refetch()}>Try again</PillButton>
         </div>
       )}
 
@@ -103,7 +119,11 @@ export function ChangelogDialog({ onClose }: Props) {
               </button>
             ))}
             {releases.length > rail.length && (
-              <button type="button" className={styles.allLink} onClick={() => window.sonos.openExternal(`https://github.com/${REPO}/releases`)}>
+              <button
+                type="button"
+                className={styles.allLink}
+                onClick={() => void window.sonos.openExternal(`https://github.com/${REPO}/releases`)}
+              >
                 Older releases on GitHub <ExternalLink size={14} aria-hidden="true" />
               </button>
             )}
@@ -112,29 +132,36 @@ export function ChangelogDialog({ onClose }: Props) {
           {selected && (
             <article className={styles.article} aria-labelledby="release-title">
               <header className={styles.articleHead}>
-                <h3 id="release-title" className={styles.articleTitle}>{selected.name || version(selected)}</h3>
+                <h3 id="release-title" className={styles.articleTitle}>
+                  {selected.name || version(selected)}
+                </h3>
                 <p className={styles.meta}>
                   {formatDate(selected.published_at)}
                   {isInstalled(selected) && ' · the version you have'}
                 </p>
-                <button type="button" className={styles.ghLink} onClick={() => window.sonos.openExternal(selected.html_url)}>
+                <button
+                  type="button"
+                  className={styles.ghLink}
+                  onClick={() => void window.sonos.openExternal(selected.html_url)}
+                >
                   View on GitHub <ExternalLink size={14} aria-hidden="true" />
                 </button>
               </header>
-              {selected.body?.trim()
-                ? <div
-                    className={styles.notes}
-                    // Links in the notes open in the browser; followed in place they'd replace the app window.
-                    onClick={(e) => {
-                      const a = (e.target as HTMLElement).closest('a');
-                      if (!a) return;
-                      e.preventDefault();
-                      if (a.href) void window.sonos.openExternal(a.href);
-                    }}
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(selected.body.trim()) as string) }}
-                  />
-                : <p className={dialog.note}>No release notes.</p>
-              }
+              {selected.body?.trim() ? (
+                <div
+                  className={styles.notes}
+                  // Links in the notes open in the browser; followed in place they'd replace the app window.
+                  onClick={(e) => {
+                    const a = (e.target as HTMLElement).closest('a');
+                    if (!a) return;
+                    e.preventDefault();
+                    if (a.href) void window.sonos.openExternal(a.href);
+                  }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(selected.body.trim()) as string) }}
+                />
+              ) : (
+                <p className={dialog.note}>No release notes.</p>
+              )}
             </article>
           )}
         </div>

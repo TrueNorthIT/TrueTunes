@@ -12,12 +12,20 @@
   gap: 1.4em;
   align-items: stretch;
 }
-.leadSolo { grid-template-columns: minmax(0, 1fr); }
-.leadSolo .top { max-width: 34em; }
+.leadSolo {
+  grid-template-columns: minmax(0, 1fr);
+}
+.leadSolo .top {
+  max-width: 34em;
+}
 .top,
-.songs { min-width: 0; }
+.songs {
+  min-width: 0;
+}
 
-.section { min-width: 0; }
+.section {
+  min-width: 0;
+}
 
 .list {
   list-style: none;
@@ -39,6 +47,10 @@
 }
 
 @container (max-width: 700px) {
-  .lead { grid-template-columns: minmax(0, 1fr); }
-  .cell { width: 9em; }
+  .lead {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cell {
+    width: 9em;
+  }
 }

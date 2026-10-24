@@ -1,19 +1,32 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { seedDisplayName } from '../../../test/queueActions';
+import { QueueActionsProvider } from '../../../hooks/useQueueActions';
 import { MemoryRouter } from 'react-router-dom';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ContextMenuProvider, useTrackContextMenu } from '../ContextMenu';
 import type { SonosItem } from '../../../types/sonos';
 
-const PLAYLISTS = Array.from({ length: 8 }, (_, i) => ({ id: `p${i}`, name: `Playlist ${i}`, owner: 'Alice', isPublic: true }));
+const PLAYLISTS = Array.from({ length: 8 }, (_, i) => ({
+  id: `p${i}`,
+  name: `Playlist ${i}`,
+  owner: 'Alice',
+  isPublic: true,
+}));
 vi.mock('../../../hooks/usePlaylists', () => ({
   useMyPlaylists: () => ({ owned: PLAYLISTS, joined: [PLAYLISTS[0]], isLoading: false }),
   favouritesId: (name: string) => `fav-${name}`,
 }));
 
 const TRACK: PlaylistTrack = {
-  uri: 'u', trackName: 'Desert Rose', artist: 'Sting', serviceId: 's', accountId: 'a', addedBy: 'Alice', addedAt: 0,
+  uri: 'u',
+  trackName: 'Desert Rose',
+  artist: 'Sting',
+  serviceId: 's',
+  accountId: 'a',
+  addedBy: 'Alice',
+  addedAt: 0,
 };
 
 function Row() {
@@ -22,14 +35,18 @@ function Row() {
 }
 
 function renderMenu(onAddToQueue = vi.fn()) {
+  const client = new QueryClient();
+  seedDisplayName(client, null);
   render(
-    <QueryClientProvider client={new QueryClient()}>
+    <QueryClientProvider client={client}>
       <MemoryRouter>
-        <ContextMenuProvider displayName={null} onAddToQueue={onAddToQueue} onQueueNext={vi.fn()}>
-          <Row />
-        </ContextMenuProvider>
+        <QueueActionsProvider value={{ addToQueue: onAddToQueue, queueNext: vi.fn() }}>
+          <ContextMenuProvider>
+            <Row />
+          </ContextMenuProvider>
+        </QueueActionsProvider>
       </MemoryRouter>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
   fireEvent.contextMenu(screen.getByText('Row'), { clientX: 10, clientY: 10 });
   return onAddToQueue;
@@ -41,7 +58,10 @@ describe('track context menu', () => {
     const menu = screen.getByRole('menu', { name: 'Desert Rose' });
     expect(menu).toHaveFocus();
     expect(screen.getAllByRole('menuitem').map((b) => b.textContent)).toEqual([
-      'Queue next', 'Add to queue', 'Add to playlist', "View Alice's profile",
+      'Queue next',
+      'Add to queue',
+      'Add to playlist',
+      "View Alice's profile",
     ]);
   });
 
@@ -75,7 +95,15 @@ describe('playlist submenu placement', () => {
   it('stays inside the window: lifted off the bottom and flipped left off the right', () => {
     // Every box reports 500px tall and 240px wide, with the "Add to playlist" item low and near the right edge.
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
-      top: 600, bottom: 1100, left: 860, right: 1100, width: 240, height: 500, x: 860, y: 600, toJSON: () => ({}),
+      top: 600,
+      bottom: 1100,
+      left: 860,
+      right: 1100,
+      width: 240,
+      height: 500,
+      x: 860,
+      y: 600,
+      toJSON: () => ({}),
     });
     renderMenu();
     fireEvent.mouseEnter(screen.getByRole('menuitem', { name: 'Add to playlist' }));

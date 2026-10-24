@@ -24,7 +24,9 @@ describe('recent searches', () => {
   it('survives blocked or corrupt storage', () => {
     localStorage.setItem('tt2.recentSearches', '{not json');
     expect(getRecentSearches()).toEqual([]);
-    const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
+    const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
     expect(getRecentSearches()).toEqual([]);
     expect(() => addRecentSearch('love')).not.toThrow();
     spy.mockRestore();

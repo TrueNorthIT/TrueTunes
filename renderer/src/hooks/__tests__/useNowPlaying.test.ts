@@ -26,9 +26,6 @@ function makePlayback(overrides: Partial<PlaybackState> = {}): PlaybackState {
     artistName: 'Default Artist',
     artUrl: null,
     stateIcon: '▶',
-    timeLabel: '1:30 / 4:00',
-    progressPct: 37,
-    positionMs: 90000,
     durationMs: 240000,
     isPlaying: true,
     shuffle: false,
@@ -72,30 +69,11 @@ describe('useNowPlaying', () => {
     expect(result.current.displayArtist).toBe('Enriched Artist');
   });
 
-  it('splits timeLabel into elapsedLabel and durationLabel', () => {
+  it('passes through durationMs, isPlaying, isVisible', () => {
     const { result } = renderHook(
-      () => useNowPlaying(makePlayback({ timeLabel: '2:15 / 5:30' })),
+      () => useNowPlaying(makePlayback({ durationMs: 180000, isPlaying: false, isVisible: false })),
       { wrapper }
     );
-    expect(result.current.elapsedLabel).toBe('2:15');
-    expect(result.current.durationLabel).toBe('5:30');
-  });
-
-  it('returns empty strings when timeLabel is empty', () => {
-    const { result } = renderHook(
-      () => useNowPlaying(makePlayback({ timeLabel: '' })),
-      { wrapper }
-    );
-    expect(result.current.elapsedLabel).toBe('');
-    expect(result.current.durationLabel).toBe('');
-  });
-
-  it('passes through progressPct, durationMs, isPlaying, isVisible', () => {
-    const { result } = renderHook(
-      () => useNowPlaying(makePlayback({ progressPct: 42, durationMs: 180000, isPlaying: false, isVisible: false })),
-      { wrapper }
-    );
-    expect(result.current.progressPct).toBe(42);
     expect(result.current.durationMs).toBe(180000);
     expect(result.current.isPlaying).toBe(false);
     expect(result.current.isVisible).toBe(false);
@@ -113,19 +91,13 @@ describe('useNowPlaying', () => {
         accountId: 'acc',
       },
     });
-    const { result } = renderHook(
-      () => useNowPlaying(makePlayback()),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useNowPlaying(makePlayback()), { wrapper });
     expect(result.current.albumItem).toBeTruthy();
     expect(result.current.albumItem?.title).toBe('Great Album');
   });
 
   it('returns null albumItem when no albumId', () => {
-    const { result } = renderHook(
-      () => useNowPlaying(makePlayback({ currentAlbumId: null })),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useNowPlaying(makePlayback({ currentAlbumId: null })), { wrapper });
     expect(result.current.albumItem).toBeNull();
   });
 

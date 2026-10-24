@@ -6,13 +6,21 @@ import { fetchImage, getCachedVariant } from './imageCache';
  * spread 0.02). A real photo, even black and white, has far more spread. `rgba` is canvas ImageData.
  */
 export function looksLikePlaceholder(rgba: ArrayLike<number>): boolean {
-  let sum = 0, sum2 = 0, maxSat = 0, n = 0;
+  let sum = 0,
+    sum2 = 0,
+    maxSat = 0,
+    n = 0;
   for (let i = 0; i + 3 < rgba.length; i += 4) {
-    const r = rgba[i] / 255, g = rgba[i + 1] / 255, b = rgba[i + 2] / 255;
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    const r = rgba[i] / 255,
+      g = rgba[i + 1] / 255,
+      b = rgba[i + 2] / 255;
+    const max = Math.max(r, g, b),
+      min = Math.min(r, g, b);
     const l = (max + min) / 2;
     maxSat = Math.max(maxSat, max === 0 ? 0 : (max - min) / max);
-    sum += l; sum2 += l * l; n++;
+    sum += l;
+    sum2 += l * l;
+    n++;
   }
   if (n === 0) return false;
   const mean = sum / n;
@@ -31,12 +39,13 @@ export function photoStateOf(hasUrl: boolean, isPlaceholder: boolean | null): Ph
 
 /** Whether the image at `src` (an object URL) is the service's grey silhouette. An image that won't load counts too. */
 function isPlaceholderImage(src: string): Promise<boolean> {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
       const size = 32;
       const canvas = document.createElement('canvas');
-      canvas.width = size; canvas.height = size;
+      canvas.width = size;
+      canvas.height = size;
       const ctx = canvas.getContext('2d');
       if (!ctx) return resolve(false);
       ctx.drawImage(img, 0, 0, size, size);
@@ -59,7 +68,9 @@ export function usePhotoState(url: string | null): { state: PhotoState; src: str
   useEffect(() => {
     if (!url) return;
     let cancelled = false;
-    const settle = (src: string | null, blank: boolean) => { if (!cancelled) setResult({ url, src, blank }); };
+    const settle = (src: string | null, blank: boolean) => {
+      if (!cancelled) setResult({ url, src, blank });
+    };
     void (async () => {
       const preview = getCachedVariant(url);
       let blank: boolean | null = null;
@@ -77,7 +88,9 @@ export function usePhotoState(url: string | null): { state: PhotoState; src: str
       blank ??= await isPlaceholderImage(full);
       settle(full, blank);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [url]);
   const r = url && result?.url === url ? result : null;
   return { state: photoStateOf(!!url, r ? r.blank : null), src: r && !r.blank ? r.src : null };

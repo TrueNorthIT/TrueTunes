@@ -11,7 +11,9 @@ beforeEach(() => {
   // jsdom never loads images: fire onload as soon as src is set
   Object.defineProperty(HTMLImageElement.prototype, 'src', {
     configurable: true,
-    set(this: HTMLImageElement) { queueMicrotask(() => this.onload?.(new Event('load'))); },
+    set(this: HTMLImageElement) {
+      queueMicrotask(() => this.onload?.(new Event('load')));
+    },
   });
   Object.defineProperty(HTMLImageElement.prototype, 'naturalWidth', { configurable: true, get: () => 2000 });
   Object.defineProperty(HTMLImageElement.prototype, 'naturalHeight', { configurable: true, get: () => 2000 });

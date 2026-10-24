@@ -40,7 +40,9 @@ export const Explicit: Story = { args: { explicit: true } };
 export const LongTitle: Story = {
   args: {
     title: 'The Extraordinarily Long Title of a Song That Has To Be Truncated Before It Pushes the Row Wider',
-    artists: <ArtistLinks artist="A Band With A Very Long Name, Another Featured Artist, And A Third" onOpenArtist={fn()} />,
+    artists: (
+      <ArtistLinks artist="A Band With A Very Long Name, Another Featured Artist, And A Third" onOpenArtist={fn()} />
+    ),
     explicit: true,
   },
 };

@@ -25,6 +25,7 @@ import { UserAvatar } from './common/UserAvatar';
 import { trackPayload } from '../lib/itemHelpers';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/LeaderboardPanel.module.css';
+import { useQueueActions } from '../hooks/useQueueActions';
 
 // The server's "week" is a rolling seven days, not the calendar week, so the label says so.
 const PERIODS: { value: StatsPeriod; label: string; phrase: string }[] = [
@@ -45,13 +46,20 @@ const QUEUEDLE_RANK_INFO: Array<{ key: Exclude<GameRankTierKey, 'provisional'>; 
 const CARD_PEOPLE = 6;
 
 /** What every track, album and artist on the page needs to open, prefetch, queue and right-click. */
-function useStatsNav(onAddToQueue?: (item: SonosItem) => void) {
+function useStatsNav(onAddToQueue?: (item: SonosItem) => void | Promise<void>) {
   const openItem = useOpenItem();
   const { resolveAndOpen } = useResolveAndOpen();
   const queryClient = useQueryClient();
   const { showTrackMenu } = useTrackContextMenu();
 
-  const openAlbum = (a: { album?: string; title: string; albumId?: string; artist: string; serviceId?: string; accountId?: string }) => {
+  const openAlbum = (a: {
+    album?: string;
+    title: string;
+    albumId?: string;
+    artist: string;
+    serviceId?: string;
+    accountId?: string;
+  }) => {
     if (a.albumId) openItem(statsAlbumToItem({ ...a, album: a.album ?? a.title, count: 0 }));
     else
       void resolveAndOpen(a.album || a.title, 'album', {
@@ -61,7 +69,11 @@ function useStatsNav(onAddToQueue?: (item: SonosItem) => void) {
       });
   };
   // Only the first credited name can use the row's artist id.
-  const openArtist = (name: string, a: { artistId?: string; serviceId?: string; accountId?: string }, isFirst: boolean) => {
+  const openArtist = (
+    name: string,
+    a: { artistId?: string; serviceId?: string; accountId?: string },
+    isFirst: boolean
+  ) => {
     if (isFirst && a.artistId) openItem(statsArtistToItem({ artist: name, ...a, count: 0 }));
     else void resolveAndOpen(name, 'artist', { serviceId: a.serviceId, accountId: a.accountId });
   };
@@ -79,7 +91,7 @@ function useStatsNav(onAddToQueue?: (item: SonosItem) => void) {
       imageUrl: t.imageUrl,
       onOpen: () => openAlbum({ ...t, title: t.trackName }),
       onMouseEnter: () => prefetchAlbum(t),
-      onAdd: item && onAddToQueue ? () => onAddToQueue(item) : undefined,
+      onAdd: item && onAddToQueue ? () => void onAddToQueue(item) : undefined,
       onContextMenu: (e: React.MouseEvent) => {
         if (!t.uri) return;
         showTrackMenu(
@@ -87,7 +99,7 @@ function useStatsNav(onAddToQueue?: (item: SonosItem) => void) {
             track: trackPayload({ ...t, uri: t.uri, albumName: t.album }),
             sonosItem: item ?? undefined,
           },
-          e,
+          e
         );
       },
     };
@@ -124,8 +136,8 @@ function RankInfoDialog({ onClose }: { onClose: () => void }) {
   return (
     <Dialog title="Queuedle rank tiers" onClose={onClose} size="lg" closeLabel="Close rank info">
       <p className={styles.dialogText}>
-        Rank tiers use your all-time Queuedle percentage: total points earned divided by total possible points
-        across games played. You need 3 played days before a tier unlocks; until then you're provisional.
+        Rank tiers use your all-time Queuedle percentage: total points earned divided by total possible points across
+        games played. You need 3 played days before a tier unlocks; until then you're provisional.
       </p>
       <ul className={styles.tiers}>
         {QUEUEDLE_RANK_INFO.map((tier) => (
@@ -159,12 +171,8 @@ function PageSkeleton() {
   );
 }
 
-interface Props {
-  /** Queues a track or album from the charts. Without it the + buttons are hidden. */
-  onAddToQueue?: (item: SonosItem) => void;
-}
-
-export function LeaderboardPanel({ onAddToQueue }: Props) {
+export function LeaderboardPanel() {
+  const { addToQueue: onAddToQueue } = useQueueActions();
   const navigate = useNavigate();
   const nav = useStatsNav(onAddToQueue);
   const [period, setPeriod] = useState<StatsPeriod>('week');
@@ -201,9 +209,7 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
         <header className={styles.hero}>
           <div>
             <h1 className={styles.title}>Leaderboard</h1>
-            <p className={styles.premise}>
-              {summary ?? 'Who has been queuing what'}
-            </p>
+            <p className={styles.premise}>{summary ?? 'Who has been queuing what'}</p>
           </div>
           <div className={styles.heroActions}>
             <div className={styles.segments} role="group" aria-label="Period">
@@ -219,12 +225,14 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
                 </button>
               ))}
             </div>
-            <PillButton onClick={() => navigate('/leaderboard/stats')}>Music stats</PillButton>
+            <PillButton onClick={() => void navigate('/leaderboard/stats')}>Music stats</PillButton>
           </div>
         </header>
 
         {isLoading && <PageSkeleton />}
-        {!isLoading && (error || data?.error) && <div className={styles.msg}>{data?.error ?? 'Failed to load stats'}</div>}
+        {!isLoading && (error || data?.error) && (
+          <div className={styles.msg}>{data?.error ?? 'Failed to load stats'}</div>
+        )}
 
         {loaded && data.totalEvents === 0 && (
           <SectionCard className={styles.section}>
@@ -234,7 +242,9 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
 
         {loaded && carded.length > 0 && (
           <section className={styles.section} aria-labelledby="lb-people">
-            <h2 id="lb-people" className={styles.bandTitle}>Top queuers</h2>
+            <h2 id="lb-people" className={styles.bandTitle}>
+              Top queuers
+            </h2>
             <div className={styles.people}>
               {carded.map((u, i) => {
                 const q = personStats[i];
@@ -246,7 +256,7 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
                     name={u.userId}
                     imageUrl={imageByUser.get(u.userId)}
                     caption={`${ordinal(i + 1)} · ${queued(u.count)}`}
-                    onOpen={() => profile(u.userId)}
+                    onOpen={() => void profile(u.userId)}
                   >
                     {q?.isPending ? (
                       <TileSkeleton />
@@ -269,7 +279,12 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
               <ol className={styles.others} start={CARD_PEOPLE + 1} aria-label="Also queuing">
                 {others.map((u, i) => (
                   <li key={u.userId}>
-                    <button type="button" className={styles.face} onClick={() => profile(u.userId)} aria-label={`${u.userId}, ${ordinal(CARD_PEOPLE + i + 1)}, ${queued(u.count)}, open profile`}>
+                    <button
+                      type="button"
+                      className={styles.face}
+                      onClick={() => void profile(u.userId)}
+                      aria-label={`${u.userId}, ${ordinal(CARD_PEOPLE + i + 1)}, ${queued(u.count)}, open profile`}
+                    >
                       <span className={styles.faceRank}>{CARD_PEOPLE + i + 1}</span>
                       <UserAvatar name={u.userId} imageUrl={imageByUser.get(u.userId)} className={styles.faceAvatar} />
                       <span className={styles.faceName}>{u.userId}</span>
@@ -286,7 +301,11 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
           <SectionCard className={styles.section} title="Top artists">
             <div className={styles.artistGrid}>
               {artists.map((a, i) => (
-                <StatsArtistTile key={`${a.artistId ?? a.artist}-${i}`} a={a} onOpen={() => nav.openArtist(a.artist, a, true)} />
+                <StatsArtistTile
+                  key={`${a.artistId ?? a.artist}-${i}`}
+                  a={a}
+                  onOpen={() => nav.openArtist(a.artist, a, true)}
+                />
               ))}
             </div>
           </SectionCard>
@@ -334,7 +353,7 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
                       imageUrl={a.imageUrl}
                       onOpen={() => nav.openAlbum({ ...a, title: a.album })}
                       onHover={() => nav.prefetchAlbum(a)}
-                      onAdd={a.albumId && onAddToQueue ? () => onAddToQueue(statsAlbumToItem(a)) : undefined}
+                      onAdd={a.albumId && onAddToQueue ? () => void onAddToQueue(statsAlbumToItem(a)) : undefined}
                     />
                   ))}
                 </div>
@@ -351,7 +370,7 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
             actions={
               <>
                 <SeeAll label="How ranks work" onClick={() => setRankInfoOpen(true)} />
-                <SeeAll onClick={() => navigate('/queuedle')} />
+                <SeeAll onClick={() => void navigate('/queuedle')} />
               </>
             }
           >
@@ -370,12 +389,23 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
                   {standings.map((r, i) => (
                     <li key={r.userName} className={styles.standing}>
                       <span className={styles.standingRank}>{String(places[i]).padStart(2, '0')}</span>
-                      <button type="button" className={styles.standingWho} onClick={() => profile(r.userName)} aria-label={`${r.userName}, open profile`}>
-                        <UserAvatar name={r.userName} imageUrl={imageByUser.get(r.userName)} className={styles.standingAvatar} />
+                      <button
+                        type="button"
+                        className={styles.standingWho}
+                        onClick={() => void profile(r.userName)}
+                        aria-label={`${r.userName}, open profile`}
+                      >
+                        <UserAvatar
+                          name={r.userName}
+                          imageUrl={imageByUser.get(r.userName)}
+                          className={styles.standingAvatar}
+                        />
                         <span className={styles.standingName}>{r.userName}</span>
                       </button>
                       <span>
-                        <span className={`${styles.tierChip}${r.isProvisional ? ' ' + styles.provisional : ''}`}>{r.tierName}</span>
+                        <span className={`${styles.tierChip}${r.isProvisional ? ' ' + styles.provisional : ''}`}>
+                          {r.tierName}
+                        </span>
                       </span>
                       <span className={styles.games}>
                         {r.gamesPlayed} {r.gamesPlayed === 1 ? 'game' : 'games'}

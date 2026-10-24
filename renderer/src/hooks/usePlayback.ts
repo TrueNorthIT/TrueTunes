@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { getActiveProvider } from "../providers";
-import type { NormalizedPlaybackState } from "../types/provider";
-import { fmtTime } from "../lib/itemHelpers";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { getActiveProvider } from '../providers';
+import type { NormalizedPlaybackState } from '../types/provider';
+import { fmtTime } from '../lib/itemHelpers';
+import { setPlaybackPosition, ZERO_POSITION, type PlaybackPosition } from './playbackPosition';
 
 export interface PlaybackState {
   isVisible: boolean;
@@ -9,13 +10,11 @@ export interface PlaybackState {
   artistName: string;
   artUrl: string | null;
   stateIcon: string;
-  timeLabel: string;
-  progressPct: number;
-  positionMs: number;
+  /** Track length. The moving position lives in playbackPosition.ts so a tick doesn't re-render the app. */
   durationMs: number;
   isPlaying: boolean;
   shuffle: boolean;
-  repeat: "none" | "one" | "all";
+  repeat: 'none' | 'one' | 'all';
   volume: number;
   currentObjectId: string | null;
   currentServiceId: string | null;
@@ -30,17 +29,14 @@ export interface PlaybackState {
 
 const IDLE_STATE: PlaybackState = {
   isVisible: false,
-  trackName: "",
-  artistName: "",
+  trackName: '',
+  artistName: '',
   artUrl: null,
-  stateIcon: "–",
-  timeLabel: "",
-  progressPct: 0,
-  positionMs: 0,
+  stateIcon: '–',
   durationMs: 0,
   isPlaying: false,
   shuffle: false,
-  repeat: "none",
+  repeat: 'none',
   volume: 50,
   currentObjectId: null,
   currentServiceId: null,
@@ -53,8 +49,19 @@ const IDLE_STATE: PlaybackState = {
   queueItemId: null,
 };
 
+const positionOf = (positionMs: number, durationMs: number): PlaybackPosition => ({
+  positionMs,
+  durationMs,
+  progressPct: durationMs > 0 ? Math.min((positionMs / durationMs) * 100, 100) : 0,
+  timeLabel: durationMs > 0 ? `${fmtTime(positionMs)} / ${fmtTime(durationMs)}` : '',
+  trackEndsAtMs: Date.now() + durationMs - positionMs,
+});
+
 export function usePlayback(activeGroupId: string | null) {
   const [state, setState] = useState<PlaybackState>(IDLE_STATE);
+  useEffect(() => {
+    setPlaybackPosition(ZERO_POSITION);
+  }, []);
 
   // Internal progress tracking — these don't need to trigger re-renders on every tick
   const positionMsRef = useRef(0);
@@ -65,7 +72,7 @@ export function usePlayback(activeGroupId: string | null) {
   // Always-current queue cursors — updated immediately on every provider push,
   // before the !name guard and outside React batching, so callers never
   // read a version that's one message behind.
-  const queueIdRef      = useRef<string | null>(null);
+  const queueIdRef = useRef<string | null>(null);
   const queueVersionRef = useRef<string | null>(null);
 
   // Cache normalized state per groupId so we can restore on group switch
@@ -78,10 +85,18 @@ export function usePlayback(activeGroupId: string | null) {
   }, [activeGroupId]);
 
   const applyState = useCallback((normalized: NormalizedPlaybackState) => {
-    const { status, isPlaying, positionMs, durationMs, currentTrack,
-            shuffle, repeatMode, queueId, queueVersion, queueItemId } = normalized;
-
-    const pct = durationMs > 0 ? Math.min((positionMs / durationMs) * 100, 100) : 0;
+    const {
+      status,
+      isPlaying,
+      positionMs,
+      durationMs,
+      currentTrack,
+      shuffle,
+      repeatMode,
+      queueId,
+      queueVersion,
+      queueItemId,
+    } = normalized;
 
     positionMsRef.current = positionMs;
     durationMsRef.current = durationMs;
@@ -90,7 +105,7 @@ export function usePlayback(activeGroupId: string | null) {
 
     if (queueId) {
       queueIdRef.current = queueId;
-      window.sonos.setQueueId(queueId);
+      void window.sonos.setQueueId(queueId);
     }
     if (queueVersion) queueVersionRef.current = queueVersion;
 
@@ -98,33 +113,30 @@ export function usePlayback(activeGroupId: string | null) {
       // Still surface queue cursors into React state so useQueue can react to them
       // even when nothing is playing (no track name).
       if (queueId || queueVersion || queueItemId) {
-        setState(prev => ({
+        setState((prev) => ({
           ...prev,
-          ...(queueId      ? { queueId }      : {}),
+          ...(queueId ? { queueId } : {}),
           ...(queueVersion ? { queueVersion } : {}),
-          ...(queueItemId  ? { queueItemId }  : {}),
+          ...(queueItemId ? { queueItemId } : {}),
         }));
       }
       return;
     }
 
+    setPlaybackPosition(positionOf(positionMs, durationMs));
     setState((prev) => ({
       isVisible: true,
       trackName: currentTrack.title,
       artistName: currentTrack.artist,
       artUrl: currentTrack.imageUrl,
-      stateIcon: status === 'playing' ? "▶" : status === 'paused' ? "⏸" : "–",
-      timeLabel: durationMs > 0 ? `${fmtTime(positionMs)} / ${fmtTime(durationMs)}` : "",
-      progressPct: pct,
-      positionMs,
+      stateIcon: status === 'playing' ? '▶' : status === 'paused' ? '⏸' : '–',
       durationMs,
       isPlaying,
       shuffle,
       // Playback state doesn't carry volume — keep whatever the provider last delivered.
       volume: prev.volume,
       repeat: repeatMode,
-      currentObjectId:
-        currentTrack.id !== prev.currentObjectId ? currentTrack.id : prev.currentObjectId,
+      currentObjectId: currentTrack.id !== prev.currentObjectId ? currentTrack.id : prev.currentObjectId,
       currentServiceId: currentTrack.serviceId,
       currentAccountId: currentTrack.accountId,
       currentAlbumId: currentTrack.albumId,
@@ -141,18 +153,8 @@ export function usePlayback(activeGroupId: string | null) {
     if (!state.isPlaying) return;
     const timer = setInterval(() => {
       const elapsed = Date.now() - lastUpdateAtRef.current;
-      const pos = Math.min(
-        positionMsRef.current + elapsed,
-        durationMsRef.current || 1,
-      );
-      const dur = durationMsRef.current;
-      const pct = dur > 0 ? (pos / dur) * 100 : 0;
-      setState((prev) => ({
-        ...prev,
-        positionMs: pos,
-        timeLabel: dur > 0 ? `${fmtTime(pos)} / ${fmtTime(dur)}` : "",
-        progressPct: pct,
-      }));
+      const pos = Math.min(positionMsRef.current + elapsed, durationMsRef.current || 1);
+      setPlaybackPosition(positionOf(pos, durationMsRef.current));
     }, 1000);
     return () => clearInterval(timer);
   }, [state.isPlaying]);
@@ -170,18 +172,17 @@ export function usePlayback(activeGroupId: string | null) {
         if (msgGroupId) groupCache.current.set(msgGroupId, normalized);
 
         // Only apply to UI if it's for the active group (or group isn't known yet)
-        if (
-          msgGroupId &&
-          activeGroupIdRef.current &&
-          msgGroupId !== activeGroupIdRef.current
-        ) return;
+        if (msgGroupId && activeGroupIdRef.current && msgGroupId !== activeGroupIdRef.current) return;
 
         applyState(normalized);
       },
-      (vol) => setState((prev) => ({ ...prev, volume: vol })),
+      (vol) => setState((prev) => ({ ...prev, volume: vol }))
     );
 
-    return () => { unsubReady(); unsubPlayback(); };
+    return () => {
+      unsubReady();
+      unsubPlayback();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -206,14 +207,15 @@ export function usePlayback(activeGroupId: string | null) {
         // Re-null after applyState in case it repopulated from stale cache
         queueVersionRef.current = null;
       } else {
+        setPlaybackPosition(ZERO_POSITION);
         setState({
           ...IDLE_STATE,
           isVisible: true,
-          trackName: "Nothing playing",
+          trackName: 'Nothing playing',
         });
       }
     },
-    [applyState],
+    [applyState]
   );
 
   return { playback: state, applyGroupCache, queueIdRef, queueVersionRef };

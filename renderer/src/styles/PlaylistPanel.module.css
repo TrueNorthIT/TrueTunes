@@ -13,7 +13,9 @@
   margin: 0 auto;
   container-type: inline-size;
 }
-.section { margin-bottom: 1.4em; }
+.section {
+  margin-bottom: 1.4em;
+}
 
 /* ── Cover ── */
 .coverPh {
@@ -22,7 +24,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 4em;
+  font-size: var(--fs-glyph-lg);
   font-weight: 700;
   color: var(--text-2);
 }
@@ -34,7 +36,13 @@
   height: 100%;
 }
 .mosaic img,
-.mosaic span { width: 100%; height: 100%; object-fit: cover; display: block; background: var(--bg-1); }
+.mosaic span {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  background: var(--bg-1);
+}
 .coverEdit {
   position: absolute;
   inset: 0;
@@ -50,10 +58,19 @@
 }
 .coverEdit:hover,
 .coverEdit:focus-visible,
-.coverUploading { opacity: 1; }
-.coverEdit:focus-visible { outline-offset: -3px; }
+.coverUploading {
+  opacity: 1;
+}
+.coverEdit:focus-visible {
+  outline-offset: -3px;
+}
 
-.skelTitle { display: block; width: 12em; height: 1em; border-radius: var(--r-xs); }
+.skelTitle {
+  display: block;
+  width: 12em;
+  height: 1em;
+  border-radius: var(--r-xs);
+}
 .renameInput {
   width: 100%;
   font: inherit;
@@ -66,7 +83,12 @@
 }
 
 /* ── People ── */
-.people { display: flex; align-items: center; gap: 0.3em 0.5em; flex-wrap: wrap; }
+.people {
+  display: flex;
+  align-items: center;
+  gap: 0.3em 0.5em;
+  flex-wrap: wrap;
+}
 .avatar {
   width: 1.9em;
   height: 1.9em;
@@ -81,7 +103,12 @@
   flex-shrink: 0;
   line-height: 1;
 }
-.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .face {
   display: inline-flex;
   align-items: center;
@@ -95,13 +122,32 @@
   font-weight: 500;
   color: var(--text-2);
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast);
+  transition:
+    background var(--dur-fast) var(--ease-fast),
+    color var(--dur-fast) var(--ease-fast);
 }
 .face:hover,
-.face:focus-visible { background: var(--row-hover); color: var(--text); }
-.with { font-size: var(--fs-body); color: var(--text-3); }
-.collabs { display: flex; align-items: center; flex-wrap: wrap; gap: 0.3em 0.5em; list-style: none; margin: 0; padding: 0; }
-.more { font-size: var(--fs-label); color: var(--text-3); }
+.face:focus-visible {
+  background: var(--row-hover);
+  color: var(--text);
+}
+.with {
+  font-size: var(--fs-body);
+  color: var(--text-3);
+}
+.collabs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3em 0.5em;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.more {
+  font-size: var(--fs-label);
+  color: var(--text-3);
+}
 
 .metaLine {
   display: flex;
@@ -112,13 +158,29 @@
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
 }
-.privacy { display: inline-flex; align-items: center; gap: 0.35em; }
-.actions { display: flex; align-items: center; gap: 0.6em; margin-top: 0.4em; flex-wrap: wrap; }
+.privacy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  margin-top: 0.4em;
+  flex-wrap: wrap;
+}
 
 /* ── Tracks ── */
 /* ponytail: capped so the duration stays near the title on wide windows; see AlbumPanel.module.css. */
-.trackCard { max-width: 68em; }
-.list { list-style: none; margin: 0; padding: 0; }
+.trackCard {
+  max-width: 68em;
+}
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
 .dropLine {
   height: 2px;
   margin: 0 0.6em;
@@ -131,12 +193,31 @@
   text-align: center;
   padding: 3em 0;
 }
-.skeletonRow { display: flex; align-items: center; gap: 1em; padding: 0.55em 0.6em; }
-.skelNum { width: 2em; height: 0.9em; border-radius: var(--r-xs); }
-.skelArt { width: 3.2em; height: 3.2em; border-radius: var(--r-thumb); flex: none; }
-.skelLine { height: 1em; border-radius: var(--r-xs); }
+.skeletonRow {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  padding: 0.55em 0.6em;
+}
+.skelNum {
+  width: 2em;
+  height: 0.9em;
+  border-radius: var(--r-xs);
+}
+.skelArt {
+  width: 3.2em;
+  height: 3.2em;
+  border-radius: var(--r-thumb);
+  flex: none;
+}
+.skelLine {
+  height: 1em;
+  border-radius: var(--r-xs);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .coverEdit,
-  .face { transition: none; }
+  .face {
+    transition: none;
+  }
 }

@@ -1,8 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import { api } from '../lib/sonosApi';
 import { decodeDefaults } from '../lib/itemHelpers';
 import type { AlbumTrack } from './useAlbumBrowse';
 import type { PlaylistResponse } from '../types/PlaylistResponse';
+import { STALE, GC_HOUR } from '../lib/queryDefaults';
 
 function cleanArtistId(id: string): string {
   return id.replace(/^srn:content:audio:artist:/, '').replace(/#.*$/, '');
@@ -36,22 +37,27 @@ export function parsePlaylistTracks(data: unknown): AlbumTrack[] {
   }));
 }
 
+export const playlistBrowseKeys = {
+  // Distinct from playlistKeys.detail (our own PlaylistDoc), which used to share ['playlist', id].
+  detail: (playlistId: string | undefined) => ['playlist-browse', playlistId] as const,
+};
+
 export function playlistQueryOptions(
   playlistId: string | undefined,
   serviceId: string | undefined,
   accountId: string | undefined,
-  defaults?: string,
+  defaults?: string
 ) {
-  return {
-    queryKey: ['playlist', playlistId] as const,
+  return queryOptions({
+    queryKey: playlistBrowseKeys.detail(playlistId),
     queryFn: async () => {
       const r = await api.browse.playlist(playlistId!, { serviceId, accountId, defaults, muse2: true });
       if (r.error) throw new Error(r.error);
       return parsePlaylistTracks(r.data);
     },
-    staleTime: Infinity,
-    gcTime: 60 * 60 * 1000,
-  };
+    staleTime: STALE.forever,
+    gcTime: GC_HOUR,
+  });
 }
 
 export function usePlaylistBrowse(

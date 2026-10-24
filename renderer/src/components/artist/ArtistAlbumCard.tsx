@@ -33,17 +33,33 @@ export function ArtistAlbumCard({ album, onOpen, onAdd, year, artistName, trackH
       tabIndex={0}
       aria-label={`Open ${album.title}`}
       onClick={() => onOpen(album)}
-      onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onOpen(album); } }}
+      onKeyDown={(e) => {
+        if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onOpen(album);
+        }
+      }}
     >
       <div className={styles.albumArt}>
         <Artwork src={art} placeholderClassName={styles.albumArtPh} />
-        <AddButton variant="corner" className={styles.albumAdd} label={`Add ${album.title} to queue`} onClick={() => onAdd(album)} />
+        <AddButton
+          variant="corner"
+          className={styles.albumAdd}
+          label={`Add ${album.title} to queue`}
+          onClick={() => onAdd(album)}
+        />
       </div>
       <div className={styles.albumTitle}>
-        <span className={styles.albumTitleText} title={album.title}>{album.title}</span>
+        <span className={styles.albumTitleText} title={album.title}>
+          {album.title}
+        </span>
         {explicit && <ExplicitBadge />}
       </div>
-      {subtitle && <div className={styles.albumSub} title={fullSubtitle}>{subtitle}</div>}
+      {subtitle && (
+        <div className={styles.albumSub} title={fullSubtitle}>
+          {subtitle}
+        </div>
+      )}
       <TrackHitLine hits={trackHits} searching={searching} />
     </div>
   );

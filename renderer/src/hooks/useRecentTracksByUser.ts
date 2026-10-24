@@ -1,17 +1,13 @@
 import { useQueries } from '@tanstack/react-query';
+import { recentlyPlayedQueryOptions } from './useRecentlyPlayed';
 
 /**
- * Recent tracks and albums per person, from one request each. Same key and fetcher as
+ * Recent tracks and albums per person, from one request each. Same options as
  * useRecentlyPlayed, so the cache is shared.
  */
 export function useRecentTracksByUser(userIds: string[], enabled = true) {
   const results = useQueries({
-    queries: userIds.map((userId) => ({
-      queryKey: ['recentlyPlayed', userId],
-      queryFn: () => window.sonos.fetchRecentlyPlayed(userId),
-      enabled,
-      staleTime: 5 * 60 * 1000,
-    })),
+    queries: userIds.map((userId) => ({ ...recentlyPlayedQueryOptions(userId), enabled })),
   });
   const tracksByUser = new Map<string, RecentTrack[]>();
   const albumsByUser = new Map<string, RecentAlbum[]>();

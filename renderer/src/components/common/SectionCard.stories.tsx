@@ -19,7 +19,13 @@ const meta = {
   title: 'Common/SectionCard',
   component: SectionCard,
   args: { title: 'Jump back in', children: tiles },
-  decorators: [(Story) => <div style={{ maxWidth: '52em' }}><Story /></div>],
+  decorators: [
+    (Story) => (
+      <div style={{ maxWidth: '52em' }}>
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof SectionCard>;
 
 export default meta;

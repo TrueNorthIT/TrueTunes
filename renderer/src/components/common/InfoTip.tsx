@@ -31,18 +31,24 @@ export function InfoTip({ label, children, className, icon }: Props) {
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const open = hover || focus;
 
-  const hide = useCallback(() => { setHover(false); setFocus(false); }, []);
+  const hide = useCallback(() => {
+    setHover(false);
+    setFocus(false);
+  }, []);
 
   // Escape works wherever focus is, including after a hover-open.
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') hide(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') hide();
+    };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [open, hide]);
 
   // Below the button, flipped above when it won't fit; clamped inside the window.
   useLayoutEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- measures the laid-out DOM, which only exists after commit
     if (!open || !btn.current || !tip.current) return setPos(null);
     const b = btn.current.getBoundingClientRect();
     const t = tip.current.getBoundingClientRect();
@@ -79,7 +85,7 @@ export function InfoTip({ label, children, className, icon }: Props) {
           >
             {children}
           </div>,
-          document.body,
+          document.body
         )}
     </>
   );

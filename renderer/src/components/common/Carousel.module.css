@@ -31,7 +31,9 @@
   border-radius: var(--r-pill);
   background: var(--glass-faint);
 }
-.searchBox:focus-within { border-color: var(--border-2); }
+.searchBox:focus-within {
+  border-color: var(--border-2);
+}
 .searchInput {
   flex: 1;
   min-width: 0;
@@ -43,7 +45,9 @@
   font-family: inherit;
   padding: 0;
 }
-.searchInput::placeholder { color: var(--text-3); }
+.searchInput::placeholder {
+  color: var(--text-3);
+}
 .searchClear {
   background: none;
   border: none;
@@ -54,15 +58,24 @@
   padding: 4px;
   border-radius: var(--r-round);
 }
-.searchClear:hover { color: var(--text); }
-.searchStatus { font-size: var(--fs-px); color: var(--text-3); white-space: nowrap; }
+.searchClear:hover {
+  color: var(--text);
+}
+.searchStatus {
+  font-size: var(--fs-px);
+  color: var(--text-3);
+  white-space: nowrap;
+}
 .controls {
   margin-left: auto;
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.arrows { display: flex; gap: 4px; }
+.arrows {
+  display: flex;
+  gap: 4px;
+}
 /* Quiet circle, no stroke: the same family as the add button. The focus ring is the global one. */
 .arrow {
   width: 28px;
@@ -71,7 +84,7 @@
   border: none;
   background: none;
   color: var(--text-3);
-  font-size: 18px;
+  font-size: var(--fs-icon);
   line-height: 1;
   font-family: inherit;
   cursor: pointer;
@@ -79,8 +92,14 @@
     background var(--dur-fast) var(--ease-fast),
     color var(--dur-fast) var(--ease-fast);
 }
-.arrow:hover:not(:disabled) { color: var(--text); background: var(--bg-2); }
-.arrow:disabled { opacity: 0.3; cursor: default; }
+.arrow:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--bg-2);
+}
+.arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
 
 .row {
   display: flex;
@@ -91,8 +110,12 @@
   padding: 25px 4px 10px;
   margin: -25px -4px -10px;
 }
-.row::-webkit-scrollbar { height: 0; }
+.row::-webkit-scrollbar {
+  height: 0;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .arrow { transition: none; }
+  .arrow {
+    transition: none;
+  }
 }

@@ -2,8 +2,8 @@ export function applyReorderLocally<T>(items: T[], fromIndices: number[], toInde
   const selectedSet = new Set(fromIndices);
   const remaining = items.filter((_, i) => !selectedSet.has(i));
   const origNonSelected = items.flatMap((_, i) => (selectedSet.has(i) ? [] : [i]));
-  const insertAt = origNonSelected.filter(i => i < toIndex).length;
-  const movers = [...fromIndices].sort((a, b) => a - b).map(i => items[i]);
+  const insertAt = origNonSelected.filter((i) => i < toIndex).length;
+  const movers = [...fromIndices].sort((a, b) => a - b).map((i) => items[i]);
   return [...remaining.slice(0, insertAt), ...movers, ...remaining.slice(insertAt)];
 }
 
@@ -16,11 +16,7 @@ export function applyReorderLocally<T>(items: T[], fromIndices: number[], toInde
 // `albumIds` is aligned to the queue items. Callers must supply the merged album id
 // (e.g. NormalizedTrack values overlaid with whatever `useTrackDetails` resolved)
 // because Sonos doesn't reliably embed album info on raw queue rows.
-export function expandToAlbumBlock(
-  itemCount: number,
-  anchor: number,
-  albumIds: (string | null)[],
-): Set<number> {
+export function expandToAlbumBlock(itemCount: number, anchor: number, albumIds: (string | null)[]): Set<number> {
   if (anchor < 0 || anchor >= itemCount) return new Set([anchor]);
   const anchorAlbum = albumIds[anchor];
   if (!anchorAlbum) return new Set([anchor]);

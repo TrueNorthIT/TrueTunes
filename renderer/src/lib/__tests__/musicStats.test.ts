@@ -16,6 +16,7 @@ import {
   slotLabel,
   varietyRows,
 } from '../musicStats';
+import { runQueryFn } from '../../test/queryFn';
 
 const person = (userId: string, over: Partial<MusicPersonStats> = {}): MusicPersonStats => ({
   userId,
@@ -80,7 +81,11 @@ describe('per-person rows', () => {
   const people = [
     person('A', { airtimeMs: 10, avgLengthMs: 200_000, explicitPct: 5, variety: 0.2, trackQueues: 50 }),
     person('B', { airtimeMs: 30, avgLengthMs: 400_000, explicitPct: 40, variety: 0.5, trackQueues: 19 }),
-    person('C', { variety: 0.3, trackQueues: 20, mostRequeued: { trackName: 't', artist: 'a', imageUrl: null, count: 4 } }),
+    person('C', {
+      variety: 0.3,
+      trackQueues: 20,
+      mostRequeued: { trackName: 't', artist: 'a', imageUrl: null, count: 4 },
+    }),
   ];
 
   it('sorts airtime desc and drops people with none known', () => {
@@ -116,6 +121,6 @@ describe('musicStatsQueryOptions', () => {
 
   it('throws on an error reply so the page shows its error state', async () => {
     vi.mocked(window.sonos.fetchMusicStats).mockResolvedValueOnce({ error: 'boom' });
-    await expect(musicStatsQueryOptions().queryFn()).rejects.toThrow('boom');
+    await expect(runQueryFn(musicStatsQueryOptions())).rejects.toThrow('boom');
   });
 });

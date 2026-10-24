@@ -76,7 +76,16 @@ describe('parsePlaylistTracks', () => {
 
   it('collects artist names into artists array', () => {
     const result = parsePlaylistTracks({
-      tracks: { items: [makeTrack('Song', { artists: [{ name: 'Alpha', id: 'id-1' }, { name: 'Beta', id: 'id-2' }] })] },
+      tracks: {
+        items: [
+          makeTrack('Song', {
+            artists: [
+              { name: 'Alpha', id: 'id-1' },
+              { name: 'Beta', id: 'id-2' },
+            ],
+          }),
+        ],
+      },
     });
     expect(result[0].artists).toEqual(['Alpha', 'Beta']);
   });
@@ -106,17 +115,20 @@ describe('parsePlaylistTracks', () => {
 // ─── usePlaylistBrowse hook ───────────────────────────────────────────────────
 
 function wrapper({ children }: { children: React.ReactNode }) {
-  return createElement(QueryClientProvider, { client: new QueryClient({ defaultOptions: { queries: { retry: false } } }) }, children);
+  return createElement(
+    QueryClientProvider,
+    { client: new QueryClient({ defaultOptions: { queries: { retry: false } } }) },
+    children
+  );
 }
 
 describe('usePlaylistBrowse', () => {
-  beforeEach(() => { mockApiPlaylist.mockReset(); });
+  beforeEach(() => {
+    mockApiPlaylist.mockReset();
+  });
 
   it('is disabled when playlistId is undefined', () => {
-    const { result } = renderHook(
-      () => usePlaylistBrowse(undefined, 'svc', 'acc'),
-      { wrapper }
-    );
+    const { result } = renderHook(() => usePlaylistBrowse(undefined, 'svc', 'acc'), { wrapper });
     expect(result.current.isLoading).toBe(false);
     expect(result.current.data).toBeUndefined();
   });
@@ -126,20 +138,14 @@ describe('usePlaylistBrowse', () => {
       error: null,
       data: { tracks: { items: [makeTrack('Fetched Song')] } },
     });
-    const { result } = renderHook(
-      () => usePlaylistBrowse('pl-1', 'svc', 'acc'),
-      { wrapper }
-    );
+    const { result } = renderHook(() => usePlaylistBrowse('pl-1', 'svc', 'acc'), { wrapper });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.data?.[0]?.title).toBe('Fetched Song');
   });
 
   it('throws when api returns error', async () => {
     mockApiPlaylist.mockResolvedValue({ error: 'Not found', data: null });
-    const { result } = renderHook(
-      () => usePlaylistBrowse('pl-1', 'svc', 'acc'),
-      { wrapper }
-    );
+    const { result } = renderHook(() => usePlaylistBrowse('pl-1', 'svc', 'acc'), { wrapper });
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });

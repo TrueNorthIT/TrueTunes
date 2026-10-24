@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useAutoplay } from '../useAutoplay';
 import type { NormalizedQueueItem } from '../../types/provider';
@@ -18,12 +18,21 @@ beforeEach(() => {
   vi.mocked(window.sonos.djAutoplay).mockReset();
   vi.mocked(window.sonos.fetchDjSet).mockReset();
   localStorage.clear();
+  // vitest runs with DEV true; the lease tests below are about a production build.
+  vi.stubEnv('DEV', false);
+  vi.stubEnv('VITE_DJ_AUTOPLAY_IN_DEV', '');
 });
+
+afterEach(() => vi.unstubAllEnvs());
 
 describe('useAutoplay', () => {
   it('reports the queue and now-playing to the coordinator', async () => {
     vi.mocked(window.sonos.djAutoplay).mockResolvedValue({
-      enabled: true, leaseHeld: false, enqueue: null, upcoming: [track], fillerUri: null,
+      enabled: true,
+      leaseHeld: false,
+      enqueue: null,
+      upcoming: [track],
+      fillerUri: null,
     });
 
     renderHook(() =>
@@ -32,7 +41,7 @@ describe('useAutoplay', () => {
         items: [item('a'), item('b')],
         nowPlayingUri: 'a',
         onEnqueue: vi.fn(),
-      }),
+      })
     );
 
     await waitFor(() => expect(window.sonos.djAutoplay).toHaveBeenCalled());
@@ -50,10 +59,18 @@ describe('useAutoplay', () => {
    */
   it('sends name keys alongside uris, index-aligned', async () => {
     vi.mocked(window.sonos.djAutoplay).mockResolvedValue({
-      enabled: true, leaseHeld: false, enqueue: null, upcoming: [], fillerUri: null,
+      enabled: true,
+      leaseHeld: false,
+      enqueue: null,
+      upcoming: [],
+      fillerUri: null,
     });
     vi.mocked(window.sonos.fetchDjSet).mockResolvedValue({
-      tracks: [], artists: [], listeners: [], artistsConsidered: 0, inferredListeners: true,
+      tracks: [],
+      artists: [],
+      listeners: [],
+      artistsConsidered: 0,
+      inferredListeners: true,
     });
 
     renderHook(() =>
@@ -62,7 +79,7 @@ describe('useAutoplay', () => {
         items: [item('a'), item('b')],
         nowPlayingUri: 'a',
         onEnqueue: vi.fn(),
-      }),
+      })
     );
 
     await waitFor(() => expect(window.sonos.djAutoplay).toHaveBeenCalled());
@@ -77,12 +94,14 @@ describe('useAutoplay', () => {
   it('only enqueues when it holds the lease', async () => {
     const onEnqueue = vi.fn();
     vi.mocked(window.sonos.djAutoplay).mockResolvedValue({
-      enabled: true, leaseHeld: false, enqueue: track, upcoming: [track], fillerUri: null,
+      enabled: true,
+      leaseHeld: false,
+      enqueue: track,
+      upcoming: [track],
+      fillerUri: null,
     });
 
-    renderHook(() =>
-      useAutoplay({ groupId: 'g1', items: [], nowPlayingUri: null, onEnqueue }),
-    );
+    renderHook(() => useAutoplay({ groupId: 'g1', items: [], nowPlayingUri: null, onEnqueue }));
 
     await waitFor(() => expect(window.sonos.djAutoplay).toHaveBeenCalled());
     expect(onEnqueue).not.toHaveBeenCalled();
@@ -91,12 +110,14 @@ describe('useAutoplay', () => {
   it('enqueues the coordinator’s pick when it does hold the lease', async () => {
     const onEnqueue = vi.fn();
     vi.mocked(window.sonos.djAutoplay).mockResolvedValue({
-      enabled: true, leaseHeld: true, enqueue: track, upcoming: [track], fillerUri: 'dj-1',
+      enabled: true,
+      leaseHeld: true,
+      enqueue: track,
+      upcoming: [track],
+      fillerUri: 'dj-1',
     });
 
-    const { result } = renderHook(() =>
-      useAutoplay({ groupId: 'g1', items: [], nowPlayingUri: null, onEnqueue }),
-    );
+    const { result } = renderHook(() => useAutoplay({ groupId: 'g1', items: [], nowPlayingUri: null, onEnqueue }));
 
     await waitFor(() => expect(onEnqueue).toHaveBeenCalledWith(track));
     await waitFor(() => expect(result.current.fillerUri).toBe('dj-1'));
@@ -104,11 +125,15 @@ describe('useAutoplay', () => {
 
   it('still previews before a group has been picked', async () => {
     vi.mocked(window.sonos.fetchDjSet).mockResolvedValue({
-      tracks: [track], artists: [], listeners: [], artistsConsidered: 1, inferredListeners: true,
+      tracks: [track],
+      artists: [],
+      listeners: [],
+      artistsConsidered: 1,
+      inferredListeners: true,
     });
 
     const { result } = renderHook(() =>
-      useAutoplay({ groupId: null, items: [], nowPlayingUri: null, onEnqueue: vi.fn() }),
+      useAutoplay({ groupId: null, items: [], nowPlayingUri: null, onEnqueue: vi.fn() })
     );
 
     // No group means no coordination — but the preview is still worth showing.
@@ -119,32 +144,38 @@ describe('useAutoplay', () => {
   /** Each Sonos group is its own queue, with its own session and lease. */
   it('coordinates per group', async () => {
     vi.mocked(window.sonos.djAutoplay).mockResolvedValue({
-      enabled: true, leaseHeld: true, enqueue: null, upcoming: [track], fillerUri: 'dj-1',
+      enabled: true,
+      leaseHeld: true,
+      enqueue: null,
+      upcoming: [track],
+      fillerUri: 'dj-1',
     });
 
     const { rerender } = renderHook(
       ({ groupId }) => useAutoplay({ groupId, items: [], nowPlayingUri: null, onEnqueue: vi.fn() }),
-      { initialProps: { groupId: 'kitchen' as string | null } },
+      { initialProps: { groupId: 'kitchen' as string | null } }
     );
     await waitFor(() => expect(window.sonos.djAutoplay).toHaveBeenCalled());
     expect(vi.mocked(window.sonos.djAutoplay).mock.calls[0][0].groupId).toBe('kitchen');
 
     rerender({ groupId: 'studio' });
     await waitFor(() =>
-      expect(
-        vi.mocked(window.sonos.djAutoplay).mock.calls.some((c) => c[0].groupId === 'studio'),
-      ).toBe(true),
+      expect(vi.mocked(window.sonos.djAutoplay).mock.calls.some((c) => c[0].groupId === 'studio')).toBe(true)
     );
   });
 
   it('drops the old room’s filler the moment the group changes', async () => {
     vi.mocked(window.sonos.djAutoplay).mockResolvedValue({
-      enabled: true, leaseHeld: false, enqueue: null, upcoming: [track], fillerUri: 'dj-1',
+      enabled: true,
+      leaseHeld: false,
+      enqueue: null,
+      upcoming: [track],
+      fillerUri: 'dj-1',
     });
 
     const { result, rerender } = renderHook(
       ({ groupId }) => useAutoplay({ groupId, items: [], nowPlayingUri: null, onEnqueue: vi.fn() }),
-      { initialProps: { groupId: 'kitchen' as string | null } },
+      { initialProps: { groupId: 'kitchen' as string | null } }
     );
     await waitFor(() => expect(result.current.fillerUri).toBe('dj-1'));
 
@@ -158,7 +189,11 @@ describe('useAutoplay', () => {
 
   it('reuses one client id across mounts so the lease does not bounce', async () => {
     vi.mocked(window.sonos.djAutoplay).mockResolvedValue({
-      enabled: false, leaseHeld: false, enqueue: null, upcoming: [], fillerUri: null,
+      enabled: false,
+      leaseHeld: false,
+      enqueue: null,
+      upcoming: [],
+      fillerUri: null,
     });
 
     const opts = { groupId: 'g1', items: [], nowPlayingUri: null, onEnqueue: vi.fn() };
@@ -176,13 +211,15 @@ describe('useAutoplay', () => {
   it('survives the coordinator being unreachable', async () => {
     vi.mocked(window.sonos.djAutoplay).mockRejectedValue(new Error('offline'));
     vi.mocked(window.sonos.fetchDjSet).mockResolvedValue({
-      tracks: [], artists: [], listeners: [], artistsConsidered: 0, inferredListeners: true,
+      tracks: [],
+      artists: [],
+      listeners: [],
+      artistsConsidered: 0,
+      inferredListeners: true,
     });
     const onEnqueue = vi.fn();
 
-    const { result } = renderHook(() =>
-      useAutoplay({ groupId: 'g1', items: [], nowPlayingUri: null, onEnqueue }),
-    );
+    const { result } = renderHook(() => useAutoplay({ groupId: 'g1', items: [], nowPlayingUri: null, onEnqueue }));
 
     await waitFor(() => expect(window.sonos.djAutoplay).toHaveBeenCalled());
     expect(result.current.upcoming).toEqual([]);
@@ -202,7 +239,7 @@ describe('useAutoplay', () => {
     });
 
     const { result } = renderHook(() =>
-      useAutoplay({ groupId: 'g1', items: [], nowPlayingUri: null, onEnqueue: vi.fn() }),
+      useAutoplay({ groupId: 'g1', items: [], nowPlayingUri: null, onEnqueue: vi.fn() })
     );
 
     await waitFor(() => expect(result.current.upcoming).toHaveLength(1));
@@ -211,7 +248,11 @@ describe('useAutoplay', () => {
 
   it('fills the preview when the coordinator answers with nothing', async () => {
     vi.mocked(window.sonos.djAutoplay).mockResolvedValue({
-      enabled: false, leaseHeld: false, enqueue: null, upcoming: [], fillerUri: null,
+      enabled: false,
+      leaseHeld: false,
+      enqueue: null,
+      upcoming: [],
+      fillerUri: null,
     });
     vi.mocked(window.sonos.fetchDjSet).mockResolvedValue({
       tracks: [track],
@@ -222,7 +263,7 @@ describe('useAutoplay', () => {
     });
 
     const { result } = renderHook(() =>
-      useAutoplay({ groupId: 'g1', items: [], nowPlayingUri: null, onEnqueue: vi.fn() }),
+      useAutoplay({ groupId: 'g1', items: [], nowPlayingUri: null, onEnqueue: vi.fn() })
     );
 
     await waitFor(() => expect(result.current.upcoming).toHaveLength(1));
@@ -230,13 +271,15 @@ describe('useAutoplay', () => {
 
   it('never lets the stand-in overwrite what is really parked', async () => {
     vi.mocked(window.sonos.djAutoplay).mockResolvedValue({
-      enabled: true, leaseHeld: false, enqueue: null,
+      enabled: true,
+      leaseHeld: false,
+      enqueue: null,
       upcoming: [{ ...track, uri: 'real', trackName: 'Actually Parked' }],
       fillerUri: 'real',
     });
 
     const { result } = renderHook(() =>
-      useAutoplay({ groupId: 'g1', items: [], nowPlayingUri: null, onEnqueue: vi.fn() }),
+      useAutoplay({ groupId: 'g1', items: [], nowPlayingUri: null, onEnqueue: vi.fn() })
     );
 
     await waitFor(() => expect(result.current.upcoming[0].trackName).toBe('Actually Parked'));
@@ -250,7 +293,11 @@ describe('useAutoplay', () => {
    */
   it('reports the playhead position, converted to a zero-based index', async () => {
     vi.mocked(window.sonos.djAutoplay).mockResolvedValue({
-      enabled: true, leaseHeld: false, enqueue: null, upcoming: [track], fillerUri: null,
+      enabled: true,
+      leaseHeld: false,
+      enqueue: null,
+      upcoming: [track],
+      fillerUri: null,
     });
 
     renderHook(() =>
@@ -260,7 +307,7 @@ describe('useAutoplay', () => {
         nowPlayingUri: 'b',
         nowPlayingQueueItemId: '2',
         onEnqueue: vi.fn(),
-      }),
+      })
     );
 
     await waitFor(() => expect(window.sonos.djAutoplay).toHaveBeenCalled());
@@ -269,7 +316,11 @@ describe('useAutoplay', () => {
 
   it('sends no index when the player does not report one', async () => {
     vi.mocked(window.sonos.djAutoplay).mockResolvedValue({
-      enabled: true, leaseHeld: false, enqueue: null, upcoming: [track], fillerUri: null,
+      enabled: true,
+      leaseHeld: false,
+      enqueue: null,
+      upcoming: [track],
+      fillerUri: null,
     });
 
     renderHook(() =>
@@ -279,10 +330,37 @@ describe('useAutoplay', () => {
         nowPlayingUri: 'a',
         nowPlayingQueueItemId: null,
         onEnqueue: vi.fn(),
-      }),
+      })
     );
 
     await waitFor(() => expect(window.sonos.djAutoplay).toHaveBeenCalled());
     expect(vi.mocked(window.sonos.djAutoplay).mock.calls[0][0].nowPlayingIndex).toBeNull();
+  });
+
+  describe('in a dev build', () => {
+    const props = { groupId: 'g1', items: [item('a')], nowPlayingUri: 'a', onEnqueue: vi.fn() };
+
+    it('never asks for the lease, but still shows the DJ preview', async () => {
+      vi.stubEnv('DEV', true);
+      vi.mocked(window.sonos.fetchDjSet).mockResolvedValue({ tracks: [track] } as never);
+      const { result } = renderHook(() => useAutoplay(props));
+      await waitFor(() => expect(result.current.upcoming).toEqual([track]));
+      expect(window.sonos.djAutoplay).not.toHaveBeenCalled();
+      expect(props.onEnqueue).not.toHaveBeenCalled();
+    });
+
+    it('takes part again when VITE_DJ_AUTOPLAY_IN_DEV is true', async () => {
+      vi.stubEnv('DEV', true);
+      vi.stubEnv('VITE_DJ_AUTOPLAY_IN_DEV', 'true');
+      vi.mocked(window.sonos.djAutoplay).mockResolvedValue({
+        enabled: true,
+        leaseHeld: false,
+        enqueue: null,
+        upcoming: [track],
+        fillerUri: null,
+      });
+      renderHook(() => useAutoplay(props));
+      await waitFor(() => expect(window.sonos.djAutoplay).toHaveBeenCalled());
+    });
   });
 });

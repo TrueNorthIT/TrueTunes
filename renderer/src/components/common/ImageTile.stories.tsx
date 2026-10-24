@@ -8,7 +8,13 @@ const meta = {
   component: ImageTile,
   args: { title: 'Golden Hour', sub: 'Maya Rowan', imageUrl: covers.sunset, onOpen: fn(), onHover: fn() },
   // A tile fills its container; on Home the grid sets the width.
-  decorators: [(Story) => <div style={{ width: '12em' }}><Story /></div>],
+  decorators: [
+    (Story) => (
+      <div style={{ width: '12em' }}>
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof ImageTile>;
 
 export default meta;

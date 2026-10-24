@@ -6,6 +6,9 @@
     "rootDir": "src",
     "outDir": "dist",
     "strict": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true

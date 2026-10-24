@@ -9,8 +9,7 @@
 .featured {
   padding: 1.7em;
   background:
-    radial-gradient(120% 110% at 15% 0%, rgba(var(--wash, 150, 158, 255), 0.26), transparent 62%),
-    var(--surface-hi);
+    radial-gradient(120% 110% at 15% 0%, rgba(var(--wash, 150, 158, 255), 0.26), transparent 62%), var(--surface-hi);
 }
 
 .head {
@@ -20,7 +19,9 @@
   flex-wrap: wrap;
   margin-bottom: 1.1em;
 }
-.headTight { margin-bottom: 0.3em; }
+.headTight {
+  margin-bottom: 0.3em;
+}
 .sub {
   margin-bottom: 1.1em;
   font-size: var(--fs-label);

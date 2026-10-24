@@ -9,12 +9,7 @@ export interface ReleaseGroup {
 
 export function releaseKey(item: SonosItem): string {
   const id = item.id;
-  return (
-    item.resource?.id?.objectId ??
-    (typeof id === 'string' ? id : id?.objectId) ??
-    item.title ??
-    ''
-  );
+  return item.resource?.id?.objectId ?? (typeof id === 'string' ? id : id?.objectId) ?? item.title ?? '';
 }
 
 export type ReleaseLabel = 'album' | 'single' | 'unknown';
@@ -60,7 +55,7 @@ function classify(title: string): { base: string; rank: Rank } {
 
 export function groupReleases(
   releases: SonosItem[],
-  trackCounts: Map<string, number>,
+  trackCounts: Map<string, number>
 ): { albums: ReleaseGroup[]; singles: ReleaseGroup[]; other: ReleaseGroup[] } {
   const byBase = new Map<string, { item: SonosItem; rank: Rank; i: number }[]>();
   releases.forEach((item, i) => {
@@ -73,7 +68,10 @@ export function groupReleases(
   // A group sits at its earliest non-alternate member (its earliest member if all are alternates),
   // so a stray remix listed early does not drag the original's group up the shelf.
   const pos = (ms: { rank: Rank; i: number }[]) =>
-    Math.min(...ms.filter((m) => m.rank < 2).map((m) => m.i), ...(ms.every((m) => m.rank === 2) ? ms.map((m) => m.i) : []));
+    Math.min(
+      ...ms.filter((m) => m.rank < 2).map((m) => m.i),
+      ...(ms.every((m) => m.rank === 2) ? ms.map((m) => m.i) : [])
+    );
   const ordered = [...byBase.values()].sort((a, b) => pos(a) - pos(b));
 
   const out = { albums: [] as ReleaseGroup[], singles: [] as ReleaseGroup[], other: [] as ReleaseGroup[] };

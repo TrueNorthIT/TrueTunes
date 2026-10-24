@@ -7,7 +7,20 @@ const meta = {
   title: 'Common/AddButton',
   component: AddButton,
   args: { label: 'Add Golden Hour to queue', onClick: fn() },
-  decorators: [(Story) => <div style={{ display: 'inline-block', padding: '1em', borderRadius: '1em', background: 'var(--bg-1)' }}><Story /></div>],
+  decorators: [
+    (Story) => (
+      <div
+        style={{
+          display: 'inline-block',
+          padding: '1em',
+          borderRadius: 'var(--r-art-card)',
+          background: 'var(--bg-1)',
+        }}
+      >
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof AddButton>;
 
 export default meta;

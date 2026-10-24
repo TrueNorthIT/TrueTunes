@@ -43,7 +43,18 @@ export interface SonosAPI {
   setDisplayName: (name: string) => Promise<{ error: string } | null>;
   getQueueDockedWidth: () => Promise<number>;
   setQueueDockedWidth: (width: number) => Promise<void>;
-  publishQueued: (item: { eventType: 'track' | 'album'; uri: string; trackName: string; artist: string; serviceId?: string; accountId?: string; artistId?: string; album?: string; albumId?: string; imageUrl?: string }) => Promise<void>;
+  publishQueued: (item: {
+    eventType: 'track' | 'album';
+    uri: string;
+    trackName: string;
+    artist: string;
+    serviceId?: string;
+    accountId?: string;
+    artistId?: string;
+    album?: string;
+    albumId?: string;
+    imageUrl?: string;
+  }) => Promise<void>;
   onAttributionMap: (cb: (map: AttributionMap) => void) => Unsubscribe;
   onAttributionEvent: (cb: (event: AttributionEvent) => void) => Unsubscribe;
   refreshAttribution: () => Promise<void>;
@@ -96,10 +107,20 @@ export interface SonosAPI {
   entraReLogin: () => Promise<void>;
   onEntraReady: (cb: (user: EntraUser) => void) => Unsubscribe;
   renameUser: (oldName: string, newName: string) => Promise<{ ok?: boolean; error?: string }>;
-  updateNowPlayingSmtc: (data: { title?: string; artist?: string; album?: string; artworkUrl?: string }) => Promise<void>;
-  minimizeWindow:    () => Promise<void>;
-  maximizeWindow:    () => Promise<void>;
-  closeWindow:       () => Promise<void>;
+  submitFeedback: (
+    type: 'bug' | 'feature',
+    title: string,
+    description: string
+  ) => Promise<{ url: string } | { error: string }>;
+  updateNowPlayingSmtc: (data: {
+    title?: string;
+    artist?: string;
+    album?: string;
+    artworkUrl?: string;
+  }) => Promise<void>;
+  minimizeWindow: () => Promise<void>;
+  maximizeWindow: () => Promise<void>;
+  closeWindow: () => Promise<void>;
   isWindowMaximized: () => Promise<boolean>;
   onWindowMaximized: (cb: (maximized: boolean) => void) => Unsubscribe;
   onUpdateDownloaded: (cb: (version: string) => void) => Unsubscribe;
@@ -202,7 +223,8 @@ contextBridge.exposeInMainWorld('sonos', {
     return () => ipcRenderer.removeListener('attribution:map', listener);
   },
   refreshAttribution: () => ipcRenderer.invoke('attribution:refresh'),
-  fetchStats: (period: string, userId?: string, count?: number) => ipcRenderer.invoke('stats:fetch', period, userId, count),
+  fetchStats: (period: string, userId?: string, count?: number) =>
+    ipcRenderer.invoke('stats:fetch', period, userId, count),
   fetchDailyGame: (date?: string) => ipcRenderer.invoke('game:fetch', date),
   submitGameScore: (input) => ipcRenderer.invoke('game:submit', input),
   fetchGameLeaderboard: (date?: string) => ipcRenderer.invoke('game:leaderboard', date),
@@ -223,27 +245,24 @@ contextBridge.exposeInMainWorld('sonos', {
     ipcRenderer.on('attribution:event', listener);
     return () => ipcRenderer.removeListener('attribution:event', listener);
   },
-  fetchRecentlyPlayed: (userId: string) =>
-    ipcRenderer.invoke('history:recent', userId),
+  fetchRecentlyPlayed: (userId: string) => ipcRenderer.invoke('history:recent', userId),
   fetchDjSet: (opts?: { users?: string[]; limit?: number; excludeUris?: string[] }) =>
     ipcRenderer.invoke('dj:fetch', opts ?? {}),
   fetchOfficePresence: () => ipcRenderer.invoke('presence:office'),
   djAutoplay: (body: unknown) => ipcRenderer.invoke('dj:autoplay', body),
   geniusDescription: (trackName: string, artistName: string) =>
     ipcRenderer.invoke('genius:description', trackName, artistName),
-  geniusArtist: (artistName: string, trackHint?: string) =>
-    ipcRenderer.invoke('genius:artist', artistName, trackHint),
+  geniusArtist: (artistName: string, trackHint?: string) => ipcRenderer.invoke('genius:artist', artistName, trackHint),
   geniusAlbumYear: (albumName: string, artistName: string) =>
     ipcRenderer.invoke('genius:albumYear', albumName, artistName),
-  geniusArtistAlbums: (artistName: string) =>
-    ipcRenderer.invoke('genius:artistAlbums', artistName),
+  geniusArtistAlbums: (artistName: string) => ipcRenderer.invoke('genius:artistAlbums', artistName),
   geniusAlbumAbout: (albumName: string, artistName: string) =>
     ipcRenderer.invoke('genius:albumAbout', albumName, artistName),
   trackEvent: (name: string, properties?: Record<string, string>) =>
     ipcRenderer.invoke('telemetry:event', name, properties),
-  minimizeWindow:    () => ipcRenderer.invoke('win:minimize'),
-  maximizeWindow:    () => ipcRenderer.invoke('win:maximize'),
-  closeWindow:       () => ipcRenderer.invoke('win:close'),
+  minimizeWindow: () => ipcRenderer.invoke('win:minimize'),
+  maximizeWindow: () => ipcRenderer.invoke('win:maximize'),
+  closeWindow: () => ipcRenderer.invoke('win:close'),
   isWindowMaximized: () => ipcRenderer.invoke('win:is-maximized'),
   onWindowMaximized: (cb: (maximized: boolean) => void): Unsubscribe => {
     const listener = (_e: unknown, maximized: boolean) => cb(maximized);
@@ -263,9 +282,11 @@ contextBridge.exposeInMainWorld('sonos', {
   deletePlaylist: (playlistId) => ipcRenderer.invoke('playlist:delete', playlistId),
   addTrackToPlaylist: (playlistId, track) => ipcRenderer.invoke('playlist:addTrack', playlistId, track),
   removeTrackFromPlaylist: (playlistId, uri) => ipcRenderer.invoke('playlist:removeTrack', playlistId, uri),
-  reorderPlaylistTracks: (playlistId, fromIndex, toIndex) => ipcRenderer.invoke('playlist:reorderTracks', playlistId, fromIndex, toIndex),
+  reorderPlaylistTracks: (playlistId, fromIndex, toIndex) =>
+    ipcRenderer.invoke('playlist:reorderTracks', playlistId, fromIndex, toIndex),
   joinPlaylist: (playlistId, action) => ipcRenderer.invoke('playlist:join', playlistId, action),
-  uploadPlaylistImage: (playlistId, data, mimeType, userName) => ipcRenderer.invoke('playlist:uploadImage', playlistId, data, mimeType, userName),
+  uploadPlaylistImage: (playlistId, data, mimeType, userName) =>
+    ipcRenderer.invoke('playlist:uploadImage', playlistId, data, mimeType, userName),
   ensureFavourites: () => ipcRenderer.invoke('profile:ensureFavourites'),
   fetchUsers: (includeSelf?: boolean) => ipcRenderer.invoke('users:list', includeSelf),
   fetchUserProfile: (userName) => ipcRenderer.invoke('profile:get', userName),
@@ -280,5 +301,6 @@ contextBridge.exposeInMainWorld('sonos', {
     return () => ipcRenderer.removeListener('auth:entra-ready', listener);
   },
   renameUser: (oldName: string, newName: string) => ipcRenderer.invoke('profile:rename', oldName, newName),
+  submitFeedback: (type, title, description) => ipcRenderer.invoke('feedback:submit', type, title, description),
   updateNowPlayingSmtc: (data) => ipcRenderer.invoke('smtc:update', data),
 } satisfies SonosAPI);

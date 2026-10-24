@@ -123,7 +123,7 @@ const bump = (m: Map<string, number>, k: string, by = 1) => m.set(k, (m.get(k) ?
 export function computeMusicStats(
   rawEvents: MusicEvent[],
   meta: Map<string, TrackMeta>,
-  opts: MusicStatsOptions = {},
+  opts: MusicStatsOptions = {}
 ): MusicStatsResult {
   const popularArtistMin = opts.popularArtistMin ?? 15;
   const topN = opts.topN ?? 10;

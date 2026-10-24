@@ -1,4 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { authenticate } from '../shared/auth';
 import { CosmosClient } from '@azure/cosmos';
 
 // POST /api/profile/claim
@@ -13,27 +14,26 @@ import { CosmosClient } from '@azure/cosmos';
 //   400                          — missing fields
 //   500                          — Cosmos error
 
-export async function claimNameHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
-  const corsHeaders = { 'Access-Control-Allow-Origin': '*' };
-
+export async function claimNameHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   let body: { oid?: string; displayName?: string };
   try {
     body = (await request.json()) as { oid?: string; displayName?: string };
   } catch {
-    return { status: 400, jsonBody: { error: 'Invalid JSON' }, headers: corsHeaders };
+    return { status: 400, jsonBody: { error: 'Invalid JSON' } };
   }
 
-  const { oid, displayName } = body;
+  const { displayName } = body;
+  const auth = await authenticate(request, context);
+  if ('response' in auth) return auth.response;
+  // The token's oid wins; the body's is trusted only from clients that send no token.
+  const oid = auth.oid ?? body.oid;
   if (!oid || !displayName) {
-    return { status: 400, jsonBody: { error: 'oid and displayName required' }, headers: corsHeaders };
+    return { status: 400, jsonBody: { error: 'oid and displayName required' } };
   }
 
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
-  const dbName  = process.env['COSMOS_DATABASE'] ?? 'truetunes';
-  if (!connStr) return { status: 500, jsonBody: { error: 'Cosmos not configured' }, headers: corsHeaders };
+  const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
+  if (!connStr) return { status: 500, jsonBody: { error: 'Cosmos not configured' } };
 
   const container = new CosmosClient(connStr).database(dbName).container('profiles');
 
@@ -49,7 +49,7 @@ export async function claimNameHandler(
 
     if (existing?.entraOid && existing.entraOid !== oid) {
       // Owned by a different Entra user — reject.
-      return { status: 409, jsonBody: { error: 'taken' }, headers: corsHeaders };
+      return { status: 409, jsonBody: { error: 'taken' } };
     }
 
     // 2. Release any previous claim this OID held on a different display name.
@@ -74,10 +74,10 @@ export async function claimNameHandler(
     await container.items.upsert(upserted);
 
     context.log(`[claim-name] ${displayName} claimed by oid=${oid}`);
-    return { status: 200, jsonBody: { ok: true }, headers: corsHeaders };
+    return { status: 200, jsonBody: { ok: true } };
   } catch (err) {
     context.error('[claim-name] failed:', err);
-    return { status: 500, jsonBody: { error: String(err) }, headers: corsHeaders };
+    return { status: 500, jsonBody: { error: String(err) } };
   }
 }
 

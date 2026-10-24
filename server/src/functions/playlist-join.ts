@@ -1,11 +1,9 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { callerName } from '../lib/caller';
 import { withOCC } from '../lib/withOCC';
 import { getPlaylistContainer } from '../lib/getContainer';
 
-export async function playlistJoinHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
+export async function playlistJoinHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const id = request.params['id'];
   if (!id) {
     return { status: 400, jsonBody: { error: 'id param required' } };
@@ -18,7 +16,10 @@ export async function playlistJoinHandler(
     return { status: 400, jsonBody: { error: 'Invalid JSON body' } };
   }
 
-  const { userName, action = 'join' } = body;
+  const { action = 'join' } = body;
+  const caller = await callerName(request, context, body.userName);
+  if ('response' in caller) return caller.response;
+  const userName = caller.name;
   if (!userName) {
     return { status: 400, jsonBody: { error: 'userName required' } };
   }
@@ -45,7 +46,7 @@ export async function playlistJoinHandler(
           doc.updatedAt = Date.now();
         }
       },
-      (doc, etag) => container.item(id, id).replace(doc, { accessCondition: { type: 'IfMatch', condition: etag } }),
+      (doc, etag) => container.item(id, id).replace(doc, { accessCondition: { type: 'IfMatch', condition: etag } })
     );
 
     context.log(`[playlist-join] id=${id} userName=${userName} action=${action}`);
@@ -60,7 +61,6 @@ export async function playlistJoinHandler(
         trackCount: (resource.tracks ?? []).length,
         updatedAt: resource.updatedAt,
       },
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     const code = (err as { statusCode?: number }).statusCode;

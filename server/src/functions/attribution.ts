@@ -3,10 +3,7 @@ import { CosmosClient } from '@azure/cosmos';
 
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 
-export async function attributionHandler(
-  _request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
+export async function attributionHandler(_request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
   const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
   const ctrName = process.env['COSMOS_CONTAINER'] ?? 'events';
@@ -33,7 +30,7 @@ export async function attributionHandler(
       }>({
         query:
           'SELECT c.uri, c.userId, c.timestamp, c.trackName, c.artist ' +
-          'FROM c WHERE c.timestamp >= @since AND c.eventType != \'album\' ' +
+          "FROM c WHERE c.timestamp >= @since AND c.eventType != 'album' " +
           'ORDER BY c.timestamp ASC',
         parameters: [{ name: '@since', value: sinceMs }],
       })
@@ -50,7 +47,6 @@ export async function attributionHandler(
 
     return {
       jsonBody: map,
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[attribution] query failed:', err);

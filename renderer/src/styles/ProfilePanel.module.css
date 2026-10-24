@@ -10,10 +10,14 @@
   flex-direction: column;
   gap: 1.4em;
 }
-.panel > * { flex-shrink: 0; }
+.panel > * {
+  flex-shrink: 0;
+}
 
 /* Every band after the hero: the 28px gutter; the one 1.4em rhythm comes from .panel's gap. */
-.band { margin: 0 28px; }
+.band {
+  margin: 0 28px;
+}
 
 /* ── Hero: the face, the name, their place in the office ──
    Runs up behind the floating nav like the artist hero. The face hangs as a round print; its colour washes in
@@ -26,7 +30,9 @@
   gap: 1.4em 2em;
   padding: calc(var(--nav-h) + 2.4em) 28px 0.6em;
 }
-.hero > :not(.heroWash) { position: relative; }
+.hero > :not(.heroWash) {
+  position: relative;
+}
 
 /* Peaks at 0.28, under the Quiet Wall ceiling, and fades out by 65%. */
 .heroWash {
@@ -54,7 +60,7 @@
   overflow: hidden;
   border-radius: var(--r-round);
   /* one-off, tied to this layout */
-  font-size: clamp(56px, 6cqw, 96px);
+  font-size: var(--fs-avatar-initial);
   font-weight: 700;
   color: var(--on-art);
 }
@@ -71,7 +77,10 @@
   background: none;
   cursor: pointer;
 }
-.avatarBtn > .avatarFace { width: 100%; height: 100%; }
+.avatarBtn > .avatarFace {
+  width: 100%;
+  height: 100%;
+}
 .avatarOverlay {
   position: absolute;
   inset: 0;
@@ -90,7 +99,9 @@
 }
 .avatarBtn:hover .avatarOverlay,
 .avatarBtn:focus-visible .avatarOverlay,
-.avatarOverlayOn { opacity: 1; }
+.avatarOverlayOn {
+  opacity: 1;
+}
 
 .heroText {
   flex: 1 1 22em;
@@ -123,7 +134,9 @@
   text-wrap: pretty;
 }
 /* A fact never breaks inside itself; the line wraps only at the separators. */
-.fact { white-space: nowrap; }
+.fact {
+  white-space: nowrap;
+}
 
 /* Office presence and the Queuedle tier: tonal chips under the facts, the tier's detail beside it. */
 .chips {
@@ -159,7 +172,7 @@
 .renameInput {
   font: inherit;
   /* one-off, tied to this layout */
-  font-size: clamp(28px, 3cqw, 44px);
+  font-size: var(--fs-rename);
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text);
@@ -170,7 +183,9 @@
   width: min(12em, 100%);
   outline: none;
 }
-.renameInput:focus { border-color: var(--border-2); }
+.renameInput:focus {
+  border-color: var(--border-2);
+}
 .renameError {
   width: 100%;
   margin: 0;
@@ -191,8 +206,13 @@
   white-space: nowrap;
   text-transform: lowercase;
 }
-.tierChip::first-letter { text-transform: uppercase; }
-.tierChip.provisional { color: var(--text-3); background: rgba(var(--tint), 0.06); }
+.tierChip::first-letter {
+  text-transform: uppercase;
+}
+.tierChip.provisional {
+  color: var(--text-3);
+  background: rgba(var(--tint), 0.06);
+}
 .rankDetail {
   font-size: var(--fs-label);
   color: var(--text-3);
@@ -218,7 +238,9 @@
   padding: 0;
 }
 /* Lately runs by day: a quiet heading over each day's rows. */
-.day + .day { margin-top: 1em; }
+.day + .day {
+  margin-top: 1em;
+}
 .dayTitle {
   margin: 0 0 0.3em 0.6em;
   font-size: var(--fs-label);
@@ -234,18 +256,42 @@
 }
 
 /* Nothing from the past week: Top tracks takes the band on its own. */
-.splitSolo { grid-template-columns: minmax(0, 1fr); }
+.splitSolo {
+  grid-template-columns: minmax(0, 1fr);
+}
 
 /* ── Shelves ── */
-.shelfTile { flex: 0 0 9.6em; min-width: 0; }
+.shelfTile {
+  flex: 0 0 9.6em;
+  min-width: 0;
+}
 
 @container (max-width: 820px) {
-  .split { grid-template-columns: minmax(0, 1fr); }
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 @container (max-width: 640px) {
-  .hero { align-items: flex-start; }
+  .hero {
+    align-items: flex-start;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .avatarOverlay { transition: none; }
+  .avatarOverlay {
+    transition: none;
+  }
+}
+
+.signingIn {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--overlay);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-2);
+  font-size: var(--fs-px-lg);
 }

@@ -10,10 +10,14 @@
   flex-direction: column;
   gap: 1.4em;
 }
-.panel > * { flex-shrink: 0; }
+.panel > * {
+  flex-shrink: 0;
+}
 
 /* Every band after the hero: the 28px gutter; the one 1.4em rhythm comes from .panel's gap. */
-.band { margin: 0 28px; }
+.band {
+  margin: 0 28px;
+}
 
 /* ── Hero: one shape for every artist ──
    Sized from the page container, not the viewport, and the same height in every state so nothing jumps. It runs
@@ -47,15 +51,15 @@
     opacity var(--dur) var(--ease),
     object-position 0.6s var(--ease);
 }
-.heroImgShown { opacity: 1; }
+.heroImgShown {
+  opacity: 1;
+}
 /* Legibility: the image-card scrim, a light one under the nav and the deep one up from the bottom. */
 .heroMedia::after {
   content: '';
   position: absolute;
   inset: 0;
-  background:
-    var(--scrim-top),
-    var(--scrim-deep);
+  background: var(--scrim-top), var(--scrim-deep);
 }
 
 /* No photo: the portrait's colour, out from behind the print and gone by the foot. The two layers together peak
@@ -83,8 +87,16 @@
   box-shadow: var(--hero-shadow);
   animation: printIn var(--dur) var(--ease);
 }
-@keyframes printIn { from { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .print { animation: none; } }
+@keyframes printIn {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .print {
+    animation: none;
+  }
+}
 .print::after {
   content: '';
   position: absolute;
@@ -147,7 +159,9 @@
 }
 
 /* The office line (OfficeChip) and the deciding actions under the name. */
-.heroChip { margin-top: 0.9em; }
+.heroChip {
+  margin-top: 0.9em;
+}
 .heroActions {
   display: flex;
   flex-wrap: wrap;
@@ -169,7 +183,11 @@
   color: var(--text-2);
   max-width: 60ch;
 }
-.emptyActions { display: flex; flex-wrap: wrap; gap: 0.6em; }
+.emptyActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em;
+}
 
 /* ── Top band: Latest release card | Top songs chart ──
    The cover stays square. Its side matches the chart card holding five rows (head, 5 × 4.3em rows, padding),
@@ -181,7 +199,11 @@
   gap: 1.4em;
   align-items: start;
 }
-.topBand .latest { min-width: 0; min-height: 0; aspect-ratio: 1; }
+.topBand .latest {
+  min-width: 0;
+  min-height: 0;
+  aspect-ratio: 1;
+}
 /* The card is the songs' container: one visible column fills it (two once there is room), so a peeking
    column never shows only its ranks. */
 .topSongs {
@@ -191,7 +213,9 @@
   --song-cols: 1;
 }
 /* no latest release: the chart takes the whole band */
-.topSongs:first-child { grid-column: 1 / -1; }
+.topSongs:first-child {
+  grid-column: 1 / -1;
+}
 /* five rows, filling column by column; the Carousel scrolls the columns (the list can run to dozens of songs) */
 .songsList {
   list-style: none;
@@ -205,18 +229,27 @@
   column-gap: 1.4em;
 }
 /* Five songs or fewer: one column across the card. */
-.songsFew { flex: 1 1 auto; grid-auto-columns: minmax(0, 1fr); }
+.songsFew {
+  flex: 1 1 auto;
+  grid-auto-columns: minmax(0, 1fr);
+}
 /* Titles get the room: the album or collaborator column and the duration give way. */
 .songsList > li {
   grid-template-columns: 2.4em minmax(0, 2.4fr) minmax(0, 1fr) 3em 2.2em;
   scroll-snap-align: start;
 }
 @container (min-width: 1500px) {
-  .topSongs { --song-cols: 2; }
+  .topSongs {
+    --song-cols: 2;
+  }
 }
 @container (max-width: 900px) {
-  .topBand { grid-template-columns: minmax(0, 1fr); }
-  .topBand .latest { aspect-ratio: 16 / 9; }
+  .topBand {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .topBand .latest {
+    aspect-ratio: 16 / 9;
+  }
 }
 
 /* ── Now-playing waveform: sits in the rank cell ── */
@@ -227,8 +260,12 @@
   height: 1em;
 }
 @keyframes waveformLevel {
-  0%   { transform: scaleY(0.2); }
-  100% { transform: scaleY(1); }
+  0% {
+    transform: scaleY(0.2);
+  }
+  100% {
+    transform: scaleY(1);
+  }
 }
 .waveformBar {
   width: 0.2em;
@@ -237,9 +274,18 @@
   transform-origin: bottom;
   animation: waveformLevel 0.9s ease-in-out infinite alternate;
 }
-.waveformBar:nth-child(1) { height: 55%; animation-delay: 0s; }
-.waveformBar:nth-child(2) { height: 100%; animation-delay: -0.35s; }
-.waveformBar:nth-child(3) { height: 70%; animation-delay: -0.18s; }
+.waveformBar:nth-child(1) {
+  height: 55%;
+  animation-delay: 0s;
+}
+.waveformBar:nth-child(2) {
+  height: 100%;
+  animation-delay: -0.35s;
+}
+.waveformBar:nth-child(3) {
+  height: 70%;
+  animation-delay: -0.18s;
+}
 .waveformPaused .waveformBar {
   animation-play-state: paused;
   transform: scaleY(0.5);
@@ -250,7 +296,9 @@
   aspect-ratio: 1;
   border-radius: var(--r-art-card);
 }
-.songsSkeleton { min-width: 0; }
+.songsSkeleton {
+  min-width: 0;
+}
 .skeletonRow {
   height: 4.3em;
   border-radius: var(--r-row);
@@ -260,8 +308,13 @@
   height: 15em;
   border-radius: var(--r-tile);
 }
-.shelfSkeleton { display: flex; gap: 14px; }
-.shelfSkeleton .skeletonCard { flex: 0 0 13.6em; }
+.shelfSkeleton {
+  display: flex;
+  gap: 14px;
+}
+.shelfSkeleton .skeletonCard {
+  flex: 0 0 13.6em;
+}
 
 /* ── Shelves ── */
 .albumCard {
@@ -274,7 +327,9 @@
   padding: 0.6em;
   transition: background var(--dur-fast) var(--ease-fast);
 }
-.albumCard:hover { background: var(--row-hover); }
+.albumCard:hover {
+  background: var(--row-hover);
+}
 
 .albumArt {
   width: 100%;
@@ -309,7 +364,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2em;
+  font-size: var(--fs-glyph-sm);
   color: var(--text-3);
 }
 
@@ -323,7 +378,9 @@
 }
 .albumCard:hover .albumAdd,
 .albumCard:focus-within .albumAdd,
-.albumAdd:focus-visible { opacity: 1; }
+.albumAdd:focus-visible {
+  opacity: 1;
+}
 
 .albumTitle {
   display: flex;
@@ -333,7 +390,9 @@
   font-weight: 600;
   color: var(--title-rest);
 }
-.albumCard:hover .albumTitle { color: var(--on-art); }
+.albumCard:hover .albumTitle {
+  color: var(--on-art);
+}
 .albumTitleText {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -365,11 +424,18 @@
 }
 
 /* Carousel header: 4px more than its default 18px so an expanded group's header clears the title */
-.shelf > :first-child { margin-bottom: 22px; }
+.shelf > :first-child {
+  margin-bottom: 22px;
+}
 
 /* ── Stacks (offsets scale with the card) ── */
-.stackWrap { position: relative; margin-bottom: 0.6em; }
-.stackWrap .albumArt { margin-bottom: 0; }
+.stackWrap {
+  position: relative;
+  margin-bottom: 0.6em;
+}
+.stackWrap .albumArt {
+  margin-bottom: 0;
+}
 .stackLayer {
   position: absolute;
   inset: 0;
@@ -377,8 +443,13 @@
   background: var(--bg-1) center / cover;
   filter: brightness(0.55);
 }
-.stackLayer1 { transform: translate(0.5em, -0.5em); }
-.stackLayer2 { transform: translate(1em, -1em); filter: brightness(0.35); }
+.stackLayer1 {
+  transform: translate(0.5em, -0.5em);
+}
+.stackLayer2 {
+  transform: translate(1em, -1em);
+  filter: brightness(0.35);
+}
 .stackPill {
   position: absolute;
   right: 0.5em;
@@ -409,7 +480,9 @@
   border-radius: var(--r-tile);
   background: var(--bg-2);
 }
-.groupBox .albumCard:hover { background: rgba(var(--tint), 0.14); }
+.groupBox .albumCard:hover {
+  background: rgba(var(--tint), 0.14);
+}
 .groupHeader {
   display: flex;
   align-items: center;
@@ -420,7 +493,11 @@
   font-weight: 600;
   color: var(--text-2);
 }
-.groupTitle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.groupTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .groupClose {
   width: 20px;
   height: 20px;
@@ -433,8 +510,14 @@
   font-size: var(--fs-px);
   cursor: pointer;
 }
-.groupClose:hover { color: var(--text); background: rgba(var(--tint), 0.16); }
-.groupCards { display: flex; gap: 4px; }
+.groupClose:hover {
+  color: var(--text);
+  background: rgba(var(--tint), 0.16);
+}
+.groupCards {
+  display: flex;
+  gap: 4px;
+}
 
 /* ── About ── */
 .aboutText {
@@ -463,7 +546,10 @@
   color: var(--text-2);
   cursor: pointer;
 }
-.moreBtn:hover { color: var(--text); text-decoration: underline; }
+.moreBtn:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
 
 .socialIcons {
   display: flex;
@@ -484,12 +570,22 @@
     background var(--dur-fast) var(--ease-fast),
     color var(--dur-fast) var(--ease-fast);
 }
-.socialIconBtn:hover { color: var(--text); background: var(--bg-2); }
+.socialIconBtn:hover {
+  color: var(--text);
+  background: var(--bg-2);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .albumCard,
   .albumAdd,
-  .socialIconBtn { transition: none; }
-  .waveformBar { animation: none; transform: scaleY(0.6); }
-  .heroImg { transition: none; }
+  .socialIconBtn {
+    transition: none;
+  }
+  .waveformBar {
+    animation: none;
+    transform: scaleY(0.6);
+  }
+  .heroImg {
+    transition: none;
+  }
 }

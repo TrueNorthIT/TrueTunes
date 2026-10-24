@@ -9,9 +9,13 @@ import type { SonosItem } from '../types/sonos';
  */
 export function useReleaseTrackCounts(releases: SonosItem[]) {
   // one query per id: the same key twice in useQueries trips its "Duplicate Queries found" warning
-  const unlabelled = [...new Map(
-    releases.filter((r) => releaseLabel(r) === 'unknown' && r.resource?.id?.objectId).map((r) => [r.resource?.id?.objectId, r]),
-  ).values()];
+  const unlabelled = [
+    ...new Map(
+      releases
+        .filter((r) => releaseLabel(r) === 'unknown' && r.resource?.id?.objectId)
+        .map((r) => [r.resource?.id?.objectId, r])
+    ).values(),
+  ];
   // ponytail: all requests fire at once; cap concurrency if the BFF rate-limits.
   const results = useQueries({
     queries: unlabelled.map((r) => {

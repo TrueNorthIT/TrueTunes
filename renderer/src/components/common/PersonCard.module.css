@@ -24,8 +24,15 @@
   transition: filter var(--dur-fast) var(--ease-fast);
 }
 .head:hover,
-.head:focus-visible { filter: brightness(1.25); }
-.action { position: absolute; top: 2em; right: 1.5em; color: var(--text-3); }
+.head:focus-visible {
+  filter: brightness(1.25);
+}
+.action {
+  position: absolute;
+  top: 2em;
+  right: 1.5em;
+  color: var(--text-3);
+}
 .avatar {
   width: 2.8em;
   height: 2.8em;
@@ -37,11 +44,31 @@
   overflow: hidden;
   flex-shrink: 0;
 }
-.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.who { display: flex; flex-direction: column; min-width: 0; }
-.name { font-size: 1em; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.caption { font-size: var(--fs-small); color: var(--text-3); }
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.name {
+  font-size: 1em;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.caption {
+  font-size: var(--fs-small);
+  color: var(--text-3);
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .head { transition: none; }
+  .head {
+    transition: none;
+  }
 }

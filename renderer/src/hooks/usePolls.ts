@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 
 // Weekly anonymous poll (P-2, P-3, P-4, P-6).
 // "Answered" lives only in localStorage under `poll-answered:<pollId>` and stores no choice;
@@ -23,19 +23,23 @@ function markAnswered(pollId: string): void {
   }
 }
 
+export const pollKeys = {
+  all: ['polls'] as const,
+  admin: ['poll-admin'] as const,
+};
+
 export function pollsQueryOptions() {
-  return {
-    queryKey: ['polls'] as const,
+  return queryOptions({
+    queryKey: pollKeys.all,
     queryFn: async (): Promise<PollLive[]> => {
       const res = await window.sonos.fetchPolls();
       if ('error' in res) throw new Error(res.error);
       return res.polls;
     },
-    staleTime: 5 * 60_000,
     // A new poll goes live on Monday morning while the app may already be open.
     refetchInterval: 30 * 60_000,
     retry: false,
-  };
+  });
 }
 
 export function usePolls() {
@@ -50,7 +54,7 @@ export function usePolls() {
       (data ?? [])
         .filter((p) => !answeredNow.has(p.id) && !isAnswered(p.id))
         .sort((a, b) => a.liveFrom.localeCompare(b.liveFrom)),
-    [data, answeredNow],
+    [data, answeredNow]
   );
   const current = waiting[0] as PollLive | undefined;
 
@@ -73,7 +77,7 @@ export function usePolls() {
         setSubmitting(false);
       }
     },
-    [current, submitting],
+    [current, submitting]
   );
 
   return { current, remaining: waiting.length, submitting, error, answer };

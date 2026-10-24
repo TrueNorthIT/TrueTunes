@@ -109,10 +109,7 @@ export interface OfficeRoster {
  * flattened away: "at a desk" quietly masquerading as "in the office" would
  * include everyone working from home.
  */
-export function resolveRoster(
-  presences: GraphPresence[],
-  oidToName: Record<string, string>,
-): OfficeRoster {
+export function resolveRoster(presences: GraphPresence[], oidToName: Record<string, string>): OfficeRoster {
   const detail = presences.map((p) => ({
     userId: oidToName[p.id] ?? p.id,
     availability: p.availability,
@@ -122,23 +119,19 @@ export function resolveRoster(
 
   // 'automatic' means Teams saw them on the office network — an observation.
   // Everything else is someone's stated intent.
-  const observed = presences.filter(
-    (p) => isInOffice(p) && p.workLocation?.source === 'automatic',
-  ).length;
+  const observed = presences.filter((p) => isInOffice(p) && p.workLocation?.source === 'automatic').length;
 
   const names = (list: GraphPresence[]) => list.map((p) => oidToName[p.id]).filter(Boolean);
 
   // 1. Sensed. Teams saw them on the network — trust it, and trust its silence.
   if (observed > 0) {
-    const sensed = presences.filter(
-      (p) => isInOffice(p) && p.workLocation?.source === 'automatic',
-    );
+    const sensed = presences.filter((p) => isInOffice(p) && p.workLocation?.source === 'automatic');
     return { inOffice: names(sensed), basis: 'sensed', observed, detail };
   }
 
   // 2. Rostered. No automatic detection anywhere, so fall back to stated intent.
   const anyWorkLocation = presences.some(
-    (p) => p.workLocation?.workLocationType && p.workLocation.workLocationType !== 'unspecified',
+    (p) => p.workLocation?.workLocationType && p.workLocation.workLocationType !== 'unspecified'
   );
   if (anyWorkLocation) {
     return { inOffice: names(presences.filter(isInOffice)), basis: 'rostered', observed, detail };

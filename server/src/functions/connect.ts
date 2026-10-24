@@ -1,4 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { callerName } from '../lib/caller';
 import { WebPubSubServiceClient } from '@azure/web-pubsub';
 import {
   BlobServiceClient,
@@ -13,11 +14,10 @@ const BLOB = 'attribution.json';
 const TOKEN_TTL_MINUTES = 60;
 const SAS_TTL_HOURS = 8;
 
-export async function connectHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
-  const username = request.query.get('username') ?? 'Unknown';
+export async function connectHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+  const caller = await callerName(request, context, request.query.get('username'));
+  if ('response' in caller) return caller.response;
+  const username = caller.name;
   context.log(`[connect] username=${username}`);
 
   const wpsConnStr = process.env['WEBPUBSUB_CONNECTION_STRING'];
@@ -32,10 +32,7 @@ export async function connectHandler(
     const wpsClient = new WebPubSubServiceClient(wpsConnStr, HUB);
     const token = await wpsClient.getClientAccessToken({
       userId: username,
-      roles: [
-        `webpubsub.sendToGroup.${HUB}`,
-        `webpubsub.joinLeaveGroup.${HUB}`,
-      ],
+      roles: [`webpubsub.sendToGroup.${HUB}`, `webpubsub.joinLeaveGroup.${HUB}`],
       expirationTimeInMinutes: TOKEN_TTL_MINUTES,
     });
 
@@ -62,7 +59,7 @@ export async function connectHandler(
         permissions: BlobSASPermissions.parse('rw'),
         expiresOn,
       },
-      sharedKeyCredential,
+      sharedKeyCredential
     ).toString();
 
     const blobSasUrl = `https://${accountName}.blob.core.windows.net/${CONTAINER}/${BLOB}?${sasToken}`;
@@ -72,7 +69,6 @@ export async function connectHandler(
         webPubSubUrl: token.url,
         blobSasUrl,
       },
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[connect] Error:', err);

@@ -42,10 +42,10 @@ interface RecentAlbum {
 
 export async function recentlyPlayedHandler(
   request: HttpRequest,
-  context: InvocationContext,
+  context: InvocationContext
 ): Promise<HttpResponseInit> {
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
-  const dbName  = process.env['COSMOS_DATABASE'] ?? 'truetunes';
+  const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
   const ctrName = process.env['COSMOS_CONTAINER'] ?? 'events';
 
   if (!connStr) return { status: 500, jsonBody: { error: 'Cosmos not configured' } };
@@ -57,29 +57,33 @@ export async function recentlyPlayedHandler(
   if (!Number.isInteger(daysRaw) || daysRaw < 1) {
     return { status: 400, jsonBody: { error: 'days must be a positive integer' } };
   }
-  const days    = Math.min(daysRaw, 30);
+  const days = Math.min(daysRaw, 30);
   const startMs = Date.now() - days * 24 * 60 * 60 * 1000;
 
   try {
-    const client    = new CosmosClient(connStr);
+    const client = new CosmosClient(connStr);
     const container = client.database(dbName).container(ctrName);
 
     const usersStart = Date.now() - 30 * 24 * 60 * 60 * 1000;
     const [eventsResult, usersResult] = await Promise.all([
-      container.items.query<RawEvent>({
-        query: `SELECT c.eventType, c.trackName, c.artist, c.serviceId, c.accountId,
+      container.items
+        .query<RawEvent>({
+          query: `SELECT c.eventType, c.trackName, c.artist, c.serviceId, c.accountId,
                        c.artistId, c.album, c.albumId, c.imageUrl, c.uri, c.timestamp
                 FROM c
                 WHERE c.userId = @userId AND c.timestamp >= @start`,
-        parameters: [
-          { name: '@userId', value: userId },
-          { name: '@start',  value: startMs },
-        ],
-      }).fetchAll(),
-      container.items.query<string>({
-        query: 'SELECT DISTINCT VALUE c.userId FROM c WHERE c.timestamp >= @usersStart',
-        parameters: [{ name: '@usersStart', value: usersStart }],
-      }).fetchAll(),
+          parameters: [
+            { name: '@userId', value: userId },
+            { name: '@start', value: startMs },
+          ],
+        })
+        .fetchAll(),
+      container.items
+        .query<string>({
+          query: 'SELECT DISTINCT VALUE c.userId FROM c WHERE c.timestamp >= @usersStart',
+          parameters: [{ name: '@usersStart', value: usersStart }],
+        })
+        .fetchAll(),
     ]);
 
     const { resources } = eventsResult;
@@ -88,26 +92,26 @@ export async function recentlyPlayedHandler(
     // Sort most-recent first, then deduplicate — keeping the first (most recent) occurrence of each key.
     resources.sort((a, b) => b.timestamp - a.timestamp);
 
-    const trackMap  = new Map<string, RecentTrack>();
-    const albumMap  = new Map<string, RecentAlbum>();
+    const trackMap = new Map<string, RecentTrack>();
+    const albumMap = new Map<string, RecentAlbum>();
 
     for (const e of resources) {
-      const isTrack    = e.eventType === 'track' || e.eventType == null;
-      const isAlbumEvt = e.eventType === 'album'  || e.eventType == null;
+      const isTrack = e.eventType === 'track' || e.eventType == null;
+      const isAlbumEvt = e.eventType === 'album' || e.eventType == null;
 
       if (isTrack && e.trackName && e.artist) {
         const key = `${e.trackName}||${e.artist}`;
         if (!trackMap.has(key)) {
           trackMap.set(key, {
-            trackName:  e.trackName,
-            artist:     e.artist,
-            serviceId:  e.serviceId  ?? undefined,
-            accountId:  e.accountId  ?? undefined,
-            artistId:   e.artistId   ?? undefined,
-            album:      e.album      ?? undefined,
-            albumId:    e.albumId    ?? undefined,
-            imageUrl:   e.imageUrl   ?? undefined,
-            uri:        e.uri        ?? undefined,
+            trackName: e.trackName,
+            artist: e.artist,
+            serviceId: e.serviceId ?? undefined,
+            accountId: e.accountId ?? undefined,
+            artistId: e.artistId ?? undefined,
+            album: e.album ?? undefined,
+            albumId: e.albumId ?? undefined,
+            imageUrl: e.imageUrl ?? undefined,
+            uri: e.uri ?? undefined,
             lastPlayed: e.timestamp,
           });
         }
@@ -117,28 +121,29 @@ export async function recentlyPlayedHandler(
         const aKey = e.albumId ?? e.album;
         if (!albumMap.has(aKey)) {
           albumMap.set(aKey, {
-            album:     e.album,
-            artist:    e.artist,
-            serviceId: e.serviceId  ?? undefined,
-            accountId: e.accountId  ?? undefined,
-            artistId:  e.artistId   ?? undefined,
-            albumId:   e.albumId    ?? undefined,
-            imageUrl:  e.imageUrl   ?? undefined,
+            album: e.album,
+            artist: e.artist,
+            serviceId: e.serviceId ?? undefined,
+            accountId: e.accountId ?? undefined,
+            artistId: e.artistId ?? undefined,
+            albumId: e.albumId ?? undefined,
+            imageUrl: e.imageUrl ?? undefined,
             lastPlayed: e.timestamp,
           });
         }
       }
     }
 
-    const tracks  = [...trackMap.values()].slice(0, 20);
+    const tracks = [...trackMap.values()].slice(0, 20);
     const artists = buildRecentArtists(resources, 10);
-    const albums  = [...albumMap.values()].slice(0, 10);
+    const albums = [...albumMap.values()].slice(0, 10);
 
-    context.log(`[recently-played] userId=${userId} tracks=${tracks.length} artists=${artists.length} albums=${albums.length} users=${availableUsers.length}`);
+    context.log(
+      `[recently-played] userId=${userId} tracks=${tracks.length} artists=${artists.length} albums=${albums.length} users=${availableUsers.length}`
+    );
 
     return {
       jsonBody: { tracks, artists, albums, availableUsers },
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[recently-played] query failed:', err);

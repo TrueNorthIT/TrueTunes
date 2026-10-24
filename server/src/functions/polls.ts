@@ -4,11 +4,11 @@ import { createPollService, HttpResult, PollService } from '../shared/pollServic
 import { containerPollStore } from '../shared/pollCosmosStore';
 import { runPollPost } from '../shared/pollPost';
 import { sendPollAnnouncement } from '../shared/vestaboard';
+import { requireAuth } from '../shared/auth';
 
 // Weekly anonymous poll. Answers carry only {pollId, choice}: nothing about the caller is read,
-// stored or logged here, and the chosen answer is never logged. Admin routes are honour-system.
-
-const headers = { 'Access-Control-Allow-Origin': '*' };
+// stored or logged here, and the chosen answer is never logged. Admin routes are honour-system:
+// writes need a signed-in caller (requireAuth), but any colleague may administer.
 
 let cachedStore: ReturnType<typeof containerPollStore> | undefined;
 let cachedService: PollService | undefined;
@@ -42,23 +42,26 @@ async function readBody(request: HttpRequest): Promise<unknown> {
 async function run(
   name: string,
   context: InvocationContext,
-  call: (service: PollService) => Promise<HttpResult>,
+  call: (service: PollService) => Promise<HttpResult>
 ): Promise<HttpResponseInit> {
   const service = getService();
-  if (!service) return { status: 500, jsonBody: { error: 'Cosmos not configured' }, headers };
+  if (!service) return { status: 500, jsonBody: { error: 'Cosmos not configured' } };
   try {
     const { status, body } = await call(service);
-    return { status, jsonBody: body, headers };
+    return { status, jsonBody: body };
   } catch (err: unknown) {
     context.error(`[${name}] failed:`, err);
-    return { status: 500, jsonBody: { error: 'Poll request failed' }, headers };
+    return { status: 500, jsonBody: { error: 'Poll request failed' } };
   }
 }
 
 export const pollsListHandler = (_request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> =>
   run('polls', context, (s) => s.listLive());
 
-export const pollsAnswerHandler = async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+export const pollsAnswerHandler = async (
+  request: HttpRequest,
+  context: InvocationContext
+): Promise<HttpResponseInit> => {
   const body = await readBody(request);
   return run('polls-answer', context, (s) => s.answer(body));
 };
@@ -66,12 +69,18 @@ export const pollsAnswerHandler = async (request: HttpRequest, context: Invocati
 export const pollsAdminListHandler = (_request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> =>
   run('polls-admin', context, (s) => s.adminList());
 
-export const pollsAdminCreateHandler = async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+export const pollsAdminCreateHandler = async (
+  request: HttpRequest,
+  context: InvocationContext
+): Promise<HttpResponseInit> => {
   const body = await readBody(request);
   return run('polls-admin-create', context, (s) => s.create(body));
 };
 
-export const pollsAdminUpdateHandler = async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+export const pollsAdminUpdateHandler = async (
+  request: HttpRequest,
+  context: InvocationContext
+): Promise<HttpResponseInit> => {
   const body = await readBody(request);
   return run('polls-admin-update', context, (s) => s.update(request.params['id'] ?? '', body));
 };
@@ -79,7 +88,10 @@ export const pollsAdminUpdateHandler = async (request: HttpRequest, context: Inv
 export const pollsAdminDeleteHandler = (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> =>
   run('polls-admin-delete', context, (s) => s.remove(request.params['id'] ?? ''));
 
-export const pollsAdminReorderHandler = async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+export const pollsAdminReorderHandler = async (
+  request: HttpRequest,
+  context: InvocationContext
+): Promise<HttpResponseInit> => {
   const body = await readBody(request);
   return run('polls-admin-reorder', context, (s) => s.reorder(body));
 };
@@ -100,12 +112,42 @@ export async function pollPostTimer(_timer: Timer, context: InvocationContext): 
 }
 
 app.http('polls', { methods: ['GET'], route: 'polls', authLevel: 'anonymous', handler: pollsListHandler });
-app.http('polls-answer', { methods: ['POST'], route: 'polls/answer', authLevel: 'anonymous', handler: pollsAnswerHandler });
-app.http('polls-admin-list', { methods: ['GET'], route: 'polls-admin', authLevel: 'anonymous', handler: pollsAdminListHandler });
-app.http('polls-admin-create', { methods: ['POST'], route: 'polls-admin', authLevel: 'anonymous', handler: pollsAdminCreateHandler });
-app.http('polls-admin-reorder', { methods: ['POST'], route: 'polls-admin/reorder', authLevel: 'anonymous', handler: pollsAdminReorderHandler });
-app.http('polls-admin-update', { methods: ['PUT'], route: 'polls-admin/{id}', authLevel: 'anonymous', handler: pollsAdminUpdateHandler });
-app.http('polls-admin-delete', { methods: ['DELETE'], route: 'polls-admin/{id}', authLevel: 'anonymous', handler: pollsAdminDeleteHandler });
+app.http('polls-answer', {
+  methods: ['POST'],
+  route: 'polls/answer',
+  authLevel: 'anonymous',
+  handler: requireAuth(pollsAnswerHandler),
+});
+app.http('polls-admin-list', {
+  methods: ['GET'],
+  route: 'polls-admin',
+  authLevel: 'anonymous',
+  handler: pollsAdminListHandler,
+});
+app.http('polls-admin-create', {
+  methods: ['POST'],
+  route: 'polls-admin',
+  authLevel: 'anonymous',
+  handler: requireAuth(pollsAdminCreateHandler),
+});
+app.http('polls-admin-reorder', {
+  methods: ['POST'],
+  route: 'polls-admin/reorder',
+  authLevel: 'anonymous',
+  handler: requireAuth(pollsAdminReorderHandler),
+});
+app.http('polls-admin-update', {
+  methods: ['PUT'],
+  route: 'polls-admin/{id}',
+  authLevel: 'anonymous',
+  handler: requireAuth(pollsAdminUpdateHandler),
+});
+app.http('polls-admin-delete', {
+  methods: ['DELETE'],
+  route: 'polls-admin/{id}',
+  authLevel: 'anonymous',
+  handler: requireAuth(pollsAdminDeleteHandler),
+});
 
 // Fires at 10:23 and 11:23 UTC on weekdays; shouldPostPoll lets only the 11:23 Europe/London one through.
 app.timer('polls-post-timer', {

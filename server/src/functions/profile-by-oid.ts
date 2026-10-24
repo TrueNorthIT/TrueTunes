@@ -11,18 +11,13 @@ import { CosmosClient } from '@azure/cosmos';
 //   400                           — missing oid
 //   500                           — Cosmos error
 
-export async function profileByOidHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
-  const corsHeaders = { 'Access-Control-Allow-Origin': '*' };
-
+export async function profileByOidHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const oid = request.query.get('oid');
-  if (!oid) return { status: 400, jsonBody: { error: 'oid required' }, headers: corsHeaders };
+  if (!oid) return { status: 400, jsonBody: { error: 'oid required' } };
 
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
-  const dbName  = process.env['COSMOS_DATABASE'] ?? 'truetunes';
-  if (!connStr) return { status: 500, jsonBody: { error: 'Cosmos not configured' }, headers: corsHeaders };
+  const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
+  if (!connStr) return { status: 500, jsonBody: { error: 'Cosmos not configured' } };
 
   const container = new CosmosClient(connStr).database(dbName).container('profiles');
 
@@ -35,14 +30,14 @@ export async function profileByOidHandler(
       .fetchAll();
 
     if (resources.length === 0) {
-      return { status: 404, jsonBody: {}, headers: corsHeaders };
+      return { status: 404, jsonBody: {} };
     }
 
     context.log(`[profile-by-oid] oid=${oid} → ${resources[0].id}`);
-    return { status: 200, jsonBody: { displayName: resources[0].id }, headers: corsHeaders };
+    return { status: 200, jsonBody: { displayName: resources[0].id } };
   } catch (err) {
     context.error('[profile-by-oid] failed:', err);
-    return { status: 500, jsonBody: { error: String(err) }, headers: corsHeaders };
+    return { status: 500, jsonBody: { error: String(err) } };
   }
 }
 

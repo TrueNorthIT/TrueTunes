@@ -56,7 +56,9 @@
 
 .resizeHandle {
   position: absolute;
-  top: 0; left: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  bottom: 0;
   width: 16px;
   cursor: ew-resize;
   background: transparent;
@@ -82,8 +84,12 @@
   transition: opacity var(--dur) var(--ease);
   pointer-events: none;
 }
-.resizeHandle:hover::after { opacity: 1; }
-.resizeHandle:focus-visible { outline-offset: -2px; }
+.resizeHandle:hover::after {
+  opacity: 1;
+}
+.resizeHandle:focus-visible {
+  outline-offset: -2px;
+}
 
 :global(html.resizingQueue),
 :global(html.resizingQueue) * {
@@ -148,7 +154,11 @@
   border-radius: var(--r-md);
 }
 
-.headerActions { display: flex; align-items: center; gap: 2px; }
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
 
 .clearConfirm {
   display: flex;
@@ -169,7 +179,9 @@
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast);
+  transition:
+    background var(--dur-fast) var(--ease-fast),
+    color var(--dur-fast) var(--ease-fast);
 }
 /* Destructive actions are tonal, not a red slab; the word carries the meaning. */
 .confirmYes,
@@ -178,25 +190,38 @@
   color: rgb(var(--danger));
 }
 .confirmYes:hover,
-.selDelBtn:hover { background: rgba(var(--danger), 0.28); }
+.selDelBtn:hover {
+  background: rgba(var(--danger), 0.28);
+}
 .confirmNo,
 .selExpandBtn {
   background: rgba(var(--tint), 0.12);
   color: var(--text);
 }
 .confirmNo:hover,
-.selExpandBtn:hover { background: rgba(var(--tint), 0.22); }
+.selExpandBtn:hover {
+  background: rgba(var(--tint), 0.22);
+}
 
 .iconBtn {
-  background: none; border: none;
-  color: var(--text-3); cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
   padding: 7px;
   border-radius: var(--r-round);
-  display: flex; align-items: center; justify-content: center;
-  transition: background var(--dur-fast) var(--ease-fast), color var(--dur-fast) var(--ease-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background var(--dur-fast) var(--ease-fast),
+    color var(--dur-fast) var(--ease-fast);
   line-height: 1;
 }
-.iconBtn:hover { color: var(--text); background: var(--bg-2); }
+.iconBtn:hover {
+  color: var(--text);
+  background: var(--bg-2);
+}
 
 /* ── Content ── */
 .content {
@@ -244,8 +269,13 @@ button.groupLabel {
   cursor: pointer;
   transition: color var(--dur-fast) var(--ease-fast);
 }
-button.groupLabel:hover { color: var(--text); }
-.groupCount { font-weight: 500; font-variant-numeric: tabular-nums; }
+button.groupLabel:hover {
+  color: var(--text);
+}
+.groupCount {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
 
 /* ── Track row ── */
 .row {
@@ -254,20 +284,39 @@ button.groupLabel:hover { color: var(--text); }
   gap: 10px;
   padding: 6px 10px 6px 16px;
   border-radius: var(--r-row);
-  transition: background var(--dur-fast) var(--ease-fast), opacity var(--dur-fast) var(--ease-fast);
+  transition:
+    background var(--dur-fast) var(--ease-fast),
+    opacity var(--dur-fast) var(--ease-fast);
   cursor: default;
   position: relative;
 }
-.row:hover { background: var(--row-hover); }
-.row.selected { background: rgba(var(--tint), 0.16); }
-.row.selected:hover { background: rgba(var(--tint), 0.22); }
+.row:hover {
+  background: var(--row-hover);
+}
+.row.selected {
+  background: rgba(var(--tint), 0.16);
+}
+.row.selected:hover {
+  background: rgba(var(--tint), 0.22);
+}
 /* What is playing gets its own lit surface, like the featured cards on Home. */
-.row.playing { background: var(--surface-hi); }
-.row.playing:hover { background: var(--row-hover); }
-.row.playing .name { color: var(--on-art); font-weight: 600; }
+.row.playing {
+  background: var(--surface-hi);
+}
+.row.playing:hover {
+  background: var(--row-hover);
+}
+.row.playing .name {
+  color: var(--on-art);
+  font-weight: 600;
+}
 /* Already played: still there, but out of the way. */
-.row.played { opacity: 0.55; }
-.row.played:hover { opacity: 0.9; }
+.row.played {
+  opacity: 0.55;
+}
+.row.played:hover {
+  opacity: 0.9;
+}
 
 /* Drag handle: lives in the row's left padding, only visible on hover or selection. */
 .dragHandle {
@@ -283,11 +332,20 @@ button.groupLabel:hover { color: var(--text); }
   transition: opacity var(--dur-fast) var(--ease-fast);
 }
 .row:hover .dragHandle,
-.row.selected .dragHandle { opacity: 1; }
-.dragHandle:active { cursor: grabbing; }
+.row.selected .dragHandle {
+  opacity: 1;
+}
+.dragHandle:active {
+  cursor: grabbing;
+}
 
 /* Art */
-.artWrap { position: relative; width: 40px; height: 40px; flex-shrink: 0; }
+.artWrap {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
 .artBtn {
   display: block;
   width: 100%;
@@ -298,30 +356,58 @@ button.groupLabel:hover { color: var(--text); }
   border-radius: var(--r-sm);
   cursor: pointer;
 }
-.art { width: 40px; height: 40px; border-radius: var(--r-sm); object-fit: cover; display: block; background: var(--bg-1); }
+.art {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-sm);
+  object-fit: cover;
+  display: block;
+  background: var(--bg-1);
+}
 .artPh {
-  width: 40px; height: 40px; border-radius: var(--r-sm); background: var(--bg-1);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-3); font-size: var(--fs-px-lg);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-sm);
+  background: var(--bg-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  font-size: var(--fs-px-lg);
 }
 .overlay {
-  position: absolute; inset: 0; border-radius: var(--r-sm);
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r-sm);
   background: var(--overlay);
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   pointer-events: none;
 }
 
 /* Animated equalizer bars (common/EqBars) */
-.eq { color: var(--on-art); }
+.eq {
+  color: var(--on-art);
+}
 
 /* Text: title, then artist (and when it will play). */
-.text { flex: 1; min-width: 0; }
+.text {
+  flex: 1;
+  min-width: 0;
+}
 .name {
-  font-size: var(--fs-px-lg); font-weight: 500; color: var(--title-rest);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: var(--fs-px-lg);
+  font-weight: 500;
+  color: var(--title-rest);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transition: color var(--dur-fast) var(--ease-fast);
 }
-.row:hover .name { color: var(--on-art); }
+.row:hover .name {
+  color: var(--on-art);
+}
 .subLine {
   display: flex;
   align-items: baseline;
@@ -331,18 +417,27 @@ button.groupLabel:hover { color: var(--text); }
 }
 .sub,
 .subLink {
-  font-size: var(--fs-px); color: var(--text-3);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: var(--fs-px);
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   min-width: 0;
 }
 .subLink {
   max-width: 100%;
-  background: none; border: none; padding: 0;
+  background: none;
+  border: none;
+  padding: 0;
   font-family: inherit;
   text-align: left;
-  cursor: pointer; transition: color var(--dur-fast) var(--ease-fast);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-fast);
 }
-.subLink:hover { color: var(--text); text-decoration: underline; }
+.subLink:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
 
 /* When it will play, on every upcoming row (Joe wants it at a glance, not on hover). The artist gives way first. */
 .timeToPlay {
@@ -354,7 +449,9 @@ button.groupLabel:hover { color: var(--text); }
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
-.timeEstimated { opacity: 0.6; }
+.timeEstimated {
+  opacity: 0.6;
+}
 
 /* Who queued it: a small avatar. The name is the accessible name and the tooltip. */
 .queuer {
@@ -367,7 +464,9 @@ button.groupLabel:hover { color: var(--text); }
   line-height: 0;
   transition: box-shadow var(--dur-fast) var(--ease-fast);
 }
-.queuer:hover { box-shadow: var(--face-ring); }
+.queuer:hover {
+  box-shadow: var(--face-ring);
+}
 .queuerAvatar {
   width: 26px;
   height: 26px;
@@ -381,15 +480,41 @@ button.groupLabel:hover { color: var(--text); }
   overflow: hidden;
   line-height: 1;
 }
-.queuerAvatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.queuerAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 
 /* ── Drop indicator ── */
+/* Laid over the edge of a virtual item rather than between rows, so showing it never moves the list. */
 .dropLine {
+  position: absolute;
+  top: -1px;
+  left: 8px;
+  right: 8px;
   height: 2px;
-  margin: 0 8px;
   background: var(--text-2);
   border-radius: var(--r-pill);
   pointer-events: none;
+  z-index: 1;
+}
+.dropLineEnd {
+  top: auto;
+  bottom: -1px;
+}
+
+/* The queue list is virtual: rows are positioned inside a box as tall as the whole list. */
+.virtualList {
+  position: relative;
+  width: 100%;
+}
+.virtualItem {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
 }
 
 /* ── Selection action bar ── */
@@ -402,7 +527,10 @@ button.groupLabel:hover { color: var(--text); }
   flex-shrink: 0;
 }
 
-.selBar span { font-size: var(--fs-px); color: var(--text-2); }
+.selBar span {
+  font-size: var(--fs-px);
+  color: var(--text-2);
+}
 
 .selActions {
   display: flex;
@@ -413,12 +541,20 @@ button.groupLabel:hover { color: var(--text); }
 /* ── Misc ── */
 .msg {
   padding: 28px 16px;
-  color: var(--text-3); font-size: var(--fs-px);
+  color: var(--text-3);
+  font-size: var(--fs-px);
   text-align: center;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
-.spinner { animation: spin 0.9s linear infinite; color: var(--text-3); }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spinner {
+  animation: spin 0.9s linear infinite;
+  color: var(--text-3);
+}
 
 /* ── DJ autoplay: the break, then what's coming ──────────────────────────── */
 
@@ -448,7 +584,9 @@ button.groupLabel:hover { color: var(--text); }
   cursor: pointer;
   padding: 3px 8px;
   border-radius: var(--r-pill);
-  transition: color var(--dur-fast) var(--ease-fast), background var(--dur-fast) var(--ease-fast);
+  transition:
+    color var(--dur-fast) var(--ease-fast),
+    background var(--dur-fast) var(--ease-fast);
   white-space: nowrap;
 }
 .djBreakLabel:hover {
@@ -460,7 +598,9 @@ button.groupLabel:hover { color: var(--text); }
   animation: djSpin 3s linear infinite;
 }
 @keyframes djSpin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Upcoming picks reuse .row so they match the queue exactly; these only mark
@@ -509,8 +649,20 @@ button.groupLabel:hover { color: var(--text); }
 
 @media (prefers-reduced-motion: reduce) {
   .spinner,
-  .djSpin { animation: none; }
+  .djSpin {
+    animation: none;
+  }
   .row,
   .name,
-  .resizeHandle::after { transition: none; }
+  .resizeHandle::after {
+    transition: none;
+  }
+}
+
+/* Showing the previous room's queue while this one loads: nothing here may act on it. */
+.iconBtn:disabled,
+.confirmYes:disabled,
+.selDelBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }

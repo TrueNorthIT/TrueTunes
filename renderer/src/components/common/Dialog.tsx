@@ -30,7 +30,17 @@ interface Props {
  * an element marked data-autofocus, or the dialog itself) and returns to the opener on close. Portalled
  * to <body> so a parent's drag region or overflow can't reach it.
  */
-export function Dialog({ title, onClose, headContent, actions, onSubmit, size = 'md', closeLabel = 'Close', className, children }: Props) {
+export function Dialog({
+  title,
+  onClose,
+  headContent,
+  actions,
+  onSubmit,
+  size = 'md',
+  closeLabel = 'Close',
+  className,
+  children,
+}: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
@@ -40,7 +50,9 @@ export function Dialog({ title, onClose, headContent, actions, onSubmit, size = 
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     dialog.showModal();
     // React's autoFocus fires before showModal(), while the dialog is still hidden, so focus is placed here.
-    const first = dialog.querySelector<HTMLElement>('[data-autofocus], input:not([type=checkbox]):not(:disabled), textarea:not(:disabled)');
+    const first = dialog.querySelector<HTMLElement>(
+      '[data-autofocus], input:not([type=checkbox]):not(:disabled), textarea:not(:disabled)'
+    );
     (first ?? dialog).focus();
     return () => {
       dialog.close();
@@ -77,16 +89,28 @@ export function Dialog({ title, onClose, headContent, actions, onSubmit, size = 
       }}
     >
       <div className={styles.head}>
-        <h2 id={titleId} className={styles.title}>{title}</h2>
+        <h2 id={titleId} className={styles.title}>
+          {title}
+        </h2>
         {headContent}
         <button type="button" className={styles.close} onClick={onClose} aria-label={closeLabel}>
           <X size={18} aria-hidden="true" />
         </button>
       </div>
       {onSubmit ? (
-        <form className={styles.form} onSubmit={(e) => { e.preventDefault(); onSubmit(e); }}>{content}</form>
-      ) : content}
+        <form
+          className={styles.form}
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit(e);
+          }}
+        >
+          {content}
+        </form>
+      ) : (
+        content
+      )}
     </dialog>,
-    document.body,
+    document.body
   );
 }

@@ -8,7 +8,13 @@ const meta = {
   title: 'Common/InfoTip',
   component: PickInfoTip,
   args: { because: 'Rich and Alex queue HAIM — never played here', kind: 'unheard', trackName: 'Seventeen' },
-  decorators: [(Story) => <div style={{ padding: '1em 1em 14em' }}><Story /></div>],
+  decorators: [
+    (Story) => (
+      <div style={{ padding: '1em 1em 14em' }}>
+        <Story />
+      </div>
+    ),
+  ],
   play: async ({ canvasElement }) => {
     await userEvent.hover(within(canvasElement).getByRole('button', { name: 'Why this pick' }));
   },
@@ -18,7 +24,14 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const WithCounts: Story = {
-  args: { fans: [{ user: 'Rich', count: 14 }, { user: 'Alex', count: 6 }], artist: 'Sugababes', viewer: 'Rich' },
+  args: {
+    fans: [
+      { user: 'Rich', count: 14 },
+      { user: 'Alex', count: 6 },
+    ],
+    artist: 'Sugababes',
+    viewer: 'Rich',
+  },
 };
 
 /** A pick the room has played: the song line leads. */
@@ -26,8 +39,14 @@ export const PlayedWithSongCounts: Story = {
   args: {
     kind: 'played',
     artist: 'Justice',
-    fans: [{ user: 'Rich', count: 14 }, { user: 'Alex', count: 6 }],
-    trackFans: [{ user: 'Rich', count: 3 }, { user: 'Alex', count: 1 }],
+    fans: [
+      { user: 'Rich', count: 14 },
+      { user: 'Alex', count: 6 },
+    ],
+    trackFans: [
+      { user: 'Rich', count: 3 },
+      { user: 'Alex', count: 1 },
+    ],
   },
 };
 

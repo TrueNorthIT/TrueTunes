@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { seedDisplayName } from '../../../test/queueActions';
+import { QueueActionsProvider } from '../../../hooks/useQueueActions';
 import { ContextMenuProvider, useTrackContextMenu } from '../ContextMenu';
 import type { SonosItem } from '../../../types/sonos';
 import { AlbumTrackRow } from '../../album/AlbumTrackRow';
@@ -26,12 +28,16 @@ function Opener() {
 function setup() {
   const onAddToQueue = vi.fn();
   const onQueueNext = vi.fn();
+  const client = new QueryClient();
+  seedDisplayName(client, 'Rich');
   render(
-    <QueryClientProvider client={new QueryClient()}>
-      <ContextMenuProvider displayName="Rich" onAddToQueue={onAddToQueue} onQueueNext={onQueueNext}>
-        <Opener />
-      </ContextMenuProvider>
-    </QueryClientProvider>,
+    <QueryClientProvider client={client}>
+      <QueueActionsProvider value={{ addToQueue: onAddToQueue, queueNext: onQueueNext }}>
+        <ContextMenuProvider>
+          <Opener />
+        </ContextMenuProvider>
+      </QueueActionsProvider>
+    </QueryClientProvider>
   );
   fireEvent.contextMenu(screen.getByText('row'));
   return { onAddToQueue, onQueueNext };
@@ -73,12 +79,14 @@ describe('Queue next is offered on track rows across the app', () => {
 
   function rightClickQueueNext(row: React.ReactElement) {
     const onQueueNext = vi.fn();
+    const client = new QueryClient();
+    seedDisplayName(client, 'Rich');
     render(
-      <QueryClientProvider client={new QueryClient()}>
-        <ContextMenuProvider displayName="Rich" onAddToQueue={vi.fn()} onQueueNext={onQueueNext}>
-          {row}
-        </ContextMenuProvider>
-      </QueryClientProvider>,
+      <QueryClientProvider client={client}>
+        <QueueActionsProvider value={{ addToQueue: vi.fn(), queueNext: onQueueNext }}>
+          <ContextMenuProvider>{row}</ContextMenuProvider>
+        </QueueActionsProvider>
+      </QueryClientProvider>
     );
     fireEvent.contextMenu(screen.getByText('Come Together'));
     fireEvent.click(screen.getByText('Queue next'));
@@ -87,15 +95,32 @@ describe('Queue next is offered on track rows across the app', () => {
 
   it('album track rows', () => {
     const onQueueNext = rightClickQueueNext(
-      <AlbumTrackRow track={albumTrack} isPlaylistOrProgram={false} isSelected={false} serviceId="svc"
-        accountId="acc" onClick={noop} onDragStart={noop} onAdd={noop} />,
+      <AlbumTrackRow
+        track={albumTrack}
+        isPlaylistOrProgram={false}
+        isSelected={false}
+        serviceId="svc"
+        accountId="acc"
+        onClick={noop}
+        onDragStart={noop}
+        onAdd={noop}
+      />
     );
     expect(onQueueNext).toHaveBeenCalledWith(raw);
   });
 
   it('artist top songs', () => {
     const onQueueNext = rightClickQueueNext(
-      <TopSongRow track={albumTrack} index={0} isSelected={false} onAdd={noop} onClick={noop} onDragStart={noop} onOpenAlbum={noop} onOpenArtist={noop} />,
+      <TopSongRow
+        track={albumTrack}
+        index={0}
+        isSelected={false}
+        onAdd={noop}
+        onClick={noop}
+        onDragStart={noop}
+        onOpenAlbum={noop}
+        onOpenArtist={noop}
+      />
     );
     expect(onQueueNext).toHaveBeenCalledWith(raw);
   });

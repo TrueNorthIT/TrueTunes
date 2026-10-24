@@ -4,10 +4,7 @@ import { lyricsQueryOptions } from './useLyrics';
 import { geniusDescriptionQueryOptions } from './useGeniusDescription';
 import type { NormalizedQueueItem } from '../types/provider';
 
-export function usePrefetchNextLyrics(
-  items: NormalizedQueueItem[],
-  queueItemId: string | null,
-) {
+export function usePrefetchNextLyrics(items: NormalizedQueueItem[], queueItemId: string | null) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -15,7 +12,9 @@ export function usePrefetchNextLyrics(
     const next = items[Number(queueItemId)]; // queueItemId is 1-based, so index = id - 1 + 1 = id
     if (!next) return;
     const { title, artist, albumName, durationMs } = next.track;
-    queryClient.prefetchQuery(lyricsQueryOptions(title, artist, albumName, durationMs));
-    queryClient.prefetchQuery(geniusDescriptionQueryOptions(title, artist));
+    // prefetchQuery ignores `enabled`, so an empty field would reach lrclib as `artist_name=` and 400.
+    if (!title || !artist) return;
+    void queryClient.prefetchQuery(lyricsQueryOptions(title, artist, albumName, durationMs));
+    void queryClient.prefetchQuery(geniusDescriptionQueryOptions(title, artist));
   }, [queryClient, items, queueItemId]);
 }

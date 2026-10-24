@@ -9,10 +9,7 @@ interface ScoreDocWithGuesses {
   };
 }
 
-export async function gameStatsHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
+export async function gameStatsHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
   const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
   const scoresCtrName = process.env['COSMOS_SCORES_CONTAINER'] ?? 'scores';
@@ -42,7 +39,6 @@ export async function gameStatsHandler(
       return {
         status: 200,
         jsonBody: { gameId, totalPlayers: 0, questions: [] },
-        headers: { 'Access-Control-Allow-Origin': '*' },
       };
     }
 
@@ -77,7 +73,6 @@ export async function gameStatsHandler(
     return {
       status: 200,
       jsonBody: { gameId, totalPlayers: total, questions },
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[game-stats] failed:', err);

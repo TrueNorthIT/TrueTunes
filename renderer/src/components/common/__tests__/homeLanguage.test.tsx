@@ -28,7 +28,11 @@ describe('AddButton', () => {
   it('is named, calls onClick and does not bubble', () => {
     const onClick = vi.fn();
     const outer = vi.fn();
-    render(<div onClick={outer}><AddButton label="Add Blue to queue" onClick={onClick} /></div>);
+    render(
+      <div onClick={outer}>
+        <AddButton label="Add Blue to queue" onClick={onClick} />
+      </div>
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Add Blue to queue' }));
     expect(onClick).toHaveBeenCalledOnce();
     expect(outer).not.toHaveBeenCalled();
@@ -41,7 +45,7 @@ describe('SectionCard', () => {
     render(
       <SectionCard title="Trending" actions={<SeeAll onClick={onSeeAll} />}>
         <p>body</p>
-      </SectionCard>,
+      </SectionCard>
     );
     expect(screen.getByRole('region', { name: 'Trending' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'See all' }));
@@ -49,12 +53,20 @@ describe('SectionCard', () => {
   });
 
   it('has no header without a title', () => {
-    render(<SectionCard><p>body</p></SectionCard>);
+    render(
+      <SectionCard>
+        <p>body</p>
+      </SectionCard>
+    );
     expect(screen.queryByRole('heading')).toBeNull();
   });
 
   it('passes the wash through as --wash', () => {
-    render(<SectionCard featured wash="1, 2, 3" title="T"><p>x</p></SectionCard>);
+    render(
+      <SectionCard featured wash="1, 2, 3" title="T">
+        <p>x</p>
+      </SectionCard>
+    );
     expect(screen.getByRole('region').style.getPropertyValue('--wash')).toBe('1, 2, 3');
   });
 });
@@ -64,7 +76,15 @@ describe('ArtCard', () => {
     const onOpen = vi.fn();
     const onAdd = vi.fn();
     render(
-      <ArtCard size="large" label="Because you play X" title="Blue" sub="Joni" openLabel="Open album Blue" onOpen={onOpen} onAdd={onAdd} />,
+      <ArtCard
+        size="large"
+        label="Because you play X"
+        title="Blue"
+        sub="Joni"
+        openLabel="Open album Blue"
+        onOpen={onOpen}
+        onAdd={onAdd}
+      />
     );
     expect(screen.getByText('Because you play X')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Open album Blue' }));
@@ -77,12 +97,14 @@ describe('ArtCard', () => {
   it('drops the cover once the photo has faded in, so only one image layer remains', () => {
     vi.mocked(useImage).mockImplementation((url) => (url ? `blob:${url}` : null));
     const { container } = render(
-      <ArtCard size="medium" label="L" title="T" openLabel="Open" onOpen={() => {}} imageUrl="cover" photoUrl="photo" />,
+      <ArtCard size="medium" label="L" title="T" openLabel="Open" onOpen={() => {}} imageUrl="cover" photoUrl="photo" />
     );
     expect(container.querySelectorAll('img')).toHaveLength(2);
     // jsdom has no AnimationEvent, so React listens for the prefixed name there; the browser fires animationend.
     const photo = container.querySelector('img[src="blob:photo"]')!;
-    act(() => { photo.dispatchEvent(new Event('webkitAnimationEnd', { bubbles: true })); });
+    act(() => {
+      photo.dispatchEvent(new Event('webkitAnimationEnd', { bubbles: true }));
+    });
     const imgs = container.querySelectorAll('img');
     expect(imgs).toHaveLength(1);
     expect(imgs[0].getAttribute('src')).toBe('blob:photo');
@@ -97,7 +119,18 @@ describe('TrackRow and ChartRow', () => {
     const onOpen = vi.fn();
     const onAdd = vi.fn();
     const onContextMenu = vi.fn();
-    render(<ul><TrackRow title="Blue" artists={artists} reason="Never played" onOpen={onOpen} onAdd={onAdd} onContextMenu={onContextMenu} /></ul>);
+    render(
+      <ul>
+        <TrackRow
+          title="Blue"
+          artists={artists}
+          reason="Never played"
+          onOpen={onOpen}
+          onAdd={onAdd}
+          onContextMenu={onContextMenu}
+        />
+      </ul>
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Blue, open album' }));
     expect(onOpen).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByRole('button', { name: 'Add Blue to queue' }));
@@ -111,8 +144,14 @@ describe('TrackRow and ChartRow', () => {
     const onOpenArtist = vi.fn();
     render(
       <ol>
-        <ChartRow rank={3} title="Blue" artists={<ArtistLinks artist="A, B" onOpenArtist={onOpenArtist} />} count={12} onOpen={() => {}} />
-      </ol>,
+        <ChartRow
+          rank={3}
+          title="Blue"
+          artists={<ArtistLinks artist="A, B" onOpenArtist={onOpenArtist} />}
+          count={12}
+          onOpen={() => {}}
+        />
+      </ol>
     );
     expect(screen.getByText('03')).toBeInTheDocument();
     expect(screen.getByText('12')).toBeInTheDocument();
@@ -147,7 +186,7 @@ describe('PersonCard', () => {
     render(
       <PersonCard name="Alex" caption="3 albums this week" onOpen={onOpen}>
         <span>tiles</span>
-      </PersonCard>,
+      </PersonCard>
     );
     expect(screen.getByText('3 albums this week')).toBeInTheDocument();
     expect(screen.getByText('tiles')).toBeInTheDocument();

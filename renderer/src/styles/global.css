@@ -70,12 +70,17 @@
   /* Image-card scrim: darker at the top for the caption, deep at the bottom for title and artist. */
   --scrim-top: linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 22%);
   --scrim-art:
-    var(--scrim-top),
-    linear-gradient(to top, rgba(0, 0, 0, 0.74) 0%, rgba(0, 0, 0, 0.26) 42%, rgba(0, 0, 0, 0) 70%);
+    var(--scrim-top), linear-gradient(to top, rgba(0, 0, 0, 0.74) 0%, rgba(0, 0, 0, 0.26) 42%, rgba(0, 0, 0, 0) 70%);
   /* Tiles whose art carries its own text get a deeper, bottom-only scrim. */
   --scrim-deep: linear-gradient(to top, rgba(0, 0, 0, 0.86) 0%, rgba(0, 0, 0, 0.4) 38%, rgba(0, 0, 0, 0) 68%);
   /* Behind the text block of a Top result, so the text holds on pale covers. */
-  --scrim-text: linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.66) 50%, rgba(0, 0, 0, 0.42) 80%, rgba(0, 0, 0, 0) 100%);
+  --scrim-text: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.82) 0%,
+    rgba(0, 0, 0, 0.66) 50%,
+    rgba(0, 0, 0, 0.42) 80%,
+    rgba(0, 0, 0, 0) 100%
+  );
 
   /* Radius scale (DESIGN.md "Shapes"). Em radii scale with the type of the element that uses them. */
   --r-sm: 6px;
@@ -109,6 +114,18 @@
   --fs-px: 13px; /* meta */
   --fs-px-lg: 14px; /* row text */
   --fs-px-title: 16px;
+  /* Glyph, stat and icon sizes: placeholder emoji in empty art, big numerals, icon buttons, lyric lines. */
+  --fs-glyph-sm: 2em; /* small empty-art glyph, count numerals */
+  --fs-glyph-md: 2.4em; /* lyrics empty-state glyph */
+  --fs-glyph: 3em; /* empty-art glyph on an album */
+  --fs-glyph-lg: 4em; /* empty-art glyph on a playlist, rank numerals */
+  --fs-stat: 4.6em; /* the Queuedle score */
+  --fs-avatar-initial: clamp(56px, 6cqw, 96px); /* initial inside the Profile avatar */
+  --fs-rename: clamp(28px, 3cqw, 44px); /* the Profile rename field */
+  --fs-lyric: clamp(1.7em, 3.4cqi, 2.4em); /* synced lyric line */
+  --fs-lyric-plain: clamp(1.4em, 2.6cqi, 1.9em); /* unsynced lyric line */
+  --fs-icon: 18px; /* icon-button glyphs (carousel arrows) */
+  --fs-icon-sm: 16px; /* icon glyphs inside the player bar */
   --nav-h: 64px; /* 12px top gap + 44px pill + 8px clearance */
   --player-h: 112px; /* 64px bar + 24px bottom margin + 24px clearance */
   --card-size: clamp(140px, 16vw, 320px);

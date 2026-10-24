@@ -6,17 +6,17 @@ on:
   pull_request:
     branches: [main, develop]
 
-permissions:
-  contents: write
-  checks: write
-  pull-requests: write
-
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   validate:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read # dorny/test-reporter
+      checks: write # dorny/test-reporter creates the check run
+      pull-requests: write # vitest-coverage-report-action comments on the PR
 
     steps:
       - uses: actions/checkout@v4
@@ -25,6 +25,9 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
 
       - run: npm ci
 
@@ -34,6 +37,12 @@ jobs:
       - run: npm run lint
 
       - run: npm run typecheck
+
+      - run: npm run format:check
+
+      - run: npm run build
+
+      - run: npm run test:main
 
       - name: Test with coverage
         run: >
@@ -60,16 +69,29 @@ jobs:
           json-final-path: renderer/coverage/coverage-final.json
           vite-config-path: renderer/vitest.config.ts
 
+      - name: Server (Azure Functions) tests and build
+        working-directory: server
+        run: |
+          npm ci
+          npm test
+          npm run build
+
   version:
     needs: validate
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       new_version: ${{ steps.bump.outputs.new_version }}
       sha: ${{ steps.push.outputs.sha }}
 
     steps:
+      # Pushes with a deploy key that may bypass the main ruleset. Deploy-key pushes DO trigger
+      # workflows, so the bump commit carries [skip ci] to stop a publish loop.
       - uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.VERSION_BUMP_DEPLOY_KEY }}
 
       - uses: actions/setup-node@v4
         with:
@@ -87,7 +109,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add package.json package-lock.json
-          git commit -m "chore: bump version to ${{ steps.bump.outputs.new_version }}"
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.new_version }} [skip ci]"
           git push
           echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
@@ -103,6 +125,8 @@ jobs:
             script: electron:publish:mac
 
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write # electron-builder uploads the GitHub release
 
     steps:
       - uses: actions/checkout@v4
@@ -121,6 +145,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPINSIGHTS_CONNECTION_STRING: ${{ secrets.APPINSIGHTS_CONNECTION_STRING }}
           GENIUS_ACCESS_TOKEN: ${{ secrets.GENIUS_ACCESS_TOKEN }}
-          VITE_GITHUB_PAT: ${{ secrets.VITE_GITHUB_PAT }}
           ENTRA_CLIENT_ID: ${{ secrets.ENTRA_CLIENT_ID }}
           ENTRA_TENANT_ID: ${{ secrets.ENTRA_TENANT_ID }}

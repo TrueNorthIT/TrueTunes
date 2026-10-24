@@ -1,15 +1,15 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ListPlus } from 'lucide-react';
 import { useImage } from '../../hooks/useImage';
-import { useAlbumBrowse, albumQueryOptions } from '../../hooks/useAlbumBrowse';
+import { useAlbumBrowse, albumQueryOptions, type AlbumTrack } from '../../hooks/useAlbumBrowse';
 import { usePlaylistBrowse } from '../../hooks/usePlaylistBrowse';
 import { useDominantColor } from '../../hooks/useDominantColor';
 import { usePageArt } from '../../lib/pageArt';
 import { useGeniusAlbumYear } from '../../hooks/useGeniusAlbumYear';
 import { useGeniusAlbumAbout } from '../../hooks/useGeniusAlbumAbout';
-import { artistQueryOptions } from '../../hooks/useArtistBrowse';
+import { artistBrowseQueryOptions } from '../../hooks/useArtistBrowse';
 import { useResolveAndOpen } from '../../hooks/useResolveAndOpen';
 import { useOpenItem } from '../../hooks/useOpenItem';
 import { useStats } from '../../hooks/useStats';
@@ -17,7 +17,13 @@ import { useReleaseTrackCounts } from '../../hooks/useReleaseTrackCounts';
 import { useReleaseYears } from '../../hooks/useReleaseYears';
 import type { PlaybackState } from '../../hooks/usePlayback';
 import {
-  resolveAlbumParams, isPlaylist, isProgram, getItemArt, getName, splitArtists,
+  decodeDefaults,
+  resolveAlbumParams,
+  isPlaylist,
+  isProgram,
+  getItemArt,
+  getName,
+  splitArtists,
 } from '../../lib/itemHelpers';
 import { withArtworkSize } from '../../lib/artworkUrl';
 import { cardSubtitle } from '../../lib/artistSubtitle';
@@ -33,25 +39,25 @@ import { SectionCard } from '../common/SectionCard';
 import { AlbumTrackRow } from './AlbumTrackRow';
 import type { SonosItem, SonosItemId } from '../../types/sonos';
 import styles from '../../styles/AlbumPanel.module.css';
+import { useQueueActions } from '../../hooks/useQueueActions';
 
 const ABOUT_SKELETON = ['94%', '88%', '96%', '72%', '90%', '58%'];
 
 interface Props {
-  onAddToQueue: (item: SonosItem) => Promise<void> | void;
   /** Live playback, to mark the track that is playing. Optional. */
   playback?: PlaybackState;
 }
 
-export function AlbumPanel({ onAddToQueue, playback }: Props) {
+export function AlbumPanel({ playback }: Props) {
+  const { addToQueue: onAddToQueue } = useQueueActions();
   const { state } = useLocation();
   const item = (state as { item?: SonosItem } | null)?.item;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const openItem = useOpenItem();
   const { resolveAndOpen } = useResolveAndOpen();
 
   const isStation = item ? isProgram(item) : false;
-  const isPlaylistOrProgram = item ? (isPlaylist(item) || isStation) : false;
+  const isPlaylistOrProgram = item ? isPlaylist(item) || isStation : false;
   const { albumId, serviceId, accountId, defaults } = item
     ? resolveAlbumParams(item)
     : { albumId: undefined, serviceId: undefined, accountId: undefined, defaults: undefined };
@@ -59,46 +65,52 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
   const lastSelected = useRef<number | null>(null);
   const [adding, setAdding] = useState(false);
 
-  const albumResult    = useAlbumBrowse(isPlaylistOrProgram ? undefined : albumId, serviceId, accountId, defaults);
+  const albumResult = useAlbumBrowse(isPlaylistOrProgram ? undefined : albumId, serviceId, accountId, defaults);
   const playlistResult = usePlaylistBrowse(isPlaylistOrProgram ? albumId : undefined, serviceId, accountId, defaults);
 
   const isLoading = isPlaylistOrProgram ? playlistResult.isLoading : albumResult.isLoading;
-  const error     = isPlaylistOrProgram ? playlistResult.error     : albumResult.error;
-  const refetch   = isPlaylistOrProgram ? playlistResult.refetch   : albumResult.refetch;
+  const error = isPlaylistOrProgram ? playlistResult.error : albumResult.error;
+  const refetch = isPlaylistOrProgram ? playlistResult.refetch : albumResult.refetch;
   const data = isPlaylistOrProgram
     ? playlistResult.data
-      ? { title: null, artist: null, artUrl: null, tracks: playlistResult.data, totalTracks: playlistResult.data.length, artistItem: null }
+      ? {
+          title: null,
+          artist: null,
+          artUrl: null,
+          tracks: playlistResult.data,
+          totalTracks: playlistResult.data.length,
+          artistItem: null,
+        }
       : null
     : (albumResult.data ?? null);
 
-  // The artist's browse is prefetched on arrival (the header link and the "More by" shelf both want it),
-  // and usually already cached from the page that led here.
-  const artistRid = data?.artistItem?.resource?.id as SonosItemId | undefined;
-  const artistReady = !!(artistRid?.objectId && artistRid.serviceId && artistRid.accountId);
-  const { data: artistData } = useQuery({
-    ...artistQueryOptions(artistRid?.objectId, artistRid?.serviceId, artistRid?.accountId, undefined),
-    enabled: artistReady && !isPlaylistOrProgram,
-  });
-  // Same grouping, years and track counts as the artist page (and the same caches).
-  const releases = artistData?.albums ?? [];
-  const { counts: releaseCounts } = useReleaseTrackCounts(releases);
-  const { years: releaseYears } = useReleaseYears(releases, artistData?.name);
+  // The artist's releases feed the "More by" shelf. The artist id is in the item's own defaults, so the browse starts
+  // now, beside the album's, instead of waiting for the album to land and name the artist.
+  const artistRid = useMemo(() => {
+    const early = decodeDefaults(defaults)?.['artistId'] as string | undefined;
+    if (early && serviceId && accountId) return { objectId: early, serviceId, accountId } as SonosItemId;
+    return data?.artistItem?.resource?.id as SonosItemId | undefined;
+  }, [defaults, serviceId, accountId, data?.artistItem]);
+  const artistReady = !!(artistRid?.objectId && artistRid.serviceId && artistRid.accountId) && !isPlaylistOrProgram;
+  useEffect(() => {
+    if (artistReady)
+      void queryClient.prefetchQuery(
+        artistBrowseQueryOptions(artistRid?.objectId, artistRid?.serviceId, artistRid?.accountId, undefined)
+      );
+  }, [artistReady, artistRid, queryClient]);
 
-  const title  = data?.title  ?? item?.title  ?? item?.name  ?? '';
+  const title = data?.title ?? item?.title ?? item?.name ?? '';
   const artist = data?.artist ?? ((item as Record<string, unknown>)?.['subtitle'] as string) ?? '';
   const artUrl = data?.artUrl ?? (item ? getItemArt(item) : null);
   // The header art is large, so ask the service for a big image.
-  const cachedArt     = useImage(artUrl ? withArtworkSize(artUrl, 600) : null);
+  const cachedArt = useImage(artUrl ? withArtworkSize(artUrl, 600) : null);
   const dominantColor = useDominantColor(cachedArt, { setGlobal: true });
   usePageArt(cachedArt);
-  const year = useGeniusAlbumYear(
-    isPlaylistOrProgram ? null : title,
-    isPlaylistOrProgram ? null : artist,
-  );
+  const year = useGeniusAlbumYear(isPlaylistOrProgram ? null : title, isPlaylistOrProgram ? null : artist);
   // Beside the tracklist: what the album is, from Genius (else the artist's bio). Nothing at all, no card.
   const { about, isLoading: aboutLoading } = useGeniusAlbumAbout(
     isPlaylistOrProgram ? null : title,
-    isPlaylistOrProgram ? null : splitArtists(artist)[0] ?? artist,
+    isPlaylistOrProgram ? null : (splitArtists(artist)[0] ?? artist)
   );
   const showAbout = aboutLoading || !!about;
 
@@ -106,67 +118,77 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
   const { data: stats } = useStats('alltime', undefined, 100);
   const queuedHere = isPlaylistOrProgram
     ? 0
-    : (stats?.topAlbums ?? []).find(a =>
-        (albumId && a.albumId === albumId) || (!!title && a.album.trim().toLowerCase() === title.trim().toLowerCase()),
-      )?.count ?? 0;
+    : ((stats?.topAlbums ?? []).find(
+        (a) =>
+          (albumId && a.albumId === albumId) || (!!title && a.album.trim().toLowerCase() === title.trim().toLowerCase())
+      )?.count ?? 0);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resets a ref alongside, which render must not write
     setSelected(new Set());
     lastSelected.current = null;
   }, [albumId]);
 
   if (!item) return null;
 
-  const trackServiceId  = (data?.tracks[0]?.id as SonosItemId | undefined)?.serviceId  ?? serviceId ?? '';
-  const trackAccountId  = (data?.tracks[0]?.id as SonosItemId | undefined)?.accountId ?? accountId ?? '';
+  const trackServiceId = (data?.tracks[0]?.id as SonosItemId | undefined)?.serviceId ?? serviceId ?? '';
+  const trackAccountId = (data?.tracks[0]?.id as SonosItemId | undefined)?.accountId ?? accountId ?? '';
 
   function handleTrackClick(index: number, e: React.MouseEvent) {
     e.stopPropagation();
     if (e.shiftKey && lastSelected.current !== null) {
       const lo = Math.min(lastSelected.current, index);
       const hi = Math.max(lastSelected.current, index);
-      setSelected(prev => { const next = new Set(prev); for (let i = lo; i <= hi; i++) next.add(i); return next; });
+      setSelected((prev) => {
+        const next = new Set(prev);
+        for (let i = lo; i <= hi; i++) next.add(i);
+        return next;
+      });
     } else if (e.ctrlKey || e.metaKey) {
-      setSelected(prev => { const next = new Set(prev); if (next.has(index)) next.delete(index); else next.add(index); return next; });
+      setSelected((prev) => {
+        const next = new Set(prev);
+        if (next.has(index)) next.delete(index);
+        else next.add(index);
+        return next;
+      });
       lastSelected.current = index;
     } else {
-      if (selected.size === 1 && selected.has(index)) { setSelected(new Set()); lastSelected.current = null; }
-      else { setSelected(new Set([index])); lastSelected.current = index; }
+      if (selected.size === 1 && selected.has(index)) {
+        setSelected(new Set());
+        lastSelected.current = null;
+      } else {
+        setSelected(new Set([index]));
+        lastSelected.current = index;
+      }
     }
   }
 
   function handleTrackDragStart(index: number, e: React.DragEvent) {
     if (!data) return;
     const toMove = selected.has(index) ? [...selected].sort((a, b) => a - b) : [index];
-    if (!selected.has(index)) { setSelected(new Set([index])); lastSelected.current = index; }
+    if (!selected.has(index)) {
+      setSelected(new Set([index]));
+      lastSelected.current = index;
+    }
     e.dataTransfer.effectAllowed = 'copy';
-    e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(toMove.map(idx => data.tracks[idx].raw)));
+    e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(toMove.map((idx) => data.tracks[idx].raw)));
     createDragGhost(toMove.length > 1 ? `${toMove.length} tracks` : data.tracks[index].title, e.dataTransfer);
   }
 
   const totalSecs = data?.tracks.reduce((s, t) => s + t.durationSeconds, 0) ?? 0;
   const totalMins = Math.round(totalSecs / 60);
-  const anyExplicit = !!data?.tracks.some(t => t.explicit);
+  const anyExplicit = !!data?.tracks.some((t) => t.explicit);
 
   function openArtist() {
     if (!data?.artistItem) return;
     const rid = data.artistItem.resource?.id as SonosItemId | undefined;
-    navigate(`/artist/${encodeURIComponent(rid?.objectId ?? '_')}`, { state: { item: data.artistItem } });
+    void navigate(`/artist/${encodeURIComponent(rid?.objectId ?? '_')}`, { state: { item: data.artistItem } });
   }
 
   // Multi-artist subtitles ("Sonny Stitt, Kenny Garrett") arrive as a single string.
   // Split on commas so each artist gets its own link; only the single-artist case
   // can use the cached artistItem for direct navigation.
   const artistParts = splitArtists(artist);
-
-  // More by this artist: their other releases, without this album's own versions or its singles.
-  const moreAlbums = moreByReleases(
-    releases,
-    { albumId, title, trackTitles: data?.tracks.map(t => t.title) ?? [] },
-    releaseCounts,
-    releaseYears,
-  );
-  const artistName = artistData?.name || artistParts[0] || '';
 
   const meta = data
     ? [data.totalTracks + ' songs', totalMins > 0 ? totalMins + ' min' : null, year].filter(Boolean).join(' · ')
@@ -179,61 +201,73 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
           wash={dominantColor}
           art={<Artwork src={cachedArt} placeholderClassName={styles.artPh} />}
           kind={isStation ? 'Station' : isPlaylistOrProgram ? 'Playlist' : 'Album'}
-          title={<>{title}{anyExplicit && <ExplicitBadge />}</>}
+          title={
+            <>
+              {title}
+              {anyExplicit && <ExplicitBadge />}
+            </>
+          }
           corner={<OfficeChip count={queuedHere} />}
         >
-            {artistParts.length > 0 && (
-              <div className={styles.artist}>
-                {artistParts.length === 1 && data?.artistItem ? (
-                  <button className={styles.link} onClick={openArtist}>
-                    {artistParts[0]}
-                  </button>
-                ) : (
-                  artistParts.map((name, i) => (
-                    <Fragment key={i}>
-                      {i > 0 && ', '}
-                      <button
-                        className={styles.link}
-                        onClick={() => resolveAndOpen(name, 'artist', { serviceId, accountId })}
-                      >
-                        {name}
-                      </button>
-                    </Fragment>
-                  ))
-                )}
-              </div>
-            )}
-            {data && <div className={styles.metaLine}>{meta}</div>}
-            {/* No whole-station add: it would replace the shared queue. Its songs add one at a time below. */}
-            {!isStation && <div className={styles.actions}>
+          {artistParts.length > 0 && (
+            <div className={styles.artist}>
+              {artistParts.length === 1 && data?.artistItem ? (
+                <button className={styles.link} onClick={openArtist}>
+                  {artistParts[0]}
+                </button>
+              ) : (
+                artistParts.map((name, i) => (
+                  <Fragment key={i}>
+                    {i > 0 && ', '}
+                    <button
+                      className={styles.link}
+                      onClick={() => void resolveAndOpen(name, 'artist', { serviceId, accountId })}
+                    >
+                      {name}
+                    </button>
+                  </Fragment>
+                ))
+              )}
+            </div>
+          )}
+          {data && <div className={styles.metaLine}>{meta}</div>}
+          {/* No whole-station add: it would replace the shared queue. Its songs add one at a time below. */}
+          {!isStation && (
+            <div className={styles.actions}>
               <PillButton
                 variant="primary"
                 disabled={adding || !data?.tracks?.length}
-                onClick={async () => {
+                onClick={() => {
                   if (!item || !data?.tracks?.length) return;
                   setAdding(true);
-                  try { await onAddToQueue(item); }
-                  finally { setAdding(false); }
+                  void onAddToQueue(item).finally(() => setAdding(false));
                 }}
               >
                 <ListPlus size={16} aria-hidden="true" />
                 {adding ? 'Adding…' : 'Add to queue'}
               </PillButton>
-            </div>}
+            </div>
+          )}
         </HeroBand>
 
         <div className={showAbout ? styles.body : undefined}>
           <SectionCard className={`${styles.section} ${styles.trackCard}`}>
             <div
               className={styles.tracks}
-              onClick={() => { setSelected(new Set()); lastSelected.current = null; }}
+              onClick={() => {
+                setSelected(new Set());
+                lastSelected.current = null;
+              }}
             >
               {isLoading && (
                 <div aria-busy="true">
                   {Array.from({ length: 10 }).map((_, i) => (
                     <div key={i} className={styles.skeletonRow}>
                       <span className={`skeleton ${styles.skelNum}`} />
-                      <span className={`skeleton ${styles.skelTitle}`} style={{ width: `${35 + (i % 4) * 12}%`, animationDelay: `${i * 60}ms` }} />
+                      <span
+                        className={`skeleton ${styles.skelTitle}`}
+                        style={{ width: `${35 + (i % 4) * 12}%`, animationDelay: `${i * 60}ms` }}
+                      />
                     </div>
                   ))}
                 </div>
@@ -256,10 +290,12 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
                       serviceId={trackServiceId}
                       accountId={trackAccountId}
                       albumArtist={isPlaylistOrProgram ? undefined : artist}
-                      playing={!!playback?.isVisible && !!track.id.objectId && track.id.objectId === playback.currentObjectId}
-                      onClick={e => handleTrackClick(i, e)}
-                      onDragStart={e => handleTrackDragStart(i, e)}
-                      onAdd={() => onAddToQueue(track.raw)}
+                      playing={
+                        !!playback?.isVisible && !!track.id.objectId && track.id.objectId === playback.currentObjectId
+                      }
+                      onClick={(e) => handleTrackClick(i, e)}
+                      onDragStart={(e) => handleTrackDragStart(i, e)}
+                      onAdd={() => void onAddToQueue(track.raw)}
                     />
                   ))}
                 </ul>
@@ -273,7 +309,9 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
                 <>
                   {about.released && <p className={styles.released}>Released {about.released}</p>}
                   <div className={styles.aboutText}>
-                    {about.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
+                    {about.paragraphs.map((p, i) => (
+                      <p key={i}>{p}</p>
+                    ))}
                   </div>
                   {about.url && (
                     <p className={styles.source}>
@@ -282,7 +320,10 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
                         href={about.url}
                         className={styles.sourceLink}
                         aria-label="Read more on Genius"
-                        onClick={(e) => { e.preventDefault(); void window.sonos.openExternal(about.url!); }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          void window.sonos.openExternal(about.url!);
+                        }}
                       >
                         Genius
                       </a>
@@ -292,7 +333,11 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
               ) : (
                 <div aria-busy="true" aria-label="Loading">
                   {ABOUT_SKELETON.map((w, i) => (
-                    <span key={i} className={`skeleton ${styles.skelLine}`} style={{ width: w, animationDelay: `${i * 60}ms` }} />
+                    <span
+                      key={i}
+                      className={`skeleton ${styles.skelLine}`}
+                      style={{ width: w, animationDelay: `${i * 60}ms` }}
+                    />
                   ))}
                 </div>
               )}
@@ -300,29 +345,77 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
           )}
         </div>
 
-        {moreAlbums.length > 0 && (
-          <SectionCard className={styles.section} title={`More by ${artistName}`}>
-            <div className={styles.shelf}>
-              {moreAlbums.map(({ item: a, year: y }, i) => {
-                const p = resolveAlbumParams(a);
-                return (
-                  <ImageTile
-                    key={p.albumId ?? i}
-                    title={getName(a)}
-                    sub={cardSubtitle(y, (a as Record<string, unknown>)['subtitle'] as string | undefined, artistName)}
-                    imageUrl={getItemArt(a)}
-                    onOpen={() => openItem(a)}
-                    onHover={() => {
-                      if (p.albumId && p.serviceId && p.accountId)
-                        void queryClient.prefetchQuery(albumQueryOptions(p.albumId, p.serviceId, p.accountId, p.defaults));
-                    }}
-                  />
-                );
-              })}
-            </div>
-          </SectionCard>
+        {data && !isPlaylistOrProgram && (
+          <MoreBy
+            artistRid={artistRid}
+            albumId={albumId}
+            title={title}
+            tracks={data.tracks}
+            fallbackName={artistParts[0] ?? ''}
+          />
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * "More by this artist": their other releases, without this album's own versions or its singles. It owns the artist
+ * browse and the per-release year and track-count lookups, so each answer re-renders the shelf and not the tracklist.
+ */
+function MoreBy({
+  artistRid,
+  albumId,
+  title,
+  tracks,
+  fallbackName,
+}: {
+  artistRid: SonosItemId | undefined;
+  albumId: string | undefined;
+  title: string;
+  tracks: AlbumTrack[];
+  fallbackName: string;
+}) {
+  const openItem = useOpenItem();
+  const queryClient = useQueryClient();
+  const { data: artistData } = useQuery({
+    ...artistBrowseQueryOptions(artistRid?.objectId, artistRid?.serviceId, artistRid?.accountId, undefined),
+    enabled: !!(artistRid?.objectId && artistRid.serviceId && artistRid.accountId),
+  });
+  const releases = useMemo(() => artistData?.parsed.albums ?? [], [artistData]);
+  // Same grouping, years and track counts as the artist page (and the same caches).
+  const { counts: releaseCounts } = useReleaseTrackCounts(releases);
+  const { years: releaseYears } = useReleaseYears(releases, artistData?.parsed.name);
+
+  const moreAlbums = moreByReleases(
+    releases,
+    { albumId, title, trackTitles: tracks.map((t) => t.title) },
+    releaseCounts,
+    releaseYears
+  );
+  const artistName = artistData?.parsed.name || fallbackName;
+  if (moreAlbums.length === 0) return null;
+
+  return (
+    <SectionCard className={styles.section} title={`More by ${artistName}`}>
+      <div className={styles.shelf}>
+        {moreAlbums.map(({ item: a, year: y }, i) => {
+          const p = resolveAlbumParams(a);
+          return (
+            <ImageTile
+              key={p.albumId ?? i}
+              title={getName(a)}
+              sub={cardSubtitle(y, (a as Record<string, unknown>)['subtitle'] as string | undefined, artistName)}
+              imageUrl={getItemArt(a)}
+              onOpen={() => openItem(a)}
+              onHover={() => {
+                if (p.albumId && p.serviceId && p.accountId)
+                  void queryClient.prefetchQuery(albumQueryOptions(p.albumId, p.serviceId, p.accountId, p.defaults));
+              }}
+            />
+          );
+        })}
+      </div>
+    </SectionCard>
   );
 }

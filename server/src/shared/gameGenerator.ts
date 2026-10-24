@@ -1,11 +1,4 @@
-import {
-  AggregateResult,
-  ItemCategory,
-  itemKey,
-  TrackEntry,
-  ArtistEntry,
-  AlbumEntry,
-} from './aggregate';
+import { AggregateResult, ItemCategory, itemKey, TrackEntry, ArtistEntry, AlbumEntry } from './aggregate';
 
 export interface GameItem {
   category: ItemCategory;
@@ -85,7 +78,7 @@ function trackToItem(
   entry: TrackEntry,
   agg: AggregateResult,
   rng: () => number,
-  opts: Required<GeneratorOptions>,
+  opts: Required<GeneratorOptions>
 ): GameItem | null {
   const id = entry.key;
   const queuers = agg.queuersByItem[itemKey('track', id)] ?? {};
@@ -110,7 +103,7 @@ function artistToItem(
   entry: ArtistEntry,
   agg: AggregateResult,
   rng: () => number,
-  opts: Required<GeneratorOptions>,
+  opts: Required<GeneratorOptions>
 ): GameItem | null {
   const id = entry.artist;
   if (BLACKLISTED_ARTISTS.has(entry.artist)) return null;
@@ -134,7 +127,7 @@ function albumToItem(
   entry: AlbumEntry,
   agg: AggregateResult,
   rng: () => number,
-  opts: Required<GeneratorOptions>,
+  opts: Required<GeneratorOptions>
 ): GameItem | null {
   if (BLACKLISTED_ARTISTS.has(entry.artist)) return null;
   const id = entry.key;
@@ -159,7 +152,7 @@ function buildBonus(
   queuers: Record<string, number>,
   userCounts: Record<string, number>,
   rng: () => number,
-  opts: Required<GeneratorOptions>,
+  opts: Required<GeneratorOptions>
 ): { topQueuer: string; candidates: string[] } | null {
   const entries = Object.entries(queuers);
   if (entries.length < opts.minDistinctQueuersForBonus) return null;
@@ -227,12 +220,7 @@ function isForced(b: number, scale: CountScale, opts: Required<GeneratorOptions>
 }
 
 /** Is `next` an acceptable follower of `tail` in the requested direction (mystery higher/lower)? */
-function validStep(
-  tail: GameItem,
-  next: GameItem,
-  higher: boolean,
-  opts: Required<GeneratorOptions>,
-): boolean {
+function validStep(tail: GameItem, next: GameItem, higher: boolean, opts: Required<GeneratorOptions>): boolean {
   const eps = 1e-9;
   const b = tail.count;
   const m = next.count;
@@ -250,11 +238,7 @@ function inRampBand(questionNumber: number, a: number, b: number): boolean {
   return ratio <= 1.5 + 1e-9;
 }
 
-function buildChain(
-  shuffledPool: GameItem[],
-  opts: Required<GeneratorOptions>,
-  rng: () => number,
-): GameItem[] {
+function buildChain(shuffledPool: GameItem[], opts: Required<GeneratorOptions>, rng: () => number): GameItem[] {
   const itemId = (item: GameItem) => `${item.category}:${item.id}`;
   if (shuffledPool.length === 0) return [];
 
@@ -299,12 +283,13 @@ function buildChain(
     ] as Array<[boolean, boolean]>) {
       for (let ci = 0; ci < shuffledPool.length; ci++) {
         const candidate = shuffledPool[ci];
-        if (usedIds.has(itemId(candidate))) continue;
-        if (candidate.albumKey && usedAlbumKeys.has(candidate.albumKey)) continue;
-        if (itemsOverlap(tail, candidate)) continue;
+        // Cheap count checks first: most of the pool fails them, and this loop dominates generation time.
         if (!validStep(tail, candidate, higher, opts)) continue;
         if (inBandOnly && !inRampBand(questionNumber, tail.count, candidate.count)) continue;
         if (!isLast && !canBridge(candidate.count)) continue;
+        if (usedIds.has(itemId(candidate))) continue;
+        if (candidate.albumKey && usedAlbumKeys.has(candidate.albumKey)) continue;
+        if (itemsOverlap(tail, candidate)) continue;
 
         chain.push(candidate);
         usedIds.add(itemId(candidate));
@@ -341,7 +326,7 @@ function buildPool(
   category: ItemCategory,
   agg: AggregateResult,
   rng: () => number,
-  opts: Required<GeneratorOptions>,
+  opts: Required<GeneratorOptions>
 ): GameItem[] {
   const pool: GameItem[] = [];
   if (category === 'track') {
@@ -382,11 +367,7 @@ function categoryOrder(rng: () => number): ItemCategory[] {
   return [first, ...rest];
 }
 
-export function generateGame(
-  agg: AggregateResult,
-  seed: string,
-  options: GeneratorOptions = {},
-): GeneratedGame {
+export function generateGame(agg: AggregateResult, seed: string, options: GeneratorOptions = {}): GeneratedGame {
   const opts = { ...DEFAULTS, ...options };
   const rng = mulberry32(seed);
 
@@ -415,8 +396,12 @@ export function generateGame(
     const carryover: 'left' | 'right' | undefined = isFirst ? undefined : swap ? 'right' : 'left';
     // bonusItem = the mystery (new) side; for Q1 use the winner since both are new
     const bonusItem: 'left' | 'right' = isFirst
-      ? left.count > right.count ? 'left' : 'right'
-      : swap ? 'left' : 'right';
+      ? left.count > right.count
+        ? 'left'
+        : 'right'
+      : swap
+        ? 'left'
+        : 'right';
 
     questions.push({
       index: i,

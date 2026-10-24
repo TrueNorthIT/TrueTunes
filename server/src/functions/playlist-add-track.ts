@@ -1,4 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { callerName } from '../lib/caller';
 import { withOCC } from '../lib/withOCC';
 import { getPlaylistContainer } from '../lib/getContainer';
 
@@ -16,7 +17,7 @@ interface PlaylistTrack {
 
 export async function playlistAddTrackHandler(
   request: HttpRequest,
-  context: InvocationContext,
+  context: InvocationContext
 ): Promise<HttpResponseInit> {
   const id = request.params['id'];
   if (!id) {
@@ -30,7 +31,10 @@ export async function playlistAddTrackHandler(
     return { status: 400, jsonBody: { error: 'Invalid JSON body' } };
   }
 
-  const { track, userName } = body;
+  const { track } = body;
+  const caller = await callerName(request, context, body.userName);
+  if ('response' in caller) return caller.response;
+  const userName = caller.name;
   if (!track || !userName) {
     return { status: 400, jsonBody: { error: 'track and userName required' } };
   }
@@ -49,14 +53,13 @@ export async function playlistAddTrackHandler(
         doc.tracks = [...(doc.tracks ?? []), updatedTrack];
         doc.updatedAt = Date.now();
       },
-      (doc, etag) => container.item(id, id).replace(doc, { accessCondition: { type: 'IfMatch', condition: etag } }),
+      (doc, etag) => container.item(id, id).replace(doc, { accessCondition: { type: 'IfMatch', condition: etag } })
     );
 
     context.log(`[playlist-add-track] id=${id} userName=${userName} track=${track.trackName}`);
 
     return {
       jsonBody: resource,
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     const code = (err as { statusCode?: number }).statusCode;

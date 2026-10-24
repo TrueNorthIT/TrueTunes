@@ -32,9 +32,8 @@ export function navDecision(target: string, appUrl: string): NavDecision {
   } catch {
     return 'deny';
   }
-  const sameApp = app.protocol === 'file:'
-    ? t.protocol === 'file:' && filePath(t) === filePath(app)
-    : t.origin === app.origin;
+  const sameApp =
+    app.protocol === 'file:' ? t.protocol === 'file:' && filePath(t) === filePath(app) : t.origin === app.origin;
   if (sameApp) return 'allow';
   return isWebUrl(target) ? 'external' : 'deny';
 }

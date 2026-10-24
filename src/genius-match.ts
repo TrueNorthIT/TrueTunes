@@ -15,7 +15,10 @@ export function namesMatch(a: string, b: string): boolean {
 }
 
 /** The first search hit whose primary artist is the one asked for; null rather than a near miss. */
-export function pickArtistHit<T extends { result: { primary_artist: { name: string } } }>(hits: T[], artistName: string): T | null {
+export function pickArtistHit<T extends { result: { primary_artist: { name: string } } }>(
+  hits: T[],
+  artistName: string
+): T | null {
   return hits.find((h) => namesMatch(h.result.primary_artist.name, artistName)) ?? null;
 }
 
@@ -40,7 +43,7 @@ export function albumBaseTitle(title: string): string {
 export function pickAlbumHits<T extends { result: { name: string; artist?: { name: string } | null } }>(
   hits: T[],
   albumName: string,
-  artistName: string,
+  artistName: string
 ): T[] {
   const mine = hits.filter((h) => h.result.artist && namesMatch(h.result.artist.name, artistName));
   const exact = mine.filter((h) => namesMatch(h.result.name, albumName));

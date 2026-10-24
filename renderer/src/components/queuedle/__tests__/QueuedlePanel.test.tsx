@@ -2,6 +2,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueuedlePanel } from '../QueuedlePanel';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactElement, ReactNode } from 'react';
+
+// The display name now comes from a React Query cache, so panels need a client.
+let queryClient: QueryClient;
+beforeEach(() => {
+  queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+});
+const renderQ = (ui: ReactElement) =>
+  render(ui, {
+    wrapper: ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    ),
+  });
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({ useNavigate: () => mockNavigate }));
@@ -24,13 +38,13 @@ vi.mock('@/hooks/useDailyGame', () => ({
   useGameStats: (gameId: string | null) => mockUseGameStats(gameId),
   useWeeklyLeaderboard: (gameId: string | null, userName: string | null | undefined) =>
     mockUseWeeklyLeaderboard(gameId, userName),
-  computeQueuedleRating: (averagePercent: number) =>
-    Math.round(Math.max(0, Math.min(100, averagePercent)) * 30),
+  computeQueuedleRating: (averagePercent: number) => Math.round(Math.max(0, Math.min(100, averagePercent)) * 30),
   getGameRankTier: (averagePercent: number, gamesPlayed: number) => {
     if (gamesPlayed < 3) return { key: 'provisional', name: 'Provisional', isProvisional: true };
     if (averagePercent >= 85) return { key: 'playlist-prophet', name: 'Playlist Prophet', isProvisional: false };
     if (averagePercent >= 70) return { key: 'algorithm-whisperer', name: 'Algorithm Whisperer', isProvisional: false };
-    if (averagePercent >= 55) return { key: 'aux-cable-apprentice', name: 'Aux Cable Apprentice', isProvisional: false };
+    if (averagePercent >= 55)
+      return { key: 'aux-cable-apprentice', name: 'Aux Cable Apprentice', isProvisional: false };
     if (averagePercent >= 40) return { key: 'background-bopper', name: 'Background Bopper', isProvisional: false };
     return { key: 'skip-button-survivor', name: 'Skip Button Survivor', isProvisional: false };
   },
@@ -185,57 +199,57 @@ describe('QueuedlePanel', () => {
 
   it('shows loading state', () => {
     mockUseDailyGame.mockReturnValue({ data: undefined, isLoading: true, error: null });
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     expect(screen.getByText("Loading today's Queuedle…")).toBeInTheDocument();
   });
 
   it('shows error state when data is null', () => {
     mockUseDailyGame.mockReturnValue({ data: null, isLoading: false, error: new Error('fail') });
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     expect(screen.getByText('Failed to load Queuedle.')).toBeInTheDocument();
   });
 
   it('shows error message from data.error field', () => {
     mockUseDailyGame.mockReturnValue({ data: { error: 'Not available yet' }, isLoading: false, error: null });
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     expect(screen.getByText('Not available yet')).toBeInTheDocument();
   });
 
   it('shows pending message when status is pending', () => {
     mockUseDailyGame.mockReturnValue({ data: { status: 'pending' }, isLoading: false, error: null });
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     expect(screen.getByText(/still brewing/)).toBeInTheDocument();
   });
 
   it('shows empty state when no questions', () => {
     mockUseDailyGame.mockReturnValue({ data: { ...baseGame, questions: [] }, isLoading: false, error: null });
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     expect(screen.getByText(/Not enough play history/)).toBeInTheDocument();
   });
 
   it('shows the resolving state while leaderboard is loading', () => {
     mockUseGameLeaderboard.mockReturnValue({ data: undefined, isLoading: true });
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     expect(screen.getByText('Checking your score…')).toBeInTheDocument();
   });
 
   // ── intro / main game phase ───────────────────────────────────────────────
 
   it('shows the intro screen before the user starts', async () => {
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await flushPromises();
     expect(await screen.findByText('Intro screen')).toBeInTheDocument();
   });
 
   it('shows the QuestionCard after starting from the intro', async () => {
     const user = userEvent.setup();
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await startGame(user);
     expect(screen.getByText('Question: Song A vs Song B')).toBeInTheDocument();
   });
 
   it('shows title and game ID', async () => {
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await flushPromises();
     expect(screen.getByText('Queuedle')).toBeInTheDocument();
     expect(screen.getByText('Monday 1 January 2024')).toBeInTheDocument();
@@ -243,7 +257,7 @@ describe('QueuedlePanel', () => {
 
   it('picking an answer reveals the result', async () => {
     const user = userEvent.setup();
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await startGame(user);
     await user.click(screen.getByText('Pick Left'));
     expect(screen.getByText('revealed-left')).toBeInTheDocument();
@@ -251,7 +265,7 @@ describe('QueuedlePanel', () => {
 
   it('clicking Next on the only question transitions to bonus phase', async () => {
     const user = userEvent.setup();
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await startGame(user);
     await user.click(screen.getByText('Pick Left'));
     await user.click(screen.getByText('Next'));
@@ -271,7 +285,7 @@ describe('QueuedlePanel', () => {
       error: null,
     });
     const user = userEvent.setup();
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await startGame(user);
     await user.click(screen.getByText('Pick Left'));
     await user.click(screen.getByText('Next'));
@@ -284,7 +298,7 @@ describe('QueuedlePanel', () => {
     const mutateAsync = vi.fn().mockResolvedValue({ score: { mainScore: 1, bonusScore: 0 } });
     mockUseSubmitGameScore.mockReturnValue({ mutateAsync, isPending: false });
     const user = userEvent.setup();
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await startGame(user);
     await user.click(screen.getByText('Pick Left'));
     await user.click(screen.getByText('Next'));
@@ -297,7 +311,7 @@ describe('QueuedlePanel', () => {
     const mutateAsync = vi.fn().mockResolvedValue({ score: { mainScore: 1, bonusScore: 1 } });
     mockUseSubmitGameScore.mockReturnValue({ mutateAsync, isPending: false });
     const user = userEvent.setup();
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await startGame(user);
     await user.click(screen.getByText('Pick Left'));
     await user.click(screen.getByText('Next'));
@@ -312,7 +326,7 @@ describe('QueuedlePanel', () => {
     const mutateAsync = vi.fn().mockResolvedValue({ score: { mainScore: 1, bonusScore: 1 } });
     mockUseSubmitGameScore.mockReturnValue({ mutateAsync, isPending: false });
     const user = userEvent.setup();
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await startGame(user);
     await user.click(screen.getByText('Pick Left'));
     await user.click(screen.getByText('Next'));
@@ -328,7 +342,7 @@ describe('QueuedlePanel', () => {
     const mutateAsync = vi.fn().mockResolvedValue({ existing: { mainScore: 0, bonusScore: 1 } });
     mockUseSubmitGameScore.mockReturnValue({ mutateAsync, isPending: false });
     const user = userEvent.setup();
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await startGame(user);
     await user.click(screen.getByText('Pick Left'));
     await user.click(screen.getByText('Next'));
@@ -343,7 +357,7 @@ describe('QueuedlePanel', () => {
     const mutateAsync = vi.fn().mockResolvedValue({});
     mockUseSubmitGameScore.mockReturnValue({ mutateAsync, isPending: false });
     const user = userEvent.setup();
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await startGame(user);
     // Pick correct answer (winner is 'left') → mainScore = 1
     await user.click(screen.getByText('Pick Left'));
@@ -363,7 +377,7 @@ describe('QueuedlePanel', () => {
     const mutateAsync = vi.fn().mockResolvedValue({ score: { mainScore: 1, bonusScore: 0 } });
     mockUseSubmitGameScore.mockReturnValue({ mutateAsync, isPending: false });
     const user = userEvent.setup();
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await startGame(user);
     await user.click(screen.getByText('Pick Left'));
     await user.click(screen.getByText('Next'));
@@ -385,7 +399,7 @@ describe('QueuedlePanel', () => {
     const mutateAsync = vi.fn().mockResolvedValue({ score: { mainScore: 1, bonusScore: 0 } });
     mockUseSubmitGameScore.mockReturnValue({ mutateAsync, isPending: false });
     const user = userEvent.setup();
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await startGame(user);
     await user.click(screen.getByText('Pick Left'));
     await user.click(screen.getByText('Next'));
@@ -412,7 +426,7 @@ describe('QueuedlePanel', () => {
       },
       isLoading: false,
     });
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await waitFor(() => expect(screen.getByText('Score: 5')).toBeInTheDocument());
   });
 
@@ -426,14 +440,14 @@ describe('QueuedlePanel', () => {
       },
       isLoading: false,
     });
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await waitFor(() => expect(screen.getByText("Today's leaderboard")).toBeInTheDocument());
     expect(screen.getByText('alice')).toBeInTheDocument();
   });
 
   it('shows ranked tab after the user has played', async () => {
     localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Ranked', pressed: false })).toBeInTheDocument());
     // Rankings are now always enabled so the post-game rank-change screen has the
     // user's prior totals available without a tab switch.
@@ -460,7 +474,7 @@ describe('QueuedlePanel', () => {
       isLoading: false,
     });
     const user = userEvent.setup();
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await user.click(await screen.findByRole('button', { name: 'Ranked' }));
     expect(screen.getByText('Ranked leaderboard')).toBeInTheDocument();
     expect(screen.getByText('alice')).toBeInTheDocument();
@@ -469,7 +483,7 @@ describe('QueuedlePanel', () => {
     await waitFor(() => expect(mockUseGameRankings).toHaveBeenLastCalledWith('TestUser', true));
   });
 
-  it('clicking Week shows the week\'s summed totals for the viewed game', async () => {
+  it("clicking Week shows the week's summed totals for the viewed game", async () => {
     localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
     mockUseWeeklyLeaderboard.mockReturnValue({
       data: [
@@ -479,7 +493,7 @@ describe('QueuedlePanel', () => {
       isLoading: false,
     });
     const user = userEvent.setup();
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await user.click(await screen.findByRole('button', { name: 'Week' }));
     // 2024-01-01 is a Monday.
     expect(screen.getByText('Week leaderboard · 1–7 Jan')).toBeInTheDocument();
@@ -518,7 +532,7 @@ describe('QueuedlePanel', () => {
       isLoading: false,
     });
     const user = userEvent.setup();
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await user.click(await screen.findByRole('button', { name: 'Ranked' }));
     expect(screen.getByText('ranked-player')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Today' }));
@@ -531,7 +545,7 @@ describe('QueuedlePanel', () => {
     localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
     // Leaderboard hasn't loaded yet — localStorage should short-circuit.
     mockUseGameLeaderboard.mockReturnValue({ data: undefined, isLoading: true });
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await waitFor(() => expect(screen.getByText('Score: 3')).toBeInTheDocument());
     expect(screen.queryByText('Intro screen')).not.toBeInTheDocument();
   });
@@ -550,7 +564,7 @@ describe('QueuedlePanel', () => {
       isLoading: false,
     });
     const user = userEvent.setup();
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     // Calendar is not rendered inline — it's hidden until the button is clicked.
     await waitFor(() => expect(screen.getByText('Past games')).toBeInTheDocument());
     expect(screen.queryByText('cal-2023-12-31')).not.toBeInTheDocument();
@@ -566,7 +580,7 @@ describe('QueuedlePanel', () => {
       isLoading: false,
     });
     const user = userEvent.setup();
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     const opener = await screen.findByRole('button', { name: 'Past games' });
     await user.click(opener);
     expect(screen.getByRole('dialog', { name: 'Past games' })).toBeInTheDocument();
@@ -578,7 +592,7 @@ describe('QueuedlePanel', () => {
   it('hides the calendar button when there are no game-dates entries', async () => {
     localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 2, bonusScore: 1 }));
     mockUseGameDates.mockReturnValue({ data: { dates: [] }, isLoading: false });
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await waitFor(() => expect(screen.getByText('Score: 3')).toBeInTheDocument());
     expect(screen.queryByText('Past games')).not.toBeInTheDocument();
   });
@@ -597,7 +611,7 @@ describe('QueuedlePanel', () => {
       error: null,
     }));
     const user = userEvent.setup();
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await user.click(await screen.findByText('Past games'));
     await user.click(screen.getByText('cal-2023-12-31'));
     expect(await screen.findByText('Intro screen')).toBeInTheDocument();
@@ -618,7 +632,7 @@ describe('QueuedlePanel', () => {
       error: null,
     }));
     const user = userEvent.setup();
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await user.click(await screen.findByText('Past games'));
     await user.click(await screen.findByText('cal-2023-12-31'));
     expect(await screen.findByText('Intro screen')).toBeInTheDocument();
@@ -635,7 +649,7 @@ describe('QueuedlePanel', () => {
       },
       isLoading: false,
     });
-    render(<QueuedlePanel />);
+    renderQ(<QueuedlePanel />);
     await waitFor(() => expect(screen.getByText('Score: 5')).toBeInTheDocument());
     await waitFor(() =>
       expect(localStorage.getItem('queuedle-played:2024-01-01')).toBe(JSON.stringify({ mainScore: 3, bonusScore: 2 }))

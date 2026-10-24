@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { artistQueryOptions } from '../useArtistBrowse';
+import { runQueryFn } from '../../test/queryFn';
 import { fetchImage } from '../../lib/imageCache';
 
 vi.mock('../../lib/imageCache', () => ({ fetchImage: vi.fn(() => Promise.resolve(null)) }));
@@ -16,18 +17,20 @@ function makeArtistResponse(overrides: Record<string, unknown> = {}) {
     title: 'The Beatles',
     images: { tile1x1: 'https://art/beatles.jpg' },
     sections: {
-      items: [{
-        items: [
-          { type: 'ITEM_ALBUM', title: 'Abbey Road', resource: { id: { objectId: 'alb-1' } } },
-          { type: 'ITEM_ALBUM', title: 'Let It Be',  resource: { id: { objectId: 'alb-2' } } },
-          { type: 'ITEM_PLAYLIST', title: 'The Beatles Radio', resource: { id: { objectId: 'pl-radio' } } },
-          {
-            type: 'ITEM_PLAYLIST',
-            title: 'Top Songs',
-            resource: { id: { objectId: 'pl-top', serviceId: 'svc', accountId: 'acc' } },
-          },
-        ],
-      }],
+      items: [
+        {
+          items: [
+            { type: 'ITEM_ALBUM', title: 'Abbey Road', resource: { id: { objectId: 'alb-1' } } },
+            { type: 'ITEM_ALBUM', title: 'Let It Be', resource: { id: { objectId: 'alb-2' } } },
+            { type: 'ITEM_PLAYLIST', title: 'The Beatles Radio', resource: { id: { objectId: 'pl-radio' } } },
+            {
+              type: 'ITEM_PLAYLIST',
+              title: 'Top Songs',
+              resource: { id: { objectId: 'pl-top', serviceId: 'svc', accountId: 'acc' } },
+            },
+          ],
+        },
+      ],
     },
     ...overrides,
   };
@@ -41,7 +44,7 @@ describe('artistQueryOptions — basic parsing', () => {
     // Top Songs playlist fetch returns empty tracks
     mockFetch.mockResolvedValueOnce({ data: { tracks: { items: [] } } });
 
-    const result = await artistQueryOptions('art-1', 'svc', 'acc', undefined).queryFn();
+    const result = await runQueryFn(artistQueryOptions('art-1', 'svc', 'acc', undefined));
     expect(result.name).toBe('The Beatles');
     expect(result.imageUrl).toBe('https://art/beatles.jpg');
   });
@@ -50,7 +53,7 @@ describe('artistQueryOptions — basic parsing', () => {
     mockFetch.mockResolvedValueOnce({ data: makeArtistResponse() });
     mockFetch.mockResolvedValueOnce({ data: { tracks: { items: [] } } });
 
-    const result = await artistQueryOptions('art-1', 'svc', 'acc', undefined).queryFn();
+    const result = await runQueryFn(artistQueryOptions('art-1', 'svc', 'acc', undefined));
     expect(result.albums).toHaveLength(2);
     expect(result.playlists).toHaveLength(1); // Radio only — Top Songs excluded
   });
@@ -65,7 +68,7 @@ describe('artistQueryOptions — basic parsing', () => {
       },
     });
 
-    const result = await artistQueryOptions('art-1', 'svc', 'acc', undefined).queryFn();
+    const result = await runQueryFn(artistQueryOptions('art-1', 'svc', 'acc', undefined));
     expect(result.topSongs).toHaveLength(1);
     expect(result.topSongs[0].title).toBe('Come Together');
   });
@@ -73,34 +76,34 @@ describe('artistQueryOptions — basic parsing', () => {
   it('returns empty topSongs when no top songs playlist', async () => {
     const noTopSongs = makeArtistResponse({
       sections: {
-        items: [{
-          items: [
-            { type: 'ITEM_ALBUM', title: 'Abbey Road', resource: { id: { objectId: 'alb-1' } } },
-          ],
-        }],
+        items: [
+          {
+            items: [{ type: 'ITEM_ALBUM', title: 'Abbey Road', resource: { id: { objectId: 'alb-1' } } }],
+          },
+        ],
       },
     });
     mockFetch.mockResolvedValueOnce({ data: noTopSongs });
 
-    const result = await artistQueryOptions('art-1', 'svc', 'acc', undefined).queryFn();
+    const result = await runQueryFn(artistQueryOptions('art-1', 'svc', 'acc', undefined));
     expect(result.topSongs).toHaveLength(0);
   });
 
   it('throws when response has an error', async () => {
     mockFetch.mockResolvedValueOnce({ data: null, error: 'Not found' });
-    await expect(
-      artistQueryOptions('art-1', 'svc', 'acc', undefined).queryFn()
-    ).rejects.toThrow('Not found');
+    await expect(runQueryFn(artistQueryOptions('art-1', 'svc', 'acc', undefined))).rejects.toThrow('Not found');
   });
 
   it('returns null imageUrl when images are missing', async () => {
     const noImagesNoTopSongs = makeArtistResponse({
       images: undefined,
-      sections: { items: [{ items: [{ type: 'ITEM_ALBUM', title: 'Abbey Road', resource: { id: { objectId: 'alb-1' } } }] }] },
+      sections: {
+        items: [{ items: [{ type: 'ITEM_ALBUM', title: 'Abbey Road', resource: { id: { objectId: 'alb-1' } } }] }],
+      },
     });
     mockFetch.mockResolvedValueOnce({ data: noImagesNoTopSongs });
 
-    const result = await artistQueryOptions('art-1', 'svc', 'acc', undefined).queryFn();
+    const result = await runQueryFn(artistQueryOptions('art-1', 'svc', 'acc', undefined));
     expect(result.imageUrl).toBeNull();
   });
 });
@@ -111,7 +114,7 @@ describe('artistQueryOptions: hero photo', () => {
     const art = makeArtistResponse({ images: { tile1x1: 'https://art/b=w544-h544-l90-rj' } });
     mockFetch.mockResolvedValueOnce({ data: art });
     mockFetch.mockReturnValueOnce(new Promise(() => {})); // top songs never settles
-    void artistQueryOptions('art-1', 'svc', 'acc', undefined).queryFn();
+    void runQueryFn(artistQueryOptions('art-1', 'svc', 'acc', undefined));
     await vi.waitFor(() => expect(fetchImage).toHaveBeenCalledWith('https://art/b=w2000-h2000-l90-rj', true));
   });
 });

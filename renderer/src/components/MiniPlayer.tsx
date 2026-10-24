@@ -7,9 +7,8 @@ import { useGroups } from '../hooks/useGroups';
 import { usePlayback } from '../hooks/usePlayback';
 import { useNowPlaying } from '../hooks/useNowPlaying';
 import { useQueuer } from '../hooks/useQueuer';
-import { fmtTime } from '../lib/itemHelpers';
 import { UserAvatar } from './common/UserAvatar';
-import { SeekBar } from './common/SeekBar';
+import { LiveSeekBar, PlaybackRemaining } from './common/SeekBar';
 import { TransportButtons } from './common/TransportButtons';
 import styles from '../styles/MiniPlayer.module.css';
 
@@ -24,10 +23,13 @@ export function MiniPlayerShell() {
   // same group the user has selected in the main window, not just groups[0].
   useEffect(() => {
     if (groups.length === 0 || activeGroupId) return;
-    getActiveProvider().getActiveGroup().then((savedCoordinatorId) => {
-      const match = savedCoordinatorId ? groups.find((g) => g.coordinatorId === savedCoordinatorId) : null;
-      setActiveGroupId(match ? match.id : groups[0].id);
-    }).catch(() => setActiveGroupId(groups[0].id));
+    getActiveProvider()
+      .getActiveGroup()
+      .then((savedCoordinatorId) => {
+        const match = savedCoordinatorId ? groups.find((g) => g.coordinatorId === savedCoordinatorId) : null;
+        setActiveGroupId(match ? match.id : groups[0].id);
+      })
+      .catch(() => setActiveGroupId(groups[0].id));
   }, [groups, activeGroupId]);
 
   // The attribution map is broadcast when the office connection comes up, usually long before this
@@ -55,14 +57,9 @@ function MiniPlayer({
   playback: ReturnType<typeof usePlayback>['playback'];
   isAuthed: boolean;
 }) {
-  const {
-    displayTrack, displayArtist, cachedArt, progressPct, durationMs, isPlaying, dominantColor,
-    elapsedLabel, durationLabel, currentObjectId,
-  } = useNowPlaying(playback);
+  const { displayTrack, displayArtist, cachedArt, durationMs, isPlaying, dominantColor, currentObjectId } =
+    useNowPlaying(playback);
   const queuer = useQueuer({ id: currentObjectId, title: displayTrack, artist: displayArtist });
-
-  const pct = Math.min(100, Math.max(0, progressPct || 0));
-  const remaining = durationMs > 0 ? `−${fmtTime(Math.max(0, durationMs * (1 - pct / 100)))}` : '';
 
   return (
     <div
@@ -71,7 +68,13 @@ function MiniPlayer({
     >
       {/* Paused keeps the transport showing: that the room has stopped is worth a glance. */}
       <div className={`${styles.art}${isPlaying ? '' : ' ' + styles.paused}`}>
-        {cachedArt ? <img src={cachedArt} alt="" /> : <div className={styles.artPh}><Music size={26} /></div>}
+        {cachedArt ? (
+          <img src={cachedArt} alt="" />
+        ) : (
+          <div className={styles.artPh}>
+            <Music size={26} />
+          </div>
+        )}
         <div className={styles.transport}>
           <TransportButtons
             disabled={!isAuthed}
@@ -87,7 +90,9 @@ function MiniPlayer({
 
       <div className={styles.label}>
         <div className={styles.head}>
-          <div className={styles.title} title={displayTrack || undefined}>{displayTrack || 'Nothing playing'}</div>
+          <div className={styles.title} title={displayTrack || undefined}>
+            {displayTrack || 'Nothing playing'}
+          </div>
           {displayArtist && <div className={styles.artist}>{displayArtist}</div>}
         </div>
 
@@ -100,28 +105,25 @@ function MiniPlayer({
                 <UserAvatar name={queuer.user} imageUrl={queuer.imageUrl} className={styles.queuerAvatar} />
                 <span className={styles.queuerName}>{queuer.user}</span>
               </span>
-              {remaining && <span className={styles.time} aria-hidden="true">{remaining}</span>}
+              <PlaybackRemaining className={styles.time} />
             </div>
           )}
           <div className={styles.progressRow}>
-            <SeekBar
-              progressPct={progressPct}
+            <LiveSeekBar
               durationMs={durationMs}
-              elapsedLabel={elapsedLabel}
-              durationLabel={durationLabel}
               className={styles.progress}
               trackClassName={styles.progressTrack}
               fillClassName={styles.progressFill}
-              title={elapsedLabel && durationLabel ? `${elapsedLabel} / ${durationLabel}` : undefined}
+              timeTitle
             />
-            {!queuer && remaining && <span className={styles.time} aria-hidden="true">{remaining}</span>}
+            {!queuer && <PlaybackRemaining className={styles.time} />}
           </div>
         </div>
       </div>
 
       <button
         className={styles.closeBtn}
-        onClick={() => window.sonos.closeMiniPlayer()}
+        onClick={() => void window.sonos.closeMiniPlayer()}
         title="Close"
         aria-label="Close mini player"
       >

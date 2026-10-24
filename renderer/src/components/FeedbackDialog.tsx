@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ExternalLink } from 'lucide-react';
+import { useDisplayName } from '../hooks/useDisplayName';
 import { Dialog } from './common/Dialog';
 import { PillButton } from './common/PillButton';
 import dialog from './common/Dialog.module.css';
@@ -11,45 +12,19 @@ interface Props {
 
 type IssueType = 'bug' | 'feature';
 
-const REPO = 'TrueNorthIT/TrueTunes';
-const PAT  = import.meta.env.VITE_GITHUB_PAT as string | undefined;
-
-async function createGitHubIssue(title: string, body: string, type: IssueType) {
-  if (!PAT) throw new Error('VITE_GITHUB_PAT is not set');
-  const label = type === 'bug' ? 'bug' : 'enhancement';
-  const res = await fetch(`https://api.github.com/repos/${REPO}/issues`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${PAT}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/vnd.github+json',
-    },
-    body: JSON.stringify({ title, body, labels: [label] }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({})) as { message?: string };
-    throw new Error(err.message ?? `GitHub API error ${res.status}`);
-  }
-  return (await res.json()) as { html_url: string };
-}
-
 const TYPES: Array<{ value: IssueType; label: string }> = [
   { value: 'bug', label: 'Bug report' },
   { value: 'feature', label: 'Feature request' },
 ];
 
 export function FeedbackDialog({ onClose }: Props) {
-  const [type, setType]           = useState<IssueType>('bug');
-  const [title, setTitle]         = useState('');
-  const [description, setDesc]    = useState('');
-  const [status, setStatus]       = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [issueUrl, setIssueUrl]   = useState('');
-  const [errorMsg, setErrorMsg]   = useState('');
-  const [displayName, setDisplayName] = useState<string | null>(null);
-
-  useEffect(() => {
-    window.sonos.getDisplayName().then(setDisplayName).catch(() => null);
-  }, []);
+  const [type, setType] = useState<IssueType>('bug');
+  const [title, setTitle] = useState('');
+  const [description, setDesc] = useState('');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [issueUrl, setIssueUrl] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const displayName = useDisplayName() ?? null;
 
   const canSubmit = title.trim().length > 0;
   const busy = status === 'loading';
@@ -58,10 +33,10 @@ export function FeedbackDialog({ onClose }: Props) {
     if (!canSubmit || busy) return;
     setStatus('loading');
     try {
-      const bodyParts = [description.trim()];
-      if (displayName) bodyParts.push(`---\n**Raised by:** ${displayName}`);
-      const issue = await createGitHubIssue(title.trim(), bodyParts.filter(Boolean).join('\n\n'), type);
-      setIssueUrl(issue.html_url);
+      // The main process posts it to the feedback function, which signs it with the caller's name.
+      const result = await window.sonos.submitFeedback(type, title.trim(), description.trim());
+      if ('error' in result) throw new Error(result.error);
+      setIssueUrl(result.url);
       setStatus('success');
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Unknown error');
@@ -79,10 +54,12 @@ export function FeedbackDialog({ onClose }: Props) {
         size="sm"
         actions={
           <>
-            <PillButton onClick={() => window.sonos.openExternal(issueUrl)}>
+            <PillButton onClick={() => void window.sonos.openExternal(issueUrl)}>
               View on GitHub <ExternalLink size={14} aria-hidden="true" />
             </PillButton>
-            <PillButton variant="primary" onClick={onClose}>Done</PillButton>
+            <PillButton variant="primary" onClick={onClose}>
+              Done
+            </PillButton>
           </>
         }
       >
@@ -108,7 +85,13 @@ export function FeedbackDialog({ onClose }: Props) {
       <div className={dialog.stack}>
         <p className={dialog.note}>
           Report a bug or ask for a feature. It goes to the True Tunes repo on GitHub
-          {displayName ? <>, signed <strong className={styles.name}>{displayName}</strong>.</> : '.'}
+          {displayName ? (
+            <>
+              , signed <strong className={styles.name}>{displayName}</strong>.
+            </>
+          ) : (
+            '.'
+          )}
         </p>
 
         <div className={styles.segmented} role="group" aria-label="Type">
@@ -140,7 +123,9 @@ export function FeedbackDialog({ onClose }: Props) {
           />
         </label>
         <label className={dialog.field}>
-          <span className={dialog.label}>Details <span className={styles.optional}>(optional)</span></span>
+          <span className={dialog.label}>
+            Details <span className={styles.optional}>(optional)</span>
+          </span>
           <textarea
             className={dialog.input}
             placeholder={

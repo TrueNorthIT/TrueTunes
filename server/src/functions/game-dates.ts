@@ -10,10 +10,7 @@ interface ScoreRow {
   gameId: string;
 }
 
-export async function gameDatesHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
+export async function gameDatesHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
   const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
   const gamesCtrName = process.env['COSMOS_GAMES_CONTAINER'] ?? 'games';
@@ -58,7 +55,6 @@ export async function gameDatesHandler(
     return {
       status: 200,
       jsonBody: { dates },
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[game-dates] failed:', err);

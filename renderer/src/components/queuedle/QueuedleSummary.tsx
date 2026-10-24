@@ -6,10 +6,14 @@ function ReviewSide({ item, won, end }: { item: GameItem; won: boolean; end?: bo
   const art = useImage(item.imageUrl);
   const artClass = `${styles.reviewArt}${item.category === 'artist' ? ' ' + styles.round : ''}`;
   return (
-    <span className={`${styles.reviewSide}${end ? ' ' + styles.reviewSideEnd : ''}${won ? ' ' + styles.reviewWon : ''}`}>
+    <span
+      className={`${styles.reviewSide}${end ? ' ' + styles.reviewSideEnd : ''}${won ? ' ' + styles.reviewWon : ''}`}
+    >
       {art ? <img src={art} className={artClass} alt="" /> : <span className={artClass} />}
       <span className={styles.reviewText}>
-        <span className={styles.reviewName} title={item.name}>{item.name}</span>
+        <span className={styles.reviewName} title={item.name}>
+          {item.name}
+        </span>
         <span className={styles.reviewCount}>{item.count.toLocaleString()} queues</span>
       </span>
     </span>

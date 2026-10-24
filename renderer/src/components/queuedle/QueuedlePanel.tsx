@@ -26,6 +26,7 @@ import { QueuedleLeaderboard, type LeaderboardTab } from './QueuedleLeaderboard'
 import { formatGameDate, standingLine } from './format';
 import { clearProgress, loadProgress, pruneProgress, saveProgress } from '../../lib/queuedleProgress';
 import { useUsers } from '../../hooks/useUsers';
+import { useDisplayName } from '../../hooks/useDisplayName';
 import { PillButton } from '../common/PillButton';
 import { ArrowLeft, CalendarDays, ChartColumn } from 'lucide-react';
 import { Dialog } from '../common/Dialog';
@@ -53,12 +54,7 @@ export function QueuedlePanel() {
   const todayId = useMemo(() => londonDateToday(), []);
   const { data, isLoading, error } = useDailyGame(selectedDate ?? undefined);
   const submit = useSubmitGameScore();
-  const [displayName, setDisplayName] = useState<string | null | undefined>(undefined);
-
-  useEffect(() => {
-    window.sonos.getDisplayName().then(setDisplayName);
-  }, []);
-
+  const displayName = useDisplayName();
   const game = data && 'questions' in data ? (data as GameDoc) : null;
   const gameId = game?.id ?? null;
   const isPastDay = selectedDate !== null && selectedDate !== todayId;
@@ -140,6 +136,7 @@ export function QueuedlePanel() {
   useEffect(() => {
     if (!gameId || questionCount === 0 || progressFor === gameId) return;
     const saved = loadProgress(gameId, questionCount);
+    /* eslint-disable react-hooks/set-state-in-effect -- hydrates state from localStorage (an external store) once per game */
     if (saved) {
       setPhase(saved.phase);
       setCurrentIdx(saved.currentIdx);
@@ -149,6 +146,7 @@ export function QueuedlePanel() {
       setBonusSelections(saved.bonusSelections);
     }
     setProgressFor(gameId);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [gameId, questionCount, progressFor]);
 
   useEffect(() => {
@@ -196,24 +194,18 @@ export function QueuedlePanel() {
     }
   }, [gameId, localPlayed, serverMain, questionCount]);
 
-  useEffect(() => {
-    if (game && bonusSelections.length !== game.questions.length) {
-      // Functional so it can't undo selections restored in this same commit.
-      const n = game.questions.length;
-      setBonusSelections((prev) => (prev.length === n ? prev : new Array(n).fill(null)));
-    }
-  }, [game, bonusSelections.length]);
+  if (game && bonusSelections.length !== game.questions.length) {
+    // Functional so it can't undo selections restored in this same commit.
+    const n = game.questions.length;
+    setBonusSelections((prev) => (prev.length === n ? prev : new Array(n).fill(null)));
+  }
 
   // Capture the user's prior rankings row exactly once, before today's submission
   // refetches the rankings query (which would include today's score and ruin the delta).
-  useEffect(() => {
-    if (!displayName) return;
-    if (beforeRanking !== undefined) return;
-    if (rankings.isLoading) return;
-    if (localScore !== null) return; // user already submitted; don't capture after the fact
-    const row = rankings.data?.find((r) => r.userName === displayName) ?? null;
-    setBeforeRanking(row);
-  }, [displayName, rankings.data, rankings.isLoading, beforeRanking, localScore]);
+  if (displayName && beforeRanking === undefined && !rankings.isLoading && localScore === null) {
+    // (localScore set = user already submitted; don't capture after the fact)
+    setBeforeRanking(rankings.data?.find((r) => r.userName === displayName) ?? null);
+  }
 
   const afterRanking = useMemo<RankSnapshot | null>(() => {
     if (!localScore || !game || beforeRanking === undefined) return null;
@@ -301,7 +293,9 @@ export function QueuedlePanel() {
     // Skeletons at the size of the header and the hero card, so nothing jumps when the game arrives.
     return shell(
       <>
-        <p className={styles.srOnly} role="status">Loading {isPastDay ? 'that' : "today's"} Queuedle…</p>
+        <p className={styles.srOnly} role="status">
+          Loading {isPastDay ? 'that' : "today's"} Queuedle…
+        </p>
         <div className={styles.hero} aria-hidden="true">
           <div>
             <h1 className={styles.title}>Queuedle</h1>
@@ -341,7 +335,7 @@ export function QueuedlePanel() {
             <ArrowLeft size={15} aria-hidden="true" /> Back to today
           </PillButton>
         )}
-        <PillButton onClick={() => navigate('/queuedle/stats')}>
+        <PillButton onClick={() => void navigate('/queuedle/stats')}>
           <ChartColumn size={15} aria-hidden="true" /> Stats
         </PillButton>
         {calendarDates.length > 0 && (
@@ -382,9 +376,10 @@ export function QueuedlePanel() {
     // Count yourself in straight away, before the leaderboard refetch catches up with your submission.
     const room =
       displayName && !scores.some((s) => s.userName === displayName)
-        ? [...scores, { userName: displayName, mainScore: score.mainScore, bonusScore: score.bonusScore, total: mine }].sort(
-            (a, b) => b.total - a.total
-          )
+        ? [
+            ...scores,
+            { userName: displayName, mainScore: score.mainScore, bonusScore: score.bonusScore, total: mine },
+          ].sort((a, b) => b.total - a.total)
         : scores;
     const others = room.filter((s) => s.userName !== displayName).map((s) => s.total);
     return (
@@ -412,7 +407,7 @@ export function QueuedlePanel() {
             viewedGameId={currentGame.id}
             me={displayName ?? null}
             imageByUser={imageByUser}
-            onOpenProfile={(name) => navigate(`/profile/${encodeURIComponent(name)}`)}
+            onOpenProfile={(name) => void navigate(`/profile/${encodeURIComponent(name)}`)}
           />
           <QueuedleSummary
             questions={currentGame.questions}
@@ -433,9 +428,7 @@ export function QueuedlePanel() {
     const note = (
       <div className={styles.playedNote}>
         <span>
-          {isPastDay
-            ? 'You played this one.'
-            : "You've already played today. A new Queuedle arrives tomorrow."}
+          {isPastDay ? 'You played this one.' : "You've already played today. A new Queuedle arrives tomorrow."}
         </span>
         {import.meta.env.DEV && (
           <button type="button" className={styles.devReplay} onClick={handleDevPlayAgain}>
@@ -594,7 +587,7 @@ export function QueuedlePanel() {
           winningItems={winningItems}
           selections={bonusSelections}
           onSelect={handleBonusSelect}
-          onSubmit={handleSubmit}
+          onSubmit={() => void handleSubmit()}
           submitting={submit.isPending}
           imageByUser={imageByUser}
         />

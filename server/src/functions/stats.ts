@@ -14,10 +14,7 @@ function periodStartMs(period: Period): number {
   return 0;
 }
 
-export async function statsHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
+export async function statsHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const connStr = process.env['COSMOS_CONNECTION_STRING'];
   const dbName = process.env['COSMOS_DATABASE'] ?? 'truetunes';
   const ctrName = process.env['COSMOS_CONTAINER'] ?? 'events';
@@ -28,7 +25,7 @@ export async function statsHandler(
 
   const period = (request.query.get('period') ?? 'alltime') as Period;
   const userId = request.query.get('userId') ?? undefined;
-  const count  = Math.min(100, Math.max(1, parseInt(request.query.get('count') ?? '10', 10) || 10));
+  const count = Math.min(100, Math.max(1, parseInt(request.query.get('count') ?? '10', 10) || 10));
   const startMs = periodStartMs(period);
 
   try {
@@ -37,8 +34,14 @@ export async function statsHandler(
 
     const conditions: string[] = [];
     const parameters: { name: string; value: string | number }[] = [];
-    if (startMs > 0) { conditions.push('c.timestamp >= @start'); parameters.push({ name: '@start', value: startMs }); }
-    if (userId)       { conditions.push('c.userId = @userId');    parameters.push({ name: '@userId', value: userId }); }
+    if (startMs > 0) {
+      conditions.push('c.timestamp >= @start');
+      parameters.push({ name: '@start', value: startMs });
+    }
+    if (userId) {
+      conditions.push('c.userId = @userId');
+      parameters.push({ name: '@userId', value: userId });
+    }
     const where = conditions.length ? ' WHERE ' + conditions.join(' AND ') : '';
     const query = {
       query: `SELECT c.userId, c.eventType, c.trackName, c.artist, c.serviceId, c.accountId, c.artistId, c.album, c.albumId, c.imageUrl, c.uri FROM c${where}`,
@@ -72,7 +75,6 @@ export async function statsHandler(
 
     return {
       jsonBody: { topUsers, topTracks, topArtists, topAlbums, totalEvents: resources.length, periodStart: startMs },
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[stats] query failed:', err);

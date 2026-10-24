@@ -17,6 +17,8 @@ interface Props {
   albumArtist?: string;
   /** This is the track playing now. */
   playing?: boolean;
+  /** Audio is really playing, so the bars move; otherwise they sit still. */
+  audioPlaying?: boolean;
   onClick: (e: React.MouseEvent) => void;
   onDragStart: (e: React.DragEvent) => void;
   onAdd: () => void;
@@ -25,8 +27,17 @@ interface Props {
 const norm = (s: string) => s.trim().toLowerCase();
 
 export function AlbumTrackRow({
-  track, isPlaylistOrProgram, isSelected, serviceId, accountId, albumArtist, playing,
-  onClick, onDragStart, onAdd,
+  track,
+  isPlaylistOrProgram,
+  isSelected,
+  serviceId,
+  accountId,
+  albumArtist,
+  playing,
+  audioPlaying = false,
+  onClick,
+  onDragStart,
+  onAdd,
 }: Props) {
   const navigate = useNavigate();
   const { showTrackMenu } = useTrackContextMenu();
@@ -43,7 +54,7 @@ export function AlbumTrackRow({
 
   // Album: the artist is the page's artist, so only say so when someone else is on the track.
   const albumArtists = albumArtist ? albumArtist.split(/,\s*/).map(norm) : null;
-  const hasGuest = !albumArtists || track.artists.some(a => !albumArtists.includes(norm(a)));
+  const hasGuest = !albumArtists || track.artists.some((a) => !albumArtists.includes(norm(a)));
   const albumArtistsText = track.artists.length && hasGuest ? track.artists.join(', ') : undefined;
 
   // Playlist or programme: every track has its own artist and album, so those are links.
@@ -57,10 +68,10 @@ export function AlbumTrackRow({
               type="button"
               className={styles.link}
               aria-label={`${a.name}, open artist`}
-              onMouseDown={e => e.stopPropagation()}
-              onClick={e => {
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/artist/${encodeURIComponent(a.objectId)}`, { state: { item: artist } });
+                void navigate(`/artist/${encodeURIComponent(a.objectId)}`, { state: { item: artist } });
               }}
             >
               {a.name}
@@ -72,32 +83,35 @@ export function AlbumTrackRow({
 
   const albumId = track.albumId;
   const albumName = track.albumName;
-  const playlistAlbum = albumId && albumName ? (
-    <button
-      type="button"
-      className={styles.link}
-      onMouseDown={e => e.stopPropagation()}
-      onClick={e => {
-        e.stopPropagation();
-        navigate(`/album/${encodeURIComponent(albumId)}`, {
-          state: {
-            item: {
-              type: 'ALBUM',
-              name: albumName,
-              resource: { type: 'ALBUM', id: { objectId: albumId, serviceId, accountId } },
-            } as SonosItem,
-          },
-        });
-      }}
-    >
-      {albumName}
-    </button>
-  ) : (albumName ?? undefined);
+  const playlistAlbum =
+    albumId && albumName ? (
+      <button
+        type="button"
+        className={styles.link}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          void navigate(`/album/${encodeURIComponent(albumId)}`, {
+            state: {
+              item: {
+                type: 'ALBUM',
+                name: albumName,
+                resource: { type: 'ALBUM', id: { objectId: albumId, serviceId, accountId } },
+              } as SonosItem,
+            },
+          });
+        }}
+      >
+        {albumName}
+      </button>
+    ) : (
+      (albumName ?? undefined)
+    );
 
   return (
     <TrackRow
       title={track.title}
-      lead={playing ? <EqBars /> : track.ordinal}
+      lead={playing ? <EqBars paused={!audioPlaying} /> : track.ordinal}
       showArt={isPlaylistOrProgram}
       imageUrl={track.artUrl}
       explicit={track.explicit}
@@ -108,7 +122,7 @@ export function AlbumTrackRow({
       playing={playing}
       onClick={onClick}
       onDragStart={onDragStart}
-      onContextMenu={e => showTrackMenu({ track: payload, sonosItem: track.raw }, e)}
+      onContextMenu={(e) => showTrackMenu({ track: payload, sonosItem: track.raw }, e)}
       onAdd={onAdd}
     />
   );

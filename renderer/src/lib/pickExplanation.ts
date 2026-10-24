@@ -29,12 +29,22 @@ function describe(all: Person[], pronoun: 'them' | 'it', viewer?: string | null)
     const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0];
     return `${list} ${names.length > 1 ? 'queue' : 'queues'} ${pronoun}`;
   }
-  const parts = shown.map((p, i) => (i === 0 ? `${p.name} queued ${pronoun} ${times(p.count!)}` : `${p.name} ${times(p.count!)}`));
+  const parts = shown.map((p, i) =>
+    i === 0 ? `${p.name} queued ${pronoun} ${times(p.count!)}` : `${p.name} ${times(p.count!)}`
+  );
   if (more > 0) parts.push(`and ${more} more`);
   return parts.join(', ');
 }
 
-export function explainPick({ because, fans, trackFans, artist, viewer, trackName, kind }: {
+export function explainPick({
+  because,
+  fans,
+  trackFans,
+  artist,
+  viewer,
+  trackName,
+  kind,
+}: {
   because: string;
   fans?: { user: string; count: number }[];
   /** Room members who have queued this very track, with counts. */
@@ -45,10 +55,18 @@ export function explainPick({ because, fans, trackFans, artist, viewer, trackNam
   trackName?: string;
   kind: 'unheard' | 'played';
 }): PickExplanation {
-  const all: Person[] = fans ? fans.map((f) => ({ name: f.user, count: f.count })) : namesFromBecause(because).map((name) => ({ name }));
+  const all: Person[] = fans
+    ? fans.map((f) => ({ name: f.user, count: f.count }))
+    : namesFromBecause(because).map((name) => ({ name }));
   const lines: string[] = [];
   if (kind === 'played' && trackFans?.length) {
-    lines.push(`This song: ${describe(trackFans.map((f) => ({ name: f.user, count: f.count })), 'it', viewer)}`);
+    lines.push(
+      `This song: ${describe(
+        trackFans.map((f) => ({ name: f.user, count: f.count })),
+        'it',
+        viewer
+      )}`
+    );
   }
   if (all.length) lines.push(`${artist ? `${artist}: ` : ''}${describe(all, 'them', viewer)}`);
   else lines.push(because.split(' — ')[0]);

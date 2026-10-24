@@ -28,7 +28,7 @@ export interface Poll {
 export class PollError extends Error {
   constructor(
     public readonly status: 400 | 404 | 409,
-    message: string,
+    message: string
   ) {
     super(message);
     this.name = 'PollError';
@@ -103,7 +103,7 @@ export function isLive(poll: { liveFrom: string | null }, nowMs: number): boolea
  */
 export function assignSchedule<T extends { id: string; liveFrom: string | null }>(
   orderedPolls: readonly T[],
-  nowMs: number,
+  nowMs: number
 ): T[] {
   let latest = londonMonday(nowMs);
   for (const p of orderedPolls) {
@@ -129,7 +129,7 @@ export function assignSchedule<T extends { id: string; liveFrom: string | null }
 export function visiblePolls<T extends { id: string; liveFrom: string | null }>(
   polls: readonly T[],
   nowMs: number,
-  answeredIds: ReadonlySet<string>,
+  answeredIds: ReadonlySet<string>
 ): T[] {
   const year = londonToday(nowMs).slice(0, 4);
   return polls
@@ -140,7 +140,7 @@ export function visiblePolls<T extends { id: string; liveFrom: string | null }>(
 /** The poll whose `liveFrom === londonMonday(nowMs)`, or undefined. */
 export function pollForThisWeek<T extends { liveFrom: string | null }>(
   polls: readonly T[],
-  nowMs: number,
+  nowMs: number
 ): T | undefined {
   const monday = londonMonday(nowMs);
   return polls.find((p) => p.liveFrom === monday);
@@ -161,7 +161,7 @@ const POST_TO_MINUTE = 11 * 60 + 37;
  */
 export function shouldPostPoll<T extends { liveFrom: string | null }>(
   polls: readonly T[],
-  nowMs: number,
+  nowMs: number
 ): T | undefined {
   const { weekday, minutes } = londonClock(nowMs);
   if (weekday > 4 || minutes < POST_FROM_MINUTE || minutes > POST_TO_MINUTE) return undefined;

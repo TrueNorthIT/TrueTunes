@@ -2,23 +2,37 @@
 // Prevents 429s when many images load at once, and revokes object URLs
 // when the cache exceeds MAX_ENTRIES to avoid memory leaks.
 
-const MAX_ENTRIES    = 200;
+const MAX_ENTRIES = 200;
 const MAX_CONCURRENT = 4;
 
 // LRU: Map preserves insertion order; moving an entry to the end marks it as recently used.
-const cache   = new Map<string, string>();          // url -> objectURL
+const cache = new Map<string, string>(); // url -> objectURL
 const inflight = new Map<string, Promise<string | null>>(); // url -> in-flight promise
 const queue: Array<() => void> = [];
 let active = 0;
 
+// Mounted consumers (see useImage) hold their URL here; evicting one would break an <img> that is still showing it.
+const holds = new Map<string, number>();
+
+export function retainImage(url: string): void {
+  holds.set(url, (holds.get(url) ?? 0) + 1);
+}
+
+export function releaseImage(url: string): void {
+  const n = (holds.get(url) ?? 0) - 1;
+  if (n > 0) holds.set(url, n);
+  else holds.delete(url);
+}
+
 function evictLru(): void {
   if (cache.size < MAX_ENTRIES) return;
-  // First key in a Map is the least recently used
-  const lruKey = cache.keys().next().value;
-  if (lruKey !== undefined) {
-    const objectUrl = cache.get(lruKey)!;
-    cache.delete(lruKey);
+  // First key in a Map is the least recently used; skip any still held by a consumer.
+  // ponytail: if every entry is held the cache grows past MAX_ENTRIES until something is released.
+  for (const [key, objectUrl] of cache) {
+    if (holds.has(key)) continue;
+    cache.delete(key);
     URL.revokeObjectURL(objectUrl);
+    return;
   }
 }
 
@@ -79,7 +93,10 @@ export function fetchImage(url: string, priority = false): Promise<string | null
       active++;
       try {
         const resp = await fetch(url, { referrerPolicy: 'no-referrer' });
-        if (!resp.ok) { resolve(null); return; }
+        if (!resp.ok) {
+          resolve(null);
+          return;
+        }
         const blob = await resp.blob();
         evictLru();
         const objectUrl = URL.createObjectURL(blob);
@@ -89,7 +106,10 @@ export function fetchImage(url: string, priority = false): Promise<string | null
         // Direct fetch failed (likely CORS) — proxy through main process
         try {
           const result = await window.sonos.fetchImage(url);
-          if ('error' in result) { resolve(null); return; }
+          if ('error' in result) {
+            resolve(null);
+            return;
+          }
           const binary = atob(result.data);
           const bytes = new Uint8Array(binary.length);
           for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
@@ -109,9 +129,9 @@ export function fetchImage(url: string, priority = false): Promise<string | null
     };
 
     if (priority || active < MAX_CONCURRENT) {
-      run();
+      void run();
     } else {
-      queue.push(run);
+      queue.push(() => void run());
     }
   });
 

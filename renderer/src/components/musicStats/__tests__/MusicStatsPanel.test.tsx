@@ -20,9 +20,7 @@ const person = (userId: string, over: Partial<MusicPersonStats> = {}): MusicPers
   timedQueues: 0,
   avgLengthMs: null,
   explicitPct: null,
-  tasteByMonth: [
-    { month: '2026-09', queues: 40, topArtists: [{ artist: `${userId} September`, count: 9 }] },
-  ],
+  tasteByMonth: [{ month: '2026-09', queues: 40, topArtists: [{ artist: `${userId} September`, count: 9 }] }],
   ...over,
 });
 
@@ -40,12 +38,31 @@ function fixture(withLengths: boolean): MusicStatsResult {
     tracksWithLength: withLengths ? 6912 : 0,
     busyHours,
     people: [
-      person('Alex', { queues: 4013, trackQueues: 3779, uniqueArtists: 334, variety: 0.088, ...timed(41.2 * HOUR, 240_000, 12, 3600) }),
-      person('Rich', { queues: 1900, trackQueues: 1851, uniqueArtists: 400, variety: 0.216, ...timed(20 * HOUR, 210_000, 30, 1800) }),
+      person('Alex', {
+        queues: 4013,
+        trackQueues: 3779,
+        uniqueArtists: 334,
+        variety: 0.088,
+        ...timed(41.2 * HOUR, 240_000, 12, 3600),
+      }),
+      person('Rich', {
+        queues: 1900,
+        trackQueues: 1851,
+        uniqueArtists: 400,
+        variety: 0.216,
+        ...timed(20 * HOUR, 210_000, 30, 1800),
+      }),
       person('Fergus Westlake', { queues: 15, trackQueues: 14, uniqueArtists: 12, variety: 0.857 }),
     ],
     discoverers: [
-      { artist: 'Kanye West', imageUrl: null, firstBy: 'Alex', firstAt: Date.UTC(2026, 5, 14, 12), totalQueues: 273, othersQueues: 153 },
+      {
+        artist: 'Kanye West',
+        imageUrl: null,
+        firstBy: 'Alex',
+        firstAt: Date.UTC(2026, 5, 14, 12),
+        totalQueues: 273,
+        othersQueues: 153,
+      },
     ],
     longest: [],
     shortest: [],
@@ -103,7 +120,9 @@ describe('MusicStatsPanel', () => {
   it('defaults the taste picker to you and switches person on click', async () => {
     vi.mocked(window.sonos.fetchMusicStats).mockResolvedValue(fixture(true));
     renderPanel();
-    const taste = await screen.findByRole('heading', { name: 'Taste over time' }).then((h) => h.closest('section') as HTMLElement);
+    const taste = await screen
+      .findByRole('heading', { name: 'Taste over time' })
+      .then((h) => h.closest('section') as HTMLElement);
     expect(await within(taste).findByText('Rich September')).toBeInTheDocument();
     fireEvent.click(within(taste).getByRole('button', { name: 'Alex' }));
     expect(within(taste).getByRole('button', { name: 'Alex' })).toHaveAttribute('aria-pressed', 'true');

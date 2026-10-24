@@ -5,7 +5,13 @@ import { useOpenItem } from '../hooks/useOpenItem';
 import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
 import { fmtTime, getItemArt, getName, getSub, isAlbum, resolveAlbumParams } from '../lib/itemHelpers';
-import { artistItemOf, containerSummary, groupContainerItems, KIND_COPY, type ContainerGroup } from '../lib/containerItems';
+import {
+  artistItemOf,
+  containerSummary,
+  groupContainerItems,
+  KIND_COPY,
+  type ContainerGroup,
+} from '../lib/containerItems';
 import { ImageTile } from './common/ImageTile';
 import { PillButton } from './common/PillButton';
 import { SectionCard } from './common/SectionCard';
@@ -13,10 +19,7 @@ import { TrackRow } from './common/TrackRow';
 import { ArtistLinks } from './common/TrackLinks';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/ContainerPanel.module.css';
-
-interface Props {
-  onAddToQueue: (item: SonosItem) => void;
-}
+import { useQueueActions } from '../hooks/useQueueActions';
 
 const SKELETON_TILES = 12;
 
@@ -24,14 +27,20 @@ const SKELETON_TILES = 12;
  * A music service shelf opened in full (a For you section on Home: "Quick picks", "Albums for you", an
  * artist's mix). Songs are a list, everything else is a grid of tiles, one section per kind.
  */
-export function ContainerPanel({ onAddToQueue }: Props) {
+export function ContainerPanel() {
+  const { addToQueue: onAddToQueue } = useQueueActions();
   const { state } = useLocation();
   const item = (state as { item?: SonosItem } | null)?.item;
   const openItem = useOpenItem();
   const { resolveAndOpen } = useResolveAndOpen();
   const queryClient = useQueryClient();
 
-  const { albumId: containerId, serviceId, accountId, defaults } = item
+  const {
+    albumId: containerId,
+    serviceId,
+    accountId,
+    defaults,
+  } = item
     ? resolveAlbumParams(item)
     : { albumId: undefined, serviceId: undefined, accountId: undefined, defaults: undefined };
 
@@ -69,7 +78,7 @@ export function ContainerPanel({ onAddToQueue }: Props) {
         trailing={secs > 0 ? fmtTime(secs * 1000) : undefined}
         // Browse tracks carry no album id: find the album by title and artist, as Home's trending rows do.
         onOpen={() => void resolveAndOpen(name, 'album', { artist: artist || undefined, serviceId, accountId })}
-        onAdd={() => onAddToQueue(t)}
+        onAdd={() => void onAddToQueue(t)}
       />
     );
   };
@@ -80,7 +89,15 @@ export function ContainerPanel({ onAddToQueue }: Props) {
     // A station opens as its track list, where songs can be added one at a time. No + here: starting a
     // station replaces the whole shared queue, which a one-click + must never do.
     if (kind === 'stations') {
-      return <ImageTile key={key} title={name} sub={getSub(child) || 'Radio'} imageUrl={getItemArt(child)} onOpen={() => openItem(child)} />;
+      return (
+        <ImageTile
+          key={key}
+          title={name}
+          sub={getSub(child) || 'Radio'}
+          imageUrl={getItemArt(child)}
+          onOpen={() => openItem(child)}
+        />
+      );
     }
     return (
       <ImageTile
@@ -91,7 +108,7 @@ export function ContainerPanel({ onAddToQueue }: Props) {
         circular={kind === 'artists'}
         onOpen={() => openItem(child)}
         onHover={isAlbum(child) ? () => prefetchAlbum(child) : undefined}
-        onAdd={kind === 'albums' || kind === 'playlists' ? () => onAddToQueue(child) : undefined}
+        onAdd={kind === 'albums' || kind === 'playlists' ? () => void onAddToQueue(child) : undefined}
       />
     );
   };

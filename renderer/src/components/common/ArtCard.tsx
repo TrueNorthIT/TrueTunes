@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useImage } from '../../hooks/useImage';
 import { withArtworkSize } from '../../lib/artworkUrl';
 import { AddButton } from './AddButton';
@@ -31,7 +31,20 @@ interface Props {
 
 /** A print with its label: the artwork is the card, with title and artist on a scrim over the lower part. */
 export function ArtCard({
-  size, label, title, sub, imageUrl, photoUrl, onOpen, openLabel, info, onAdd, addLabel, onContextMenu, onMouseEnter, className,
+  size,
+  label,
+  title,
+  sub,
+  imageUrl,
+  photoUrl,
+  onOpen,
+  openLabel,
+  info,
+  onAdd,
+  addLabel,
+  onContextMenu,
+  onMouseEnter,
+  className,
 }: Props) {
   // Shown big, so ask the service for a bigger image.
   const px = size === 'large' ? 1200 : 800;
@@ -39,8 +52,9 @@ export function ArtCard({
   const photo = useImage(photoUrl ? withArtworkSize(photoUrl, px) : null);
   // The cover sits under the photo only while the photo fades in. Left stacked, the two layers can drift a pixel
   // apart while scrolling and the cover shows through at the edges.
-  const [photoIn, setPhotoIn] = useState(false);
-  useEffect(() => setPhotoIn(false), [photo]);
+  const [photoInFor, setPhotoInFor] = useState<string | null>(null);
+  const photoIn = photo !== null && photoInFor === photo;
+  const setPhotoIn = (v: boolean) => setPhotoInFor(v ? photo : null);
   return (
     <div
       className={[styles.card, size === 'large' ? styles.large : styles.medium, className].filter(Boolean).join(' ')}
@@ -54,7 +68,9 @@ export function ArtCard({
           src={photo}
           alt=""
           onAnimationEnd={() => setPhotoIn(true)}
-          onLoad={() => { if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) setPhotoIn(true); }}
+          onLoad={() => {
+            if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) setPhotoIn(true);
+          }}
         />
       )}
       <button type="button" className={styles.cover} aria-label={openLabel} onClick={onOpen} />
@@ -66,7 +82,9 @@ export function ArtCard({
         <div className={styles.title}>{title}</div>
         {sub != null && <div className={styles.sub}>{sub}</div>}
       </div>
-      {onAdd && <AddButton variant="art" className={styles.add} label={addLabel ?? `Add ${title} to queue`} onClick={onAdd} />}
+      {onAdd && (
+        <AddButton variant="art" className={styles.add} label={addLabel ?? `Add ${title} to queue`} onClick={onAdd} />
+      )}
     </div>
   );
 }

@@ -44,7 +44,9 @@
   width: max-content;
   border-radius: var(--r-xs);
 }
-.details > summary:hover { color: var(--text); }
+.details > summary:hover {
+  color: var(--text);
+}
 .trace {
   margin-top: 0.6em;
   padding: 0.8em 1em;

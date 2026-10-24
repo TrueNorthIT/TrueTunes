@@ -17,7 +17,7 @@ describe('groupUnheard', () => {
     const groups = groupUnheard(
       [act('Muse', ['Uprising||Muse']), act('Jungle')],
       [[song('Uprising'), song('Hysteria'), song('Madness')], [song('Back On 74')]],
-      { perAct: 3 },
+      { perAct: 3 }
     );
     expect(groups.map((g) => [g.act.artist, g.tracks.map((t) => t.title)])).toEqual([
       ['Muse', ['Hysteria', 'Madness']],
@@ -26,10 +26,11 @@ describe('groupUnheard', () => {
   });
 
   it('matches heard tracks on the credited artist as well as the act', () => {
-    const [g] = groupUnheard([act('Gorillaz', ['Feel Good Inc.||Gorillaz feat. De La Soul'])], [[
-      song('Feel Good Inc.', ['Gorillaz feat. De La Soul']),
-      song('On Melancholy Hill', ['Gorillaz']),
-    ]], { perAct: 3 });
+    const [g] = groupUnheard(
+      [act('Gorillaz', ['Feel Good Inc.||Gorillaz feat. De La Soul'])],
+      [[song('Feel Good Inc.', ['Gorillaz feat. De La Soul']), song('On Melancholy Hill', ['Gorillaz'])]],
+      { perAct: 3 }
+    );
     expect(g.tracks.map((t) => t.title)).toEqual(['On Melancholy Hill']);
   });
 
@@ -37,7 +38,7 @@ describe('groupUnheard', () => {
     const groups = groupUnheard(
       [act('Muse'), act('HAIM', ['Want You Back||HAIM']), act('Gorillaz')],
       [[song('a'), song('b'), song('c'), song('d')], [song('Want You Back')], undefined],
-      { perAct: 3 },
+      { perAct: 3 }
     );
     expect(groups).toHaveLength(1);
     expect(groups[0].tracks).toHaveLength(3);
@@ -80,14 +81,24 @@ describe('groupUnheard: what is already queued or repeated', () => {
   it('shows a song once, under the higher-ranked act, whatever the version', () => {
     const groups = groupUnheard(
       [act('Justice'), act('Tame Impala')],
-      [[song('Neverender (Radio Edit)'), song('D.A.N.C.E.')], [song('Neverender'), song('Elephant'), song('Neverender - Remastered')]],
-      { perAct: 3 },
+      [
+        [song('Neverender (Radio Edit)'), song('D.A.N.C.E.')],
+        [song('Neverender'), song('Elephant'), song('Neverender - Remastered')],
+      ],
+      { perAct: 3 }
     );
-    expect(groups.map((g) => g.tracks.map((t) => t.title))).toEqual([['Neverender (Radio Edit)', 'D.A.N.C.E.'], ['Elephant']]);
+    expect(groups.map((g) => g.tracks.map((t) => t.title))).toEqual([
+      ['Neverender (Radio Edit)', 'D.A.N.C.E.'],
+      ['Elephant'],
+    ]);
   });
 
   it('treats an inline featured credit as the same song', () => {
-    const [g] = groupUnheard([act('M-Beat')], [[song('Sweet Love'), song('Sweet Love Ft Nazlyn'), song('Incredible Dub')]], { perAct: 3 });
+    const [g] = groupUnheard(
+      [act('M-Beat')],
+      [[song('Sweet Love'), song('Sweet Love Ft Nazlyn'), song('Incredible Dub')]],
+      { perAct: 3 }
+    );
     expect(g.tracks.map((t) => t.title)).toEqual(['Sweet Love', 'Incredible Dub']);
     expect(songKey('Do I Wanna Know? feat. Nobody')).toBe(songKey('Do I Wanna Know?'));
     // "ft" inside a word is not a credit.
@@ -95,17 +106,24 @@ describe('groupUnheard: what is already queued or repeated', () => {
   });
 
   it('treats a heard version as heard', () => {
-    const [g] = groupUnheard([act('Justice', ['Neverender (Radio Edit)||Justice, Tame Impala'])], [[song('Neverender'), song('Genesis')]], { perAct: 3 });
+    const [g] = groupUnheard(
+      [act('Justice', ['Neverender (Radio Edit)||Justice, Tame Impala'])],
+      [[song('Neverender'), song('Genesis')]],
+      { perAct: 3 }
+    );
     expect(g.tracks.map((t) => t.title)).toEqual(['Genesis']);
   });
 
   it('moves to the next tracks each round, wrapping round the pool', () => {
     const songs = [['a', 'b', 'c', 'd', 'e'].map((t) => song(t))];
-    const titles = (round: number) => groupUnheard([act('A')], songs, { perAct: 3, round })[0].tracks.map((t) => t.title);
+    const titles = (round: number) =>
+      groupUnheard([act('A')], songs, { perAct: 3, round })[0].tracks.map((t) => t.title);
     expect(titles(0)).toEqual(['a', 'b', 'c']);
     expect(titles(1)).toEqual(['d', 'e', 'a']);
     // A pool no bigger than the window never moves.
-    expect(groupUnheard([act('B')], [[song('x'), song('y')]], { perAct: 3, round: 4 })[0].tracks.map((t) => t.title)).toEqual(['x', 'y']);
+    expect(
+      groupUnheard([act('B')], [[song('x'), song('y')]], { perAct: 3, round: 4 })[0].tracks.map((t) => t.title)
+    ).toEqual(['x', 'y']);
   });
 });
 

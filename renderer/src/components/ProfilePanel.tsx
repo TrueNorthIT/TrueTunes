@@ -3,6 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Camera } from 'lucide-react';
 import { useStats } from '../hooks/useStats';
+import { useDisplayName, useDisplayNameActions } from '../hooks/useDisplayName';
+import { useQueueActions } from '../hooks/useQueueActions';
+import { recentlyPlayedQueryOptions } from '../hooks/useRecentlyPlayed';
 import { useGameRankings } from '../hooks/useDailyGame';
 import { useMyPlaylists } from '../hooks/usePlaylists';
 import { useUserProfile, useInvalidateUserProfile } from '../hooks/useUserProfile';
@@ -15,7 +18,13 @@ import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
 import { createDragGhost } from '../lib/dragHelpers';
 import { normalizeAvatar } from '../lib/avatarImage';
-import { primaryArtistName, queued as queuedLabel, statsAlbumToItem, statsArtistToItem, statsTrackToItem } from '../lib/homeData';
+import {
+  primaryArtistName,
+  queued as queuedLabel,
+  statsAlbumToItem,
+  statsArtistToItem,
+  statsTrackToItem,
+} from '../lib/homeData';
 import { resolveAlbumParams, albumItem, trackPayload } from '../lib/itemHelpers';
 import { groupByDay, officeRank, profileFacts, queuedCount } from '../lib/profileData';
 import { Carousel } from './common/Carousel';
@@ -34,21 +43,18 @@ import styles from '../styles/ProfilePanel.module.css';
 /** StatsTrack and RecentTrack carry the same navigation fields. */
 type ProfileTrack = Omit<StatsTrack, 'count'>;
 
-interface Props {
-  onAddToQueue: (item: SonosItem) => void;
-  displayName?: string | null;
-  onSignOut?: () => void;
-  onChangeName?: (name: string) => Promise<{ error: string } | null>;
-}
-
 /** Keyed on the person, so moving from one profile to another starts at the top with nothing selected. */
-export function ProfilePanel(props: Props) {
+export function ProfilePanel() {
   const { userName } = useParams<{ userName: string }>();
   if (!userName) return null;
-  return <Profile key={userName} userName={userName} {...props} />;
+  return <Profile key={userName} userName={userName} />;
 }
 
-function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName }: Props & { userName: string }) {
+function Profile({ userName }: { userName: string }) {
+  const { addToQueue: onAddToQueue } = useQueueActions();
+  const displayName = useDisplayName();
+  const displayNameActions = useDisplayNameActions();
+  const [signingIn, setSigningIn] = useState(false);
   const navigate = useNavigate();
   const openItem = useOpenItem();
   const { resolveAndOpen } = useResolveAndOpen();
@@ -60,16 +66,13 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
   const { data: stats, isLoading: statsLoading } = useStats('alltime', userName, 25);
   const { data: week } = useStats('week', userName);
   const { data: office } = useStats('alltime');
-  const { data: recent, isLoading: recentLoading } = useQuery({
-    queryKey: ['recentlyPlayed', userName], // the key and fetcher useRecentlyPlayed uses, so the cache is shared
-    queryFn: () => window.sonos.fetchRecentlyPlayed(userName),
-    staleTime: 5 * 60_000,
-  });
+  const { data: recent, isLoading: recentLoading } = useQuery(recentlyPlayedQueryOptions(userName)); // shared with useRecentlyPlayed
   const { data: rankings } = useGameRankings(userName, true);
   const ranking = rankings?.find((r) => r.userName === userName) ?? null;
   const { data: presence } = useOfficePresence();
   // Only a sensed or rostered presence says someone is here; "available" includes working from home.
-  const inOffice = (presence?.basis === 'sensed' || presence?.basis === 'rostered') && presence.inOffice.includes(userName);
+  const inOffice =
+    (presence?.basis === 'sensed' || presence?.basis === 'rostered') && presence.inOffice.includes(userName);
 
   const topTracks = stats?.topTracks ?? [];
   const topArtists = stats?.topArtists ?? [];
@@ -111,20 +114,29 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
     try {
       const { buffer, mimeType } = await normalizeAvatar(file);
       await window.sonos.uploadProfileImage(userName, buffer, mimeType);
-      invalidateProfile(userName);
+      void invalidateProfile(userName);
     } finally {
       setUploading(false);
       e.target.value = '';
     }
   }
 
+  async function handleSignOut() {
+    displayNameActions.set(null);
+    setSigningIn(true);
+    await window.sonos.entraSignOut().catch(() => {});
+    await window.sonos.entraReLogin().catch(() => {});
+    await displayNameActions.refresh();
+    setSigningIn(false);
+  }
+
   async function handleRenameSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = renameValue.trim();
-    if (!trimmed || !onChangeName) return;
+    if (!trimmed) return;
     setRenameSaving(true);
     setRenameError(null);
-    const result = await onChangeName(trimmed);
+    const result = await displayNameActions.rename(displayName, trimmed);
     setRenameSaving(false);
     if (result?.error === 'taken') {
       setRenameError('That name is already taken.');
@@ -132,23 +144,33 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
       setRenameError('Couldn’t change your name. Try again.');
     } else {
       setRenaming(false);
-      navigate(`/profile/${encodeURIComponent(trimmed)}`);
+      void navigate(`/profile/${encodeURIComponent(trimmed)}`);
     }
   }
 
   // ── Track navigation: album on the title or art, artist on the name, the track menu on right-click ──
   const albumItemFor = (t: ProfileTrack): SonosItem | null =>
     t.albumId
-      ? albumItem(t.album ?? t.trackName, { objectId: t.albumId, serviceId: t.serviceId ?? '', accountId: t.accountId ?? '' })
+      ? albumItem(t.album ?? t.trackName, {
+          objectId: t.albumId,
+          serviceId: t.serviceId ?? '',
+          accountId: t.accountId ?? '',
+        })
       : null;
   const openAlbum = (t: ProfileTrack) => {
     const item = albumItemFor(t);
     if (item) openItem(item);
-    else void resolveAndOpen(t.album || t.trackName, 'album', { artist: primaryArtistName(t.artist), serviceId: t.serviceId, accountId: t.accountId });
+    else
+      void resolveAndOpen(t.album || t.trackName, 'album', {
+        artist: primaryArtistName(t.artist),
+        serviceId: t.serviceId,
+        accountId: t.accountId,
+      });
   };
   const prefetchAlbum = (t: ProfileTrack) => {
     const p = resolveAlbumParams(albumItemFor(t) ?? ({} as SonosItem));
-    if (p.albumId && p.serviceId && p.accountId) void queryClient.prefetchQuery(albumQueryOptions(p.albumId, p.serviceId, p.accountId, p.defaults));
+    if (p.albumId && p.serviceId && p.accountId)
+      void queryClient.prefetchQuery(albumQueryOptions(p.albumId, p.serviceId, p.accountId, p.defaults));
   };
   const openArtist = (name: string, ids: { artistId?: string; serviceId?: string; accountId?: string }) => {
     if (ids.artistId) openItem(statsArtistToItem({ artist: name, count: 0, ...ids }));
@@ -157,7 +179,9 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
   const artistLinks = (t: ProfileTrack) => (
     <ArtistLinks
       artist={t.artist}
-      onOpenArtist={(name, isFirst) => openArtist(name, { artistId: isFirst ? t.artistId : undefined, serviceId: t.serviceId, accountId: t.accountId })}
+      onOpenArtist={(name, isFirst) =>
+        openArtist(name, { artistId: isFirst ? t.artistId : undefined, serviceId: t.serviceId, accountId: t.accountId })
+      }
     />
   );
   const menu = (t: ProfileTrack, e: React.MouseEvent) => {
@@ -167,12 +191,12 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
         track: trackPayload({ ...t, uri: t.uri, albumName: t.album }),
         sonosItem: statsTrackToItem(t) ?? undefined,
       },
-      e,
+      e
     );
   };
   const addTrack = (t: ProfileTrack) => {
     const item = statsTrackToItem(t);
-    return item ? () => onAddToQueue(item) : undefined;
+    return item ? () => void onAddToQueue(item) : undefined;
   };
 
   // ── Top tracks: click, shift and ctrl select; drag the selection onto the queue ──
@@ -183,9 +207,18 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
     if (e.shiftKey && lastSelected.current !== null) {
       const lo = Math.min(lastSelected.current, i);
       const hi = Math.max(lastSelected.current, i);
-      setSelected((prev) => { const next = new Set(prev); for (let j = lo; j <= hi; j++) next.add(j); return next; });
+      setSelected((prev) => {
+        const next = new Set(prev);
+        for (let j = lo; j <= hi; j++) next.add(j);
+        return next;
+      });
     } else if (e.ctrlKey || e.metaKey) {
-      setSelected((prev) => { const next = new Set(prev); if (next.has(i)) next.delete(i); else next.add(i); return next; });
+      setSelected((prev) => {
+        const next = new Set(prev);
+        if (next.has(i)) next.delete(i);
+        else next.add(i);
+        return next;
+      });
       lastSelected.current = i;
     } else if (selected.size === 1 && selected.has(i)) {
       setSelected(new Set());
@@ -197,7 +230,10 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
   }
   function handleTrackDragStart(i: number, e: React.DragEvent) {
     const indices = selected.has(i) ? [...selected].sort((a, b) => a - b) : [i];
-    if (!selected.has(i)) { setSelected(new Set([i])); lastSelected.current = i; }
+    if (!selected.has(i)) {
+      setSelected(new Set([i]));
+      lastSelected.current = i;
+    }
     const items = indices.map((j) => statsTrackToItem(chart[j])).filter((x): x is SonosItem => x !== null);
     e.dataTransfer.effectAllowed = 'copy';
     e.dataTransfer.setData('application/sonos-item-list', JSON.stringify(items));
@@ -219,32 +255,72 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
         {wash && <div className={styles.heroWash} aria-hidden="true" />}
 
         {isOwnProfile ? (
-          <button type="button" className={`${styles.avatarBtn} ${styles.avatar}`} onClick={() => fileInputRef.current?.click()} aria-label="Change your photo">
+          <button
+            type="button"
+            className={`${styles.avatarBtn} ${styles.avatar}`}
+            onClick={() => fileInputRef.current?.click()}
+            aria-label="Change your photo"
+          >
             <UserAvatar name={userName} imageUrl={profile?.imageUrl} className={styles.avatarFace} />
-            <span className={`${styles.avatarOverlay}${uploading ? ' ' + styles.avatarOverlayOn : ''}`} aria-hidden="true">
-              {uploading ? 'Uploading…' : <><Camera size={22} /> Change photo</>}
+            <span
+              className={`${styles.avatarOverlay}${uploading ? ' ' + styles.avatarOverlayOn : ''}`}
+              aria-hidden="true"
+            >
+              {uploading ? (
+                'Uploading…'
+              ) : (
+                <>
+                  <Camera size={22} /> Change photo
+                </>
+              )}
             </span>
-            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={handleAvatarUpload} />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              hidden
+              onChange={(e) => void handleAvatarUpload(e)}
+            />
           </button>
         ) : (
-          <UserAvatar name={userName} imageUrl={profile?.imageUrl} className={`${styles.avatar} ${styles.avatarFace}`} />
+          <UserAvatar
+            name={userName}
+            imageUrl={profile?.imageUrl}
+            className={`${styles.avatar} ${styles.avatarFace}`}
+          />
         )}
 
         <div className={styles.heroText}>
           {renaming ? (
-            <form onSubmit={handleRenameSubmit} className={styles.renameForm}>
+            <form onSubmit={(e) => void handleRenameSubmit(e)} className={styles.renameForm}>
               <input
                 className={styles.renameInput}
                 aria-label="Your name"
                 value={renameValue}
-                onChange={(e) => { setRenameValue(e.target.value); setRenameError(null); }}
+                onChange={(e) => {
+                  setRenameValue(e.target.value);
+                  setRenameError(null);
+                }}
                 autoFocus
                 maxLength={32}
                 spellCheck={false}
               />
-              <PillButton type="submit" variant="primary" disabled={!renameValue.trim() || renameSaving}>{renameSaving ? 'Saving…' : 'Save'}</PillButton>
-              <PillButton onClick={() => { setRenaming(false); setRenameError(null); }}>Cancel</PillButton>
-              {renameError && <p className={styles.renameError} role="alert">{renameError}</p>}
+              <PillButton type="submit" variant="primary" disabled={!renameValue.trim() || renameSaving}>
+                {renameSaving ? 'Saving…' : 'Save'}
+              </PillButton>
+              <PillButton
+                onClick={() => {
+                  setRenaming(false);
+                  setRenameError(null);
+                }}
+              >
+                Cancel
+              </PillButton>
+              {renameError && (
+                <p className={styles.renameError} role="alert">
+                  {renameError}
+                </p>
+              )}
             </form>
           ) : (
             <h1 className={styles.name}>{userName}</h1>
@@ -252,7 +328,12 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
           {/* Each fact is unbreakable, so the line only wraps between facts: no widowed "office". */}
           {facts.length > 0 && (
             <p className={styles.facts}>
-              {facts.map((f, i) => <span key={f}>{i > 0 && ' · '}<span className={styles.fact}>{f}</span></span>)}
+              {facts.map((f, i) => (
+                <span key={f}>
+                  {i > 0 && ' · '}
+                  <span className={styles.fact}>{f}</span>
+                </span>
+              ))}
             </p>
           )}
           {nothingYet && <p className={styles.facts}>Nothing queued yet</p>}
@@ -274,19 +355,27 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
               )}
             </div>
           )}
-          {isOwnProfile && !renaming && (onChangeName || onSignOut) && (
+          {isOwnProfile && !renaming && (
             <div className={styles.heroActions}>
-              {onChangeName && <PillButton onClick={() => { setRenameValue(userName); setRenaming(true); }}>Change name</PillButton>}
-              {onSignOut && <PillButton onClick={onSignOut}>Sign out</PillButton>}
+              <PillButton
+                onClick={() => {
+                  setRenameValue(userName);
+                  setRenaming(true);
+                }}
+              >
+                Change name
+              </PillButton>
+              <PillButton onClick={() => void handleSignOut()}>Sign out</PillButton>
             </div>
           )}
         </div>
-
       </header>
 
       {nothingYet && (
         <p className={`${styles.band} ${styles.empty}`}>
-          {isOwnProfile ? 'Anything you add to the queue shows up here: your top tracks, artists and albums.' : `${userName} hasn’t queued anything yet.`}
+          {isOwnProfile
+            ? 'Anything you add to the queue shows up here: your top tracks, artists and albums.'
+            : `${userName} hasn’t queued anything yet.`}
         </p>
       )}
 
@@ -294,11 +383,21 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
         <div className={`${styles.band} ${styles.split}${showLately ? '' : ' ' + styles.splitSolo}`}>
           <SectionCard title="Top tracks">
             {statsLoading ? (
-              <div aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <div key={i} className={`skeleton ${styles.rowSkel}`} />)}</div>
+              <div aria-hidden="true">
+                {Array.from({ length: 10 }, (_, i) => (
+                  <div key={i} className={`skeleton ${styles.rowSkel}`} />
+                ))}
+              </div>
             ) : (
               <>
                 <ChartHead labels={['#', 'Title', 'Artist', 'Queued']} />
-                <ol className={styles.list} onClick={() => { setSelected(new Set()); lastSelected.current = null; }}>
+                <ol
+                  className={styles.list}
+                  onClick={() => {
+                    setSelected(new Set());
+                    lastSelected.current = null;
+                  }}
+                >
                   {chart.map((t, i) => (
                     <ChartRow
                       key={`${t.uri ?? t.trackName}-${i}`}
@@ -325,7 +424,11 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
           {showLately && (
             <SectionCard title="Lately">
               {recentLoading ? (
-                <div aria-hidden="true">{Array.from({ length: 8 }, (_, i) => <div key={i} className={`skeleton ${styles.rowSkel}`} />)}</div>
+                <div aria-hidden="true">
+                  {Array.from({ length: 8 }, (_, i) => (
+                    <div key={i} className={`skeleton ${styles.rowSkel}`} />
+                  ))}
+                </div>
               ) : (
                 groupByDay(lately).map((g) => (
                   <div key={g.day} className={styles.day}>
@@ -355,7 +458,9 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
       {topArtists.length > 0 && (
         <Carousel title="Top artists" className={styles.band} gap="1.2em">
           {topArtists.map((a, i) => (
-            <div key={`${a.artistId ?? a.artist}-${i}`} className={styles.shelfTile}><StatsArtistTile a={a} onOpen={() => openArtist(a.artist, a)} /></div>
+            <div key={`${a.artistId ?? a.artist}-${i}`} className={styles.shelfTile}>
+              <StatsArtistTile a={a} onOpen={() => openArtist(a.artist, a)} />
+            </div>
           ))}
         </Carousel>
       )}
@@ -371,7 +476,11 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
                   sub={a.artist}
                   meta={queuedLabel(a.count)}
                   imageUrl={a.imageUrl}
-                  onOpen={() => (a.albumId ? openItem(item) : void resolveAndOpen(a.album, 'album', { artist: primaryArtistName(a.artist) }))}
+                  onOpen={() =>
+                    a.albumId
+                      ? openItem(item)
+                      : void resolveAndOpen(a.album, 'album', { artist: primaryArtistName(a.artist) })
+                  }
                 />
               </div>
             );
@@ -384,7 +493,9 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
           title="Playlists"
           className={styles.band}
           gap="1.2em"
-          actions={isOwnProfile ? <PillButton onClick={() => setCreatePlaylistOpen(true)}>New playlist</PillButton> : undefined}
+          actions={
+            isOwnProfile ? <PillButton onClick={() => setCreatePlaylistOpen(true)}>New playlist</PillButton> : undefined
+          }
         >
           {playlists.length === 0 ? (
             <p className={styles.empty}>No playlists yet.</p>
@@ -396,7 +507,7 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
                   sub={`${pl.trackCount} ${pl.trackCount === 1 ? 'track' : 'tracks'}`}
                   meta={pl.owner !== userName ? `By ${pl.owner}` : !pl.isPublic ? 'Private' : null}
                   imageUrl={pl.imageUrl}
-                  onOpen={() => navigate(`/playlist/${pl.id}`)}
+                  onOpen={() => void navigate(`/playlist/${pl.id}`)}
                 />
               </div>
             ))
@@ -404,8 +515,17 @@ function Profile({ userName, onAddToQueue, displayName, onSignOut, onChangeName 
         </Carousel>
       )}
 
+      {signingIn && (
+        <div className={styles.signingIn}>
+          <span>Signing in with your organisation account…</span>
+        </div>
+      )}
       {createPlaylistOpen && (
-        <CreatePlaylistDialog displayName={displayName} pendingTrack={null} onClose={() => setCreatePlaylistOpen(false)} />
+        <CreatePlaylistDialog
+          displayName={displayName}
+          pendingTrack={null}
+          onClose={() => setCreatePlaylistOpen(false)}
+        />
       )}
     </div>
   );

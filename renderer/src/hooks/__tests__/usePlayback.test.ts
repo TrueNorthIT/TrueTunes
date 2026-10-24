@@ -1,15 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { usePlayback } from '../usePlayback';
+import { getPlaybackPosition } from '../playbackPosition';
 import type { PlaybackPayload } from '../../types/sonos';
 
 // ── WS callback capture ───────────────────────────────────────────────────────
 
-let wsHandler:    ((header: unknown, payload: unknown) => void) | null = null;
+let wsHandler: ((header: unknown, payload: unknown) => void) | null = null;
 let readyHandler: (() => void) | null = null;
 
 beforeEach(() => {
-  wsHandler    = null;
+  wsHandler = null;
   readyHandler = null;
   vi.clearAllMocks();
 
@@ -54,12 +55,16 @@ function makePayload(overrides: Partial<PlaybackPayload> = {}): PlaybackPayload 
 
 /** Fire a playbackExtended WS message for the given group. */
 function firePlayback(payload: PlaybackPayload, groupId = 'g1') {
-  act(() => { wsHandler!({ namespace: 'playbackExtended', groupId }, payload); });
+  act(() => {
+    wsHandler!({ namespace: 'playbackExtended', groupId }, payload);
+  });
 }
 
 /** Fire a groupVolume WS message. */
 function fireVolume(volume: number, groupId = 'g1') {
-  act(() => { wsHandler!({ namespace: 'groupVolume', groupId }, { volume }); });
+  act(() => {
+    wsHandler!({ namespace: 'groupVolume', groupId }, { volume });
+  });
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -82,7 +87,9 @@ describe('usePlayback — initial state', () => {
 describe('usePlayback — onWsReady', () => {
   it('sets isVisible true when the WS session is ready', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    act(() => { readyHandler!(); });
+    act(() => {
+      readyHandler!();
+    });
     expect(result.current.playback.isVisible).toBe(true);
   });
 });
@@ -97,90 +104,128 @@ describe('usePlayback — track name and artist', () => {
 
   it('falls back to track.title when name is absent', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      metadata: { currentItem: { track: { title: 'Via Title', artist: 'Someone', durationMillis: 0 } } },
-    }));
+    firePlayback(
+      makePayload({
+        metadata: { currentItem: { track: { title: 'Via Title', artist: 'Someone', durationMillis: 0 } } },
+      })
+    );
     expect(result.current.playback.trackName).toBe('Via Title');
   });
 
   it('handles artist as a plain string', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      metadata: { currentItem: { track: { name: 'T', artist: 'String Artist', durationMillis: 0 } } },
-    }));
+    firePlayback(
+      makePayload({
+        metadata: { currentItem: { track: { name: 'T', artist: 'String Artist', durationMillis: 0 } } },
+      })
+    );
     expect(result.current.playback.artistName).toBe('String Artist');
   });
 
   it('returns empty artistName when artist is absent', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      metadata: { currentItem: { track: { name: 'T', durationMillis: 0 } } },
-    }));
+    firePlayback(
+      makePayload({
+        metadata: { currentItem: { track: { name: 'T', durationMillis: 0 } } },
+      })
+    );
     expect(result.current.playback.artistName).toBe('');
   });
 });
 
 describe('usePlayback — progress and timing', () => {
   it('computes progressPct as posMs / durMs * 100', () => {
-    const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      playback: { playbackState: 'PLAYING', positionMillis: 60000, queueId: 'q1', queueVersion: 'v1', playModes: {} },
-      metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 120000 } } },
-    }));
-    expect(result.current.playback.progressPct).toBeCloseTo(50);
+    renderHook(() => usePlayback('g1'));
+    firePlayback(
+      makePayload({
+        playback: { playbackState: 'PLAYING', positionMillis: 60000, queueId: 'q1', queueVersion: 'v1', playModes: {} },
+        metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 120000 } } },
+      })
+    );
+    expect(getPlaybackPosition().progressPct).toBeCloseTo(50);
   });
 
   it('clamps progressPct to 100 when posMs > durMs', () => {
-    const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      playback: { playbackState: 'PLAYING', positionMillis: 999999, queueId: 'q1', queueVersion: 'v1', playModes: {} },
-      metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
-    }));
-    expect(result.current.playback.progressPct).toBe(100);
+    renderHook(() => usePlayback('g1'));
+    firePlayback(
+      makePayload({
+        playback: {
+          playbackState: 'PLAYING',
+          positionMillis: 999999,
+          queueId: 'q1',
+          queueVersion: 'v1',
+          playModes: {},
+        },
+        metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
+      })
+    );
+    expect(getPlaybackPosition().progressPct).toBe(100);
   });
 
   it('sets progressPct to 0 when durMs is 0', () => {
-    const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      playback: { playbackState: 'PLAYING', positionMillis: 10000, queueId: 'q1', queueVersion: 'v1', playModes: {} },
-      metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 0 } } },
-    }));
-    expect(result.current.playback.progressPct).toBe(0);
+    renderHook(() => usePlayback('g1'));
+    firePlayback(
+      makePayload({
+        playback: { playbackState: 'PLAYING', positionMillis: 10000, queueId: 'q1', queueVersion: 'v1', playModes: {} },
+        metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 0 } } },
+      })
+    );
+    expect(getPlaybackPosition().progressPct).toBe(0);
   });
 
   it('builds a timeLabel when duration is known', () => {
-    const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      playback: { playbackState: 'PLAYING', positionMillis: 65000, queueId: 'q1', queueVersion: 'v1', playModes: {} },
-      metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 183000 } } },
-    }));
-    expect(result.current.playback.timeLabel).toBe('1:05 / 3:03');
+    renderHook(() => usePlayback('g1'));
+    firePlayback(
+      makePayload({
+        playback: { playbackState: 'PLAYING', positionMillis: 65000, queueId: 'q1', queueVersion: 'v1', playModes: {} },
+        metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 183000 } } },
+      })
+    );
+    expect(getPlaybackPosition().timeLabel).toBe('1:05 / 3:03');
   });
 
   it('sets empty timeLabel when duration is 0', () => {
-    const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 0 } } },
-    }));
-    expect(result.current.playback.timeLabel).toBe('');
+    renderHook(() => usePlayback('g1'));
+    firePlayback(
+      makePayload({
+        metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 0 } } },
+      })
+    );
+    expect(getPlaybackPosition().timeLabel).toBe('');
   });
 });
 
 describe('usePlayback — playback state', () => {
   it('sets isPlaying true and stateIcon ▶ when PLAYING', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      playback: { playbackState: 'PLAYBACK_STATE_PLAYING', positionMillis: 0, queueId: 'q1', queueVersion: 'v1', playModes: {} },
-    }));
+    firePlayback(
+      makePayload({
+        playback: {
+          playbackState: 'PLAYBACK_STATE_PLAYING',
+          positionMillis: 0,
+          queueId: 'q1',
+          queueVersion: 'v1',
+          playModes: {},
+        },
+      })
+    );
     expect(result.current.playback.isPlaying).toBe(true);
     expect(result.current.playback.stateIcon).toBe('▶');
   });
 
   it('sets isPlaying false and stateIcon ⏸ when PAUSED', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      playback: { playbackState: 'PLAYBACK_STATE_PAUSED', positionMillis: 0, queueId: 'q1', queueVersion: 'v1', playModes: {} },
-    }));
+    firePlayback(
+      makePayload({
+        playback: {
+          playbackState: 'PLAYBACK_STATE_PAUSED',
+          positionMillis: 0,
+          queueId: 'q1',
+          queueVersion: 'v1',
+          playModes: {},
+        },
+      })
+    );
     expect(result.current.playback.isPlaying).toBe(false);
     expect(result.current.playback.stateIcon).toBe('⏸');
   });
@@ -188,18 +233,22 @@ describe('usePlayback — playback state', () => {
   it('keeps previous volume on non-NO_GROUPS payload', () => {
     const { result } = renderHook(() => usePlayback('g1'));
     fireVolume(72);
-    firePlayback(makePayload({
-      playback: { playbackState: 'PLAYING', positionMillis: 0, queueId: 'q1', queueVersion: 'v1', playModes: {} },
-    }));
+    firePlayback(
+      makePayload({
+        playback: { playbackState: 'PLAYING', positionMillis: 0, queueId: 'q1', queueVersion: 'v1', playModes: {} },
+      })
+    );
     expect(result.current.playback.volume).toBe(72);
   });
 
   it('zeros volume when playbackState is NO_GROUPS', () => {
     const { result } = renderHook(() => usePlayback('g1'));
     fireVolume(80);
-    firePlayback(makePayload({
-      playback: { playbackState: 'NO_GROUPS', positionMillis: 0, queueId: 'q1', queueVersion: 'v1', playModes: {} },
-    }));
+    firePlayback(
+      makePayload({
+        playback: { playbackState: 'NO_GROUPS', positionMillis: 0, queueId: 'q1', queueVersion: 'v1', playModes: {} },
+      })
+    );
     expect(result.current.playback.volume).toBe(0);
   });
 });
@@ -207,33 +256,65 @@ describe('usePlayback — playback state', () => {
 describe('usePlayback — play modes', () => {
   it('sets shuffle true when playModes.shuffle is true', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      playback: { playbackState: 'PLAYING', positionMillis: 0, queueId: 'q1', queueVersion: 'v1', playModes: { shuffle: true } },
-    }));
+    firePlayback(
+      makePayload({
+        playback: {
+          playbackState: 'PLAYING',
+          positionMillis: 0,
+          queueId: 'q1',
+          queueVersion: 'v1',
+          playModes: { shuffle: true },
+        },
+      })
+    );
     expect(result.current.playback.shuffle).toBe(true);
   });
 
   it('sets repeat "one" when repeatOne is true', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      playback: { playbackState: 'PLAYING', positionMillis: 0, queueId: 'q1', queueVersion: 'v1', playModes: { repeatOne: true } },
-    }));
+    firePlayback(
+      makePayload({
+        playback: {
+          playbackState: 'PLAYING',
+          positionMillis: 0,
+          queueId: 'q1',
+          queueVersion: 'v1',
+          playModes: { repeatOne: true },
+        },
+      })
+    );
     expect(result.current.playback.repeat).toBe('one');
   });
 
   it('sets repeat "all" when repeat is true and repeatOne is false', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      playback: { playbackState: 'PLAYING', positionMillis: 0, queueId: 'q1', queueVersion: 'v1', playModes: { repeat: true, repeatOne: false } },
-    }));
+    firePlayback(
+      makePayload({
+        playback: {
+          playbackState: 'PLAYING',
+          positionMillis: 0,
+          queueId: 'q1',
+          queueVersion: 'v1',
+          playModes: { repeat: true, repeatOne: false },
+        },
+      })
+    );
     expect(result.current.playback.repeat).toBe('all');
   });
 
   it('sets repeat "none" when both repeat flags are false', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      playback: { playbackState: 'PLAYING', positionMillis: 0, queueId: 'q1', queueVersion: 'v1', playModes: { repeat: false, repeatOne: false } },
-    }));
+    firePlayback(
+      makePayload({
+        playback: {
+          playbackState: 'PLAYING',
+          positionMillis: 0,
+          queueId: 'q1',
+          queueVersion: 'v1',
+          playModes: { repeat: false, repeatOne: false },
+        },
+      })
+    );
     expect(result.current.playback.repeat).toBe('none');
   });
 });
@@ -241,35 +322,50 @@ describe('usePlayback — play modes', () => {
 describe('usePlayback — art URL', () => {
   it('picks the first https:// image URL', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      metadata: { currentItem: { track: {
-        name: 'T', artist: 'A', durationMillis: 0,
-        images: [
-          { url: 'http://insecure.example.com/img.jpg' },
-          { url: 'https://secure.example.com/img.jpg' },
-        ],
-      } } },
-    }));
+    firePlayback(
+      makePayload({
+        metadata: {
+          currentItem: {
+            track: {
+              name: 'T',
+              artist: 'A',
+              durationMillis: 0,
+              images: [{ url: 'http://insecure.example.com/img.jpg' }, { url: 'https://secure.example.com/img.jpg' }],
+            },
+          },
+        },
+      })
+    );
     expect(result.current.playback.artUrl).toBe('https://secure.example.com/img.jpg');
   });
 
   it('falls back to imageUrl when images array has no https entry', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      metadata: { currentItem: { track: {
-        name: 'T', artist: 'A', durationMillis: 0,
-        images: [],
-        imageUrl: 'https://fallback.example.com/img.jpg',
-      } } },
-    }));
+    firePlayback(
+      makePayload({
+        metadata: {
+          currentItem: {
+            track: {
+              name: 'T',
+              artist: 'A',
+              durationMillis: 0,
+              images: [],
+              imageUrl: 'https://fallback.example.com/img.jpg',
+            },
+          },
+        },
+      })
+    );
     expect(result.current.playback.artUrl).toBe('https://fallback.example.com/img.jpg');
   });
 
   it('sets artUrl null when no images are available', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 0, images: [] } } },
-    }));
+    firePlayback(
+      makePayload({
+        metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 0, images: [] } } },
+      })
+    );
     expect(result.current.playback.artUrl).toBeNull();
   });
 });
@@ -277,17 +373,21 @@ describe('usePlayback — art URL', () => {
 describe('usePlayback — explicit flag', () => {
   it('reads explicit from track.explicit', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 0, explicit: true } } },
-    }));
+    firePlayback(
+      makePayload({
+        metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 0, explicit: true } } },
+      })
+    );
     expect(result.current.playback.isExplicit).toBe(true);
   });
 
   it('reads explicit from track.isExplicit (legacy field)', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 0, isExplicit: true } as never } },
-    }));
+    firePlayback(
+      makePayload({
+        metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 0, isExplicit: true } as never } },
+      })
+    );
     expect(result.current.playback.isExplicit).toBe(true);
   });
 });
@@ -327,19 +427,30 @@ describe('usePlayback — queue cursor refs', () => {
 describe('usePlayback — no track name (queue-cursor-only path)', () => {
   it('does not set trackName or isVisible when payload has no track name', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      metadata: { currentItem: { track: { durationMillis: 0 } } },
-    }));
+    firePlayback(
+      makePayload({
+        metadata: { currentItem: { track: { durationMillis: 0 } } },
+      })
+    );
     expect(result.current.playback.trackName).toBe('');
     expect(result.current.playback.isVisible).toBe(false);
   });
 
   it('still updates queueId in state when track name is absent', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      playback: { playbackState: 'PLAYING', positionMillis: 0, queueId: 'q-new', queueVersion: 'v-new', itemId: 'qi2', playModes: {} },
-      metadata: { currentItem: { track: { durationMillis: 0 } } },
-    }));
+    firePlayback(
+      makePayload({
+        playback: {
+          playbackState: 'PLAYING',
+          positionMillis: 0,
+          queueId: 'q-new',
+          queueVersion: 'v-new',
+          itemId: 'qi2',
+          playModes: {},
+        },
+        metadata: { currentItem: { track: { durationMillis: 0 } } },
+      })
+    );
     expect(result.current.playback.queueId).toBe('q-new');
     expect(result.current.playback.queueVersion).toBe('v-new');
     expect(result.current.playback.queueItemId).toBe('qi2');
@@ -368,7 +479,9 @@ describe('usePlayback — group filtering', () => {
     firePlayback(g2Payload, 'g2');
 
     // Switch to g2 — the cached payload should be applied
-    act(() => { result.current.applyGroupCache('g2'); });
+    act(() => {
+      result.current.applyGroupCache('g2');
+    });
     expect(result.current.playback.trackName).toBe('G2 Track');
   });
 });
@@ -392,7 +505,9 @@ describe('usePlayback — groupVolume namespace', () => {
 describe('usePlayback — applyGroupCache', () => {
   it('shows "Nothing playing" when no cache entry exists for the group', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    act(() => { result.current.applyGroupCache('g2'); });
+    act(() => {
+      result.current.applyGroupCache('g2');
+    });
     expect(result.current.playback.trackName).toBe('Nothing playing');
     expect(result.current.playback.isVisible).toBe(true);
   });
@@ -400,11 +515,18 @@ describe('usePlayback — applyGroupCache', () => {
   it('applies cached payload when switching to a group with history', () => {
     const { result } = renderHook(() => usePlayback('g1'));
     // Cache a payload for g1 by firing a WS message
-    firePlayback(makePayload({ metadata: { currentItem: { track: { name: 'Cached Song', artist: 'X', durationMillis: 0 } } } }), 'g1');
+    firePlayback(
+      makePayload({ metadata: { currentItem: { track: { name: 'Cached Song', artist: 'X', durationMillis: 0 } } } }),
+      'g1'
+    );
 
     // Switch away and back
-    act(() => { result.current.applyGroupCache('g2'); });
-    act(() => { result.current.applyGroupCache('g1'); });
+    act(() => {
+      result.current.applyGroupCache('g2');
+    });
+    act(() => {
+      result.current.applyGroupCache('g1');
+    });
     expect(result.current.playback.trackName).toBe('Cached Song');
   });
 
@@ -413,7 +535,9 @@ describe('usePlayback — applyGroupCache', () => {
     firePlayback(makePayload()); // populates queueVersionRef = 'v1'
     expect(result.current.queueVersionRef.current).toBe('v1');
 
-    act(() => { result.current.applyGroupCache('g2'); });
+    act(() => {
+      result.current.applyGroupCache('g2');
+    });
     expect(result.current.queueVersionRef.current).toBeNull();
   });
 
@@ -422,48 +546,154 @@ describe('usePlayback — applyGroupCache', () => {
     firePlayback(makePayload());
     expect(result.current.queueIdRef.current).toBe('q1');
 
-    act(() => { result.current.applyGroupCache('g2'); });
+    act(() => {
+      result.current.applyGroupCache('g2');
+    });
     expect(result.current.queueIdRef.current).toBeNull();
   });
 
   it('filters out WS messages from the old group immediately after switch', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    act(() => { result.current.applyGroupCache('g2'); });
+    act(() => {
+      result.current.applyGroupCache('g2');
+    });
 
     // A message still tagged g1 should now be ignored
-    firePlayback(makePayload({ metadata: { currentItem: { track: { name: 'Old Group Track', artist: 'X', durationMillis: 0 } } } }), 'g1');
+    firePlayback(
+      makePayload({
+        metadata: { currentItem: { track: { name: 'Old Group Track', artist: 'X', durationMillis: 0 } } },
+      }),
+      'g1'
+    );
     expect(result.current.playback.trackName).toBe('Nothing playing');
   });
 });
 
 describe('usePlayback — progress tick', () => {
-  beforeEach(() => { vi.useFakeTimers(); });
-  afterEach(() => { vi.useRealTimers(); });
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it('advances progressPct over time while playing', () => {
-    const { result } = renderHook(() => usePlayback('g1'));
+    renderHook(() => usePlayback('g1'));
     // Start at 50% (90s / 180s)
-    firePlayback(makePayload({
-      playback: { playbackState: 'PLAYBACK_STATE_PLAYING', positionMillis: 90000, queueId: 'q1', queueVersion: 'v1', playModes: {} },
-      metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
-    }));
-    const initialPct = result.current.playback.progressPct;
+    firePlayback(
+      makePayload({
+        playback: {
+          playbackState: 'PLAYBACK_STATE_PLAYING',
+          positionMillis: 90000,
+          queueId: 'q1',
+          queueVersion: 'v1',
+          playModes: {},
+        },
+        metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
+      })
+    );
+    const initialPct = getPlaybackPosition().progressPct;
 
-    act(() => { vi.advanceTimersByTime(5000); });
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
 
-    expect(result.current.playback.progressPct).toBeGreaterThan(initialPct);
+    expect(getPlaybackPosition().progressPct).toBeGreaterThan(initialPct);
   });
 
   it('does not tick when paused', () => {
+    renderHook(() => usePlayback('g1'));
+    firePlayback(
+      makePayload({
+        playback: {
+          playbackState: 'PLAYBACK_STATE_PAUSED',
+          positionMillis: 90000,
+          queueId: 'q1',
+          queueVersion: 'v1',
+          playModes: {},
+        },
+        metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
+      })
+    );
+    const initialPct = getPlaybackPosition().progressPct;
+
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    expect(getPlaybackPosition().progressPct).toBe(initialPct);
+  });
+  it('advances positionMs and timeLabel by wall-clock time while playing', () => {
+    renderHook(() => usePlayback('g1'));
+    firePlayback(
+      makePayload({
+        playback: {
+          playbackState: 'PLAYBACK_STATE_PLAYING',
+          positionMillis: 90000,
+          queueId: 'q1',
+          queueVersion: 'v1',
+          playModes: {},
+        },
+        metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
+      })
+    );
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(getPlaybackPosition().positionMs).toBe(95000);
+    expect(getPlaybackPosition().timeLabel).toBe('1:35 / 3:00');
+  });
+
+  it('resyncs to the position of the next status update', () => {
+    renderHook(() => usePlayback('g1'));
+    const at = (positionMillis: number) =>
+      makePayload({
+        playback: {
+          playbackState: 'PLAYBACK_STATE_PLAYING',
+          positionMillis,
+          queueId: 'q1',
+          queueVersion: 'v1',
+          playModes: {},
+        },
+        metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
+      });
+    firePlayback(at(10000));
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    firePlayback(at(60000));
+    expect(getPlaybackPosition().positionMs).toBe(60000);
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(getPlaybackPosition().positionMs).toBe(62000);
+  });
+
+  it('stops ticking once a paused update arrives', () => {
+    renderHook(() => usePlayback('g1'));
+    const withState = (playbackState: string, positionMillis: number) =>
+      makePayload({
+        playback: { playbackState, positionMillis, queueId: 'q1', queueVersion: 'v1', playModes: {} },
+        metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
+      });
+    firePlayback(withState('PLAYBACK_STATE_PLAYING', 10000));
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    firePlayback(withState('PLAYBACK_STATE_PAUSED', 12000));
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(getPlaybackPosition().positionMs).toBe(12000);
+  });
+
+  it('keeps the playback object referentially stable across ticks', () => {
     const { result } = renderHook(() => usePlayback('g1'));
-    firePlayback(makePayload({
-      playback: { playbackState: 'PLAYBACK_STATE_PAUSED', positionMillis: 90000, queueId: 'q1', queueVersion: 'v1', playModes: {} },
-      metadata: { currentItem: { track: { name: 'T', artist: 'A', durationMillis: 180000 } } },
-    }));
-    const initialPct = result.current.playback.progressPct;
-
-    act(() => { vi.advanceTimersByTime(5000); });
-
-    expect(result.current.playback.progressPct).toBe(initialPct);
+    firePlayback(makePayload());
+    const before = result.current.playback;
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(result.current.playback).toBe(before);
   });
 });

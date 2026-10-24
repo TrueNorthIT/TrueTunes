@@ -59,6 +59,8 @@ import type { NormalizedQueueItem } from '../types/provider';
 import { withArtworkSize } from '../lib/artworkUrl';
 import { UserAvatar } from './common/UserAvatar';
 import { Artwork } from './common/Artwork';
+import { PlaybackTime } from './common/SeekBar';
+import { usePlaybackPosition } from '../hooks/playbackPosition';
 import { QueuerChip } from './common/QueuerChip';
 import { useTrackContextMenu } from './common/ContextMenu';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
@@ -74,6 +76,8 @@ import { TrackRow } from './common/TrackRow';
 import { ArtistLinks as SharedArtistLinks } from './common/TrackLinks';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/HomePanel.module.css';
+import { useDisplayName } from '../hooks/useDisplayName';
+import { useQueueActions } from '../hooks/useQueueActions';
 
 /** Everything Home needs to make a track navigable: album, artist, a queueable item, a context menu. */
 interface NavTrack {
@@ -101,7 +105,13 @@ interface Nav {
 
 const noop = () => {};
 const NavContext = createContext<Nav>({
-  openAlbum: noop, openArtist: noop, openAlbumItem: noop, openArtistItem: noop, prefetch: noop, prefetchItem: noop, menu: noop,
+  openAlbum: noop,
+  openArtist: noop,
+  openAlbumItem: noop,
+  openArtistItem: noop,
+  prefetch: noop,
+  prefetchItem: noop,
+  menu: noop,
 });
 
 /** StatsTrack and RecentTrack share every field Home needs. */
@@ -124,7 +134,7 @@ function navTrackFrom(t: Omit<StatsTrack, 'count'> & { count?: number }): NavTra
 function openArtistWith(
   item: SonosItem,
   openItem: (i: SonosItem) => void,
-  resolveAndOpen: ReturnType<typeof useResolveAndOpen>['resolveAndOpen'],
+  resolveAndOpen: ReturnType<typeof useResolveAndOpen>['resolveAndOpen']
 ) {
   const { artistId, serviceId, accountId } = resolveArtistParams(item);
   if (artistId) openItem(item);
@@ -155,8 +165,21 @@ function PickRow({ t, reason, onAdd }: { t: NavTrack; reason?: string; onAdd?: (
 }
 
 /** The artwork is the card: title and artist sit on a soft scrim over the lower part. */
-function PickCard({ size, label, t, photoUrl, onAdd, className, why }: {
-  size: 'large' | 'medium'; label: string; t: NavTrack; photoUrl?: string | null; onAdd: () => void; className?: string;
+function PickCard({
+  size,
+  label,
+  t,
+  photoUrl,
+  onAdd,
+  className,
+  why,
+}: {
+  size: 'large' | 'medium';
+  label: string;
+  t: NavTrack;
+  photoUrl?: string | null;
+  onAdd: () => void;
+  className?: string;
   why: Parameters<typeof PickInfoTip>[0];
 }) {
   const nav = useContext(NavContext);
@@ -180,8 +203,16 @@ function PickCard({ size, label, t, photoUrl, onAdd, className, why }: {
 }
 
 /** Square collection tile with its name over the artwork. */
-function ArtTile({ name, imageUrl, onOpen, onAdd }: {
-  name: string; imageUrl?: string | null; onOpen?: () => void; onAdd?: () => void;
+function ArtTile({
+  name,
+  imageUrl,
+  onOpen,
+  onAdd,
+}: {
+  name: string;
+  imageUrl?: string | null;
+  onOpen?: () => void;
+  onAdd?: () => void;
 }) {
   const art = useImage(imageUrl ?? null);
   const inner = (
@@ -193,7 +224,9 @@ function ArtTile({ name, imageUrl, onOpen, onAdd }: {
   return (
     <div className={styles.artTile}>
       {onOpen ? (
-        <button type="button" className={styles.tileMain} onClick={onOpen} aria-label={name}>{inner}</button>
+        <button type="button" className={styles.tileMain} onClick={onOpen} aria-label={name}>
+          {inner}
+        </button>
       ) : (
         <div className={styles.tileMain}>{inner}</div>
       )}
@@ -224,9 +257,7 @@ function greeting(name?: string | null): string {
   return first ? `Good ${part}, ${first}` : `Good ${part}`;
 }
 
-function TrendRow({ rank, t, count, onAdd }: {
-  rank: number; t: NavTrack; count: number; onAdd?: () => void;
-}) {
+function TrendRow({ rank, t, count, onAdd }: { rank: number; t: NavTrack; count: number; onAdd?: () => void }) {
   const nav = useContext(NavContext);
   return (
     <ChartRow
@@ -243,8 +274,32 @@ function TrendRow({ rank, t, count, onAdd }: {
   );
 }
 
+/** The Now playing band's progress line: the one part of the band that moves every second. */
+function NowProgress() {
+  const pct = usePlaybackPosition((p) => p.progressPct);
+  return (
+    <div className={styles.nowProgress}>
+      <PlaybackTime part="elapsed" className={styles.nowTime} />
+      <div
+        className={styles.nowBar}
+        role="progressbar"
+        aria-label="Track progress"
+        aria-valuenow={Math.round(pct)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div className={styles.nowFill} style={{ transform: `scaleX(${Math.min(1, Math.max(0, pct / 100))})` }} />
+      </div>
+      <PlaybackTime part="duration" className={styles.nowTime} />
+    </div>
+  );
+}
+
 /** Now playing card and live synced lyrics. No transport controls: the player bar has them. */
-function NowPlayingBand({ playback, imageByUser }: {
+function NowPlayingBand({
+  playback,
+  imageByUser,
+}: {
   playback: PlaybackState;
   imageByUser: Map<string, string | null | undefined>;
 }) {
@@ -282,13 +337,10 @@ function NowPlayingBand({ playback, imageByUser }: {
       : void resolveAndOpen(np.albumName || np.displayTrack, 'album', { artist: np.displayArtist });
   const openArtist = () =>
     np.artistItem ? openItem(np.artistItem) : void resolveAndOpen(primaryArtistName(np.displayArtist), 'artist');
-  const openLyrics = () => navigate('/lyrics');
+  const openLyrics = () => void navigate('/lyrics');
 
   return (
-    <section
-      className={`${styles.band}${showLyrics ? '' : ' ' + styles.bandSolo}`}
-      aria-label="Now playing"
-    >
+    <section className={`${styles.band}${showLyrics ? '' : ' ' + styles.bandSolo}`} aria-label="Now playing">
       <div
         className={styles.nowCard}
         style={np.dominantColor ? ({ '--wash': np.dominantColor } as React.CSSProperties) : undefined}
@@ -305,34 +357,55 @@ function NowPlayingBand({ playback, imageByUser }: {
         <div className={styles.nowInfo}>
           <span className={styles.nowLabel}>Now playing</span>
           <h2 className={styles.nowTitle}>
-            <button type="button" className={styles.titleBtn} onClick={openAlbum} onMouseEnter={np.prefetchAlbum} aria-label={`${np.displayTrack}, open album`}>
+            <button
+              type="button"
+              className={styles.titleBtn}
+              onClick={openAlbum}
+              onMouseEnter={np.prefetchAlbum}
+              aria-label={`${np.displayTrack}, open album`}
+            >
               {np.displayTrack}
             </button>
           </h2>
           <div className={styles.nowMeta}>
-            <button type="button" className={`${styles.artistBtn} ${styles.metaArtist}`} onClick={openArtist} aria-label={`${np.displayArtist}, open artist`}>
+            <button
+              type="button"
+              className={`${styles.artistBtn} ${styles.metaArtist}`}
+              onClick={openArtist}
+              aria-label={`${np.displayArtist}, open artist`}
+            >
               {np.displayArtist}
             </button>
             {np.albumName && (
               <>
-                <span className={styles.metaDot} aria-hidden="true">·</span>
-                <button type="button" className={`${styles.artistBtn} ${styles.metaAlbum}`} onClick={openAlbum} aria-label={`${np.albumName}, open album`}>{np.albumName}</button>
+                <span className={styles.metaDot} aria-hidden="true">
+                  ·
+                </span>
+                <button
+                  type="button"
+                  className={`${styles.artistBtn} ${styles.metaAlbum}`}
+                  onClick={openAlbum}
+                  aria-label={`${np.albumName}, open album`}
+                >
+                  {np.albumName}
+                </button>
               </>
             )}
           </div>
           {queuer && (
-            <QueuerChip className={styles.queuerChip} user={queuer.user} imageUrl={imageByUser.get(queuer.user)} onOpen={() => profile(queuer.user)} />
+            <QueuerChip
+              className={styles.queuerChip}
+              user={queuer.user}
+              imageUrl={imageByUser.get(queuer.user)}
+              onOpen={() => void profile(queuer.user)}
+            />
           )}
-          <div className={styles.nowProgress}>
-            <span className={styles.nowTime}>{np.elapsedLabel}</span>
-            <div className={styles.nowBar} role="progressbar" aria-label="Track progress" aria-valuenow={Math.round(np.progressPct)} aria-valuemin={0} aria-valuemax={100}>
-              <div className={styles.nowFill} style={{ transform: `scaleX(${Math.min(1, Math.max(0, np.progressPct / 100))})` }} />
-            </div>
-            <span className={styles.nowTime}>{np.durationLabel}</span>
-          </div>
+          <NowProgress />
           {aboutLoading && !blurb && (
             <div className={styles.about} aria-label="About this track" aria-busy="true">
-              {['100%', '92%', '58%'].map((w) => <span key={w} className={`skeleton ${styles.aboutSkel}`} style={{ width: w }} />)}
+              {['100%', '92%', '58%'].map((w) => (
+                <span key={w} className={`skeleton ${styles.aboutSkel}`} style={{ width: w }} />
+              ))}
             </div>
           )}
           {blurb && (
@@ -365,16 +438,22 @@ function NowPlayingBand({ playback, imageByUser }: {
           <div ref={boxRef} className={styles.lyricsScroll}>
             {lyricsPending ? (
               <div className={styles.lyricsSkel}>
-                {['70%', '55%', '80%', '45%', '65%'].map((w) => <span key={w} className={`skeleton ${styles.lyricSkel}`} style={{ width: w }} />)}
+                {['70%', '55%', '80%', '45%', '65%'].map((w) => (
+                  <span key={w} className={`skeleton ${styles.lyricSkel}`} style={{ width: w }} />
+                ))}
               </div>
             ) : lyr.lines.length > 0 ? (
               <div className={styles.lyricsPad}>
                 {lyr.lines.map((line, i) => (
                   <div
                     key={i}
-                    ref={(el) => { lineRefs.current[i] = el; }}
+                    ref={(el) => {
+                      lineRefs.current[i] = el;
+                    }}
                     className={`${styles.lyricLine}${i === activeLine ? ' ' + styles.lyricActive : ''}`}
-                    style={activeLine >= 0 ? { opacity: Math.max(0.18, 1 - Math.abs(i - activeLine) * 0.24) } : undefined}
+                    style={
+                      activeLine >= 0 ? { opacity: Math.max(0.18, 1 - Math.abs(i - activeLine) * 0.24) } : undefined
+                    }
                   >
                     {line.text}
                   </div>
@@ -382,7 +461,11 @@ function NowPlayingBand({ playback, imageByUser }: {
               </div>
             ) : (
               <div className={styles.lyricsPad}>
-                {plain.map((l, i) => <div key={i} className={`${styles.lyricLine} ${styles.lyricPlain}`}>{l}</div>)}
+                {plain.map((l, i) => (
+                  <div key={i} className={`${styles.lyricLine} ${styles.lyricPlain}`}>
+                    {l}
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -394,10 +477,8 @@ function NowPlayingBand({ playback, imageByUser }: {
 
 interface Props {
   isAuthed: boolean;
-  onAddToQueue: (item: SonosItem, position?: number, opts?: { attribute?: boolean }) => void;
   ytm: YtmSections | undefined;
   ytmLoading: boolean;
-  displayName?: string | null;
   /** Live playback and queue, for the Now playing band. Without a current track the band is hidden. */
   playback?: PlaybackState;
   /** The live queue, so Queue all can be undone. */
@@ -414,7 +495,7 @@ export async function fetchYtmSections(): Promise<YtmSections> {
   const rootR = await api.browse.container('root', { muse2: true });
   if (rootR.error) return { forYou: [], newReleases: [], charts: [] };
 
-  const d = rootR.data as Record<string, unknown>;
+  const d = rootR.data ?? {};
   const stack = ((d['sections'] as Record<string, unknown>)?.['items'] as unknown[])?.[0] as
     | Record<string, unknown>
     | undefined;
@@ -443,7 +524,7 @@ export async function fetchYtmSections(): Promise<YtmSections> {
   const withoutPodcasts = (items: SonosItem[]) => items.filter((i) => !isPodcast(i));
 
   const homeItems = withoutPodcasts(await browseContainer(homeItem)).filter(
-    (i) => !/podcast/i.test(String(i.title ?? i.name ?? '')),
+    (i) => !/podcast/i.test(String(i.title ?? i.name ?? ''))
   );
   const findShelf = (...titles: string[]) => {
     for (const t of titles) {
@@ -461,7 +542,9 @@ export async function fetchYtmSections(): Promise<YtmSections> {
     browseContainer(find('New releases') ?? findShelf('New releases', 'Fresh new music')).then(withoutPodcasts),
     browseContainer(find('Charts') ?? findShelf('Top songs', 'Trending songs for you')).then(withoutPodcasts),
     browseContainer(supermixItem).catch(() => [] as SonosItem[]),
-    Promise.all(homeItems.map((i) => (isContainer(i) ? browseContainer(i).catch(() => [] as SonosItem[]) : Promise.resolve(null)))),
+    Promise.all(
+      homeItems.map((i) => (isContainer(i) ? browseContainer(i).catch(() => [] as SonosItem[]) : Promise.resolve(null)))
+    ),
   ]);
   const shelves = homeItems.filter((_, i) => {
     const kids = shelfKids[i];
@@ -479,8 +562,9 @@ export async function fetchYtmSections(): Promise<YtmSections> {
   };
 }
 
-
-export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName, playback, queueItems = [] }: Props) {
+export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = [] }: Props) {
+  const { addToQueue: onAddToQueue } = useQueueActions();
+  const displayName = useDisplayName();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -488,12 +572,15 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
   const { resolveAndOpen } = useResolveAndOpen();
   const { showTrackMenu } = useTrackContextMenu();
 
-
   // Navigation shared by every track on Home: album on the title or art, artist on the name,
   // the app's track context menu on right-click, and a prefetch on hover so the click is instant.
   const albumItemFor = (t: NavTrack): SonosItem | null =>
     t.albumId
-      ? albumItem(t.album ?? t.title, { objectId: t.albumId, serviceId: t.serviceId ?? '', accountId: t.accountId ?? '' })
+      ? albumItem(t.album ?? t.title, {
+          objectId: t.albumId,
+          serviceId: t.serviceId ?? '',
+          accountId: t.accountId ?? '',
+        })
       : null;
   const prefetchAlbumItem = (item: SonosItem) => {
     const p = resolveAlbumParams(item);
@@ -525,10 +612,10 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
             serviceId: t.serviceId ?? undefined,
             accountId: t.accountId ?? undefined,
           },
-          { title: name },
+          { title: name }
         ),
         openItem,
-        resolveAndOpen,
+        resolveAndOpen
       ),
     openAlbumItem: (item) => {
       if (resolveAlbumParams(item).albumId) openItem(item);
@@ -546,10 +633,18 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
       if (!t.uri) return;
       showTrackMenu(
         {
-          track: trackPayload({ uri: t.uri, trackName: t.title, artist: t.artist, albumName: t.album, imageUrl: t.imageUrl, serviceId: t.serviceId, accountId: t.accountId }),
+          track: trackPayload({
+            uri: t.uri,
+            trackName: t.title,
+            artist: t.artist,
+            albumName: t.album,
+            imageUrl: t.imageUrl,
+            serviceId: t.serviceId,
+            accountId: t.accountId,
+          }),
           sonosItem: t.item ?? undefined,
         },
-        e,
+        e
       );
     },
   };
@@ -585,7 +680,14 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
     return {
       key: d.track.id.objectId,
       because: d.because,
-      why: { because: d.because, fans: d.fans, artist: d.artist, viewer: displayName, trackName: d.track.title, kind: 'unheard' as const },
+      why: {
+        because: d.because,
+        fans: d.fans,
+        artist: d.artist,
+        viewer: displayName,
+        trackName: d.track.title,
+        kind: 'unheard' as const,
+      },
       item: d.track.raw,
       act,
       t: {
@@ -609,24 +711,34 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
         const item = statsTrackToItem(t);
         if (!item) return [];
         const act = actByName.get(t.artist);
-        return [{
-          key: t.uri,
-          because: t.because,
-          why: { because: t.because, fans: t.fans, trackFans: t.trackFans, artist: t.artist, viewer: displayName, trackName: t.trackName, kind: 'played' as const },
-          item,
-          act,
-          t: {
-            title: t.trackName,
-            artist: t.artist,
-            albumId: t.albumId,
-            artistId: act?.artistId,
-            serviceId: t.serviceId,
-            accountId: t.accountId,
-            imageUrl: t.imageUrl,
-            uri: t.uri,
+        return [
+          {
+            key: t.uri,
+            because: t.because,
+            why: {
+              because: t.because,
+              fans: t.fans,
+              trackFans: t.trackFans,
+              artist: t.artist,
+              viewer: displayName,
+              trackName: t.trackName,
+              kind: 'played' as const,
+            },
             item,
-          } as NavTrack,
-        }];
+            act,
+            t: {
+              title: t.trackName,
+              artist: t.artist,
+              albumId: t.albumId,
+              artistId: act?.artistId,
+              serviceId: t.serviceId,
+              accountId: t.accountId,
+              imageUrl: t.imageUrl,
+              uri: t.uri,
+              item,
+            } as NavTrack,
+          },
+        ];
       });
   const picksBusy = djLoading || discoveriesLoading;
   // The artist's photo carries the featured cards. The hero is chosen once, when the picks have
@@ -638,7 +750,9 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
   const withPhoto = picks.map((p, i) => ({ ...p, photo: photoQueries[i]?.data ?? null }));
   const picksSig = picks.map((p) => p.key).join('|');
   // Settled = every pick that can have a photo has finished looking (a query that has not started yet is still pending).
-  const photosSettled = picks.every((p, i) => !(p.act?.artistId && p.act.serviceId && p.act.accountId) || !photoQueries[i]?.isPending);
+  const photosSettled = picks.every(
+    (p, i) => !(p.act?.artistId && p.act.serviceId && p.act.accountId) || !photoQueries[i]?.isPending
+  );
   const [capped, setCapped] = useState('');
   useEffect(() => {
     if (!picksSig) return;
@@ -661,7 +775,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
   const heroSrc = lead?.photo ?? lead?.t.imageUrl;
   const heroArt = useImage(heroSrc ? withArtworkSize(heroSrc, 1200) : null);
   const wash = useDominantColor(heroArt);
-  const addPick = (p: (typeof picks)[number]) => () => onAddToQueue(p.item, -1, { attribute: false });
+  const addPick = (p: (typeof picks)[number]) => () => void onAddToQueue(p.item, -1, { attribute: false });
   const pickRow = (p: (typeof picks)[number]) => (
     <PickRow key={p.key} t={p.t} reason={neverPlayedTag(p.because) ?? undefined} onAdd={addPick(p)} />
   );
@@ -677,7 +791,9 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
 
   // What people are queuing: each person's recent albums, or their latest tracks if they have no albums
   const { tracksByUser, albumsByUser } = useRecentTracksByUser(inOffice.slice(0, 10), isAuthed);
-  const trackPicks = new Map(picksByPerson(inOffice, tracksByUser, { perPerson: 3, maxPeople: 10 }).map((p) => [p.user, p.tracks]));
+  const trackPicks = new Map(
+    picksByPerson(inOffice, tracksByUser, { perPerson: 3, maxPeople: 10 }).map((p) => [p.user, p.tracks])
+  );
   const people = inOffice
     .flatMap((user) => {
       const albums = [...(albumsByUser.get(user) ?? [])].sort((a, b) => b.lastPlayed - a.lastPlayed);
@@ -709,7 +825,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
           imageUrl: t.imageUrl,
           open: () => nav.openAlbum(nt),
           hover: () => nav.prefetch(nt),
-          add: nt.item ? () => onAddToQueue(nt.item as SonosItem) : undefined,
+          add: nt.item ? () => void onAddToQueue(nt.item as SonosItem) : undefined,
         };
       });
       return [{ user, noun: 'track', count: tracks.length, tiles }];
@@ -723,12 +839,12 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
       label: artist,
       sub: null as string | null,
       item,
-    })),
+    }))
   );
 
   const queueAll = () => {
     const added = picks.map((p) => ({ id: p.t.uri ?? p.key ?? '', title: p.t.title, artist: p.t.artist }));
-    picks.forEach((p) => onAddToQueue(p.item, -1, { attribute: false }));
+    picks.forEach((p) => void onAddToQueue(p.item, -1, { attribute: false }));
     showToast(`Queued ${picks.length} pick${picks.length === 1 ? '' : 's'}`, 'info', {
       durationMs: 6000,
       action: {
@@ -736,7 +852,10 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
         onClick: () => {
           // Only what is still in the queue from this batch; anything else is left alone.
           const indices = indicesToUndo(queueRef.current, added);
-          if (indices.length) void getActiveProvider().removeFromQueue(indices).catch(() => showToast('Could not undo'));
+          if (indices.length)
+            void getActiveProvider()
+              .removeFromQueue(indices)
+              .catch(() => showToast('Could not undo'));
         },
       },
     });
@@ -766,11 +885,12 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                         className={styles.queuedleChamp}
                         title={`Queuedle champion, week of ${formatWeekRange(lastWeekWinner.range)}`}
                       >
-                        <span aria-hidden="true">👑 </span>Last week: {lastWeekWinner.userName} · {lastWeekWinner.total} pts
+                        <span aria-hidden="true">👑 </span>Last week: {lastWeekWinner.userName} · {lastWeekWinner.total}{' '}
+                        pts
                       </span>
                     )}
                   </span>
-                  <button type="button" className={styles.pillBtn} onClick={() => navigate('/queuedle')}>
+                  <button type="button" className={styles.pillBtn} onClick={() => void navigate('/queuedle')}>
                     {score ? 'View results' : 'Play'}
                   </button>
                 </div>
@@ -796,7 +916,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                             type="button"
                             className={styles.face}
                             title={u === champion ? `${u}'s profile · last week's Queuedle champion` : `${u}'s profile`}
-                            onClick={() => navigate(`/profile/${encodeURIComponent(u)}`)}
+                            onClick={() => void navigate(`/profile/${encodeURIComponent(u)}`)}
                           >
                             <UserAvatar name={u} imageUrl={imageByUser.get(u)} className={styles.faceAvatar} />
                             <span className={styles.faceName}>
@@ -812,11 +932,16 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                 actions={
                   <>
                     {picks.length > 0 && (
-                      <button type="button" className={styles.ghostBtn} onClick={queueAll} title="Add every pick to the queue">
+                      <button
+                        type="button"
+                        className={styles.ghostBtn}
+                        onClick={queueAll}
+                        title="Add every pick to the queue"
+                      >
                         <ListPlus size={14} /> Queue all
                       </button>
                     )}
-                    <SeeAll onClick={() => navigate('/discover')} />
+                    <SeeAll onClick={() => void navigate('/discover')} />
                   </>
                 }
               >
@@ -824,14 +949,29 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                   <div className={styles.msg}>Digging for something new…</div>
                 ) : (
                   <div className={styles.picksLayout}>
-                    <PickCard size="large" className={styles.picksLead} label={pickReason(lead.because, displayName, lead.why.fans)} t={lead.t} photoUrl={lead.photo} onAdd={addPick(lead)} why={lead.why} />
+                    <PickCard
+                      size="large"
+                      className={styles.picksLead}
+                      label={pickReason(lead.because, displayName, lead.why.fans)}
+                      t={lead.t}
+                      photoUrl={lead.photo}
+                      onAdd={addPick(lead)}
+                      why={lead.why}
+                    />
                     {[featured[0], featured[1]].map((p, i) =>
                       p ? (
                         <div key={p.key} className={styles.picksCol}>
-                          <PickCard size="medium" label={pickReason(p.because, displayName, p.why.fans)} t={p.t} photoUrl={p.photo} onAdd={addPick(p)} why={p.why} />
+                          <PickCard
+                            size="medium"
+                            label={pickReason(p.because, displayName, p.why.fans)}
+                            t={p.t}
+                            photoUrl={p.photo}
+                            onAdd={addPick(p)}
+                            why={p.why}
+                          />
                           <ul className={styles.list}>{(i === 0 ? listA : listB).map(pickRow)}</ul>
                         </div>
-                      ) : null,
+                      ) : null
                     )}
                   </div>
                 )}
@@ -844,7 +984,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                   <SectionCard
                     className={styles.section}
                     title="Trending in the office · this week"
-                    actions={<SeeAll onClick={() => navigate('/leaderboard')} />}
+                    actions={<SeeAll onClick={() => void navigate('/leaderboard')} />}
                   >
                     <ChartHead />
                     <ol className={styles.list}>
@@ -856,7 +996,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                             rank={i + 1}
                             t={nt}
                             count={t.count}
-                            onAdd={nt.item ? () => onAddToQueue(nt.item as SonosItem) : undefined}
+                            onAdd={nt.item ? () => void onAddToQueue(nt.item as SonosItem) : undefined}
                           />
                         );
                       })}
@@ -895,7 +1035,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                       name={p.user}
                       imageUrl={imageByUser.get(p.user)}
                       caption={`${p.count} ${p.noun}${p.count === 1 ? '' : 's'} this week`}
-                      onOpen={() => navigate(`/profile/${encodeURIComponent(p.user)}`)}
+                      onOpen={() => void navigate(`/profile/${encodeURIComponent(p.user)}`)}
                     >
                       <div className={styles.albumRow}>
                         {p.tiles.map((d) => (
@@ -929,7 +1069,7 @@ export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName
                         imageUrl={getItemArt(item)}
                         // Only a single song gets a +. My Supermix is a dynamic mix (a PLAYLIST resource, like artist
                         // radio), stations would replace the shared queue, and shelves are lists: all of them open.
-                        onAdd={isTrack(item) ? () => onAddToQueue(item) : undefined}
+                        onAdd={isTrack(item) ? () => void onAddToQueue(item) : undefined}
                         onOpen={
                           isAlbum(item) || isPlaylist(item) || isContainer(item) || isProgram(item)
                             ? () => openItem(item)

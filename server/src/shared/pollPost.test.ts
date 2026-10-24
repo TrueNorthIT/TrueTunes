@@ -16,7 +16,10 @@ import { MemoryPollStore, poll, queue } from './pollsKit.testkit';
 
 const at = (iso: string): number => Date.parse(iso);
 
-function setup(now: string, polls = queue(poll('this', '2026-10-26', { question: 'Best biscuit?' }), poll('next', '2026-11-02'))) {
+function setup(
+  now: string,
+  polls = queue(poll('this', '2026-10-26', { question: 'Best biscuit?' }), poll('next', '2026-11-02'))
+) {
   const posted: number[][][] = [];
   const store = new MemoryPollStore(polls);
   const deps = {
@@ -33,9 +36,17 @@ function setup(now: string, polls = queue(poll('this', '2026-10-26', { question:
 test("P-13 runPollPost: at 11:23 London on a weekday it posts this week's poll board once", async () => {
   const { deps, posted } = setup('2026-10-28T11:23:00Z');
   const result = await runPollPost(deps);
-  assert.deepEqual(result, { posted: true, pollId: 'this' }, "Expected this week's poll (liveFrom 2026-10-26) to be reported as posted");
+  assert.deepEqual(
+    result,
+    { posted: true, pollId: 'this' },
+    "Expected this week's poll (liveFrom 2026-10-26) to be reported as posted"
+  );
   assert.equal(posted.length, 1, 'Expected exactly one Vestaboard post');
-  assert.deepEqual(posted[0], renderPollBoard('Best biscuit?').board, 'Expected the posted board to be the rendered poll board');
+  assert.deepEqual(
+    posted[0],
+    renderPollBoard('Best biscuit?').board,
+    'Expected the posted board to be the rendered poll board'
+  );
 });
 
 test('P-13 runPollPost: outside the 11:23 window it does not post', async () => {

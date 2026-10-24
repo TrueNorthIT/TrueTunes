@@ -1,10 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { getPlaylistContainer } from '../lib/getContainer';
 
-export async function playlistGetHandler(
-  request: HttpRequest,
-  context: InvocationContext,
-): Promise<HttpResponseInit> {
+export async function playlistGetHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const id = request.params['id'];
   if (!id) {
     return { status: 400, jsonBody: { error: 'id param required' } };
@@ -23,7 +20,6 @@ export async function playlistGetHandler(
 
     return {
       jsonBody: resource,
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[playlist-get] read failed:', err);
