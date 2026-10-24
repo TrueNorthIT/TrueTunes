@@ -465,7 +465,7 @@ export function QueuedleStatsPanel() {
       title="Queuedle stats"
       facts={days.length > 0 ? `${days.length} games · ${players.length} players` : undefined}
       backLabel="Queuedle"
-      onBack={() => navigate('/queuedle')}
+      onBack={() => void navigate('/queuedle')}
     >
       {(history.isLoading || displayName === undefined) && <p className={styles.state}>Loading every game so far…</p>}
       {history.isError && <p className={styles.state}>Couldn’t load the Queuedle history.</p>}

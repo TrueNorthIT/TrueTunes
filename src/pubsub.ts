@@ -275,18 +275,20 @@ export class OfficePubSub {
     if (this.reconnectTimer) return;
     const delay = Math.min(1000 * 2 ** this.reconnectAttempts, 60_000);
     this.reconnectAttempts++;
-    this.reconnectTimer = setTimeout(async () => {
-      this.reconnectTimer = null;
-      if (this.intentionalClose || !this.functionUrl) return;
-      try {
-        const url = `${this.functionUrl}/api/connect?username=${encodeURIComponent(this.username)}`;
-        const raw = await httpPost(url, await this.authHeaders());
-        const { webPubSubUrl } = JSON.parse(raw.toString()) as { webPubSubUrl: string; [k: string]: unknown };
-        this.openWebSocket(webPubSubUrl);
-      } catch {
-        this.scheduleReconnect();
-      }
-    }, delay);
+    this.reconnectTimer = setTimeout(() => void this.reconnect(), delay);
+  }
+
+  private async reconnect(): Promise<void> {
+    this.reconnectTimer = null;
+    if (this.intentionalClose || !this.functionUrl) return;
+    try {
+      const url = `${this.functionUrl}/api/connect?username=${encodeURIComponent(this.username)}`;
+      const raw = await httpPost(url, await this.authHeaders());
+      const { webPubSubUrl } = JSON.parse(raw.toString()) as { webPubSubUrl: string; [k: string]: unknown };
+      this.openWebSocket(webPubSubUrl);
+    } catch {
+      this.scheduleReconnect();
+    }
   }
 
   private logEventWithRetry(event: AttributionEvent): void {

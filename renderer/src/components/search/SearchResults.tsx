@@ -210,7 +210,7 @@ export function SearchResults({ query, results, onEngage }: Props) {
         trailing={r.durationMs ? fmtTime(r.durationMs) : undefined}
         onOpen={albumItem ? () => openItem(albumItem) : undefined}
         onMouseEnter={albumItem ? () => prefetchAlbum(albumItem) : undefined}
-        onAdd={() => onAddToQueue(r.item)}
+        onAdd={() => void onAddToQueue(r.item)}
         selected={selected.has(i)}
         onClick={(e) => {
           e.stopPropagation();
@@ -264,7 +264,7 @@ export function SearchResults({ query, results, onEngage }: Props) {
           imageUrl={getItemArt(a)}
           onOpen={() => openItem(a)}
           onHover={() => prefetchAlbum(a)}
-          onAdd={() => onAddToQueue(a)}
+          onAdd={() => void onAddToQueue(a)}
         />
       )),
     },
@@ -276,7 +276,7 @@ export function SearchResults({ query, results, onEngage }: Props) {
           sub={playlistSub(p)}
           imageUrl={getItemArt(p)}
           onOpen={() => openItem(p)}
-          onAdd={() => onAddToQueue(p)}
+          onAdd={() => void onAddToQueue(p)}
         />
       )),
     },
@@ -300,7 +300,7 @@ export function SearchResults({ query, results, onEngage }: Props) {
               else if (isTrack(top) && top.artists?.[0]) openArtist(searchTrackRow(top).artists, top.artists[0].name);
               else openItem(top);
             }}
-            onAdd={() => onAddToQueue(top)}
+            onAdd={() => void onAddToQueue(top)}
             openItem={openItem}
             onHover={() =>
               isArtist(top) ? prefetchArtist(top) : prefetchAlbum(isTrack(top) ? (albumItemOf(top) ?? top) : top)

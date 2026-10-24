@@ -376,14 +376,14 @@ export function useSubmitGameScore() {
   >({
     mutationFn: (input) => window.sonos.submitGameScore(input),
     onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: queuedleKeys.leaderboards });
-      qc.invalidateQueries({ queryKey: queuedleKeys.game(variables.gameId) });
-      qc.invalidateQueries({ queryKey: queuedleKeys.game() });
-      qc.invalidateQueries({ queryKey: queuedleKeys.datesAll });
-      qc.invalidateQueries({ queryKey: queuedleKeys.historyAll });
-      qc.invalidateQueries({ queryKey: queuedleKeys.weeklyAll });
-      qc.invalidateQueries({ queryKey: queuedleKeys.myScoresFor(variables.gameId) });
-      qc.invalidateQueries({ queryKey: queuedleKeys.stats(variables.gameId) });
+      void qc.invalidateQueries({ queryKey: queuedleKeys.leaderboards });
+      void qc.invalidateQueries({ queryKey: queuedleKeys.game(variables.gameId) });
+      void qc.invalidateQueries({ queryKey: queuedleKeys.game() });
+      void qc.invalidateQueries({ queryKey: queuedleKeys.datesAll });
+      void qc.invalidateQueries({ queryKey: queuedleKeys.historyAll });
+      void qc.invalidateQueries({ queryKey: queuedleKeys.weeklyAll });
+      void qc.invalidateQueries({ queryKey: queuedleKeys.myScoresFor(variables.gameId) });
+      void qc.invalidateQueries({ queryKey: queuedleKeys.stats(variables.gameId) });
     },
   });
 }

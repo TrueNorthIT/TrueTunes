@@ -78,7 +78,7 @@ export function ContainerPanel() {
         trailing={secs > 0 ? fmtTime(secs * 1000) : undefined}
         // Browse tracks carry no album id: find the album by title and artist, as Home's trending rows do.
         onOpen={() => void resolveAndOpen(name, 'album', { artist: artist || undefined, serviceId, accountId })}
-        onAdd={() => onAddToQueue(t)}
+        onAdd={() => void onAddToQueue(t)}
       />
     );
   };
@@ -108,7 +108,7 @@ export function ContainerPanel() {
         circular={kind === 'artists'}
         onOpen={() => openItem(child)}
         onHover={isAlbum(child) ? () => prefetchAlbum(child) : undefined}
-        onAdd={kind === 'albums' || kind === 'playlists' ? () => onAddToQueue(child) : undefined}
+        onAdd={kind === 'albums' || kind === 'playlists' ? () => void onAddToQueue(child) : undefined}
       />
     );
   };

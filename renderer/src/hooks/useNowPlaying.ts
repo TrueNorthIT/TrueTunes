@@ -45,7 +45,7 @@ export function useNowPlaying(playback: PlaybackState) {
   const queryClient = useQueryClient();
   const prefetchAlbum = () => {
     if (albumId && svcId && accId) {
-      queryClient.prefetchQuery(albumQueryOptions(albumId, svcId, accId, undefined));
+      void queryClient.prefetchQuery(albumQueryOptions(albumId, svcId, accId, undefined));
     }
   };
 

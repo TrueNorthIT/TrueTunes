@@ -52,7 +52,7 @@ vi.mock('../hooks/useAutoplay', () => ({
 // the real addToQueue closure from MainApp.
 
 let capturedAddToQueue:
-  | ((item: SonosItem, position?: number, opts?: { attribute?: boolean; djFiller?: boolean }) => void)
+  | ((item: SonosItem, position?: number, opts?: { attribute?: boolean; djFiller?: boolean }) => Promise<void>)
   | null = null;
 let capturedQueueItems: { track: { id: string } }[] = [];
 

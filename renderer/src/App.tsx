@@ -89,7 +89,7 @@ const MainApp = memo(function MainApp() {
   usePrefetchNextLyrics(queueItems, playback.queueItemId);
 
   const reloadQueue = useCallback(() => {
-    reloadQueueRaw();
+    void reloadQueueRaw();
     window.sonos.refreshAttribution().catch(() => {});
   }, [reloadQueueRaw]);
 
@@ -226,7 +226,7 @@ const MainApp = memo(function MainApp() {
   const handleGroupChange = useCallback(
     (groupId: string) => {
       setActiveGroupId(groupId);
-      getActiveProvider().setGroup(groupId);
+      void getActiveProvider().setGroup(groupId);
       applyGroupCache(groupId);
       window.sonos.refreshAttribution().catch(() => {});
       window.sonos.trackEvent('group_changed').catch(() => {});
@@ -236,8 +236,8 @@ const MainApp = memo(function MainApp() {
 
   useEffect(() => {
     function onKey(e: globalThis.KeyboardEvent) {
-      if (e.ctrlKey && e.shiftKey && e.key === 'H') window.sonos.openHttpMonitor();
-      if (e.ctrlKey && e.shiftKey && e.key === 'W') window.sonos.openWsMonitor();
+      if (e.ctrlKey && e.shiftKey && e.key === 'H') void window.sonos.openHttpMonitor();
+      if (e.ctrlKey && e.shiftKey && e.key === 'W') void window.sonos.openWsMonitor();
       if (e.key === 'F2') setFeedbackOpen(true);
     }
     document.addEventListener('keydown', onKey);
@@ -286,7 +286,7 @@ const MainApp = memo(function MainApp() {
               groups={groups}
               activeGroupId={activeGroupId}
               onGroupChange={handleGroupChange}
-              onResync={() => window.sonos.resync()}
+              onResync={() => void window.sonos.resync()}
               onSaveName={(name) => {
                 const stored = name.trim();
                 void window.sonos

@@ -21,7 +21,7 @@ export function useImage(url: string | null | undefined): string | null {
     // Clear immediately so the stale image doesn't linger while the new one loads
     setSrc(null);
     let cancelled = false;
-    fetchImage(url).then((objectUrl) => {
+    void fetchImage(url).then((objectUrl) => {
       if (!cancelled) setSrc(objectUrl);
     });
     return () => {

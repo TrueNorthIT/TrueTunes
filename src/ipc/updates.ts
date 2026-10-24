@@ -10,8 +10,8 @@ export function register(): void {
 
     let pendingUpdateVersion: string | null = null;
 
-    const pollInterval = setInterval(() => autoUpdater.checkForUpdates(), 15 * 60 * 1000);
-    autoUpdater.checkForUpdates();
+    const pollInterval = setInterval(() => void autoUpdater.checkForUpdates(), 15 * 60 * 1000);
+    void autoUpdater.checkForUpdates();
 
     autoUpdater.once('update-available', () => clearInterval(pollInterval));
 

@@ -95,7 +95,7 @@ function VolumeButton({ volume }: { volume: number }) {
   const commitVolume = (val: number) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      getActiveProvider().setVolume(val);
+      void getActiveProvider().setVolume(val);
       dragging.current = false;
     }, 150);
   };
@@ -250,7 +250,7 @@ export function PlayerBar({ isAuthed, playback, onShuffle }: Props) {
 
   const toggleRepeat = () => {
     const next = rawRepeat === 'none' ? 'all' : rawRepeat === 'all' ? 'one' : 'none';
-    getActiveProvider()
+    void getActiveProvider()
       .setPlayModes({ repeat: next as 'none' | 'one' | 'all' })
       .then(refresh);
   };
@@ -316,7 +316,7 @@ export function PlayerBar({ isAuthed, playback, onShuffle }: Props) {
               className={styles.queuer}
               aria-label={`Queued by ${queuer.user}`}
               title={`Queued by ${queuer.user}`}
-              onClick={() => navigate(`/profile/${encodeURIComponent(queuer.user)}`)}
+              onClick={() => void navigate(`/profile/${encodeURIComponent(queuer.user)}`)}
             >
               <UserAvatar name={queuer.user} imageUrl={queuerImage} className={styles.queuerAvatar} />
             </button>
@@ -328,7 +328,7 @@ export function PlayerBar({ isAuthed, playback, onShuffle }: Props) {
           <button
             className={`${styles.ctrl}${shuffle ? ' ' + styles.active : ''}`}
             disabled={!isAuthed}
-            onClick={toggleShuffle}
+            onClick={() => void toggleShuffle()}
             title="Shuffle"
           >
             <Shuffle size={11} />
@@ -356,7 +356,7 @@ export function PlayerBar({ isAuthed, playback, onShuffle }: Props) {
           {displayName && currentObjectId && (
             <button
               className={`${styles.ctrl}${isFavourited ? ' ' + styles.favourited : ''}`}
-              onClick={toggleFavourite}
+              onClick={() => void toggleFavourite()}
               title={isFavourited ? 'Remove from Favourites' : 'Add to Favourites'}
             >
               <Heart size={14} fill={isFavourited ? 'currentColor' : 'none'} />
@@ -365,12 +365,12 @@ export function PlayerBar({ isAuthed, playback, onShuffle }: Props) {
           <VolumeButton volume={volume} />
           <button
             className={`${styles.ctrl}${lyricsActive ? ' ' + styles.active : ''}`}
-            onClick={() => (lyricsActive ? navigate(-1) : navigate('/lyrics'))}
+            onClick={() => void (lyricsActive ? navigate(-1) : navigate('/lyrics'))}
             title="Lyrics"
           >
             <MicVocal size={14} />
           </button>
-          <button className={styles.ctrl} onClick={() => window.sonos.openMiniPlayer()} title="Mini player">
+          <button className={styles.ctrl} onClick={() => void window.sonos.openMiniPlayer()} title="Mini player">
             <PictureInPicture2 size={14} />
           </button>
         </div>

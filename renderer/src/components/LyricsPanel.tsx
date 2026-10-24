@@ -40,7 +40,7 @@ function renderDom(node: GeniusDomNode, key: number | string): React.ReactNode {
           className={styles.aboutLink}
           onClick={(e) => {
             e.preventDefault();
-            window.sonos.openExternal(href);
+            void window.sonos.openExternal(href);
           }}
         >
           {children}
@@ -92,7 +92,7 @@ export function LyricsPanel({ playback }: Props) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') void onClose();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
@@ -182,7 +182,7 @@ export function LyricsPanel({ playback }: Props) {
                 className={styles.queuer}
                 user={queuer.user}
                 imageUrl={queuer.imageUrl}
-                onOpen={() => navigate(`/profile/${encodeURIComponent(queuer.user)}`)}
+                onOpen={() => void navigate(`/profile/${encodeURIComponent(queuer.user)}`)}
               />
             )}
             {status && <p className={styles.note}>{status}</p>}

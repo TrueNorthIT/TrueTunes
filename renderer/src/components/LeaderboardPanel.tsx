@@ -46,7 +46,7 @@ const QUEUEDLE_RANK_INFO: Array<{ key: Exclude<GameRankTierKey, 'provisional'>; 
 const CARD_PEOPLE = 6;
 
 /** What every track, album and artist on the page needs to open, prefetch, queue and right-click. */
-function useStatsNav(onAddToQueue?: (item: SonosItem) => void) {
+function useStatsNav(onAddToQueue?: (item: SonosItem) => void | Promise<void>) {
   const openItem = useOpenItem();
   const { resolveAndOpen } = useResolveAndOpen();
   const queryClient = useQueryClient();
@@ -91,7 +91,7 @@ function useStatsNav(onAddToQueue?: (item: SonosItem) => void) {
       imageUrl: t.imageUrl,
       onOpen: () => openAlbum({ ...t, title: t.trackName }),
       onMouseEnter: () => prefetchAlbum(t),
-      onAdd: item && onAddToQueue ? () => onAddToQueue(item) : undefined,
+      onAdd: item && onAddToQueue ? () => void onAddToQueue(item) : undefined,
       onContextMenu: (e: React.MouseEvent) => {
         if (!t.uri) return;
         showTrackMenu(
@@ -225,7 +225,7 @@ export function LeaderboardPanel() {
                 </button>
               ))}
             </div>
-            <PillButton onClick={() => navigate('/leaderboard/stats')}>Music stats</PillButton>
+            <PillButton onClick={() => void navigate('/leaderboard/stats')}>Music stats</PillButton>
           </div>
         </header>
 
@@ -256,7 +256,7 @@ export function LeaderboardPanel() {
                     name={u.userId}
                     imageUrl={imageByUser.get(u.userId)}
                     caption={`${ordinal(i + 1)} · ${queued(u.count)}`}
-                    onOpen={() => profile(u.userId)}
+                    onOpen={() => void profile(u.userId)}
                   >
                     {q?.isPending ? (
                       <TileSkeleton />
@@ -282,7 +282,7 @@ export function LeaderboardPanel() {
                     <button
                       type="button"
                       className={styles.face}
-                      onClick={() => profile(u.userId)}
+                      onClick={() => void profile(u.userId)}
                       aria-label={`${u.userId}, ${ordinal(CARD_PEOPLE + i + 1)}, ${queued(u.count)}, open profile`}
                     >
                       <span className={styles.faceRank}>{CARD_PEOPLE + i + 1}</span>
@@ -353,7 +353,7 @@ export function LeaderboardPanel() {
                       imageUrl={a.imageUrl}
                       onOpen={() => nav.openAlbum({ ...a, title: a.album })}
                       onHover={() => nav.prefetchAlbum(a)}
-                      onAdd={a.albumId && onAddToQueue ? () => onAddToQueue(statsAlbumToItem(a)) : undefined}
+                      onAdd={a.albumId && onAddToQueue ? () => void onAddToQueue(statsAlbumToItem(a)) : undefined}
                     />
                   ))}
                 </div>
@@ -370,7 +370,7 @@ export function LeaderboardPanel() {
             actions={
               <>
                 <SeeAll label="How ranks work" onClick={() => setRankInfoOpen(true)} />
-                <SeeAll onClick={() => navigate('/queuedle')} />
+                <SeeAll onClick={() => void navigate('/queuedle')} />
               </>
             }
           >
@@ -392,7 +392,7 @@ export function LeaderboardPanel() {
                       <button
                         type="button"
                         className={styles.standingWho}
-                        onClick={() => profile(r.userName)}
+                        onClick={() => void profile(r.userName)}
                         aria-label={`${r.userName}, open profile`}
                       >
                         <UserAvatar

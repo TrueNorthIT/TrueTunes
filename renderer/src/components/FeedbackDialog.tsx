@@ -54,7 +54,7 @@ export function FeedbackDialog({ onClose }: Props) {
         size="sm"
         actions={
           <>
-            <PillButton onClick={() => window.sonos.openExternal(issueUrl)}>
+            <PillButton onClick={() => void window.sonos.openExternal(issueUrl)}>
               View on GitHub <ExternalLink size={14} aria-hidden="true" />
             </PillButton>
             <PillButton variant="primary" onClick={onClose}>

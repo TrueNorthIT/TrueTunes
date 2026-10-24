@@ -13,7 +13,7 @@ async function flush() {
   timer = null;
   const batch = [...pending.values()].slice(0, MAX_BATCH);
   batch.forEach((t) => pending.delete(t.uri));
-  if (pending.size > 0) timer = setTimeout(flush, FLUSH_DELAY_MS);
+  if (pending.size > 0) timer = setTimeout(() => void flush(), FLUSH_DELAY_MS);
   if (batch.length === 0) return;
   try {
     const res = await window.sonos.reportTrackMeta(batch);
@@ -31,7 +31,7 @@ export function reportTrackMeta(t: { uri: string | null | undefined; durationMs?
   if (durationMs === undefined && explicit === undefined) return;
   reported.add(t.uri);
   pending.set(t.uri, { uri: t.uri, durationMs, explicit });
-  if (!timer) timer = setTimeout(flush, FLUSH_DELAY_MS);
+  if (!timer) timer = setTimeout(() => void flush(), FLUSH_DELAY_MS);
 }
 
 /** Test hook. */

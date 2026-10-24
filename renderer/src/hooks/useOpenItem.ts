@@ -7,13 +7,13 @@ export function useOpenItem() {
   return (item: SonosItem) => {
     if (isArtist(item)) {
       const { artistId } = resolveArtistParams(item);
-      navigate(`/artist/${encodeURIComponent(artistId ?? '_')}`, { state: { item } });
+      void navigate(`/artist/${encodeURIComponent(artistId ?? '_')}`, { state: { item } });
     } else if (isContainer(item)) {
       const { albumId } = resolveAlbumParams(item);
-      navigate(`/container/${encodeURIComponent(albumId ?? '_')}`, { state: { item } });
+      void navigate(`/container/${encodeURIComponent(albumId ?? '_')}`, { state: { item } });
     } else {
       const { albumId } = resolveAlbumParams(item);
-      navigate(`/album/${encodeURIComponent(albumId ?? '_')}`, { state: { item } });
+      void navigate(`/album/${encodeURIComponent(albumId ?? '_')}`, { state: { item } });
     }
   };
 }

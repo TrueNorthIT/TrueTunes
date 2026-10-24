@@ -247,7 +247,7 @@ export function ArtistPanel({ currentTrackName, isPlaybackActive }: Props) {
           key={key}
           album={group.primary}
           onOpen={openItem}
-          onAdd={onAddToQueue}
+          onAdd={(item) => void onAddToQueue(item)}
           year={years.get(primaryKey)}
           artistName={name}
           trackHits={trackHits.get(primaryKey)}
@@ -278,7 +278,7 @@ export function ArtistPanel({ currentTrackName, isPlaybackActive }: Props) {
         closeRef={refFor(closeEls, key)}
         artistName={name}
         onOpen={openItem}
-        onAdd={onAddToQueue}
+        onAdd={(item) => void onAddToQueue(item)}
         years={years}
         trackHits={trackHits}
         searching={searching}
@@ -323,7 +323,7 @@ export function ArtistPanel({ currentTrackName, isPlaybackActive }: Props) {
                 </PillButton>
               ))
             ) : (
-              <PillButton onClick={() => navigate(`/search?q=${encodeURIComponent(name)}`)}>
+              <PillButton onClick={() => void navigate(`/search?q=${encodeURIComponent(name)}`)}>
                 <Search size={16} aria-hidden="true" />
                 Search for {name}
               </PillButton>
@@ -347,7 +347,7 @@ export function ArtistPanel({ currentTrackName, isPlaybackActive }: Props) {
                 <LatestReleaseCard
                   album={latestAlbum}
                   onOpen={openItem}
-                  onAdd={onAddToQueue}
+                  onAdd={(item) => void onAddToQueue(item)}
                   artistName={name}
                   year={years.get(releaseKey(latestAlbum))}
                   songCount={latestData?.totalTracks}
@@ -366,7 +366,7 @@ export function ArtistPanel({ currentTrackName, isPlaybackActive }: Props) {
                           isSelected={selected.has(i)}
                           isCurrentTrack={track.title === currentTrackName}
                           isPlaybackActive={isPlaybackActive}
-                          onAdd={onAddToQueue}
+                          onAdd={(item) => void onAddToQueue(item)}
                           onClick={handleTrackClick}
                           onDragStart={handleDragStart}
                           onOpenAlbum={openTrackAlbum}

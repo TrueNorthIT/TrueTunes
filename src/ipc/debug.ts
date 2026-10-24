@@ -17,7 +17,7 @@ export function openDebugWindow(): void {
     title: 'WS Monitor',
     webPreferences: { nodeIntegration: true, contextIsolation: false },
   });
-  state.debugWin.loadFile(path.join(__dirname, '..', 'debug-ws.html'));
+  void state.debugWin.loadFile(path.join(__dirname, '..', 'debug-ws.html'));
   state.debugWin.on('closed', () => {
     state.debugWin = null;
   });
@@ -35,7 +35,7 @@ export function openHttpDebugWindow(): void {
     title: 'HTTP Monitor',
     webPreferences: { nodeIntegration: true, contextIsolation: false },
   });
-  state.httpDebugWin.loadFile(path.join(__dirname, '..', 'debug-http.html'));
+  void state.httpDebugWin.loadFile(path.join(__dirname, '..', 'debug-http.html'));
   state.httpDebugWin.on('closed', () => {
     state.httpDebugWin = null;
   });
