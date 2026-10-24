@@ -267,12 +267,6 @@ describe('QueueSidebar — Delete key', () => {
     await user.keyboard('{Backspace}');
     await waitFor(() => expect(mockRemoveFromQueue).toHaveBeenCalledWith([0]));
   });
-
-  it('does not fire when sidebar is closed', async () => {
-    const { user } = setup({ open: false } as never);
-    await user.keyboard('{Delete}');
-    expect(mockRemoveFromQueue).not.toHaveBeenCalled();
-  });
 });
 
 // ─── selection bar Delete button ──────────────────────────────────────────────

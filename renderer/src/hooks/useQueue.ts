@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getActiveProvider } from '../providers';
 import { STALE } from '../lib/queryDefaults';
 import type { NormalizedQueueItem } from '../types/provider';
@@ -31,6 +31,7 @@ export function queueQueryOptions(groupId: string, onEtag?: (etag: string) => vo
     staleTime: STALE.forever,
     retry: false, // a transient 5xx during queue propagation is retried by the next version push
     refetchOnWindowFocus: false,
+    placeholderData: keepPreviousData, // a group switch keeps the old rows up until the new queue lands
     queryFn: async (): Promise<QueueData> => {
       const items: NormalizedQueueItem[] = [];
       let offset = 0;
@@ -63,10 +64,12 @@ export function useEditQueue(groupId: string | null) {
       if (!groupId) return () => {};
       const key = queueKeys.list(groupId);
       const prev = queryClient.getQueryData<QueueData>(key);
-      queryClient.setQueryData<QueueData>(key, (old) => ({
-        ...old,
-        items: typeof updater === 'function' ? updater(old?.items ?? NO_ITEMS) : updater,
-      }));
+      // Nothing cached for this group means the rows on screen are the previous group's placeholder.
+      if (!prev) return () => {};
+      queryClient.setQueryData<QueueData>(key, {
+        ...prev,
+        items: typeof updater === 'function' ? updater(prev.items) : updater,
+      });
       return () => {
         queryClient.setQueryData<QueueData>(key, prev);
       };

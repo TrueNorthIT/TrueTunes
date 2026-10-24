@@ -240,6 +240,28 @@ describe('useEditQueue', () => {
     await waitFor(() => expect(result.current.q.items.map((i) => i.track.title)).toEqual(['A', 'B']));
   });
 
+  it('does nothing while the rows are placeholder from another group', async () => {
+    mockFetch.mockResolvedValueOnce(queueResponse([{ name: 'A' }]));
+    let resolveB: (v: ReturnType<typeof queueResponse>) => void = () => {};
+    mockFetch.mockReturnValueOnce(new Promise((r) => (resolveB = r)));
+    const { result, rerender } = renderHook(
+      ({ g }: { g: string }) => ({ q: useQueue(true, g, 'q1'), edit: useEditQueue(g) }),
+      { wrapper: wrapper(), initialProps: { g: 'g1' } }
+    );
+    await waitFor(() => expect(result.current.q.items).toHaveLength(1));
+
+    rerender({ g: 'g2' });
+    expect(result.current.q.items.map((i) => i.track.title)).toEqual(['A']); // old rows stay up
+    expect(result.current.q.isLoading).toBe(false);
+    act(() => {
+      result.current.edit([]);
+    });
+    expect(result.current.q.items).toHaveLength(1);
+
+    resolveB(queueResponse([{ name: 'B' }, { name: 'C' }]));
+    await waitFor(() => expect(result.current.q.items.map((i) => i.track.title)).toEqual(['B', 'C']));
+  });
+
   it('does nothing without a group', () => {
     const client = new QueryClient();
     const { result } = renderHook(() => useEditQueue(null), { wrapper: wrapper(client) });
