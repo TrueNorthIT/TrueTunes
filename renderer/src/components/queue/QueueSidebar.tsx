@@ -32,6 +32,8 @@ interface Props {
   items: NormalizedQueueItem[];
   groupId: string | null;
   isLoading: boolean;
+  /** Showing the previous group's rows while this one loads: removing or moving them would hit the wrong queue. */
+  readOnly?: boolean;
   error: string | null;
   currentObjectId: string | null;
   currentQueueItemId: string | null;
@@ -77,6 +79,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     items,
     groupId,
     isLoading,
+    readOnly = false,
     error,
     currentObjectId,
     currentQueueItemId,
@@ -216,7 +219,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
 
   useEffect(() => {
     setSelected(new Set());
-  }, [items]);
+  }, [items, readOnly]);
 
   useEffect(() => {
     if (!isActive) return;
@@ -242,7 +245,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     if (!isActive) return;
     async function onKeyDown(e: KeyboardEvent) {
       if (e.key !== 'Delete' && e.key !== 'Backspace') return;
-      if (selected.size === 0) return;
+      if (readOnly || selected.size === 0) return;
       e.preventDefault();
       const indices = [...selected];
       const undo = editQueue((prev) => prev.filter((_, i) => !selected.has(i)));
@@ -257,7 +260,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [isActive, selected, editQueue, onRefresh, onError]);
+  }, [isActive, readOnly, selected, editQueue, onRefresh, onError]);
 
   function handleResizePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     e.preventDefault();
@@ -316,6 +319,10 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   }
 
   function handleDragStart(index: number, e: React.DragEvent) {
+    if (readOnly) {
+      e.preventDefault();
+      return;
+    }
     const toMove = selected.has(index) ? new Set(selected) : new Set([index]);
     if (!selected.has(index)) {
       setSelected(toMove);
@@ -337,6 +344,10 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   }
 
   async function handleDrop(e: React.DragEvent) {
+    if (readOnly) {
+      setDragOverIndex(null);
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     if (dragOverIndex === null) return;
@@ -441,6 +452,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
             <span>Clear all {items.length} tracks?</span>
             <button
               className={styles.confirmYes}
+              disabled={readOnly}
               onClick={async () => {
                 setPendingClear(false);
                 const undo = editQueue([]);
@@ -479,6 +491,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
                 className={styles.iconBtn}
                 title="Clear queue"
                 aria-label="Clear queue"
+                disabled={readOnly}
                 onClick={() => setPendingClear(true)}
               >
                 <ListX size={15} />
@@ -631,6 +644,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
               })()}
             <button
               className={styles.selDelBtn}
+              disabled={readOnly}
               onClick={async () => {
                 const indices = [...selected];
                 const undo = editQueue((prev) => prev.filter((_, i) => !selected.has(i)));

@@ -118,6 +118,8 @@ export function useQueue(
   return {
     items: query.data?.items ?? NO_ITEMS,
     isLoading: query.isLoading,
+    /** The rows are the previous group's, shown while this group loads. Edits would hit the wrong queue. */
+    isPlaceholder: query.isPlaceholderData,
     error: query.data ? null : (query.error?.message ?? null),
     reload,
   };

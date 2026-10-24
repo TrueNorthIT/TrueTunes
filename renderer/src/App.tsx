@@ -73,6 +73,7 @@ const MainApp = memo(function MainApp() {
   const {
     items: queueItems,
     isLoading: queueLoading,
+    isPlaceholder: queuePlaceholder,
     error: queueError,
     reload: reloadQueueRaw,
   } = useQueue(
@@ -268,6 +269,7 @@ const MainApp = memo(function MainApp() {
             playback={playback}
             queueItems={queueItems}
             queueLoading={queueLoading}
+            queueReadOnly={queuePlaceholder}
             queueError={queueError}
             reloadQueue={reloadQueue}
             groups={groups}
@@ -341,6 +343,7 @@ const MainApp = memo(function MainApp() {
                 items={queueItems}
                 groupId={activeGroupId}
                 isLoading={queueLoading}
+                readOnly={queuePlaceholder}
                 error={queueError}
                 currentObjectId={playback.currentObjectId}
                 currentQueueItemId={playback.queueItemId}

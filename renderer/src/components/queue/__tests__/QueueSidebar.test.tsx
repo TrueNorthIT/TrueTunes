@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { ComponentProps } from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { QueueSidebar } from '../QueueSidebar';
@@ -18,13 +18,23 @@ vi.mock('../DraggableQueueRow', () => ({
     index,
     isSelected,
     onRowClick,
+    onDragOver,
+    onDrop,
   }: {
     item: NormalizedQueueItem;
     index: number;
     isSelected: boolean;
     onRowClick: (index: number, e: React.MouseEvent) => void;
+    onDragOver: (index: number, e: React.DragEvent) => void;
+    onDrop: (e: React.DragEvent) => void;
   }) => (
-    <div data-testid={`row-${index}`} data-selected={String(isSelected)} onClick={(e) => onRowClick(index, e)}>
+    <div
+      data-testid={`row-${index}`}
+      data-selected={String(isSelected)}
+      onClick={(e) => onRowClick(index, e)}
+      onDragOver={(e) => onDragOver(index, e)}
+      onDrop={onDrop}
+    >
       Track {index}
     </div>
   ),
@@ -493,5 +503,50 @@ describe('QueueSidebar — virtual list', () => {
     expect(rows.length).toBeGreaterThan(0);
     expect(rows.length).toBeLessThan(100);
     expect(screen.getByLabelText('500 tracks')).toBeInTheDocument();
+  });
+});
+
+// --- read-only while another room's rows are showing ---
+
+// Removal and reorder go to the active room by position alone, so rows left over from the previous room must be inert.
+function dragRowToEnd() {
+  const dataTransfer = {
+    types: [] as string[],
+    dropEffect: '',
+    getData: (k: string) => (k === 'application/queue-indices' ? JSON.stringify([0]) : ''),
+  };
+  fireEvent.dragOver(screen.getByTestId('row-2'), { dataTransfer, clientY: 1000 });
+  fireEvent.drop(screen.getByTestId('row-2'), { dataTransfer });
+}
+
+describe('QueueSidebar - readOnly (previous room rows)', () => {
+  it('control: drag-reorder reaches the provider when not read-only', async () => {
+    setup();
+    dragRowToEnd();
+    await waitFor(() => expect(mockReorderQueue).toHaveBeenCalledWith([0], 3, 3));
+  });
+
+  it('drag-reorder does nothing', async () => {
+    setup({ readOnly: true });
+    dragRowToEnd();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(mockReorderQueue).not.toHaveBeenCalled();
+  });
+
+  it('Delete key does nothing', async () => {
+    const { user, client, rerender } = setup();
+    await user.click(screen.getByTestId('row-1'));
+    rerender(<QueueSidebar {...defaultProps} readOnly />);
+    await user.keyboard('{Delete}');
+    expect(mockRemoveFromQueue).not.toHaveBeenCalled();
+    expect(cachedItems(client)).toHaveLength(3);
+  });
+
+  it('clears the selection and disables Clear', async () => {
+    const { user, rerender } = setup();
+    await user.click(screen.getByTestId('row-1'));
+    rerender(<QueueSidebar {...defaultProps} readOnly />);
+    await waitFor(() => expect(screen.getByTestId('row-1').dataset.selected).toBe('false'));
+    expect(screen.getByTitle('Clear queue')).toBeDisabled();
   });
 });
