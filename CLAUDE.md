@@ -52,12 +52,14 @@ Live data (now playing, queue, picks) changes between shots, so for before/after
 
 `src/preload.ts` exposes `window.sonos` via `contextBridge.exposeInMainWorld`. Every renderer→main call goes through this.
 
-- Add a new capability: declare it in `SonosAPI` in `preload.ts`, implement it in the `contextBridge.exposeInMainWorld` call, add an `ipcMain.handle` in `main.ts`, and add the type to `renderer/src/types/globals.d.ts` (`SonosPreload` interface).
+- Add a new capability: declare it in `SonosAPI` in `preload.ts`, implement it in the `contextBridge.exposeInMainWorld` call, add an `ipcMain.handle` in the matching `src/ipc/<domain>.ts` module's `register()`, and add the type to `renderer/src/types/globals.d.ts` (`SonosPreload` interface).
+- `main.ts` keeps app lifecycle, window creation and wiring only. Handlers live in `src/ipc/*.ts` (one module per domain, each exporting `register()`); shared config and runtime state live in `src/state.ts`; the Sonos HTTP and WebSocket clients in `src/sonos-api.ts` and `src/sonos-ws.ts`. No circular imports: a module needing something from `main.ts` gets it through its `init`/`register` deps.
+- `installIpcGuard()` (`src/ipc/guard.ts`) wraps `ipcMain.handle` with the sender check. `main.ts` calls it before any `register()`; a handler registered before it gets no check. `src/ipc-channels.test.ts` fails if a preload channel has no registered handler.
 - `globals.d.ts` must NOT have `export {}` — it is a pure ambient file. Adding `export {}` turns it into a module and breaks all global type visibility.
 
 ### Sonos API
 
-All Sonos HTTP calls go through `src/main.ts` → `sonosFetch()` → play.sonos.com BFF. The renderer calls `window.sonos.fetch({ operationId, pathParams, query, body })` — operationIds are defined in `SonosWebPlayerAPI.yaml` at the repo root.
+All Sonos HTTP calls go through `src/sonos-api.ts` → `sonosFetch()` → play.sonos.com BFF. The renderer calls `window.sonos.fetch({ operationId, pathParams, query, body })` — operationIds are defined in `SonosWebPlayerAPI.yaml` at the repo root.
 
 `renderer/src/lib/sonosApi.ts` is the typed wrapper around `window.sonos.fetch` — add new API calls here.
 
@@ -151,7 +153,7 @@ Stories sit beside the component as `Foo.stories.tsx` (CSF, `args` for controls,
 1. If it needs a new IPC call:
    - Add to `SonosAPI` interface in `src/preload.ts`
    - Add to `contextBridge.exposeInMainWorld` in `src/preload.ts`
-   - Add `ipcMain.handle(...)` in `src/main.ts`
+   - Add `ipcMain.handle(...)` in the `register()` of the matching `src/ipc/<domain>.ts` (a new module needs a `register()` call in `main.ts`, after `installIpcGuard()`)
    - Add to `SonosPreload` interface in `renderer/src/types/globals.d.ts`
    - Add to `renderer/src/test/sonosFake.ts` (the one shared `window.sonos` fake: `setup.ts` wraps it in `vi.fn()`, the Storybook preview logs it as actions)
 
