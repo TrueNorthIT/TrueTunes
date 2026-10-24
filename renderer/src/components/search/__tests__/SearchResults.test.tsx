@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { queueActionsWrapper } from '../../../test/queueActions';
 import type { ReactNode } from 'react';
 import { SearchResults } from '../SearchResults';
 import type { SonosItem } from '../../../types/sonos';
@@ -70,7 +71,9 @@ function renderResults(results: SonosItem[], query = 'zzz') {
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
-  return render(<SearchResults query={query} results={results} onAddToQueue={onAddToQueue} />, { wrapper });
+  return render(<SearchResults query={query} results={results} />, {
+    wrapper: queueActionsWrapper(onAddToQueue, wrapper),
+  });
 }
 
 const songsCard = () => screen.getByRole('region', { name: 'Songs' });

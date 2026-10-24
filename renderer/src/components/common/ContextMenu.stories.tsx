@@ -1,6 +1,10 @@
+import type { ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { fn, userEvent, within } from 'storybook/test';
 import { covers } from '../../../.storybook/fixtures';
+import { displayNameKeys } from '../../hooks/useDisplayName';
+import { QueueActionsProvider } from '../../hooks/useQueueActions';
 import { ContextMenuProvider, CreatePlaylistDialog, useTrackContextMenu } from './ContextMenu';
 import { ToastProvider } from './Toast';
 import { TrackRow } from './TrackRow';
@@ -32,14 +36,25 @@ function Surface() {
   );
 }
 
+/** The provider reads the name from the app's query cache, so a story seeds it there. */
+function SeedDisplayName({ name, children }: { name: string | null; children: ReactNode }) {
+  const queryClient = useQueryClient();
+  queryClient.setQueryData(displayNameKeys.all, name);
+  return <>{children}</>;
+}
+
 const meta = {
   title: 'Common/ContextMenu',
   component: ContextMenuProvider,
-  args: { displayName: 'Priya Shah', onAddToQueue: fn(), onQueueNext: fn(), children: <Surface /> },
+  args: { children: <Surface /> },
   decorators: [
-    (Story) => (
+    (Story, { parameters }) => (
       <ToastProvider>
-        <Story />
+        <QueueActionsProvider value={{ addToQueue: fn(), queueNext: fn() }}>
+          <SeedDisplayName name={parameters.displayName === undefined ? 'Priya Shah' : parameters.displayName}>
+            <Story />
+          </SeedDisplayName>
+        </QueueActionsProvider>
       </ToastProvider>
     ),
   ],
@@ -56,7 +71,7 @@ export const Open: Story = {
   },
 };
 /** Signed out of the office: there is no one to add to playlists for. */
-export const NoDisplayName: Story = { ...Open, args: { displayName: null } };
+export const NoDisplayName: Story = { ...Open, parameters: { displayName: null } };
 
 export const NewPlaylistDialog: Story = {
   render: () => <CreatePlaylistDialog displayName="Priya Shah" pendingTrack={track} onClose={fn()} />,

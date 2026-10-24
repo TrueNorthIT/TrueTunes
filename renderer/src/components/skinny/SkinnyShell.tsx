@@ -4,6 +4,8 @@ import type { NormalizedQueueItem, NormalizedGroup } from '../../types/provider'
 import { QueueSidebar } from '../queue/QueueSidebar';
 import { SkinnyTransport } from './SkinnyTransport';
 import { AmbientBackdrop } from '../AmbientBackdrop';
+import { useDisplayName } from '../../hooks/useDisplayName';
+import { useToast } from '../common/Toast';
 import styles from '../../styles/SkinnyShell.module.css';
 
 interface Props {
@@ -14,11 +16,8 @@ interface Props {
   queueLoading: boolean;
   queueError: string | null;
   reloadQueue: () => void;
-  showToast: (msg: string) => void;
   groups: NormalizedGroup[];
   activeGroupId: string | null;
-  /** The signed-in display name, so DJ picks can say "You". */
-  displayName?: string | null;
   /** Same DJ section as the docked queue — it's the same queue underneath. */
   autoplay?: {
     enabled: boolean;
@@ -42,12 +41,12 @@ export function SkinnyShell({
   queueLoading,
   queueError,
   reloadQueue,
-  showToast,
   groups,
   activeGroupId,
-  displayName,
 }: Props) {
   const np = useNowPlaying(playback);
+  const displayName = useDisplayName();
+  const { showToast } = useToast();
 
   return (
     <div className={styles.shell}>
@@ -67,7 +66,6 @@ export function SkinnyShell({
         groupName={groups.find((g) => g.id === activeGroupId)?.name ?? null}
         onRefresh={reloadQueue}
         onError={showToast}
-        onAddToQueue={() => {}}
       />
       <SkinnyTransport np={np} isAuthed={isAuthed} />
     </div>

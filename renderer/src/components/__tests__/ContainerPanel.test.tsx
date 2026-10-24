@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ContainerPanel } from '../ContainerPanel';
 import type { SonosItem } from '../../types/sonos';
+import { queueActionsWrapper } from '../../test/queueActions';
 
 const mockUseLocation = vi.fn();
 const mockOpenItem = vi.fn();
@@ -52,25 +53,25 @@ beforeEach(() => {
 describe('ContainerPanel', () => {
   it('returns nothing when no item in state', () => {
     mockUseLocation.mockReturnValue({ state: null });
-    const { container } = render(<ContainerPanel onAddToQueue={vi.fn()} />);
+    const { container } = render(<ContainerPanel />, { wrapper: queueActionsWrapper() });
     expect(container.firstChild).toBeNull();
   });
 
   it('names the shelf as the page heading', () => {
-    render(<ContainerPanel onAddToQueue={vi.fn()} />);
+    render(<ContainerPanel />, { wrapper: queueActionsWrapper() });
     expect(screen.getByRole('heading', { level: 1, name: 'Quick picks' })).toBeInTheDocument();
   });
 
   it('shows skeleton tiles while loading', () => {
     mockUseContainerBrowse.mockReturnValue({ data: undefined, isLoading: true, error: null, refetch: vi.fn() });
-    const { container } = render(<ContainerPanel onAddToQueue={vi.fn()} />);
+    const { container } = render(<ContainerPanel />, { wrapper: queueActionsWrapper() });
     expect(container.querySelectorAll('[class*="skelTile"]').length).toBeGreaterThan(0);
   });
 
   it('offers Retry when the browse fails', async () => {
     const refetch = vi.fn();
     mockUseContainerBrowse.mockReturnValue({ data: undefined, isLoading: false, error: new Error('fail'), refetch });
-    render(<ContainerPanel onAddToQueue={vi.fn()} />);
+    render(<ContainerPanel />, { wrapper: queueActionsWrapper() });
     expect(screen.getByText(/Couldn’t load Quick picks/)).toBeInTheDocument();
     await userEvent.setup().click(screen.getByRole('button', { name: 'Retry' }));
     expect(refetch).toHaveBeenCalled();
@@ -78,7 +79,7 @@ describe('ContainerPanel', () => {
 
   it('says so when the shelf is empty', () => {
     mockUseContainerBrowse.mockReturnValue({ data: [], isLoading: false, error: null, refetch: vi.fn() });
-    render(<ContainerPanel onAddToQueue={vi.fn()} />);
+    render(<ContainerPanel />, { wrapper: queueActionsWrapper() });
     expect(screen.getByText('Nothing here right now.')).toBeInTheDocument();
   });
 
@@ -90,7 +91,7 @@ describe('ContainerPanel', () => {
       error: null,
       refetch: vi.fn(),
     });
-    render(<ContainerPanel onAddToQueue={onAddToQueue} />);
+    render(<ContainerPanel />, { wrapper: queueActionsWrapper(onAddToQueue) });
     expect(screen.getByText('2 songs')).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(2);
     expect(screen.getAllByText('7:12')).toHaveLength(2);
@@ -105,7 +106,7 @@ describe('ContainerPanel', () => {
       error: null,
       refetch: vi.fn(),
     });
-    render(<ContainerPanel onAddToQueue={vi.fn()} />);
+    render(<ContainerPanel />, { wrapper: queueActionsWrapper() });
     await userEvent.setup().click(screen.getByRole('button', { name: 'Daft Punk, open artist' }));
     expect(mockOpenItem).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -121,7 +122,7 @@ describe('ContainerPanel', () => {
       error: null,
       refetch: vi.fn(),
     });
-    render(<ContainerPanel onAddToQueue={vi.fn()} />);
+    render(<ContainerPanel />, { wrapper: queueActionsWrapper() });
     expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['Albums', 'Songs']);
     expect(screen.getByText('2 albums · 1 song')).toBeInTheDocument();
   });
@@ -134,7 +135,7 @@ describe('ContainerPanel', () => {
       error: null,
       refetch: vi.fn(),
     });
-    render(<ContainerPanel onAddToQueue={onAddToQueue} />);
+    render(<ContainerPanel />, { wrapper: queueActionsWrapper(onAddToQueue) });
     expect(screen.queryByRole('button', { name: /to queue/ })).toBeNull();
     await userEvent.setup().click(screen.getByRole('button', { name: /STORM II/ }));
     expect(mockOpenItem).toHaveBeenCalledWith(expect.objectContaining({ title: 'STORM II' }));

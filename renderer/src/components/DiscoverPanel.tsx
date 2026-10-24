@@ -20,13 +20,11 @@ import { TrackRow } from './common/TrackRow';
 import { UserAvatar } from './common/UserAvatar';
 import type { NormalizedQueueItem } from '../types/provider';
 import { albumItem, artistItem, trackPayload } from '../lib/itemHelpers';
-import type { SonosItem } from '../types/sonos';
 import styles from '../styles/DiscoverPanel.module.css';
+import { useDisplayName } from '../hooks/useDisplayName';
+import { useQueueActions } from '../hooks/useQueueActions';
 
 interface Props {
-  onAddToQueue: (item: SonosItem, position?: number, opts?: { attribute?: boolean }) => void;
-  /** Marks whoever is using this copy of the app, so the room reads at a glance. */
-  displayName?: string | null;
   /** The live queue, so Queue all can be undone. */
   queueItems?: NormalizedQueueItem[];
 }
@@ -151,7 +149,9 @@ function SkeletonGrid() {
   );
 }
 
-export function DiscoverPanel({ onAddToQueue, displayName, queueItems = [] }: Props) {
+export function DiscoverPanel({ queueItems = [] }: Props) {
+  const { addToQueue: onAddToQueue } = useQueueActions();
+  const displayName = useDisplayName();
   const { showToast } = useToast();
   // Include yourself: you're in the room, and the picks are partly yours.
   const { data: users = [] } = useUsers(true, true);

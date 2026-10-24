@@ -76,6 +76,8 @@ import { TrackRow } from './common/TrackRow';
 import { ArtistLinks as SharedArtistLinks } from './common/TrackLinks';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/HomePanel.module.css';
+import { useDisplayName } from '../hooks/useDisplayName';
+import { useQueueActions } from '../hooks/useQueueActions';
 
 /** Everything Home needs to make a track navigable: album, artist, a queueable item, a context menu. */
 interface NavTrack {
@@ -475,10 +477,8 @@ function NowPlayingBand({
 
 interface Props {
   isAuthed: boolean;
-  onAddToQueue: (item: SonosItem, position?: number, opts?: { attribute?: boolean }) => void;
   ytm: YtmSections | undefined;
   ytmLoading: boolean;
-  displayName?: string | null;
   /** Live playback and queue, for the Now playing band. Without a current track the band is hidden. */
   playback?: PlaybackState;
   /** The live queue, so Queue all can be undone. */
@@ -562,7 +562,9 @@ export async function fetchYtmSections(): Promise<YtmSections> {
   };
 }
 
-export function HomePanel({ isAuthed, onAddToQueue, ytm, ytmLoading, displayName, playback, queueItems = [] }: Props) {
+export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = [] }: Props) {
+  const { addToQueue: onAddToQueue } = useQueueActions();
+  const displayName = useDisplayName();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const navigate = useNavigate();
