@@ -32,6 +32,8 @@ The renderer is **never type-checked by Vite** (esbuild strips types). `npm run 
 
 **The live app drives the office speakers.** Never press (or script a click on) add, queue, play next, station, transport or seek controls, and never play or submit Queuedle, feedback or polls. Navigate and hover only. To see a control's states, use its story in Storybook (below), where nothing reaches Sonos.
 
+In dev builds the DJ autoplay client never requests the enqueue lease (preview only), so a dev instance can't add filler to the real queue; set `VITE_DJ_AUTOPLAY_IN_DEV=true` to opt in.
+
 `npm run dev` enables Chrome DevTools Protocol on port 9333 (`curl -s http://localhost:9333/json/version` to check).
 
 ```bash

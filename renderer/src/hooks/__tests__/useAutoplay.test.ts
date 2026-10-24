@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useAutoplay } from '../useAutoplay';
 import type { NormalizedQueueItem } from '../../types/provider';
@@ -18,7 +18,12 @@ beforeEach(() => {
   vi.mocked(window.sonos.djAutoplay).mockReset();
   vi.mocked(window.sonos.fetchDjSet).mockReset();
   localStorage.clear();
+  // vitest runs with DEV true; the lease tests below are about a production build.
+  vi.stubEnv('DEV', false);
+  vi.stubEnv('VITE_DJ_AUTOPLAY_IN_DEV', '');
 });
+
+afterEach(() => vi.unstubAllEnvs());
 
 describe('useAutoplay', () => {
   it('reports the queue and now-playing to the coordinator', async () => {
@@ -330,5 +335,32 @@ describe('useAutoplay', () => {
 
     await waitFor(() => expect(window.sonos.djAutoplay).toHaveBeenCalled());
     expect(vi.mocked(window.sonos.djAutoplay).mock.calls[0][0].nowPlayingIndex).toBeNull();
+  });
+
+  describe('in a dev build', () => {
+    const props = { groupId: 'g1', items: [item('a')], nowPlayingUri: 'a', onEnqueue: vi.fn() };
+
+    it('never asks for the lease, but still shows the DJ preview', async () => {
+      vi.stubEnv('DEV', true);
+      vi.mocked(window.sonos.fetchDjSet).mockResolvedValue({ tracks: [track] } as never);
+      const { result } = renderHook(() => useAutoplay(props));
+      await waitFor(() => expect(result.current.upcoming).toEqual([track]));
+      expect(window.sonos.djAutoplay).not.toHaveBeenCalled();
+      expect(props.onEnqueue).not.toHaveBeenCalled();
+    });
+
+    it('takes part again when VITE_DJ_AUTOPLAY_IN_DEV is true', async () => {
+      vi.stubEnv('DEV', true);
+      vi.stubEnv('VITE_DJ_AUTOPLAY_IN_DEV', 'true');
+      vi.mocked(window.sonos.djAutoplay).mockResolvedValue({
+        enabled: true,
+        leaseHeld: false,
+        enqueue: null,
+        upcoming: [track],
+        fillerUri: null,
+      });
+      renderHook(() => useAutoplay(props));
+      await waitFor(() => expect(window.sonos.djAutoplay).toHaveBeenCalled());
+    });
   });
 });
