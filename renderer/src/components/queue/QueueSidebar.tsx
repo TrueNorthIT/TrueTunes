@@ -8,7 +8,7 @@ import {
   useState,
   forwardRef,
 } from 'react';
-import { defaultRangeExtractor, useVirtualizer, type Range } from '@tanstack/react-virtual';
+import { defaultRangeExtractor, useVirtualizer, type Range, type Virtualizer } from '@tanstack/react-virtual';
 import { useQueries } from '@tanstack/react-query';
 import { Loader2, Disc3, RotateCw, LocateFixed, ListX } from 'lucide-react';
 import { applyReorderLocally, expandToAlbumBlock, projectPlayTimes } from '../../lib/queueHelpers';
@@ -191,30 +191,12 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     return { entries: out, entryOfRow };
   }, [items.length, grouped, playingIdx, nowPlayingRow]);
 
-  // A dragged row must stay mounted even if the list scrolls it out of view, or the browser never fires its dragend.
-  const rangeExtractor = useCallback(
-    (range: Range) => {
-      const base = defaultRangeExtractor(range);
-      const extra = [...draggingSet.current]
-        .map((i) => entryOfRow[i])
-        .filter((e) => e !== undefined && !base.includes(e));
-      return extra.length ? [...base, ...extra].sort((a, b) => a - b) : base;
-    },
-    [entryOfRow]
-  );
-  const virtualizer = useVirtualizer({
-    count: showItems ? entries.length : 0,
-    getScrollElement: () => contentRef.current,
-    estimateSize: (i) => (entries[i]?.kind === 'label' ? LABEL_ESTIMATE_PX : ROW_ESTIMATE_PX),
-    getItemKey: (i) => entries[i]?.key ?? i,
-    overscan: 8,
-    rangeExtractor,
-  });
+  const virtualizerRef = useRef<Virtualizer<HTMLDivElement, Element> | null>(null);
 
   function scrollToNowPlaying(smooth = true) {
     const entry = grouped ? entryOfRow[playingIdx] : undefined;
     if (entry !== undefined) {
-      virtualizer.scrollToIndex(entry, { align: 'center', behavior: smooth ? 'smooth' : 'auto' });
+      virtualizerRef.current?.scrollToIndex(entry, { align: 'center', behavior: smooth ? 'smooth' : 'auto' });
       return;
     }
     contentRef.current
@@ -526,13 +508,15 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
           <div className={styles.dropLine} style={{ position: 'relative' }} />
         )}
         {showItems && entries.length > 0 && (
-          <div className={styles.virtualList} style={{ height: virtualizer.getTotalSize() }}>
-            {virtualizer.getVirtualItems().map((v) => {
-              const entry = entries[v.index];
-              if (!entry) return null;
-              let body: React.ReactNode;
+          <VirtualRows
+            entries={entries}
+            entryOfRow={entryOfRow}
+            scrollRef={contentRef}
+            draggingSet={draggingSet}
+            virtualizerRef={virtualizerRef}
+            renderEntry={(entry) => {
               if (entry.kind === 'label') {
-                body = (
+                return (
                   <div className={styles.groupLabel}>
                     {entry.text}
                     {entry.count !== undefined && (
@@ -543,50 +527,38 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
                     )}
                   </div>
                 );
-              } else {
-                const i = entry.index;
-                const item = items[i];
-                const attr = resolveAttribution(attributionMap, item.track);
-                body = (
-                  <>
-                    {dragOverIndex === i && <div className={styles.dropLine} />}
-                    {dragOverIndex === items.length && i === items.length - 1 && (
-                      <div className={`${styles.dropLine} ${styles.dropLineEnd}`} />
-                    )}
-                    <DraggableQueueRow
-                      item={item}
-                      index={i}
-                      currentObjectId={currentObjectId}
-                      currentQueueItemId={currentQueueItemId}
-                      attribution={attr}
-                      attributionImageUrl={attr ? imageByUser.get(attr.user) : undefined}
-                      isSelected={selected.has(i)}
-                      played={grouped && i < playingIdx}
-                      audioPlaying={isPlaying}
-                      timeToPlay={timesToPlay[i]?.atMs}
-                      timeEstimated={timesToPlay[i]?.estimated}
-                      onRowClick={onRowClick}
-                      onDragStart={onRowDragStart}
-                      onDragOver={onRowDragOver}
-                      onDrop={onRowDrop}
-                      onDragEnd={handleDragEnd}
-                    />
-                  </>
-                );
               }
+              const i = entry.index;
+              const item = items[i];
+              const attr = resolveAttribution(attributionMap, item.track);
               return (
-                <div
-                  key={v.key}
-                  data-index={v.index}
-                  ref={virtualizer.measureElement}
-                  className={styles.virtualItem}
-                  style={{ transform: `translateY(${v.start}px)` }}
-                >
-                  {body}
-                </div>
+                <>
+                  {dragOverIndex === i && <div className={styles.dropLine} />}
+                  {dragOverIndex === items.length && i === items.length - 1 && (
+                    <div className={`${styles.dropLine} ${styles.dropLineEnd}`} />
+                  )}
+                  <DraggableQueueRow
+                    item={item}
+                    index={i}
+                    currentObjectId={currentObjectId}
+                    currentQueueItemId={currentQueueItemId}
+                    attribution={attr}
+                    attributionImageUrl={attr ? imageByUser.get(attr.user) : undefined}
+                    isSelected={selected.has(i)}
+                    played={grouped && i < playingIdx}
+                    audioPlaying={isPlaying}
+                    timeToPlay={timesToPlay[i]?.atMs}
+                    timeEstimated={timesToPlay[i]?.estimated}
+                    onRowClick={onRowClick}
+                    onDragStart={onRowDragStart}
+                    onDragOver={onRowDragOver}
+                    onDrop={onRowDrop}
+                    onDragEnd={handleDragEnd}
+                  />
+                </>
               );
-            })}
-          </div>
+            }}
+          />
         )}
 
         {/* Always rendered, even with nothing queued up yet: it's the room's
@@ -674,3 +646,69 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     </div>
   );
 });
+
+/**
+ * The virtual window over the queue. It owns the virtualizer so a scroll re-renders only this and the rows that
+ * entered the window, not the whole sidebar (whose per-track queries are costly to re-run on every scroll step).
+ */
+function VirtualRows({
+  entries,
+  entryOfRow,
+  scrollRef,
+  draggingSet,
+  virtualizerRef,
+  renderEntry,
+}: {
+  entries: Entry[];
+  entryOfRow: number[];
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+  draggingSet: React.RefObject<Set<number>>;
+  virtualizerRef: React.RefObject<Virtualizer<HTMLDivElement, Element> | null>;
+  renderEntry: (entry: Entry) => React.ReactNode;
+}) {
+  // A dragged row must stay mounted even if the list scrolls it out of view, or the browser never fires its dragend.
+  const rangeExtractor = useCallback(
+    (range: Range) => {
+      const base = defaultRangeExtractor(range);
+      const extra = [...draggingSet.current]
+        .map((i) => entryOfRow[i])
+        .filter((e) => e !== undefined && !base.includes(e));
+      return extra.length ? [...base, ...extra].sort((a, b) => a - b) : base;
+    },
+    [entryOfRow, draggingSet]
+  );
+  const virtualizer = useVirtualizer({
+    count: entries.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: (i) => (entries[i]?.kind === 'label' ? LABEL_ESTIMATE_PX : ROW_ESTIMATE_PX),
+    getItemKey: (i) => entries[i]?.key ?? i,
+    overscan: 8,
+    rangeExtractor,
+  });
+  useLayoutEffect(() => {
+    virtualizerRef.current = virtualizer;
+    return () => {
+      virtualizerRef.current = null;
+    };
+  }, [virtualizer, virtualizerRef]);
+
+  return (
+    <div className={styles.virtualList} style={{ height: virtualizer.getTotalSize() }}>
+      {virtualizer.getVirtualItems().map((v) => {
+        const entry = entries[v.index];
+        if (!entry) return null;
+        return (
+          <div
+            key={v.key}
+            data-index={v.index}
+            ref={virtualizer.measureElement}
+            className={styles.virtualItem}
+            style={{ transform: `translateY(${v.start}px)` }}
+          >
+            {renderEntry(entry)}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
