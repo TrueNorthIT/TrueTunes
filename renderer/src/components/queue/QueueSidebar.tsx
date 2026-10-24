@@ -163,9 +163,11 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   }, [items, trackDetailsResults]);
 
   const [liveWidth, setLiveWidth] = useState<number>(dockedWidth ?? 380);
-  useEffect(() => {
+  const [prevDockedWidth, setPrevDockedWidth] = useState(dockedWidth);
+  if (dockedWidth !== prevDockedWidth) {
+    setPrevDockedWidth(dockedWidth);
     if (typeof dockedWidth === 'number') setLiveWidth(dockedWidth);
-  }, [dockedWidth]);
+  }
   const liveWidthRef = useRef(liveWidth);
   useEffect(() => {
     liveWidthRef.current = liveWidth;
@@ -217,7 +219,10 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
 
   useImperativeHandle(ref, () => ({ scrollToNowPlaying: jumpToNowPlaying }), [jumpToNowPlaying]);
 
+  // A new Set on every run, mount included: that commit's re-render is what first lays out the virtual list under
+  // jsdom (no ResizeObserver), so a render-phase "previous props" reset would leave the rows unrendered in tests.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- see above
     setSelected(new Set());
   }, [items, readOnly]);
 

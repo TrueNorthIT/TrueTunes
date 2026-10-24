@@ -4,6 +4,8 @@ import { getCached, fetchImage, retainImage, releaseImage } from '../lib/imageCa
 export function useImage(url: string | null | undefined): string | null {
   const [src, setSrc] = useState<string | null>(() => (url ? getCached(url) : null));
 
+  /* eslint-disable react-hooks/set-state-in-effect -- mirrors the module-level image cache (an external store), whose
+     hits are synchronous and mutate LRU order, so they can't be read during render */
   useEffect(() => {
     if (!url) {
       setSrc(null);
@@ -26,6 +28,7 @@ export function useImage(url: string | null | undefined): string | null {
       cancelled = true;
     };
   }, [url]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Pin the cached blob while this consumer shows it, so LRU eviction can't revoke it under a lazy-decoding <img>.
   useEffect(() => {

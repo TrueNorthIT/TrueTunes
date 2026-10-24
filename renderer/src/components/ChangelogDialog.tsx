@@ -50,7 +50,7 @@ interface Props {
 }
 
 export function ChangelogDialog({ onClose }: Props) {
-  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [pickedIdx, setSelectedIdx] = useState<number | null>(null);
   const {
     data: releases = NO_RELEASES,
     isSuccess,
@@ -77,11 +77,12 @@ export function ChangelogDialog({ onClose }: Props) {
       .catch(() => setVersionLoaded(true));
   }, []);
 
-  useEffect(() => {
-    if (!versionLoaded || status !== 'ready' || !appVersion || releases.length === 0) return;
-    const idx = releases.findIndex((r) => r.tag_name === `v${appVersion}` || r.tag_name === appVersion);
-    if (idx >= 0) setSelectedIdx(idx);
-  }, [versionLoaded, status, appVersion, releases]);
+  // Open on the installed release until the reader picks another.
+  const installedIdx =
+    versionLoaded && status === 'ready' && appVersion
+      ? releases.findIndex((r) => r.tag_name === `v${appVersion}` || r.tag_name === appVersion)
+      : -1;
+  const selectedIdx = pickedIdx ?? Math.max(installedIdx, 0);
 
   const isInstalled = (r: Release) => !!appVersion && (r.tag_name === `v${appVersion}` || r.tag_name === appVersion);
   const selected = releases[selectedIdx];

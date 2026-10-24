@@ -136,6 +136,7 @@ export function QueuedlePanel() {
   useEffect(() => {
     if (!gameId || questionCount === 0 || progressFor === gameId) return;
     const saved = loadProgress(gameId, questionCount);
+    /* eslint-disable react-hooks/set-state-in-effect -- hydrates state from localStorage (an external store) once per game */
     if (saved) {
       setPhase(saved.phase);
       setCurrentIdx(saved.currentIdx);
@@ -145,6 +146,7 @@ export function QueuedlePanel() {
       setBonusSelections(saved.bonusSelections);
     }
     setProgressFor(gameId);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [gameId, questionCount, progressFor]);
 
   useEffect(() => {
@@ -192,24 +194,18 @@ export function QueuedlePanel() {
     }
   }, [gameId, localPlayed, serverMain, questionCount]);
 
-  useEffect(() => {
-    if (game && bonusSelections.length !== game.questions.length) {
-      // Functional so it can't undo selections restored in this same commit.
-      const n = game.questions.length;
-      setBonusSelections((prev) => (prev.length === n ? prev : new Array(n).fill(null)));
-    }
-  }, [game, bonusSelections.length]);
+  if (game && bonusSelections.length !== game.questions.length) {
+    // Functional so it can't undo selections restored in this same commit.
+    const n = game.questions.length;
+    setBonusSelections((prev) => (prev.length === n ? prev : new Array(n).fill(null)));
+  }
 
   // Capture the user's prior rankings row exactly once, before today's submission
   // refetches the rankings query (which would include today's score and ruin the delta).
-  useEffect(() => {
-    if (!displayName) return;
-    if (beforeRanking !== undefined) return;
-    if (rankings.isLoading) return;
-    if (localScore !== null) return; // user already submitted; don't capture after the fact
-    const row = rankings.data?.find((r) => r.userName === displayName) ?? null;
-    setBeforeRanking(row);
-  }, [displayName, rankings.data, rankings.isLoading, beforeRanking, localScore]);
+  if (displayName && beforeRanking === undefined && !rankings.isLoading && localScore === null) {
+    // (localScore set = user already submitted; don't capture after the fact)
+    setBeforeRanking(rankings.data?.find((r) => r.userName === displayName) ?? null);
+  }
 
   const afterRanking = useMemo<RankSnapshot | null>(() => {
     if (!localScore || !game || beforeRanking === undefined) return null;
