@@ -12,6 +12,8 @@ export function usePrefetchNextLyrics(items: NormalizedQueueItem[], queueItemId:
     const next = items[Number(queueItemId)]; // queueItemId is 1-based, so index = id - 1 + 1 = id
     if (!next) return;
     const { title, artist, albumName, durationMs } = next.track;
+    // prefetchQuery ignores `enabled`, so an empty field would reach lrclib as `artist_name=` and 400.
+    if (!title || !artist) return;
     queryClient.prefetchQuery(lyricsQueryOptions(title, artist, albumName, durationMs));
     queryClient.prefetchQuery(geniusDescriptionQueryOptions(title, artist));
   }, [queryClient, items, queueItemId]);

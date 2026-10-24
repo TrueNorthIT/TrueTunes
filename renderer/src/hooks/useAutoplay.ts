@@ -136,7 +136,9 @@ export function useAutoplay({
     // doesn't. Returning early here left the section empty on every client that
     // hadn't picked a group yet, which is exactly when you most want to see what
     // the DJ would put on.
-    if (!groupId) {
+    // A dev instance must not ask for the lease (it could win it from a real client and append to the office
+    // queue), so it shows the DJ preview only. VITE_DJ_AUTOPLAY_IN_DEV=true opts back in.
+    if (!groupId || (import.meta.env.DEV && import.meta.env.VITE_DJ_AUTOPLAY_IN_DEV !== 'true')) {
       await fillPreviewDirectly();
       return;
     }

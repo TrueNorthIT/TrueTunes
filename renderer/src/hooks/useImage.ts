@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getCached, fetchImage } from '../lib/imageCache';
+import { getCached, fetchImage, retainImage, releaseImage } from '../lib/imageCache';
 
 export function useImage(url: string | null | undefined): string | null {
   const [src, setSrc] = useState<string | null>(() => (url ? getCached(url) : null));
@@ -26,6 +26,13 @@ export function useImage(url: string | null | undefined): string | null {
       cancelled = true;
     };
   }, [url]);
+
+  // Pin the cached blob while this consumer shows it, so LRU eviction can't revoke it under a lazy-decoding <img>.
+  useEffect(() => {
+    if (!url || !src) return;
+    retainImage(url);
+    return () => releaseImage(url);
+  }, [url, src]);
 
   return src;
 }

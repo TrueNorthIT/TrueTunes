@@ -106,6 +106,25 @@
       }
     },
     {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2023-01-01",
+      "name": "[concat(variables('storageName'), '/default')]",
+      "dependsOn": ["[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"],
+      "properties": {
+        "cors": {
+          "corsRules": [
+            {
+              "allowedOrigins": ["*"],
+              "allowedMethods": ["GET", "HEAD"],
+              "allowedHeaders": ["*"],
+              "exposedHeaders": ["*"],
+              "maxAgeInSeconds": 86400
+            }
+          ]
+        }
+      }
+    },
+    {
       "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
       "apiVersion": "2023-01-01",
       "name": "[concat(variables('storageName'), '/default/', variables('containerName'))]",
