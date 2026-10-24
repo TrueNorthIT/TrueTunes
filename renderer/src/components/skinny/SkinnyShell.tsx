@@ -12,8 +12,8 @@ interface Props {
   isAuthed: boolean;
   playback: ReturnType<typeof usePlayback>['playback'];
   queueItems: NormalizedQueueItem[];
-  setQueueItems: (updater: NormalizedQueueItem[] | ((prev: NormalizedQueueItem[]) => NormalizedQueueItem[])) => void;
   queueLoading: boolean;
+  queueReadOnly: boolean;
   queueError: string | null;
   reloadQueue: () => void;
   groups: NormalizedGroup[];
@@ -37,8 +37,8 @@ export function SkinnyShell({
   isAuthed,
   playback,
   queueItems,
-  setQueueItems,
   queueLoading,
+  queueReadOnly,
   queueError,
   reloadQueue,
   groups,
@@ -56,8 +56,9 @@ export function SkinnyShell({
         viewer={displayName}
         variant="skinny"
         items={queueItems}
-        setItems={setQueueItems}
+        groupId={activeGroupId}
         isLoading={queueLoading}
+        readOnly={queueReadOnly}
         error={queueError}
         currentObjectId={playback.currentObjectId}
         currentQueueItemId={playback.queueItemId}

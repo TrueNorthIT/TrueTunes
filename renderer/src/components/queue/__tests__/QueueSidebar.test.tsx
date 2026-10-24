@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import type { ComponentProps } from 'react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { QueueSidebar } from '../QueueSidebar';
+import { queueKeys, type QueueData } from '../../../hooks/useQueue';
 import type { NormalizedQueueItem } from '../../../types/provider';
 
 const { mockRemoveFromQueue, mockClearQueue, mockReorderQueue } = vi.hoisted(() => ({
@@ -16,13 +18,23 @@ vi.mock('../DraggableQueueRow', () => ({
     index,
     isSelected,
     onRowClick,
+    onDragOver,
+    onDrop,
   }: {
     item: NormalizedQueueItem;
     index: number;
     isSelected: boolean;
     onRowClick: (index: number, e: React.MouseEvent) => void;
+    onDragOver: (index: number, e: React.DragEvent) => void;
+    onDrop: (e: React.DragEvent) => void;
   }) => (
-    <div data-testid={`row-${index}`} data-selected={String(isSelected)} onClick={(e) => onRowClick(index, e)}>
+    <div
+      data-testid={`row-${index}`}
+      data-selected={String(isSelected)}
+      onClick={(e) => onRowClick(index, e)}
+      onDragOver={(e) => onDragOver(index, e)}
+      onDrop={onDrop}
+    >
       Track {index}
     </div>
   ),
@@ -67,7 +79,7 @@ function makeItem(i: number): NormalizedQueueItem {
 
 const defaultProps = {
   items: [makeItem(0), makeItem(1), makeItem(2)],
-  setItems: vi.fn(),
+  groupId: 'g1',
   isLoading: false,
   error: null,
   currentObjectId: null,
@@ -77,19 +89,18 @@ const defaultProps = {
   onError: vi.fn(),
 };
 
-function makeQueryClient() {
-  return new QueryClient({ defaultOptions: { queries: { retry: false } } });
-}
+const cachedItems = (client: QueryClient) => client.getQueryData<QueueData>(queueKeys.list('g1'))?.items;
 
-function Wrapper({ children }: { children: React.ReactNode }) {
-  return <QueryClientProvider client={makeQueryClient()}>{children}</QueryClientProvider>;
-}
-
-function setup(props = {}) {
+function setup(props: Partial<ComponentProps<typeof QueueSidebar>> = {}) {
   const user = userEvent.setup();
   const merged = { ...defaultProps, ...props };
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  client.setQueryData<QueueData>(queueKeys.list('g1'), { items: merged.items });
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  }
   const result = render(<QueueSidebar {...merged} />, { wrapper: Wrapper });
-  return { user, ...result };
+  return { user, client, ...result };
 }
 
 beforeEach(() => {
@@ -235,12 +246,11 @@ describe('QueueSidebar — Delete key', () => {
     await waitFor(() => expect(mockRemoveFromQueue).toHaveBeenCalledWith([1]));
   });
 
-  it('Delete key calls setItems to optimistically remove', async () => {
-    const setItems = vi.fn();
-    const { user } = setup({ setItems });
+  it('Delete key optimistically removes the row from the cached queue', async () => {
+    const { user, client } = setup();
     await user.click(screen.getByTestId('row-0'));
     await user.keyboard('{Delete}');
-    await waitFor(() => expect(setItems).toHaveBeenCalled());
+    await waitFor(() => expect(cachedItems(client)?.map((i) => i.track.id)).toEqual(['obj1', 'obj2']));
   });
 
   it('Delete key does nothing when nothing is selected', async () => {
@@ -253,11 +263,12 @@ describe('QueueSidebar — Delete key', () => {
     mockRemoveFromQueue.mockRejectedValue(new Error('boom'));
     const onRefresh = vi.fn();
     const onError = vi.fn();
-    const { user } = setup({ onRefresh, onError });
+    const { user, client } = setup({ onRefresh, onError });
     await user.click(screen.getByTestId('row-0'));
     await user.keyboard('{Delete}');
     await waitFor(() => expect(onError).toHaveBeenCalledWith('Failed to remove track'));
     expect(onRefresh).toHaveBeenCalled();
+    expect(cachedItems(client)).toHaveLength(3); // rolled back
   });
 
   it('Backspace key also triggers delete', async () => {
@@ -265,12 +276,6 @@ describe('QueueSidebar — Delete key', () => {
     await user.click(screen.getByTestId('row-0'));
     await user.keyboard('{Backspace}');
     await waitFor(() => expect(mockRemoveFromQueue).toHaveBeenCalledWith([0]));
-  });
-
-  it('does not fire when sidebar is closed', async () => {
-    const { user } = setup({ open: false });
-    await user.keyboard('{Delete}');
-    expect(mockRemoveFromQueue).not.toHaveBeenCalled();
   });
 });
 
@@ -294,11 +299,12 @@ describe('QueueSidebar — selection bar Delete button', () => {
     mockRemoveFromQueue.mockRejectedValue(new Error('oops'));
     const onRefresh = vi.fn();
     const onError = vi.fn();
-    const { user } = setup({ onRefresh, onError });
+    const { user, client } = setup({ onRefresh, onError });
     await user.click(screen.getByTestId('row-0'));
     await user.click(screen.getByRole('button', { name: 'Delete' }));
     await waitFor(() => expect(onError).toHaveBeenCalledWith('Failed to remove tracks'));
     expect(onRefresh).toHaveBeenCalled();
+    expect(cachedItems(client)).toHaveLength(3); // rolled back
   });
 });
 
@@ -318,24 +324,24 @@ describe('QueueSidebar — clear queue', () => {
     expect(screen.queryByText(/Clear all/)).not.toBeInTheDocument();
   });
 
-  it('Clear button calls clearQueue and setItems([])', async () => {
-    const setItems = vi.fn();
-    const { user } = setup({ setItems });
+  it('Clear button calls clearQueue and empties the cached queue', async () => {
+    const { user, client } = setup();
     await user.click(screen.getByTitle('Clear queue'));
     await user.click(screen.getByRole('button', { name: 'Clear' }));
     await waitFor(() => expect(mockClearQueue).toHaveBeenCalled());
-    expect(setItems).toHaveBeenCalledWith([]);
+    expect(cachedItems(client)).toEqual([]);
   });
 
   it('clearQueue error calls onRefresh and onError', async () => {
     mockClearQueue.mockRejectedValue(new Error('fail'));
     const onRefresh = vi.fn();
     const onError = vi.fn();
-    const { user } = setup({ onRefresh, onError });
+    const { user, client } = setup({ onRefresh, onError });
     await user.click(screen.getByTitle('Clear queue'));
     await user.click(screen.getByRole('button', { name: 'Clear' }));
     await waitFor(() => expect(onError).toHaveBeenCalledWith('Failed to clear queue'));
     expect(onRefresh).toHaveBeenCalled();
+    expect(cachedItems(client)).toHaveLength(3); // rolled back
   });
 
   it('does not show ⊘ when queue is empty', () => {
@@ -362,11 +368,7 @@ describe('QueueSidebar — items change clears selection', () => {
     const { user, rerender } = setup();
     await user.click(screen.getByTestId('row-0'));
     expect(screen.getByTestId('row-0').dataset.selected).toBe('true');
-    rerender(
-      <Wrapper>
-        <QueueSidebar {...defaultProps} items={[makeItem(0), makeItem(1), makeItem(2), makeItem(3)]} />
-      </Wrapper>
-    );
+    rerender(<QueueSidebar {...defaultProps} items={[makeItem(0), makeItem(1), makeItem(2), makeItem(3)]} />);
     // After rerender with new items, selection should be cleared
     await waitFor(() => expect(screen.getByTestId('row-0').dataset.selected).toBe('false'));
   });
@@ -501,5 +503,50 @@ describe('QueueSidebar — virtual list', () => {
     expect(rows.length).toBeGreaterThan(0);
     expect(rows.length).toBeLessThan(100);
     expect(screen.getByLabelText('500 tracks')).toBeInTheDocument();
+  });
+});
+
+// --- read-only while another room's rows are showing ---
+
+// Removal and reorder go to the active room by position alone, so rows left over from the previous room must be inert.
+function dragRowToEnd() {
+  const dataTransfer = {
+    types: [] as string[],
+    dropEffect: '',
+    getData: (k: string) => (k === 'application/queue-indices' ? JSON.stringify([0]) : ''),
+  };
+  fireEvent.dragOver(screen.getByTestId('row-2'), { dataTransfer, clientY: 1000 });
+  fireEvent.drop(screen.getByTestId('row-2'), { dataTransfer });
+}
+
+describe('QueueSidebar - readOnly (previous room rows)', () => {
+  it('control: drag-reorder reaches the provider when not read-only', async () => {
+    setup();
+    dragRowToEnd();
+    await waitFor(() => expect(mockReorderQueue).toHaveBeenCalledWith([0], 3, 3));
+  });
+
+  it('drag-reorder does nothing', async () => {
+    setup({ readOnly: true });
+    dragRowToEnd();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(mockReorderQueue).not.toHaveBeenCalled();
+  });
+
+  it('Delete key does nothing', async () => {
+    const { user, client, rerender } = setup();
+    await user.click(screen.getByTestId('row-1'));
+    rerender(<QueueSidebar {...defaultProps} readOnly />);
+    await user.keyboard('{Delete}');
+    expect(mockRemoveFromQueue).not.toHaveBeenCalled();
+    expect(cachedItems(client)).toHaveLength(3);
+  });
+
+  it('clears the selection and disables Clear', async () => {
+    const { user, rerender } = setup();
+    await user.click(screen.getByTestId('row-1'));
+    rerender(<QueueSidebar {...defaultProps} readOnly />);
+    await waitFor(() => expect(screen.getByTestId('row-1').dataset.selected).toBe('false'));
+    expect(screen.getByTitle('Clear queue')).toBeDisabled();
   });
 });

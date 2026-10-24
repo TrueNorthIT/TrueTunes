@@ -658,3 +658,11 @@ button.groupLabel:hover {
     transition: none;
   }
 }
+
+/* Showing the previous room's queue while this one loads: nothing here may act on it. */
+.iconBtn:disabled,
+.confirmYes:disabled,
+.selDelBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

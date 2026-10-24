@@ -117,7 +117,6 @@ export function useMediaSession(playback: PlaybackState) {
       // Some OS/browser combinations reject transient states (e.g. mid-seek) — safe to ignore.
     }
     // Re-sync on track change / play-pause toggle / manual seek, not on every progress tick.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playback.isVisible, playback.currentObjectId, playback.isPlaying, playback.durationMs]);
 
   // Transport action handlers — wired once, always delegate to the active provider
