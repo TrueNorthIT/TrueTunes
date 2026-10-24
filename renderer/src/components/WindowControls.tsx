@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Minus, Maximize2, Minimize2, X, DownloadCloud, Vote } from 'lucide-react';
 import { usePolls } from '../hooks/usePolls';
 import { PollAnswerDialog } from './polls/PollAnswerDialog';
 import styles from '../styles/WindowControls.module.css';
 
-export function WindowControls() {
+export const WindowControls = memo(function WindowControls() {
   const [isMaximized, setIsMaximized] = useState(false);
   const [updateVersion, setUpdateVersion] = useState<string | null>(null);
   const [pollOpen, setPollOpen] = useState(false);
@@ -71,4 +71,4 @@ export function WindowControls() {
       )}
     </>
   );
-}
+});

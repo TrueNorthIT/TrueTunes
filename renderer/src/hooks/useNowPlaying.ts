@@ -12,8 +12,6 @@ export function useNowPlaying(playback: PlaybackState) {
     artUrl,
     trackName,
     artistName,
-    timeLabel,
-    progressPct,
     durationMs,
     isPlaying,
     isVisible,
@@ -44,8 +42,6 @@ export function useNowPlaying(playback: PlaybackState) {
   const svcId = td?.serviceId ?? currentServiceId ?? undefined;
   const accId = td?.accountId ?? currentAccountId ?? undefined;
 
-  const [elapsedLabel = '', durationLabel = ''] = timeLabel ? timeLabel.split(' / ') : [];
-
   const queryClient = useQueryClient();
   const prefetchAlbum = () => {
     if (albumId && svcId && accId) {
@@ -74,10 +70,7 @@ export function useNowPlaying(playback: PlaybackState) {
     albumId,
     cachedArt,
     dominantColor,
-    elapsedLabel,
-    durationLabel,
     // Passthrough from playback state
-    progressPct,
     durationMs,
     isPlaying,
     isVisible,

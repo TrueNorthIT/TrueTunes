@@ -294,10 +294,13 @@ log('idle done');
 if (!report.playing) {
   const tick = await call(async () => {
     const P = window.__perf;
+    // The app keeps the per-second position in a small store (dev builds expose it); older builds kept it in
+    // MainApp's playback state, which is found through the fibre tree instead.
+    const store = window.__playbackPosition;
     const rootEl = document.getElementById('root');
     const stack = [rootEl[Object.keys(rootEl).find((k) => k.startsWith('__reactContainer'))]];
     let hook = null;
-    while (stack.length && !hook) {
+    while (!store && stack.length && !hook) {
       const f = stack.pop();
       if (f.type?.name === 'MainApp') {
         for (let h = f.memoizedState; h; h = h.next) {
@@ -307,23 +310,31 @@ if (!report.playing) {
       if (f.sibling) stack.push(f.sibling);
       if (f.child) stack.push(f.child);
     }
-    if (!hook) return null;
-    const original = hook.memoizedState;
+    if (!store && !hook) return null;
+    const original = store ? store.get() : hook.memoizedState;
+    const endsAt = Date.now() + 180000; // constant while a track plays, as in the app
     const t0 = performance.now();
     const perTick = [];
     for (let i = 1; i <= 10; i++) {
       const c0 = P.commits.length;
       const s = performance.now();
-      hook.queue.dispatch((prev) => {
-        const pos = prev.positionMs + 1000, dur = prev.durationMs || 180000;
-        return { ...prev, positionMs: pos, timeLabel: `${Math.floor(pos / 60000)}:${String(Math.floor(pos / 1000) % 60).padStart(2, '0')} / 3:00`, progressPct: (pos / dur) * 100 };
-      });
+      const label = (pos) => `${Math.floor(pos / 60000)}:${String(Math.floor(pos / 1000) % 60).padStart(2, '0')} / 3:00`;
+      if (store) {
+        const pos = i * 1000;
+        store.set({ positionMs: pos, durationMs: 180000, progressPct: (pos / 180000) * 100, timeLabel: label(pos), trackEndsAtMs: endsAt });
+      } else {
+        hook.queue.dispatch((prev) => {
+          const pos = prev.positionMs + 1000, dur = prev.durationMs || 180000;
+          return { ...prev, positionMs: pos, timeLabel: label(pos), progressPct: (pos / dur) * 100 };
+        });
+      }
       await new Promise((r) => setTimeout(r, 1000));
       const cs = P.commits.slice(c0);
       perTick.push({ commits: cs.length, renderMs: Math.round(cs.reduce((a, c) => a + c.dur, 0) * 10) / 10, lastCommitMs: cs.length ? Math.round(cs.at(-1).t - s) : null });
     }
     const sum = summarise(t0, performance.now());
-    hook.queue.dispatch(() => original);
+    if (store) store.set(original);
+    else hook.queue.dispatch(() => original);
     return { ...sum, perTick };
   });
   if (tick) {

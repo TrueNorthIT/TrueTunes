@@ -14,6 +14,7 @@ const mockBrowseContainer = vi.fn();
 const mockUseLocation = vi.fn();
 const mockUseSearchParams = vi.fn();
 const mockNavigate = vi.fn();
+import { setPlaybackPosition } from '../../hooks/playbackPosition';
 vi.mock('react-router-dom', () => ({
   useLocation: () => mockUseLocation(),
   useSearchParams: () => mockUseSearchParams(),
@@ -133,9 +134,6 @@ const nowPlaying = {
   cachedArt: null,
   artUrlRaw: null,
   dominantColor: null,
-  elapsedLabel: '0:14',
-  durationLabel: '0:50',
-  progressPct: 28,
   durationMs: 50000,
   currentObjectId: 'cur',
   prefetchAlbum: vi.fn(),
@@ -149,6 +147,13 @@ const defaultProps = {
 };
 
 beforeEach(() => {
+  setPlaybackPosition({
+    trackEndsAtMs: 0,
+    positionMs: 14000,
+    durationMs: 50000,
+    progressPct: 28,
+    timeLabel: '0:14 / 0:50',
+  });
   vi.clearAllMocks();
   mockUseLocation.mockReturnValue({ pathname: '/' });
   mockUseSearchParams.mockReturnValue([new URLSearchParams()]);

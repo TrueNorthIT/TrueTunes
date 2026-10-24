@@ -1,22 +1,30 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ListPlus } from 'lucide-react';
 import { useImage } from '../../hooks/useImage';
-import { useAlbumBrowse, albumQueryOptions } from '../../hooks/useAlbumBrowse';
+import { useAlbumBrowse, albumQueryOptions, type AlbumTrack } from '../../hooks/useAlbumBrowse';
 import { usePlaylistBrowse } from '../../hooks/usePlaylistBrowse';
 import { useDominantColor } from '../../hooks/useDominantColor';
 import { usePageArt } from '../../lib/pageArt';
 import { useGeniusAlbumYear } from '../../hooks/useGeniusAlbumYear';
 import { useGeniusAlbumAbout } from '../../hooks/useGeniusAlbumAbout';
-import { artistQueryOptions } from '../../hooks/useArtistBrowse';
+import { artistBrowseQueryOptions } from '../../hooks/useArtistBrowse';
 import { useResolveAndOpen } from '../../hooks/useResolveAndOpen';
 import { useOpenItem } from '../../hooks/useOpenItem';
 import { useStats } from '../../hooks/useStats';
 import { useReleaseTrackCounts } from '../../hooks/useReleaseTrackCounts';
 import { useReleaseYears } from '../../hooks/useReleaseYears';
 import type { PlaybackState } from '../../hooks/usePlayback';
-import { resolveAlbumParams, isPlaylist, isProgram, getItemArt, getName, splitArtists } from '../../lib/itemHelpers';
+import {
+  decodeDefaults,
+  resolveAlbumParams,
+  isPlaylist,
+  isProgram,
+  getItemArt,
+  getName,
+  splitArtists,
+} from '../../lib/itemHelpers';
 import { withArtworkSize } from '../../lib/artworkUrl';
 import { cardSubtitle } from '../../lib/artistSubtitle';
 import { moreByReleases } from '../../lib/moreBy';
@@ -45,7 +53,6 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
   const item = (state as { item?: SonosItem } | null)?.item;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const openItem = useOpenItem();
   const { resolveAndOpen } = useResolveAndOpen();
 
   const isStation = item ? isProgram(item) : false;
@@ -76,18 +83,20 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
       : null
     : (albumResult.data ?? null);
 
-  // The artist's browse is prefetched on arrival (the header link and the "More by" shelf both want it),
-  // and usually already cached from the page that led here.
-  const artistRid = data?.artistItem?.resource?.id as SonosItemId | undefined;
-  const artistReady = !!(artistRid?.objectId && artistRid.serviceId && artistRid.accountId);
-  const { data: artistData } = useQuery({
-    ...artistQueryOptions(artistRid?.objectId, artistRid?.serviceId, artistRid?.accountId, undefined),
-    enabled: artistReady && !isPlaylistOrProgram,
-  });
-  // Same grouping, years and track counts as the artist page (and the same caches).
-  const releases = artistData?.albums ?? [];
-  const { counts: releaseCounts } = useReleaseTrackCounts(releases);
-  const { years: releaseYears } = useReleaseYears(releases, artistData?.name);
+  // The artist's releases feed the "More by" shelf. The artist id is in the item's own defaults, so the browse starts
+  // now, beside the album's, instead of waiting for the album to land and name the artist.
+  const artistRid = useMemo(() => {
+    const early = decodeDefaults(defaults)?.['artistId'] as string | undefined;
+    if (early && serviceId && accountId) return { objectId: early, serviceId, accountId } as SonosItemId;
+    return data?.artistItem?.resource?.id as SonosItemId | undefined;
+  }, [defaults, serviceId, accountId, data?.artistItem]);
+  const artistReady = !!(artistRid?.objectId && artistRid.serviceId && artistRid.accountId) && !isPlaylistOrProgram;
+  useEffect(() => {
+    if (artistReady)
+      void queryClient.prefetchQuery(
+        artistBrowseQueryOptions(artistRid?.objectId, artistRid?.serviceId, artistRid?.accountId, undefined)
+      );
+  }, [artistReady, artistRid, queryClient]);
 
   const title = data?.title ?? item?.title ?? item?.name ?? '';
   const artist = data?.artist ?? ((item as Record<string, unknown>)?.['subtitle'] as string) ?? '';
@@ -178,15 +187,6 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
   // Split on commas so each artist gets its own link; only the single-artist case
   // can use the cached artistItem for direct navigation.
   const artistParts = splitArtists(artist);
-
-  // More by this artist: their other releases, without this album's own versions or its singles.
-  const moreAlbums = moreByReleases(
-    releases,
-    { albumId, title, trackTitles: data?.tracks.map((t) => t.title) ?? [] },
-    releaseCounts,
-    releaseYears
-  );
-  const artistName = artistData?.name || artistParts[0] || '';
 
   const meta = data
     ? [data.totalTracks + ' songs', totalMins > 0 ? totalMins + ' min' : null, year].filter(Boolean).join(' · ')
@@ -347,31 +347,77 @@ export function AlbumPanel({ onAddToQueue, playback }: Props) {
           )}
         </div>
 
-        {moreAlbums.length > 0 && (
-          <SectionCard className={styles.section} title={`More by ${artistName}`}>
-            <div className={styles.shelf}>
-              {moreAlbums.map(({ item: a, year: y }, i) => {
-                const p = resolveAlbumParams(a);
-                return (
-                  <ImageTile
-                    key={p.albumId ?? i}
-                    title={getName(a)}
-                    sub={cardSubtitle(y, (a as Record<string, unknown>)['subtitle'] as string | undefined, artistName)}
-                    imageUrl={getItemArt(a)}
-                    onOpen={() => openItem(a)}
-                    onHover={() => {
-                      if (p.albumId && p.serviceId && p.accountId)
-                        void queryClient.prefetchQuery(
-                          albumQueryOptions(p.albumId, p.serviceId, p.accountId, p.defaults)
-                        );
-                    }}
-                  />
-                );
-              })}
-            </div>
-          </SectionCard>
+        {data && !isPlaylistOrProgram && (
+          <MoreBy
+            artistRid={artistRid}
+            albumId={albumId}
+            title={title}
+            tracks={data.tracks}
+            fallbackName={artistParts[0] ?? ''}
+          />
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * "More by this artist": their other releases, without this album's own versions or its singles. It owns the artist
+ * browse and the per-release year and track-count lookups, so each answer re-renders the shelf and not the tracklist.
+ */
+function MoreBy({
+  artistRid,
+  albumId,
+  title,
+  tracks,
+  fallbackName,
+}: {
+  artistRid: SonosItemId | undefined;
+  albumId: string | undefined;
+  title: string;
+  tracks: AlbumTrack[];
+  fallbackName: string;
+}) {
+  const openItem = useOpenItem();
+  const queryClient = useQueryClient();
+  const { data: artistData } = useQuery({
+    ...artistBrowseQueryOptions(artistRid?.objectId, artistRid?.serviceId, artistRid?.accountId, undefined),
+    enabled: !!(artistRid?.objectId && artistRid.serviceId && artistRid.accountId),
+  });
+  const releases = useMemo(() => artistData?.parsed.albums ?? [], [artistData]);
+  // Same grouping, years and track counts as the artist page (and the same caches).
+  const { counts: releaseCounts } = useReleaseTrackCounts(releases);
+  const { years: releaseYears } = useReleaseYears(releases, artistData?.parsed.name);
+
+  const moreAlbums = moreByReleases(
+    releases,
+    { albumId, title, trackTitles: tracks.map((t) => t.title) },
+    releaseCounts,
+    releaseYears
+  );
+  const artistName = artistData?.parsed.name || fallbackName;
+  if (moreAlbums.length === 0) return null;
+
+  return (
+    <SectionCard className={styles.section} title={`More by ${artistName}`}>
+      <div className={styles.shelf}>
+        {moreAlbums.map(({ item: a, year: y }, i) => {
+          const p = resolveAlbumParams(a);
+          return (
+            <ImageTile
+              key={p.albumId ?? i}
+              title={getName(a)}
+              sub={cardSubtitle(y, (a as Record<string, unknown>)['subtitle'] as string | undefined, artistName)}
+              imageUrl={getItemArt(a)}
+              onOpen={() => openItem(a)}
+              onHover={() => {
+                if (p.albumId && p.serviceId && p.accountId)
+                  void queryClient.prefetchQuery(albumQueryOptions(p.albumId, p.serviceId, p.accountId, p.defaults));
+              }}
+            />
+          );
+        })}
+      </div>
+    </SectionCard>
   );
 }

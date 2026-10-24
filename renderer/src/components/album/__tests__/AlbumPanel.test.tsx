@@ -22,7 +22,7 @@ vi.mock('../../../hooks/useDominantColor', () => ({
 }));
 
 vi.mock('../../../hooks/useArtistBrowse', () => ({
-  artistQueryOptions: vi.fn(() => ({ queryKey: [], queryFn: async () => null })),
+  artistBrowseQueryOptions: vi.fn(() => ({ queryKey: [], queryFn: async () => null })),
 }));
 
 const mockUseAlbumBrowse = vi.fn();

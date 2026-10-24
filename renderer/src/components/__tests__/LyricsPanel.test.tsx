@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
+import { setPlaybackPosition, ZERO_POSITION } from '../../hooks/playbackPosition';
 import { LyricsPanel } from '../LyricsPanel';
 import type { PlaybackState } from '../../hooks/usePlayback';
 
@@ -27,7 +28,6 @@ const playing = {
   displayArtist: 'Muse',
   albumName: 'Black Holes and Revelations',
   durationMs: 200_000,
-  progressPct: 50,
   cachedArt: null,
   artUrlRaw: null,
   dominantColor: null,
@@ -65,6 +65,7 @@ describe('LyricsPanel', () => {
         { timeMs: 150_000, text: 'Later' },
       ],
     });
+    act(() => setPlaybackPosition({ ...ZERO_POSITION, durationMs: 200_000, progressPct: 50 }));
     render(<LyricsPanel playback={playback} />);
     expect(screen.getByText('Now')).toHaveAttribute('aria-current', 'true');
     expect(screen.getByText('Later')).not.toHaveAttribute('aria-current');

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { getActiveProvider } from './providers';
@@ -36,10 +36,6 @@ import { DiscoverPanel } from './components/DiscoverPanel';
 import { SearchPanel } from './components/search/SearchPanel';
 import { useAutoplay } from './hooks/useAutoplay';
 import type { NormalizedQueueItem } from './types/provider';
-import { LeaderboardPanel } from './components/LeaderboardPanel';
-import { QueuedlePanel } from './components/queuedle/QueuedlePanel';
-import { QueuedleStatsPanel } from './components/queuedle/QueuedleStatsPanel';
-import { MusicStatsPanel } from './components/musicStats/MusicStatsPanel';
 import { QueueSidebar, type QueueSidebarHandle } from './components/queue/QueueSidebar';
 import { SkinnyShell } from './components/skinny/SkinnyShell';
 import { useSkinnyMode } from './hooks/useSkinnyMode';
@@ -47,7 +43,6 @@ import { MiniPlayerShell } from './components/MiniPlayer';
 import { FeedbackDialog } from './components/FeedbackDialog';
 import { PollAdminLauncher } from './components/polls/PollAdminLauncher';
 import { ChangelogDialog } from './components/ChangelogDialog';
-import { LyricsPanel } from './components/LyricsPanel';
 import { useDisplayName, useDisplayNameActions, refreshDisplayName } from './hooks/useDisplayName';
 import { ProfilePanel } from './components/ProfilePanel';
 import { PlaylistPanel } from './components/PlaylistPanel';
@@ -62,11 +57,26 @@ import { effectiveDockedWidth } from './lib/queueWidth';
 
 import styles from './styles/App.module.css';
 
+// The heavy routes load on first visit, so they don't weigh on startup.
+const LeaderboardPanel = lazy(() =>
+  import('./components/LeaderboardPanel').then((m) => ({ default: m.LeaderboardPanel }))
+);
+const QueuedlePanel = lazy(() =>
+  import('./components/queuedle/QueuedlePanel').then((m) => ({ default: m.QueuedlePanel }))
+);
+const QueuedleStatsPanel = lazy(() =>
+  import('./components/queuedle/QueuedleStatsPanel').then((m) => ({ default: m.QueuedleStatsPanel }))
+);
+const MusicStatsPanel = lazy(() =>
+  import('./components/musicStats/MusicStatsPanel').then((m) => ({ default: m.MusicStatsPanel }))
+);
+const LyricsPanel = lazy(() => import('./components/LyricsPanel').then((m) => ({ default: m.LyricsPanel })));
+
 // ── Mini player window: self-contained shell ──────────────────────────────────
 
 // ── Main app ──────────────────────────────────────────────────────────────────
 
-function MainApp() {
+const MainApp = memo(function MainApp() {
   const queryClient = useQueryClient();
   const isAuthed = useAuth();
   const groups = useGroups();
@@ -566,75 +576,77 @@ function MainApp() {
             <AmbientBackdrop nowPlayingArt={playback.artUrl} />
             <div className={styles.body}>
               <main className={styles.main}>
-                <Routes>
-                  <Route
-                    path="/"
-                    element={
-                      <HomePanel
-                        isAuthed={isAuthed}
-                        onAddToQueue={handleAddToQueue}
-                        ytm={ytm}
-                        ytmLoading={ytmLoading}
-                        displayName={displayName}
-                        playback={playback}
-                        queueItems={queueItems}
-                      />
-                    }
-                  />
-                  <Route path="/search" element={<SearchPanel onAddToQueue={handleAddToQueue} />} />
-                  <Route
-                    path="/discover"
-                    element={
-                      <DiscoverPanel
-                        onAddToQueue={handleAddToQueue}
-                        displayName={displayName}
-                        queueItems={queueItems}
-                      />
-                    }
-                  />
-                  <Route
-                    path="/album/:id"
-                    element={<AlbumPanel onAddToQueue={handleAddToQueue} playback={playback} />}
-                  />
-                  <Route
-                    path="/artist/:id"
-                    element={
-                      <ArtistPanel
-                        onAddToQueue={handleAddToQueue}
-                        currentTrackName={playback.trackName}
-                        isPlaybackActive={playback.isPlaying}
-                      />
-                    }
-                  />
-                  <Route path="/container/:id" element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
-                  <Route path="/leaderboard" element={<LeaderboardPanel onAddToQueue={handleAddToQueue} />} />
-                  <Route path="/leaderboard/stats" element={<MusicStatsPanel />} />
-                  <Route path="/queuedle" element={<QueuedlePanel />} />
-                  <Route path="/queuedle/stats" element={<QueuedleStatsPanel />} />
-                  <Route path="/lyrics" element={<LyricsPanel playback={playback} />} />
-                  <Route
-                    path="/profile/:userName"
-                    element={
-                      <ProfilePanel
-                        onAddToQueue={handleAddToQueue}
-                        displayName={displayName}
-                        onSignOut={async () => {
-                          displayNameActions.set(null);
-                          setEntraLoading(true);
-                          await window.sonos.entraSignOut().catch(() => {});
-                          await window.sonos.entraReLogin().catch(() => {});
-                          await displayNameActions.refresh();
-                          setEntraLoading(false);
-                        }}
-                        onChangeName={(name) => displayNameActions.rename(displayName, name)}
-                      />
-                    }
-                  />
-                  <Route
-                    path="/playlist/:id"
-                    element={<PlaylistPanel displayName={displayName} onAddToQueue={handleAddToQueue} />}
-                  />
-                </Routes>
+                <Suspense fallback={null}>
+                  <Routes>
+                    <Route
+                      path="/"
+                      element={
+                        <HomePanel
+                          isAuthed={isAuthed}
+                          onAddToQueue={handleAddToQueue}
+                          ytm={ytm}
+                          ytmLoading={ytmLoading}
+                          displayName={displayName}
+                          playback={playback}
+                          queueItems={queueItems}
+                        />
+                      }
+                    />
+                    <Route path="/search" element={<SearchPanel onAddToQueue={handleAddToQueue} />} />
+                    <Route
+                      path="/discover"
+                      element={
+                        <DiscoverPanel
+                          onAddToQueue={handleAddToQueue}
+                          displayName={displayName}
+                          queueItems={queueItems}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/album/:id"
+                      element={<AlbumPanel onAddToQueue={handleAddToQueue} playback={playback} />}
+                    />
+                    <Route
+                      path="/artist/:id"
+                      element={
+                        <ArtistPanel
+                          onAddToQueue={handleAddToQueue}
+                          currentTrackName={playback.trackName}
+                          isPlaybackActive={playback.isPlaying}
+                        />
+                      }
+                    />
+                    <Route path="/container/:id" element={<ContainerPanel onAddToQueue={handleAddToQueue} />} />
+                    <Route path="/leaderboard" element={<LeaderboardPanel onAddToQueue={handleAddToQueue} />} />
+                    <Route path="/leaderboard/stats" element={<MusicStatsPanel />} />
+                    <Route path="/queuedle" element={<QueuedlePanel />} />
+                    <Route path="/queuedle/stats" element={<QueuedleStatsPanel />} />
+                    <Route path="/lyrics" element={<LyricsPanel playback={playback} />} />
+                    <Route
+                      path="/profile/:userName"
+                      element={
+                        <ProfilePanel
+                          onAddToQueue={handleAddToQueue}
+                          displayName={displayName}
+                          onSignOut={async () => {
+                            displayNameActions.set(null);
+                            setEntraLoading(true);
+                            await window.sonos.entraSignOut().catch(() => {});
+                            await window.sonos.entraReLogin().catch(() => {});
+                            await displayNameActions.refresh();
+                            setEntraLoading(false);
+                          }}
+                          onChangeName={(name) => displayNameActions.rename(displayName, name)}
+                        />
+                      }
+                    />
+                    <Route
+                      path="/playlist/:id"
+                      element={<PlaylistPanel displayName={displayName} onAddToQueue={handleAddToQueue} />}
+                    />
+                  </Routes>
+                </Suspense>
               </main>
               <QueueSidebar
                 ref={queueSidebarRef}
@@ -645,7 +657,7 @@ function MainApp() {
                 error={queueError}
                 currentObjectId={playback.currentObjectId}
                 currentQueueItemId={playback.queueItemId}
-                positionMs={playback.positionMs}
+                isPlaying={playback.isPlaying}
                 currentTrackDurationMs={playback.durationMs}
                 groupName={groups.find((g) => g.id === activeGroupId)?.name ?? null}
                 onRefresh={reloadQueue}
@@ -672,7 +684,7 @@ function MainApp() {
       </ContextMenuProvider>
     </ToastProvider>
   );
-}
+});
 
 // ── Root ──────────────────────────────────────────────────────────────────────
 

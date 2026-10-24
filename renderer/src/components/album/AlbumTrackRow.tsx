@@ -17,6 +17,8 @@ interface Props {
   albumArtist?: string;
   /** This is the track playing now. */
   playing?: boolean;
+  /** Audio is really playing, so the bars move; otherwise they sit still. */
+  audioPlaying?: boolean;
   onClick: (e: React.MouseEvent) => void;
   onDragStart: (e: React.DragEvent) => void;
   onAdd: () => void;
@@ -32,6 +34,7 @@ export function AlbumTrackRow({
   accountId,
   albumArtist,
   playing,
+  audioPlaying = false,
   onClick,
   onDragStart,
   onAdd,
@@ -108,7 +111,7 @@ export function AlbumTrackRow({
   return (
     <TrackRow
       title={track.title}
-      lead={playing ? <EqBars /> : track.ordinal}
+      lead={playing ? <EqBars paused={!audioPlaying} /> : track.ordinal}
       showArt={isPlaylistOrProgram}
       imageUrl={track.artUrl}
       explicit={track.explicit}
