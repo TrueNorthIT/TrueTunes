@@ -337,7 +337,7 @@ function NowPlayingBand({
       : void resolveAndOpen(np.albumName || np.displayTrack, 'album', { artist: np.displayArtist });
   const openArtist = () =>
     np.artistItem ? openItem(np.artistItem) : void resolveAndOpen(primaryArtistName(np.displayArtist), 'artist');
-  const openLyrics = () => navigate('/lyrics');
+  const openLyrics = () => void navigate('/lyrics');
 
   return (
     <section className={`${styles.band}${showLyrics ? '' : ' ' + styles.bandSolo}`} aria-label="Now playing">
@@ -397,7 +397,7 @@ function NowPlayingBand({
               className={styles.queuerChip}
               user={queuer.user}
               imageUrl={imageByUser.get(queuer.user)}
-              onOpen={() => profile(queuer.user)}
+              onOpen={() => void profile(queuer.user)}
             />
           )}
           <NowProgress />
@@ -775,7 +775,7 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
   const heroSrc = lead?.photo ?? lead?.t.imageUrl;
   const heroArt = useImage(heroSrc ? withArtworkSize(heroSrc, 1200) : null);
   const wash = useDominantColor(heroArt);
-  const addPick = (p: (typeof picks)[number]) => () => onAddToQueue(p.item, -1, { attribute: false });
+  const addPick = (p: (typeof picks)[number]) => () => void onAddToQueue(p.item, -1, { attribute: false });
   const pickRow = (p: (typeof picks)[number]) => (
     <PickRow key={p.key} t={p.t} reason={neverPlayedTag(p.because) ?? undefined} onAdd={addPick(p)} />
   );
@@ -825,7 +825,7 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
           imageUrl: t.imageUrl,
           open: () => nav.openAlbum(nt),
           hover: () => nav.prefetch(nt),
-          add: nt.item ? () => onAddToQueue(nt.item as SonosItem) : undefined,
+          add: nt.item ? () => void onAddToQueue(nt.item as SonosItem) : undefined,
         };
       });
       return [{ user, noun: 'track', count: tracks.length, tiles }];
@@ -844,7 +844,7 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
 
   const queueAll = () => {
     const added = picks.map((p) => ({ id: p.t.uri ?? p.key ?? '', title: p.t.title, artist: p.t.artist }));
-    picks.forEach((p) => onAddToQueue(p.item, -1, { attribute: false }));
+    picks.forEach((p) => void onAddToQueue(p.item, -1, { attribute: false }));
     showToast(`Queued ${picks.length} pick${picks.length === 1 ? '' : 's'}`, 'info', {
       durationMs: 6000,
       action: {
@@ -890,7 +890,7 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
                       </span>
                     )}
                   </span>
-                  <button type="button" className={styles.pillBtn} onClick={() => navigate('/queuedle')}>
+                  <button type="button" className={styles.pillBtn} onClick={() => void navigate('/queuedle')}>
                     {score ? 'View results' : 'Play'}
                   </button>
                 </div>
@@ -916,7 +916,7 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
                             type="button"
                             className={styles.face}
                             title={u === champion ? `${u}'s profile · last week's Queuedle champion` : `${u}'s profile`}
-                            onClick={() => navigate(`/profile/${encodeURIComponent(u)}`)}
+                            onClick={() => void navigate(`/profile/${encodeURIComponent(u)}`)}
                           >
                             <UserAvatar name={u} imageUrl={imageByUser.get(u)} className={styles.faceAvatar} />
                             <span className={styles.faceName}>
@@ -941,7 +941,7 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
                         <ListPlus size={14} /> Queue all
                       </button>
                     )}
-                    <SeeAll onClick={() => navigate('/discover')} />
+                    <SeeAll onClick={() => void navigate('/discover')} />
                   </>
                 }
               >
@@ -984,7 +984,7 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
                   <SectionCard
                     className={styles.section}
                     title="Trending in the office · this week"
-                    actions={<SeeAll onClick={() => navigate('/leaderboard')} />}
+                    actions={<SeeAll onClick={() => void navigate('/leaderboard')} />}
                   >
                     <ChartHead />
                     <ol className={styles.list}>
@@ -996,7 +996,7 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
                             rank={i + 1}
                             t={nt}
                             count={t.count}
-                            onAdd={nt.item ? () => onAddToQueue(nt.item as SonosItem) : undefined}
+                            onAdd={nt.item ? () => void onAddToQueue(nt.item as SonosItem) : undefined}
                           />
                         );
                       })}
@@ -1035,7 +1035,7 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
                       name={p.user}
                       imageUrl={imageByUser.get(p.user)}
                       caption={`${p.count} ${p.noun}${p.count === 1 ? '' : 's'} this week`}
-                      onOpen={() => navigate(`/profile/${encodeURIComponent(p.user)}`)}
+                      onOpen={() => void navigate(`/profile/${encodeURIComponent(p.user)}`)}
                     >
                       <div className={styles.albumRow}>
                         {p.tiles.map((d) => (
@@ -1069,7 +1069,7 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
                         imageUrl={getItemArt(item)}
                         // Only a single song gets a +. My Supermix is a dynamic mix (a PLAYLIST resource, like artist
                         // radio), stations would replace the shared queue, and shelves are lists: all of them open.
-                        onAdd={isTrack(item) ? () => onAddToQueue(item) : undefined}
+                        onAdd={isTrack(item) ? () => void onAddToQueue(item) : undefined}
                         onOpen={
                           isAlbum(item) || isPlaylist(item) || isContainer(item) || isProgram(item)
                             ? () => openItem(item)

@@ -71,7 +71,7 @@ export function AlbumTrackRow({
               onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/artist/${encodeURIComponent(a.objectId)}`, { state: { item: artist } });
+                void navigate(`/artist/${encodeURIComponent(a.objectId)}`, { state: { item: artist } });
               }}
             >
               {a.name}
@@ -91,7 +91,7 @@ export function AlbumTrackRow({
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.stopPropagation();
-          navigate(`/album/${encodeURIComponent(albumId)}`, {
+          void navigate(`/album/${encodeURIComponent(albumId)}`, {
             state: {
               item: {
                 type: 'ALBUM',

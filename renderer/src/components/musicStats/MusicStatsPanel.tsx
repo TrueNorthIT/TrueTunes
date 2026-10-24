@@ -401,7 +401,7 @@ export function MusicStatsPanel() {
       title="Music stats"
       facts={data ? `${formatCount(data.totalEvents)} queues · ${data.people.length} people` : undefined}
       backLabel="Leaderboard"
-      onBack={() => navigate('/leaderboard')}
+      onBack={() => void navigate('/leaderboard')}
     >
       {stats.isLoading && <p className={styles.state}>Crunching every queue so far…</p>}
       {stats.isError && !data && <p className={styles.state}>Couldn’t load the music stats.</p>}

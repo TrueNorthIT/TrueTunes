@@ -96,7 +96,7 @@ export const DraggableQueueRow = memo(function DraggableQueueRow({
       data-playing={isPlaying ? 'true' : undefined}
       draggable
       onClick={(e) => onRowClick(index, e)}
-      onDoubleClick={() => getActiveProvider().skipToTrack(index + 1)}
+      onDoubleClick={() => void getActiveProvider().skipToTrack(index + 1)}
       onContextMenu={(e) => showTrackMenu({ track: payload }, e)}
       onDragStart={(e) => onDragStart(index, e)}
       onDragOver={(e) => onDragOver(index, e)}
@@ -181,7 +181,7 @@ export const DraggableQueueRow = memo(function DraggableQueueRow({
           title={`Queued by ${attribution.user}`}
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/profile/${encodeURIComponent(attribution.user)}`);
+            void navigate(`/profile/${encodeURIComponent(attribution.user)}`);
           }}
         >
           <UserAvatar name={attribution.user} imageUrl={attributionImageUrl} className={styles.queuerAvatar} />

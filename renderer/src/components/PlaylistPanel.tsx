@@ -75,7 +75,7 @@ function PlaylistRow({
           ? {
               user: track.addedBy,
               imageUrl: imageByUser.get(track.addedBy),
-              onOpen: () => navigate(`/profile/${encodeURIComponent(track.addedBy)}`),
+              onOpen: () => void navigate(`/profile/${encodeURIComponent(track.addedBy)}`),
             }
           : undefined
       }
@@ -165,8 +165,8 @@ export function PlaylistPanel() {
       queryClient.setQueryData(playlistKeys.detail(id), { ...playlist, tracks: newTracks });
       try {
         await window.sonos.reorderPlaylistTracks(id, from, index);
-        queryClient.invalidateQueries({ queryKey: playlistKeys.detail(id) });
-        queryClient.invalidateQueries({ queryKey: playlistKeys.owned(displayName) });
+        void queryClient.invalidateQueries({ queryKey: playlistKeys.detail(id) });
+        void queryClient.invalidateQueries({ queryKey: playlistKeys.owned(displayName) });
       } catch {
         queryClient.setQueryData(playlistKeys.detail(id), snapshot);
         showToast('Failed to reorder tracks');
@@ -189,7 +189,7 @@ export function PlaylistPanel() {
   async function handleAddAll() {
     if (!playlist?.tracks.length) return;
     for (const t of playlist.tracks) {
-      onAddToQueue(trackToSonosItem(t), -1);
+      void onAddToQueue(trackToSonosItem(t), -1);
     }
   }
 
@@ -197,8 +197,8 @@ export function PlaylistPanel() {
     if (!id || !displayName) return;
     try {
       await window.sonos.joinPlaylist(id, isMember ? 'leave' : 'join');
-      queryClient.invalidateQueries({ queryKey: playlistKeys.detail(id) });
-      queryClient.invalidateQueries({ queryKey: playlistKeys.joined(displayName) });
+      void queryClient.invalidateQueries({ queryKey: playlistKeys.detail(id) });
+      void queryClient.invalidateQueries({ queryKey: playlistKeys.joined(displayName) });
     } catch {
       showToast(isMember ? 'Failed to leave playlist' : 'Failed to join playlist');
     }
@@ -216,7 +216,7 @@ export function PlaylistPanel() {
       const buffer = await file.arrayBuffer();
       const result = await window.sonos.uploadPlaylistImage(id, buffer, file.type, displayName ?? '');
       if (result && 'imageUrl' in result) {
-        queryClient.invalidateQueries({ queryKey: playlistKeys.detail(id) });
+        void queryClient.invalidateQueries({ queryKey: playlistKeys.detail(id) });
       } else if (result && 'error' in result) {
         showToast((result as { error: string }).error);
       }
@@ -235,7 +235,7 @@ export function PlaylistPanel() {
     });
     try {
       await window.sonos.removeTrackFromPlaylist(id, uri);
-      queryClient.invalidateQueries({ queryKey: playlistKeys.owned(displayName) });
+      void queryClient.invalidateQueries({ queryKey: playlistKeys.owned(displayName) });
     } catch {
       queryClient.setQueryData(playlistKeys.detail(id), snapshot);
       showToast('Failed to remove track');
@@ -259,7 +259,7 @@ export function PlaylistPanel() {
     queryClient.setQueryData(playlistKeys.detail(id), { ...playlist, name: trimmed });
     try {
       await window.sonos.updatePlaylist(id, { name: trimmed });
-      queryClient.invalidateQueries({ queryKey: playlistKeys.owned(displayName) });
+      void queryClient.invalidateQueries({ queryKey: playlistKeys.owned(displayName) });
     } catch {
       queryClient.setQueryData(playlistKeys.detail(id), snapshot);
       showToast('Failed to rename playlist');
@@ -272,8 +272,8 @@ export function PlaylistPanel() {
     try {
       await window.sonos.deletePlaylist(id);
       queryClient.removeQueries({ queryKey: playlistKeys.detail(id) });
-      queryClient.invalidateQueries({ queryKey: playlistKeys.owned(owner) });
-      navigate(`/profile/${encodeURIComponent(owner)}`);
+      void queryClient.invalidateQueries({ queryKey: playlistKeys.owned(owner) });
+      void navigate(`/profile/${encodeURIComponent(owner)}`);
     } catch {
       setConfirmDelete(false);
       showToast('Failed to delete playlist');
@@ -327,7 +327,7 @@ export function PlaylistPanel() {
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 style={{ display: 'none' }}
-                onChange={handleImageUpload}
+                onChange={(e) => void handleImageUpload(e)}
               />
             </>
           }
@@ -343,7 +343,7 @@ export function PlaylistPanel() {
                   value={renameValue}
                   onChange={(e) => setRenameValue(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') commitRename();
+                    if (e.key === 'Enter') void commitRename();
                     if (e.key === 'Escape') {
                       cancelRename.current = true;
                       setRenaming(false);
@@ -354,7 +354,7 @@ export function PlaylistPanel() {
                       cancelRename.current = false;
                       return;
                     }
-                    commitRename();
+                    void commitRename();
                   }}
                   autoFocus
                 />
@@ -374,7 +374,7 @@ export function PlaylistPanel() {
                 <button
                   type="button"
                   className={styles.face}
-                  onClick={() => navigate(`/profile/${encodeURIComponent(playlist.owner)}`)}
+                  onClick={() => void navigate(`/profile/${encodeURIComponent(playlist.owner)}`)}
                   aria-label={`${playlist.owner}, owner, open profile`}
                 >
                   <UserAvatar
@@ -394,7 +394,7 @@ export function PlaylistPanel() {
                             type="button"
                             className={styles.face}
                             aria-label={`${m}, collaborator, open profile`}
-                            onClick={() => navigate(`/profile/${encodeURIComponent(m)}`)}
+                            onClick={() => void navigate(`/profile/${encodeURIComponent(m)}`)}
                           >
                             <UserAvatar name={m} imageUrl={imageByUser.get(m)} className={styles.avatar} />
                             {m}
@@ -426,19 +426,19 @@ export function PlaylistPanel() {
               </div>
               <div className={styles.actions}>
                 {playlist.tracks.length > 0 && (
-                  <PillButton variant="primary" onClick={handleAddAll}>
+                  <PillButton variant="primary" onClick={() => void handleAddAll()}>
                     <ListPlus size={16} aria-hidden="true" />
                     Add all to queue
                   </PillButton>
                 )}
                 {playlist.isPublic && !isOwner && (
-                  <PillButton onClick={handleJoin}>{isMember ? 'Leave' : 'Join'}</PillButton>
+                  <PillButton onClick={() => void handleJoin()}>{isMember ? 'Leave' : 'Join'}</PillButton>
                 )}
                 {isOwner &&
                   !playlist.isFavourites &&
                   (confirmDelete ? (
                     <>
-                      <PillButton variant="danger" onClick={handleDelete}>
+                      <PillButton variant="danger" onClick={() => void handleDelete()}>
                         Delete forever
                       </PillButton>
                       <PillButton onClick={() => setConfirmDelete(false)}>Cancel</PillButton>
@@ -480,12 +480,12 @@ export function PlaylistPanel() {
                     isOwner={isOwner}
                     canReorder={canReorder}
                     imageByUser={imageByUser}
-                    onAdd={() => onAddToQueue(trackToSonosItem(t), -1)}
-                    onRemove={() => handleRemoveTrack(t.uri, i)}
+                    onAdd={() => void onAddToQueue(trackToSonosItem(t), -1)}
+                    onRemove={() => void handleRemoveTrack(t.uri, i)}
                     onContextMenu={(e) => showTrackMenu({ track: t, sonosItem: trackToSonosItem(t) }, e)}
                     onDragStart={(e) => handleDragStart(i, e)}
                     onDragOver={(e) => handleDragOver(i, e)}
-                    onDrop={(e) => handleDrop(i, e)}
+                    onDrop={(e) => void handleDrop(i, e)}
                     onDragEnd={handleDragEnd}
                   />
                 </Fragment>

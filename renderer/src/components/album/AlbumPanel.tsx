@@ -124,6 +124,7 @@ export function AlbumPanel({ playback }: Props) {
       )?.count ?? 0);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resets a ref alongside, which render must not write
     setSelected(new Set());
     lastSelected.current = null;
   }, [albumId]);
@@ -181,7 +182,7 @@ export function AlbumPanel({ playback }: Props) {
   function openArtist() {
     if (!data?.artistItem) return;
     const rid = data.artistItem.resource?.id as SonosItemId | undefined;
-    navigate(`/artist/${encodeURIComponent(rid?.objectId ?? '_')}`, { state: { item: data.artistItem } });
+    void navigate(`/artist/${encodeURIComponent(rid?.objectId ?? '_')}`, { state: { item: data.artistItem } });
   }
 
   // Multi-artist subtitles ("Sonny Stitt, Kenny Garrett") arrive as a single string.
@@ -220,7 +221,7 @@ export function AlbumPanel({ playback }: Props) {
                     {i > 0 && ', '}
                     <button
                       className={styles.link}
-                      onClick={() => resolveAndOpen(name, 'artist', { serviceId, accountId })}
+                      onClick={() => void resolveAndOpen(name, 'artist', { serviceId, accountId })}
                     >
                       {name}
                     </button>
@@ -236,14 +237,10 @@ export function AlbumPanel({ playback }: Props) {
               <PillButton
                 variant="primary"
                 disabled={adding || !data?.tracks?.length}
-                onClick={async () => {
+                onClick={() => {
                   if (!item || !data?.tracks?.length) return;
                   setAdding(true);
-                  try {
-                    await onAddToQueue(item);
-                  } finally {
-                    setAdding(false);
-                  }
+                  void onAddToQueue(item).finally(() => setAdding(false));
                 }}
               >
                 <ListPlus size={16} aria-hidden="true" />
@@ -298,7 +295,7 @@ export function AlbumPanel({ playback }: Props) {
                       }
                       onClick={(e) => handleTrackClick(i, e)}
                       onDragStart={(e) => handleTrackDragStart(i, e)}
-                      onAdd={() => onAddToQueue(track.raw)}
+                      onAdd={() => void onAddToQueue(track.raw)}
                     />
                   ))}
                 </ul>

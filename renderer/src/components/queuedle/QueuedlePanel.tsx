@@ -335,7 +335,7 @@ export function QueuedlePanel() {
             <ArrowLeft size={15} aria-hidden="true" /> Back to today
           </PillButton>
         )}
-        <PillButton onClick={() => navigate('/queuedle/stats')}>
+        <PillButton onClick={() => void navigate('/queuedle/stats')}>
           <ChartColumn size={15} aria-hidden="true" /> Stats
         </PillButton>
         {calendarDates.length > 0 && (
@@ -407,7 +407,7 @@ export function QueuedlePanel() {
             viewedGameId={currentGame.id}
             me={displayName ?? null}
             imageByUser={imageByUser}
-            onOpenProfile={(name) => navigate(`/profile/${encodeURIComponent(name)}`)}
+            onOpenProfile={(name) => void navigate(`/profile/${encodeURIComponent(name)}`)}
           />
           <QueuedleSummary
             questions={currentGame.questions}
@@ -587,7 +587,7 @@ export function QueuedlePanel() {
           winningItems={winningItems}
           selections={bonusSelections}
           onSelect={handleBonusSelect}
-          onSubmit={handleSubmit}
+          onSubmit={() => void handleSubmit()}
           submitting={submit.isPending}
           imageByUser={imageByUser}
         />

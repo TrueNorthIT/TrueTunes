@@ -33,7 +33,8 @@ if (rel.startsWith(`renderer${sep}`) && rel.endsWith('.css')) {
 const r = spawnSync(process.execPath, cmd, {
   cwd: root,
   encoding: 'utf8',
-  env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1' },
+  // TT_LINT_FAST: eslint.config.mjs skips the slow type-aware promise rules here; CI and `npm run lint` still run them.
+  env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1', TT_LINT_FAST: '1' },
 });
 if (r.status === 0) process.exit(0);
 process.stderr.write(`Lint failed for ${rel}. Fix these before moving on:\n${r.stdout}${r.stderr}`);

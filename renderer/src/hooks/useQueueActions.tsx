@@ -141,7 +141,7 @@ export function useCreateQueueActions({
       for (const t of tracks) {
         const tid = t.id;
         if (!tid?.objectId) continue;
-        window.sonos.publishQueued({
+        void window.sonos.publishQueued({
           eventType: 'track',
           uri: tid.objectId,
           trackName: t.title,
@@ -201,7 +201,7 @@ export function useCreateQueueActions({
 
         const tid = normalized.track?.id as SonosItemId | undefined;
         if (tid?.objectId && tid?.serviceId && tid?.accountId) {
-          queryClient.prefetchQuery(trackQueryOptions(tid.objectId, tid.serviceId, tid.accountId));
+          void queryClient.prefetchQuery(trackQueryOptions(tid.objectId, tid.serviceId, tid.accountId));
         }
       }
 
@@ -302,7 +302,7 @@ export function useCreateQueueActions({
               .then((tracks) => fanOutTrackAttribution(tracks, { serviceId: pSvc, accountId: pAcc }));
           doFanOut().catch(() => {
             // Retry once after a short delay on transient failure
-            setTimeout(() => doFanOut().catch(() => {}), 3000);
+            setTimeout(() => void doFanOut().catch(() => {}), 3000);
           });
         }
       }

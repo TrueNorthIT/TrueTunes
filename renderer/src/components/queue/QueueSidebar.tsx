@@ -248,14 +248,14 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
 
   useEffect(() => {
     if (!isActive) return;
-    async function onKeyDown(e: KeyboardEvent) {
+    function onKeyDown(e: KeyboardEvent) {
       if (e.key !== 'Delete' && e.key !== 'Backspace') return;
       if (readOnly || selected.size === 0) return;
       e.preventDefault();
       const indices = [...selected];
       const undo = editQueue((prev) => prev.filter((_, i) => !selected.has(i)));
       setSelected(new Set());
-      await getActiveProvider()
+      getActiveProvider()
         .removeFromQueue(indices)
         .catch(() => {
           undo();
@@ -411,7 +411,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   const onRowClick = useCallback((i: number, e: React.MouseEvent) => latest.current.handleRowClick(i, e), []);
   const onRowDragStart = useCallback((i: number, e: React.DragEvent) => latest.current.handleDragStart(i, e), []);
   const onRowDragOver = useCallback((i: number, e: React.DragEvent) => latest.current.handleDragOver(i, e), []);
-  const onRowDrop = useCallback((e: React.DragEvent) => latest.current.handleDrop(e), []);
+  const onRowDrop = useCallback((e: React.DragEvent) => void latest.current.handleDrop(e), []);
 
   function handleContentClick() {
     setSelected(new Set());
@@ -458,10 +458,10 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
             <button
               className={styles.confirmYes}
               disabled={readOnly}
-              onClick={async () => {
+              onClick={() => {
                 setPendingClear(false);
                 const undo = editQueue([]);
-                await getActiveProvider()
+                getActiveProvider()
                   .clearQueue()
                   .catch(() => {
                     undo();
@@ -518,7 +518,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
         onDragLeave={(e) => {
           if (!contentRef.current?.contains(e.relatedTarget as Node)) setDragOverIndex(null);
         }}
-        onDrop={handleDrop}
+        onDrop={(e) => void handleDrop(e)}
       >
         {isLoading && (
           <div className={styles.msg}>
@@ -650,11 +650,11 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
             <button
               className={styles.selDelBtn}
               disabled={readOnly}
-              onClick={async () => {
+              onClick={() => {
                 const indices = [...selected];
                 const undo = editQueue((prev) => prev.filter((_, i) => !selected.has(i)));
                 setSelected(new Set());
-                await getActiveProvider()
+                getActiveProvider()
                   .removeFromQueue(indices)
                   .catch(() => {
                     undo();

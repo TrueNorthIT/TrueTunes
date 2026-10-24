@@ -167,7 +167,7 @@ function createAuthWindow(): void {
     },
   });
 
-  state.authWin.loadURL(`${BASE_URL}`);
+  void state.authWin.loadURL(`${BASE_URL}`);
 
   // Spoof UA and capture session cookie on all play.sonos.com requests
   session.defaultSession.webRequest.onBeforeSendHeaders({ urls: [`${BASE_URL}/*`] }, (details, callback) => {
@@ -308,9 +308,9 @@ function createUIWindow(): void {
   guardNavigation(state.uiWin);
 
   if (app.isPackaged) {
-    state.uiWin.loadFile(APP_INDEX);
+    void state.uiWin.loadFile(APP_INDEX);
   } else {
-    state.uiWin.loadURL('http://localhost:5173');
+    void state.uiWin.loadURL('http://localhost:5173');
   }
 
   state.uiWin.webContents.on('did-finish-load', () => {
@@ -352,9 +352,9 @@ function createMiniPlayerWindow(): void {
   guardNavigation(state.miniWin);
 
   if (app.isPackaged) {
-    state.miniWin.loadFile(APP_INDEX, { hash: '/mini' });
+    void state.miniWin.loadFile(APP_INDEX, { hash: '/mini' });
   } else {
-    state.miniWin.loadURL('http://localhost:5173/#/mini');
+    void state.miniWin.loadURL('http://localhost:5173/#/mini');
   }
 
   state.miniWin.webContents.on('did-finish-load', () => {
@@ -454,7 +454,7 @@ process.on('unhandledRejection', (reason) => {
 
 // ─── App lifecycle ────────────────────────────────────────────────────────────
 
-app.whenReady().then(async () => {
+void app.whenReady().then(async () => {
   if (app.isPackaged) {
     Menu.setApplicationMenu(null);
   } else {

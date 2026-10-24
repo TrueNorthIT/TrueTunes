@@ -129,9 +129,9 @@ export function fetchImage(url: string, priority = false): Promise<string | null
     };
 
     if (priority || active < MAX_CONCURRENT) {
-      run();
+      void run();
     } else {
-      queue.push(run);
+      queue.push(() => void run());
     }
   });
 

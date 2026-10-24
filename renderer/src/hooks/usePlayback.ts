@@ -105,7 +105,7 @@ export function usePlayback(activeGroupId: string | null) {
 
     if (queueId) {
       queueIdRef.current = queueId;
-      window.sonos.setQueueId(queueId);
+      void window.sonos.setQueueId(queueId);
     }
     if (queueVersion) queueVersionRef.current = queueVersion;
 

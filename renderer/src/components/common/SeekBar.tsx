@@ -33,7 +33,7 @@ export function SeekBar({
   const seekTo = (ms: number) => {
     if (!durationMs) return;
     const p = getActiveProvider();
-    p.seek(Math.floor(Math.min(durationMs, Math.max(0, ms)))).then(() => p.refreshPlayback());
+    void p.seek(Math.floor(Math.min(durationMs, Math.max(0, ms)))).then(() => p.refreshPlayback());
   };
 
   const onClick = (e: React.MouseEvent<HTMLDivElement>) => {

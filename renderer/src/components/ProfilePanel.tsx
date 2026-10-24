@@ -114,7 +114,7 @@ function Profile({ userName }: { userName: string }) {
     try {
       const { buffer, mimeType } = await normalizeAvatar(file);
       await window.sonos.uploadProfileImage(userName, buffer, mimeType);
-      invalidateProfile(userName);
+      void invalidateProfile(userName);
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -144,7 +144,7 @@ function Profile({ userName }: { userName: string }) {
       setRenameError('Couldn’t change your name. Try again.');
     } else {
       setRenaming(false);
-      navigate(`/profile/${encodeURIComponent(trimmed)}`);
+      void navigate(`/profile/${encodeURIComponent(trimmed)}`);
     }
   }
 
@@ -196,7 +196,7 @@ function Profile({ userName }: { userName: string }) {
   };
   const addTrack = (t: ProfileTrack) => {
     const item = statsTrackToItem(t);
-    return item ? () => onAddToQueue(item) : undefined;
+    return item ? () => void onAddToQueue(item) : undefined;
   };
 
   // ── Top tracks: click, shift and ctrl select; drag the selection onto the queue ──
@@ -279,7 +279,7 @@ function Profile({ userName }: { userName: string }) {
               type="file"
               accept="image/jpeg,image/png,image/webp"
               hidden
-              onChange={handleAvatarUpload}
+              onChange={(e) => void handleAvatarUpload(e)}
             />
           </button>
         ) : (
@@ -292,7 +292,7 @@ function Profile({ userName }: { userName: string }) {
 
         <div className={styles.heroText}>
           {renaming ? (
-            <form onSubmit={handleRenameSubmit} className={styles.renameForm}>
+            <form onSubmit={(e) => void handleRenameSubmit(e)} className={styles.renameForm}>
               <input
                 className={styles.renameInput}
                 aria-label="Your name"
@@ -365,7 +365,7 @@ function Profile({ userName }: { userName: string }) {
               >
                 Change name
               </PillButton>
-              <PillButton onClick={handleSignOut}>Sign out</PillButton>
+              <PillButton onClick={() => void handleSignOut()}>Sign out</PillButton>
             </div>
           )}
         </div>
@@ -507,7 +507,7 @@ function Profile({ userName }: { userName: string }) {
                   sub={`${pl.trackCount} ${pl.trackCount === 1 ? 'track' : 'tracks'}`}
                   meta={pl.owner !== userName ? `By ${pl.owner}` : !pl.isPublic ? 'Private' : null}
                   imageUrl={pl.imageUrl}
-                  onOpen={() => navigate(`/playlist/${pl.id}`)}
+                  onOpen={() => void navigate(`/playlist/${pl.id}`)}
                 />
               </div>
             ))

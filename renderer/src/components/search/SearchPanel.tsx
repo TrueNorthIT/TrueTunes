@@ -143,7 +143,7 @@ function SearchHome() {
           <Carousel
             title="New to the office"
             gap="1.4em"
-            actions={<SeeAll label="More in Discover" onClick={() => navigate('/discover')} />}
+            actions={<SeeAll label="More in Discover" onClick={() => void navigate('/discover')} />}
           >
             {fresh.map((d) => {
               const t = d.track;
@@ -158,7 +158,7 @@ function SearchHome() {
                         ? openItem(albumItem(t.albumName ?? t.title, { ...t.id, objectId: t.albumId }))
                         : openItem(t.raw)
                     }
-                    onAdd={() => onAddToQueue(t.raw, -1, { attribute: false })}
+                    onAdd={() => void onAddToQueue(t.raw, -1, { attribute: false })}
                   />
                 </div>
               );
@@ -189,7 +189,7 @@ function RecentSearches() {
               type="button"
               className={styles.recent}
               data-search-stop=""
-              onClick={() => navigate(`/search?q=${encodeURIComponent(s)}`, { replace: true })}
+              onClick={() => void navigate(`/search?q=${encodeURIComponent(s)}`, { replace: true })}
             >
               {s}
             </button>

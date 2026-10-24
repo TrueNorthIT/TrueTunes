@@ -310,10 +310,10 @@ function scheduleReconnect(): void {
   if (quitting) return;
   if (reconnectTimer) return; // already pending
   log(`[ws] Reconnecting in ${reconnectDelay / 1000}s`);
-  reconnectTimer = setTimeout(async () => {
+  reconnectTimer = setTimeout(() => {
     reconnectTimer = null;
     reconnectDelay = Math.min(reconnectDelay * 2, 30_000);
-    await connectWebSocket();
+    void connectWebSocket();
   }, reconnectDelay);
 }
 

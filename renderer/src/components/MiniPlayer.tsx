@@ -123,7 +123,7 @@ function MiniPlayer({
 
       <button
         className={styles.closeBtn}
-        onClick={() => window.sonos.closeMiniPlayer()}
+        onClick={() => void window.sonos.closeMiniPlayer()}
         title="Close"
         aria-label="Close mini player"
       >

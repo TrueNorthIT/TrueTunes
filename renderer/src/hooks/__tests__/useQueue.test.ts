@@ -265,7 +265,7 @@ describe('useEditQueue', () => {
   it('does nothing without a group', () => {
     const client = new QueryClient();
     const { result } = renderHook(() => useEditQueue(null), { wrapper: wrapper(client) });
-    act(() => result.current([]));
+    void act(() => result.current([]));
     expect(client.getQueryCache().getAll()).toHaveLength(0);
   });
 });

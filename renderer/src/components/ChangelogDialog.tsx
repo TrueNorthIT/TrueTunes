@@ -122,7 +122,7 @@ export function ChangelogDialog({ onClose }: Props) {
               <button
                 type="button"
                 className={styles.allLink}
-                onClick={() => window.sonos.openExternal(`https://github.com/${REPO}/releases`)}
+                onClick={() => void window.sonos.openExternal(`https://github.com/${REPO}/releases`)}
               >
                 Older releases on GitHub <ExternalLink size={14} aria-hidden="true" />
               </button>
@@ -142,7 +142,7 @@ export function ChangelogDialog({ onClose }: Props) {
                 <button
                   type="button"
                   className={styles.ghLink}
-                  onClick={() => window.sonos.openExternal(selected.html_url)}
+                  onClick={() => void window.sonos.openExternal(selected.html_url)}
                 >
                   View on GitHub <ExternalLink size={14} aria-hidden="true" />
                 </button>
