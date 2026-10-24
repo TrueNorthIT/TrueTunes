@@ -3,6 +3,7 @@ import { render, screen, act, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App } from '../App';
+import { useQueueActions } from '../hooks/useQueueActions';
 import type { SonosItem } from '../types/sonos';
 
 // ── Hoisted refs so vi.mock factories (which are hoisted too) can reference them
@@ -47,8 +48,8 @@ vi.mock('../hooks/useAutoplay', () => ({
 }));
 
 // ── Component stubs ───────────────────────────────────────────────────────────
-// QueueSidebar and HomePanel capture onAddToQueue — either reference gives us
-// the real handleAddToQueue closure from MainApp.
+// QueueSidebar and HomePanel capture the queue actions from context — either gives us
+// the real addToQueue closure from MainApp.
 
 let capturedAddToQueue:
   | ((item: SonosItem, position?: number, opts?: { attribute?: boolean; djFiller?: boolean }) => void)
@@ -56,19 +57,16 @@ let capturedAddToQueue:
 let capturedQueueItems: { track: { id: string } }[] = [];
 
 vi.mock('../components/queue/QueueSidebar', () => ({
-  QueueSidebar: (props: {
-    onAddToQueue: (item: SonosItem, position?: number) => void;
-    items: { track: { id: string } }[];
-  }) => {
-    capturedAddToQueue = props.onAddToQueue;
+  QueueSidebar: (props: { items: { track: { id: string } }[] }) => {
+    capturedAddToQueue = useQueueActions().addToQueue;
     capturedQueueItems = props.items;
     return null;
   },
 }));
 
 vi.mock('../components/HomePanel', () => ({
-  HomePanel: (props: { onAddToQueue: (item: SonosItem, position?: number) => void }) => {
-    capturedAddToQueue = props.onAddToQueue;
+  HomePanel: () => {
+    capturedAddToQueue = useQueueActions().addToQueue;
     return null;
   },
   fetchYtmSections: vi.fn().mockResolvedValue({ sections: [] }),

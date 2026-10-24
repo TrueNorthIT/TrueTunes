@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { seedDisplayName } from '../../test/queueActions';
+import { QueueActionsProvider } from '../../hooks/useQueueActions';
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ProfilePanel } from '../ProfilePanel';
@@ -21,23 +23,16 @@ function stats(over: Partial<StatsResult> = {}): StatsResult {
 
 function renderProfile(userName: string, displayName = 'Joe') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  seedDisplayName(client, displayName);
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[`/profile/${encodeURIComponent(userName)}`]}>
-        <Routes>
-          <Route
-            path="/profile/:userName"
-            element={
-              <ProfilePanel
-                onAddToQueue={vi.fn()}
-                displayName={displayName}
-                onSignOut={vi.fn()}
-                onChangeName={vi.fn(async () => null)}
-              />
-            }
-          />
-        </Routes>
-      </MemoryRouter>
+      <QueueActionsProvider value={{ addToQueue: vi.fn(), queueNext: vi.fn() }}>
+        <MemoryRouter initialEntries={[`/profile/${encodeURIComponent(userName)}`]}>
+          <Routes>
+            <Route path="/profile/:userName" element={<ProfilePanel />} />
+          </Routes>
+        </MemoryRouter>
+      </QueueActionsProvider>
     </QueryClientProvider>
   );
 }

@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, Heart, ListMusic, ListPlus, ListStart, Lock, Plus, UserRound } from 'lucide-react';
 import { useMyPlaylists, favouritesId, playlistKeys } from '../../hooks/usePlaylists';
+import { useDisplayName } from '../../hooks/useDisplayName';
+import { useQueueActions } from '../../hooks/useQueueActions';
 import { useToast } from './Toast';
 import { Dialog } from './Dialog';
 import { PillButton } from './PillButton';
@@ -39,9 +41,6 @@ export function useTrackContextMenu() {
 
 interface ProviderProps {
   children: React.ReactNode;
-  displayName: string | null | undefined;
-  onAddToQueue: (item: SonosItem, position?: number) => void;
-  onQueueNext: (item: SonosItem) => void;
 }
 
 interface SubmenuAnchor {
@@ -150,7 +149,9 @@ function PlaylistSubmenu({
   );
 }
 
-export function ContextMenuProvider({ children, displayName, onAddToQueue, onQueueNext }: ProviderProps) {
+export function ContextMenuProvider({ children }: ProviderProps) {
+  const displayName = useDisplayName();
+  const { addToQueue: onAddToQueue, queueNext: onQueueNext } = useQueueActions();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showToast } = useToast();

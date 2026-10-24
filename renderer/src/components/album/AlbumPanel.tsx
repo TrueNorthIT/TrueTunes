@@ -39,16 +39,17 @@ import { SectionCard } from '../common/SectionCard';
 import { AlbumTrackRow } from './AlbumTrackRow';
 import type { SonosItem, SonosItemId } from '../../types/sonos';
 import styles from '../../styles/AlbumPanel.module.css';
+import { useQueueActions } from '../../hooks/useQueueActions';
 
 const ABOUT_SKELETON = ['94%', '88%', '96%', '72%', '90%', '58%'];
 
 interface Props {
-  onAddToQueue: (item: SonosItem) => Promise<void> | void;
   /** Live playback, to mark the track that is playing. Optional. */
   playback?: PlaybackState;
 }
 
-export function AlbumPanel({ onAddToQueue, playback }: Props) {
+export function AlbumPanel({ playback }: Props) {
+  const { addToQueue: onAddToQueue } = useQueueActions();
   const { state } = useLocation();
   const item = (state as { item?: SonosItem } | null)?.item;
   const navigate = useNavigate();

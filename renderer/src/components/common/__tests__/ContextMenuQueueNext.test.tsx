@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { seedDisplayName } from '../../../test/queueActions';
+import { QueueActionsProvider } from '../../../hooks/useQueueActions';
 import { ContextMenuProvider, useTrackContextMenu } from '../ContextMenu';
 import type { SonosItem } from '../../../types/sonos';
 import { AlbumTrackRow } from '../../album/AlbumTrackRow';
@@ -26,11 +28,15 @@ function Opener() {
 function setup() {
   const onAddToQueue = vi.fn();
   const onQueueNext = vi.fn();
+  const client = new QueryClient();
+  seedDisplayName(client, 'Rich');
   render(
-    <QueryClientProvider client={new QueryClient()}>
-      <ContextMenuProvider displayName="Rich" onAddToQueue={onAddToQueue} onQueueNext={onQueueNext}>
-        <Opener />
-      </ContextMenuProvider>
+    <QueryClientProvider client={client}>
+      <QueueActionsProvider value={{ addToQueue: onAddToQueue, queueNext: onQueueNext }}>
+        <ContextMenuProvider>
+          <Opener />
+        </ContextMenuProvider>
+      </QueueActionsProvider>
     </QueryClientProvider>
   );
   fireEvent.contextMenu(screen.getByText('row'));
@@ -73,11 +79,13 @@ describe('Queue next is offered on track rows across the app', () => {
 
   function rightClickQueueNext(row: React.ReactElement) {
     const onQueueNext = vi.fn();
+    const client = new QueryClient();
+    seedDisplayName(client, 'Rich');
     render(
-      <QueryClientProvider client={new QueryClient()}>
-        <ContextMenuProvider displayName="Rich" onAddToQueue={vi.fn()} onQueueNext={onQueueNext}>
-          {row}
-        </ContextMenuProvider>
+      <QueryClientProvider client={client}>
+        <QueueActionsProvider value={{ addToQueue: vi.fn(), queueNext: onQueueNext }}>
+          <ContextMenuProvider>{row}</ContextMenuProvider>
+        </QueueActionsProvider>
       </QueryClientProvider>
     );
     fireEvent.contextMenu(screen.getByText('Come Together'));
