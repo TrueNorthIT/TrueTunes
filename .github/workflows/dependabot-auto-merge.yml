@@ -3,6 +3,7 @@ name: Dependabot auto-merge
 # Patch bumps (x.y.Z) merge themselves once the required `validate` check passes; minors and majors wait for a person.
 # The merge is made with GITHUB_TOKEN, which starts no workflows, so it doesn't bump the version or build a release:
 # patches ship with the next human merge to main.
+# A Dependabot PR merged by hand does start publish.yml; its version job skips Dependabot merges for the same result.
 on: pull_request
 
 permissions:

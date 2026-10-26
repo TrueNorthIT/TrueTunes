@@ -78,7 +78,16 @@ jobs:
 
   version:
     needs: validate
-    if: github.event_name == 'push'
+    # No release for a Dependabot merge: its update lands on main and ships with the next human-merged release.
+    # Auto-merges (GITHUB_TOKEN) start no run at all, but a person merging a Dependabot PR does, and github.actor
+    # is then that person. So look at the pushed commit instead:
+    #   - squash/rebase merge: the commit's author is dependabot[bot] (e.g. 6334b11, #166, merged by hand);
+    #   - merge commit: the message is "Merge pull request #N from <owner>/dependabot/...".
+    # Skipping version also skips publish (needs: version).
+    if: >-
+      github.event_name == 'push' &&
+      github.event.head_commit.author.name != 'dependabot[bot]' &&
+      !contains(github.event.head_commit.message, format('from {0}/dependabot/', github.repository_owner))
     runs-on: ubuntu-latest
     permissions:
       contents: write
