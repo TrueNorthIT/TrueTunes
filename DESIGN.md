@@ -260,6 +260,7 @@ Every font size in the CSS is one of these tokens, enforced by Stylelint. Glyph,
 
 ### Named Rules
 **The Sentence Case Rule.** Titles, captions, buttons and chips are sentence case. Hierarchy comes from size, weight 600 and negative tracking, not from capitals or a second face. Server strings in title case (tier names) are sentence-cased in CSS.
+Exception: Queuedle's round names, Higher or Lower and Top Queuer, are names and keep their capitals.
 
 **The 13px Floor Rule.** No content text renders below 13px at any window width. 0.93em is the smallest plain `em` step that holds 13px at the 14px base; anything smaller is written `max(13px, Xem)`. Tabular numerals (`font-variant-numeric: tabular-nums`) are used for ranks, play counts, facts and times.
 

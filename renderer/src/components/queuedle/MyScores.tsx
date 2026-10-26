@@ -32,13 +32,13 @@ export function MyScores({ mainScore, bonusScore, maxMain, maxBonus, standing, m
       </div>
       <div className={styles.rounds}>
         <ScoreDistribution
-          title="Higher or lower"
+          title="Higher or Lower"
           scores={mainScores ?? [mainScore]}
           maxScore={maxMain}
           playerScore={mainScore}
         />
         <ScoreDistribution
-          title="Top queuer"
+          title="Top Queuer"
           scores={bonusScores ?? [bonusScore]}
           maxScore={maxBonus}
           playerScore={bonusScore}

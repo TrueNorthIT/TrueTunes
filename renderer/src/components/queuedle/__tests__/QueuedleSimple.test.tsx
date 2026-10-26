@@ -47,14 +47,30 @@ describe('QueuedleBonusResults', () => {
     expect(screen.getByText('The Beatles')).toBeInTheDocument();
   });
 
-  it('shows correct checkmark when guess matches topQueuer', () => {
+  it('marks a right pick with a tick, as your pick and the top queuer', () => {
     render(<QueuedleBonusResults winningItems={items} bonusGuesses={['alice', 'wrong']} onContinue={vi.fn()} />);
-    expect(screen.getByText(/✓ alice/)).toBeInTheDocument();
+    const row = screen.getByTitle('alice');
+    expect(row).toHaveAttribute('data-result', 'right');
+    expect(row).toHaveTextContent('alice✓, your pick, top queuer');
   });
 
-  it('shows wrong mark when guess does not match', () => {
+  it('marks a wrong pick with a cross and the top queuer with a tick, both by name', () => {
     render(<QueuedleBonusResults winningItems={items} bonusGuesses={['alice', 'wrong']} onContinue={vi.fn()} />);
-    expect(screen.getByText(/✗ wrong/)).toBeInTheDocument();
+    const pick = screen.getByTitle('wrong');
+    expect(pick).toHaveAttribute('data-result', 'wrong');
+    expect(pick).toHaveTextContent('wrong✗, your pick');
+    const answer = screen.getByTitle('bob');
+    expect(answer).toHaveAttribute('data-result', 'right');
+    expect(answer).toHaveTextContent('bob✓, top queuer');
+  });
+
+  it('lists every candidate on the card, unmarked ones without a tick or cross', () => {
+    const withCandidates = [{ ...items[0], queuerCandidates: ['alice', 'cara', 'dan'] }];
+    render(<QueuedleBonusResults winningItems={withCandidates} bonusGuesses={['cara']} onContinue={vi.fn()} />);
+    const list = screen.getByRole('list', { name: 'Who queued Come Together most' });
+    expect(list.querySelectorAll('li')).toHaveLength(3);
+    expect(screen.getByTitle('dan')).toHaveAttribute('data-result', 'other');
+    expect(screen.getByTitle('dan')).not.toHaveTextContent(/[✓✗]/);
   });
 
   it('calls onContinue when See my score is clicked', async () => {
@@ -74,8 +90,8 @@ describe('MyScores', () => {
 
   it('shows each round with its score', () => {
     render(<MyScores mainScore={3} bonusScore={2} maxMain={5} maxBonus={3} />);
-    expect(screen.getByText('Higher or lower')).toBeInTheDocument();
-    expect(screen.getByText('Top queuer')).toBeInTheDocument();
+    expect(screen.getByText('Higher or Lower')).toBeInTheDocument();
+    expect(screen.getByText('Top Queuer')).toBeInTheDocument();
     expect(screen.getByText('3/5')).toBeInTheDocument();
     expect(screen.getByText('2/3')).toBeInTheDocument();
   });
@@ -98,7 +114,7 @@ describe('MyScores', () => {
   it('summarises how the room scored for screen readers', () => {
     render(<MyScores mainScore={3} bonusScore={2} maxMain={5} maxBonus={3} mainScores={[3, 3, 1]} bonusScores={[2]} />);
     expect(
-      screen.getByRole('img', { name: 'Higher or lower across the room: 1 scored 1, 2 scored 3' })
+      screen.getByRole('img', { name: 'Higher or Lower across the room: 1 scored 1, 2 scored 3' })
     ).toBeInTheDocument();
   });
 });
