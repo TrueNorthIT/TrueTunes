@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ReactNode } from 'react';
-import { expect, fn, userEvent, within } from 'storybook/test';
-import { QueueActionsProvider } from '../../hooks/useQueueActions';
+import { expect, userEvent, within } from 'storybook/test';
 import { covers, portrait } from '../../../.storybook/fixtures';
 import { QueuedlePanel } from './QueuedlePanel';
 
@@ -194,7 +193,7 @@ export const QuestionRevealed: Story = {
   },
 };
 
-/** Round three answered, with a track as the challenger: its + adds it to the queue (here, to the Actions panel). */
+/** Round three answered, with a track as the challenger: right-click it for the track menu (queue, playlists). */
 export const QuestionRevealedTrack: Story = {
   beforeEach: stub({
     phase: 'main',
@@ -203,19 +202,12 @@ export const QuestionRevealedTrack: Story = {
     mainGuesses: allRight.slice(0, 3),
     bonusSelections: [],
   }),
-  decorators: [
-    (Story) => (
-      <QueueActionsProvider value={{ addToQueue: fn(), queueNext: fn() }}>
-        <Story />
-      </QueueActionsProvider>
-    ),
-  ],
   play: async ({ canvasElement }) => {
-    await within(canvasElement).findByRole('button', { name: `Add ${questions[2].right.name} to queue` });
+    await within(canvasElement).findByText(questions[2].right.name);
   },
 };
 
-/** Already played today: the scores, the room and your answers, where each track has its +. */
+/** Already played today: the scores, the room and your answers, where each track has the track menu. */
 export const Results: Story = {
   beforeEach: () => {
     const restore = stub(null)();
@@ -225,17 +217,9 @@ export const Results: Story = {
     );
     return restore;
   },
-  decorators: [
-    (Story) => (
-      <QueueActionsProvider value={{ addToQueue: fn(), queueNext: fn() }}>
-        <Story />
-      </QueueActionsProvider>
-    ),
-  ],
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await canvas.findByText('Your answers');
-    await expect(canvas.getAllByRole('button', { name: `Add ${items[3].name} to queue` }).length).toBeGreaterThan(0);
   },
 };
 

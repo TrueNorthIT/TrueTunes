@@ -1,8 +1,7 @@
 import { Music } from 'lucide-react';
 import { PillButton } from '../common/PillButton';
-import { AddButton } from '../common/AddButton';
-import { useQueueActions } from '../../hooks/useQueueActions';
-import { gameTrackToItem } from '../../lib/homeData';
+import { useTrackContextMenu } from '../common/ContextMenu';
+import { gameTrackMenu } from '../../lib/homeData';
 import styles from '../../styles/Queuedle.module.css';
 
 interface Props {
@@ -36,10 +35,11 @@ function Side({
   pickedSide: 'left' | 'right' | null;
   onPick: (side: 'left' | 'right') => void;
 }) {
-  const { addToQueue } = useQueueActions();
+  const { showTrackMenu } = useTrackContextMenu();
   const yours = revealed && pickedSide === side;
-  // A track can be queued once the round is revealed, never before the pick (it would spoil the round).
-  const queueable = revealed ? gameTrackToItem(item) : null;
+  // A track's context menu (queue, playlists) opens once the round is revealed, never before the pick (it would
+  // spoil the round).
+  const menu = revealed ? gameTrackMenu(item) : null;
   const slideFrom = isCarryover && carryFrom !== null && carryFrom !== side ? carryFrom : null;
   const cls = [
     styles.side,
@@ -79,12 +79,17 @@ function Side({
             {isWinner ? '✓' : '✗'} Your pick
           </span>
         )}
-        {queueable && <AddButton label={`Add ${item.name} to queue`} onClick={() => void addToQueue(queueable)} />}
       </span>
     </>
   );
 
-  if (revealed) return <div className={cls}>{body}</div>;
+  if (revealed) {
+    return (
+      <div className={cls} onContextMenu={menu ? (e) => showTrackMenu(menu, e) : undefined}>
+        {body}
+      </div>
+    );
+  }
   return (
     <button type="button" className={cls} onClick={() => onPick(side)} disabled={pickedSide !== null}>
       {body}
