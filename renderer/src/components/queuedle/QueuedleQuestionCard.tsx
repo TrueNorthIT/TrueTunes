@@ -46,13 +46,16 @@ function Side({
 
   const body = (
     <>
-      <span className={`${styles.sideArt}${item.category === 'artist' ? ' ' + styles.round : ''}`}>
-        {item.imageUrl ? <img src={item.imageUrl} alt="" loading="lazy" /> : <Music size={40} aria-hidden="true" />}
+      <span className={styles.sideArtBox}>
+        <span className={`${styles.sideArt}${item.category === 'artist' ? ' ' + styles.round : ''}`}>
+          {item.imageUrl ? <img src={item.imageUrl} alt="" loading="lazy" /> : <Music size={40} aria-hidden="true" />}
+        </span>
       </span>
       <span className={styles.sideText}>
         <span className={styles.kind}>{KIND[item.category]}</span>
         <span className={styles.itemName}>{item.name}</span>
-        {item.subtitle && item.category !== 'artist' ? <span className={styles.itemSub}>{item.subtitle}</span> : null}
+        {/* An empty sub-line still takes its height, so both prints come out the same size. */}
+        <span className={styles.itemSub}>{item.subtitle && item.category !== 'artist' ? item.subtitle : ''}</span>
       </span>
       <span className={styles.sideFoot}>
         {revealed || isCarryover ? (
@@ -76,13 +79,7 @@ function Side({
 
   if (revealed) return <div className={cls}>{body}</div>;
   return (
-    <button
-      type="button"
-      className={cls}
-      onClick={() => onPick(side)}
-      disabled={pickedSide !== null}
-      aria-label={`${PICK[item.category]}: ${item.name}${isCarryover ? `, ${item.count} queues` : ''}`}
-    >
+    <button type="button" className={cls} onClick={() => onPick(side)} disabled={pickedSide !== null}>
       {body}
     </button>
   );

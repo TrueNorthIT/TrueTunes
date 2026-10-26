@@ -1,4 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { callerName } from '../lib/caller';
 import { getPlaylistContainer } from '../lib/getContainer';
 
 export async function playlistCreateHandler(
@@ -12,7 +13,10 @@ export async function playlistCreateHandler(
     return { status: 400, jsonBody: { error: 'Invalid JSON body' } };
   }
 
-  const { name, isPublic = false, owner } = body;
+  const { name, isPublic = false } = body;
+  const caller = await callerName(request, context, body.owner);
+  if ('response' in caller) return caller.response;
+  const owner = caller.name;
   if (!name || !owner) {
     return { status: 400, jsonBody: { error: 'name and owner required' } };
   }
@@ -44,7 +48,6 @@ export async function playlistCreateHandler(
     return {
       status: 201,
       jsonBody: doc,
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[playlist-create] create failed:', err);

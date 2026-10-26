@@ -23,7 +23,6 @@ export async function getGameHandler(request: HttpRequest, context: InvocationCo
       return {
         status: 404,
         jsonBody: { status: 'pending', gameId, message: "Today's Queuedle hasn't been generated yet." },
-        headers: { 'Access-Control-Allow-Origin': '*' },
       };
     }
 
@@ -31,21 +30,18 @@ export async function getGameHandler(request: HttpRequest, context: InvocationCo
       return {
         status: 202,
         jsonBody: { status: 'pending', gameId },
-        headers: { 'Access-Control-Allow-Origin': '*' },
       };
     }
 
     return {
       status: 200,
       jsonBody: resource,
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err: unknown) {
     if ((err as { code?: number }).code === 404) {
       return {
         status: 404,
         jsonBody: { status: 'pending', gameId },
-        headers: { 'Access-Control-Allow-Origin': '*' },
       };
     }
     context.error('[get-game] read failed:', err);

@@ -38,6 +38,7 @@ import {
 import type { AlbumTrack } from '../../hooks/useAlbumBrowse';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/ArtistPanel.module.css';
+import { useQueueActions } from '../../hooks/useQueueActions';
 
 // "Man Alive (Deluxe)" -> "Man Alive"
 function baseName(title = ''): string {
@@ -68,12 +69,12 @@ function extractBio(description: GeniusDomNode | null): string {
 const SNAP_ROW = { scrollSnapType: 'x mandatory', scrollPaddingInline: '4px' } as const;
 
 interface Props {
-  onAddToQueue: (item: SonosItem) => void;
   currentTrackName: string;
   isPlaybackActive: boolean;
 }
 
-export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }: Props) {
+export function ArtistPanel({ currentTrackName, isPlaybackActive }: Props) {
+  const { addToQueue: onAddToQueue } = useQueueActions();
   const { state } = useLocation();
   const item = (state as { item?: SonosItem } | null)?.item;
   const openItem = useOpenItem();
@@ -246,7 +247,7 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
           key={key}
           album={group.primary}
           onOpen={openItem}
-          onAdd={onAddToQueue}
+          onAdd={(item) => void onAddToQueue(item)}
           year={years.get(primaryKey)}
           artistName={name}
           trackHits={trackHits.get(primaryKey)}
@@ -277,7 +278,7 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
         closeRef={refFor(closeEls, key)}
         artistName={name}
         onOpen={openItem}
-        onAdd={onAddToQueue}
+        onAdd={(item) => void onAddToQueue(item)}
         years={years}
         trackHits={trackHits}
         searching={searching}
@@ -322,7 +323,7 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
                 </PillButton>
               ))
             ) : (
-              <PillButton onClick={() => navigate(`/search?q=${encodeURIComponent(name)}`)}>
+              <PillButton onClick={() => void navigate(`/search?q=${encodeURIComponent(name)}`)}>
                 <Search size={16} aria-hidden="true" />
                 Search for {name}
               </PillButton>
@@ -346,7 +347,7 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
                 <LatestReleaseCard
                   album={latestAlbum}
                   onOpen={openItem}
-                  onAdd={onAddToQueue}
+                  onAdd={(item) => void onAddToQueue(item)}
                   artistName={name}
                   year={years.get(releaseKey(latestAlbum))}
                   songCount={latestData?.totalTracks}
@@ -365,7 +366,7 @@ export function ArtistPanel({ onAddToQueue, currentTrackName, isPlaybackActive }
                           isSelected={selected.has(i)}
                           isCurrentTrack={track.title === currentTrackName}
                           isPlaybackActive={isPlaybackActive}
-                          onAdd={onAddToQueue}
+                          onAdd={(item) => void onAddToQueue(item)}
                           onClick={handleTrackClick}
                           onDragStart={handleDragStart}
                           onOpenAlbum={openTrackAlbum}

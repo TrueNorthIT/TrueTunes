@@ -7,9 +7,8 @@ import { useGroups } from '../hooks/useGroups';
 import { usePlayback } from '../hooks/usePlayback';
 import { useNowPlaying } from '../hooks/useNowPlaying';
 import { useQueuer } from '../hooks/useQueuer';
-import { fmtTime } from '../lib/itemHelpers';
 import { UserAvatar } from './common/UserAvatar';
-import { SeekBar } from './common/SeekBar';
+import { LiveSeekBar, PlaybackRemaining } from './common/SeekBar';
 import { TransportButtons } from './common/TransportButtons';
 import styles from '../styles/MiniPlayer.module.css';
 
@@ -58,22 +57,9 @@ function MiniPlayer({
   playback: ReturnType<typeof usePlayback>['playback'];
   isAuthed: boolean;
 }) {
-  const {
-    displayTrack,
-    displayArtist,
-    cachedArt,
-    progressPct,
-    durationMs,
-    isPlaying,
-    dominantColor,
-    elapsedLabel,
-    durationLabel,
-    currentObjectId,
-  } = useNowPlaying(playback);
+  const { displayTrack, displayArtist, cachedArt, durationMs, isPlaying, dominantColor, currentObjectId } =
+    useNowPlaying(playback);
   const queuer = useQueuer({ id: currentObjectId, title: displayTrack, artist: displayArtist });
-
-  const pct = Math.min(100, Math.max(0, progressPct || 0));
-  const remaining = durationMs > 0 ? `−${fmtTime(Math.max(0, durationMs * (1 - pct / 100)))}` : '';
 
   return (
     <div
@@ -119,36 +105,25 @@ function MiniPlayer({
                 <UserAvatar name={queuer.user} imageUrl={queuer.imageUrl} className={styles.queuerAvatar} />
                 <span className={styles.queuerName}>{queuer.user}</span>
               </span>
-              {remaining && (
-                <span className={styles.time} aria-hidden="true">
-                  {remaining}
-                </span>
-              )}
+              <PlaybackRemaining className={styles.time} />
             </div>
           )}
           <div className={styles.progressRow}>
-            <SeekBar
-              progressPct={progressPct}
+            <LiveSeekBar
               durationMs={durationMs}
-              elapsedLabel={elapsedLabel}
-              durationLabel={durationLabel}
               className={styles.progress}
               trackClassName={styles.progressTrack}
               fillClassName={styles.progressFill}
-              title={elapsedLabel && durationLabel ? `${elapsedLabel} / ${durationLabel}` : undefined}
+              timeTitle
             />
-            {!queuer && remaining && (
-              <span className={styles.time} aria-hidden="true">
-                {remaining}
-              </span>
-            )}
+            {!queuer && <PlaybackRemaining className={styles.time} />}
           </div>
         </div>
       </div>
 
       <button
         className={styles.closeBtn}
-        onClick={() => window.sonos.closeMiniPlayer()}
+        onClick={() => void window.sonos.closeMiniPlayer()}
         title="Close"
         aria-label="Close mini player"
       >

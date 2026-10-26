@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { trackPayload } from '../../lib/itemHelpers';
 import { useNavigate } from 'react-router-dom';
 import { useImage } from '../../hooks/useImage';
@@ -23,6 +24,8 @@ interface Props {
   isSelected: boolean;
   /** Already played: shown dimmed. */
   played?: boolean;
+  /** Audio is really playing (not just this being the current track): the bars only move then. */
+  audioPlaying?: boolean;
   timeToPlay?: number;
   timeEstimated?: boolean;
   onRowClick: (index: number, e: React.MouseEvent) => void;
@@ -40,7 +43,7 @@ function fmtClockTime(ms: number): string {
   return `${h % 12 || 12}:${m} ${ampm}`;
 }
 
-export function DraggableQueueRow({
+export const DraggableQueueRow = memo(function DraggableQueueRow({
   item,
   index,
   currentObjectId,
@@ -49,6 +52,7 @@ export function DraggableQueueRow({
   attributionImageUrl,
   isSelected,
   played,
+  audioPlaying = false,
   timeToPlay,
   timeEstimated,
   onRowClick,
@@ -92,7 +96,7 @@ export function DraggableQueueRow({
       data-playing={isPlaying ? 'true' : undefined}
       draggable
       onClick={(e) => onRowClick(index, e)}
-      onDoubleClick={() => getActiveProvider().skipToTrack(index + 1)}
+      onDoubleClick={() => void getActiveProvider().skipToTrack(index + 1)}
       onContextMenu={(e) => showTrackMenu({ track: payload }, e)}
       onDragStart={(e) => onDragStart(index, e)}
       onDragOver={(e) => onDragOver(index, e)}
@@ -121,7 +125,7 @@ export function DraggableQueueRow({
         )}
         {isPlaying && (
           <div className={styles.overlay}>
-            <EqBars className={styles.eq} />
+            <EqBars className={styles.eq} paused={!audioPlaying} />
           </div>
         )}
       </div>
@@ -177,7 +181,7 @@ export function DraggableQueueRow({
           title={`Queued by ${attribution.user}`}
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/profile/${encodeURIComponent(attribution.user)}`);
+            void navigate(`/profile/${encodeURIComponent(attribution.user)}`);
           }}
         >
           <UserAvatar name={attribution.user} imageUrl={attributionImageUrl} className={styles.queuerAvatar} />
@@ -185,4 +189,4 @@ export function DraggableQueueRow({
       )}
     </div>
   );
-}
+});

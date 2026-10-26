@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, Heart, ListMusic, ListPlus, ListStart, Lock, Plus, UserRound } from 'lucide-react';
 import { useMyPlaylists, favouritesId, playlistKeys } from '../../hooks/usePlaylists';
+import { useDisplayName } from '../../hooks/useDisplayName';
+import { useQueueActions } from '../../hooks/useQueueActions';
 import { useToast } from './Toast';
 import { Dialog } from './Dialog';
 import { PillButton } from './PillButton';
@@ -39,9 +41,6 @@ export function useTrackContextMenu() {
 
 interface ProviderProps {
   children: React.ReactNode;
-  displayName: string | null | undefined;
-  onAddToQueue: (item: SonosItem, position?: number) => void;
-  onQueueNext: (item: SonosItem) => void;
 }
 
 interface SubmenuAnchor {
@@ -91,10 +90,10 @@ function PlaylistSubmenu({
   async function handleAdd(playlist: PlaylistMeta) {
     try {
       await window.sonos.addTrackToPlaylist(playlist.id, track);
-      queryClient.invalidateQueries({ queryKey: playlistKeys.detail(playlist.id) });
-      queryClient.invalidateQueries({ queryKey: playlistKeys.owned(playlist.owner) });
+      void queryClient.invalidateQueries({ queryKey: playlistKeys.detail(playlist.id) });
+      void queryClient.invalidateQueries({ queryKey: playlistKeys.owned(playlist.owner) });
       if (displayName && playlist.owner !== displayName) {
-        queryClient.invalidateQueries({ queryKey: playlistKeys.joined(displayName) });
+        void queryClient.invalidateQueries({ queryKey: playlistKeys.joined(displayName) });
       }
     } catch {
       showToast(`Failed to add to ${playlist.name}`);
@@ -126,7 +125,7 @@ function PlaylistSubmenu({
       {isLoading && <div className={styles.emptyHint}>Loading…</div>}
       {!isLoading && allPlaylists.length === 0 && <div className={styles.emptyHint}>No playlists yet</div>}
       {allPlaylists.map((pl) => (
-        <button key={pl.id} type="button" role="menuitem" className={styles.item} onClick={() => handleAdd(pl)}>
+        <button key={pl.id} type="button" role="menuitem" className={styles.item} onClick={() => void handleAdd(pl)}>
           <ListMusic className={styles.itemIcon} size={16} aria-hidden="true" />
           <span className={styles.itemLabel}>{pl.name}</span>
           {!pl.isPublic && <Lock className={styles.itemTrail} size={13} aria-label="Private" />}
@@ -150,7 +149,9 @@ function PlaylistSubmenu({
   );
 }
 
-export function ContextMenuProvider({ children, displayName, onAddToQueue, onQueueNext }: ProviderProps) {
+export function ContextMenuProvider({ children }: ProviderProps) {
+  const displayName = useDisplayName();
+  const { addToQueue: onAddToQueue, queueNext: onQueueNext } = useQueueActions();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -207,12 +208,12 @@ export function ContextMenuProvider({ children, displayName, onAddToQueue, onQue
   }, [menuState.open, close]);
 
   function handleQueueNext() {
-    if (menuState.payload?.sonosItem) onQueueNext(menuState.payload.sonosItem);
+    if (menuState.payload?.sonosItem) void onQueueNext(menuState.payload.sonosItem);
     close();
   }
 
   function handleAddToQueue() {
-    if (menuState.payload?.sonosItem) onAddToQueue(menuState.payload.sonosItem, -1);
+    if (menuState.payload?.sonosItem) void onAddToQueue(menuState.payload.sonosItem, -1);
     close();
   }
 
@@ -229,8 +230,8 @@ export function ContextMenuProvider({ children, displayName, onAddToQueue, onQue
     }
     try {
       await window.sonos.addTrackToPlaylist(favId, track);
-      queryClient.invalidateQueries({ queryKey: playlistKeys.detail(favId) });
-      queryClient.invalidateQueries({ queryKey: playlistKeys.owned(displayName) });
+      void queryClient.invalidateQueries({ queryKey: playlistKeys.detail(favId) });
+      void queryClient.invalidateQueries({ queryKey: playlistKeys.owned(displayName) });
     } catch {
       if (snapshot) queryClient.setQueryData(playlistKeys.detail(favId), snapshot);
       showToast('Failed to add to Favourites');
@@ -254,7 +255,7 @@ export function ContextMenuProvider({ children, displayName, onAddToQueue, onQue
 
   function handleOpenProfile() {
     if (menuState.payload?.track.addedBy) {
-      navigate(`/profile/${encodeURIComponent(menuState.payload.track.addedBy)}`);
+      void navigate(`/profile/${encodeURIComponent(menuState.payload.track.addedBy)}`);
     }
     close();
   }
@@ -289,7 +290,12 @@ export function ContextMenuProvider({ children, displayName, onAddToQueue, onQue
               </>
             )}
             {displayName && (
-              <button type="button" role="menuitem" className={styles.item} onClick={handleAddToFavourites}>
+              <button
+                type="button"
+                role="menuitem"
+                className={styles.item}
+                onClick={() => void handleAddToFavourites()}
+              >
                 <Heart className={styles.itemIcon} size={16} aria-hidden="true" />
                 Add to Favourites
               </button>
@@ -371,7 +377,7 @@ export function CreatePlaylistDialog({
       if (pendingTrack && playlist.id) {
         await window.sonos.addTrackToPlaylist(playlist.id, pendingTrack);
       }
-      queryClient.invalidateQueries({ queryKey: playlistKeys.owned(displayName) });
+      void queryClient.invalidateQueries({ queryKey: playlistKeys.owned(displayName) });
       onClose();
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : String(err));

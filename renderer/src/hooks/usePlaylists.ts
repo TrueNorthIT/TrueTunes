@@ -56,8 +56,8 @@ export function useMyPlaylists(userName: string | null | undefined) {
     joined: joined.data ?? [],
     isLoading: owned.isLoading || joined.isLoading,
     refetch: () => {
-      owned.refetch();
-      joined.refetch();
+      void owned.refetch();
+      void joined.refetch();
     },
   };
 }
@@ -109,8 +109,8 @@ export function useFavourite(displayName: string | null | undefined, track: FavT
       }
       try {
         await window.sonos.removeTrackFromPlaylist(favId, track.uri);
-        queryClient.invalidateQueries({ queryKey: playlistKeys.detail(favId) });
-        queryClient.invalidateQueries({ queryKey: playlistKeys.owned(displayName) });
+        void queryClient.invalidateQueries({ queryKey: playlistKeys.detail(favId) });
+        void queryClient.invalidateQueries({ queryKey: playlistKeys.owned(displayName) });
       } catch {
         if (snapshot) queryClient.setQueryData(playlistKeys.detail(favId), snapshot);
         showToast('Failed to remove from Favourites');
@@ -135,8 +135,8 @@ export function useFavourite(displayName: string | null | undefined, track: FavT
       }
       try {
         await window.sonos.addTrackToPlaylist(favId, playlistTrack);
-        queryClient.invalidateQueries({ queryKey: playlistKeys.detail(favId) });
-        queryClient.invalidateQueries({ queryKey: playlistKeys.owned(displayName) });
+        void queryClient.invalidateQueries({ queryKey: playlistKeys.detail(favId) });
+        void queryClient.invalidateQueries({ queryKey: playlistKeys.owned(displayName) });
       } catch {
         if (snapshot) queryClient.setQueryData(playlistKeys.detail(favId), snapshot);
         showToast('Failed to add to Favourites');

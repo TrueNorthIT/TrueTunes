@@ -32,6 +32,8 @@ The renderer is **never type-checked by Vite** (esbuild strips types). `npm run 
 
 **The live app drives the office speakers.** Never press (or script a click on) add, queue, play next, station, transport or seek controls, and never play or submit Queuedle, feedback or polls. Navigate and hover only. To see a control's states, use its story in Storybook (below), where nothing reaches Sonos.
 
+In dev builds the DJ autoplay client never requests the enqueue lease (preview only), so a dev instance can't add filler to the real queue; set `VITE_DJ_AUTOPLAY_IN_DEV=true` to opt in.
+
 `npm run dev` enables Chrome DevTools Protocol on port 9333 (`curl -s http://localhost:9333/json/version` to check).
 
 ```bash
@@ -52,18 +54,26 @@ Live data (now playing, queue, picks) changes between shots, so for before/after
 
 `src/preload.ts` exposes `window.sonos` via `contextBridge.exposeInMainWorld`. Every renderer→main call goes through this.
 
-- Add a new capability: declare it in `SonosAPI` in `preload.ts`, implement it in the `contextBridge.exposeInMainWorld` call, add an `ipcMain.handle` in `main.ts`, and add the type to `renderer/src/types/globals.d.ts` (`SonosPreload` interface).
+- Add a new capability: declare it in `SonosAPI` in `preload.ts`, implement it in the `contextBridge.exposeInMainWorld` call, add an `ipcMain.handle` in the matching `src/ipc/<domain>.ts` module's `register()`, and add the type to `renderer/src/types/globals.d.ts` (`SonosPreload` interface).
+- `main.ts` keeps app lifecycle, window creation and wiring only. Handlers live in `src/ipc/*.ts` (one module per domain, each exporting `register()`); shared config and runtime state live in `src/state.ts`; the Sonos HTTP and WebSocket clients in `src/sonos-api.ts` and `src/sonos-ws.ts`. No circular imports: a module needing something from `main.ts` gets it through its `init`/`register` deps.
+- `installIpcGuard()` (`src/ipc/guard.ts`) wraps `ipcMain.handle` with the sender check. `main.ts` calls it before any `register()`; a handler registered before it gets no check. `src/ipc-channels.test.ts` fails if a preload channel has no registered handler.
 - `globals.d.ts` must NOT have `export {}` — it is a pure ambient file. Adding `export {}` turns it into a module and breaks all global type visibility.
 
 ### Sonos API
 
-All Sonos HTTP calls go through `src/main.ts` → `sonosFetch()` → play.sonos.com BFF. The renderer calls `window.sonos.fetch({ operationId, pathParams, query, body })` — operationIds are defined in `SonosWebPlayerAPI.yaml` at the repo root.
+All Sonos HTTP calls go through `src/sonos-api.ts` → `sonosFetch()` → play.sonos.com BFF. The renderer calls `window.sonos.fetch({ operationId, pathParams, query, body })` — operationIds are defined in `SonosWebPlayerAPI.yaml` at the repo root.
 
 `renderer/src/lib/sonosApi.ts` is the typed wrapper around `window.sonos.fetch` — add new API calls here.
 
 ### React Query
 
-All data fetching in the renderer uses React Query (`@tanstack/react-query`). Query options factories (e.g. `trackQueryOptions`, `albumQueryOptions`) live alongside their hooks and can be called directly in tests without a QueryClient — just call `opts.queryFn()`.
+All data fetching in the renderer uses React Query (`@tanstack/react-query`). Each query is a factory wrapped in `queryOptions()` (e.g. `trackQueryOptions`), living alongside its hook with an `xxxKeys` key factory in the same file (e.g. `playlistKeys.owned(id)`). Use the key factory for every invalidation and `setQueryData`; never type a key out by hand. The QueryClient default `staleTime` is 5 minutes (`renderer/src/main.tsx`); only a query that deliberately differs sets one, using `STALE` / `GC_HOUR` from `lib/queryDefaults.ts`. The signed-in name comes from `useDisplayName()`.
+
+### Playback position (the per-second tick)
+
+`PlaybackState` (from `usePlayback`) changes only when Sonos pushes an update. The moving position (`positionMs`, `progressPct`, `timeLabel`, `trackEndsAtMs`) lives in `hooks/playbackPosition.ts`, a tiny external store: read it with `usePlaybackPosition(select)` (pick a primitive so you re-render only when it changes), or `getPlaybackPosition()` inside an effect or handler. Never add the position back into `PlaybackState`, or every page and queue row re-renders each second. `LiveSeekBar`, `PlaybackTime` and `PlaybackRemaining` in `common/SeekBar.tsx` are the ready-made readers.
+
+The queue list is virtual (`@tanstack/react-virtual`, in `QueueSidebar`): rows exist only near the viewport, so reach a row through `scrollToNowPlaying` or the virtualizer, not by querying the DOM. `EqBars` takes `paused` and only animates while audio is really playing.
 
 ### Attribution / office presence
 
@@ -90,14 +100,15 @@ npm test             # watch mode
 
 ### How to test hooks
 
-Don't use `renderHook` for data-fetching hooks. Call the query options factory directly:
+Don't use `renderHook` for data-fetching hooks. Run the query options factory through `runQueryFn` (`queryOptions` types `queryFn` as optional, so calling it directly doesn't typecheck):
 
 ```ts
 import { trackQueryOptions } from '../useTrackDetails';
+import { runQueryFn } from '../../test/queryFn';
 
 const mockFetch = vi.mocked(window.sonos.fetch);
 mockFetch.mockResolvedValueOnce({ data: { ... } });
-const result = await trackQueryOptions('id', 'serviceId', 'accountId').queryFn();
+const result = await runQueryFn(trackQueryOptions('id', 'serviceId', 'accountId'));
 expect(result?.trackName).toBe('...');
 ```
 
@@ -144,7 +155,7 @@ Stories sit beside the component as `Foo.stories.tsx` (CSF, `args` for controls,
 1. If it needs a new IPC call:
    - Add to `SonosAPI` interface in `src/preload.ts`
    - Add to `contextBridge.exposeInMainWorld` in `src/preload.ts`
-   - Add `ipcMain.handle(...)` in `src/main.ts`
+   - Add `ipcMain.handle(...)` in the `register()` of the matching `src/ipc/<domain>.ts` (a new module needs a `register()` call in `main.ts`, after `installIpcGuard()`)
    - Add to `SonosPreload` interface in `renderer/src/types/globals.d.ts`
    - Add to `renderer/src/test/sonosFake.ts` (the one shared `window.sonos` fake: `setup.ts` wraps it in `vi.fn()`, the Storybook preview logs it as actions)
 
@@ -185,8 +196,9 @@ Resource group: `truetunes-rg` (uksouth)
 | App Insights  | `truetunes-ai`           |
 | Log Analytics | `truetunes-law`          |
 
-Deploy: `cd server && npm run deploy` — wraps `az deployment group create` and reads `VESTABOARD_API_KEY` from the root `.env`, passing it as the `vestaboardApiKey` ARM parameter so the secret is never committed. It then runs `func azure functionapp publish`, which **replaces every function** with what's in this checkout.
+Deploy: `cd server && npm run deploy` — wraps `az deployment group create` and reads `VESTABOARD_API_KEY`, `GITHUB_ISSUES_TOKEN`, `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID` and `AUTH_ENFORCE` from the root `.env`, passing them as ARM parameters so the secrets are never committed. It then runs `func azure functionapp publish`, which **replaces every function** with what's in this checkout.
 
+- **Function auth.** Functions that write or act as a user check the caller's Entra ID token (`server/src/shared/auth.ts`, `lib/caller.ts`); the main process sends it via `fnFetch`. Without a token a request is let through (and logged) until `AUTH_ENFORCE=true`, which is transitional. Read-only functions stay anonymous. No browser calls the functions, so they send no CORS headers.
 - **Deploy from a tree that contains `origin/main`.** Deploying a feature branch that's behind main deletes main's newer functions from production (this removed `music-stats` and `track-meta` once). Merge main first, or deploy the merge from a throwaway worktree.
 - `az` and `func` use whichever Azure CLI account is active: pick the TrueNorth admin identity first (the `azswap` profiles skill).
 - A fresh worktree has no `server/node_modules`; run `npm ci` in `server/` first, or tsc falls back to the root's TypeScript 6 and fails with TS5107.

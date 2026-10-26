@@ -25,6 +25,34 @@ export default tseslint.config(
     },
   },
 
+  // ── Type-aware: promises ─────────────────────────────────────────────────────
+  // Only the three promise rules, not recommendedTypeChecked. projectService picks the nearest tsconfig, so this
+  // covers the files those projects include: src/, renderer/ and server/src/. The root and server tsconfigs
+  // exclude their test files, and config scripts sit outside every project; those keep the untyped rules.
+  // TT_LINT_FAST=1 (set by scripts/lint-edited.mjs for the per-edit hook) skips this block: typed linting adds seconds
+  // per file. CI and `npm run lint` leave it unset and run the full typed rules.
+  ...(process.env.TT_LINT_FAST
+    ? []
+    : [
+        {
+          files: [
+            'src/**/*.ts',
+            'renderer/src/**/*.{ts,tsx}',
+            'renderer/.storybook/**/*.{ts,tsx}',
+            'server/src/**/*.ts',
+          ],
+          ignores: ['src/**/*.test.ts', 'server/src/**/*.{test,testkit}.ts'],
+          languageOptions: {
+            parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
+          },
+          rules: {
+            '@typescript-eslint/no-floating-promises': 'error',
+            '@typescript-eslint/no-misused-promises': 'error',
+            '@typescript-eslint/await-thenable': 'error',
+          },
+        },
+      ]),
+
   // ── Renderer: React hooks + fast-refresh ─────────────────────────────────────
   {
     files: ['renderer/src/**/*.{ts,tsx}'],
@@ -34,9 +62,8 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      // React Compiler compatibility check — we don't use the compiler, valid pattern
+      // Legacy rule name (removed in eslint-plugin-react-hooks 7; the compiler diagnostics ship in 'recommended' above)
       'react-hooks/react-compiler': 'off',
-      'react-hooks/set-state-in-effect': 'off',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       // Design system: inline styles take tokens (var(--…)), never literal colours, px font sizes or radii.
       // Runtime-derived values (template literals, variables such as the artwork accent) are not literals, so pass.

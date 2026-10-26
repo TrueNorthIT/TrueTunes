@@ -1,70 +1,126 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { keepPreviousData, queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getActiveProvider } from '../providers';
+import { STALE } from '../lib/queryDefaults';
 import type { NormalizedQueueItem } from '../types/provider';
 
 const PAGE = 50;
+const NO_ITEMS: NormalizedQueueItem[] = [];
+
+export const queueKeys = {
+  all: ['queue'] as const,
+  list: (groupId: string) => [...queueKeys.all, groupId] as const,
+};
+
+export interface QueueData {
+  items: NormalizedQueueItem[];
+  /** Etag of the first page: the `If-Match` for the next write. */
+  etag?: string;
+}
+
+/**
+ * The whole queue, paged in 50s. `onEtag` is called from inside the fetch, so a caller awaiting a
+ * refetch sees the fresh etag before it resolves.
+ *
+ * Fresh until told otherwise: Sonos pushes a new `queueVersion` on every change, and `useQueue`
+ * turns that into an invalidation. A timer would only refetch a queue that hasn't changed.
+ */
+export function queueQueryOptions(groupId: string, onEtag?: (etag: string) => void) {
+  return queryOptions({
+    queryKey: queueKeys.list(groupId),
+    staleTime: STALE.forever,
+    retry: false, // a transient 5xx during queue propagation is retried by the next version push
+    refetchOnWindowFocus: false,
+    placeholderData: keepPreviousData, // a group switch keeps the old rows up until the new queue lands
+    queryFn: async (): Promise<QueueData> => {
+      const items: NormalizedQueueItem[] = [];
+      let offset = 0;
+      let etag: string | undefined;
+      const provider = getActiveProvider();
+      while (true) {
+        const r = await provider.getQueue({ count: PAGE, offset });
+        if (r.error) throw new Error(r.error);
+        if (offset === 0 && r.etag) etag = r.etag;
+        items.push(...r.items);
+        if (r.items.length < PAGE) break;
+        offset += r.items.length;
+      }
+      if (etag) onEtag?.(etag);
+      return { items, etag };
+    },
+  });
+}
+
+type Updater = NormalizedQueueItem[] | ((prev: NormalizedQueueItem[]) => NormalizedQueueItem[]);
+
+/**
+ * Optimistic edits to the cached queue. Returns a function that applies one and hands back its
+ * rollback, which restores exactly what was there before.
+ */
+export function useEditQueue(groupId: string | null) {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (updater: Updater) => {
+      if (!groupId) return () => {};
+      const key = queueKeys.list(groupId);
+      const prev = queryClient.getQueryData<QueueData>(key);
+      // Nothing cached for this group means the rows on screen are the previous group's placeholder.
+      if (!prev) return () => {};
+      queryClient.setQueryData<QueueData>(key, {
+        ...prev,
+        items: typeof updater === 'function' ? updater(prev.items) : updater,
+      });
+      return () => {
+        queryClient.setQueryData<QueueData>(key, prev);
+      };
+    },
+    [queryClient, groupId]
+  );
+}
 
 export function useQueue(
   isAuthed: boolean,
   activeGroupId: string | null,
   queueId: string | null,
   onEtag?: (etag: string) => void,
-  onReloadError?: (msg: string) => void
+  onReloadError?: (msg: string) => void,
+  queueVersion?: string | null
 ) {
-  const [items, setItems] = useState<NormalizedQueueItem[]>([]);
-  const [isLoading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const hasLoaded = useRef(false);
-  const onEtagRef = useRef(onEtag);
+  const queryClient = useQueryClient();
+  const enabled = isAuthed && !!activeGroupId;
+  const groupId = activeGroupId ?? '';
+  const query = useQuery({ ...queueQueryOptions(groupId, onEtag), enabled });
+
+  // A background reload that fails keeps the items on screen and reports through the callback;
+  // only a failed first load replaces the queue with an error.
   const onReloadErrorRef = useRef(onReloadError);
-  useEffect(() => {
-    onEtagRef.current = onEtag;
-  });
   useEffect(() => {
     onReloadErrorRef.current = onReloadError;
   });
-
-  const load = useCallback(async () => {
-    if (!activeGroupId) return;
-    // Only show the spinner on the very first load — background reloads are silent
-    if (!hasLoaded.current) setLoading(true);
-    setError(null);
-
-    const all: NormalizedQueueItem[] = [];
-    let offset = 0;
-    let freshEtag: string | undefined;
-    const provider = getActiveProvider();
-
-    while (true) {
-      const r = await provider.getQueue({ count: PAGE, offset });
-      if (r.error) {
-        // First load: show the error in place of the queue.
-        // Background reload after a successful first load: keep the existing
-        // items visible and surface the error via the optional callback —
-        // a transient 5xx during queue propagation should not blank the UI.
-        if (!hasLoaded.current) {
-          setError(r.error);
-        } else {
-          onReloadErrorRef.current?.(r.error);
-        }
-        setLoading(false);
-        return;
-      }
-      if (offset === 0 && r.etag) freshEtag = r.etag;
-      all.push(...r.items);
-      if (r.items.length < PAGE) break;
-      offset += r.items.length;
-    }
-
-    if (freshEtag) onEtagRef.current?.(freshEtag);
-    setItems(all);
-    hasLoaded.current = true;
-    setLoading(false);
-  }, [activeGroupId, queueId]); // eslint-disable-line react-hooks/exhaustive-deps
-
+  const reloadFailed = query.isRefetchError ? query.error.message : null;
   useEffect(() => {
-    if (isAuthed && activeGroupId) load();
-  }, [isAuthed, activeGroupId, load]);
+    if (reloadFailed) onReloadErrorRef.current?.(reloadFailed);
+  }, [reloadFailed, query.errorUpdatedAt]);
 
-  return { items, setItems, isLoading, error, reload: load };
+  // Sonos reports a new queue version for every change, including other people's. First mount
+  // joins the load already in flight rather than starting a second one.
+  useEffect(() => {
+    if (enabled) {
+      void queryClient.invalidateQueries({ queryKey: queueKeys.list(groupId) }, { cancelRefetch: false });
+    }
+  }, [queryClient, enabled, groupId, queueId, queueVersion]);
+
+  const { refetch } = query;
+  const reload = useCallback(async () => {
+    if (enabled) await refetch();
+  }, [enabled, refetch]);
+
+  return {
+    items: query.data?.items ?? NO_ITEMS,
+    isLoading: query.isLoading,
+    /** The rows are the previous group's, shown while this group loads. Edits would hit the wrong queue. */
+    isPlaceholder: query.isPlaceholderData,
+    error: query.data ? null : (query.error?.message ?? null),
+    reload,
+  };
 }

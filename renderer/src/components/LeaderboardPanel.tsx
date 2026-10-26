@@ -22,9 +22,12 @@ import { PersonCard } from './common/PersonCard';
 import { SectionCard, SeeAll } from './common/SectionCard';
 import { ArtistLinks } from './common/TrackLinks';
 import { UserAvatar } from './common/UserAvatar';
+import { PersonName } from './common/PersonName';
+import { championLabel, useChampion } from '../lib/champion';
 import { trackPayload } from '../lib/itemHelpers';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/LeaderboardPanel.module.css';
+import { useQueueActions } from '../hooks/useQueueActions';
 
 // The server's "week" is a rolling seven days, not the calendar week, so the label says so.
 const PERIODS: { value: StatsPeriod; label: string; phrase: string }[] = [
@@ -45,7 +48,7 @@ const QUEUEDLE_RANK_INFO: Array<{ key: Exclude<GameRankTierKey, 'provisional'>; 
 const CARD_PEOPLE = 6;
 
 /** What every track, album and artist on the page needs to open, prefetch, queue and right-click. */
-function useStatsNav(onAddToQueue?: (item: SonosItem) => void) {
+function useStatsNav(onAddToQueue?: (item: SonosItem) => void | Promise<void>) {
   const openItem = useOpenItem();
   const { resolveAndOpen } = useResolveAndOpen();
   const queryClient = useQueryClient();
@@ -90,7 +93,7 @@ function useStatsNav(onAddToQueue?: (item: SonosItem) => void) {
       imageUrl: t.imageUrl,
       onOpen: () => openAlbum({ ...t, title: t.trackName }),
       onMouseEnter: () => prefetchAlbum(t),
-      onAdd: item && onAddToQueue ? () => onAddToQueue(item) : undefined,
+      onAdd: item && onAddToQueue ? () => void onAddToQueue(item) : undefined,
       onContextMenu: (e: React.MouseEvent) => {
         if (!t.uri) return;
         showTrackMenu(
@@ -170,12 +173,8 @@ function PageSkeleton() {
   );
 }
 
-interface Props {
-  /** Queues a track or album from the charts. Without it the + buttons are hidden. */
-  onAddToQueue?: (item: SonosItem) => void;
-}
-
-export function LeaderboardPanel({ onAddToQueue }: Props) {
+export function LeaderboardPanel() {
+  const { addToQueue: onAddToQueue } = useQueueActions();
   const navigate = useNavigate();
   const nav = useStatsNav(onAddToQueue);
   const [period, setPeriod] = useState<StatsPeriod>('week');
@@ -185,6 +184,12 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
   const { data: users = [] } = useUsers(true, true);
   const imageByUser = new Map(users.map((u) => [u.userId, u.imageUrl]));
   const rankings = useGameRankings(null, true);
+  // The buttons name the person themselves, so they say the champion's title too (the avatar's own label is hidden by theirs).
+  const champion = useChampion();
+  const champ = (name: string) =>
+    champion && champion.userName.trim().toLowerCase() === name.trim().toLowerCase()
+      ? `, ${championLabel(champion)}`
+      : '';
 
   const topUsers = data?.topUsers ?? [];
   const carded = topUsers.slice(0, CARD_PEOPLE);
@@ -228,7 +233,7 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
                 </button>
               ))}
             </div>
-            <PillButton onClick={() => navigate('/leaderboard/stats')}>Music stats</PillButton>
+            <PillButton onClick={() => void navigate('/leaderboard/stats')}>Music stats</PillButton>
           </div>
         </header>
 
@@ -259,7 +264,7 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
                     name={u.userId}
                     imageUrl={imageByUser.get(u.userId)}
                     caption={`${ordinal(i + 1)} · ${queued(u.count)}`}
-                    onOpen={() => profile(u.userId)}
+                    onOpen={() => void profile(u.userId)}
                   >
                     {q?.isPending ? (
                       <TileSkeleton />
@@ -285,12 +290,12 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
                     <button
                       type="button"
                       className={styles.face}
-                      onClick={() => profile(u.userId)}
-                      aria-label={`${u.userId}, ${ordinal(CARD_PEOPLE + i + 1)}, ${queued(u.count)}, open profile`}
+                      onClick={() => void profile(u.userId)}
+                      aria-label={`${u.userId}${champ(u.userId)}, ${ordinal(CARD_PEOPLE + i + 1)}, ${queued(u.count)}, open profile`}
                     >
                       <span className={styles.faceRank}>{CARD_PEOPLE + i + 1}</span>
                       <UserAvatar name={u.userId} imageUrl={imageByUser.get(u.userId)} className={styles.faceAvatar} />
-                      <span className={styles.faceName}>{u.userId}</span>
+                      <PersonName name={u.userId} className={styles.faceName} />
                       <span className={styles.faceCount}>{u.count.toLocaleString()}</span>
                     </button>
                   </li>
@@ -356,7 +361,7 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
                       imageUrl={a.imageUrl}
                       onOpen={() => nav.openAlbum({ ...a, title: a.album })}
                       onHover={() => nav.prefetchAlbum(a)}
-                      onAdd={a.albumId && onAddToQueue ? () => onAddToQueue(statsAlbumToItem(a)) : undefined}
+                      onAdd={a.albumId && onAddToQueue ? () => void onAddToQueue(statsAlbumToItem(a)) : undefined}
                     />
                   ))}
                 </div>
@@ -373,7 +378,7 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
             actions={
               <>
                 <SeeAll label="How ranks work" onClick={() => setRankInfoOpen(true)} />
-                <SeeAll onClick={() => navigate('/queuedle')} />
+                <SeeAll onClick={() => void navigate('/queuedle')} />
               </>
             }
           >
@@ -395,15 +400,15 @@ export function LeaderboardPanel({ onAddToQueue }: Props) {
                       <button
                         type="button"
                         className={styles.standingWho}
-                        onClick={() => profile(r.userName)}
-                        aria-label={`${r.userName}, open profile`}
+                        onClick={() => void profile(r.userName)}
+                        aria-label={`${r.userName}${champ(r.userName)}, open profile`}
                       >
                         <UserAvatar
                           name={r.userName}
                           imageUrl={imageByUser.get(r.userName)}
                           className={styles.standingAvatar}
                         />
-                        <span className={styles.standingName}>{r.userName}</span>
+                        <PersonName name={r.userName} className={styles.standingName} />
                       </button>
                       <span>
                         <span className={`${styles.tierChip}${r.isProvisional ? ' ' + styles.provisional : ''}`}>

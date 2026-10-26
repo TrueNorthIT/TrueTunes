@@ -95,6 +95,28 @@ export class EntraAuth {
     }
   }
 
+  /**
+   * The signed-in user's ID token, which the True Tunes Azure Functions accept as
+   * proof of who is calling (its audience is this app). Silent only; null when
+   * nobody is signed in. MSAL's silent flow only checks the access token's expiry,
+   * so an ID token close to its own is refreshed here.
+   */
+  async idToken(): Promise<string | null> {
+    const accounts = await this.msalApp.getTokenCache().getAllAccounts();
+    if (accounts.length === 0) return null;
+    try {
+      const req: SilentFlowRequest = { scopes: SCOPES, account: accounts[0] };
+      let result = await this.msalApp.acquireTokenSilent(req);
+      const exp = (result?.idTokenClaims as { exp?: number } | undefined)?.exp ?? 0;
+      if (exp * 1000 - Date.now() < 5 * 60_000) {
+        result = await this.msalApp.acquireTokenSilent({ ...req, forceRefresh: true });
+      }
+      return result?.idToken || null;
+    } catch {
+      return null;
+    }
+  }
+
   async signOut(): Promise<void> {
     const accounts = await this.msalApp.getTokenCache().getAllAccounts();
     for (const account of accounts) {

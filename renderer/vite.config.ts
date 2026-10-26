@@ -1,10 +1,27 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import { defineConfig, type Plugin } from 'vite';
+import react, { reactCompilerPreset } from '@vitejs/plugin-react';
+import babel from '@rolldown/plugin-babel';
 import path from 'path';
+
+/**
+ * The dev server injects inline scripts (React Fast Refresh) and talks HMR over a websocket, which the
+ * built app's CSP in index.html rightly refuses. Dev only: the build keeps the strict policy.
+ */
+const devCsp = (): Plugin => ({
+  name: 'dev-csp',
+  apply: 'serve',
+  // Only inside the meta tag's content="...": index.html's explanatory comment uses the same words.
+  transformIndexHtml: (html) =>
+    html.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>/, (meta) =>
+      meta
+        .replace(/script-src [^;"]*/, "script-src 'self' 'unsafe-inline' 'unsafe-eval'")
+        .replace(/connect-src /, 'connect-src ws://localhost:5173 ')
+    ),
+});
 
 export default defineConfig({
   root: path.resolve(__dirname),
-  plugins: [react()],
+  plugins: [react(), babel({ presets: [reactCompilerPreset()] }), devCsp()],
   base: './',
   build: {
     outDir: path.resolve(__dirname, 'dist'),

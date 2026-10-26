@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Minus, Maximize2, Minimize2, X, DownloadCloud, Vote } from 'lucide-react';
 import { usePolls } from '../hooks/usePolls';
 import { PollAnswerDialog } from './polls/PollAnswerDialog';
 import styles from '../styles/WindowControls.module.css';
 
-export function WindowControls() {
+export const WindowControls = memo(function WindowControls() {
   const [isMaximized, setIsMaximized] = useState(false);
   const [updateVersion, setUpdateVersion] = useState<string | null>(null);
   const [pollOpen, setPollOpen] = useState(false);
@@ -25,7 +25,7 @@ export function WindowControls() {
       {updateVersion && (
         <button
           className={styles.titleBarUpdateBtn}
-          onClick={() => window.sonos.installUpdate()}
+          onClick={() => void window.sonos.installUpdate()}
           title={`v${updateVersion} ready — click to restart and install`}
         >
           <DownloadCloud size={13} />
@@ -42,19 +42,19 @@ export function WindowControls() {
           <span>Poll</span>
         </button>
       )}
-      <button className={styles.winBtn} onClick={() => window.sonos.minimizeWindow()} title="Minimise">
+      <button className={styles.winBtn} onClick={() => void window.sonos.minimizeWindow()} title="Minimise">
         <Minus size={13} />
       </button>
       <button
         className={styles.winBtn}
-        onClick={() => window.sonos.maximizeWindow()}
+        onClick={() => void window.sonos.maximizeWindow()}
         title={isMaximized ? 'Restore' : 'Maximise'}
       >
         {isMaximized ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
       </button>
       <button
         className={`${styles.winBtn} ${styles.closeBtn}`}
-        onClick={() => window.sonos.closeWindow()}
+        onClick={() => void window.sonos.closeWindow()}
         title="Close"
       >
         <X size={13} />
@@ -65,10 +65,11 @@ export function WindowControls() {
           remaining={polls.remaining}
           submitting={polls.submitting}
           error={polls.error}
-          onChoose={polls.answer}
+          onChoose={(choice) => void polls.answer(choice)}
+          onSkip={polls.skip}
           onClose={() => setPollOpen(false)}
         />
       )}
     </>
   );
-}
+});

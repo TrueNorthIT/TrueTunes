@@ -1,4 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { callerName } from '../lib/caller';
 import { WebPubSubServiceClient } from '@azure/web-pubsub';
 import {
   BlobServiceClient,
@@ -14,7 +15,9 @@ const TOKEN_TTL_MINUTES = 60;
 const SAS_TTL_HOURS = 8;
 
 export async function connectHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-  const username = request.query.get('username') ?? 'Unknown';
+  const caller = await callerName(request, context, request.query.get('username'));
+  if ('response' in caller) return caller.response;
+  const username = caller.name;
   context.log(`[connect] username=${username}`);
 
   const wpsConnStr = process.env['WEBPUBSUB_CONNECTION_STRING'];
@@ -66,7 +69,6 @@ export async function connectHandler(request: HttpRequest, context: InvocationCo
         webPubSubUrl: token.url,
         blobSasUrl,
       },
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[connect] Error:', err);

@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Reset the module between tests to get a fresh cache, queue, and active counter.
 let fetchImage: (url: string, priority?: boolean) => Promise<string | null>;
 let getCached: (url: string) => string | null;
+let retainImage: (url: string) => void;
+let releaseImage: (url: string) => void;
 
 const mockFetchGlobal = vi.fn();
 const mockCreateObjectURL = vi.fn(() => 'blob:mock');
@@ -24,6 +26,8 @@ beforeEach(async () => {
   const mod = await import('../imageCache');
   fetchImage = mod.fetchImage;
   getCached = mod.getCached;
+  retainImage = mod.retainImage;
+  releaseImage = mod.releaseImage;
 });
 
 function okResponse(content = 'img') {
@@ -240,5 +244,26 @@ describe('getCachedVariant', () => {
     await mod.fetchImage('https://lh3.example.com/abc=w60-h60');
     expect(mod.getCachedVariant('https://lh3.example.com/abc=w2000-h2000')).toBeNull();
     expect(mod.getCachedVariant('https://example.com/plain.jpg')).toBeNull();
+  });
+});
+
+describe('eviction of held URLs', () => {
+  it('does not revoke a URL a consumer holds, and revokes it once released', async () => {
+    let n = 0;
+    mockCreateObjectURL.mockImplementation(() => `blob:${n++}`);
+    mockFetchGlobal.mockImplementation(() => Promise.resolve(okResponse()));
+
+    const first = 'https://example.com/0.jpg';
+    await fetchImage(first);
+    retainImage(first);
+    for (let i = 1; i <= 200; i++) await fetchImage(`https://example.com/${i}.jpg`);
+
+    expect(mockRevokeObjectURL).not.toHaveBeenCalledWith('blob:0');
+    expect(mockRevokeObjectURL).toHaveBeenCalledTimes(1); // the next-oldest went instead
+
+    releaseImage(first);
+    mockRevokeObjectURL.mockClear();
+    for (let i = 201; i <= 400; i++) await fetchImage(`https://example.com/${i}.jpg`);
+    expect(mockRevokeObjectURL).toHaveBeenCalledWith('blob:0');
   });
 });

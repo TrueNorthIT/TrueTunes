@@ -3,12 +3,14 @@ import { render, screen, act, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App } from '../App';
+import { useQueueActions } from '../hooks/useQueueActions';
 import type { SonosItem } from '../types/sonos';
 
 // ── Hoisted refs so vi.mock factories (which are hoisted too) can reference them
-const { mockQueueVersionRef, mockQueueIdRef } = vi.hoisted(() => ({
+const { mockQueueVersionRef, mockQueueIdRef, mockAutoplay } = vi.hoisted(() => ({
   mockQueueVersionRef: { current: null as string | null },
   mockQueueIdRef: { current: null as string | null },
+  mockAutoplay: { fillerUri: null as string | null },
 }));
 
 // ── Hook mocks ────────────────────────────────────────────────────────────────
@@ -41,22 +43,30 @@ vi.mock('../hooks/usePlayback', () => ({
   }),
 }));
 
-// ── Component stubs ───────────────────────────────────────────────────────────
-// QueueSidebar and HomePanel capture onAddToQueue — either reference gives us
-// the real handleAddToQueue closure from MainApp.
+vi.mock('../hooks/useAutoplay', () => ({
+  useAutoplay: () => ({ enabled: false, upcoming: [], fillerUri: mockAutoplay.fillerUri, setEnabled: () => {} }),
+}));
 
-let capturedAddToQueue: ((item: SonosItem, position?: number) => void) | null = null;
+// ── Component stubs ───────────────────────────────────────────────────────────
+// QueueSidebar and HomePanel capture the queue actions from context — either gives us
+// the real addToQueue closure from MainApp.
+
+let capturedAddToQueue:
+  | ((item: SonosItem, position?: number, opts?: { attribute?: boolean; djFiller?: boolean }) => Promise<void>)
+  | null = null;
+let capturedQueueItems: { track: { id: string } }[] = [];
 
 vi.mock('../components/queue/QueueSidebar', () => ({
-  QueueSidebar: (props: { onAddToQueue: (item: SonosItem, position?: number) => void }) => {
-    capturedAddToQueue = props.onAddToQueue;
+  QueueSidebar: (props: { items: { track: { id: string } }[] }) => {
+    capturedAddToQueue = useQueueActions().addToQueue;
+    capturedQueueItems = props.items;
     return null;
   },
 }));
 
 vi.mock('../components/HomePanel', () => ({
-  HomePanel: (props: { onAddToQueue: (item: SonosItem, position?: number) => void }) => {
-    capturedAddToQueue = props.onAddToQueue;
+  HomePanel: () => {
+    capturedAddToQueue = useQueueActions().addToQueue;
     return null;
   },
   fetchYtmSections: vi.fn().mockResolvedValue({ sections: [] }),
@@ -122,6 +132,8 @@ beforeEach(() => {
   // time behave the same within a test; afterEach drops whatever is left.
   vi.useFakeTimers({ shouldAdvanceTime: true });
   capturedAddToQueue = null;
+  capturedQueueItems = [];
+  mockAutoplay.fillerUri = null;
   mockQueueVersionRef.current = null;
   mockQueueIdRef.current = 'q1';
   vi.clearAllMocks();
@@ -433,5 +445,128 @@ describe('handleAddToQueue — non-track item', () => {
     expect(albumEvents[0].uri).toBe('alb1');
     const trackUris = trackEvents.map((e) => e.uri).sort();
     expect(trackUris).toEqual(['trk-a', 'trk-b', 'trk-c']);
+  });
+});
+
+// ─── characterisation: placement, optimistic insert, attribution, stations ───
+
+const queueTrack = (id: string) => ({
+  type: 'TRACK',
+  name: id,
+  track: { id: { objectId: id, serviceId: 'gm', accountId: 'acc1' }, name: id },
+});
+
+function mockQueueWith(ids: string[]) {
+  mockFetch.mockImplementation(async (req: { operationId: string }) => {
+    if (req.operationId === 'getQueueResources') return { data: { items: ids.map(queueTrack) }, etag: 'etag-v1' };
+    if (req.operationId === 'addQueueResource') return { data: {}, etag: 'etag-after' };
+    return { data: null };
+  });
+}
+
+const addPosition = () =>
+  mockFetch.mock.calls.find((c) => c[0].operationId === 'addQueueResource')?.[0].query?.position;
+
+describe('handleAddToQueue — DJ filler placement', () => {
+  it('puts a user pick in front of the parked filler', async () => {
+    mockQueueWith(['q-a', 'q-filler']);
+    mockAutoplay.fillerUri = 'q-filler';
+    await mountAndSettle();
+    await waitFor(() => expect(capturedQueueItems).toHaveLength(2));
+    await act(async () => {
+      await capturedAddToQueue!(makeTrackItem());
+    });
+    expect(addPosition()).toBe('1');
+  });
+
+  it('puts the filler itself at the very end', async () => {
+    mockQueueWith(['q-a', 'q-filler']);
+    mockAutoplay.fillerUri = 'q-filler';
+    await mountAndSettle();
+    await waitFor(() => expect(capturedQueueItems).toHaveLength(2));
+    await act(async () => {
+      await capturedAddToQueue!(makeTrackItem(), -1, { attribute: false, djFiller: true });
+    });
+    expect(addPosition()).toBe('-1');
+  });
+
+  it('leaves an explicit position alone', async () => {
+    mockQueueWith(['q-a', 'q-filler']);
+    mockAutoplay.fillerUri = 'q-filler';
+    await mountAndSettle();
+    await waitFor(() => expect(capturedQueueItems).toHaveLength(2));
+    await act(async () => {
+      await capturedAddToQueue!(makeTrackItem(), 0);
+    });
+    expect(addPosition()).toBe('0');
+  });
+});
+
+describe('handleAddToQueue — optimistic insert', () => {
+  it('appends a single track to the visible queue', async () => {
+    mockQueueWith(['q-a']);
+    await mountAndSettle();
+    await waitFor(() => expect(capturedQueueItems).toHaveLength(1));
+    await act(async () => {
+      await capturedAddToQueue!(makeTrackItem());
+    });
+    await waitFor(() => expect(capturedQueueItems.map((q) => q.track.id)).toEqual(['q-a', 'obj1']));
+  });
+
+  it('inserts at the requested position', async () => {
+    mockQueueWith(['q-a', 'q-b']);
+    await mountAndSettle();
+    await waitFor(() => expect(capturedQueueItems).toHaveLength(2));
+    await act(async () => {
+      await capturedAddToQueue!(makeTrackItem(), 1);
+    });
+    await waitFor(() => expect(capturedQueueItems.map((q) => q.track.id)).toEqual(['q-a', 'obj1', 'q-b']));
+  });
+});
+
+describe('handleAddToQueue — attribution', () => {
+  it('publishes one track event for a single track', async () => {
+    const publish = vi.mocked(window.sonos.publishQueued).mockResolvedValue(undefined);
+    mockQueueWith([]);
+    await mountAndSettle();
+    await act(async () => {
+      await capturedAddToQueue!(makeTrackItem());
+    });
+    expect(publish).toHaveBeenCalledTimes(1);
+    expect(publish.mock.calls[0][0]).toMatchObject({ eventType: 'track', uri: 'obj1', trackName: 'Test Track' });
+  });
+
+  it('publishes nothing when attribute is false (DJ picks)', async () => {
+    const publish = vi.mocked(window.sonos.publishQueued).mockResolvedValue(undefined);
+    mockQueueWith([]);
+    await mountAndSettle();
+    await act(async () => {
+      await capturedAddToQueue!(makeTrackItem(), -1, { attribute: false });
+    });
+    expect(publish).not.toHaveBeenCalled();
+  });
+
+  it('publishes nothing when the add fails', async () => {
+    const publish = vi.mocked(window.sonos.publishQueued).mockResolvedValue(undefined);
+    mockFetch.mockImplementation(async (req: { operationId: string }) =>
+      req.operationId === 'addQueueResource' ? { data: null, error: 'boom' } : { data: { items: [] }, etag: 'etag-v1' }
+    );
+    await mountAndSettle();
+    await act(async () => {
+      await capturedAddToQueue!(makeTrackItem());
+    });
+    expect(publish).not.toHaveBeenCalled();
+  });
+});
+
+describe('handleAddToQueue — stations', () => {
+  it('refuses a station with a toast and never calls the API', async () => {
+    mockQueueWith([]);
+    await mountAndSettle();
+    await act(async () => {
+      await capturedAddToQueue!({ type: 'PROGRAM', name: 'Radio', resource: { type: 'PROGRAM' } } as SonosItem);
+    });
+    expect(screen.getByText('Open the station to add its songs')).toBeInTheDocument();
+    expect(mockFetch.mock.calls.some((c) => c[0].operationId === 'addQueueResource')).toBe(false);
   });
 });

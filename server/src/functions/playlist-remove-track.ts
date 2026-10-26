@@ -1,4 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { callerName } from '../lib/caller';
 import { withOCC } from '../lib/withOCC';
 import { getPlaylistContainer } from '../lib/getContainer';
 
@@ -18,7 +19,10 @@ export async function playlistRemoveTrackHandler(
     return { status: 400, jsonBody: { error: 'Invalid JSON body' } };
   }
 
-  const { userName, uri } = body;
+  const { uri } = body;
+  const caller = await callerName(request, context, body.userName);
+  if ('response' in caller) return caller.response;
+  const userName = caller.name;
   if (!userName || !uri) {
     return { status: 400, jsonBody: { error: 'userName and uri required' } };
   }
@@ -48,7 +52,6 @@ export async function playlistRemoveTrackHandler(
 
     return {
       jsonBody: resource,
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     const code = (err as { statusCode?: number }).statusCode;

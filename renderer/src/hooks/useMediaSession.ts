@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { getActiveProvider } from '../providers';
 import { useTrackDetails } from './useTrackDetails';
 import type { PlaybackState } from './usePlayback';
+import { getPlaybackPosition } from './playbackPosition';
 
 /**
  * Publishes the current track to the OS media overlay (Windows System Media
@@ -110,13 +111,12 @@ export function useMediaSession(playback: PlaybackState) {
       navigator.mediaSession.setPositionState({
         duration: playback.durationMs / 1000,
         playbackRate: playback.isPlaying ? 1 : 0,
-        position: Math.min(playback.positionMs, playback.durationMs) / 1000,
+        position: Math.min(getPlaybackPosition().positionMs, playback.durationMs) / 1000,
       });
     } catch {
       // Some OS/browser combinations reject transient states (e.g. mid-seek) — safe to ignore.
     }
     // Re-sync on track change / play-pause toggle / manual seek, not on every progress tick.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playback.isVisible, playback.currentObjectId, playback.isPlaying, playback.durationMs]);
 
   // Transport action handlers — wired once, always delegate to the active provider

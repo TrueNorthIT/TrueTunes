@@ -19,11 +19,10 @@ export async function profileGetHandler(request: HttpRequest, context: Invocatio
 
     return {
       jsonBody: resource ?? { id: userName },
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err: unknown) {
     if ((err as { code?: number }).code === 404) {
-      return { jsonBody: { id: userName }, headers: { 'Access-Control-Allow-Origin': '*' } };
+      return { jsonBody: { id: userName } };
     }
     context.error('[profile-get] failed:', err);
     return { status: 500, jsonBody: { error: String(err) } };

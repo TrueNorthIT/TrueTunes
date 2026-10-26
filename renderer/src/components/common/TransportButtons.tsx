@@ -23,7 +23,7 @@ export function TransportButtons({ disabled, isPlaying, btnClassName, playClassN
       <button
         className={btnClassName}
         disabled={disabled}
-        onClick={() => getActiveProvider().skipPrev().then(refresh)}
+        onClick={() => void getActiveProvider().skipPrev().then(refresh)}
         title="Previous"
         aria-label="Previous"
       >
@@ -32,7 +32,7 @@ export function TransportButtons({ disabled, isPlaying, btnClassName, playClassN
       <button
         className={`${btnClassName} ${playClassName}`}
         disabled={disabled}
-        onClick={() => (isPlaying ? getActiveProvider().pause() : getActiveProvider().play()).then(refresh)}
+        onClick={() => void (isPlaying ? getActiveProvider().pause() : getActiveProvider().play()).then(refresh)}
         title={playLabel}
         aria-label={playLabel}
       >
@@ -48,7 +48,7 @@ export function TransportButtons({ disabled, isPlaying, btnClassName, playClassN
       <button
         className={btnClassName}
         disabled={disabled}
-        onClick={() => getActiveProvider().skipNext().then(refresh)}
+        onClick={() => void getActiveProvider().skipNext().then(refresh)}
         title="Next"
         aria-label="Next"
       >

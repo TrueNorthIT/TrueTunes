@@ -25,7 +25,7 @@ const renderPanel = () => {
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
-  return render(<SearchPanel onAddToQueue={vi.fn()} />, { wrapper });
+  return render(<SearchPanel />, { wrapper });
 };
 
 beforeEach(() => {

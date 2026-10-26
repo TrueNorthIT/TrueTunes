@@ -11,14 +11,28 @@ const inflight = new Map<string, Promise<string | null>>(); // url -> in-flight 
 const queue: Array<() => void> = [];
 let active = 0;
 
+// Mounted consumers (see useImage) hold their URL here; evicting one would break an <img> that is still showing it.
+const holds = new Map<string, number>();
+
+export function retainImage(url: string): void {
+  holds.set(url, (holds.get(url) ?? 0) + 1);
+}
+
+export function releaseImage(url: string): void {
+  const n = (holds.get(url) ?? 0) - 1;
+  if (n > 0) holds.set(url, n);
+  else holds.delete(url);
+}
+
 function evictLru(): void {
   if (cache.size < MAX_ENTRIES) return;
-  // First key in a Map is the least recently used
-  const lruKey = cache.keys().next().value;
-  if (lruKey !== undefined) {
-    const objectUrl = cache.get(lruKey)!;
-    cache.delete(lruKey);
+  // First key in a Map is the least recently used; skip any still held by a consumer.
+  // ponytail: if every entry is held the cache grows past MAX_ENTRIES until something is released.
+  for (const [key, objectUrl] of cache) {
+    if (holds.has(key)) continue;
+    cache.delete(key);
     URL.revokeObjectURL(objectUrl);
+    return;
   }
 }
 
@@ -115,9 +129,9 @@ export function fetchImage(url: string, priority = false): Promise<string | null
     };
 
     if (priority || active < MAX_CONCURRENT) {
-      run();
+      void run();
     } else {
-      queue.push(run);
+      queue.push(() => void run());
     }
   });
 

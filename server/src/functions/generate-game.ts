@@ -75,7 +75,7 @@ export async function generateGameHttp(request: HttpRequest, context: Invocation
     if (!result.ok) {
       return { status: 500, jsonBody: result };
     }
-    return { status: 200, jsonBody: result, headers: { 'Access-Control-Allow-Origin': '*' } };
+    return { status: 200, jsonBody: result };
   } catch (err) {
     context.error('[generate-game:http] failed:', err);
     return { status: 500, jsonBody: { error: String(err) } };

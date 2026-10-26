@@ -55,7 +55,6 @@ export async function gameDatesHandler(request: HttpRequest, context: Invocation
     return {
       status: 200,
       jsonBody: { dates },
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[game-dates] failed:', err);

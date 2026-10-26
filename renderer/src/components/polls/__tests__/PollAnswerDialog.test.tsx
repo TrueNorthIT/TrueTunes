@@ -21,6 +21,7 @@ describe('PollAnswerDialog', () => {
         submitting={false}
         error={null}
         onChoose={onChoose}
+        onSkip={vi.fn()}
         onClose={vi.fn()}
       />
     );
@@ -31,7 +32,38 @@ describe('PollAnswerDialog', () => {
   });
 
   it('disables the choices while a vote is being sent', () => {
-    render(<PollAnswerDialog poll={POLL} remaining={1} submitting error={null} onChoose={vi.fn()} onClose={vi.fn()} />);
+    render(
+      <PollAnswerDialog
+        poll={POLL}
+        remaining={1}
+        submitting
+        error={null}
+        onChoose={vi.fn()}
+        onSkip={vi.fn()}
+        onClose={vi.fn()}
+      />
+    );
     expect(screen.getByRole('button', { name: 'Hobnob' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Skip this poll' })).toBeDisabled();
+  });
+
+  it('offers Skip, which skips without choosing anything', async () => {
+    const onChoose = vi.fn();
+    const onSkip = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <PollAnswerDialog
+        poll={POLL}
+        remaining={1}
+        submitting={false}
+        error={null}
+        onChoose={onChoose}
+        onSkip={onSkip}
+        onClose={vi.fn()}
+      />
+    );
+    await user.click(screen.getByRole('button', { name: 'Skip this poll' }));
+    expect(onSkip).toHaveBeenCalledTimes(1);
+    expect(onChoose).not.toHaveBeenCalled();
   });
 });

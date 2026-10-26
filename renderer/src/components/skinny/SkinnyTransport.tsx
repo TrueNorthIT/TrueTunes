@@ -3,7 +3,7 @@ import { Music } from 'lucide-react';
 import type { useNowPlaying } from '../../hooks/useNowPlaying';
 import { useQueuer } from '../../hooks/useQueuer';
 import { UserAvatar } from '../common/UserAvatar';
-import { SeekBar } from '../common/SeekBar';
+import { LiveSeekBar, PlaybackTime } from '../common/SeekBar';
 import { TransportButtons } from '../common/TransportButtons';
 import styles from '../../styles/SkinnyTransport.module.css';
 
@@ -18,18 +18,7 @@ interface Props {
  * the card is one row, like the player bar. The artwork's colour washes in from the art corner.
  */
 export function SkinnyTransport({ np, isAuthed }: Props) {
-  const {
-    displayTrack,
-    displayArtist,
-    cachedArt,
-    progressPct,
-    durationMs,
-    dominantColor,
-    isPlaying,
-    elapsedLabel,
-    durationLabel,
-    currentObjectId,
-  } = np;
+  const { displayTrack, displayArtist, cachedArt, durationMs, dominantColor, isPlaying, currentObjectId } = np;
   const queuer = useQueuer({ id: currentObjectId, title: displayTrack, artist: displayArtist });
 
   return (
@@ -75,17 +64,14 @@ export function SkinnyTransport({ np, isAuthed }: Props) {
         </div>
 
         <div className={styles.progressRow}>
-          <span className={styles.time}>{elapsedLabel}</span>
-          <SeekBar
-            progressPct={progressPct}
+          <PlaybackTime part="elapsed" className={styles.time} />
+          <LiveSeekBar
             durationMs={durationMs}
-            elapsedLabel={elapsedLabel}
-            durationLabel={durationLabel}
             className={styles.progress}
             trackClassName={styles.progressTrack}
             fillClassName={styles.progressFill}
           />
-          <span className={styles.time}>{durationLabel}</span>
+          <PlaybackTime part="duration" className={styles.time} />
         </div>
       </div>
     </section>

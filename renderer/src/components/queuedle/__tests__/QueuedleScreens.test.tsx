@@ -13,8 +13,8 @@ describe('QueuedleIntro', () => {
     const onStart = vi.fn();
     render(<QueuedleIntro onStart={onStart} rounds={10} />);
     expect(screen.getByRole('heading', { name: '10 rounds on what the office has queued' })).toBeInTheDocument();
-    expect(screen.getByText('Higher or lower')).toBeInTheDocument();
-    expect(screen.getByText('Top queuer')).toBeInTheDocument();
+    expect(screen.getByText('Higher or Lower')).toBeInTheDocument();
+    expect(screen.getByText('Top Queuer')).toBeInTheDocument();
     expect(screen.getByText(/20 in all/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Start' }));
     expect(onStart).toHaveBeenCalled();
@@ -146,6 +146,7 @@ describe('QueuedleBonusResults summary', () => {
       />
     );
     expect(screen.getByText(/You knew 1 of 2/)).toBeInTheDocument();
-    expect(screen.getByText('It was bob')).toBeInTheDocument();
+    expect(screen.getByTitle('bob')).toHaveAttribute('data-result', 'right');
+    expect(screen.getByTitle('zed')).toHaveAttribute('data-result', 'wrong');
   });
 });

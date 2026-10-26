@@ -1,4 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { requireAuth } from '../shared/auth';
 import { CosmosClient } from '@azure/cosmos';
 import { containerDocStore, eventsSinceQuery, historyQuery } from '../shared/cosmosAdapters';
 import {
@@ -36,22 +37,21 @@ export function getDjAutoplayService(connStr: string): DjAutoplayService {
 
 export function createDjAutoplayHandler(resolveService: (connStr: string) => DjAutoplayService) {
   return async function djAutoplayHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    const headers = { 'Access-Control-Allow-Origin': '*' };
     const connStr = process.env['COSMOS_CONNECTION_STRING'];
 
-    if (!connStr) return { status: 500, jsonBody: { error: 'Cosmos not configured' }, headers };
+    if (!connStr) return { status: 500, jsonBody: { error: 'Cosmos not configured' } };
 
     let body: AutoplayBody;
     try {
       body = (await request.json()) as AutoplayBody;
     } catch {
-      return { status: 400, jsonBody: { error: 'Invalid JSON body' }, headers };
+      return { status: 400, jsonBody: { error: 'Invalid JSON body' } };
     }
 
     const groupId = body.groupId?.trim();
     const clientId = body.clientId?.trim();
     if (!groupId || !clientId) {
-      return { status: 400, jsonBody: { error: 'groupId and clientId are required' }, headers };
+      return { status: 400, jsonBody: { error: 'groupId and clientId are required' } };
     }
 
     try {
@@ -63,10 +63,10 @@ export function createDjAutoplayHandler(resolveService: (connStr: string) => DjA
         );
       }
 
-      return { status: 200, jsonBody: result, headers };
+      return { status: 200, jsonBody: result };
     } catch (err) {
       context.error('[dj-autoplay] failed:', err);
-      return { status: 500, jsonBody: { error: String(err) }, headers };
+      return { status: 500, jsonBody: { error: String(err) } };
     }
   };
 }
@@ -77,5 +77,5 @@ app.http('dj-autoplay', {
   route: 'dj/autoplay',
   methods: ['POST'],
   authLevel: 'anonymous',
-  handler: djAutoplayHandler,
+  handler: requireAuth(djAutoplayHandler),
 });

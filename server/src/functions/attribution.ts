@@ -47,7 +47,6 @@ export async function attributionHandler(_request: HttpRequest, context: Invocat
 
     return {
       jsonBody: map,
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[attribution] query failed:', err);

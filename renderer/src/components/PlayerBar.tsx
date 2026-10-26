@@ -8,7 +8,7 @@ import { useAttribution, resolveAttribution } from '../hooks/useAttribution';
 import { useUsers } from '../hooks/useUsers';
 import { UserAvatar } from './common/UserAvatar';
 import { ExplicitBadge } from './common/ExplicitBadge';
-import { SeekBar } from './common/SeekBar';
+import { LiveSeekBar, PlaybackTime } from './common/SeekBar';
 import { TransportButtons } from './common/TransportButtons';
 import type React from 'react';
 import {
@@ -27,13 +27,13 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import type { PlaybackState } from '../hooks/usePlayback';
+import { useDisplayName } from '../hooks/useDisplayName';
 import styles from '../styles/PlayerBar.module.css';
 
 interface Props {
   isAuthed: boolean;
   playback: PlaybackState;
   onShuffle: () => void;
-  displayName?: string | null;
 }
 
 function ScrollingText({ text, className }: { text: string; className: string }) {
@@ -88,13 +88,14 @@ function VolumeButton({ volume }: { volume: number }) {
   // Sync incoming WS volume only when the user isn't actively dragging
   const dragging = useRef(false);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the drag guard is a ref, which render must not read
     if (!dragging.current) setLocalVol(volume);
   }, [volume]);
 
   const commitVolume = (val: number) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      getActiveProvider().setVolume(val);
+      void getActiveProvider().setVolume(val);
       dragging.current = false;
     }, 150);
   };
@@ -199,7 +200,8 @@ function VolumeButton({ volume }: { volume: number }) {
   );
 }
 
-export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props) {
+export function PlayerBar({ isAuthed, playback, onShuffle }: Props) {
+  const displayName = useDisplayName();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const lyricsActive = pathname === '/lyrics';
@@ -209,9 +211,6 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
     displayArtist,
     cachedArt,
     dominantColor,
-    elapsedLabel,
-    durationLabel,
-    progressPct,
     durationMs,
     isPlaying,
     isVisible,
@@ -251,7 +250,7 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
 
   const toggleRepeat = () => {
     const next = rawRepeat === 'none' ? 'all' : rawRepeat === 'all' ? 'one' : 'none';
-    getActiveProvider()
+    void getActiveProvider()
       .setPlayModes({ repeat: next as 'none' | 'one' | 'all' })
       .then(refresh);
   };
@@ -301,17 +300,14 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
               {isExplicit && <ExplicitBadge />}
             </div>
             <div className={styles.progressSection}>
-              <span className={styles.time}>{elapsedLabel}</span>
-              <SeekBar
-                progressPct={progressPct}
+              <PlaybackTime part="elapsed" className={styles.time} />
+              <LiveSeekBar
                 durationMs={durationMs}
-                elapsedLabel={elapsedLabel}
-                durationLabel={durationLabel}
                 className={styles.progressBar}
                 trackClassName={styles.progressTrack}
                 fillClassName={styles.progressFill}
               />
-              <span className={styles.time}>{durationLabel}</span>
+              <PlaybackTime part="duration" className={styles.time} />
             </div>
           </div>
           {queuer && (
@@ -320,7 +316,7 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
               className={styles.queuer}
               aria-label={`Queued by ${queuer.user}`}
               title={`Queued by ${queuer.user}`}
-              onClick={() => navigate(`/profile/${encodeURIComponent(queuer.user)}`)}
+              onClick={() => void navigate(`/profile/${encodeURIComponent(queuer.user)}`)}
             >
               <UserAvatar name={queuer.user} imageUrl={queuerImage} className={styles.queuerAvatar} />
             </button>
@@ -332,7 +328,7 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
           <button
             className={`${styles.ctrl}${shuffle ? ' ' + styles.active : ''}`}
             disabled={!isAuthed}
-            onClick={toggleShuffle}
+            onClick={() => void toggleShuffle()}
             title="Shuffle"
           >
             <Shuffle size={11} />
@@ -360,7 +356,7 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
           {displayName && currentObjectId && (
             <button
               className={`${styles.ctrl}${isFavourited ? ' ' + styles.favourited : ''}`}
-              onClick={toggleFavourite}
+              onClick={() => void toggleFavourite()}
               title={isFavourited ? 'Remove from Favourites' : 'Add to Favourites'}
             >
               <Heart size={14} fill={isFavourited ? 'currentColor' : 'none'} />
@@ -369,12 +365,12 @@ export function PlayerBar({ isAuthed, playback, onShuffle, displayName }: Props)
           <VolumeButton volume={volume} />
           <button
             className={`${styles.ctrl}${lyricsActive ? ' ' + styles.active : ''}`}
-            onClick={() => (lyricsActive ? navigate(-1) : navigate('/lyrics'))}
+            onClick={() => void (lyricsActive ? navigate(-1) : navigate('/lyrics'))}
             title="Lyrics"
           >
             <MicVocal size={14} />
           </button>
-          <button className={styles.ctrl} onClick={() => window.sonos.openMiniPlayer()} title="Mini player">
+          <button className={styles.ctrl} onClick={() => void window.sonos.openMiniPlayer()} title="Mini player">
             <PictureInPicture2 size={14} />
           </button>
         </div>

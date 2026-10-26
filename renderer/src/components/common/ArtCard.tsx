@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useImage } from '../../hooks/useImage';
 import { withArtworkSize } from '../../lib/artworkUrl';
 import { AddButton } from './AddButton';
@@ -52,8 +52,9 @@ export function ArtCard({
   const photo = useImage(photoUrl ? withArtworkSize(photoUrl, px) : null);
   // The cover sits under the photo only while the photo fades in. Left stacked, the two layers can drift a pixel
   // apart while scrolling and the cover shows through at the edges.
-  const [photoIn, setPhotoIn] = useState(false);
-  useEffect(() => setPhotoIn(false), [photo]);
+  const [photoInFor, setPhotoInFor] = useState<string | null>(null);
+  const photoIn = photo !== null && photoInFor === photo;
+  const setPhotoIn = (v: boolean) => setPhotoInFor(v ? photo : null);
   return (
     <div
       className={[styles.card, size === 'large' ? styles.large : styles.medium, className].filter(Boolean).join(' ')}

@@ -23,6 +23,35 @@
       "metadata": {
         "description": "Vestaboard Read/Write API key. Pulled from .env by `npm run deploy`. Leave blank to disable Vestaboard messages."
       }
+    },
+    "githubIssuesToken": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Fine-grained GitHub token, Issues read/write on TrueNorthIT/TrueTunes only, for the feedback function. Pulled from .env (GITHUB_ISSUES_TOKEN) by `npm run deploy`. Blank disables feedback."
+      }
+    },
+    "entraTenantId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Entra tenant the desktop app signs in to (ENTRA_TENANT_ID in .env). The functions verify the caller's token against it."
+      }
+    },
+    "entraClientId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The desktop app's Entra app registration (ENTRA_CLIENT_ID in .env): the audience of the tokens the functions accept."
+      }
+    },
+    "authEnforce": {
+      "type": "string",
+      "defaultValue": "false",
+      "allowedValues": ["false", "true"],
+      "metadata": {
+        "description": "Transitional. 'false' still lets requests without a token through (logged), for clients released before tokens. Set AUTH_ENFORCE=true in .env and redeploy once every client sends one."
+      }
     }
   },
   "variables": {
@@ -74,6 +103,25 @@
         "supportsHttpsTrafficOnly": true,
         "minimumTlsVersion": "TLS1_2",
         "allowBlobPublicAccess": false
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2023-01-01",
+      "name": "[concat(variables('storageName'), '/default')]",
+      "dependsOn": ["[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"],
+      "properties": {
+        "cors": {
+          "corsRules": [
+            {
+              "allowedOrigins": ["*"],
+              "allowedMethods": ["GET", "HEAD"],
+              "allowedHeaders": ["*"],
+              "exposedHeaders": ["*"],
+              "maxAgeInSeconds": 86400
+            }
+          ]
+        }
       }
     },
     {
@@ -389,12 +437,28 @@
             {
               "name": "VESTABOARD_API_KEY",
               "value": "[parameters('vestaboardApiKey')]"
+            },
+            {
+              "name": "GITHUB_ISSUES_TOKEN",
+              "value": "[parameters('githubIssuesToken')]"
+            },
+            {
+              "name": "ENTRA_TENANT_ID",
+              "value": "[parameters('entraTenantId')]"
+            },
+            {
+              "name": "ENTRA_CLIENT_ID",
+              "value": "[parameters('entraClientId')]"
+            },
+            {
+              "name": "AUTH_ENFORCE",
+              "value": "[parameters('authEnforce')]"
             }
           ],
           "ftpsState": "Disabled",
           "minTlsVersion": "1.2",
           "cors": {
-            "allowedOrigins": ["*"],
+            "allowedOrigins": [],
             "supportCredentials": false
           }
         },

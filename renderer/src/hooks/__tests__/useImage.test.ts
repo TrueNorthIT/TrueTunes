@@ -12,6 +12,8 @@ vi.mock('../../lib/imageCache', () => ({
   get fetchImage() {
     return fetchImage;
   },
+  retainImage: vi.fn(),
+  releaseImage: vi.fn(),
 }));
 
 beforeEach(() => {

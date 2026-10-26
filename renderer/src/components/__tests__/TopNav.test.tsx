@@ -17,6 +17,8 @@ vi.mock('../../hooks/useUserProfile', () => ({
   useUserProfile: () => ({ data: null, isLoading: false }),
 }));
 
+let mockDisplayName: string | null | undefined = 'Alice';
+vi.mock('../../hooks/useDisplayName', () => ({ useDisplayName: () => mockDisplayName }));
 vi.mock('../../hooks/useImage', () => ({
   useImage: () => null,
 }));
@@ -27,13 +29,13 @@ const defaultProps = {
   activeGroupId: 'g1',
   onGroupChange: vi.fn(),
   onResync: vi.fn(),
-  displayName: 'Alice',
   onSaveName: vi.fn(),
   onChangelogOpen: vi.fn(),
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockDisplayName = 'Alice';
   localStorage.clear();
   mockUseLocation.mockReturnValue({ pathname: '/' });
   mockUseSearchParams.mockReturnValue([new URLSearchParams()]);
@@ -179,7 +181,8 @@ describe('TopNav', () => {
   it('calls onSaveName with trimmed name when Sign in is submitted (unauthenticated)', async () => {
     const onSaveName = vi.fn();
     const user = userEvent.setup();
-    render(<TopNav {...defaultProps} displayName={null} onSaveName={onSaveName} />);
+    mockDisplayName = null;
+    render(<TopNav {...defaultProps} onSaveName={onSaveName} />);
     await user.click(screen.getByTitle('Sign in'));
     await user.type(screen.getByPlaceholderText('Your name'), 'Bob');
     await user.click(screen.getAllByText('Sign in')[1]);
@@ -206,7 +209,8 @@ describe('TopNav', () => {
 
   it('shows app version in sign-in popover after load (unauthenticated)', async () => {
     const user = userEvent.setup();
-    render(<TopNav {...defaultProps} displayName={null} />);
+    mockDisplayName = null;
+    render(<TopNav {...defaultProps} />);
     await user.click(screen.getByTitle('Sign in'));
     await waitFor(() => expect(screen.getByText('v1.0.0')).toBeInTheDocument());
   });

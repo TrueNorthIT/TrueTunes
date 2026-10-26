@@ -29,7 +29,7 @@ export function useQueueTrack(item: NormalizedQueueItem, currentObjectId: string
 
   const prefetchAlbum =
     albumId && albumSvcId && albumAccId
-      ? () => queryClient.prefetchQuery(albumQueryOptions(albumId, albumSvcId!, albumAccId!, undefined))
+      ? () => void queryClient.prefetchQuery(albumQueryOptions(albumId, albumSvcId!, albumAccId!, undefined))
       : undefined;
 
   const artistId = data?.artistId ?? null;
@@ -40,7 +40,7 @@ export function useQueueTrack(item: NormalizedQueueItem, currentObjectId: string
 
   const prefetchArtist =
     artistId && serviceId && accountId
-      ? () => queryClient.prefetchQuery(artistQueryOptions(artistId, serviceId, accountId, undefined))
+      ? () => void queryClient.prefetchQuery(artistQueryOptions(artistId, serviceId, accountId, undefined))
       : undefined;
 
   return { artUrl, artist, albumName, albumItem, prefetchAlbum, artistItem, prefetchArtist, isPlaying, explicit };

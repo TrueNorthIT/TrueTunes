@@ -136,6 +136,7 @@ export function QueuedlePanel() {
   useEffect(() => {
     if (!gameId || questionCount === 0 || progressFor === gameId) return;
     const saved = loadProgress(gameId, questionCount);
+    /* eslint-disable react-hooks/set-state-in-effect -- hydrates state from localStorage (an external store) once per game */
     if (saved) {
       setPhase(saved.phase);
       setCurrentIdx(saved.currentIdx);
@@ -145,6 +146,7 @@ export function QueuedlePanel() {
       setBonusSelections(saved.bonusSelections);
     }
     setProgressFor(gameId);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [gameId, questionCount, progressFor]);
 
   useEffect(() => {
@@ -192,24 +194,18 @@ export function QueuedlePanel() {
     }
   }, [gameId, localPlayed, serverMain, questionCount]);
 
-  useEffect(() => {
-    if (game && bonusSelections.length !== game.questions.length) {
-      // Functional so it can't undo selections restored in this same commit.
-      const n = game.questions.length;
-      setBonusSelections((prev) => (prev.length === n ? prev : new Array(n).fill(null)));
-    }
-  }, [game, bonusSelections.length]);
+  if (game && bonusSelections.length !== game.questions.length) {
+    // Functional so it can't undo selections restored in this same commit.
+    const n = game.questions.length;
+    setBonusSelections((prev) => (prev.length === n ? prev : new Array(n).fill(null)));
+  }
 
   // Capture the user's prior rankings row exactly once, before today's submission
   // refetches the rankings query (which would include today's score and ruin the delta).
-  useEffect(() => {
-    if (!displayName) return;
-    if (beforeRanking !== undefined) return;
-    if (rankings.isLoading) return;
-    if (localScore !== null) return; // user already submitted; don't capture after the fact
-    const row = rankings.data?.find((r) => r.userName === displayName) ?? null;
-    setBeforeRanking(row);
-  }, [displayName, rankings.data, rankings.isLoading, beforeRanking, localScore]);
+  if (displayName && beforeRanking === undefined && !rankings.isLoading && localScore === null) {
+    // (localScore set = user already submitted; don't capture after the fact)
+    setBeforeRanking(rankings.data?.find((r) => r.userName === displayName) ?? null);
+  }
 
   const afterRanking = useMemo<RankSnapshot | null>(() => {
     if (!localScore || !game || beforeRanking === undefined) return null;
@@ -283,9 +279,11 @@ export function QueuedlePanel() {
   }
 
   // Every state renders inside the same scrolling page, so the header never jumps between states.
-  const shell = (content: ReactNode, header?: ReactNode) => (
+  // While a game is being played the page is a fixed-height stage instead: no header, and the
+  // round fills the window without scrolling.
+  const shell = (content: ReactNode, header?: ReactNode, stage = false) => (
     <div className={styles.panel}>
-      <div className={`page-scale ${styles.page}`}>
+      <div className={`page-scale ${styles.page}${stage ? ' ' + styles.pageStage : ''}`}>
         {header}
         {content}
       </div>
@@ -339,7 +337,7 @@ export function QueuedlePanel() {
             <ArrowLeft size={15} aria-hidden="true" /> Back to today
           </PillButton>
         )}
-        <PillButton onClick={() => navigate('/queuedle/stats')}>
+        <PillButton onClick={() => void navigate('/queuedle/stats')}>
           <ChartColumn size={15} aria-hidden="true" /> Stats
         </PillButton>
         {calendarDates.length > 0 && (
@@ -358,13 +356,14 @@ export function QueuedlePanel() {
     </Dialog>
   );
 
-  const page = (content: ReactNode) =>
+  const page = (content: ReactNode, stage = false) =>
     shell(
       <>
         {content}
         {calendar}
       </>,
-      header
+      stage ? undefined : header,
+      stage
     );
 
   // The payoff of a once-a-day game: your score against the room, then the room, then your answers.
@@ -411,7 +410,7 @@ export function QueuedlePanel() {
             viewedGameId={currentGame.id}
             me={displayName ?? null}
             imageByUser={imageByUser}
-            onOpenProfile={(name) => navigate(`/profile/${encodeURIComponent(name)}`)}
+            onOpenProfile={(name) => void navigate(`/profile/${encodeURIComponent(name)}`)}
           />
           <QueuedleSummary
             questions={currentGame.questions}
@@ -548,13 +547,17 @@ export function QueuedlePanel() {
 
   const bonusGuesses = bonusSelections.map((s) => s ?? '');
   const showProgress = phase === 'main' || phase === 'bonus';
+  // The game's own beats (both rounds, then the bonus marks and the rank change) hide the header so
+  // they fit the window; the intro and the results bring it back. The top nav is the way out, and
+  // progress is saved per game, so leaving mid-game loses nothing.
+  const inPlay = phase === 'main' || phase === 'bonus' || phase === 'bonus-results' || phase === 'rank-change';
 
   return page(
     <>
       {showProgress && (
-        <div className={styles.progress}>
+        <div className={`${styles.progress}${phase === 'bonus' ? ' ' + styles.progressWide : ''}`}>
           <span className={styles.progressLabel}>
-            {phase === 'main' ? `Round ${currentIdx + 1} of ${total}` : 'Bonus round'}
+            {phase === 'main' ? `Round ${currentIdx + 1} of ${total}` : 'Top Queuer'}
           </span>
           <div className={styles.pips} aria-hidden="true">
             {pips.map((cls, i) => (
@@ -591,7 +594,7 @@ export function QueuedlePanel() {
           winningItems={winningItems}
           selections={bonusSelections}
           onSelect={handleBonusSelect}
-          onSubmit={handleSubmit}
+          onSubmit={() => void handleSubmit()}
           submitting={submit.isPending}
           imageByUser={imageByUser}
         />
@@ -618,6 +621,7 @@ export function QueuedlePanel() {
       {phase === 'summary' &&
         localScore &&
         renderResults(game, { mainScore: localScore.main, bonusScore: localScore.bonus }, mainGuesses, bonusGuesses)}
-    </>
+    </>,
+    inPlay
   );
 }

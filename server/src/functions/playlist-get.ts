@@ -20,7 +20,6 @@ export async function playlistGetHandler(request: HttpRequest, context: Invocati
 
     return {
       jsonBody: resource,
-      headers: { 'Access-Control-Allow-Origin': '*' },
     };
   } catch (err) {
     context.error('[playlist-get] read failed:', err);

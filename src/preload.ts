@@ -107,6 +107,11 @@ export interface SonosAPI {
   entraReLogin: () => Promise<void>;
   onEntraReady: (cb: (user: EntraUser) => void) => Unsubscribe;
   renameUser: (oldName: string, newName: string) => Promise<{ ok?: boolean; error?: string }>;
+  submitFeedback: (
+    type: 'bug' | 'feature',
+    title: string,
+    description: string
+  ) => Promise<{ url: string } | { error: string }>;
   updateNowPlayingSmtc: (data: {
     title?: string;
     artist?: string;
@@ -296,5 +301,6 @@ contextBridge.exposeInMainWorld('sonos', {
     return () => ipcRenderer.removeListener('auth:entra-ready', listener);
   },
   renameUser: (oldName: string, newName: string) => ipcRenderer.invoke('profile:rename', oldName, newName),
+  submitFeedback: (type, title, description) => ipcRenderer.invoke('feedback:submit', type, title, description),
   updateNowPlayingSmtc: (data) => ipcRenderer.invoke('smtc:update', data),
 } satisfies SonosAPI);

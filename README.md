@@ -57,7 +57,11 @@ Without this the app works normally — telemetry is a silent no-op.
 
 ```
 src/                  Main process (Electron, Node.js)
-  main.ts             Entry point — BrowserWindow, IPC handlers, WebSocket, auth
+  main.ts             Entry point — app lifecycle, windows, wiring
+  state.ts            Config, constants and shared runtime state
+  sonos-api.ts        Sonos BFF HTTP client (sonosFetch, service discovery)
+  sonos-ws.ts         Sonos WebSocket client (bootstrap, commands, push forwarding)
+  ipc/                IPC handlers by domain, each with register(); guard.ts is the sender check
   preload.ts          contextBridge — exposes window.sonos API to renderer
   pubsub.ts           Azure Web PubSub client (office presence / attribution)
   telemetry.ts        Azure Application Insights wrapper (no-op without connection string)

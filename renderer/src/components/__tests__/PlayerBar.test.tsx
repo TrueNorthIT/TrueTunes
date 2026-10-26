@@ -7,6 +7,7 @@ import type { PlaybackState } from '../../hooks/usePlayback';
 
 // ─── module mocks ────────────────────────────────────────────────────────────
 
+import { setPlaybackPosition } from '../../hooks/playbackPosition';
 vi.mock('react-router-dom', () => ({
   useNavigate: () => vi.fn(),
   useLocation: () => ({ pathname: '/' }),
@@ -31,9 +32,6 @@ function makePlayback(overrides: Partial<PlaybackState> = {}): PlaybackState {
     artistName: 'Test Artist',
     artUrl: null,
     stateIcon: '▶',
-    timeLabel: '1:00 / 3:00',
-    progressPct: 33,
-    positionMs: 60000,
     durationMs: 180000,
     isPlaying: true,
     shuffle: false,
@@ -60,9 +58,6 @@ function makeNowPlaying(overrides: Partial<ReturnType<typeof useNowPlaying>> = {
     albumId: null,
     cachedArt: null,
     dominantColor: null,
-    elapsedLabel: '1:00',
-    durationLabel: '3:00',
-    progressPct: 33,
     durationMs: 180000,
     isPlaying: true,
     isVisible: true,
@@ -100,6 +95,13 @@ function setup(
 }
 
 beforeEach(() => {
+  setPlaybackPosition({
+    trackEndsAtMs: 0,
+    positionMs: 60000,
+    durationMs: 180000,
+    progressPct: 33,
+    timeLabel: '1:00 / 3:00',
+  });
   vi.clearAllMocks();
   vi.mocked(window.sonos.fetch).mockResolvedValue({ data: null });
   vi.mocked(window.sonos.refreshPlayback).mockResolvedValue(undefined);

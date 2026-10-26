@@ -1,21 +1,19 @@
 import { useEffect, useState } from 'react';
 
 export function useDominantColor(src: string | null, { setGlobal = false } = {}): string | null {
-  const [color, setColor] = useState<string | null>(null);
+  // Keyed by src, so a new src reads as no colour until its image has been analysed.
+  const [result, setResult] = useState<{ src: string; color: string } | null>(null);
+  const color = src && result?.src === src ? result.color : null;
 
   useEffect(() => {
-    if (!src) {
-      setColor(null);
-      return;
-    }
-    setColor(null); // clear stale color immediately while new image is analysed
+    if (!src) return;
     const img = new Image();
     img.onload = () => {
       const size = 20;
       const canvas = document.createElement('canvas');
       canvas.width = size;
       canvas.height = size;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', { willReadFrequently: true }); // a software canvas: reading it back is cheap
       if (!ctx) return;
       ctx.drawImage(img, 0, 0, size, size);
       const { data } = ctx.getImageData(0, 0, size, size);
@@ -40,7 +38,7 @@ export function useDominantColor(src: string | null, { setGlobal = false } = {})
       const vibrant = candidates.find((c) => c.sat > 0.2 && c.lum > 0.18 && c.lum < 0.85);
       const pick = vibrant ?? candidates[0];
 
-      setColor(`${pick.r}, ${pick.g}, ${pick.b}`);
+      setResult({ src, color: `${pick.r}, ${pick.g}, ${pick.b}` });
     };
     img.src = src;
   }, [src]);

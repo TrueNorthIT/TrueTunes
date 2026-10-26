@@ -1,7 +1,18 @@
-import { useEffect, useImperativeHandle, useMemo, useRef, useState, Fragment, forwardRef } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  forwardRef,
+} from 'react';
+import { defaultRangeExtractor, useVirtualizer, type Range, type Virtualizer } from '@tanstack/react-virtual';
 import { useQueries } from '@tanstack/react-query';
 import { Loader2, Disc3, RotateCw, LocateFixed, ListX } from 'lucide-react';
 import { applyReorderLocally, expandToAlbumBlock, projectPlayTimes } from '../../lib/queueHelpers';
+import { usePlaybackPosition } from '../../hooks/playbackPosition';
 import { reportTrackMeta } from '../../lib/trackMetaReporter';
 import { createDragGhost } from '../../lib/dragHelpers';
 import { getActiveProvider } from '../../providers';
@@ -14,20 +25,24 @@ import { WindowControls } from '../WindowControls';
 import type { NormalizedQueueItem } from '../../types/provider';
 import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/QueueSidebar.module.css';
+import { useQueueActions } from '../../hooks/useQueueActions';
+import { useEditQueue } from '../../hooks/useQueue';
 
 interface Props {
   items: NormalizedQueueItem[];
-  setItems: (updater: NormalizedQueueItem[] | ((prev: NormalizedQueueItem[]) => NormalizedQueueItem[])) => void;
+  groupId: string | null;
   isLoading: boolean;
+  /** Showing the previous group's rows while this one loads: removing or moving them would hit the wrong queue. */
+  readOnly?: boolean;
   error: string | null;
   currentObjectId: string | null;
   currentQueueItemId: string | null;
-  positionMs?: number;
+  /** Audio is playing, so the current row's bars move. */
+  isPlaying?: boolean;
   currentTrackDurationMs?: number;
   groupName: string | null;
   onRefresh: () => void;
   onError: (msg: string) => void;
-  onAddToQueue: (item: SonosItem, position: number) => void;
   dockedWidth?: number;
   onResizeWidth?: (width: number) => void;
   onResizeWidthLive?: (width: number) => void;
@@ -44,6 +59,13 @@ interface Props {
   };
 }
 
+/** What the virtual list lays out: a section label or a queue row. */
+type Entry = { key: string; kind: 'row'; index: number } | { key: string; kind: 'label'; text: string; count?: number };
+
+// Starting heights; the real ones are measured as rows render (a .row is 40px art + 12px padding).
+const ROW_ESTIMATE_PX = 52;
+const LABEL_ESTIMATE_PX = 36;
+
 export interface QueueSidebarHandle {
   scrollToNowPlaying: () => void;
 }
@@ -55,17 +77,17 @@ const PLAYER_BAR_PADDING = 64; // 32px breathing room each side
 export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function QueueSidebar(
   {
     items,
-    setItems,
+    groupId,
     isLoading,
+    readOnly = false,
     error,
     currentObjectId,
     currentQueueItemId,
-    positionMs = 0,
+    isPlaying = false,
     currentTrackDurationMs = 0,
     groupName,
     onRefresh,
     onError,
-    onAddToQueue,
     dockedWidth,
     onResizeWidth,
     onResizeWidthLive,
@@ -76,6 +98,8 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   ref
 ) {
   const isActive = true;
+  const { addToQueue: onAddToQueue } = useQueueActions();
+  const editQueue = useEditQueue(groupId);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const attributionMap = useAttribution(onRefresh);
@@ -116,20 +140,19 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     [items, trackDetailsResults]
   );
 
-  const [nowMs, setNowMs] = useState(0);
-  useEffect(() => {
-    setNowMs(Date.now());
-  }, [positionMs]);
+  // When the playing track ends, to the second. It is constant while the track plays (the tick moves position and
+  // the clock together), so the queue re-renders on a seek, pause or resync, not every second.
+  const trackEndsAtSec = usePlaybackPosition((p) => (p.durationMs > 0 ? Math.floor(p.trackEndsAtMs / 1000) : 0));
 
   const timesToPlay = useMemo(() => {
-    if (!currentQueueItemId || currentTrackDurationMs <= 0 || nowMs === 0) return [];
+    if (!currentQueueItemId || currentTrackDurationMs <= 0 || trackEndsAtSec === 0) return [];
     return projectPlayTimes({
-      nowMs,
+      nowMs: trackEndsAtSec * 1000,
       currentIdx: Number(currentQueueItemId) - 1,
-      remainingMs: currentTrackDurationMs - positionMs,
+      remainingMs: 0,
       durations: items.map((item, i) => trackDetailsResults[i]?.data?.durationMs || item.track.durationMs || undefined),
     });
-  }, [items, currentQueueItemId, positionMs, currentTrackDurationMs, trackDetailsResults, nowMs]);
+  }, [items, currentQueueItemId, currentTrackDurationMs, trackDetailsResults, trackEndsAtSec]);
 
   // Feed the music stats with lengths we've already looked up anyway.
   useEffect(() => {
@@ -140,65 +163,109 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   }, [items, trackDetailsResults]);
 
   const [liveWidth, setLiveWidth] = useState<number>(dockedWidth ?? 380);
-  useEffect(() => {
+  const [prevDockedWidth, setPrevDockedWidth] = useState(dockedWidth);
+  if (dockedWidth !== prevDockedWidth) {
+    setPrevDockedWidth(dockedWidth);
     if (typeof dockedWidth === 'number') setLiveWidth(dockedWidth);
-  }, [dockedWidth]);
+  }
   const liveWidthRef = useRef(liveWidth);
   useEffect(() => {
     liveWidthRef.current = liveWidth;
   }, [liveWidth]);
 
-  function scrollToNowPlaying() {
+  // Played / now playing / up next, from the live queue position. Without a position the list is flat.
+  const playingIdx = currentQueueItemId !== null ? Number(currentQueueItemId) - 1 : -1;
+  const grouped = playingIdx >= 0 && playingIdx < items.length;
+  const isSkinny = variant === 'skinny';
+  // Skinny docks its own Now playing card under the list, so the row here would show the track twice.
+  const nowPlayingRow = !isSkinny;
+  const showItems = !isLoading && !error;
+
+  // One list, played tracks included (Joe prefers it to folding them away); the labels mark the sections.
+  const { entries, entryOfRow } = useMemo(() => {
+    const out: Entry[] = [];
+    const entryOfRow: number[] = [];
+    if (grouped && playingIdx > 0) out.push({ key: 'l-played', kind: 'label', text: 'Played', count: playingIdx });
+    for (let i = 0; i < items.length; i++) {
+      if (grouped && i === playingIdx && !nowPlayingRow) continue;
+      if (grouped && i === playingIdx && nowPlayingRow) out.push({ key: 'l-now', kind: 'label', text: 'Now playing' });
+      if (grouped && i === playingIdx + 1) {
+        out.push({ key: 'l-next', kind: 'label', text: 'Up next', count: items.length - playingIdx - 1 });
+      }
+      entryOfRow[i] = out.length;
+      out.push({ key: `r${i}`, kind: 'row', index: i });
+    }
+    return { entries: out, entryOfRow };
+  }, [items.length, grouped, playingIdx, nowPlayingRow]);
+
+  const virtualizerRef = useRef<Virtualizer<HTMLDivElement, Element> | null>(null);
+
+  function scrollToNowPlaying(smooth = true) {
+    const entry = grouped ? entryOfRow[playingIdx] : undefined;
+    if (entry !== undefined) {
+      virtualizerRef.current?.scrollToIndex(entry, { align: 'center', behavior: smooth ? 'smooth' : 'auto' });
+      return;
+    }
     contentRef.current
       ?.querySelector<HTMLElement>('[data-playing="true"]')
-      ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      ?.scrollIntoView({ block: 'center', behavior: smooth ? 'smooth' : 'auto' });
   }
+  // The timers below fire later; they call whatever this render's scroll was, not the one they were made in.
+  const scrollToNowRef = useRef(scrollToNowPlaying);
+  useLayoutEffect(() => {
+    scrollToNowRef.current = scrollToNowPlaying;
+  });
+  const jumpToNowPlaying = useCallback(() => scrollToNowRef.current(), []);
 
-  useImperativeHandle(ref, () => ({ scrollToNowPlaying }), []);
+  useImperativeHandle(ref, () => ({ scrollToNowPlaying: jumpToNowPlaying }), [jumpToNowPlaying]);
 
+  // A new Set on every run, mount included: that commit's re-render is what first lays out the virtual list under
+  // jsdom (no ResizeObserver), so a render-phase "previous props" reset would leave the rows unrendered in tests.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- see above
     setSelected(new Set());
-  }, [items]);
+  }, [items, readOnly]);
 
   useEffect(() => {
     if (!isActive) return;
-    const id = setTimeout(scrollToNowPlaying, 50);
+    const id = setTimeout(jumpToNowPlaying, 50);
     return () => clearTimeout(id);
-  }, [isActive]);
+  }, [isActive, jumpToNowPlaying]);
 
   // Track change while queue is visible
   useEffect(() => {
     if (!isActive) return;
-    const id = setTimeout(scrollToNowPlaying, 50);
+    const id = setTimeout(jumpToNowPlaying, 50);
     return () => clearTimeout(id);
-  }, [currentQueueItemId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentQueueItemId, isActive, jumpToNowPlaying]);
 
   // Group switch — queue reloads async so use a longer delay
   useEffect(() => {
     if (!isActive) return;
-    const id = setTimeout(scrollToNowPlaying, 400);
+    const id = setTimeout(jumpToNowPlaying, 400);
     return () => clearTimeout(id);
-  }, [groupName]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [groupName, isActive, jumpToNowPlaying]);
 
   useEffect(() => {
     if (!isActive) return;
-    async function onKeyDown(e: KeyboardEvent) {
+    function onKeyDown(e: KeyboardEvent) {
       if (e.key !== 'Delete' && e.key !== 'Backspace') return;
-      if (selected.size === 0) return;
+      if (readOnly || selected.size === 0) return;
       e.preventDefault();
       const indices = [...selected];
-      setItems((prev) => prev.filter((_, i) => !selected.has(i)));
+      const undo = editQueue((prev) => prev.filter((_, i) => !selected.has(i)));
       setSelected(new Set());
-      await getActiveProvider()
+      getActiveProvider()
         .removeFromQueue(indices)
         .catch(() => {
+          undo();
           onRefresh();
           onError('Failed to remove track');
         });
     }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [isActive, selected, setItems, onRefresh, onError]);
+  }, [isActive, readOnly, selected, editQueue, onRefresh, onError]);
 
   function handleResizePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     e.preventDefault();
@@ -257,6 +324,10 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   }
 
   function handleDragStart(index: number, e: React.DragEvent) {
+    if (readOnly) {
+      e.preventDefault();
+      return;
+    }
     const toMove = selected.has(index) ? new Set(selected) : new Set([index]);
     if (!selected.has(index)) {
       setSelected(toMove);
@@ -278,6 +349,10 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   }
 
   async function handleDrop(e: React.DragEvent) {
+    if (readOnly) {
+      setDragOverIndex(null);
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     if (dragOverIndex === null) return;
@@ -312,33 +387,38 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     const targetIndex = dragOverIndex;
     setDragOverIndex(null);
     setSelected(new Set());
-    setItems(applyReorderLocally(items, fromIndices, targetIndex));
+    const undo = editQueue(applyReorderLocally(items, fromIndices, targetIndex));
     await getActiveProvider()
       .reorderQueue(fromIndices, targetIndex, currentLength)
       .catch(() => {
+        undo();
         onRefresh();
         onError('Failed to reorder queue');
       });
   }
 
-  function handleDragEnd() {
+  const handleDragEnd = useCallback(() => {
     setDragOverIndex(null);
     draggingSet.current = new Set();
-  }
+  }, []);
+
+  // The handlers close over selection, items and the drop target, so they change every render. The rows are
+  // memoised, so they get these stable wrappers, which call the latest handlers.
+  const latest = useRef({ handleRowClick, handleDragStart, handleDragOver, handleDrop });
+  useLayoutEffect(() => {
+    latest.current = { handleRowClick, handleDragStart, handleDragOver, handleDrop };
+  });
+  const onRowClick = useCallback((i: number, e: React.MouseEvent) => latest.current.handleRowClick(i, e), []);
+  const onRowDragStart = useCallback((i: number, e: React.DragEvent) => latest.current.handleDragStart(i, e), []);
+  const onRowDragOver = useCallback((i: number, e: React.DragEvent) => latest.current.handleDragOver(i, e), []);
+  const onRowDrop = useCallback((e: React.DragEvent) => void latest.current.handleDrop(e), []);
 
   function handleContentClick() {
     setSelected(new Set());
     lastSelected.current = null;
   }
 
-  // Played / now playing / up next, from the live queue position. Without a position the list is flat.
-  const playingIdx = currentQueueItemId !== null ? Number(currentQueueItemId) - 1 : -1;
-  const grouped = playingIdx >= 0 && playingIdx < items.length;
-
   const selCount = selected.size;
-  const isSkinny = variant === 'skinny';
-  // Skinny docks its own Now playing card under the list, so the row here would show the track twice.
-  const nowPlayingRow = !isSkinny;
   const sidebarClass = isSkinny ? `${styles.sidebar} ${styles.skinny}` : styles.sidebar;
   const sidebarStyle = isSkinny ? undefined : { width: liveWidth };
 
@@ -377,12 +457,14 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
             <span>Clear all {items.length} tracks?</span>
             <button
               className={styles.confirmYes}
-              onClick={async () => {
+              disabled={readOnly}
+              onClick={() => {
                 setPendingClear(false);
-                setItems([]);
-                await getActiveProvider()
+                const undo = editQueue([]);
+                getActiveProvider()
                   .clearQueue()
                   .catch(() => {
+                    undo();
                     onRefresh();
                     onError('Failed to clear queue');
                   });
@@ -402,7 +484,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
             {nowPlayingRow && (
               <button
                 className={styles.iconBtn}
-                onClick={scrollToNowPlaying}
+                onClick={jumpToNowPlaying}
                 title="Jump to now playing"
                 aria-label="Jump to now playing"
               >
@@ -414,6 +496,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
                 className={styles.iconBtn}
                 title="Clear queue"
                 aria-label="Clear queue"
+                disabled={readOnly}
                 onClick={() => setPendingClear(true)}
               >
                 <ListX size={15} />
@@ -435,7 +518,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
         onDragLeave={(e) => {
           if (!contentRef.current?.contains(e.relatedTarget as Node)) setDragOverIndex(null);
         }}
-        onDrop={handleDrop}
+        onDrop={(e) => void handleDrop(e)}
       >
         {isLoading && (
           <div className={styles.msg}>
@@ -444,47 +527,62 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
         )}
         {error && <div className={styles.msg}>{error}</div>}
         {!isLoading && !error && items.length === 0 && <div className={styles.msg}>Queue is empty.</div>}
-        {/* One list, played tracks included (Joe prefers it to folding them away); the labels mark the sections. */}
-        {!isLoading && !error && grouped && playingIdx > 0 && (
-          <div className={styles.groupLabel}>
-            Played <span className={styles.groupCount}>{playingIdx}</span>
-          </div>
+        {items.length === 0 && dragOverIndex === 0 && (
+          <div className={styles.dropLine} style={{ position: 'relative' }} />
         )}
-        {!isLoading &&
-          !error &&
-          items.map((item, i) => {
-            if (grouped && i === playingIdx && !nowPlayingRow) return null;
-            const attr = resolveAttribution(attributionMap, item.track);
-            return (
-              <Fragment key={i}>
-                {grouped && i === playingIdx && nowPlayingRow && <div className={styles.groupLabel}>Now playing</div>}
-                {grouped && i === playingIdx + 1 && (
+        {showItems && entries.length > 0 && (
+          <VirtualRows
+            entries={entries}
+            entryOfRow={entryOfRow}
+            scrollRef={contentRef}
+            draggingSet={draggingSet}
+            virtualizerRef={virtualizerRef}
+            renderEntry={(entry) => {
+              if (entry.kind === 'label') {
+                return (
                   <div className={styles.groupLabel}>
-                    Up next <span className={styles.groupCount}>{items.length - playingIdx - 1}</span>
+                    {entry.text}
+                    {entry.count !== undefined && (
+                      <>
+                        {' '}
+                        <span className={styles.groupCount}>{entry.count}</span>
+                      </>
+                    )}
                   </div>
-                )}
-                {dragOverIndex === i && <div className={styles.dropLine} />}
-                <DraggableQueueRow
-                  item={item}
-                  index={i}
-                  currentObjectId={currentObjectId}
-                  currentQueueItemId={currentQueueItemId}
-                  attribution={attr}
-                  attributionImageUrl={attr ? imageByUser.get(attr.user) : undefined}
-                  isSelected={selected.has(i)}
-                  played={grouped && i < playingIdx}
-                  timeToPlay={timesToPlay[i]?.atMs}
-                  timeEstimated={timesToPlay[i]?.estimated}
-                  onRowClick={handleRowClick}
-                  onDragStart={handleDragStart}
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                  onDragEnd={handleDragEnd}
-                />
-              </Fragment>
-            );
-          })}
-        {dragOverIndex === items.length && <div className={styles.dropLine} />}
+                );
+              }
+              const i = entry.index;
+              const item = items[i];
+              const attr = resolveAttribution(attributionMap, item.track);
+              return (
+                <>
+                  {dragOverIndex === i && <div className={styles.dropLine} />}
+                  {dragOverIndex === items.length && i === items.length - 1 && (
+                    <div className={`${styles.dropLine} ${styles.dropLineEnd}`} />
+                  )}
+                  <DraggableQueueRow
+                    item={item}
+                    index={i}
+                    currentObjectId={currentObjectId}
+                    currentQueueItemId={currentQueueItemId}
+                    attribution={attr}
+                    attributionImageUrl={attr ? imageByUser.get(attr.user) : undefined}
+                    isSelected={selected.has(i)}
+                    played={grouped && i < playingIdx}
+                    audioPlaying={isPlaying}
+                    timeToPlay={timesToPlay[i]?.atMs}
+                    timeEstimated={timesToPlay[i]?.estimated}
+                    onRowClick={onRowClick}
+                    onDragStart={onRowDragStart}
+                    onDragOver={onRowDragOver}
+                    onDrop={onRowDrop}
+                    onDragEnd={handleDragEnd}
+                  />
+                </>
+              );
+            }}
+          />
+        )}
 
         {/* Always rendered, even with nothing queued up yet: it's the room's
             signal that the DJ exists and whether it's armed. Hiding it until
@@ -551,13 +649,15 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
               })()}
             <button
               className={styles.selDelBtn}
-              onClick={async () => {
+              disabled={readOnly}
+              onClick={() => {
                 const indices = [...selected];
-                setItems((prev) => prev.filter((_, i) => !selected.has(i)));
+                const undo = editQueue((prev) => prev.filter((_, i) => !selected.has(i)));
                 setSelected(new Set());
-                await getActiveProvider()
+                getActiveProvider()
                   .removeFromQueue(indices)
                   .catch(() => {
+                    undo();
                     onRefresh();
                     onError('Failed to remove tracks');
                   });
@@ -571,3 +671,69 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     </div>
   );
 });
+
+/**
+ * The virtual window over the queue. It owns the virtualizer so a scroll re-renders only this and the rows that
+ * entered the window, not the whole sidebar (whose per-track queries are costly to re-run on every scroll step).
+ */
+function VirtualRows({
+  entries,
+  entryOfRow,
+  scrollRef,
+  draggingSet,
+  virtualizerRef,
+  renderEntry,
+}: {
+  entries: Entry[];
+  entryOfRow: number[];
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+  draggingSet: React.RefObject<Set<number>>;
+  virtualizerRef: React.RefObject<Virtualizer<HTMLDivElement, Element> | null>;
+  renderEntry: (entry: Entry) => React.ReactNode;
+}) {
+  // A dragged row must stay mounted even if the list scrolls it out of view, or the browser never fires its dragend.
+  const rangeExtractor = useCallback(
+    (range: Range) => {
+      const base = defaultRangeExtractor(range);
+      const extra = [...draggingSet.current]
+        .map((i) => entryOfRow[i])
+        .filter((e) => e !== undefined && !base.includes(e));
+      return extra.length ? [...base, ...extra].sort((a, b) => a - b) : base;
+    },
+    [entryOfRow, draggingSet]
+  );
+  const virtualizer = useVirtualizer({
+    count: entries.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: (i) => (entries[i]?.kind === 'label' ? LABEL_ESTIMATE_PX : ROW_ESTIMATE_PX),
+    getItemKey: (i) => entries[i]?.key ?? i,
+    overscan: 8,
+    rangeExtractor,
+  });
+  useLayoutEffect(() => {
+    virtualizerRef.current = virtualizer;
+    return () => {
+      virtualizerRef.current = null;
+    };
+  }, [virtualizer, virtualizerRef]);
+
+  return (
+    <div className={styles.virtualList} style={{ height: virtualizer.getTotalSize() }}>
+      {virtualizer.getVirtualItems().map((v) => {
+        const entry = entries[v.index];
+        if (!entry) return null;
+        return (
+          <div
+            key={v.key}
+            data-index={v.index}
+            ref={virtualizer.measureElement}
+            className={styles.virtualItem}
+            style={{ transform: `translateY(${v.start}px)` }}
+          >
+            {renderEntry(entry)}
+          </div>
+        );
+      })}
+    </div>
+  );
+}

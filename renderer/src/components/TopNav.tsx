@@ -20,6 +20,7 @@ import type { NormalizedGroup } from '../types/provider';
 import { addRecentSearch } from '../lib/recentSearches';
 import { PillButton } from './common/PillButton';
 import dialog from './common/Dialog.module.css';
+import { useDisplayName } from '../hooks/useDisplayName';
 import styles from '../styles/TopNav.module.css';
 
 interface Props {
@@ -28,7 +29,6 @@ interface Props {
   activeGroupId: string | null;
   onGroupChange: (groupId: string) => void;
   onResync: () => void;
-  displayName: string | null | undefined;
   onSaveName: (name: string) => void;
   onChangelogOpen: () => void;
 }
@@ -39,10 +39,10 @@ export function TopNav({
   activeGroupId,
   onGroupChange,
   onResync,
-  displayName,
   onSaveName,
   onChangelogOpen,
 }: Props) {
+  const displayName = useDisplayName();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -122,7 +122,7 @@ export function TopNav({
   const pushedSearch = useRef(false);
   const openSearch = (to: string) => {
     if (!isInSearch) pushedSearch.current = true;
-    navigate(to, { replace: isInSearch });
+    void navigate(to, { replace: isInSearch });
   };
   const runSearch = (q: string) => openSearch(q ? `/search?q=${encodeURIComponent(q)}` : '/search');
   useEffect(() => {
@@ -156,14 +156,14 @@ export function TopNav({
   const leaveSearch = () => {
     setSearchText('');
     if (!isInSearch) return;
-    if (pushedSearch.current) navigate(-1);
-    else navigate('/');
+    if (pushedSearch.current) void navigate(-1);
+    else void navigate('/');
     pushedSearch.current = false;
   };
 
   const handleClear = () => {
     setSearchText('');
-    navigate('/');
+    void navigate('/');
   };
 
   const isAtRoot = location.pathname === '/';
@@ -177,10 +177,10 @@ export function TopNav({
 
       {/* Back / forward pill — fixed top-left */}
       <div className={styles.historyPill}>
-        <button className={styles.historyBtn} disabled={!canGoBack} onClick={() => navigate(-1)} title="Back">
+        <button className={styles.historyBtn} disabled={!canGoBack} onClick={() => void navigate(-1)} title="Back">
           <ChevronLeft size={16} />
         </button>
-        <button className={styles.historyBtn} disabled={!canGoForward} onClick={() => navigate(1)} title="Forward">
+        <button className={styles.historyBtn} disabled={!canGoForward} onClick={() => void navigate(1)} title="Forward">
           <ChevronRight size={16} />
         </button>
       </div>
@@ -201,7 +201,7 @@ export function TopNav({
             <button
               className={`${styles.iconBtn}${isLeaderboard ? ' ' + styles.active : ''}`}
               aria-current={isLeaderboard ? 'page' : undefined}
-              onClick={() => navigate('/leaderboard')}
+              onClick={() => void navigate('/leaderboard')}
               title="Leaderboard"
             >
               <Trophy size={15} />
@@ -209,7 +209,7 @@ export function TopNav({
             <button
               className={`${styles.iconBtn}${isQueuedle ? ' ' + styles.active : ''}`}
               aria-current={isQueuedle ? 'page' : undefined}
-              onClick={() => navigate('/queuedle')}
+              onClick={() => void navigate('/queuedle')}
               title="Queuedle — daily game"
             >
               <Gamepad2 size={15} />
@@ -218,7 +218,7 @@ export function TopNav({
             <button
               className={`${styles.iconBtn}${isDiscover ? ' ' + styles.active : ''}`}
               aria-current={isDiscover ? 'page' : undefined}
-              onClick={() => navigate('/discover')}
+              onClick={() => void navigate('/discover')}
               title="Discover — music for the room"
             >
               <Compass size={15} />
@@ -261,7 +261,7 @@ export function TopNav({
                 {displayName ? (
                   <button
                     className={`${styles.profileChip}${location.pathname.startsWith('/profile/') ? ' ' + styles.profileChipActive : ''}`}
-                    onClick={() => navigate(`/profile/${encodeURIComponent(displayName)}`)}
+                    onClick={() => void navigate(`/profile/${encodeURIComponent(displayName)}`)}
                     title="My profile"
                   >
                     <span className={styles.profileAvatar}>
@@ -369,9 +369,9 @@ export function TopNav({
               <button
                 className={styles.iconBtn}
                 onClick={() => {
-                  window.sonos.openDevTools();
-                  window.sonos.openHttpMonitor();
-                  window.sonos.openWsMonitor();
+                  void window.sonos.openDevTools();
+                  void window.sonos.openHttpMonitor();
+                  void window.sonos.openWsMonitor();
                 }}
                 title="Inspect"
               >

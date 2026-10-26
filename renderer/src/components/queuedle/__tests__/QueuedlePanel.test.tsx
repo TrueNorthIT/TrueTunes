@@ -255,6 +255,50 @@ describe('QueuedlePanel', () => {
     expect(screen.getByText('Monday 1 January 2024')).toBeInTheDocument();
   });
 
+  // ── the header gives way to the game while it is played ───────────────────
+
+  const title = () => screen.queryByRole('heading', { name: 'Queuedle', level: 1 });
+
+  it('hides the header through both rounds and the reveal, and brings it back for the results', async () => {
+    const mutateAsync = vi.fn().mockResolvedValue({ score: { mainScore: 1, bonusScore: 1 } });
+    mockUseSubmitGameScore.mockReturnValue({ mutateAsync, isPending: false });
+    const user = userEvent.setup();
+    renderQ(<QueuedlePanel />);
+    await flushPromises();
+    expect(title()).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Stats/ })).toBeInTheDocument();
+
+    await startGame(user);
+    expect(title()).toBeNull();
+    expect(screen.queryByText('Monday 1 January 2024')).toBeNull();
+    expect(screen.queryByRole('button', { name: /Stats/ })).toBeNull();
+    expect(screen.getByText('Round 1 of 1')).toBeInTheDocument();
+
+    await user.click(screen.getByText('Pick Left'));
+    await user.click(screen.getByText('Next'));
+    expect(screen.getByText('Top Queuer')).toBeInTheDocument();
+    expect(title()).toBeNull();
+
+    await user.click(screen.getByText('Submit Bonus'));
+    await waitFor(() => screen.getByText('Bonus results'));
+    expect(title()).toBeNull();
+    await user.click(screen.getByText('See Score'));
+    expect(screen.getByText('Rank change')).toBeInTheDocument();
+    expect(title()).toBeNull();
+
+    await user.click(screen.getByText('Continue Rank'));
+    expect(screen.getByText('Score: 2')).toBeInTheDocument();
+    expect(title()).toBeInTheDocument();
+    expect(screen.getByText('Monday 1 January 2024')).toBeInTheDocument();
+  });
+
+  it('shows the header on the already-played view', async () => {
+    localStorage.setItem('queuedle-played:2024-01-01', JSON.stringify({ mainScore: 1, bonusScore: 0 }));
+    renderQ(<QueuedlePanel />);
+    await flushPromises();
+    expect(title()).toBeInTheDocument();
+  });
+
   it('picking an answer reveals the result', async () => {
     const user = userEvent.setup();
     renderQ(<QueuedlePanel />);
