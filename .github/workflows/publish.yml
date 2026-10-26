@@ -131,8 +131,8 @@ jobs:
           git push
           echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
-      # Both publish jobs upload into this one draft. Left to electron-builder, the Windows and macOS jobs each create
-      # their own draft when they start together, which split 1.0.62 and 1.0.63 across two drafts.
+      # The publish job uploads into this draft. Left to electron-builder, parallel publish jobs each created their own
+      # draft, which split 1.0.62 and 1.0.63 across two drafts.
       - name: Create the draft release
         run: >-
           gh release create "v${{ steps.bump.outputs.new_version }}" --draft
@@ -143,15 +143,8 @@ jobs:
   publish:
     needs: version
     if: github.event_name == 'push'
-    strategy:
-      matrix:
-        include:
-          - os: windows-latest
-            script: electron:publish:win
-          - os: macos-latest
-            script: electron:publish:mac
-
-    runs-on: ${{ matrix.os }}
+    # Windows only: nobody runs the macOS build, and macOS runners bill at 10x.
+    runs-on: windows-latest
     permissions:
       contents: write # electron-builder uploads the GitHub release
 
@@ -167,7 +160,7 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run ${{ matrix.script }}
+      - run: npm run electron:publish:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPINSIGHTS_CONNECTION_STRING: ${{ secrets.APPINSIGHTS_CONNECTION_STRING }}
