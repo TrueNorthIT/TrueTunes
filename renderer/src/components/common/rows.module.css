@@ -115,7 +115,7 @@
 .reason {
   font-size: var(--fs-small);
   color: var(--text);
-  margin-top: 0.15em;
+  margin-top: 0.5em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
