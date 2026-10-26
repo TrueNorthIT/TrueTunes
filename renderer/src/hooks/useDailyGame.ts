@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { queryOptions, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import {
   calculateWeeklyLeaderboard,
   isInWeek,
@@ -166,8 +166,6 @@ export function calculateGameRankings(sources: GameRankingSource[]): GameRanking
 export const queuedleKeys = {
   game: (date?: string) => ['queuedle', date ?? 'today'] as const,
   leaderboard: (date?: string) => ['queuedle-leaderboard', date ?? 'today'] as const,
-  /** Prefix of every leaderboard key, for invalidation. */
-  leaderboards: ['queuedle-leaderboard'] as const,
   dates: (userName: string | null | undefined) => ['queuedle-dates', userName ?? ''] as const,
   datesAll: ['queuedle-dates'] as const,
   history: (userName: string | null | undefined) => ['queuedle-history', userName ?? ''] as const,
@@ -230,23 +228,60 @@ export function useGameDates(userName: string | null | undefined) {
   return useQuery(gameDatesQueryOptions(userName));
 }
 
+/** Runs at most `max` of the wrapped calls at once; the rest wait their turn. */
+function callPool(max: number) {
+  let active = 0;
+  const waiting: Array<() => void> = [];
+  return async <T>(call: () => Promise<T>): Promise<T> => {
+    if (active < max) active++;
+    else await new Promise<void>((resolve) => waiting.push(resolve));
+    try {
+      return await call();
+    } finally {
+      // Hand the slot straight to the next caller, so a newcomer can't squeeze in between.
+      const next = waiting.shift();
+      if (next) next();
+      else active--;
+    }
+  };
+}
+
+/** IPC calls a history fetch keeps in flight at once, so a cold cache doesn't fire them all together. */
+export const HISTORY_CONCURRENCY = 6;
+
 /**
- * Every ready Queuedle day with its leaderboard and question count. One fetch
- * per day, so the rankings and the stats page share it through the cache.
+ * Every ready Queuedle day with its leaderboard and question count. Each day reads
+ * through the per-day game and leaderboard caches that the Queuedle page uses too:
+ * a ready game never changes, so it is fetched once; today's leaderboard is always
+ * fetched; a past day's can still change (anyone can play an old day from the
+ * calendar), so it is re-read once it is half an hour old.
  */
-export async function fetchQueuedleHistory(userName: string): Promise<QueuedleDay[]> {
+export async function fetchQueuedleHistory(client: QueryClient, userName: string): Promise<QueuedleDay[]> {
   const datesResult = await window.sonos.fetchGameDates(userName);
   const dates = Array.isArray(datesResult.dates) ? datesResult.dates.filter((date) => date.status === 'ready') : [];
+  const today = londonDateId(Date.now());
+  const pool = callPool(HISTORY_CONCURRENCY);
   const days = await Promise.all(
-    dates.map(async (date): Promise<QueuedleDay | null> => {
+    dates.map(async ({ gameId }): Promise<QueuedleDay | null> => {
       try {
         const [leaderboard, game] = await Promise.all([
-          window.sonos.fetchGameLeaderboard(date.gameId),
-          window.sonos.fetchDailyGame(date.gameId),
+          client.fetchQuery({
+            queryKey: queuedleKeys.leaderboard(gameId),
+            queryFn: () => pool(() => window.sonos.fetchGameLeaderboard(gameId)),
+            // An { error } answer is cached too, so make it stale at once and ask again next time.
+            staleTime: (q) => (gameId === today || !Array.isArray(q.state.data?.scores) ? 0 : STALE.halfHour),
+            gcTime: Infinity,
+          }),
+          client.fetchQuery({
+            queryKey: queuedleKeys.game(gameId),
+            queryFn: (): Promise<GameFetchResult> => pool(() => window.sonos.fetchDailyGame(gameId)),
+            staleTime: (q) => (isReadyGameDoc(q.state.data) ? Infinity : 0),
+            gcTime: Infinity,
+          }),
         ]);
         if (!isReadyGameDoc(game)) return null;
         const scores = Array.isArray(leaderboard?.scores) ? leaderboard.scores.filter(isScoreRow) : [];
-        return { gameId: date.gameId, questionCount: game.questions.length, scores };
+        return { gameId, questionCount: game.questions.length, scores };
       } catch {
         return null;
       }
@@ -258,7 +293,7 @@ export async function fetchQueuedleHistory(userName: string): Promise<QueuedleDa
 export function queuedleHistoryQueryOptions(userName: string | null | undefined) {
   return queryOptions({
     queryKey: queuedleKeys.history(userName),
-    queryFn: () => fetchQueuedleHistory(userName ?? ''),
+    queryFn: ({ client }) => fetchQueuedleHistory(client, userName ?? ''),
     refetchInterval: 5 * 60_000,
   });
 }
@@ -404,7 +439,9 @@ export function useSubmitGameScore() {
   >({
     mutationFn: (input) => window.sonos.submitGameScore(input),
     onSuccess: (_data, variables) => {
-      void qc.invalidateQueries({ queryKey: queuedleKeys.leaderboards });
+      // Only the played day's board: invalidating them all would make the next history fetch re-read every day.
+      void qc.invalidateQueries({ queryKey: queuedleKeys.leaderboard(variables.gameId) });
+      void qc.invalidateQueries({ queryKey: queuedleKeys.leaderboard() });
       void qc.invalidateQueries({ queryKey: queuedleKeys.game(variables.gameId) });
       void qc.invalidateQueries({ queryKey: queuedleKeys.game() });
       void qc.invalidateQueries({ queryKey: queuedleKeys.datesAll });
