@@ -7,6 +7,7 @@
 import { buildDjSet, type DjTrack } from './dj';
 import { decideAutoplay, emptySession, trackKey, type DjSession } from './autoplay';
 import type { DocStore, StoredDoc } from './djDayLedger';
+import { londonDayKey } from './djDay';
 import {
   createDjAutoplayService,
   type AutoplayBody,
@@ -188,9 +189,9 @@ export function buildHistory(o: {
 
 export const songKey = (s: { trackName: string; artist: string }): string => trackKey(s.trackName, s.artist);
 
-/** What today's DJ would put first, with no exclusions (uses the existing buildDjSet). */
-export function djRanking(history: TimedEvent[], users: string[] = USERS): DjTrack[] {
-  return buildDjSet(history, { users, limit: 400, perArtistMax: 400 }).tracks;
+/** What the DJ would put first on the London day of `now`, with no exclusions (same day seed as the service). */
+export function djRanking(history: TimedEvent[], users: string[] = USERS, now: number = T0): DjTrack[] {
+  return buildDjSet(history, { users, limit: 400, perArtistMax: 400, seed: londonDayKey(now) }).tracks;
 }
 
 // ---------------------------------------------------------------------------
@@ -415,7 +416,8 @@ export class MiniRoom {
 export function handQueueFavourite(w: World, o: { logAs?: (s: Song) => Song; at?: number } = {}): Song {
   const logAs = o.logAs ?? ((s: Song) => s);
   const at = o.at ?? w.now;
-  for (const cand of djRanking(w.events).slice(0, 8)) {
+  const rank = (events: TimedEvent[]) => djRanking(events, USERS, w.now);
+  for (const cand of rank(w.events).slice(0, 8)) {
     const song = asSong(cand);
     const logged = logAs(song);
     const trial: TimedEvent[] = [
@@ -430,7 +432,8 @@ export function handQueueFavourite(w: World, o: { logAs?: (s: Song) => Song; at?
         timestamp: at,
       },
     ];
-    if (djRanking(trial)[0] && songKey(djRanking(trial)[0]) === songKey(song)) {
+    const [first] = rank(trial);
+    if (first && songKey(first) === songKey(song)) {
       w.handQueue(logged, { at });
       return song;
     }
