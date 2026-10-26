@@ -16,6 +16,7 @@ permissions:
   contents: write
   pull-requests: write
   actions: read # gh run view --log-failed
+  checks: read # gh pr checks
   id-token: write # Claude GitHub App token
 
 jobs:
@@ -60,7 +61,7 @@ jobs:
           allowed_bots: 'dependabot[bot]'
           claude_args: >-
             --max-turns 60
-            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(gh run view:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(npm run:*),Bash(npx tsc:*),Bash(npx eslint:*),Bash(npx vitest:*),Bash(npx prettier:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*)"
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(gh run view:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh pr checks:*),Bash(npx playwright install:*),Bash(npm run:*),Bash(npx tsc:*),Bash(npx eslint:*),Bash(npx vitest:*),Bash(npx prettier:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*)"
           prompt: |
             Dependabot PR #${{ env.PR }} in ${{ github.repository }} failed CI (workflow run ${{ env.RUN_ID }}).
             You are on its branch, with dependencies installed using --ignore-scripts. Read CLAUDE.md first.
@@ -69,9 +70,10 @@ jobs:
             2. Fix the code so it works with the updated dependencies. Fix the cause properly: never disable a lint rule
                to get past it, skip or weaken a test, add --legacy-peer-deps or npm overrides, or pin the dependency
                back to the old version.
-            3. Run the checks that cover your change (`npm run typecheck`, `npm run lint`, and the affected test files
-               with `npx vitest run --config renderer/vitest.config.ts <files>`; for server/ use its own npm scripts).
-               CI runs the full suite after you push.
+            3. Run the checks that cover your change: `npm run typecheck`, `npm run lint`, `npm run test:main`, and the
+               jsdom tests with `npx vitest run --config renderer/vitest.config.ts --project unit [files]`; for server/
+               run `npm test` and `npm run build` there. The `stories` project needs Chromium: only if the failure is in
+               story tests, run `npx playwright install --with-deps chromium` first. CI runs the full suite after you push.
             4. Commit with a message starting `[claude-fix]`, and `git push`.
             5. Comment on the PR (`gh pr comment ${{ env.PR }}`) with the cause, what you changed and why, and what a
                reviewer should check. Write in UK English.

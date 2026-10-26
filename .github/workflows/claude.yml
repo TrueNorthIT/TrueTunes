@@ -28,7 +28,8 @@ jobs:
       pull-requests: write
       issues: write
       id-token: write # Claude GitHub App token
-      actions: read # CI results on PRs
+      actions: read # CI logs
+      checks: read # gh pr checks
     steps:
       - uses: actions/checkout@v7
         with:
@@ -39,9 +40,11 @@ jobs:
           node-version-file: '.nvmrc'
 
       - uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # for the read-only gh calls; pushes use the Claude GitHub App
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: >-
             --max-turns 80
-            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(npm ci:*),Bash(npm run:*),Bash(npx tsc:*),Bash(npx eslint:*),Bash(npx vitest:*),Bash(npx prettier:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*),Bash(gh run view:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*)"
-            --append-system-prompt "Read CLAUDE.md first; it is authoritative. Install dependencies with npm ci --ignore-scripts (and in server/ if you touch it) before running checks. There is no Sonos, Electron window or Azure here: never deploy or run az/func. CI runs the full suite on every push, so locally run only the checks that cover your change. Write in UK English."
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(npm ci:*),Bash(npm run:*),Bash(npx tsc:*),Bash(npx eslint:*),Bash(npx vitest:*),Bash(npx prettier:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*),Bash(gh run view:*),Bash(npx playwright install:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*)"
+            --append-system-prompt "Read CLAUDE.md first; it is authoritative. This is a fresh Linux runner: install with npm ci --ignore-scripts at the root (and in server/ if you touch it). Fast checks: npm run typecheck, npm run lint, npm run test:main, and the jsdom tests with npx vitest run --config renderer/vitest.config.ts --project unit [files]. The stories project needs Chromium: run npx playwright install --with-deps chromium first, and only if you changed components or stories. CI (publish.yml validate) runs the full suite on every push, so run only what covers your change. There is no Sonos, Electron window or Azure here: never deploy or run az or func. Write in UK English."
