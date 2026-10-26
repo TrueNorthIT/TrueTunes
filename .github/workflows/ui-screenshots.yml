@@ -12,10 +12,6 @@ name: UI screenshots
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  # warm-cache: a cache saved by a PR run is visible to that PR only, so the browser is cached from main for every PR.
-  push:
-    branches: [main]
-    paths: [package-lock.json, .github/workflows/ui-screenshots.yml]
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -25,35 +21,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  warm-cache:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Playwright version
-        id: playwright
-        run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/playwright-core'].version")" >> "$GITHUB_OUTPUT"
-
-      - id: playwright-cache
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
-
-      # Only the download: nothing launches the browser here, so no system libraries.
-      - if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx -y "playwright@${{ steps.playwright.outputs.version }}" install chromium
-
   screenshots:
     if: >-
-      github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 30 # apt has taken 11 min on a slow mirror
+    timeout-minutes: 20
     permissions:
       contents: write # push to ui-screenshots/pr-<n>
       pull-requests: write # the comment
@@ -85,24 +58,10 @@ jobs:
       - if: steps.changed.outputs.ui
         run: npm ci
 
-      # The browser comes from a cache keyed on the Playwright version; the system libraries still come from apt.
-      - name: Playwright version
-        id: playwright
-        if: steps.changed.outputs.ui
-        run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/playwright-core'].version")" >> "$GITHUB_OUTPUT"
-
-      - id: playwright-cache
-        if: steps.changed.outputs.ui
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
-
-      - if: steps.changed.outputs.ui && steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
-
-      - if: steps.changed.outputs.ui && steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+      # The browser only (~6 s). No --with-deps: ubuntu-latest ships Google Chrome, so Chromium's system libraries are
+      # already there, and apt has taken 11 min on a slow mirror.
+      - if: steps.changed.outputs.ui
+        run: npx playwright install chromium
 
       # The base is built with its own Storybook config and stories but screenshotted by this PR's scripts, which
       # don't exist on the base yet. It shares this checkout's node_modules unless the PR changes the lockfile.
