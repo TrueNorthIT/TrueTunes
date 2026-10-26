@@ -134,6 +134,8 @@ jobs:
           cp -r "$RUNNER_TEMP/shots/$SHORT" "$SHORT"
           rm "$SHORT/comment.md"
           git add -A "$SHORT"
+          # Every affected story unchanged: no images, so nothing to commit; the comment still says so.
+          git diff --cached --quiet && exit 0
           git commit -qm "Screenshots for PR #$PR at $SHORT"
           git push -q origin "HEAD:refs/heads/$BRANCH"
 
