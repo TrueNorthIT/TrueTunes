@@ -193,10 +193,12 @@ export function useAutoplay({
   // Switching group means a different queue with its own session. Clearing
   // first stops the previous room's picks — and worse, its fillerUri, which
   // decides where user tracks get inserted — leaking into the new one for the
-  // second or two before the first poll lands.
-  useEffect(() => {
+  // second or two before the first poll lands. Reset during render, so the old picks never paint for the new group.
+  const [stateGroupId, setStateGroupId] = useState(groupId);
+  if (groupId !== stateGroupId) {
+    setStateGroupId(groupId);
     setState({ enabled: false, upcoming: [], fillerUri: null });
-  }, [groupId]);
+  }
 
   useEffect(() => {
     void poll();
