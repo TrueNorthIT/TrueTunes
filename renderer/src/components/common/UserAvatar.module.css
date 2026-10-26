@@ -4,11 +4,18 @@
 .champion.champion {
   position: relative;
   overflow: visible;
+  /* With overflow visible, an aspect-ratio avatar (Profile's) would grow to fit its content; keep it square. */
+  min-height: 0;
   /* the ring and crown size from the avatar's own width */
   container-type: inline-size;
 }
-/* The photo was clipped by the avatar's overflow; now it clips itself. */
+/* The photo was clipped by the avatar's overflow; now it fills the circle exactly and clips itself. */
 .champion.champion > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   border-radius: inherit;
 }
 
@@ -42,7 +49,7 @@
   }
 }
 
-/* The champion's name, where a page shows it beside their avatar. */
-.championName {
+/* The champion's name, where a page shows it beside their avatar. Doubled to beat the page's own name colour. */
+.championName.championName {
   color: rgb(var(--champion-text));
 }
