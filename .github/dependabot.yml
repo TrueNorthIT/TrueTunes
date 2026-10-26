@@ -4,6 +4,8 @@ version: 2
 updates:
   - package-ecosystem: npm
     directory: /
+    # Majors wait for review one PR each; the default limit of 5 let them block the patch group.
+    open-pull-requests-limit: 15
     schedule:
       interval: weekly
     groups:
