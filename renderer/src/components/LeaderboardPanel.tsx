@@ -199,8 +199,8 @@ export function LeaderboardPanel() {
 
   const profile = (user: string) => navigate(`/profile/${encodeURIComponent(user)}`);
   const phrase = PERIODS.find((p) => p.value === period)?.phrase ?? '';
-  const loaded = data && !data.error && !isLoading;
-  const tracks = data?.topTracks.slice(0, 10) ?? [];
+  const loaded = data && data.error === undefined && !isLoading;
+  const tracks = data?.topTracks?.slice(0, 10) ?? [];
   const artists = mergeArtists(data?.topArtists ?? []).slice(0, 12);
   // When every album was queued once, the order is arbitrary: no chart.
   const topAlbums = data?.topAlbums ?? [];
