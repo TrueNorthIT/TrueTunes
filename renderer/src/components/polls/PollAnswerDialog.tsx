@@ -1,5 +1,6 @@
 import { Dialog } from '../common/Dialog';
 import dialog from '../common/Dialog.module.css';
+import { PillButton } from '../common/PillButton';
 import styles from '../../styles/PollDialog.module.css';
 
 interface Props {
@@ -9,14 +10,26 @@ interface Props {
   submitting: boolean;
   error: string | null;
   onChoose: (choice: number) => void;
+  /** Hide this poll without voting (nothing is sent). */
+  onSkip: () => void;
   onClose: () => void;
 }
 
 /** One poll at a time: the question and a button per choice. Anonymous; nothing but the index is sent. */
-export function PollAnswerDialog({ poll, remaining, submitting, error, onChoose, onClose }: Props) {
+export function PollAnswerDialog({ poll, remaining, submitting, error, onChoose, onSkip, onClose }: Props) {
   // Dialog portals to <body>, out of the title bar, so its drag region can't swallow clicks.
   return (
-    <Dialog title={poll.question} onClose={onClose} size="sm" closeLabel="Close">
+    <Dialog
+      title={poll.question}
+      onClose={onClose}
+      size="sm"
+      closeLabel="Close"
+      actions={
+        <PillButton disabled={submitting} onClick={onSkip}>
+          Skip this poll
+        </PillButton>
+      }
+    >
       <div className={dialog.stack}>
         <p className={dialog.note}>
           Anonymous: nobody can see who picked what.

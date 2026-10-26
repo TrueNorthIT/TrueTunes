@@ -100,9 +100,9 @@ function sessionFilePath(): string {
 }
 
 export async function saveSessionToken(token: string): Promise<void> {
-  if (!safeStorage.isEncryptionAvailable()) return;
   try {
-    const enc = safeStorage.encryptString(token);
+    if (!(await safeStorage.isAsyncEncryptionAvailable())) return;
+    const enc = await safeStorage.encryptStringAsync(token);
     await fs.writeFile(sessionFilePath(), enc);
   } catch {
     /* ignore */
@@ -110,10 +110,13 @@ export async function saveSessionToken(token: string): Promise<void> {
 }
 
 export async function loadSessionToken(): Promise<string | null> {
-  if (!safeStorage.isEncryptionAvailable()) return null;
   try {
+    if (!(await safeStorage.isAsyncEncryptionAvailable())) return null;
     const enc = await fs.readFile(sessionFilePath());
-    return safeStorage.decryptString(enc);
+    // Also reads tokens written by the sync encryptString (Electron 45 and earlier).
+    const { result, shouldReEncrypt } = await safeStorage.decryptStringAsync(enc);
+    if (shouldReEncrypt) await saveSessionToken(result);
+    return result;
   } catch {
     return null;
   }

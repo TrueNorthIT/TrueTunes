@@ -1,28 +1,46 @@
+# Patch bumps merge themselves once `validate` passes (.github/workflows/dependabot-auto-merge.yml).
+# Minor bumps come as one grouped PR per ecosystem for review; majors come one PR each.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /
-    target-branch: develop
+    # Majors wait for review one PR each; the default limit of 5 let them block the patch group.
+    open-pull-requests-limit: 15
     schedule:
       interval: weekly
+    ignore:
+      # Types follow the Node runtime, not the latest Node.
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
     groups:
-      npm-minor-patch:
-        update-types: [minor, patch]
+      # vitest and its @vitest/* packages only work at one version: bump them together, majors included.
+      vitest:
+        patterns: [vitest, '@vitest/*']
+      npm-patch:
+        update-types: [patch]
+      npm-minor:
+        update-types: [minor]
 
   - package-ecosystem: npm
     directory: /server
-    target-branch: develop
     schedule:
       interval: weekly
+    ignore:
+      # Types follow the Node runtime, not the latest Node.
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
     groups:
-      server-npm-minor-patch:
-        update-types: [minor, patch]
+      server-npm-patch:
+        update-types: [patch]
+      server-npm-minor:
+        update-types: [minor]
 
   - package-ecosystem: github-actions
     directory: /
-    target-branch: develop
     schedule:
       interval: weekly
     groups:
-      actions-minor-patch:
-        update-types: [minor, patch]
+      actions-patch:
+        update-types: [patch]
+      actions-minor:
+        update-types: [minor]

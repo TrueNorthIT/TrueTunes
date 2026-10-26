@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { QueuedleBonusScreen } from '../QueuedleBonusScreen';
 
 function item(overrides: Partial<GameItem> & { id: string; name: string }): GameItem {
@@ -77,5 +77,45 @@ describe('QueuedleBonusScreen', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
     expect(onSubmit).toHaveBeenCalled();
+  });
+
+  it('lays the winners out as cards, each a labelled group of named colleagues', () => {
+    render(
+      <QueuedleBonusScreen
+        winningItems={winningItems}
+        selections={['bob', null]}
+        onSelect={() => {}}
+        onSubmit={() => {}}
+        submitting={false}
+      />
+    );
+    expect(screen.getAllByRole('listitem')).toHaveLength(2);
+    const group = screen.getByRole('group', { name: 'Who queued First Song most' });
+    const buttons = within(group).getAllByRole('button');
+    // Each choice shows the name as text beside the face (the avatar's initial is hidden from the accessible name).
+    expect(buttons.map((b) => b.querySelector('span:last-child')?.textContent)).toEqual([
+      'alice',
+      'bob',
+      'cara',
+      'dan',
+    ]);
+    expect(within(group).getByRole('button', { name: 'bob' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(group).getByRole('button', { name: 'alice' })).toHaveAttribute('aria-pressed', 'false');
+    expect(within(group).getByRole('button', { name: 'bob' })).toHaveAttribute('title', 'bob');
+    expect(screen.getByText('1 of 2 answered')).toBeInTheDocument();
+  });
+
+  it('keeps one pick per card: the other cards are untouched', () => {
+    render(
+      <QueuedleBonusScreen
+        winningItems={winningItems}
+        selections={['bob', null]}
+        onSelect={() => {}}
+        onSubmit={() => {}}
+        submitting={false}
+      />
+    );
+    const second = screen.getByRole('group', { name: 'Who queued Second Song most' });
+    for (const b of within(second).getAllByRole('button')) expect(b).toHaveAttribute('aria-pressed', 'false');
   });
 });

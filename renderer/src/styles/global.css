@@ -33,6 +33,9 @@
   --success: 74, 222, 128;
   /* Something waiting for you (the Poll button): a tonal orange triplet, like --danger. */
   --attention: 251, 146, 60;
+  /* Last week's Queuedle champion: the gold ring on their avatar (a ring, never a glow), and its lighter step for their name. Triplets. */
+  --champion: 232, 184, 74;
+  --champion-text: 243, 207, 110;
 
   /* Black and white only ever appear as these alpha overlays. */
   --overlay: rgba(0, 0, 0, 0.55); /* dim over art, modal backdrop, dark corner buttons, focus edge */

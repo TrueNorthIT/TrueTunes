@@ -45,7 +45,7 @@ export function QueuedleIntro({ onStart, rounds, isPastDay, players = [] }: Prop
       <ol className={styles.rules}>
         <li className={styles.rule}>
           <span className={styles.ruleNum}>1</span>
-          <h3 className={styles.ruleTitle}>Higher or lower</h3>
+          <h3 className={styles.ruleTitle}>Higher or Lower</h3>
           <p className={styles.ruleBody}>
             Two tracks, artists or albums. Pick the one the office has queued more. The winner stays on to face the next
             challenger.
@@ -53,7 +53,7 @@ export function QueuedleIntro({ onStart, rounds, isPastDay, players = [] }: Prop
         </li>
         <li className={styles.rule}>
           <span className={styles.ruleNum}>2</span>
-          <h3 className={styles.ruleTitle}>Top queuer</h3>
+          <h3 className={styles.ruleTitle}>Top Queuer</h3>
           <p className={styles.ruleBody}>For each winner, guess which colleague has queued it the most.</p>
         </li>
       </ol>

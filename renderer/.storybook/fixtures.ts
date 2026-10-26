@@ -40,3 +40,12 @@ export const portrait = cover(
 
 /** The flat grey silhouette the music service sends for an artist with no photo (TopResultCard treats it as no art). */
 export const greySilhouette = svg('<rect width="600" height="600" fill="#808080"/>');
+
+/** Last week's Queuedle champion, for the gold-ring states (week of 19–25 Oct). */
+export const championOf = (userName: string) => ({
+  userName,
+  total: 65,
+  gamesPlayed: 5,
+  bestTotal: 18,
+  range: { from: '2026-10-19', to: '2026-10-25' },
+});

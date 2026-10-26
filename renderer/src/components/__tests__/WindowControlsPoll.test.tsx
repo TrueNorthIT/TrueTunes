@@ -253,3 +253,27 @@ describe('P-4 answered is remembered locally only', () => {
     );
   });
 });
+
+describe('Skipping a poll', () => {
+  it('hides it without voting, offers the next one, and stays hidden after a restart', async () => {
+    withPolls(BISCUIT, DRINK);
+    const user = userEvent.setup();
+    const first = renderControls();
+    await screen.findByText('Poll');
+    await user.click(screen.getByRole('button', { name: /^poll\b/i }));
+    await screen.findByText('Skip this poll');
+    await user.click(screen.getByRole('button', { name: 'Skip this poll' }));
+    // The next poll is offered, and nothing was sent for the skipped one.
+    expect(await screen.findByRole('dialog', { name: 'Tea or coffee?' })).toBeInTheDocument();
+    expect(window.sonos.answerPoll).not.toHaveBeenCalled();
+    expect(localStorage.getItem('poll-answered:p1')).not.toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Skip this poll' }));
+    await waitFor(() => expect(pollButton()).toBeNull());
+    first.unmount();
+
+    renderControls();
+    await waitFor(() => expect(window.sonos.fetchPolls).toHaveBeenCalledTimes(2));
+    expect(pollButton()).toBeNull();
+    expect(window.sonos.answerPoll).not.toHaveBeenCalled();
+  });
+});
