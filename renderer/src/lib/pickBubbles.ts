@@ -12,8 +12,7 @@ export interface BubblePerson {
 }
 
 export type SizedBubble =
-  | { kind: 'face'; user: string; count?: number; r: number }
-  | { kind: 'more'; more: number; r: number };
+  { kind: 'face'; user: string; count?: number; r: number } | { kind: 'more'; more: number; r: number };
 
 export type Bubble = SizedBubble & { x: number; y: number };
 
