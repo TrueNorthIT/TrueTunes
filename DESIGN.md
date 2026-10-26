@@ -218,7 +218,8 @@ A near-monochrome navy room whose only saturated colour is borrowed, at runtime,
 
 ### Status
 - **Danger** (`danger`, `--danger: 248, 113, 113`): destructive actions (Clear, Delete), errors and Queuedle's wrong answers. A triplet like `--tint`, used tonally (a 0.16 fill under full-strength text), never as a slab.
-- **Success** (`--success: 74, 222, 128`): the success toast's status dot. A triplet, used as a dot only.
+- **Success** (`--success: 74, 222, 128`): the success toast's status dot, and the tonal Update button in the title bar (a 0.16 fill under full-strength green text) when a new version is ready. A triplet, never a slab.
+- **Attention** (`--attention: 251, 146, 60`): the tonal Poll button in the title bar (0.16 fill under full-strength orange text, with the shaking ballot icon), when a poll is waiting for an answer. A triplet, used only there.
 - **Danger solid** (`--danger-solid: 220, 50, 50`): the one solid slab, the error banner, because white text needs more contrast than tonal Danger gives.
 - **Right mint** (`--right: 128, 214, 166`): local to Queuedle (its panel and its portalled calendar), for right answers and played days. It is not a global token, and no other surface uses it.
 
@@ -230,7 +231,7 @@ Generated colours keep the same restraint: user avatars and playlist placeholder
 ### Named Rules
 **The One Tint Rule.** Every tonal surface, fill, separator and border is `rgba(var(--tint), α)`. To retune the room, change `--tint`; never introduce a second hue for chrome.
 
-**The Artwork Carries Colour Rule.** Saturated colour enters only from artwork: the ambient backdrop, the `--wash` radial on featured cards and heroes, the person-header gradient, the player-bar tint. Chrome stays navy and white. Danger and Queuedle's mint are status, not decoration, and are always tonal.
+**The Artwork Carries Colour Rule.** Saturated colour enters only from artwork: the ambient backdrop, the `--wash` radial on featured cards and heroes, the person-header gradient, the player-bar tint. Chrome stays navy and white. Danger, Queuedle's mint, and the title bar's green Update and orange Poll buttons are status, not decoration, and are always tonal.
 
 **The Quiet Wall Rule.** Tint stays subtle and desaturated. Surfaces sit 6–9% tint over the ground. A wash peaks at 0.3 alpha, with stacked layers counted together (the artist hero's 0.24 radial plus its 0.08 fall-off), and fades to transparent by about 65%. No purple, no neon, no glow.
 
