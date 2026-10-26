@@ -74,7 +74,7 @@ async function shoot(which, { id, title }) {
     .catch(() => console.warn(`${which} ${id}: no render-finished signal in 15s; screenshotting anyway`));
   // Page stories keep loading from the mock backend after the first render (and Home has a 1.5 s timer).
   if (/^Pages\//.test(title)) {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
     await page.waitForTimeout(3000);
   }
   await page.addStyleTag({
@@ -106,6 +106,7 @@ const has = (which, id) => builds[which].index.entries[id]?.type === 'story';
 const save = (name, png) => writeFileSync(join(args.out, name), PNG.sync.write(png));
 const results = [];
 for (const s of top) {
+  const started = Date.now();
   const shots = [has('base', s.id) && (await shoot('base', s)), has('head', s.id) && (await shoot('head', s))];
   // Both cropped to the same rectangle round whatever either one shows.
   const crop = cropBox(shots.filter(Boolean));
@@ -136,7 +137,7 @@ for (const s of top) {
     save(`${s.id}-before.png`, before);
     results.push({ ...s, status: 'deleted' });
   }
-  console.log(`${results.at(-1).status.padEnd(9)} ${s.id}`);
+  console.log(`${results.at(-1).status.padEnd(9)} ${s.id} (${((Date.now() - started) / 1000).toFixed(1)} s)`);
 }
 
 // The opener: the biggest change, with the pointing man beside its biggest box.
