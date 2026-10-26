@@ -88,6 +88,11 @@ jobs:
       github.event_name == 'push' &&
       github.event.head_commit.author.name != 'dependabot[bot]' &&
       !contains(github.event.head_commit.message, format('from {0}/dependabot/', github.repository_owner))
+    # One release at a time, so two merges close together bump 1.0.N and 1.0.N+1 instead of colliding. GitHub keeps
+    # only one pending job per group: a third merge replaces the second's pending job, and its release includes both.
+    concurrency:
+      group: release-${{ github.ref }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -98,8 +103,12 @@ jobs:
     steps:
       # Pushes with a deploy key that may bypass the main ruleset. Deploy-key pushes DO trigger
       # workflows, so the bump commit carries [skip ci] to stop a publish loop.
+      # Check out the branch head, not the triggering sha: anything merged while validate ran (e.g. a Dependabot
+      # auto-merge) would otherwise make the push non-fast-forward and lose the release. Every commit on main has
+      # already passed validate as a required PR check, and those later commits ship in this release.
       - uses: actions/checkout@v7
         with:
+          ref: ${{ github.ref_name }}
           ssh-key: ${{ secrets.VERSION_BUMP_DEPLOY_KEY }}
 
       - uses: actions/setup-node@v7
