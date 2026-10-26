@@ -10,8 +10,6 @@ interface Layer {
   settled: boolean;
 }
 
-let seq = 0;
-
 /**
  * One fixed, heavily blurred copy of the current artwork behind everything.
  * Source: the page's artwork when it registers one (usePageArt, already cached), else the now-playing
@@ -24,12 +22,19 @@ export function AmbientBackdrop({ nowPlayingArt }: { nowPlayingArt: string | nul
   const src = pageArt ?? now;
   const [layers, setLayers] = useState<Layer[]>([]);
 
+  // A new source fades the current layers out and adds one on top, adjusted during render rather than in an effect.
+  const [prevSrc, setPrevSrc] = useState<string | null>(null);
+  if (src !== prevSrc) {
+    setPrevSrc(src);
+    if (!(src && layers.some((l) => !l.out && l.src === src))) {
+      const faded = layers.map((l) => ({ ...l, out: true }));
+      // ids only need to be unique among the layers on screen; the newest is always last
+      const id = (layers[layers.length - 1]?.id ?? 0) + 1;
+      setLayers(src ? [...faded, { id, src, out: false, settled: false }] : faded);
+    }
+  }
+
   useEffect(() => {
-    setLayers((prev) => {
-      if (src && prev.some((l) => !l.out && l.src === src)) return prev;
-      const faded = prev.map((l) => ({ ...l, out: true }));
-      return src ? [...faded, { id: ++seq, src, out: false, settled: false }] : faded;
-    });
     // drop the faded-out layers once the 1s crossfade is over
     const t = setTimeout(() => setLayers((p) => p.filter((l) => !l.out)), 1000);
     return () => clearTimeout(t);
