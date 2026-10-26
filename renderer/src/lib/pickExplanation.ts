@@ -10,7 +10,7 @@ type Person = { name: string; count?: number };
 const MAX_PEOPLE = 6;
 
 /** Old servers: "Rich, Alex and others queue HAIM — never played here" gives Rich and Alex, with no counts. */
-function namesFromBecause(because: string): string[] {
+export function namesFromBecause(because: string): string[] {
   const m = because.split(' — ')[0].match(/^(.*?)\s(?:queues?)\s/);
   if (!m) return [];
   return m[1].split(/,\s*|\s+and\s+/).filter((n) => n && n !== 'others');

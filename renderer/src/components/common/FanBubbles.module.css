@@ -1,0 +1,94 @@
+/* Sits on the right of an ArtCard, centred a little above the card's middle. On a short card (a medium pick at a
+   normal window) it rises instead, so its foot stays clear of the title and the + (they take the bottom ~2.8em at
+   this scale), but never above the card's top. --cloud-h is its height, set inline. */
+.cloud {
+  position: absolute;
+  top: max(calc(var(--cloud-h) / 2 + 0.4em), min(44%, calc(100% - var(--cloud-h) / 2 - 3.5em)));
+  right: 2.4em;
+  translate: 0 -50%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* The sunflower head: it breathes as one from its centre face (transform only, so it stays on the compositor). */
+.head {
+  position: absolute;
+  inset: 0;
+}
+
+.bubble {
+  position: absolute;
+  pointer-events: auto;
+}
+.bubble:hover {
+  z-index: 1;
+}
+
+/* The face: a round print, so it takes the artwork's rest shadow to sit off the art behind it. No glow. */
+.face {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--r-round);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--on-art);
+  box-shadow: var(--art-shadow);
+}
+.face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.more {
+  background: var(--overlay);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Name and count on hover, right-aligned so it opens back over the card, never past its edge. */
+.tip {
+  position: absolute;
+  top: calc(100% + 0.35em);
+  right: 0;
+  padding: 0.15em 0.65em;
+  border-radius: var(--r-pill);
+  background: var(--overlay-strong);
+  color: var(--on-art);
+  font-size: var(--fs-small);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-fast);
+  pointer-events: none;
+}
+.bubble:hover .tip {
+  opacity: 1;
+}
+
+/* A slow shared breath, only when the viewer allows motion; the layout above is the resting state. */
+@media (prefers-reduced-motion: no-preference) {
+  .cloud:not(.still) .head {
+    animation: breathe 6s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+}
+
+@keyframes breathe {
+  from {
+    transform: scale(0.97);
+  }
+  to {
+    transform: scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tip {
+    transition: none;
+  }
+}
