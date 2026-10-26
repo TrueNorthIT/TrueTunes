@@ -72,7 +72,9 @@ export function bubbleRadii(people: BubblePerson[], size: BubbleCardSize): Sized
  */
 export function packCircles(
   radii: number[],
-  gap: number
+  gap: number,
+  /** How much more vertical distance counts than horizontal: 4 keeps the column wide, 1 packs a round cluster. */
+  squash = 4
 ): { points: { x: number; y: number }[]; width: number; height: number } {
   const placed: { x: number; y: number; r: number }[] = [];
   const STEPS = 36;
@@ -90,7 +92,7 @@ export function packCircles(
         const y = p.y + d * Math.sin(a);
         const clear = placed.every((q) => Math.hypot(q.x - x, q.y - y) >= q.r + r + gap - 1e-9);
         if (!clear) continue;
-        const score = x * x + 4 * y * y;
+        const score = x * x + squash * y * y;
         if (!best || score < best.score - 1e-9) best = { x, y, score };
       }
     }

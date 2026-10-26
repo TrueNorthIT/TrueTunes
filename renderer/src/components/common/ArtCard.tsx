@@ -23,6 +23,8 @@ interface Props {
   info?: ReactNode;
   /** Something hung on the art, clear of the caption line, title and + (e.g. FanBubbles). It places itself. */
   aside?: ReactNode;
+  /** Keep the caption line (label + info) hidden until a face in the `aside` cloud is hovered, or the card has focus. */
+  reasonOnHover?: boolean;
   onAdd?: () => void;
   addLabel?: string;
   onContextMenu?: (e: React.MouseEvent) => void;
@@ -43,6 +45,7 @@ export function ArtCard({
   openLabel,
   info,
   aside,
+  reasonOnHover,
   onAdd,
   addLabel,
   onContextMenu,
@@ -60,7 +63,14 @@ export function ArtCard({
   const setPhotoIn = (v: boolean) => setPhotoInFor(v ? photo : null);
   return (
     <div
-      className={[styles.card, size === 'large' ? styles.large : styles.medium, className].filter(Boolean).join(' ')}
+      className={[
+        styles.card,
+        size === 'large' ? styles.large : styles.medium,
+        reasonOnHover ? styles.reasonOnHover : null,
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
       onContextMenu={onContextMenu}
       onMouseEnter={onMouseEnter}
     >

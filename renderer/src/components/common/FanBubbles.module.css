@@ -1,4 +1,5 @@
-/* Hangs on the right of an ArtCard, under the caption line (label + info) and well above the title and the +. */
+/* The cloud places itself on the ArtCard for its arrangement, always clear of the caption line, the title and the +.
+   Column (shipped): on the right, under the caption line. */
 .cloud {
   position: absolute;
   top: 3em;
@@ -6,25 +7,54 @@
   z-index: 1;
   pointer-events: none;
 }
+/* The round clusters sit on the right, centred a little above the card's middle. */
+.spiral,
+.sunflower,
+.packed,
+.orbit,
+.stack {
+  top: 44%;
+  right: 2.4em;
+  translate: 0 -50%;
+}
+/* The arc's box has the card's top-right corner as its own. */
+.arc {
+  top: 0;
+  right: 0;
+}
+/* The constellation spreads over the upper part of the art, under the caption line, out of the title's way. */
+.constellation {
+  top: 3.2em;
+  right: 1.4em;
+}
+
+/* Whole-cloud motion (spiral sway, sunflower breath, cluster bob) moves this; each face's own motion is on .bubble. */
+.field {
+  position: absolute;
+  inset: 0;
+}
 
 .bubble {
   position: absolute;
   pointer-events: auto;
-  /* Transform only, so the drift stays on the compositor. Out of step: each bubble has its own pace and phase. */
-  animation: drift var(--drift-dur) ease-in-out var(--drift-delay) infinite alternate;
-  will-change: transform;
 }
 .bubble:hover {
-  z-index: 1;
+  z-index: 10 !important;
 }
 
-@keyframes drift {
-  from {
-    transform: translate(0, 0);
-  }
-  to {
-    transform: translate(var(--dx), var(--dy));
-  }
+/* The constellation's lines: thin, faint tint, centre to centre behind the faces. */
+.links {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.links line {
+  stroke: rgba(var(--tint), 0.35);
+  stroke-width: 1.25px;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
 }
 
 /* The face: a round print, so it takes the artwork's rest shadow to sit off the art behind it. No glow. */
@@ -51,6 +81,19 @@
   background: var(--overlay);
   font-variant-numeric: tabular-nums;
 }
+/* Soft stack: overlapping faces are parted by a 2px ring of the surface colour, then the print shadow. */
+.stack .face {
+  box-shadow:
+    0 0 0 2px var(--bg-1),
+    var(--art-shadow);
+}
+
+.orbitX,
+.orbitY {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
 
 /* Name and count on hover, right-aligned so it opens back over the card, never past its edge. */
 .tip {
@@ -73,14 +116,95 @@
   opacity: 1;
 }
 
-.still .bubble {
-  animation: none;
+/* All motion is transform-only and only when the viewer allows it; the layout above is the resting state. */
+@media (prefers-reduced-motion: no-preference) {
+  /* Column, arc and constellation: each face drifts on its own path, out of step. */
+  .cloud:not(.still):is(.column, .arc, .constellation) .bubble {
+    animation: drift var(--drift-dur) ease-in-out var(--drift-delay) infinite alternate;
+  }
+  /* Golden spiral: the whole spiral turns a few degrees back and forth about its eye. */
+  .spiral:not(.still) .field {
+    animation: sway 9s ease-in-out -4.5s infinite alternate;
+  }
+  /* Sunflower: a slow shared breath from the centre. */
+  .sunflower:not(.still) .field {
+    animation: breathe 6s ease-in-out infinite alternate;
+  }
+  /* Packed: the cluster bobs gently as one. */
+  .packed:not(.still) .field {
+    animation: bob 4.5s ease-in-out infinite alternate;
+  }
+  /* Soft stack: the pile fans out a little along its line and settles back. */
+  .stack:not(.still) .bubble {
+    animation: spread 5s ease-in-out infinite alternate;
+  }
+  /* Orbit: two eased slides a quarter-lap apart trace each satellite's ellipse. */
+  .orbit:not(.still) .orbitX {
+    animation: orbitX var(--orbit-half) cubic-bezier(0.37, 0, 0.63, 1) var(--orbit-x-delay) infinite alternate;
+  }
+  .orbit:not(.still) .orbitY {
+    animation: orbitY var(--orbit-half) cubic-bezier(0.37, 0, 0.63, 1) var(--orbit-y-delay) infinite alternate;
+  }
+}
+
+@keyframes drift {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(var(--dx), var(--dy));
+  }
+}
+@keyframes sway {
+  from {
+    transform: rotate(-4deg);
+  }
+  to {
+    transform: rotate(4deg);
+  }
+}
+@keyframes breathe {
+  from {
+    transform: scale(0.97);
+  }
+  to {
+    transform: scale(1.04);
+  }
+}
+@keyframes bob {
+  from {
+    transform: translateY(0.18em);
+  }
+  to {
+    transform: translateY(-0.18em);
+  }
+}
+@keyframes spread {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(var(--sx), var(--sy));
+  }
+}
+@keyframes orbitX {
+  from {
+    transform: translateX(var(--ox-from));
+  }
+  to {
+    transform: translateX(var(--ox-to));
+  }
+}
+@keyframes orbitY {
+  from {
+    transform: translateY(var(--oy-from));
+  }
+  to {
+    transform: translateY(var(--oy-to));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bubble {
-    animation: none;
-  }
   .tip {
     transition: none;
   }

@@ -159,3 +159,6 @@ server/dist-test/
 
 # Storybook static build
 storybook-static/
+
+# Local screenshot sheets from design explorations
+.bubble-shots/
