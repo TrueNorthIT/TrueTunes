@@ -7,12 +7,15 @@ import {
   dailyGameQueryOptions,
   dailyGameRefetchInterval,
   getGameRankTier,
+  HISTORY_CONCURRENCY,
+  queuedleHistoryQueryOptions,
   useDailyGame,
   useGameLeaderboard,
   useGameRankings,
   useSubmitGameScore,
 } from '../useDailyGame';
 import { runQueryFn } from '../../test/queryFn';
+import { londonDateId } from '../../lib/queuedleWeek';
 
 const mockFetch = vi.mocked(window.sonos.fetchDailyGame);
 
@@ -266,6 +269,58 @@ describe('useGameRankings', () => {
     renderHook(() => useGameRankings('alice', false), { wrapper });
     expect(window.sonos.fetchGameDates).not.toHaveBeenCalled();
     expect(window.sonos.fetchGameLeaderboard).not.toHaveBeenCalled();
+  });
+});
+
+describe('queuedleHistoryQueryOptions', () => {
+  const today = londonDateId(Date.now());
+  const pastDays = Array.from({ length: 20 }, (_, i) => `2020-01-${String(i + 1).padStart(2, '0')}`);
+
+  it('fetches a past day once, today every time, and keeps at most six calls in flight', async () => {
+    vi.mocked(window.sonos.fetchGameDates).mockResolvedValue({
+      dates: [today, ...pastDays].map((gameId) => ({ gameId, status: 'ready' as const, userPlayed: false })),
+    });
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const slow = async <T>(value: T): Promise<T> => {
+      maxInFlight = Math.max(maxInFlight, ++inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      inFlight--;
+      return value;
+    };
+    vi.mocked(window.sonos.fetchGameLeaderboard).mockImplementation((date?: string) =>
+      slow({
+        gameId: date ?? '',
+        scores: [{ userName: 'alice', mainScore: 1, bonusScore: 1, total: 2 }],
+      } as GameLeaderboardResult)
+    );
+    mockFetch.mockImplementation((date?: string) => slow(gameWithQuestionCount(date ?? '', 2)));
+    const client = new QueryClient();
+
+    const first = await runQueryFn(queuedleHistoryQueryOptions('alice'), client);
+    expect(first).toHaveLength(21);
+    expect(window.sonos.fetchGameLeaderboard).toHaveBeenCalledTimes(21);
+    expect(maxInFlight).toBe(HISTORY_CONCURRENCY);
+
+    vi.clearAllMocks();
+    const second = await runQueryFn(queuedleHistoryQueryOptions(null), client);
+    expect(second).toEqual(first);
+    expect(window.sonos.fetchGameLeaderboard).toHaveBeenCalledTimes(1);
+    expect(window.sonos.fetchGameLeaderboard).toHaveBeenCalledWith(today);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('asks again for a day whose game came back as an error', async () => {
+    vi.mocked(window.sonos.fetchGameDates).mockResolvedValue({
+      dates: [{ gameId: pastDays[0], status: 'ready', userPlayed: false }],
+    });
+    vi.mocked(window.sonos.fetchGameLeaderboard).mockResolvedValue({ gameId: pastDays[0], scores: [] });
+    mockFetch.mockResolvedValueOnce({ error: 'timeout' }).mockResolvedValueOnce(gameWithQuestionCount(pastDays[0], 2));
+    const client = new QueryClient();
+
+    expect(await runQueryFn(queuedleHistoryQueryOptions('alice'), client)).toEqual([]);
+    expect(await runQueryFn(queuedleHistoryQueryOptions('alice'), client)).toHaveLength(1);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 });
 
