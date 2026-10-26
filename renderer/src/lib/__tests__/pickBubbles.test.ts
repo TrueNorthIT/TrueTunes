@@ -109,8 +109,8 @@ describe('layoutBubbles (sunflower)', () => {
 
   it('stays small enough for a medium card even at the cap', () => {
     const l = layoutBubbles(fans(9, 8, 7, 6, 5, 4, 3, 2, 1), 'medium');
-    // Drawn at 1.3×, centred a little above the middle of a 4:3 card at least ~16em wide (12em high, ~13em when
-    // squarer on a narrow page): it has to leave the title its bottom ~4em.
+    // Drawn at 1.3×, the capped head stays about 10em square; on a short medium card the cloud rises (see
+    // FanBubbles.module.css) so its foot stays clear of the title.
     expect(l.width * 1.3).toBeLessThan(11);
     expect(l.height * 1.3).toBeLessThan(11);
   });

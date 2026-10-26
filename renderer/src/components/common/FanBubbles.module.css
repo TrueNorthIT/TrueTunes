@@ -1,8 +1,9 @@
-/* Sits on the right of an ArtCard, centred a little above the card's middle: under the caption line (label + info)
-   and well above the title and the +. */
+/* Sits on the right of an ArtCard, centred a little above the card's middle. On a short card (a medium pick at a
+   normal window) it rises instead, so its foot stays clear of the title and the + (they take the bottom ~2.8em at
+   this scale), but never above the card's top. --cloud-h is its height, set inline. */
 .cloud {
   position: absolute;
-  top: 44%;
+  top: max(calc(var(--cloud-h) / 2 + 0.4em), min(44%, calc(100% - var(--cloud-h) / 2 - 3.5em)));
   right: 2.4em;
   translate: 0 -50%;
   z-index: 1;

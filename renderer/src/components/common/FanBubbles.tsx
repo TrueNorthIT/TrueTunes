@@ -35,7 +35,14 @@ export function FanBubbles({ people, size, imageFor, viewer, animate = true, cla
   return (
     <div
       className={[styles.cloud, animate ? null : styles.still, className].filter(Boolean).join(' ')}
-      style={{ width: em(width), height: em(height), fontSize: `${BUBBLE_SCALE}em` }}
+      style={
+        {
+          width: em(width),
+          height: em(height),
+          fontSize: `${BUBBLE_SCALE}em`,
+          '--cloud-h': em(height),
+        } as CSSProperties
+      }
       role="img"
       aria-label={bubbleLabel(people, viewer)}
     >
