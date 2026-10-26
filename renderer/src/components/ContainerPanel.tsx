@@ -44,7 +44,15 @@ export function ContainerPanel() {
     ? resolveAlbumParams(item)
     : { albumId: undefined, serviceId: undefined, accountId: undefined, defaults: undefined };
 
-  const { data, isLoading, error, refetch } = useContainerBrowse(containerId, serviceId, accountId, defaults);
+  // The shelf's title (and artwork, between same-titled shelves) lets an expired Home card be looked up again
+  // for a fresh id (see containerQueryOptions).
+  const { data, isLoading, error, refetch } = useContainerBrowse(
+    containerId,
+    serviceId,
+    accountId,
+    defaults,
+    item ? { title: item.title ?? item.name, art: getItemArt(item) } : undefined
+  );
 
   if (!item) return null;
 

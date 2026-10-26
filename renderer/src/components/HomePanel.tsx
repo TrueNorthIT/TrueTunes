@@ -2,9 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Plus, ListPlus, ArrowUpRight } from 'lucide-react';
-import { api } from '../lib/sonosApi';
 import {
-  extractItems,
   resolveAlbumParams,
   resolveArtistParams,
   isAlbum,
@@ -35,6 +33,7 @@ import {
   statsAlbumToItem,
   statsTrackToItem,
 } from '../lib/homeData';
+import { browseYtmItem, fetchYtmRootItems } from '../lib/ytmSections';
 import { useOpenItem } from '../hooks/useOpenItem';
 import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
 import { useRecentlyPlayed } from '../hooks/useRecentlyPlayed';
@@ -493,38 +492,18 @@ export interface YtmSections {
 }
 
 export async function fetchYtmSections(): Promise<YtmSections> {
-  const rootR = await api.browse.container('root', { muse2: true });
-  if (rootR.error) return { forYou: [], newReleases: [], charts: [] };
-
-  const d = rootR.data ?? {};
-  const stack = ((d['sections'] as Record<string, unknown>)?.['items'] as unknown[])?.[0] as
-    | Record<string, unknown>
-    | undefined;
-  const rootItems = (stack?.['items'] ?? []) as SonosItem[];
+  const rootItems = await fetchYtmRootItems();
+  if (!rootItems) return { forYou: [], newReleases: [], charts: [] };
 
   const find = (title: string) => rootItems.find((i) => (i.title ?? i.name) === title);
   const homeItem = find('Home');
   const supermixItem = find('My Supermix');
 
-  const browseContainer = async (item: SonosItem | undefined): Promise<SonosItem[]> => {
-    if (!item) return [];
-    const rid = item.resource?.id as import('../types/sonos').SonosItemId | undefined;
-    const id = rid?.objectId;
-    if (!id) return [];
-    const r = await api.browse.container(id, {
-      serviceId: rid?.serviceId,
-      accountId: rid?.accountId,
-      defaults: item.resource?.defaults as string | undefined,
-      muse2: true,
-    });
-    return r.error ? [] : extractItems(r.data);
-  };
-
   // Podcasts are filtered from the Home, New releases and Charts shelves only
   // (search, artist pages and the queue still show them).
   const withoutPodcasts = (items: SonosItem[]) => items.filter((i) => !isPodcast(i));
 
-  const homeItems = withoutPodcasts(await browseContainer(homeItem)).filter(
+  const homeItems = withoutPodcasts(await browseYtmItem(homeItem)).filter(
     (i) => !/podcast/i.test(String(i.title ?? i.name ?? ''))
   );
   const findShelf = (...titles: string[]) => {
@@ -540,11 +519,11 @@ export async function fetchYtmSections(): Promise<YtmSections> {
   // A shelf is only recognisable as podcasts by what is in it, so look inside each one and drop a
   // shelf whose children are all podcasts. (A title regex missed "Popular shows".)
   const [newItems, chartItems, mixKids, shelfKids] = await Promise.all([
-    browseContainer(find('New releases') ?? findShelf('New releases', 'Fresh new music')).then(withoutPodcasts),
-    browseContainer(find('Charts') ?? findShelf('Top songs', 'Trending songs for you')).then(withoutPodcasts),
-    browseContainer(supermixItem).catch(() => [] as SonosItem[]),
+    browseYtmItem(find('New releases') ?? findShelf('New releases', 'Fresh new music')).then(withoutPodcasts),
+    browseYtmItem(find('Charts') ?? findShelf('Top songs', 'Trending songs for you')).then(withoutPodcasts),
+    browseYtmItem(supermixItem).catch(() => [] as SonosItem[]),
     Promise.all(
-      homeItems.map((i) => (isContainer(i) ? browseContainer(i).catch(() => [] as SonosItem[]) : Promise.resolve(null)))
+      homeItems.map((i) => (isContainer(i) ? browseYtmItem(i).catch(() => [] as SonosItem[]) : Promise.resolve(null)))
     ),
   ]);
   const shelves = homeItems.filter((_, i) => {
