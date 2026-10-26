@@ -2,9 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Plus, ListPlus, ArrowUpRight } from 'lucide-react';
-import { api } from '../lib/sonosApi';
 import {
-  extractItems,
   resolveAlbumParams,
   resolveArtistParams,
   isAlbum,
@@ -35,7 +33,9 @@ import {
   statsAlbumToItem,
   statsTrackToItem,
 } from '../lib/homeData';
+import { browseYtmItem, fetchYtmRootItems } from '../lib/ytmSections';
 import { useOpenItem } from '../hooks/useOpenItem';
+import { useShelvesOnScreen } from '../hooks/useShelvesOnScreen';
 import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
 import { useRecentlyPlayed } from '../hooks/useRecentlyPlayed';
 import { useRecentTracksByUser } from '../hooks/useRecentTracksByUser';
@@ -61,7 +61,7 @@ import { withArtworkSize } from '../lib/artworkUrl';
 import { UserAvatar } from './common/UserAvatar';
 import { Artwork } from './common/Artwork';
 import { PlaybackTime } from './common/SeekBar';
-import { usePlaybackPosition } from '../hooks/playbackPosition';
+import { LiveWavyProgress } from './common/WavyProgress';
 import { QueuerChip } from './common/QueuerChip';
 import { useTrackContextMenu } from './common/ContextMenu';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
@@ -69,6 +69,8 @@ import { artistImageQueryOptions, artistQueryOptions } from '../hooks/useArtistB
 import { Carousel } from './common/Carousel';
 import { PickInfoTip } from './common/PickInfoTip';
 import { ArtCard } from './common/ArtCard';
+import { FanBubbles } from './common/FanBubbles';
+import { namesFromBecause } from '../lib/pickExplanation';
 import { ChartHead, ChartRow } from './common/ChartRow';
 import { ImageTile } from './common/ImageTile';
 import { PersonCard } from './common/PersonCard';
@@ -174,6 +176,7 @@ function PickCard({
   onAdd,
   className,
   why,
+  imageFor,
 }: {
   size: 'large' | 'medium';
   label: string;
@@ -182,8 +185,12 @@ function PickCard({
   onAdd: () => void;
   className?: string;
   why: Parameters<typeof PickInfoTip>[0];
+  imageFor?: (user: string) => string | null | undefined;
 }) {
   const nav = useContext(NavContext);
+  // Who it's for, sized by their queues of the artist. Older servers send no counts: the names in the reason,
+  // all one size. A pick like "Like Muse, which the room plays" names nobody and gets no cloud.
+  const people = why.fans ?? namesFromBecause(why.because).map((user) => ({ user }));
   return (
     <ArtCard
       size={size}
@@ -196,6 +203,9 @@ function PickCard({
       openLabel={`Open album ${t.album ?? t.title}`}
       onOpen={() => nav.openAlbum(t)}
       info={<PickInfoTip {...why} />}
+      aside={<FanBubbles people={people} size={size} imageFor={imageFor} viewer={why.viewer} />}
+      // With a cloud, the reason waits for a hover on it (or focus); without one it stays in view.
+      reasonOnHover={people.length > 0}
       onAdd={onAdd}
       onContextMenu={(e) => nav.menu(t, e)}
       onMouseEnter={() => nav.prefetch(t)}
@@ -276,21 +286,11 @@ function TrendRow({ rank, t, count, onAdd }: { rank: number; t: NavTrack; count:
 }
 
 /** The Now playing band's progress line: the one part of the band that moves every second. */
-function NowProgress() {
-  const pct = usePlaybackPosition((p) => p.progressPct);
+function NowProgress({ paused }: { paused: boolean }) {
   return (
     <div className={styles.nowProgress}>
       <PlaybackTime part="elapsed" className={styles.nowTime} />
-      <div
-        className={styles.nowBar}
-        role="progressbar"
-        aria-label="Track progress"
-        aria-valuenow={Math.round(pct)}
-        aria-valuemin={0}
-        aria-valuemax={100}
-      >
-        <div className={styles.nowFill} style={{ transform: `scaleX(${Math.min(1, Math.max(0, pct / 100))})` }} />
-      </div>
+      <LiveWavyProgress paused={paused} />
       <PlaybackTime part="duration" className={styles.nowTime} />
     </div>
   );
@@ -401,7 +401,7 @@ function NowPlayingBand({
               onOpen={() => void profile(queuer.user)}
             />
           )}
-          <NowProgress />
+          <NowProgress paused={!playback.isPlaying} />
           {aboutLoading && !blurb && (
             <div className={styles.about} aria-label="About this track" aria-busy="true">
               {['100%', '92%', '58%'].map((w) => (
@@ -493,37 +493,18 @@ export interface YtmSections {
 }
 
 export async function fetchYtmSections(): Promise<YtmSections> {
-  const rootR = await api.browse.container('root', { muse2: true });
-  if (rootR.error) return { forYou: [], newReleases: [], charts: [] };
-
-  const d = rootR.data ?? {};
-  const stack = ((d['sections'] as Record<string, unknown>)?.['items'] as unknown[])?.[0] as
-    Record<string, unknown> | undefined;
-  const rootItems = (stack?.['items'] ?? []) as SonosItem[];
+  const rootItems = await fetchYtmRootItems();
+  if (!rootItems) return { forYou: [], newReleases: [], charts: [] };
 
   const find = (title: string) => rootItems.find((i) => (i.title ?? i.name) === title);
   const homeItem = find('Home');
   const supermixItem = find('My Supermix');
 
-  const browseContainer = async (item: SonosItem | undefined): Promise<SonosItem[]> => {
-    if (!item) return [];
-    const rid = item.resource?.id as import('../types/sonos').SonosItemId | undefined;
-    const id = rid?.objectId;
-    if (!id) return [];
-    const r = await api.browse.container(id, {
-      serviceId: rid?.serviceId,
-      accountId: rid?.accountId,
-      defaults: item.resource?.defaults as string | undefined,
-      muse2: true,
-    });
-    return r.error ? [] : extractItems(r.data);
-  };
-
   // Podcasts are filtered from the Home, New releases and Charts shelves only
   // (search, artist pages and the queue still show them).
   const withoutPodcasts = (items: SonosItem[]) => items.filter((i) => !isPodcast(i));
 
-  const homeItems = withoutPodcasts(await browseContainer(homeItem)).filter(
+  const homeItems = withoutPodcasts(await browseYtmItem(homeItem)).filter(
     (i) => !/podcast/i.test(String(i.title ?? i.name ?? ''))
   );
   const findShelf = (...titles: string[]) => {
@@ -539,11 +520,11 @@ export async function fetchYtmSections(): Promise<YtmSections> {
   // A shelf is only recognisable as podcasts by what is in it, so look inside each one and drop a
   // shelf whose children are all podcasts. (A title regex missed "Popular shows".)
   const [newItems, chartItems, mixKids, shelfKids] = await Promise.all([
-    browseContainer(find('New releases') ?? findShelf('New releases', 'Fresh new music')).then(withoutPodcasts),
-    browseContainer(find('Charts') ?? findShelf('Top songs', 'Trending songs for you')).then(withoutPodcasts),
-    browseContainer(supermixItem).catch(() => [] as SonosItem[]),
+    browseYtmItem(find('New releases') ?? findShelf('New releases', 'Fresh new music')).then(withoutPodcasts),
+    browseYtmItem(find('Charts') ?? findShelf('Top songs', 'Trending songs for you')).then(withoutPodcasts),
+    browseYtmItem(supermixItem).catch(() => [] as SonosItem[]),
     Promise.all(
-      homeItems.map((i) => (isContainer(i) ? browseContainer(i).catch(() => [] as SonosItem[]) : Promise.resolve(null)))
+      homeItems.map((i) => (isContainer(i) ? browseYtmItem(i).catch(() => [] as SonosItem[]) : Promise.resolve(null)))
     ),
   ]);
   const shelves = homeItems.filter((_, i) => {
@@ -652,6 +633,7 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
   const { artistItems, albumItems, currentUserId } = useRecentlyPlayed();
   const { data: users = [] } = useUsers(isAuthed, true);
   const imageByUser = new Map(users.map((u) => [u.userId, u.imageUrl]));
+  const imageFor = (user: string) => imageByUser.get(user);
 
   // Queuedle
   const { data: todayGame } = useDailyGame();
@@ -861,7 +843,7 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
       },
     });
   };
-  const forYou = ytm?.forYou ?? [];
+  const forYou = useShelvesOnScreen(ytm?.forYou);
 
   return (
     <div className={styles.panel}>
@@ -952,6 +934,7 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
                       photoUrl={lead.photo}
                       onAdd={addPick(lead)}
                       why={lead.why}
+                      imageFor={imageFor}
                     />
                     {[featured[0], featured[1]].map((p, i) =>
                       p ? (
@@ -963,6 +946,7 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
                             photoUrl={p.photo}
                             onAdd={addPick(p)}
                             why={p.why}
+                            imageFor={imageFor}
                           />
                           <ul className={styles.list}>{(i === 0 ? listA : listB).map(pickRow)}</ul>
                         </div>

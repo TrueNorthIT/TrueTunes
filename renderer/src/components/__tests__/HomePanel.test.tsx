@@ -1096,10 +1096,5 @@ describe('HomePanel', () => {
       );
       expect(rule('lyricLine'), 'Expected no font-size in the transition').not.toMatch(/transition:[^;]*font-size/);
     });
-
-    it('drives the progress bar with scaleX, not width', () => {
-      expect(rule('nowFill'), 'Expected a transform transition').toMatch(/transition:\s*transform/);
-      expect(rule('nowFill'), 'Expected no width transition').not.toMatch(/transition:[^;]*width/);
-    });
   });
 });

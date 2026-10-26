@@ -326,6 +326,10 @@ Generously rounded, never sharp. Radii scale with the type in `em`: cards and di
 ### Image card (signature)
 A print with its label (ArtCard). The artwork fills the card edge to edge (`object-fit: cover`). A two-part scrim, `rgba(0,0,0,.4)` fading over the top 22% and `rgba(0,0,0,.74) → .26 → 0` up from the bottom by 70%, keeps a sentence-case top-left caption and a bottom-left title and artist legible in white. The whole card is one button. Artist links and the add button sit above it. Hover or focus-within scales the image to 1.03 and dims it to `brightness(.88)` over 0.15s.
 
+**Who a pick is for (FanBubbles).** On the Picks card's prints, the faces of the people a pick is for sit as a sunflower head on the right of the art, centred a little above the middle (on a short card it rises, never past the top, to keep its foot clear of the title and the +). The biggest fan is in the middle; each next face steps out round it at the golden angle (137.5°), a little further each time (√ of its place), by the least that keeps a gap between faces. Each face is the shared avatar (so the champion keeps their ring and crown), its area proportional to that person's plays of the artist (radius 0.95–1.9em on the large card, 0.8–1.4em on the medium, all drawn at 1.3×), largest first, at most six with a "+n". The head breathes slowly as one from its centre (scale 0.97–1.04 over 6s, transform only) and holds still under `prefers-reduced-motion`. A face takes the art-rest shadow like any print; no glow. Hover names the person and their plays; the cloud's accessible name lists everyone.
+
+**Reason on hover.** On a pick card with a cloud, the caption line (the reason, "Long Alex & Sam love The Smiths", and its ⓘ) is hidden at rest so the faces carry the card, and fades in (`--dur`) when the cloud or the line is hovered or anything in the card has focus. Hidden by opacity only: it stays the open button's accessible description, and the ⓘ stays in the tab order. A card with nobody to show keeps the line in view.
+
 **Top result (TopResultCard)** is the same print at feature scale, for Search. The art or artist photo fills a 1.2em card (at least 20em high, 4:3 when stacked), and the title (3 lines), meta, pills and office chip sit bottom left on a scrim of their own (0.82 → 0 up the text block), so the text holds on pale covers. With no art it falls back to Lit Wall and the tint wash.
 
 ### Artist hero (signature)
@@ -341,7 +345,7 @@ Borderless rows (TrackRow, ChartRow) with a 0.65em radius and 3.2em rounded thum
 Square art (ImageTile, 0.7–0.9em radius, or a circle for artists) over a two-line caption: title in Title-at-rest, sub in tertiary label. Hover or focus rises the tile 2px and gives the art the Art-lifted shadow.
 
 ### Now Playing card
-Lit Wall with the artwork wash, 16em hero artwork (12.5em under 1100px), feature title, artist meta, a thin progress bar (0.32em, `rgba(255,255,255,.14)` track and `.85` fill) with tabular times, and the queued-by chip. Its sibling, the live lyrics box, is a Wall card that masks lyrics top and bottom with a gradient. The active line grows to 1.45em in white and the rest sit at full label. The Lyrics page is this band at full size: the art grows with the window, and a solo layout replaces an empty lyrics card.
+Lit Wall with the artwork wash, 16em hero artwork (12.5em under 1100px), feature title, artist meta, a wavy progress line with tabular times (WavyProgress: the played part is a 0.32em `--title-rest` stroke shaped as a sine wave, 0.16em amplitude and 2em wavelength, travelling slowly forward, its height ramping up from flat over the first wavelength so a just-started track shows a short flat line; a 0.35em gap; then the flat 0.32em `--track`. Paused, the wave eases to a straight line over 0.6s and stops; under reduced motion it is a still, flat line), and the queued-by chip. Its sibling, the live lyrics box, is a Wall card that masks lyrics top and bottom with a gradient. The active line grows to 1.45em in white and the rest sit at full label. The Lyrics page is this band at full size: the art grows with the window, and a solo layout replaces an empty lyrics card.
 
 **Skinny Now Playing card:** the same card in px (16px radius, 10px art radius, 16px title, 13px meta), with the queued-by chip and the transport, docked under the queue.
 
@@ -395,7 +399,8 @@ Every custom property declared in `global.css` or `depth.css` is named in this f
 - **Do** reveal secondary actions (add buttons) on hover or `:focus-within`, and let every interactive element take the global focus ring.
 - **Do** use the material tokens for anything floating over content, and keep the reduced-transparency fallback.
 - **Do** use the shared Dialog for every modal, with the primary or destructive action last.
-- **Do** honour `prefers-reduced-motion`: stop skeleton pulses and image, hero or lyric transitions.
+- **Do** honour `prefers-reduced-motion`: stop skeleton pulses and image, hero or lyric transitions, and flatten the wavy progress line.
+- **Do** keep ambient motion (the wavy progress line, the EQ bars) on the compositor: animate `transform` and `opacity`, never layout, and run it only while audio is really playing.
 
 ### Don't:
 - **Don't** use purple, neon or glow, and keep generated hues off 250–330°.

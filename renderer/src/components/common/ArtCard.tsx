@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { useImage } from '../../hooks/useImage';
 import { withArtworkSize } from '../../lib/artworkUrl';
 import { AddButton } from './AddButton';
@@ -21,6 +21,14 @@ interface Props {
   openLabel: string;
   /** Small control beside the label (an InfoTip). It sits above the open button, so it never opens the card. */
   info?: ReactNode;
+  /** Something hung on the art, clear of the caption line, title and + (e.g. FanBubbles). It places itself. */
+  aside?: ReactNode;
+  /**
+   * Keep the caption line (label + info) out of sight until the `aside` cloud is hovered or the card has focus, then
+   * fade it in. It stays in the accessibility tree (and is the open button's description), and the info stays
+   * focusable, so screen readers and the keyboard still reach it at rest.
+   */
+  reasonOnHover?: boolean;
   onAdd?: () => void;
   addLabel?: string;
   onContextMenu?: (e: React.MouseEvent) => void;
@@ -40,6 +48,8 @@ export function ArtCard({
   onOpen,
   openLabel,
   info,
+  aside,
+  reasonOnHover,
   onAdd,
   addLabel,
   onContextMenu,
@@ -55,9 +65,17 @@ export function ArtCard({
   const [photoInFor, setPhotoInFor] = useState<string | null>(null);
   const photoIn = photo !== null && photoInFor === photo;
   const setPhotoIn = (v: boolean) => setPhotoInFor(v ? photo : null);
+  const labelId = useId();
   return (
     <div
-      className={[styles.card, size === 'large' ? styles.large : styles.medium, className].filter(Boolean).join(' ')}
+      className={[
+        styles.card,
+        size === 'large' ? styles.large : styles.medium,
+        reasonOnHover ? styles.reasonOnHover : null,
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
       onContextMenu={onContextMenu}
       onMouseEnter={onMouseEnter}
     >
@@ -73,11 +91,20 @@ export function ArtCard({
           }}
         />
       )}
-      <button type="button" className={styles.cover} aria-label={openLabel} onClick={onOpen} />
+      <button
+        type="button"
+        className={styles.cover}
+        aria-label={openLabel}
+        aria-describedby={reasonOnHover ? labelId : undefined}
+        onClick={onOpen}
+      />
       <div className={styles.top}>
-        <span className={styles.label}>{label}</span>
+        <span className={styles.label} id={labelId}>
+          {label}
+        </span>
         {info}
       </div>
+      {aside}
       <div className={styles.caption}>
         <div className={styles.title}>{title}</div>
         {sub != null && <div className={styles.sub}>{sub}</div>}
