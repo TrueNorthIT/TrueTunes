@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { fn } from 'storybook/test';
-import { covers, portrait } from '../../../.storybook/fixtures';
+import { championOf, covers, portrait } from '../../../.storybook/fixtures';
+import { ChampionContext } from '../../lib/champion';
 import { ImageTile } from './ImageTile';
 import { PersonCard } from './PersonCard';
 
@@ -22,6 +23,16 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 export const NoPhoto: Story = { args: { imageUrl: null } };
+/** Last week's Queuedle champion: gold ring and crown on the avatar, their name in the lighter gold. */
+export const Champion: Story = {
+  decorators: [
+    (Story) => (
+      <ChampionContext.Provider value={championOf('Priya Shah')}>
+        <Story />
+      </ChampionContext.Provider>
+    ),
+  ],
+};
 export const NoCaption: Story = { args: { caption: undefined } };
 export const LongName: Story = {
   args: { name: 'Alexandria Montgomery-Featherstonehaugh', caption: '1,204 tracks queued all time' },

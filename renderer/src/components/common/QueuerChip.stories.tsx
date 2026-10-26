@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { fn } from 'storybook/test';
-import { portrait } from '../../../.storybook/fixtures';
+import { championOf, portrait } from '../../../.storybook/fixtures';
+import { ChampionContext } from '../../lib/champion';
 import { QueuerChip } from './QueuerChip';
 
 const meta = {
@@ -20,3 +21,15 @@ export const Default: Story = {};
 export const NoPhoto: Story = { args: { imageUrl: null } };
 export const LongName: Story = { args: { user: 'Alexandria Montgomery-Featherstonehaugh' } };
 export const CustomPrefix: Story = { args: { prefix: 'Added by ' } };
+/** Queued by last week's Queuedle champion: the gold ring and crown come from UserAvatar, the title joins the label. */
+export const Champion: Story = {
+  decorators: [
+    (Story) => (
+      <ChampionContext.Provider value={championOf('Priya Shah')}>
+        <div style={{ padding: '0.6em' }}>
+          <Story />
+        </div>
+      </ChampionContext.Provider>
+    ),
+  ],
+};
