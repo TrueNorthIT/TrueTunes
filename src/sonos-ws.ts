@@ -322,7 +322,7 @@ export async function connectWebSocket(): Promise<void> {
   if (ws && ws.readyState <= WebSocket.OPEN) return;
 
   // Fetch a fresh ticket from /api/mfe
-  let ticket: string | null = null;
+  let ticket: string | null;
   try {
     ticket = findTicket(await fetchMfeData());
   } catch (err) {
