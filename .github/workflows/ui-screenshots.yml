@@ -1,0 +1,132 @@
+name: UI screenshots
+
+# On a PR that changes UI code: before (base) and after (this PR) screenshots of every Storybook story the change
+# affects, with the changed areas boxed, in one PR comment that each push updates. Stories are found through the import
+# graph of the Storybook build (scripts/ui-screenshots/). Not for Dependabot or forks (a fork's token can't push or
+# comment).
+#
+# The images go on one orphan branch per PR, ui-screenshots/pr-<n>, under <short sha>/, and stay there after the PR
+# closes so old comments keep their pictures. GITHUB_TOKEN pushes start no workflows, publish.yml only runs on main,
+# and the main ruleset covers only the default branch. Nothing deletes them: remove a stale one by hand with
+#   git push origin --delete ui-screenshots/pr-<n>
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+concurrency:
+  group: ui-screenshots-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  screenshots:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write # push to ui-screenshots/pr-<n>
+      pull-requests: write # the comment
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PR: ${{ github.event.pull_request.number }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      BASE_REF: ${{ github.base_ref }}
+      BRANCH: ui-screenshots/pr-${{ github.event.pull_request.number }}
+    steps:
+      # The PR merged into its base, so HEAD^1 is the base it is compared with and the diff is only the PR's changes.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+
+      - name: Changed files
+        id: changed
+        run: |
+          echo "short=${HEAD_SHA::7}" >> "$GITHUB_OUTPUT"
+          git diff --name-only --no-renames HEAD^1 HEAD | tee "$RUNNER_TEMP/changed.txt"
+          if grep -q '^renderer/' "$RUNNER_TEMP/changed.txt"; then echo "ui=true" >> "$GITHUB_OUTPUT"; fi
+
+      - if: steps.changed.outputs.ui
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - if: steps.changed.outputs.ui
+        run: npm ci
+
+      # The browser only (~6 s). No --with-deps: ubuntu-latest ships Google Chrome, so Chromium's system libraries are
+      # already there, and apt has taken 11 min on a slow mirror.
+      - if: steps.changed.outputs.ui
+        run: npx playwright install chromium
+
+      # The base is built with its own Storybook config and stories but screenshotted by this PR's scripts, which
+      # don't exist on the base yet. It shares this checkout's node_modules unless the PR changes the lockfile.
+      - name: Build Storybook for this PR and its base
+        if: steps.changed.outputs.ui
+        run: |
+          npx storybook build -c renderer/.storybook -o "$RUNNER_TEMP/sb-head" --stats-json "$RUNNER_TEMP/sb-head" --quiet
+          git worktree add -q "$RUNNER_TEMP/base" HEAD^1
+          cd "$RUNNER_TEMP/base"
+          if git diff --quiet HEAD "$GITHUB_SHA" -- package-lock.json; then
+            ln -s "$GITHUB_WORKSPACE/node_modules" node_modules
+          else
+            npm ci
+          fi
+          npx storybook build -c renderer/.storybook -o "$RUNNER_TEMP/sb-base" --stats-json "$RUNNER_TEMP/sb-base" --quiet
+
+      - name: Screenshot the affected stories
+        id: shots
+        if: steps.changed.outputs.ui
+        env:
+          SHORT: ${{ steps.changed.outputs.short }}
+        run: |
+          node scripts/ui-screenshots/run.mjs \
+            --base "$RUNNER_TEMP/sb-base" --head "$RUNNER_TEMP/sb-head" --changed "$RUNNER_TEMP/changed.txt" \
+            --out "$RUNNER_TEMP/shots/$SHORT" --sha "$SHORT" --base-name "$BASE_REF" \
+            --url "https://github.com/$GITHUB_REPOSITORY/blob/$BRANCH/$SHORT/"
+          if [ -f "$RUNNER_TEMP/shots/$SHORT/comment.md" ]; then echo "body=$RUNNER_TEMP/shots/$SHORT/comment.md" >> "$GITHUB_OUTPUT"; fi
+
+      # Adds this push's folder to the PR's branch, creating the branch on the PR's first run. Earlier pushes' folders
+      # stay. Only this PR's runs write to it, one at a time (the concurrency group), so the push can't race.
+      - name: Publish the images
+        if: steps.shots.outputs.body
+        env:
+          SHORT: ${{ steps.changed.outputs.short }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git fetch -q --depth 1 origin "$BRANCH"; then
+            git checkout -qf --detach FETCH_HEAD
+          else
+            git checkout -qf --orphan screenshots
+            git rm -rq --cached .
+          fi
+          rm -rf "$SHORT"
+          cp -r "$RUNNER_TEMP/shots/$SHORT" "$SHORT"
+          rm "$SHORT/comment.md"
+          git add -A "$SHORT"
+          git commit -qm "Screenshots for PR #$PR at $SHORT"
+          git push -q origin "HEAD:refs/heads/$BRANCH"
+
+      # One comment per PR, found by its marker. A push that no longer affects any story updates it rather than
+      # leaving old screenshots up; a PR that never touched a story gets none.
+      - name: Comment
+        env:
+          BODY: ${{ steps.shots.outputs.body }}
+        run: |
+          id=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/comments" \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- ui-screenshots -->"))) | .id' | sed -n 1p)
+          if [ -z "$BODY" ]; then
+            [ -n "$id" ] || exit 0
+            BODY="$RUNNER_TEMP/none.md"
+            printf '<!-- ui-screenshots -->\n### UI screenshots\n\nNo story is affected at %s.\n' "${HEAD_SHA::7}" > "$BODY"
+          fi
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -F "body=@$BODY" --silent
+          else
+            gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -F "body=@$BODY" --silent
+          fi

@@ -32,7 +32,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,json,css}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,json,css}\"",
     "typecheck": "tsc --noEmit && tsc --noEmit --project renderer/tsconfig.json",
-    "test:main": "node --test src/**/*.test.ts",
+    "test:main": "node --test src/**/*.test.ts scripts/**/*.test.mjs",
     "lint:eslint": "eslint .",
     "lint:css": "stylelint \"renderer/src/**/*.css\"",
     "lint:design": "npx -y -p @google/design.md@0.4.0 designmd lint DESIGN.md"
@@ -82,7 +82,9 @@
     "lucide-react": "^1.61.0",
     "node-addon-api": "^8.9.2",
     "node-gyp": "^13.1.0",
+    "pixelmatch": "^8.0.0",
     "playwright": "1.64.1",
+    "pngjs": "^7.0.0",
     "prettier": "^3.9.10",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
