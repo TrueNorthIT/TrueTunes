@@ -55,6 +55,7 @@ test('affectedStories: walks the import graph, preview-only files affect everyth
         reasons: [
           { moduleName: './renderer/src/components/common/TrackRow.stories.tsx' },
           { moduleName: './renderer/src/pages/AlbumPage.tsx' },
+          { moduleName: './renderer/src/components/common/ContextMenu.stories.tsx' },
         ],
       },
       {
@@ -64,18 +65,27 @@ test('affectedStories: walks the import graph, preview-only files affect everyth
       { name: './renderer/src/styles/global.css', reasons: [{ moduleName: './renderer/.storybook/preview.tsx' }] },
     ],
   };
-  const entry = (id, title, file) => ({ type: 'story', id, title, name: id, importPath: `./renderer/src/${file}` });
+  const entry = (id, title, file) => ({
+    type: 'story',
+    id,
+    title,
+    name: id,
+    importPath: `./renderer/src/${file}.stories.tsx`,
+    componentPath: `./renderer/src/${file}.tsx`,
+  });
   const index = {
     entries: {
-      a: entry('a', 'Common/TrackRow', 'components/common/TrackRow.stories.tsx'),
-      p: entry('p', 'Pages/Album', 'pages/AlbumPage.stories.tsx'),
-      x: entry('x', 'Common/Other', 'components/common/Other.stories.tsx'),
+      // ContextMenu's story renders a TrackRow but isn't TrackRow's own story, so it ranks after it.
+      c: entry('c', 'Common/ContextMenu', 'components/common/ContextMenu'),
+      a: entry('a', 'Common/TrackRow', 'components/common/TrackRow'),
+      p: entry('p', 'Pages/Album', 'pages/AlbumPage'),
+      x: entry('x', 'Common/Other', 'components/common/Other'),
     },
   };
   const ids = (changed) => affectedStories(changed, [{ stats, index }]).map((s) => s.id);
-  assert.deepEqual(ids(['renderer/src/components/common/TrackRow.tsx']), ['p', 'a']);
+  assert.deepEqual(ids(['renderer/src/components/common/TrackRow.tsx']), ['p', 'a', 'c']);
   assert.deepEqual(ids(['README.md', 'src/main.ts']), []);
-  assert.deepEqual(ids(['renderer/src/styles/global.css']).sort(), ['a', 'p', 'x']);
+  assert.deepEqual(ids(['renderer/src/styles/global.css']).sort(), ['a', 'c', 'p', 'x']);
   assert.deepEqual(ids(['renderer/src/components/common/Other.stories.tsx']), ['x']);
 });
 

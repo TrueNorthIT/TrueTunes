@@ -26,7 +26,8 @@ export function importersOf(stats) {
 /**
  * Stories affected by the changed files, most relevant first, from both builds (so a deleted story still counts).
  * A changed file reaches a story file through the import graph; a file only the preview reaches (global.css) affects
- * every story. Ranked: pages first, then the fewest import hops from a changed file, then by title.
+ * every story. Ranked: pages first, then stories of a directly changed component, then the fewest import hops from a
+ * changed file, then by title.
  */
 export function affectedStories(changed, builds) {
   const changedSet = new Set(changed);
@@ -54,13 +55,23 @@ export function affectedStories(changed, builds) {
       const file = s.importPath.replace(/^\.\//, '');
       const d = hops.get(file) ?? (everything || changedSet.has(file) ? 99 : undefined);
       if (d === undefined) continue;
+      // The story's own component changed, or a file it imports directly (its CSS module).
+      const component = s.componentPath?.replace(/^\.\//, '');
+      const direct = component !== undefined && (hops.get(component) ?? 2) <= 1;
       const prev = stories.get(s.id);
-      if (!prev || d < prev.hops) stories.set(s.id, { id: s.id, title: s.title, name: s.name, file, hops: d });
+      stories.set(s.id, {
+        id: s.id,
+        title: s.title,
+        name: s.name,
+        file,
+        hops: Math.min(d, prev?.hops ?? d),
+        direct: direct || !!prev?.direct,
+      });
     }
   }
-  const page = (s) => (/^Pages\//.test(s.title) ? 0 : 1);
+  const rank = (s) => (/^Pages\//.test(s.title) ? 0 : s.direct ? 1 : 2);
   return [...stories.values()].sort(
-    (a, b) => page(a) - page(b) || a.hops - b.hops || a.title.localeCompare(b.title) || a.id.localeCompare(b.id)
+    (a, b) => rank(a) - rank(b) || a.hops - b.hops || a.title.localeCompare(b.title) || a.id.localeCompare(b.id)
   );
 }
 
