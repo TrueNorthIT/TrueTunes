@@ -150,6 +150,14 @@ Stories sit beside the component as `Foo.stories.tsx` (CSF, `args` for controls,
 - The preview loads `global.css`, `depth.css` and the Manrope font, wraps each story in a fresh `QueryClient` (retries off), a `MemoryRouter` and a `page-scale` root on `--bg`.
 - Add a story when you add a shared component in `common/`, covering its real states (default, no art, long title, disabled, playing and so on).
 
+### Page stories and the mock backend
+
+Every routed page has a story under `Pages/` (`*.page.stories.tsx` beside the panel), plus `Pages/App shell` (the whole `<App />`). They set `parameters.backend = 'mock'`, which makes `.storybook/preview.tsx` swap in `renderer/src/test/mockBackend.ts` for `window.sonos`: an invented catalogue, office and Azure data (`renderer/src/test/fixtures/`), the initial playback, queue, group and attribution pushes, and nothing that writes. `mockRuntime.ts` freezes `Date` at 2026-10-26T12:00:00Z, reports reduced motion, serves art and LRCLIB lyrics locally and refuses any other external URL. Everything is deterministic: no `Math.random`, no ticking position (playback is paused).
+
+- A page story is `pageParameters(path, { pattern, state })` (the route and the `location.state.item` the page opens with) inside `PageProviders`; `LiveShell` hands the page the playback, queue and Home shelves the shell would. See `renderer/.storybook/pageStory.tsx`.
+- When a page calls something new, add the answer to the mock (`fetch` dispatches on `operationId` in `mockBackend.ts`; Azure calls are in `fixtures/azure.ts`) rather than stubbing in the story. Art URLs must come from `fixtures/art.ts`.
+- `sonosDefaults` (the unit tests' `pending` reads) is untouched: only stories that opt in see the mock.
+
 ## Adding a new feature — checklist
 
 1. If it needs a new IPC call:

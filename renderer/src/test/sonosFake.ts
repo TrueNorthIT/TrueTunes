@@ -104,11 +104,15 @@ export const sonosDefaults: SonosPreload = {
   updateNowPlayingSmtc: () => Promise.resolve(),
 };
 
-/** `wrap` receives each method's name and default; return what should sit on `window.sonos` in its place. */
+/**
+ * `wrap` receives each method's name and default; return what should sit on `window.sonos` in its place.
+ * `impls` replaces the defaults wholesale (the Storybook page stories pass the defaults plus the mock backend).
+ */
 export function createSonosFake(
-  wrap: (name: string, impl: (...args: never[]) => unknown) => (...args: never[]) => unknown = (_n, impl) => impl
+  wrap: (name: string, impl: (...args: never[]) => unknown) => (...args: never[]) => unknown = (_n, impl) => impl,
+  impls: SonosPreload = sonosDefaults
 ): SonosPreload {
   return Object.fromEntries(
-    Object.entries(sonosDefaults).map(([name, impl]) => [name, wrap(name, impl as (...args: never[]) => unknown)])
+    Object.entries(impls).map(([name, impl]) => [name, wrap(name, impl as (...args: never[]) => unknown)])
   ) as unknown as SonosPreload;
 }
