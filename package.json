@@ -1,6 +1,6 @@
 {
   "name": "true-tunes-2",
-  "version": "1.0.60",
+  "version": "1.0.61",
   "description": "Sonos Web Player proxy app",
   "repository": "https://github.com/TrueNorthIT/TrueTunes",
   "author": {
@@ -66,10 +66,10 @@
     "@types/react-dom": "^19.2.3",
     "@types/ws": "^8.18.2",
     "@vitejs/plugin-react": "^6.0.1",
-    "@vitest/browser": "4.1.5",
-    "@vitest/browser-playwright": "4.1.5",
-    "@vitest/coverage-v8": "^4.1.5",
-    "@vitest/ui": "^4.1.4",
+    "@vitest/browser": "4.1.12",
+    "@vitest/browser-playwright": "4.1.12",
+    "@vitest/coverage-v8": "^4.1.12",
+    "@vitest/ui": "^4.1.12",
     "babel-plugin-react-compiler": "^1.0.0",
     "concurrently": "^10.0.6",
     "electron": "^45.0.0",
@@ -95,7 +95,7 @@
     "typescript": "^6.0.2",
     "typescript-eslint": "^8.58.2",
     "vite": "^8.0.8",
-    "vitest": "^4.1.4"
+    "vitest": "^4.1.12"
   },
   "overrides": {
     "@azure/identity": {
