@@ -2,12 +2,16 @@ name: UI screenshots
 
 # On a PR that changes UI code: before (base) and after (this PR) screenshots of every Storybook story the change
 # affects, with the changed areas boxed, in one PR comment that each push updates. Stories are found through the import
-# graph of the Storybook build (scripts/ui-screenshots/). The images go on the orphan `pr-screenshots` branch under
-# pr-<n>/<sha>/; GITHUB_TOKEN pushes start no workflows, and publish.yml only runs on main anyway. Closing the PR
-# deletes its folder. Not for Dependabot or forks (a fork's token can't push or comment).
+# graph of the Storybook build (scripts/ui-screenshots/). Not for Dependabot or forks (a fork's token can't push or
+# comment).
+#
+# The images go on one orphan branch per PR, ui-screenshots/pr-<n>, under <short sha>/, and stay there after the PR
+# closes so old comments keep their pictures. GITHUB_TOKEN pushes start no workflows, publish.yml only runs on main,
+# and the main ruleset covers only the default branch. Nothing deletes them: remove a stale one by hand with
+#   git push origin --delete ui-screenshots/pr-<n>
 on:
   pull_request:
-    types: [opened, synchronize, reopened, closed]
+    types: [opened, synchronize, reopened]
   # warm-cache: a cache saved by a PR run is visible to that PR only, so the browser is cached from main for every PR.
   push:
     branches: [main]
@@ -45,19 +49,20 @@ jobs:
 
   screenshots:
     if: >-
-      github.event.action != 'closed' &&
+      github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 30 # apt has taken 11 min on a slow mirror
     permissions:
-      contents: write # push to pr-screenshots
+      contents: write # push to ui-screenshots/pr-<n>
       pull-requests: write # the comment
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PR: ${{ github.event.pull_request.number }}
       HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       BASE_REF: ${{ github.base_ref }}
+      BRANCH: ui-screenshots/pr-${{ github.event.pull_request.number }}
     steps:
       # The PR merged into its base, so HEAD^1 is the base it is compared with and the diff is only the PR's changes.
       - uses: actions/checkout@v7
@@ -118,36 +123,35 @@ jobs:
         id: shots
         if: steps.changed.outputs.ui
         env:
-          DIR: pr-${{ github.event.pull_request.number }}/${{ steps.changed.outputs.short }}
+          SHORT: ${{ steps.changed.outputs.short }}
         run: |
           node scripts/ui-screenshots/run.mjs \
             --base "$RUNNER_TEMP/sb-base" --head "$RUNNER_TEMP/sb-head" --changed "$RUNNER_TEMP/changed.txt" \
-            --out "$RUNNER_TEMP/shots/$DIR" --sha "${HEAD_SHA::7}" --base-name "$BASE_REF" \
-            --url "https://github.com/$GITHUB_REPOSITORY/blob/pr-screenshots/$DIR/"
-          if [ -f "$RUNNER_TEMP/shots/$DIR/comment.md" ]; then echo "body=$RUNNER_TEMP/shots/$DIR/comment.md" >> "$GITHUB_OUTPUT"; fi
+            --out "$RUNNER_TEMP/shots/$SHORT" --sha "$SHORT" --base-name "$BASE_REF" \
+            --url "https://github.com/$GITHUB_REPOSITORY/blob/$BRANCH/$SHORT/"
+          if [ -f "$RUNNER_TEMP/shots/$SHORT/comment.md" ]; then echo "body=$RUNNER_TEMP/shots/$SHORT/comment.md" >> "$GITHUB_OUTPUT"; fi
 
-      # Replaces this PR's folder on pr-screenshots (creating the branch if it is missing). Another PR's run may push
-      # in between, so on a rejected push it starts again from the new tip.
+      # Adds this push's folder to the PR's branch, creating the branch on the PR's first run. Earlier pushes' folders
+      # stay. Only this PR's runs write to it, one at a time (the concurrency group), so the push can't race.
       - name: Publish the images
         if: steps.shots.outputs.body
+        env:
+          SHORT: ${{ steps.changed.outputs.short }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          for attempt in 1 2 3 4 5; do
-            if git fetch -q --depth 1 origin pr-screenshots; then
-              git checkout -qf --detach FETCH_HEAD
-            else
-              git checkout -qf --orphan "pr-screenshots-$attempt"
-              git rm -rq --cached .
-            fi
-            rm -rf "pr-$PR"
-            cp -r "$RUNNER_TEMP/shots/pr-$PR" "pr-$PR"
-            rm "pr-$PR"/*/comment.md
-            git add -A "pr-$PR"
-            git commit -qm "Screenshots for PR #$PR at ${HEAD_SHA::7}"
-            git push -q origin HEAD:refs/heads/pr-screenshots && exit 0
-          done
-          exit 1
+          if git fetch -q --depth 1 origin "$BRANCH"; then
+            git checkout -qf --detach FETCH_HEAD
+          else
+            git checkout -qf --orphan screenshots
+            git rm -rq --cached .
+          fi
+          rm -rf "$SHORT"
+          cp -r "$RUNNER_TEMP/shots/$SHORT" "$SHORT"
+          rm "$SHORT/comment.md"
+          git add -A "$SHORT"
+          git commit -qm "Screenshots for PR #$PR at $SHORT"
+          git push -q origin "HEAD:refs/heads/$BRANCH"
 
       # One comment per PR, found by its marker. A push that no longer affects any story updates it rather than
       # leaving old screenshots up; a PR that never touched a story gets none.
@@ -167,35 +171,3 @@ jobs:
           else
             gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -F "body=@$BODY" --silent
           fi
-
-  cleanup:
-    if: >-
-      github.event.action == 'closed' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.user.login != 'dependabot[bot]'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    env:
-      PR: ${{ github.event.pull_request.number }}
-    steps:
-      - id: checkout
-        uses: actions/checkout@v7
-        continue-on-error: true # no pr-screenshots branch yet: nothing to delete
-        with:
-          ref: pr-screenshots
-
-      - name: Delete this PR's screenshots
-        if: steps.checkout.outcome == 'success'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          for attempt in 1 2 3 4 5; do
-            git fetch -q --depth 1 origin pr-screenshots
-            git checkout -qf --detach FETCH_HEAD
-            [ -d "pr-$PR" ] || exit 0
-            git rm -rq "pr-$PR"
-            git commit -qm "Remove the screenshots for PR #$PR"
-            git push -q origin HEAD:refs/heads/pr-screenshots && exit 0
-          done
-          exit 1
