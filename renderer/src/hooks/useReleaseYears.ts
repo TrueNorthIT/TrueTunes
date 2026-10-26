@@ -21,13 +21,17 @@ export function geniusArtistAlbumsQueryOptions(artistName: string | null | undef
 
 /**
  * Release year per release (keyed by releaseKey): matched from the artist's Genius album list,
- * then a per-title Genius song search for whatever that list did not cover.
+ * then (unless `titleSearch` is false) a per-title Genius song search for whatever that list did not cover.
  */
-export function useReleaseYears(releases: SonosItem[], artistName: string | null | undefined) {
+export function useReleaseYears(
+  releases: SonosItem[],
+  artistName: string | null | undefined,
+  { titleSearch = true }: { titleSearch?: boolean } = {}
+) {
   const albums = useQuery(geniusArtistAlbumsQueryOptions(artistName));
   const years = matchReleaseYears(releases, albums.data ?? []);
   // Wait for the album list so the fallback only searches for what it missed.
-  const unmatched = albums.isFetched ? releases.filter((r) => !years.has(releaseKey(r))) : [];
+  const unmatched = titleSearch && albums.isFetched ? releases.filter((r) => !years.has(releaseKey(r))) : [];
   // ponytail: one search per unmatched release, all at once; cap concurrency if Genius rate-limits.
   // One search per title: versions that share a title (clean and explicit, say) would otherwise put the same
   // key in useQueries twice, which it warns about as "Duplicate Queries found".

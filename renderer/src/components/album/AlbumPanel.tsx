@@ -383,9 +383,10 @@ function MoreBy({
     enabled: !!(artistRid?.objectId && artistRid.serviceId && artistRid.accountId),
   });
   const releases = useMemo(() => artistData?.parsed.albums ?? [], [artistData]);
-  // Same grouping, years and track counts as the artist page (and the same caches).
+  // Same grouping, years and track counts as the artist page (and the same caches). Years come from the artist's
+  // Genius album list only: the per-title fallback cost about 20 lookups per album opened.
   const { counts: releaseCounts } = useReleaseTrackCounts(releases);
-  const { years: releaseYears } = useReleaseYears(releases, artistData?.parsed.name);
+  const { years: releaseYears } = useReleaseYears(releases, artistData?.parsed.name, { titleSearch: false });
 
   const moreAlbums = moreByReleases(
     releases,

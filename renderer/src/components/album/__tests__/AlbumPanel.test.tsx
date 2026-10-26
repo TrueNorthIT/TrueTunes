@@ -22,8 +22,9 @@ vi.mock('../../../hooks/useDominantColor', () => ({
   useDominantColor: (...a: unknown[]) => mockUseDominantColor(...a),
 }));
 
+const mockArtistBrowse = vi.fn();
 vi.mock('../../../hooks/useArtistBrowse', () => ({
-  artistBrowseQueryOptions: vi.fn(() => ({ queryKey: [], queryFn: async () => null })),
+  artistBrowseQueryOptions: vi.fn(() => ({ queryKey: ['artist-browse'], queryFn: async () => mockArtistBrowse() })),
 }));
 
 const mockUseAlbumBrowse = vi.fn();
@@ -123,6 +124,7 @@ beforeEach(() => {
   mockUseLocation.mockReturnValue({ state: { item: albumItem } });
   mockUseAlbumBrowse.mockReturnValue({ data: makeAlbumData(), isLoading: false, error: null });
   mockUsePlaylistBrowse.mockReturnValue({ data: undefined, isLoading: false, error: null });
+  mockArtistBrowse.mockReturnValue(null);
 });
 
 describe('AlbumPanel', () => {
@@ -431,5 +433,35 @@ describe('AlbumPanel', () => {
       expect(window.sonos.geniusAlbumAbout).not.toHaveBeenCalled();
       expect(screen.queryByRole('heading', { name: /^About/ })).toBeNull();
     });
+  });
+
+  // ── more by this artist ───────────────────────────────────────────────────
+
+  it('dates the "More by" shelf from the artist album list only, with no per-title Genius lookups', async () => {
+    const release = (title: string, objectId: string) =>
+      ({
+        title,
+        id: objectId,
+        resource: {
+          type: 'ALBUM',
+          id: { objectId, serviceId: 'svc-1', accountId: 'acc-1' },
+          defaults: btoa(JSON.stringify({ summary: 'Album - The Beatles' })),
+        },
+      }) as SonosItem;
+    mockArtistBrowse.mockReturnValue({
+      parsed: { name: 'The Beatles', albums: [release('Help!', 'help'), release('Revolver', 'revolver')] },
+    });
+    vi.mocked(window.sonos.geniusArtistAlbums).mockResolvedValue([{ name: 'Revolver', year: 1966 }]);
+    const artistItem = {
+      title: 'The Beatles',
+      resource: { id: { objectId: 'art-1', serviceId: 'svc-1', accountId: 'acc-1' } },
+    };
+    mockUseAlbumBrowse.mockReturnValue({ data: makeAlbumData({ artistItem }), isLoading: false, error: null });
+    render(<AlbumPanel />, { wrapper });
+    // Revolver is dated from the album list; Help! is not, so it sorts after it and nobody searches for its year.
+    // (The one year lookup left is this album's own, for its header.)
+    expect(await screen.findByText('1966')).toBeInTheDocument();
+    expect(screen.getAllByText(/^(Help!|Revolver)$/).map((e) => e.textContent)).toEqual(['Revolver', 'Help!']);
+    expect(vi.mocked(window.sonos.geniusAlbumYear).mock.calls.map(([album]) => album)).toEqual(['Abbey Road']);
   });
 });
