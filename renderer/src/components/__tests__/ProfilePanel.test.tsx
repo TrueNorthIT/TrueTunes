@@ -17,7 +17,7 @@ const track = (trackName: string, count: number) => ({
   count,
 });
 
-function stats(over: Partial<StatsResult> = {}): StatsResult {
+function stats(over: Partial<StatsData> = {}): StatsData {
   return { topUsers: [], topTracks: [], topArtists: [], topAlbums: [], totalEvents: 0, periodStart: 0, ...over };
 }
 

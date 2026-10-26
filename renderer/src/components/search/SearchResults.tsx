@@ -406,11 +406,11 @@ function TopResult({
   } else if (isTrack(item)) {
     meta = [albumNameOf(item) ? 'Song' : 'Video', artistNamesOf(item), albumNameOf(item)].filter(Boolean).join(' · ');
     actions = add;
-    count = stats?.topTracks.find((t) => t.uri && t.uri === oid)?.count;
+    count = stats?.topTracks?.find((t) => t.uri && t.uri === oid)?.count;
   } else if (isAlbum(item)) {
     meta = albumSub(item, null) || 'Album';
     actions = add;
-    count = stats?.topAlbums.find((a) => a.albumId && a.albumId === oid)?.count;
+    count = stats?.topAlbums?.find((a) => a.albumId && a.albumId === oid)?.count;
   } else {
     // A station can only start by replacing the shared queue: open it instead, to add its songs.
     meta = [isProgram(item) ? 'Station' : 'Playlist', playlistSub(item)].filter(Boolean).join(' · ');

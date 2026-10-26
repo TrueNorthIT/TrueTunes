@@ -178,9 +178,18 @@ describe('LeaderboardPanel', () => {
     });
 
     it('shows data.error when present', () => {
-      mockLoaded({ ...mockData, error: 'Cosmos unavailable' });
+      mockLoaded({ error: 'Cosmos unavailable' });
       renderPanel();
       expect(screen.getByText('Cosmos unavailable')).toBeInTheDocument();
+    });
+
+    // #195: a failed stats:fetch resolves { error } with no lists, which used to throw on topTracks.slice.
+    it('shows the error, not a crash, when stats:fetch resolves { error } with no lists', async () => {
+      const actual = await vi.importActual<typeof import('../../hooks/useStats')>('../../hooks/useStats');
+      mockUseStats.mockImplementation(actual.useStats);
+      vi.mocked(window.sonos.fetchStats).mockResolvedValue({ error: 'x' });
+      renderPanel();
+      expect(await screen.findByText('x')).toBeInTheDocument();
     });
 
     it('says so when nothing was queued in the period, instead of empty sections', () => {
