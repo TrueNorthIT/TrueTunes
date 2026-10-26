@@ -12,19 +12,27 @@ name: UI screenshots
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  # Replay a merged PR on today's main (gh workflow run ui-screenshots.yml -f pr=190): before is main with the PR
+  # reverted, after is main, so a PR merged before a story existed (e.g. before the page stories) still gets shots.
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Number of a merged PR to replay on main
+        required: true
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 concurrency:
-  group: ui-screenshots-${{ github.event.pull_request.number }}
+  group: ui-screenshots-${{ github.event.pull_request.number || inputs.pr }}
   cancel-in-progress: true
 
 jobs:
   screenshots:
     if: >-
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.user.login != 'dependabot[bot]'
+      github.event_name == 'workflow_dispatch' || (
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        github.event.pull_request.user.login != 'dependabot[bot]')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -32,15 +40,32 @@ jobs:
       pull-requests: write # the comment
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      PR: ${{ github.event.pull_request.number }}
-      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-      BASE_REF: ${{ github.base_ref }}
-      BRANCH: ui-screenshots/pr-${{ github.event.pull_request.number }}
+      PR: ${{ github.event.pull_request.number || inputs.pr }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      BASE_REF: "${{ github.base_ref || format('main without #{0}', inputs.pr) }}"
+      BRANCH: ui-screenshots/pr-${{ github.event.pull_request.number || inputs.pr }}
     steps:
       # The PR merged into its base, so HEAD^1 is the base it is compared with and the diff is only the PR's changes.
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 2
+          # Full history for a replay (0 is falsy in expressions, hence the order), the merge commit's parents otherwise.
+          fetch-depth: ${{ github.event_name != 'workflow_dispatch' && 2 || 0 }}
+
+      # Lay out HEAD^1 = main with the PR reverted and HEAD = main, the same shape as a PR's merge commit, so every
+      # later step works unchanged.
+      - name: Replay the merged PR on main
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          merge=$(gh pr view "$PR" --json mergeCommit -q '.mergeCommit.oid // ""')
+          [ -n "$merge" ] || { echo "::error::PR #$PR isn't merged"; exit 1; }
+          if [ "$(git rev-list --parents -n 1 "$merge" | wc -w)" -gt 2 ]; then
+            git revert --no-edit -m 1 "$merge"
+          else
+            git revert --no-edit "$merge"
+          fi
+          git checkout -q "$(git commit-tree "$GITHUB_SHA^{tree}" -p HEAD -m "main with #$PR")"
 
       - name: Changed files
         id: changed
