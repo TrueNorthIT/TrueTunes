@@ -48,6 +48,12 @@ export const artistKeys = {
 
 type ArtistBrowse = ReturnType<typeof parseArtist>;
 
+/**
+ * Releases per browse. Without a count the BFF stops at 100, and it gives a section's `total` only on the page that
+ * reaches the end, so a full page without one means there is more. Asking past the end hangs for about a minute.
+ */
+export const ARTIST_PAGE = 500;
+
 async function fetchArtistBrowse(
   artistId: string | undefined,
   serviceId: string | undefined,
@@ -55,8 +61,19 @@ async function fetchArtistBrowse(
   defaults: string | undefined,
   fallbackName?: string
 ): Promise<ArtistBrowse> {
+  let target = { artistId: artistId!, serviceId, accountId, defaults };
+  const browse = (offset?: number) =>
+    api.browse.artist(target.artistId, {
+      serviceId: target.serviceId,
+      accountId: target.accountId,
+      defaults: target.defaults,
+      muse2: true,
+      count: ARTIST_PAGE,
+      offset,
+    });
+
   // First attempt: direct browse with whatever defaults we already have.
-  let r = await api.browse.artist(artistId!, { serviceId, accountId, defaults, muse2: true });
+  let r = await browse();
 
   // YT Music (and some other services) need an opaque `defaults` blob to
   // return a populated artist response. Navigation sources like the
@@ -77,23 +94,33 @@ async function fetchArtistBrowse(
       if (matched) {
         const mid = matched.resource?.id as SonosItemId | undefined;
         const mDefaults = matched.resource?.defaults as string | undefined;
-        r = await api.browse.artist(mid?.objectId ?? artistId!, {
+        target = {
+          artistId: mid?.objectId ?? artistId!,
           serviceId: mid?.serviceId ?? serviceId,
           accountId: mid?.accountId ?? accountId,
           defaults: mDefaults ?? defaults,
-          muse2: true,
-        });
+        };
+        r = await browse();
       }
     }
   }
   if (r.error || !r.data) throw new Error(r.error ?? 'No artist data');
 
-  const browse = parseArtist(r.data);
+  // Page the rest of the releases onto the first section.
+  const releases = r.data.sections?.items?.[0];
+  let page: typeof releases | undefined = releases;
+  while (releases && page?.items?.length === ARTIST_PAGE && (page.total ?? Infinity) > releases.items.length) {
+    page = (await browse(releases.items.length)).data?.sections?.items?.[0];
+    if (!page?.items?.length) break;
+    releases.items.push(...page.items);
+  }
+
+  const result = parseArtist(r.data);
   // Start the hero photo now, alongside top songs and Genius: the image service takes about two seconds for
   // a size it hasn't served, and waiting for the whole artist query first made the hero the last thing on the page.
   // usePhotoState asks for the same URL and joins this request.
-  if (browse.parsed.imageUrl) void fetchImage(withArtworkSize(browse.parsed.imageUrl), true);
-  return browse;
+  if (result.parsed.imageUrl) void fetchImage(withArtworkSize(result.parsed.imageUrl), true);
+  return result;
 }
 
 /** The browse call alone, cached apart from the full artist so a page that only needs releases or the photo can use it. */

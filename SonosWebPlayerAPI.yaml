@@ -189,7 +189,9 @@ paths:
       tags: [Browse]
       operationId: browseArtist
       summary: Browse artist
-      description: Returns discography and related content for a specific artist.
+      description: >
+        Returns discography and related content for a specific artist. The releases section pages by count
+        and offset (100 by default); its total appears only on the page that reaches the end.
       parameters:
         - $ref: "#/components/parameters/householdId"
         - $ref: "#/components/parameters/serviceId"
@@ -200,6 +202,12 @@ paths:
           schema: { type: string }
         - $ref: "#/components/parameters/muse2"
         - $ref: "#/components/parameters/defaults"
+        - name: count
+          in: query
+          schema: { type: string, example: "500" }
+        - name: offset
+          in: query
+          schema: { type: string, example: "0" }
       responses:
         "200":
           description: Artist browse result.
