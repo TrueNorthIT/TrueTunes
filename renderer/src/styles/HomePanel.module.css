@@ -492,21 +492,6 @@ button.tileMain {
 .nowTime:last-child {
   text-align: right;
 }
-.nowBar {
-  flex: 1;
-  height: 0.32em;
-  border-radius: var(--r-art-card);
-  background: var(--track);
-  overflow: hidden;
-}
-.nowFill {
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--title-rest);
-  transform-origin: left center;
-  transition: transform 0.4s linear;
-}
 
 .about {
   display: flex;
@@ -642,7 +627,6 @@ button.tileMain {
 
 @media (prefers-reduced-motion: reduce) {
   .nowArt,
-  .nowFill,
   .lyricLine,
   .lyricsBox {
     transition: none;
