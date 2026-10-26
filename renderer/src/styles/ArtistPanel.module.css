@@ -400,6 +400,22 @@
   min-width: 0;
   flex: 1;
 }
+/* The card's button (ArtistAlbumCard): plain text, with the focus ring drawn round the whole card. */
+.albumOpen {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.albumOpen:focus-visible {
+  outline: none;
+}
+.albumCard:has(.albumOpen:focus-visible) {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: 2px;
+}
 .albumSub {
   font-size: var(--fs-label);
   color: var(--text-3);

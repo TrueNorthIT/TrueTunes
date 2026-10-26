@@ -276,7 +276,7 @@ describe('LeaderboardPanel', () => {
       expect(screen.getByText('3rd · 60 queued')).toBeInTheDocument();
       expect(screen.getByText('6th · 30 queued')).toBeInTheDocument();
       const others = screen.getByRole('list', { name: 'Also queuing' });
-      fireEvent.click(within(others).getByRole('button', { name: 'u8, 8th, 10 queued, open profile' }));
+      fireEvent.click(within(others).getByRole('button', { name: '8. u8, 10 queued, open profile' }));
       expect(mockNavigate).toHaveBeenCalledWith('/profile/u8');
     });
   });

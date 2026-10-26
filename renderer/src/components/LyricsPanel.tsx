@@ -196,11 +196,15 @@ export function LyricsPanel({ playback }: Props) {
         </section>
 
         {!status && (
-          <section className={styles.lyricsCard} aria-label="Lyrics" aria-busy={lyr.pending}>
+          <section className={styles.lyricsCard}>
+            {/* Focusable so the keyboard can scroll it too (synced lines follow the song, but you can still read ahead). */}
             <div
               ref={boxRef}
               className={`${styles.scroll} ${lyr.lines.length ? '' : styles.scrollFree}`}
-              tabIndex={lyr.lines.length ? undefined : 0}
+              role="region"
+              aria-label="Lyrics"
+              aria-busy={lyr.pending}
+              tabIndex={0}
             >
               {lyr.pending ? (
                 <div className={styles.pad} aria-hidden="true">

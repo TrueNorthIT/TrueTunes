@@ -53,3 +53,8 @@
 .championName.championName {
   color: rgb(var(--champion-text));
 }
+
+/* No photo: the initial (--initial, a quoted letter set by UserAvatar), drawn as generated content. */
+.initial::before {
+  content: var(--initial);
+}

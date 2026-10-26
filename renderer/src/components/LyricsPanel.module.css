@@ -250,6 +250,14 @@
 .scroll::-webkit-scrollbar {
   display: none;
 }
+/* The card clips an outer ring and the fade masks one on the box, so the card wears it. */
+.scroll:focus-visible {
+  outline: none;
+}
+.lyricsCard:has(.scroll:focus-visible) {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: 2px;
+}
 /* Plain lyrics don't follow the song, so they scroll by hand and show where you are. */
 .scrollFree {
   scrollbar-width: auto;

@@ -528,6 +528,30 @@ button.tileMain {
 .lyricsBox:hover {
   background: var(--surface-hi);
 }
+/* Static, so its ::after and the arrow position against the box. */
+.lyricsLink {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.lyricsLink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+/* The ring goes round the box the button covers. */
+.lyricsLink:focus-visible {
+  outline: none;
+}
+.lyricsBox:has(.lyricsLink:focus-visible) {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: 2px;
+}
 .lyricsOpen {
   position: absolute;
   top: 0.8em;
@@ -546,8 +570,7 @@ button.tileMain {
     background var(--dur-fast) var(--ease-fast),
     color var(--dur-fast) var(--ease-fast);
 }
-.lyricsOpen:hover,
-.lyricsOpen:focus-visible {
+.lyricsOpen:hover {
   background: var(--bg-2);
   color: var(--text);
 }

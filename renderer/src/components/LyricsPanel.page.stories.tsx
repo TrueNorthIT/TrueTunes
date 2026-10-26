@@ -10,8 +10,6 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  // Real a11y findings in the page, tracked in a GitHub issue, not caused by the mock data: scrollable-region-focusable: the lyrics scroll box cannot be reached by keyboard.
-  parameters: { a11y: { test: 'todo' } },
   render: () => (
     <PageProviders>
       <LiveShell>{(s) => <LyricsPanel playback={s.playback} />}</LiveShell>

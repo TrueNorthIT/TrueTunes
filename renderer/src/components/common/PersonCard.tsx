@@ -12,7 +12,7 @@ interface Props {
   caption?: string;
   /** Opens their profile. */
   onOpen: () => void;
-  /** Title and accessible name of the header button. Default "Open {name}'s profile". */
+  /** Tooltip of the header button. Default "Open {name}'s profile". Its accessible name is what it shows (name, caption). */
   openLabel?: string;
   /** Small control at the header's right edge (an InfoTip); a sibling of the header button, not inside it. */
   action?: ReactNode;
@@ -30,7 +30,7 @@ export function PersonCard({ name, imageUrl, caption, onOpen, openLabel, action,
     : undefined;
   return (
     <div className={styles.card}>
-      <button type="button" className={styles.head} style={wash} onClick={onOpen} title={label} aria-label={openLabel}>
+      <button type="button" className={styles.head} style={wash} onClick={onOpen} title={label}>
         <UserAvatar name={name} imageUrl={imageUrl} className={styles.avatar} />
         <span className={styles.who}>
           <PersonName name={name} className={styles.name} />

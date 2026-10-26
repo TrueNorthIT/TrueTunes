@@ -10,8 +10,6 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  // Real a11y findings in the page, tracked in a GitHub issue, not caused by the mock data: label-content-name-mismatch: the act buttons have a title that differs from their visible text.
-  parameters: { a11y: { test: 'todo' } },
   render: () => (
     <PageProviders>
       <LiveShell>{(s) => <DiscoverPanel queueItems={s.queueItems} />}</LiveShell>

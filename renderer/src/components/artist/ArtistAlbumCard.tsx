@@ -27,19 +27,9 @@ export function ArtistAlbumCard({ album, onOpen, onAdd, year, artistName, trackH
   const subtitle = cardSubtitle(year, fullSubtitle, artistName);
   const explicit = !!raw['isExplicit'];
   return (
-    <div
-      className={styles.albumCard}
-      role="button"
-      tabIndex={0}
-      aria-label={`Open ${album.title}`}
-      onClick={() => onOpen(album)}
-      onKeyDown={(e) => {
-        if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
-          e.preventDefault();
-          onOpen(album);
-        }
-      }}
-    >
+    // A click anywhere on the card opens it. The title is the card's button for the keyboard and screen
+    // readers, a sibling of the + rather than its parent; its click bubbles up to here.
+    <div className={styles.albumCard} onClick={() => onOpen(album)}>
       <div className={styles.albumArt}>
         <Artwork src={art} placeholderClassName={styles.albumArtPh} />
         <AddButton
@@ -50,9 +40,14 @@ export function ArtistAlbumCard({ album, onOpen, onAdd, year, artistName, trackH
         />
       </div>
       <div className={styles.albumTitle}>
-        <span className={styles.albumTitleText} title={album.title}>
+        <button
+          type="button"
+          className={`${styles.albumTitleText} ${styles.albumOpen}`}
+          title={album.title}
+          aria-label={`${album.title}, open album`}
+        >
           {album.title}
-        </span>
+        </button>
         {explicit && <ExplicitBadge />}
       </div>
       {subtitle && (

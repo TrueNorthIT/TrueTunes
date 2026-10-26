@@ -105,7 +105,7 @@ beforeEach(() => {
 describe('DiscoverPanel', () => {
   it('groups the unheard tracks by act, with who is behind each act', async () => {
     renderPanel();
-    const muse = (await screen.findByRole('button', { name: 'Open Muse' }, { timeout: 4000 }))
+    const muse = (await screen.findByRole('button', { description: 'Open Muse' }, { timeout: 4000 }))
       .parentElement as HTMLElement;
     expect(within(muse).getByText('Rich, Alex and others')).toBeInTheDocument();
     expect(within(muse).getByText('Hysteria')).toBeInTheDocument();
@@ -168,7 +168,7 @@ describe('DiscoverPanel', () => {
     expect(rich.querySelector('img')).toBeTruthy();
     const alex = screen.getByTitle('Alex — no Teams presence');
     expect(alex.querySelector('img')).toBeFalsy();
-    expect(alex.textContent).toContain('A');
+    expect((alex.querySelector('[style*="--initial"]') as HTMLElement).style.getPropertyValue('--initial')).toBe('"A"');
   });
 
   it('says so in one line when presence detects nobody, rather than calling everyone away', async () => {
@@ -227,13 +227,13 @@ describe('DiscoverPanel', () => {
       detail: [],
     });
     renderPanel();
-    await screen.findByRole('button', { name: 'Open Muse' }, { timeout: 4000 });
+    await screen.findByRole('button', { description: 'Open Muse' }, { timeout: 4000 });
     vi.mocked(window.sonos.fetchDjSet).mockReturnValue(new Promise(() => {}));
     await userEvent.click(await screen.findByRole('button', { name: '+2' }));
     await userEvent.click(screen.getByTitle('Alex — no Teams presence'));
 
-    expect(screen.getByRole('button', { name: 'Open Muse' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Open Muse' }).closest('[aria-busy]')).toHaveAttribute(
+    expect(screen.getByRole('button', { description: 'Open Muse' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { description: 'Open Muse' }).closest('[aria-busy]')).toHaveAttribute(
       'aria-busy',
       'true'
     );
