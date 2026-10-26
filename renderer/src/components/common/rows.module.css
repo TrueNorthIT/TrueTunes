@@ -114,7 +114,7 @@
 }
 .reason {
   font-size: var(--fs-small);
-  color: var(--text-3);
+  color: var(--text);
   margin-top: 0.15em;
   white-space: nowrap;
   overflow: hidden;
