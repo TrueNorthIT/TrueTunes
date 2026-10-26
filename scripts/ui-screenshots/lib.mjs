@@ -4,8 +4,8 @@
 export const MARKER = '<!-- ui-screenshots -->';
 export const MAX_STORIES = 20;
 
-// The pointing man in .github/ui-screenshots/pointer.png: his size and his fingertip (he points left).
-export const POINTER = { w: 561, h: 837, tipX: 59, tipY: 251 };
+// The opener's art, all in one place to swap it: the image (repo-relative), its size, and the fingertip (it points left).
+export const POINTER = { file: '.github/ui-screenshots/pointer.png', w: 561, h: 837, tipX: 59, tipY: 251 };
 
 /**
  * Reverse import graph from Storybook's `--stats-json` (preview-stats.json): module -> modules that import it.
@@ -80,8 +80,9 @@ const isStoryFile = (f) => /\.stories\.[jt]sx?$/.test(f);
 /**
  * Groups changed pixels (mask[y * w + x] truthy) into at most `max` rectangles: changed pixels within `gap` of each
  * other share a box, each box gets `margin` on every side (clamped to the image), and overlapping boxes merge.
+ * A group of fewer than `minPixels` is rendering noise (an anti-aliased edge that varies between runs) and is dropped.
  */
-export function groupBoxes(mask, w, h, { cell = 8, gap = 24, margin = 6, max = 6 } = {}) {
+export function groupBoxes(mask, w, h, { cell = 8, gap = 24, margin = 6, max = 6, minPixels = 4 } = {}) {
   const cw = Math.ceil(w / cell);
   const ch = Math.ceil(h / cell);
   const cells = new Map(); // cell index -> pixel bounds inside it
@@ -91,11 +92,12 @@ export function groupBoxes(mask, w, h, { cell = 8, gap = 24, margin = 6, max = 6
       const k = Math.floor(y / cell) * cw + Math.floor(x / cell);
       const b = cells.get(k);
       if (b) {
+        b.n++;
         b.x0 = Math.min(b.x0, x);
         b.x1 = Math.max(b.x1, x);
         b.y0 = Math.min(b.y0, y);
         b.y1 = Math.max(b.y1, y);
-      } else cells.set(k, { x0: x, x1: x, y0: y, y1: y });
+      } else cells.set(k, { x0: x, x1: x, y0: y, y1: y, n: 1 });
     }
 
   // Connected components over cells, where "connected" reaches `gap` pixels.
@@ -125,8 +127,10 @@ export function groupBoxes(mask, w, h, { cell = 8, gap = 24, margin = 6, max = 6
           box.x1 = Math.max(box.x1, b.x1);
           box.y0 = Math.min(box.y0, b.y0);
           box.y1 = Math.max(box.y1, b.y1);
+          box.n += b.n;
         }
     }
+    if (box.n < minPixels) continue;
     boxes.push({
       x0: Math.max(0, box.x0 - margin),
       y0: Math.max(0, box.y0 - margin),
@@ -157,6 +161,33 @@ export function groupBoxes(mask, w, h, { cell = 8, gap = 24, margin = 6, max = 6
   return boxes
     .map(({ x0, y0, x1, y1 }) => ({ x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 }))
     .sort((a, b) => b.w * b.h - a.w * a.h);
+}
+
+/**
+ * The rectangle worth showing: everything that differs from the top-left pixel (the page background) in any of the
+ * images, which share a size, plus `pad` on each side. A before/after pair cropped to it still lines up.
+ */
+export function cropBox(images, pad = 16) {
+  const { width: w, height: h } = images[0];
+  let x0 = w;
+  let y0 = h;
+  let x1 = -1;
+  let y1 = -1;
+  for (const { data } of images)
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++) {
+        const i = (y * w + x) * 4;
+        if (data[i] === data[0] && data[i + 1] === data[1] && data[i + 2] === data[2] && data[i + 3] === data[3])
+          continue;
+        x0 = Math.min(x0, x);
+        x1 = Math.max(x1, x);
+        y0 = Math.min(y0, y);
+        y1 = Math.max(y1, y);
+      }
+  if (x1 < 0) return { x: 0, y: 0, w, h }; // nothing rendered: show it all
+  x0 = Math.max(0, x0 - pad);
+  y0 = Math.max(0, y0 - pad);
+  return { x: x0, y: y0, w: Math.min(w - 1, x1 + pad) - x0 + 1, h: Math.min(h - 1, y1 + pad) - y0 + 1 };
 }
 
 /**

@@ -1,6 +1,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { affectedStories, buildComment, groupBoxes, MARKER, placePointer, POINTER } from './lib.mjs';
+import { affectedStories, buildComment, cropBox, groupBoxes, MARKER, placePointer, POINTER } from './lib.mjs';
+
+test('cropBox: the union of what differs from the background in every image, padded and clamped', () => {
+  const img = (rects) => {
+    const data = new Uint8Array(100 * 50 * 4).fill(9); // background
+    for (const [x, y] of rects) data.set([200, 0, 0, 255], (y * 100 + x) * 4);
+    return { width: 100, height: 50, data };
+  };
+  assert.deepEqual(cropBox([img([[30, 20]]), img([[60, 25]])], 5), { x: 25, y: 15, w: 41, h: 16 });
+  assert.deepEqual(cropBox([img([[2, 48]])], 5), { x: 0, y: 43, w: 8, h: 7 });
+  assert.deepEqual(cropBox([img([])]), { x: 0, y: 0, w: 100, h: 50 });
+});
 
 function mask(w, h, rects) {
   const m = new Uint8Array(w * h);
@@ -26,11 +37,16 @@ test('groupBoxes: nearby pixels share a box with a margin, distant ones get thei
 });
 
 test('groupBoxes: margins clamp to the image and the count is capped', () => {
-  const specks = Array.from({ length: 10 }, (_, i) => [i * 40, 0, i * 40, 0]);
+  const specks = Array.from({ length: 10 }, (_, i) => [i * 40, 0, i * 40 + 1, 1]);
   const boxes = groupBoxes(mask(400, 20, specks), 400, 20, { max: 3 });
   assert.equal(boxes.length, 3);
   for (const b of boxes) assert.ok(b.x >= 0 && b.y === 0 && b.x + b.w <= 400);
   assert.deepEqual(groupBoxes(new Uint8Array(100), 10, 10), []);
+});
+
+test('groupBoxes: a few stray anti-aliased pixels are noise, not a change', () => {
+  assert.deepEqual(groupBoxes(mask(100, 100, [[50, 50, 52, 50]]), 100, 100), []);
+  assert.equal(groupBoxes(mask(100, 100, [[50, 50, 51, 51]]), 100, 100).length, 1);
 });
 
 test('placePointer: fingertip on the right edge of the box, mirrored when he would fall off', () => {

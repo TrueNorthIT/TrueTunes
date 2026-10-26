@@ -2,7 +2,8 @@
 //   node scripts/ui-screenshots/run.mjs --base <storybook build> --head <storybook build> --changed <file list>
 //     --out <dir> --sha <short sha> --base-name <branch> --url <image URL prefix>
 // Both builds come from `storybook build --stats-json`. Writes the images and comment.md to --out, or nothing when no
-// story is affected. Static builds only, served from disk: no Electron, nothing reaches Sonos.
+// story is affected. Shots are taken at 1280x800 and cropped to what the story shows. Static builds only, served from
+// disk: no Electron, nothing reaches Sonos.
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, extname } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -10,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { PNG } from 'pngjs';
 import pixelmatch from 'pixelmatch';
-import { affectedStories, buildComment, groupBoxes, placePointer, MAX_STORIES, POINTER } from './lib.mjs';
+import { affectedStories, buildComment, cropBox, groupBoxes, placePointer, MAX_STORIES, POINTER } from './lib.mjs';
 
 const { values: args } = parseArgs({
   options: Object.fromEntries(
@@ -44,6 +45,9 @@ const context = await browser.newContext({
   viewport: { width: WIDTH, height: HEIGHT },
   deviceScaleFactor: 1,
   reducedMotion: 'reduce',
+  // Dates and times (toLocaleDateString) format the same on every runner.
+  locale: 'en-GB',
+  timezoneId: 'Europe/London',
 });
 // Relative times ("3 min ago") and dated charts render the same on every run.
 await context.clock.setFixedTime(new Date('2026-01-15T12:00:00Z'));
@@ -57,7 +61,7 @@ await context.route('**/*', (route) => {
 });
 const page = await context.newPage();
 
-async function shoot(which, id) {
+async function shoot(which, { id, title }) {
   await page.goto(`http://${which}.storybook/iframe.html?id=${id}&viewMode=story`);
   await page
     .waitForFunction(
@@ -68,6 +72,11 @@ async function shoot(which, id) {
       { timeout: 15000 }
     )
     .catch(() => console.warn(`${which} ${id}: no render-finished signal in 15s; screenshotting anyway`));
+  // Page stories keep loading from the mock backend after the first render (and Home has a 1.5 s timer).
+  if (/^Pages\//.test(title)) {
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
+  }
   await page.addStyleTag({
     content:
       '*, *::before, *::after { animation: none !important; transition: none !important; caret-color: transparent !important; }',
@@ -97,23 +106,29 @@ const has = (which, id) => builds[which].index.entries[id]?.type === 'story';
 const save = (name, png) => writeFileSync(join(args.out, name), PNG.sync.write(png));
 const results = [];
 for (const s of top) {
-  const before = has('base', s.id) && (await shoot('base', s.id));
-  const after = has('head', s.id) && (await shoot('head', s.id));
+  const shots = [has('base', s.id) && (await shoot('base', s)), has('head', s.id) && (await shoot('head', s))];
+  // Both cropped to the same rectangle round whatever either one shows.
+  const crop = cropBox(shots.filter(Boolean));
+  const [before, after] = shots.map((png) => {
+    if (!png) return png;
+    const out = new PNG({ width: crop.w, height: crop.h });
+    PNG.bitblt(png, out, crop.x, crop.y, crop.w, crop.h, 0, 0);
+    return out;
+  });
   if (before && after) {
     const { width: w, height: h } = after;
     const diff = new Uint8Array(w * h * 4);
     const count = pixelmatch(before.data, after.data, diff, w, h, { threshold: 0.1, diffMask: true });
-    if (!count) {
-      results.push({ ...s, status: 'unchanged' });
-      continue;
-    }
     // diffMask paints changed pixels red and anti-aliasing yellow; only the red ones count.
     const mask = new Uint8Array(w * h).map((_, i) => diff[i * 4 + 3] && !diff[i * 4 + 1]);
-    const boxes = groupBoxes(mask, w, h);
-    drawBoxes(after, boxes);
-    save(`${s.id}-before.png`, before);
-    save(`${s.id}-after.png`, after);
-    results.push({ ...s, status: 'changed', count, boxes });
+    const boxes = count ? groupBoxes(mask, w, h) : [];
+    if (!boxes.length) results.push({ ...s, status: 'unchanged' });
+    else {
+      drawBoxes(after, boxes);
+      save(`${s.id}-before.png`, before);
+      save(`${s.id}-after.png`, after);
+      results.push({ ...s, status: 'changed', count, boxes, w, h, crop, bg: [...after.data.subarray(0, 3)] });
+    }
   } else if (after) {
     save(`${s.id}-after.png`, after);
     results.push({ ...s, status: 'new' });
@@ -127,13 +142,22 @@ for (const s of top) {
 // The opener: the biggest change, with the pointing man beside its biggest box.
 const biggest = results.filter((r) => r.status === 'changed').sort((a, b) => b.count - a.count)[0];
 if (biggest) {
-  const box = biggest.boxes[0];
-  const p = placePointer(box, WIDTH, HEIGHT);
+  const { w, h, bg, crop } = biggest;
+  // He goes on the right unless he'd run off the right of the full-width screenshot; the canvas then grows (in the
+  // page's background colour) to fit all of him round the cropped picture.
+  const p = placePointer(biggest.boxes[0], WIDTH - crop.x, h);
+  const man = { x: p.x, y: p.y, w: POINTER.w * p.scale, h: POINTER.h * p.scale };
+  const ox = Math.max(0, -man.x);
+  const oy = Math.max(0, -man.y);
+  const width = Math.ceil(Math.max(w, man.x + man.w) + ox);
+  const height = Math.ceil(Math.max(h, man.y + man.h) + oy);
   const img = (file) => `data:image/png;base64,${readFileSync(file).toString('base64')}`;
+  await page.setViewportSize({ width, height });
   await page.setContent(
-    `<body style="margin:0"><img src="${img(join(args.out, `${biggest.id}-after.png`))}" style="display:block">` +
-      `<img src="${img(fileURLToPath(new URL('../../.github/ui-screenshots/pointer.png', import.meta.url)))}"` +
-      ` style="position:absolute;left:${p.x}px;top:${p.y}px;width:${POINTER.w * p.scale}px;` +
+    `<body style="margin:0;background:rgb(${bg})">` +
+      `<img src="${img(join(args.out, `${biggest.id}-after.png`))}" style="position:absolute;left:${ox}px;top:${oy}px">` +
+      `<img src="${img(fileURLToPath(new URL(`../../${POINTER.file}`, import.meta.url)))}"` +
+      ` style="position:absolute;left:${man.x + ox}px;top:${man.y + oy}px;width:${man.w}px;` +
       `${p.mirror ? 'transform:scaleX(-1)' : ''}"></body>`
   );
   await page.evaluate(() => Promise.all([...document.images].map((i) => i.decode())));
