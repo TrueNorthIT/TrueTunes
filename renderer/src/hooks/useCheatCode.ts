@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 
 /**
  * Fires `onMatch` when the user types `sequence` anywhere in the app (P-8).
@@ -41,8 +41,8 @@ function isTypingTarget(target: EventTarget | null): boolean {
 }
 
 export function useCheatCode(sequence: readonly string[], onMatch: () => void): void {
-  const onMatchRef = useRef(onMatch);
-  onMatchRef.current = onMatch;
+  // Always calls the latest onMatch without re-subscribing the listener.
+  const fireMatch = useEffectEvent(onMatch);
 
   useEffect(() => {
     const expected = sequence.map((k) => k.toLowerCase());
@@ -59,7 +59,7 @@ export function useCheatCode(sequence: readonly string[], onMatch: () => void): 
       }
       if (progress === expected.length) {
         progress = 0;
-        onMatchRef.current();
+        fireMatch();
       }
     }
 

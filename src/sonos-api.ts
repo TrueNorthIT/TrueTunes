@@ -222,8 +222,8 @@ export async function sonosFetch(request: FetchRequest, isRetry = false): Promis
   const RETRY_DELAYS_MS = [250, 750];
 
   let response!: Response;
-  let bodyText = '';
-  let resHeaders: Record<string, string> = {};
+  let bodyText: string;
+  let resHeaders: Record<string, string>;
 
   for (let attempt = 0; ; attempt++) {
     const reqId = randomUUID();

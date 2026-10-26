@@ -498,8 +498,7 @@ export async function fetchYtmSections(): Promise<YtmSections> {
 
   const d = rootR.data ?? {};
   const stack = ((d['sections'] as Record<string, unknown>)?.['items'] as unknown[])?.[0] as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   const rootItems = (stack?.['items'] ?? []) as SonosItem[];
 
   const find = (title: string) => rootItems.find((i) => (i.title ?? i.name) === title);
