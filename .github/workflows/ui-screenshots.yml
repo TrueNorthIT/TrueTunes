@@ -54,8 +54,24 @@ jobs:
       - if: steps.changed.outputs.ui
         run: npm ci
 
-      - if: steps.changed.outputs.ui
+      # The browser comes from a cache keyed on the Playwright version; the system libraries still come from apt.
+      - name: Playwright version
+        id: playwright
+        if: steps.changed.outputs.ui
+        run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/playwright-core'].version")" >> "$GITHUB_OUTPUT"
+
+      - id: playwright-cache
+        if: steps.changed.outputs.ui
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      - if: steps.changed.outputs.ui && steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
+
+      - if: steps.changed.outputs.ui && steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
 
       # The base is built with its own Storybook config and stories but screenshotted by this PR's scripts, which
       # don't exist on the base yet. It shares this checkout's node_modules unless the PR changes the lockfile.
