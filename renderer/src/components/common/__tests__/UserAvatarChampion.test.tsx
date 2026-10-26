@@ -18,7 +18,9 @@ const LABEL = 'Queuedle champion, week of 19–25 Oct';
 
 const withChampion =
   (value: Champion | null) =>
-  ({ children }: { children: ReactNode }) => <ChampionContext.Provider value={value}>{children}</ChampionContext.Provider>;
+  ({ children }: { children: ReactNode }) => (
+    <ChampionContext.Provider value={value}>{children}</ChampionContext.Provider>
+  );
 
 describe('UserAvatar: last week’s Queuedle champion', () => {
   it('crowns the champion, and says so in words', () => {

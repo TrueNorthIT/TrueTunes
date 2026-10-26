@@ -660,7 +660,8 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
   const { data: myScore } = useMyScore(todayGameId, currentUserId);
   // Last week's Queuedle winner is crowned all this week: on the Queuedle card, and on their face when they're in.
   const lastWeekWinner = useChampion();
-  const isChampion = (u: string) => !!lastWeekWinner && u.trim().toLowerCase() === lastWeekWinner.userName.trim().toLowerCase();
+  const isChampion = (u: string) =>
+    !!lastWeekWinner && u.trim().toLowerCase() === lastWeekWinner.userName.trim().toLowerCase();
   const score = myScore?.score;
   const maxScore = todayGame && 'questions' in todayGame ? todayGame.questions.length * 2 : null;
 
@@ -882,10 +883,7 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
                         : 'Not played yet'}
                     </span>
                     {lastWeekWinner && (
-                      <span
-                        className={styles.queuedleChamp}
-                        title={championLabel(lastWeekWinner)}
-                      >
+                      <span className={styles.queuedleChamp} title={championLabel(lastWeekWinner)}>
                         <span aria-hidden="true">👑 </span>Last week: {lastWeekWinner.userName} · {lastWeekWinner.total}{' '}
                         pts
                       </span>

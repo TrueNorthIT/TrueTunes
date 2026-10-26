@@ -24,7 +24,7 @@ describe('champion cache', () => {
     expect(readChampionCache(range.from, store)).toBeUndefined();
   });
 
-  it("hits for the same week, and serves the stored winner", () => {
+  it('hits for the same week, and serves the stored winner', () => {
     writeChampionCache(range.from, rich, store);
     expect(readChampionCache(range.from, store)).toEqual({ winner: rich });
   });

@@ -47,7 +47,10 @@ describe("last week's winner query", () => {
     } as never);
     fetchBoard.mockImplementation(async (id) =>
       id === '2026-10-20'
-        ? board(id, [{ userName: 'Abbie', total: 10 }, { userName: 'Rich', total: 12 }])
+        ? board(id, [
+            { userName: 'Abbie', total: 10 },
+            { userName: 'Rich', total: 12 },
+          ])
         : board(id ?? '', [{ userName: 'Abbie', total: 9 }])
     );
     const opts = lastWeekWinnerQueryOptions('Me', today);
