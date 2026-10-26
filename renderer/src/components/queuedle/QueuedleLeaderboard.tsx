@@ -66,7 +66,7 @@ export function QueuedleLeaderboard({
           rank: ranks[i],
           name: s.userName,
           detail: (
-            <span title={`Higher or lower ${s.mainScore}, top queuer ${s.bonusScore}`}>
+            <span title={`Higher or Lower ${s.mainScore}, Top Queuer ${s.bonusScore}`}>
               {s.mainScore} + {s.bonusScore}
             </span>
           ),

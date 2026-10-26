@@ -11,6 +11,8 @@ import {
 import type { WeeklyStanding } from '../lib/queuedleWeek';
 import type { QueuedleDay } from '../lib/queuedleStats';
 import { STALE } from '../lib/queryDefaults';
+import { readChampionCache, writeChampionCache } from '../lib/championCache';
+import type { Champion } from '../lib/championCache';
 
 export interface GameRanking {
   userName: string;
@@ -297,7 +299,10 @@ export function useWeeklyLeaderboard(gameId: string | null, userName: string | n
   return useQuery(weeklyLeaderboardQueryOptions(gameId, userName));
 }
 
-/** Last week's Queuedle winner, for the gold avatar on Home all this week. */
+/**
+ * Last week's Queuedle winner, crowned on their avatar all this week. Mounted once, by
+ * ChampionProvider; everything else reads useChampion().
+ */
 export function useLastWeekWinner(userName: string | null | undefined) {
   // Re-read the date now and then so Monday's handover happens without a restart.
   const [now, setNow] = useState(() => Date.now());
@@ -308,23 +313,46 @@ export function useLastWeekWinner(userName: string | null | undefined) {
   return useQuery(lastWeekWinnerQueryOptions(userName, londonDateId(now)));
 }
 
+/**
+ * A finished week's winner can't change, so it is worked out once a week: served from
+ * localStorage while the cache is for this week, never stale while the key (the week)
+ * stands, and only written back when every day of the week loaded.
+ */
 export const lastWeekWinnerQueryOptions = (userName: string | null | undefined, today: string) => {
   const range = previousWeekRange(today);
   return queryOptions({
     queryKey: queuedleKeys.lastWeekWinner(range?.from),
-    queryFn: async () => {
+    queryFn: async (): Promise<Champion | null> => {
       if (!range) return null;
+      const cached = readChampionCache(range.from);
+      if (cached) return cached.winner;
       const datesResult = await window.sonos.fetchGameDates(userName ?? '');
-      const dates = Array.isArray(datesResult.dates) ? datesResult.dates : [];
-      const inWeek = dates.filter((d) => d.status === 'ready' && isInWeek(d.gameId, range));
+      if (!Array.isArray(datesResult.dates)) throw new Error(datesResult.error ?? 'No Queuedle dates');
+      const inWeek = datesResult.dates.filter((d) => d.status === 'ready' && isInWeek(d.gameId, range));
+      let complete = true;
       const boards = await Promise.all(
-        inWeek.map((d) => window.sonos.fetchGameLeaderboard(d.gameId).catch(() => null))
+        inWeek.map((d) =>
+          window.sonos.fetchGameLeaderboard(d.gameId).then(
+            (board) => {
+              if (!board || board.error) complete = false;
+              return board;
+            },
+            () => {
+              complete = false;
+              return null;
+            }
+          )
+        )
       );
-      return weeklyWinner(boards, range);
+      const winner = weeklyWinner(boards, range);
+      // A missing day could hide the real winner: show this one for now, but work it out again next launch.
+      if (complete) writeChampionCache(range.from, winner);
+      return winner;
     },
+    // A cached null (nobody played) is data too, so it also stands in for the fetch.
+    initialData: () => (range ? readChampionCache(range.from)?.winner : undefined),
     enabled: !!range && userName !== undefined,
-    staleTime: STALE.halfHour,
-    refetchInterval: 30 * 60_000,
+    staleTime: Infinity,
   });
 };
 

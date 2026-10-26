@@ -9,6 +9,7 @@ import { resolve } from 'node:path';
 const homeCss = readFileSync(resolve(__dirname, '../../styles/HomePanel.module.css'), 'utf-8');
 import { HomePanel, fetchYtmSections } from '../HomePanel';
 import type { SonosItem } from '../../types/sonos';
+import { ChampionContext } from '../../lib/champion';
 
 const mockServiceQuery = vi.fn();
 const mockBrowseContainer = vi.fn();
@@ -95,8 +96,13 @@ vi.mock('../../hooks/useRecentlyPlayed', () => ({
 function makeWrapper(client?: QueryClient, extra: { add?: QueueActions['addToQueue']; displayName?: string } = {}) {
   const shared = client ?? new QueryClient({ defaultOptions: { queries: { retry: false } } });
   if (extra.displayName) seedDisplayName(shared, extra.displayName);
+  // The app's ChampionProvider, fed by the same mocked weekly-winner hook.
   const Outer = ({ children }: { children: React.ReactNode }) =>
-    createElement(QueryClientProvider, { client: shared }, children);
+    createElement(
+      QueryClientProvider,
+      { client: shared },
+      createElement(ChampionContext.Provider, { value: mockUseLastWeekWinner().data ?? null }, children)
+    );
   return queueActionsWrapper(extra.add, Outer);
 }
 
@@ -873,8 +879,12 @@ describe('HomePanel', () => {
       mockUseDjDiscoveries.mockReturnValue({ discoveries: [discovery(1)], isLoading: false });
       render(<HomePanel {...defaultProps} />, { wrapper: makeWrapper() });
       expect(screen.getByText(/Last week: Rich · 65 pts/)).toBeInTheDocument();
-      expect(screen.getByLabelText("Last week's Queuedle champion")).toBeInTheDocument();
-      expect(screen.getByTitle("Rich's profile · last week's Queuedle champion")).toBeInTheDocument();
+      // The crown is on Rich's avatar, which says why in words, and only on his.
+      const crowned = screen.getAllByRole('img', { name: 'Queuedle champion, week of 12–18 Oct' });
+      expect(crowned).toHaveLength(1);
+      expect(within(screen.getByTitle("Rich's profile · last week's Queuedle champion")).getByRole('img')).toBe(
+        crowned[0]
+      );
       expect(screen.getByTitle("Abbie's profile")).toBeInTheDocument();
     });
 

@@ -22,6 +22,8 @@ import { PersonCard } from './common/PersonCard';
 import { SectionCard, SeeAll } from './common/SectionCard';
 import { ArtistLinks } from './common/TrackLinks';
 import { UserAvatar } from './common/UserAvatar';
+import { PersonName } from './common/PersonName';
+import { championLabel, useChampion } from '../lib/champion';
 import { trackPayload } from '../lib/itemHelpers';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/LeaderboardPanel.module.css';
@@ -182,6 +184,12 @@ export function LeaderboardPanel() {
   const { data: users = [] } = useUsers(true, true);
   const imageByUser = new Map(users.map((u) => [u.userId, u.imageUrl]));
   const rankings = useGameRankings(null, true);
+  // The buttons name the person themselves, so they say the champion's title too (the avatar's own label is hidden by theirs).
+  const champion = useChampion();
+  const champ = (name: string) =>
+    champion && champion.userName.trim().toLowerCase() === name.trim().toLowerCase()
+      ? `, ${championLabel(champion)}`
+      : '';
 
   const topUsers = data?.topUsers ?? [];
   const carded = topUsers.slice(0, CARD_PEOPLE);
@@ -283,11 +291,11 @@ export function LeaderboardPanel() {
                       type="button"
                       className={styles.face}
                       onClick={() => void profile(u.userId)}
-                      aria-label={`${u.userId}, ${ordinal(CARD_PEOPLE + i + 1)}, ${queued(u.count)}, open profile`}
+                      aria-label={`${u.userId}${champ(u.userId)}, ${ordinal(CARD_PEOPLE + i + 1)}, ${queued(u.count)}, open profile`}
                     >
                       <span className={styles.faceRank}>{CARD_PEOPLE + i + 1}</span>
                       <UserAvatar name={u.userId} imageUrl={imageByUser.get(u.userId)} className={styles.faceAvatar} />
-                      <span className={styles.faceName}>{u.userId}</span>
+                      <PersonName name={u.userId} className={styles.faceName} />
                       <span className={styles.faceCount}>{u.count.toLocaleString()}</span>
                     </button>
                   </li>
@@ -393,14 +401,14 @@ export function LeaderboardPanel() {
                         type="button"
                         className={styles.standingWho}
                         onClick={() => void profile(r.userName)}
-                        aria-label={`${r.userName}, open profile`}
+                        aria-label={`${r.userName}${champ(r.userName)}, open profile`}
                       >
                         <UserAvatar
                           name={r.userName}
                           imageUrl={imageByUser.get(r.userName)}
                           className={styles.standingAvatar}
                         />
-                        <span className={styles.standingName}>{r.userName}</span>
+                        <PersonName name={r.userName} className={styles.standingName} />
                       </button>
                       <span>
                         <span className={`${styles.tierChip}${r.isProvisional ? ' ' + styles.provisional : ''}`}>

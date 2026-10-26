@@ -53,7 +53,7 @@ function ReviewRow({ question: q, guess, bonusGuess, qStat }: ReviewRowProps) {
         <span className={styles.reviewMeta}>
           {bonusGuess && (
             <span className={bonusCorrect ? styles.metaRight : styles.metaWrong}>
-              Top queuer: {bonusCorrect ? '✓' : '✗'} {bonusGuess}
+              Top Queuer: {bonusCorrect ? '✓' : '✗'} {bonusGuess}
             </span>
           )}
           {qStat && correctPct !== undefined && <span>{correctPct}% got it right</span>}

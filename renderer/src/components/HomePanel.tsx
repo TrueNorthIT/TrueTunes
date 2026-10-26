@@ -44,8 +44,9 @@ import { useStats } from '../hooks/useStats';
 import { useOfficePresence } from '../hooks/useOfficePresence';
 import { useDjSet } from '../hooks/useDjSet';
 import { useDjDiscoveries } from '../hooks/useDjDiscoveries';
-import { useDailyGame, useLastWeekWinner, useMyScore } from '../hooks/useDailyGame';
-import { formatWeekRange } from '../lib/queuedleWeek';
+import { useDailyGame, useMyScore } from '../hooks/useDailyGame';
+import { championLabel, useChampion } from '../lib/champion';
+import { PersonName } from './common/PersonName';
 import { useImage } from '../hooks/useImage';
 import { useDominantColor } from '../hooks/useDominantColor';
 import { useNowPlaying } from '../hooks/useNowPlaying';
@@ -497,8 +498,7 @@ export async function fetchYtmSections(): Promise<YtmSections> {
 
   const d = rootR.data ?? {};
   const stack = ((d['sections'] as Record<string, unknown>)?.['items'] as unknown[])?.[0] as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   const rootItems = (stack?.['items'] ?? []) as SonosItem[];
 
   const find = (title: string) => rootItems.find((i) => (i.title ?? i.name) === title);
@@ -658,8 +658,9 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
   const todayGameId = todayGame && 'id' in todayGame ? todayGame.id : null;
   const { data: myScore } = useMyScore(todayGameId, currentUserId);
   // Last week's Queuedle winner is crowned all this week: on the Queuedle card, and on their face when they're in.
-  const lastWeekWinner = useLastWeekWinner(displayName).data ?? null;
-  const champion = lastWeekWinner?.userName ?? null;
+  const lastWeekWinner = useChampion();
+  const isChampion = (u: string) =>
+    !!lastWeekWinner && u.trim().toLowerCase() === lastWeekWinner.userName.trim().toLowerCase();
   const score = myScore?.score;
   const maxScore = todayGame && 'questions' in todayGame ? todayGame.questions.length * 2 : null;
 
@@ -881,10 +882,7 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
                         : 'Not played yet'}
                     </span>
                     {lastWeekWinner && (
-                      <span
-                        className={styles.queuedleChamp}
-                        title={`Queuedle champion, week of ${formatWeekRange(lastWeekWinner.range)}`}
-                      >
+                      <span className={styles.queuedleChamp} title={championLabel(lastWeekWinner)}>
                         <span aria-hidden="true">👑 </span>Last week: {lastWeekWinner.userName} · {lastWeekWinner.total}{' '}
                         pts
                       </span>
@@ -915,14 +913,11 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
                           <button
                             type="button"
                             className={styles.face}
-                            title={u === champion ? `${u}'s profile · last week's Queuedle champion` : `${u}'s profile`}
+                            title={isChampion(u) ? `${u}'s profile · last week's Queuedle champion` : `${u}'s profile`}
                             onClick={() => void navigate(`/profile/${encodeURIComponent(u)}`)}
                           >
                             <UserAvatar name={u} imageUrl={imageByUser.get(u)} className={styles.faceAvatar} />
-                            <span className={styles.faceName}>
-                              {u === champion && <span aria-label="Last week's Queuedle champion">👑 </span>}
-                              {u}
-                            </span>
+                            <PersonName name={u} className={styles.faceName} />
                           </button>
                         </li>
                       ))}

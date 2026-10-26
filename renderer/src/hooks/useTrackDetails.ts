@@ -35,8 +35,7 @@ function parseResponse(d: Record<string, unknown> | undefined): TrackDetails {
 
   // Resource IDs
   const resourceId = (item?.['resource'] as Record<string, unknown> | undefined)?.['id'] as
-    | Record<string, string>
-    | undefined;
+    Record<string, string> | undefined;
   const serviceId = resourceId?.['serviceId'];
   const accountId = resourceId?.['accountId'];
 
