@@ -131,6 +131,15 @@ jobs:
           git push
           echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
+      # Both publish jobs upload into this one draft. Left to electron-builder, the Windows and macOS jobs each create
+      # their own draft when they start together, which split 1.0.62 and 1.0.63 across two drafts.
+      - name: Create the draft release
+        run: >-
+          gh release create "v${{ steps.bump.outputs.new_version }}" --draft
+          --title "${{ steps.bump.outputs.new_version }}" --target "${{ steps.push.outputs.sha }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   publish:
     needs: version
     if: github.event_name == 'push'
