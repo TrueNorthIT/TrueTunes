@@ -4,6 +4,7 @@ import { queryOptions, useQuery } from '@tanstack/react-query';
 // Weekly anonymous poll (P-2, P-3, P-4, P-6).
 // "Answered" lives only in localStorage under `poll-answered:<pollId>` and stores no choice;
 // the answer request is exactly { pollId, choice } and nothing here emits telemetry.
+// Skipping sets the same local mark and sends nothing, so it hides the poll without voting.
 
 const answeredKey = (pollId: string) => `poll-answered:${pollId}`;
 
@@ -80,5 +81,13 @@ export function usePolls() {
     [current, submitting]
   );
 
-  return { current, remaining: waiting.length, submitting, error, answer };
+  /** Hide the current poll on this machine without voting. Nothing is sent. */
+  const skip = useCallback(() => {
+    if (!current || submitting) return;
+    markAnswered(current.id);
+    setAnsweredNow((prev) => new Set(prev).add(current.id));
+    setError(null);
+  }, [current, submitting]);
+
+  return { current, remaining: waiting.length, submitting, error, answer, skip };
 }
