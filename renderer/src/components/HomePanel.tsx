@@ -204,6 +204,8 @@ function PickCard({
       onOpen={() => nav.openAlbum(t)}
       info={<PickInfoTip {...why} />}
       aside={<FanBubbles people={people} size={size} imageFor={imageFor} viewer={why.viewer} />}
+      // With a cloud, the reason waits for a hover on it (or focus); without one it stays in view.
+      reasonOnHover={people.length > 0}
       onAdd={onAdd}
       onContextMenu={(e) => nav.menu(t, e)}
       onMouseEnter={() => nav.prefetch(t)}

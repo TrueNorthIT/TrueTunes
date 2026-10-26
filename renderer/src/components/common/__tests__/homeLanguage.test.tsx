@@ -110,6 +110,24 @@ describe('ArtCard', () => {
     expect(imgs[0].getAttribute('src')).toBe('blob:photo');
     vi.mocked(useImage).mockImplementation(() => null);
   });
+
+  it('with reasonOnHover, still describes the card by its reason and keeps the info reachable', () => {
+    render(
+      <ArtCard
+        size="large"
+        label="Long Alex & Sam love The Smiths"
+        title="Ask"
+        openLabel="Open album Ask"
+        onOpen={() => {}}
+        info={<button type="button">Why this pick</button>}
+        reasonOnHover
+      />
+    );
+    expect(screen.getByRole('button', { name: 'Open album Ask' })).toHaveAccessibleDescription(
+      'Long Alex & Sam love The Smiths'
+    );
+    expect(screen.getByRole('button', { name: 'Why this pick' })).not.toHaveAttribute('tabindex', '-1');
+  });
 });
 
 describe('TrackRow and ChartRow', () => {

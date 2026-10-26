@@ -1,30 +1,26 @@
-/* Hangs on the right of an ArtCard, under the caption line (label + info) and well above the title and the +. */
+/* Sits on the right of an ArtCard, centred a little above the card's middle: under the caption line (label + info)
+   and well above the title and the +. */
 .cloud {
   position: absolute;
-  top: 3em;
-  right: 1em;
+  top: 44%;
+  right: 2.4em;
+  translate: 0 -50%;
   z-index: 1;
   pointer-events: none;
+}
+
+/* The sunflower head: it breathes as one from its centre face (transform only, so it stays on the compositor). */
+.head {
+  position: absolute;
+  inset: 0;
 }
 
 .bubble {
   position: absolute;
   pointer-events: auto;
-  /* Transform only, so the drift stays on the compositor. Out of step: each bubble has its own pace and phase. */
-  animation: drift var(--drift-dur) ease-in-out var(--drift-delay) infinite alternate;
-  will-change: transform;
 }
 .bubble:hover {
   z-index: 1;
-}
-
-@keyframes drift {
-  from {
-    transform: translate(0, 0);
-  }
-  to {
-    transform: translate(var(--dx), var(--dy));
-  }
 }
 
 /* The face: a round print, so it takes the artwork's rest shadow to sit off the art behind it. No glow. */
@@ -73,14 +69,24 @@
   opacity: 1;
 }
 
-.still .bubble {
-  animation: none;
+/* A slow shared breath, only when the viewer allows motion; the layout above is the resting state. */
+@media (prefers-reduced-motion: no-preference) {
+  .cloud:not(.still) .head {
+    animation: breathe 6s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+}
+
+@keyframes breathe {
+  from {
+    transform: scale(0.97);
+  }
+  to {
+    transform: scale(1.04);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bubble {
-    animation: none;
-  }
   .tip {
     transition: none;
   }

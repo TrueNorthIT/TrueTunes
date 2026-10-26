@@ -137,6 +137,18 @@
   opacity: 1;
 }
 
+/* Reason on hover: the caption line waits, out of sight but still read out and focusable, until the cloud on the
+   art is hovered (or the line itself, or anything in the card has focus), then fades in. */
+.reasonOnHover .top {
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+.reasonOnHover:has([data-fan-bubble]:hover) .top,
+.reasonOnHover .top:hover,
+.reasonOnHover:focus-within .top {
+  opacity: 1;
+}
+
 /* Narrower page: squarer cards so the next band starts in the first screen. */
 @container (max-width: 1100px) {
   .medium {
@@ -157,7 +169,8 @@
   .photo {
     animation: none;
   }
-  .fill {
+  .fill,
+  .reasonOnHover .top {
     transition: none;
   }
   .card:hover .fill,

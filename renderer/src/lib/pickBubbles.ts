@@ -1,6 +1,7 @@
 /**
- * The bubble cloud of who a pick is for: each person's face sized by how much they like the artist, packed loosely
- * into a small cluster that hangs on the right of a pick card. Pure maths, all in `em`, so the card scales it.
+ * The bubble cloud of who a pick is for: each person's face sized by how much they like the artist, laid out as a
+ * sunflower head (the biggest in the middle, the rest stepping out at the golden angle) on the right of a pick card.
+ * Pure maths, all in `em`, so the card scales it.
  */
 
 export type BubbleCardSize = 'large' | 'medium';
@@ -21,6 +22,8 @@ export interface BubbleLayout {
   /** The cloud's bounding box. Bubble x/y are centres inside it. */
   width: number;
   height: number;
+  /** The centre face's centre: the point the head breathes from. */
+  origin: { x: number; y: number };
 }
 
 /** Bubble radii and spacing in em: the biggest fan gets `max`, nobody drops below `min` (a face still has to read). */
@@ -65,76 +68,53 @@ export function bubbleRadii(people: BubblePerson[], size: BubbleCardSize): Sized
   return more > 0 ? [...faces, { kind: 'more', more, r: round(Math.max(min, equal * 0.85)) }] : faces;
 }
 
+/** 137.5°: the sunflower's step, so no two faces line up however many there are. */
+export const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+/** The whole head is turned so the second face sits up and to the left of the first, back over the card. */
+const SUNFLOWER_TURN = Math.PI * 0.75;
+
 /**
- * Pack circles (in the order given, largest first) into a loose cluster: each touches an earlier one, `gap` clear
- * of all of them, at the spot nearest the first circle's centre. Vertical distance counts double, so the cloud
- * grows sideways more than down and stays clear of the caption. Deterministic: the same radii give the same cloud.
+ * Sunflower (phyllotaxis): the first (biggest) circle at the centre, the i-th at i × 137.5° round it, its distance
+ * growing with √(i − 1) from a first ring snug against the centre, by the smallest step that keeps every circle `gap`
+ * clear of the others. Centres are relative to the first circle. Deterministic: the same radii give the same head.
  */
-export function packCircles(
-  radii: number[],
-  gap: number
-): { points: { x: number; y: number }[]; width: number; height: number } {
-  const placed: { x: number; y: number; r: number }[] = [];
-  const STEPS = 36;
-  for (const r of radii) {
-    if (!placed.length) {
-      placed.push({ x: 0, y: 0, r });
-      continue;
-    }
-    let best: { x: number; y: number; score: number } | null = null;
-    for (const p of placed) {
-      const d = p.r + r + gap;
-      for (let k = 0; k < STEPS; k++) {
-        const a = (k / STEPS) * Math.PI * 2;
-        const x = p.x + d * Math.cos(a);
-        const y = p.y + d * Math.sin(a);
-        const clear = placed.every((q) => Math.hypot(q.x - x, q.y - y) >= q.r + r + gap - 1e-9);
-        if (!clear) continue;
-        const score = x * x + 4 * y * y;
-        if (!best || score < best.score - 1e-9) best = { x, y, score };
-      }
-    }
-    // A ring of 36 spots round every earlier circle always has a clear one on the outside of the cluster.
-    placed.push({ x: best?.x ?? 0, y: best?.y ?? 0, r });
+export function sunflowerCircles(radii: number[], gap: number, turn = SUNFLOWER_TURN): { x: number; y: number }[] {
+  const base = radii.length > 1 ? radii[0] + gap + radii[1] : 0;
+  const at = (step: number) =>
+    radii.map((r, i) => {
+      const d = i === 0 ? 0 : base + step * Math.sqrt(i - 1);
+      return { x: d * Math.cos(i * GOLDEN_ANGLE + turn), y: d * Math.sin(i * GOLDEN_ANGLE + turn), r };
+    });
+  const clear = (pts: { x: number; y: number; r: number }[]) =>
+    pts.every((p, i) => pts.slice(0, i).every((q) => Math.hypot(q.x - p.x, q.y - p.y) >= q.r + p.r + gap - 1e-9));
+  for (let step = 0; step < 20; step += 0.02) {
+    const pts = at(step);
+    if (clear(pts)) return pts;
   }
-  if (!placed.length) return { points: [], width: 0, height: 0 };
-  const minX = Math.min(...placed.map((c) => c.x - c.r));
-  const minY = Math.min(...placed.map((c) => c.y - c.r));
-  const maxX = Math.max(...placed.map((c) => c.x + c.r));
-  const maxY = Math.max(...placed.map((c) => c.y + c.r));
-  return {
-    points: placed.map((c) => ({ x: round(c.x - minX), y: round(c.y - minY) })),
-    width: round(maxX - minX),
-    height: round(maxY - minY),
-  };
+  return at(20);
 }
 
-/** Sizes and positions for a card's bubble cloud. Empty when there is nobody to show. */
+/**
+ * Sizes and positions for a card's bubble cloud, as a sunflower head: centres inside the box, and the centre face's
+ * centre as `origin` (the point the head breathes from). Empty when there is nobody to show.
+ */
 export function layoutBubbles(people: BubblePerson[], size: BubbleCardSize): BubbleLayout {
   const sized = bubbleRadii(people, size);
-  const { points, width, height } = packCircles(
+  if (!sized.length) return { bubbles: [], width: 0, height: 0, origin: { x: 0, y: 0 } };
+  const pts = sunflowerCircles(
     sized.map((b) => b.r),
     BUBBLE_RADII[size].gap
   );
-  return { bubbles: sized.map((b, i) => ({ ...b, ...points[i] })), width, height };
-}
-
-/**
- * Each bubble's slow drift: a few px (0.14–0.3em each way) over 5.5–9.5s, with a different path, pace and phase per
- * bubble so the cloud never moves in step.
- */
-export function driftFor(i: number): { dx: number; dy: number; duration: number; delay: number } {
-  // A cheap deterministic scramble of the index: varied, but the same on every render.
-  const f = (seed: number) => {
-    const s = Math.sin((i + 1) * 12.9898 + seed * 78.233) * 43758.5453;
-    return s - Math.floor(s);
-  };
-  const amp = (seed: number) => (0.14 + f(seed) * 0.16) * (f(seed + 7) < 0.5 ? -1 : 1);
+  const minX = Math.min(...sized.map((b, i) => pts[i].x - b.r));
+  const minY = Math.min(...sized.map((b, i) => pts[i].y - b.r));
+  const maxX = Math.max(...sized.map((b, i) => pts[i].x + b.r));
+  const maxY = Math.max(...sized.map((b, i) => pts[i].y + b.r));
+  const shift = (p: { x: number; y: number }) => ({ x: round(p.x - minX), y: round(p.y - minY) });
   return {
-    dx: round(amp(1)),
-    dy: round(amp(2)),
-    duration: round(5.5 + f(3) * 4),
-    delay: round(-f(4) * 6),
+    bubbles: sized.map((b, i) => ({ ...b, ...shift(pts[i]) })),
+    width: round(maxX - minX),
+    height: round(maxY - minY),
+    origin: shift(pts[0]),
   };
 }
 

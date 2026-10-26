@@ -5,9 +5,9 @@ import {
   bubbleLabel,
   bubbleRadii,
   bubbleTip,
-  driftFor,
+  GOLDEN_ANGLE,
   layoutBubbles,
-  packCircles,
+  sunflowerCircles,
   type BubbleLayout,
 } from '../pickBubbles';
 
@@ -64,10 +64,12 @@ describe('bubbleRadii', () => {
   });
 });
 
-describe('packCircles / layoutBubbles', () => {
-  it('packs without overlapping, a gap apart, inside its box', () => {
+describe('layoutBubbles (sunflower)', () => {
+  const scenarios = [[12], [12, 5], [24, 15, 8, 4], [30, 9, 4, 2, 1, 1], [31, 18, 9, 6, 3, 2, 1, 1]];
+
+  it('places every face a gap clear of the others, inside its box', () => {
     for (const size of ['large', 'medium'] as const) {
-      for (const counts of [[12], [12, 5], [30, 9, 4, 2, 1, 1], [9, 8, 7, 6, 5, 4, 3, 2, 1]]) {
+      for (const counts of scenarios) {
         const l = layoutBubbles(fans(...counts), size);
         expect(overlaps(l, BUBBLE_RADII[size].gap)).toEqual([]);
         for (const b of l.bubbles) {
@@ -80,49 +82,48 @@ describe('packCircles / layoutBubbles', () => {
     }
   });
 
-  it('spreads sideways more than down, so the cloud stays clear of the caption', () => {
-    const l = layoutBubbles(fans(30, 20, 10, 5, 2, 1), 'large');
-    expect(l.width).toBeGreaterThan(l.height);
+  it('puts the biggest face in the middle and breathes from it', () => {
+    const l = layoutBubbles(fans(31, 18, 9, 6, 3, 2, 1, 1), 'large');
+    const [first, ...rest] = l.bubbles;
+    expect(first.r).toBe(BUBBLE_RADII.large.max);
+    expect(l.origin).toEqual({ x: first.x, y: first.y });
+    // Everyone else is round it, none nearer than the first ring.
+    const ring = first.r + BUBBLE_RADII.large.gap + rest[0].r;
+    for (const b of rest) expect(Math.hypot(b.x - first.x, b.y - first.y)).toBeGreaterThanOrEqual(ring - 2e-3);
+  });
+
+  it('steps each face round the centre by the golden angle (137.5°)', () => {
+    expect((GOLDEN_ANGLE * 180) / Math.PI).toBeCloseTo(137.508, 3);
+    const pts = sunflowerCircles([1.9, 1.5, 1.2, 1, 1], 0.35, 0);
+    for (let i = 1; i < pts.length; i++) {
+      const a = Math.atan2(pts[i].y, pts[i].x);
+      const turn = (((a - i * GOLDEN_ANGLE) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+      expect(Math.min(turn, 2 * Math.PI - turn)).toBeCloseTo(0, 6);
+    }
+  });
+
+  it('starts the first ring snug against the centre face', () => {
+    const pts = sunflowerCircles([1.9, 1.2], 0.35, 0);
+    expect(Math.hypot(pts[1].x, pts[1].y)).toBeCloseTo(1.9 + 0.35 + 1.2, 6);
   });
 
   it('stays small enough for a medium card even at the cap', () => {
     const l = layoutBubbles(fans(9, 8, 7, 6, 5, 4, 3, 2, 1), 'medium');
-    // A medium card is at least ~16em wide and leaves ~9em between the caption line and the title.
-    expect(l.width).toBeLessThan(10);
-    expect(l.height).toBeLessThan(8);
+    // Drawn at 1.3×, centred a little above the middle of a 4:3 card at least ~16em wide (12em high, ~13em when
+    // squarer on a narrow page): it has to leave the title its bottom ~4em.
+    expect(l.width * 1.3).toBeLessThan(11);
+    expect(l.height * 1.3).toBeLessThan(11);
   });
 
   it('is deterministic and empty for nobody', () => {
     expect(layoutBubbles(fans(5, 3, 1), 'large')).toEqual(layoutBubbles(fans(5, 3, 1), 'large'));
-    expect(packCircles([], 0.3)).toEqual({ points: [], width: 0, height: 0 });
-    expect(layoutBubbles([], 'large').bubbles).toEqual([]);
+    expect(layoutBubbles([], 'large')).toEqual({ bubbles: [], width: 0, height: 0, origin: { x: 0, y: 0 } });
   });
 
   it('boxes a single bubble exactly', () => {
     const l = layoutBubbles(fans(4), 'medium');
     expect(l.width).toBe(BUBBLE_RADII.medium.max * 2);
     expect(l.bubbles[0]).toMatchObject({ x: BUBBLE_RADII.medium.max, y: BUBBLE_RADII.medium.max });
-  });
-});
-
-describe('driftFor', () => {
-  it('moves a few px (well under half an em) each way over several seconds', () => {
-    for (let i = 0; i < 8; i++) {
-      const d = driftFor(i);
-      expect(Math.abs(d.dx)).toBeGreaterThan(0.1);
-      expect(Math.abs(d.dx)).toBeLessThanOrEqual(0.3);
-      expect(Math.abs(d.dy)).toBeLessThanOrEqual(0.3);
-      expect(d.duration).toBeGreaterThanOrEqual(5.5);
-      expect(d.duration).toBeLessThanOrEqual(9.5);
-      expect(d.delay).toBeLessThanOrEqual(0);
-    }
-  });
-
-  it('is out of step: no two bubbles share a pace or phase', () => {
-    const ds = Array.from({ length: MAX_BUBBLES }, (_, i) => driftFor(i));
-    expect(new Set(ds.map((d) => d.duration)).size).toBe(MAX_BUBBLES);
-    expect(new Set(ds.map((d) => d.delay)).size).toBe(MAX_BUBBLES);
-    expect(driftFor(3)).toEqual(driftFor(3));
   });
 });
 
