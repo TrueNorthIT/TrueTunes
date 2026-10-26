@@ -8,7 +8,14 @@ updates:
     open-pull-requests-limit: 15
     schedule:
       interval: weekly
+    ignore:
+      # Types follow the Node runtime, not the latest Node.
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
     groups:
+      # vitest and its @vitest/* packages only work at one version: bump them together, majors included.
+      vitest:
+        patterns: [vitest, '@vitest/*']
       npm-patch:
         update-types: [patch]
       npm-minor:
@@ -18,6 +25,10 @@ updates:
     directory: /server
     schedule:
       interval: weekly
+    ignore:
+      # Types follow the Node runtime, not the latest Node.
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
     groups:
       server-npm-patch:
         update-types: [patch]

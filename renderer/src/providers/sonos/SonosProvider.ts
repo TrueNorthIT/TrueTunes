@@ -197,9 +197,12 @@ export class SonosProvider implements AudioProvider {
 
   subscribeGroups(onGroups: (groups: NormalizedGroup[]) => void) {
     return window.sonos.onWsGroups((raw) => {
-      const groups = (raw as Array<{ id: string; name: string; coordinatorId?: string }>).map(
-        (g): NormalizedGroup => ({ id: g.id, name: g.name, providerId: 'sonos', coordinatorId: g.coordinatorId })
-      );
+      const groups = (raw as Array<{ id: string; name: string; coordinatorId?: string }>).map((g): NormalizedGroup => ({
+        id: g.id,
+        name: g.name,
+        providerId: 'sonos',
+        coordinatorId: g.coordinatorId,
+      }));
       onGroups(groups);
     });
   }

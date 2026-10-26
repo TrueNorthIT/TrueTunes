@@ -48,7 +48,6 @@ export function InfoTip({ label, children, className, icon }: Props) {
 
   // Below the button, flipped above when it won't fit; clamped inside the window.
   useLayoutEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- measures the laid-out DOM, which only exists after commit
     if (!open || !btn.current || !tip.current) return setPos(null);
     const b = btn.current.getBoundingClientRect();
     const t = tip.current.getBoundingClientRect();

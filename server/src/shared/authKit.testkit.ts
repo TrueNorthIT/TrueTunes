@@ -32,7 +32,7 @@ export async function tenantKeys() {
       .setIssuedAt()
       .setExpirationTime(opts.exp ?? '1h')
       .sign((opts.key ?? good).privateKey);
-  return { check, sign, rogue };
+  return { check, sign, good, rogue };
 }
 
 export function fakeRequest(authorization?: string): HttpRequest {

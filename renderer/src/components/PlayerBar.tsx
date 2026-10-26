@@ -88,7 +88,6 @@ function VolumeButton({ volume }: { volume: number }) {
   // Sync incoming WS volume only when the user isn't actively dragging
   const dragging = useRef(false);
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- the drag guard is a ref, which render must not read
     if (!dragging.current) setLocalVol(volume);
   }, [volume]);
 
