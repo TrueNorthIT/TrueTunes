@@ -26,9 +26,10 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  background: rgba(var(--tint), 0.16);
+  /* Tonal green, the Danger recipe in --success: a 0.16 fill under full-strength text. */
+  background: rgba(var(--success), 0.16);
   border: none;
-  color: var(--text);
+  color: rgb(var(--success));
   cursor: pointer;
   font-family: inherit;
   font-size: var(--fs-px);
@@ -40,16 +41,17 @@
   -webkit-app-region: no-drag;
 }
 .titleBarUpdateBtn:hover {
-  background: rgba(var(--tint), 0.24);
+  background: rgba(var(--success), 0.28);
 }
 
 .titleBarPollBtn {
   display: flex;
   align-items: center;
   gap: 5px;
-  background: rgba(var(--tint), 0.16);
+  /* Tonal orange in --attention, so a waiting poll stands out from the navy chrome. */
+  background: rgba(var(--attention), 0.16);
   border: none;
-  color: var(--text);
+  color: rgb(var(--attention));
   cursor: pointer;
   font-family: inherit;
   font-size: var(--fs-px);
@@ -61,7 +63,7 @@
   -webkit-app-region: no-drag;
 }
 .titleBarPollBtn:hover {
-  background: rgba(var(--tint), 0.24);
+  background: rgba(var(--attention), 0.28);
 }
 
 /* Shakes briefly every few seconds to catch the eye, then rests. */
