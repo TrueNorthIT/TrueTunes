@@ -73,7 +73,11 @@ test('keys fetched from a JWKS URL, shaped like Entra publishes them, verify tok
   await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
   try {
     const { port } = server.address() as AddressInfo;
-    const check = { issuer: ISSUER, audience: CLIENT, keys: createRemoteJWKSet(new URL(`http://127.0.0.1:${port}/keys`)) };
+    const check = {
+      issuer: ISSUER,
+      audience: CLIENT,
+      keys: createRemoteJWKSet(new URL(`http://127.0.0.1:${port}/keys`)),
+    };
     assert.equal(await verifyEntraToken(await sign(), check), OID);
     assert.equal(await verifyEntraToken(await sign(), check), OID);
     assert.equal(fetches, 1);
