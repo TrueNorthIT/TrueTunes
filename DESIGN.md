@@ -220,6 +220,7 @@ A near-monochrome navy room whose only saturated colour is borrowed, at runtime,
 - **Danger** (`danger`, `--danger: 248, 113, 113`): destructive actions (Clear, Delete), errors and Queuedle's wrong answers. A triplet like `--tint`, used tonally (a 0.16 fill under full-strength text), never as a slab.
 - **Success** (`--success: 74, 222, 128`): the success toast's status dot, and the tonal Update button in the title bar (a 0.16 fill under full-strength green text) when a new version is ready. A triplet, never a slab.
 - **Attention** (`--attention: 251, 146, 60`): the tonal Poll button in the title bar (0.16 fill under full-strength orange text, with the shaking ballot icon), when a poll is waiting for an answer. A triplet, used only there.
+- **Champion gold** (`--champion: 232, 184, 74`, `--champion-text: 243, 207, 110`): last week's Queuedle champion, all week, everywhere their avatar appears. `--champion` is a solid ring just inside the avatar's edge (7% of its width, at least 2px), set off from the photo by a hairline of `--overlay`, with a 👑 badge at the top right sized to the avatar (hidden below 24px, where it can't be read); `--champion-text` is the lighter step for their name where a page shows it beside the avatar. A ring, not a glow: it stays inside the Quiet Wall Rule. The avatar's accessible name and tooltip say "Queuedle champion, week of …", so it isn't colour alone.
 - **Danger solid** (`--danger-solid: 220, 50, 50`): the one solid slab, the error banner, because white text needs more contrast than tonal Danger gives.
 - **Right mint** (`--right: 128, 214, 166`): local to Queuedle (its panel and its portalled calendar), for right answers and played days. It is not a global token, and no other surface uses it.
 
@@ -231,9 +232,9 @@ Generated colours keep the same restraint: user avatars and playlist placeholder
 ### Named Rules
 **The One Tint Rule.** Every tonal surface, fill, separator and border is `rgba(var(--tint), α)`. To retune the room, change `--tint`; never introduce a second hue for chrome.
 
-**The Artwork Carries Colour Rule.** Saturated colour enters only from artwork: the ambient backdrop, the `--wash` radial on featured cards and heroes, the person-header gradient, the player-bar tint. Chrome stays navy and white. Danger, Queuedle's mint, and the title bar's green Update and orange Poll buttons are status, not decoration, and are always tonal.
+**The Artwork Carries Colour Rule.** Saturated colour enters only from artwork: the ambient backdrop, the `--wash` radial on featured cards and heroes, the person-header gradient, the player-bar tint. Chrome stays navy and white. Danger, Queuedle's mint, the title bar's green Update and orange Poll buttons, and the Queuedle champion's gold ring are status, not decoration. The fills are always tonal; the champion's gold is a thin ring and a name colour, never a fill.
 
-**The Quiet Wall Rule.** Tint stays subtle and desaturated. Surfaces sit 6–9% tint over the ground. A wash peaks at 0.3 alpha, with stacked layers counted together (the artist hero's 0.24 radial plus its 0.08 fall-off), and fades to transparent by about 65%. No purple, no neon, no glow.
+**The Quiet Wall Rule.** Tint stays subtle and desaturated. Surfaces sit 6–9% tint over the ground. A wash peaks at 0.3 alpha, with stacked layers counted together (the artist hero's 0.24 radial plus its 0.08 fall-off), and fades to transparent by about 65%. No purple, no neon, no glow. That includes the Queuedle champion: their gold is a crisp ring with no halo, no pulse.
 
 **The No Violet Rule.** Generated colours (avatars, playlist art) never land on 250–330°. Fold the hue past that band rather than clamping to its edge.
 
@@ -260,6 +261,7 @@ Every font size in the CSS is one of these tokens, enforced by Stylelint. Glyph,
 
 ### Named Rules
 **The Sentence Case Rule.** Titles, captions, buttons and chips are sentence case. Hierarchy comes from size, weight 600 and negative tracking, not from capitals or a second face. Server strings in title case (tier names) are sentence-cased in CSS.
+Exception: Queuedle's round names, Higher or Lower and Top Queuer, are names and keep their capitals.
 
 **The 13px Floor Rule.** No content text renders below 13px at any window width. 0.93em is the smallest plain `em` step that holds 13px at the 14px base; anything smaller is written `max(13px, Xem)`. Tabular numerals (`font-variant-numeric: tabular-nums`) are used for ranks, play counts, facts and times.
 

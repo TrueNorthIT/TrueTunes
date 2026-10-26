@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useImage } from '../../hooks/useImage';
 import { useDominantColor } from '../../hooks/useDominantColor';
 import { UserAvatar } from './UserAvatar';
+import { PersonName } from './PersonName';
 import styles from './PersonCard.module.css';
 
 interface Props {
@@ -32,7 +33,7 @@ export function PersonCard({ name, imageUrl, caption, onOpen, openLabel, action,
       <button type="button" className={styles.head} style={wash} onClick={onOpen} title={label} aria-label={openLabel}>
         <UserAvatar name={name} imageUrl={imageUrl} className={styles.avatar} />
         <span className={styles.who}>
-          <span className={styles.name}>{name}</span>
+          <PersonName name={name} className={styles.name} />
           {caption && <span className={styles.caption}>{caption}</span>}
         </span>
       </button>

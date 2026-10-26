@@ -26,6 +26,7 @@ import { QueueSidebar, type QueueSidebarHandle } from './components/queue/QueueS
 import { SkinnyShell } from './components/skinny/SkinnyShell';
 import { useSkinnyMode } from './hooks/useSkinnyMode';
 import { MiniPlayerShell } from './components/MiniPlayer';
+import { ChampionProvider } from './components/ChampionProvider';
 import { FeedbackDialog } from './components/FeedbackDialog';
 import { PollAdminLauncher } from './components/polls/PollAdminLauncher';
 import { ChangelogDialog } from './components/ChangelogDialog';
@@ -379,13 +380,17 @@ function RouteBoundary({ children }: { children: ReactNode }) {
 
 export function App() {
   const location = useLocation();
-  return location.pathname === '/mini' ? (
-    <MiniPlayerShell />
-  ) : (
-    <ErrorBoundary>
-      <ToastProvider>
-        <MainApp />
-      </ToastProvider>
-    </ErrorBoundary>
+  return (
+    <ChampionProvider>
+      {location.pathname === '/mini' ? (
+        <MiniPlayerShell />
+      ) : (
+        <ErrorBoundary>
+          <ToastProvider>
+            <MainApp />
+          </ToastProvider>
+        </ErrorBoundary>
+      )}
+    </ChampionProvider>
   );
 }
