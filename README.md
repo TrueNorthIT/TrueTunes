@@ -22,7 +22,6 @@ Built with Electron + React. Requires a Sonos system on the local network and a 
 Download the latest installer from [GitHub Releases](https://github.com/TrueNorthIT/TrueTunes/releases).
 
 - **Windows** — run the `.exe` installer
-- **macOS** — open the `.dmg` and drag to Applications
 
 On first launch you will be prompted to sign in with your Sonos account. After signing in, set a display name so your queues appear on the leaderboard.
 
