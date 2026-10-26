@@ -1,0 +1,87 @@
+/* Hangs on the right of an ArtCard, under the caption line (label + info) and well above the title and the +. */
+.cloud {
+  position: absolute;
+  top: 3em;
+  right: 1em;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.bubble {
+  position: absolute;
+  pointer-events: auto;
+  /* Transform only, so the drift stays on the compositor. Out of step: each bubble has its own pace and phase. */
+  animation: drift var(--drift-dur) ease-in-out var(--drift-delay) infinite alternate;
+  will-change: transform;
+}
+.bubble:hover {
+  z-index: 1;
+}
+
+@keyframes drift {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(var(--dx), var(--dy));
+  }
+}
+
+/* The face: a round print, so it takes the artwork's rest shadow to sit off the art behind it. No glow. */
+.face {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--r-round);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--on-art);
+  box-shadow: var(--art-shadow);
+}
+.face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.more {
+  background: var(--overlay);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Name and count on hover, right-aligned so it opens back over the card, never past its edge. */
+.tip {
+  position: absolute;
+  top: calc(100% + 0.35em);
+  right: 0;
+  padding: 0.15em 0.65em;
+  border-radius: var(--r-pill);
+  background: var(--overlay-strong);
+  color: var(--on-art);
+  font-size: var(--fs-small);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-fast);
+  pointer-events: none;
+}
+.bubble:hover .tip {
+  opacity: 1;
+}
+
+.still .bubble {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble {
+    animation: none;
+  }
+  .tip {
+    transition: none;
+  }
+}

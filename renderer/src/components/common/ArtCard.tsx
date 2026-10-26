@@ -21,6 +21,8 @@ interface Props {
   openLabel: string;
   /** Small control beside the label (an InfoTip). It sits above the open button, so it never opens the card. */
   info?: ReactNode;
+  /** Something hung on the art, clear of the caption line, title and + (e.g. FanBubbles). It places itself. */
+  aside?: ReactNode;
   onAdd?: () => void;
   addLabel?: string;
   onContextMenu?: (e: React.MouseEvent) => void;
@@ -40,6 +42,7 @@ export function ArtCard({
   onOpen,
   openLabel,
   info,
+  aside,
   onAdd,
   addLabel,
   onContextMenu,
@@ -78,6 +81,7 @@ export function ArtCard({
         <span className={styles.label}>{label}</span>
         {info}
       </div>
+      {aside}
       <div className={styles.caption}>
         <div className={styles.title}>{title}</div>
         {sub != null && <div className={styles.sub}>{sub}</div>}

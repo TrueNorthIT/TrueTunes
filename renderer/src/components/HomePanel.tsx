@@ -69,6 +69,8 @@ import { artistImageQueryOptions, artistQueryOptions } from '../hooks/useArtistB
 import { Carousel } from './common/Carousel';
 import { PickInfoTip } from './common/PickInfoTip';
 import { ArtCard } from './common/ArtCard';
+import { FanBubbles } from './common/FanBubbles';
+import { namesFromBecause } from '../lib/pickExplanation';
 import { ChartHead, ChartRow } from './common/ChartRow';
 import { ImageTile } from './common/ImageTile';
 import { PersonCard } from './common/PersonCard';
@@ -174,6 +176,7 @@ function PickCard({
   onAdd,
   className,
   why,
+  imageFor,
 }: {
   size: 'large' | 'medium';
   label: string;
@@ -182,8 +185,12 @@ function PickCard({
   onAdd: () => void;
   className?: string;
   why: Parameters<typeof PickInfoTip>[0];
+  imageFor?: (user: string) => string | null | undefined;
 }) {
   const nav = useContext(NavContext);
+  // Who it's for, sized by their queues of the artist. Older servers send no counts: the names in the reason,
+  // all one size. A pick like "Like Muse, which the room plays" names nobody and gets no cloud.
+  const people = why.fans ?? namesFromBecause(why.because).map((user) => ({ user }));
   return (
     <ArtCard
       size={size}
@@ -196,6 +203,7 @@ function PickCard({
       openLabel={`Open album ${t.album ?? t.title}`}
       onOpen={() => nav.openAlbum(t)}
       info={<PickInfoTip {...why} />}
+      aside={<FanBubbles people={people} size={size} imageFor={imageFor} viewer={why.viewer} />}
       onAdd={onAdd}
       onContextMenu={(e) => nav.menu(t, e)}
       onMouseEnter={() => nav.prefetch(t)}
@@ -652,6 +660,7 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
   const { artistItems, albumItems, currentUserId } = useRecentlyPlayed();
   const { data: users = [] } = useUsers(isAuthed, true);
   const imageByUser = new Map(users.map((u) => [u.userId, u.imageUrl]));
+  const imageFor = (user: string) => imageByUser.get(user);
 
   // Queuedle
   const { data: todayGame } = useDailyGame();
@@ -952,6 +961,7 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
                       photoUrl={lead.photo}
                       onAdd={addPick(lead)}
                       why={lead.why}
+                      imageFor={imageFor}
                     />
                     {[featured[0], featured[1]].map((p, i) =>
                       p ? (
@@ -963,6 +973,7 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
                             photoUrl={p.photo}
                             onAdd={addPick(p)}
                             why={p.why}
+                            imageFor={imageFor}
                           />
                           <ul className={styles.list}>{(i === 0 ? listA : listB).map(pickRow)}</ul>
                         </div>

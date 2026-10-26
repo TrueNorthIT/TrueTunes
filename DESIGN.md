@@ -326,6 +326,8 @@ Generously rounded, never sharp. Radii scale with the type in `em`: cards and di
 ### Image card (signature)
 A print with its label (ArtCard). The artwork fills the card edge to edge (`object-fit: cover`). A two-part scrim, `rgba(0,0,0,.4)` fading over the top 22% and `rgba(0,0,0,.74) → .26 → 0` up from the bottom by 70%, keeps a sentence-case top-left caption and a bottom-left title and artist legible in white. The whole card is one button. Artist links and the add button sit above it. Hover or focus-within scales the image to 1.03 and dims it to `brightness(.88)` over 0.15s.
 
+**Who a pick is for (FanBubbles).** On the Picks card's prints, the faces of the people a pick is for float as a loose cloud on the right of the art, under the caption line and clear of the title and the +. Each face is the shared avatar (so the champion keeps their ring and crown), its area proportional to that person's plays of the artist (radius 0.95–1.9em on the large card, 0.8–1.4em on the medium), largest first, at most six with a "+n". They drift a few pixels, slowly and out of step (transform only, 5.5–9.5s), and hold still under `prefers-reduced-motion`. A face takes the art-rest shadow like any print; no glow. Hover names the person and their plays; the cloud's accessible name lists everyone.
+
 **Top result (TopResultCard)** is the same print at feature scale, for Search. The art or artist photo fills a 1.2em card (at least 20em high, 4:3 when stacked), and the title (3 lines), meta, pills and office chip sit bottom left on a scrim of their own (0.82 → 0 up the text block), so the text holds on pale covers. With no art it falls back to Lit Wall and the tint wash.
 
 ### Artist hero (signature)
