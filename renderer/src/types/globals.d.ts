@@ -108,6 +108,9 @@ interface GameItem {
   subtitle: string;
   imageUrl?: string;
   uri?: string;
+  /** With `uri`, what a track needs to be queued. Absent on games generated before #100. */
+  serviceId?: string;
+  accountId?: string;
   count: number;
   topQueuer: string;
   queuerCandidates: string[];

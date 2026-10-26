@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ReactNode } from 'react';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, fn, userEvent, within } from 'storybook/test';
+import { QueueActionsProvider } from '../../hooks/useQueueActions';
 import { covers, portrait } from '../../../.storybook/fixtures';
 import { QueuedlePanel } from './QueuedlePanel';
 
@@ -45,6 +46,7 @@ const items: GameItem[] = [
     name,
     subtitle,
     imageUrl: category === 'artist' ? portrait : art[i % art.length],
+    ...(category === 'track' && { uri: `track-${i}`, serviceId: 'svc', accountId: 'acc' }),
     count: 40 + ((i * 37) % 90),
     topQueuer: candidates[i % candidates.length],
     queuerCandidates: candidates,
@@ -189,6 +191,27 @@ export const QuestionRevealed: Story = {
   }),
   play: async ({ canvasElement }) => {
     await within(canvasElement).findByRole('button', { name: 'Next' });
+  },
+};
+
+/** Round three answered, with a track as the challenger: its + adds it to the queue (here, to the Actions panel). */
+export const QuestionRevealedTrack: Story = {
+  beforeEach: stub({
+    phase: 'main',
+    currentIdx: 2,
+    pickedSide: questions[2].winner,
+    mainGuesses: allRight.slice(0, 3),
+    bonusSelections: [],
+  }),
+  decorators: [
+    (Story) => (
+      <QueueActionsProvider value={{ addToQueue: fn(), queueNext: fn() }}>
+        <Story />
+      </QueueActionsProvider>
+    ),
+  ],
+  play: async ({ canvasElement }) => {
+    await within(canvasElement).findByRole('button', { name: `Add ${questions[2].right.name} to queue` });
   },
 };
 

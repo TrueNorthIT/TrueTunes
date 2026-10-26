@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueuedleQuestionCard } from '../QueuedleQuestionCard';
+import { queueActionsWrapper } from '../../../test/queueActions';
 
 const question: GameQuestion = {
   index: 0,
@@ -115,5 +116,49 @@ describe('QueuedleQuestionCard', () => {
       />
     );
     expect(screen.getByRole('heading', { name: 'Which has the office queued more?' })).toBeInTheDocument();
+  });
+
+  describe('add to queue (#100)', () => {
+    const queueable: GameQuestion = {
+      ...question,
+      left: { ...question.left, uri: 'spotify:track:left', serviceId: '12', accountId: 'acc', imageUrl: 'art.jpg' },
+    };
+    const card = (revealed: boolean) => (
+      <QueuedleQuestionCard
+        question={queueable}
+        revealed={revealed}
+        pickedSide={revealed ? 'right' : null}
+        onPick={() => {}}
+        onNext={() => {}}
+      />
+    );
+
+    it('offers nothing before the reveal', () => {
+      render(card(false), { wrapper: queueActionsWrapper() });
+      expect(screen.queryByRole('button', { name: /to queue/ })).toBeNull();
+    });
+
+    it('queues the revealed track through the shared queue action', () => {
+      const addToQueue = vi.fn().mockResolvedValue(undefined);
+      render(card(true), { wrapper: queueActionsWrapper(addToQueue) });
+      fireEvent.click(screen.getByRole('button', { name: 'Add Left Song to queue' }));
+      expect(addToQueue).toHaveBeenCalledTimes(1);
+      expect(addToQueue.mock.calls[0][0]).toMatchObject({
+        type: 'TRACK',
+        title: 'Left Song',
+        artist: 'Left Artist',
+        resource: { id: { objectId: 'spotify:track:left', serviceId: '12', accountId: 'acc' } },
+      });
+      // Artists and albums aren't queueable from here.
+      expect(screen.getAllByRole('button', { name: /to queue/ })).toHaveLength(1);
+    });
+
+    it('offers nothing for a track from an older game without service ids', () => {
+      render(
+        <QueuedleQuestionCard question={question} revealed={true} pickedSide="left" onPick={() => {}} onNext={() => {}} />,
+        { wrapper: queueActionsWrapper() }
+      );
+      expect(screen.queryByRole('button', { name: /to queue/ })).toBeNull();
+    });
   });
 });

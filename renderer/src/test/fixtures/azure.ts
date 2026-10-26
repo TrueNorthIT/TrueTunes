@@ -331,6 +331,7 @@ const GAME_ITEMS = (() => {
       name: cat === 'track' ? t.title : cat === 'artist' ? t.artist : t.album,
       subtitle: cat === 'artist' ? '' : t.artist,
       imageUrl: cat === 'artist' ? artistArt(ARTISTS.find((a) => a.id === t.artistId)!) : trackArt(t),
+      ...(cat === 'track' && { uri: t.id, serviceId: SERVICE_ID, accountId: ACCOUNT_ID }),
       count: 40 + ((i * 37) % 90),
       topQueuer: candidates[i % candidates.length],
       queuerCandidates: candidates,
