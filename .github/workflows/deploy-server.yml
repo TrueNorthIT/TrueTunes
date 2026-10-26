@@ -1,0 +1,86 @@
+name: Deploy server
+
+# Deploys the Azure Functions (server/) when a release is published, by running the same `npm run deploy` as a local
+# deploy: the ARM template, then `func azure functionapp publish`, which REPLACES every function with this checkout's.
+# deploy.mjs refuses a tree that doesn't contain origin/main, so publishing an older draft after newer merges fails
+# here instead of rolling production back: publish the newest release (or run this by hand from main).
+#
+# Needs, in the `production` environment (add protection rules there to require an approval):
+#   - AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID: an Entra app with a federated credential for
+#     repo:TrueNorthIT/TrueTunes:environment:production and Contributor on truetunes-rg (OIDC, no client secret).
+#   - VESTABOARD_API_KEY, GITHUB_ISSUES_TOKEN, ENTRA_TENANT_ID, ENTRA_CLIENT_ID: the ARM parameters deploy.mjs reads
+#     from .env locally. ARM sets whatever it's given, so an empty one would blank that setting in production; the
+#     check below fails the run instead.
+#   - AUTH_ENFORCE (a variable, not a secret): 'true' or 'false'. Unset means 'false'.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+# One deploy at a time; a second waits rather than cancelling one halfway through `func publish`.
+concurrency:
+  group: deploy-server
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write # azure/login OIDC
+
+    steps:
+      # Full history: deploy.mjs checks that HEAD contains origin/main.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install, test and build
+        working-directory: server
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+      - name: Check the deploy parameters are set
+        env:
+          VESTABOARD_API_KEY: ${{ secrets.VESTABOARD_API_KEY }}
+          GITHUB_ISSUES_TOKEN: ${{ secrets.GITHUB_ISSUES_TOKEN }}
+          ENTRA_TENANT_ID: ${{ secrets.ENTRA_TENANT_ID }}
+          ENTRA_CLIENT_ID: ${{ secrets.ENTRA_CLIENT_ID }}
+        run: |
+          missing=0
+          for name in VESTABOARD_API_KEY GITHUB_ISSUES_TOKEN ENTRA_TENANT_ID ENTRA_CLIENT_ID; do
+            if [ -z "${!name}" ]; then echo "::error::$name is not set in the production environment"; missing=1; fi
+          done
+          exit $missing
+
+      - name: Install Azure Functions Core Tools
+        run: npm install -g azure-functions-core-tools@4 --unsafe-perm true
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy
+        working-directory: server
+        run: npm run deploy
+        env:
+          VESTABOARD_API_KEY: ${{ secrets.VESTABOARD_API_KEY }}
+          GITHUB_ISSUES_TOKEN: ${{ secrets.GITHUB_ISSUES_TOKEN }}
+          ENTRA_TENANT_ID: ${{ secrets.ENTRA_TENANT_ID }}
+          ENTRA_CLIENT_ID: ${{ secrets.ENTRA_CLIENT_ID }}
+          AUTH_ENFORCE: ${{ vars.AUTH_ENFORCE || 'false' }}
+          TRUETUNES_SUBSCRIPTION: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
