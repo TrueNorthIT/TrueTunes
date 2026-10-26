@@ -1,0 +1,48 @@
+/* Last week's Queuedle champion (DESIGN.md, Status: Champion gold). Added to the caller's avatar class,
+   so every page that shows the winner's face gets it without its own CSS. Doubled for specificity
+   over the caller's single-class `overflow: hidden`, which would clip the crown. */
+.champion.champion {
+  position: relative;
+  overflow: visible;
+  /* the ring and crown size from the avatar's own width */
+  container-type: inline-size;
+}
+/* The photo was clipped by the avatar's overflow; now it clips itself. */
+.champion.champion > img {
+  border-radius: inherit;
+}
+
+/* Inside the circle, so no row or card that clips its content can cut it off. */
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 max(2px, 7cqi) rgba(var(--champion), 1),
+    inset 0 0 0 calc(max(2px, 7cqi) + 1px) var(--overlay);
+  pointer-events: none;
+}
+
+.crown {
+  position: absolute;
+  top: -14cqi;
+  right: -12cqi;
+  width: max(12px, 46cqi);
+  height: max(12px, 46cqi);
+  transform: rotate(18deg);
+  filter: drop-shadow(0 1px 1px var(--overlay));
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* Too small to hold a legible crown (the mini player's 20px queuer): the ring alone. */
+@container (max-width: 23px) {
+  .crown {
+    display: none;
+  }
+}
+
+/* The champion's name, where a page shows it beside their avatar. */
+.championName {
+  color: rgb(var(--champion-text));
+}

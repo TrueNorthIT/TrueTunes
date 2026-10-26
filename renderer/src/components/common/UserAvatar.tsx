@@ -1,4 +1,6 @@
 import { useImage } from '../../hooks/useImage';
+import { championLabel, useChampionFor } from '../../lib/champion';
+import styles from './UserAvatar.module.css';
 
 /** No purple: a name hash lands on 0–250° or 330–360°, never on the 250–330° violets. */
 function avatarHue(hash: number): number {
@@ -21,9 +23,22 @@ export function avatarGradient(name: string): string {
   return `linear-gradient(135deg, hsl(${hue},55%,30%), hsl(${hue},60%,20%))`;
 }
 
+/** The 👑, drawn as a scalable glyph so it sizes with the avatar rather than a font size. */
+function Crown() {
+  return (
+    <svg className={styles.crown} viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+      <text x="10" y="16" textAnchor="middle" fontSize="16">
+        👑
+      </text>
+    </svg>
+  );
+}
+
 /**
  * Round profile picture, falling back to the initial on a per-name gradient.
  * Sizing and shape come from `className` so each panel keeps its own layout.
+ * Last week's Queuedle champion (from ChampionContext) gets a gold ring and a crown, and says so
+ * in its accessible name and tooltip; everyone else renders exactly as before.
  */
 export function UserAvatar({
   name,
@@ -35,9 +50,29 @@ export function UserAvatar({
   className?: string;
 }) {
   const art = useImage(imageUrl ?? null);
+  const champion = useChampionFor(name);
+  const style = art ? undefined : { background: avatarGradient(name) };
+  const content = art ? <img src={art} alt="" loading="lazy" /> : name.slice(0, 1).toUpperCase();
+  if (!champion) {
+    return (
+      <div className={className} style={style} aria-hidden="true">
+        {content}
+      </div>
+    );
+  }
+  const label = championLabel(champion);
   return (
-    <div className={className} style={art ? undefined : { background: avatarGradient(name) }} aria-hidden="true">
-      {art ? <img src={art} alt="" loading="lazy" /> : name.slice(0, 1).toUpperCase()}
+    <div
+      className={[className, styles.champion].filter(Boolean).join(' ')}
+      style={style}
+      role="img"
+      aria-label={label}
+      title={label}
+      data-champion=""
+    >
+      {content}
+      <span className={styles.ring} aria-hidden="true" />
+      <Crown />
     </div>
   );
 }
