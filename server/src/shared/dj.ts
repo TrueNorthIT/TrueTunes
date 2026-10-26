@@ -91,6 +91,27 @@ export interface DjOptions {
    * regulars love isn't vetoed by one indifferent listener.
    */
   groupBlend?: number;
+  /**
+   * Day seed, e.g. `londonDayKey(now)`. When set, artist scores get a small
+   * seeded wobble and each act's top few tracks are rotated, so the set opens
+   * differently each day but is identical for every call within it (the preview
+   * and the enqueue must agree, which rules out Math.random). Omitted → fully
+   * deterministic ranking.
+   */
+  seed?: string;
+}
+
+/** Artist scores move by up to ±this fraction under a seed. */
+const ARTIST_JITTER = 0.15;
+/** Under a seed, the first pick for an act rotates among its this-many most-played tracks. */
+const TRACK_ROTATION = 3;
+
+/** FNV-1a, mapped to [0, 1). Stable across runs and hosts. */
+function seededUnit(seed: string, id: string): number {
+  let h = 0x811c9dc5;
+  const s = `${seed}|${id}`;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
+  return (h >>> 0) / 0x1_0000_0000;
 }
 
 /**
@@ -326,7 +347,9 @@ export function buildDjSet(events: RawEvent[], options: DjOptions = {}): DjResul
           worstUser = p.user;
         }
       }
-      const score = (1 - blend) * worst + blend * weighted;
+      const base = (1 - blend) * worst + blend * weighted;
+      const score =
+        options.seed === undefined ? base : base * (1 + ARTIST_JITTER * (2 * seededUnit(options.seed, artist) - 1));
 
       // Name the listeners who actually play this, heaviest first — that's who
       // the "because" line should credit.
@@ -358,7 +381,16 @@ export function buildDjSet(events: RawEvent[], options: DjOptions = {}): DjResul
   // Every track here has already played out loud in the office, so within an
   // artist the best pick is simply the one the room plays most. Genuinely new
   // music cannot come from this corpus at all — see `artists` on the result.
-  for (const list of Object.values(tracksByArtist)) list.sort((a, b) => b.count - a.count);
+  // With a seed, the act's top few swap places by day so a runaway favourite
+  // ("Incredible", issue #104) still turns up most days but doesn't open every one.
+  for (const list of Object.values(tracksByArtist)) {
+    list.sort((a, b) => b.count - a.count);
+    if (options.seed !== undefined) {
+      const seed = options.seed;
+      const top = list.splice(0, TRACK_ROTATION).sort((a, b) => seededUnit(seed, a.key) - seededUnit(seed, b.key));
+      list.unshift(...top);
+    }
+  }
 
   const picked: DjTrack[] = [];
   const seenUris = new Set<string>();
