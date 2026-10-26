@@ -42,7 +42,7 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PR: ${{ github.event.pull_request.number || inputs.pr }}
       HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-      BASE_REF: ${{ github.base_ref || format('main without #{0}', inputs.pr) }}
+      BASE_REF: "${{ github.base_ref || format('main without #{0}', inputs.pr) }}"
       BRANCH: ui-screenshots/pr-${{ github.event.pull_request.number || inputs.pr }}
     steps:
       # The PR merged into its base, so HEAD^1 is the base it is compared with and the diff is only the PR's changes.
