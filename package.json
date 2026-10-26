@@ -97,6 +97,11 @@
     "vite": "^8.0.8",
     "vitest": "^4.1.4"
   },
+  "overrides": {
+    "@azure/identity": {
+      "@azure/msal-node": "$@azure/msal-node"
+    }
+  },
   "build": {
     "appId": "uk.co.truenorthit.truetunes",
     "productName": "True Tunes",
