@@ -79,13 +79,7 @@ function Side({
 
   if (revealed) return <div className={cls}>{body}</div>;
   return (
-    <button
-      type="button"
-      className={cls}
-      onClick={() => onPick(side)}
-      disabled={pickedSide !== null}
-      aria-label={`${PICK[item.category]}: ${item.name}${isCarryover ? `, ${item.count} queues` : ''}`}
-    >
+    <button type="button" className={cls} onClick={() => onPick(side)} disabled={pickedSide !== null}>
       {body}
     </button>
   );

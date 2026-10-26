@@ -813,8 +813,12 @@ button.side:disabled {
 .sideWon {
   background: radial-gradient(120% 90% at 50% 0%, rgba(var(--right), 0.2), transparent 65%), var(--surface-hi);
 }
-.sideLost {
-  opacity: 0.55;
+/* Only the print dims, so the losing side's text keeps its contrast. */
+.sideLost .sideArtBox {
+  opacity: 0.5;
+}
+.sideLost .itemName {
+  color: var(--text-2);
 }
 
 /* The art takes the height the text leaves, as the largest square that fits (wide or short windows alike). */
@@ -824,6 +828,7 @@ button.side:disabled {
   container-type: size;
   display: grid;
   place-items: center;
+  transition: opacity var(--dur) var(--ease);
 }
 .sideArt {
   position: relative;
@@ -1482,6 +1487,7 @@ button.side:disabled {
 @media (prefers-reduced-motion: reduce) {
   .side,
   .sideArt,
+  .sideArtBox,
   .pip,
   .segment,
   .candidate,
