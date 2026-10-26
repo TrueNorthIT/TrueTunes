@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { QueuedleBonusResults } from '../QueuedleBonusResults';
 import { QueuedleSummary } from '../QueuedleSummary';
 import { MyScores } from '../MyScores';
+import { queueActionsWrapper } from '../../../test/queueActions';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({ useNavigate: () => mockNavigate }));
@@ -137,5 +138,25 @@ describe('QueuedleSummary', () => {
     expect(screen.getByText('Your answers')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'You got this right' })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'You got this wrong' })).toBeInTheDocument();
+  });
+
+  it('queues a track that has all three ids, and only that one (#100)', async () => {
+    const addToQueue = vi.fn().mockResolvedValue(undefined);
+    const ids = { uri: 'spotify:track:ct', serviceId: '12', accountId: 'acc' };
+    const queueable = { ...q, left: { ...items[0], ...ids } };
+    // A track without a serviceId (an older game) gets no button.
+    const older = { ...q, index: 1, left: { ...items[0], name: 'Something', uri: 'x', accountId: 'acc' } };
+    render(<QueuedleSummary questions={[queueable, older]} mainGuesses={['left', 'left']} />, {
+      wrapper: queueActionsWrapper(addToQueue),
+    });
+    const buttons = screen.getAllByRole('button', { name: /to queue/ });
+    expect(buttons).toHaveLength(1);
+    await userEvent.click(screen.getByRole('button', { name: 'Add Come Together to queue' }));
+    expect(addToQueue).toHaveBeenCalledTimes(1);
+    expect(addToQueue.mock.calls[0][0]).toMatchObject({
+      type: 'TRACK',
+      title: 'Come Together',
+      resource: { id: { objectId: 'spotify:track:ct', serviceId: '12', accountId: 'acc' } },
+    });
   });
 });

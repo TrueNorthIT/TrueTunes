@@ -2,7 +2,7 @@ import { Music } from 'lucide-react';
 import { PillButton } from '../common/PillButton';
 import { AddButton } from '../common/AddButton';
 import { useQueueActions } from '../../hooks/useQueueActions';
-import { statsTrackToItem } from '../../lib/homeData';
+import { gameTrackToItem } from '../../lib/homeData';
 import styles from '../../styles/Queuedle.module.css';
 
 interface Props {
@@ -39,11 +39,7 @@ function Side({
   const { addToQueue } = useQueueActions();
   const yours = revealed && pickedSide === side;
   // A track can be queued once the round is revealed, never before the pick (it would spoil the round).
-  // Games generated before #100 carry no service ids, so their tracks can't be queued.
-  const queueable =
-    revealed && item.category === 'track' && item.serviceId && item.accountId
-      ? statsTrackToItem({ ...item, trackName: item.name, artist: item.subtitle })
-      : null;
+  const queueable = revealed ? gameTrackToItem(item) : null;
   const slideFrom = isCarryover && carryFrom !== null && carryFrom !== side ? carryFrom : null;
   const cls = [
     styles.side,

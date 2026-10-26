@@ -1,9 +1,14 @@
 import { useImage } from '../../hooks/useImage';
 import { SectionCard } from '../common/SectionCard';
+import { AddButton } from '../common/AddButton';
+import { useQueueActions } from '../../hooks/useQueueActions';
+import { gameTrackToItem } from '../../lib/homeData';
 import styles from '../../styles/Queuedle.module.css';
 
 function ReviewSide({ item, won, end }: { item: GameItem; won: boolean; end?: boolean }) {
   const art = useImage(item.imageUrl);
+  const { addToQueue } = useQueueActions();
+  const queueable = gameTrackToItem(item);
   const artClass = `${styles.reviewArt}${item.category === 'artist' ? ' ' + styles.round : ''}`;
   return (
     <span
@@ -16,6 +21,7 @@ function ReviewSide({ item, won, end }: { item: GameItem; won: boolean; end?: bo
         </span>
         <span className={styles.reviewCount}>{item.count.toLocaleString()} queues</span>
       </span>
+      {queueable && <AddButton label={`Add ${item.name} to queue`} onClick={() => void addToQueue(queueable)} />}
     </span>
   );
 }

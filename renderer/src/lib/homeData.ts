@@ -39,6 +39,12 @@ export function statsTrackToItem(t: Omit<StatsTrack, 'count'> & { count?: number
   };
 }
 
+/** A Queuedle track, queueable only with all three ids (games generated before #100 have no service ids). */
+export function gameTrackToItem(item: GameItem): SonosItem | null {
+  if (item.category !== 'track' || !item.serviceId || !item.accountId) return null;
+  return statsTrackToItem({ ...item, trackName: item.name, artist: item.subtitle });
+}
+
 export function statsArtistToItem(a: StatsArtist): SonosItem {
   return artistItem(
     a.artist,

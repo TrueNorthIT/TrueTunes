@@ -215,6 +215,30 @@ export const QuestionRevealedTrack: Story = {
   },
 };
 
+/** Already played today: the scores, the room and your answers, where each track has its +. */
+export const Results: Story = {
+  beforeEach: () => {
+    const restore = stub(null)();
+    localStorage.setItem(
+      `queuedle-played:${GAME_ID}`,
+      JSON.stringify({ mainScore: 7, bonusScore: 6, guesses: allRight })
+    );
+    return restore;
+  },
+  decorators: [
+    (Story) => (
+      <QueueActionsProvider value={{ addToQueue: fn(), queueNext: fn() }}>
+        <Story />
+      </QueueActionsProvider>
+    ),
+  ],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByText('Your answers');
+    await expect(canvas.getAllByRole('button', { name: `Add ${items[3].name} to queue` }).length).toBeGreaterThan(0);
+  },
+};
+
 /** The top queuer round, part answered: ten cards, five by two. */
 export const Bonus: Story = {
   beforeEach: stub({
