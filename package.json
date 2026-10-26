@@ -39,7 +39,7 @@
     "lint:design": "npx -y -p @google/design.md@0.4.0 designmd lint DESIGN.md"
   },
   "dependencies": {
-    "@azure/msal-node": "^5.2.2",
+    "@azure/msal-node": "^7.1.1",
     "@fontsource-variable/manrope": "^5.3.0",
     "@tanstack/react-virtual": "^3.14.22",
     "applicationinsights": "^3.17.0",
@@ -72,7 +72,7 @@
     "@vitest/ui": "^5.0.5",
     "babel-plugin-react-compiler": "^1.0.0",
     "concurrently": "^10.0.6",
-    "electron": "^41.0.0",
+    "electron": "^45.0.0",
     "electron-builder": "^26.18.0",
     "eslint": "^10.13.0",
     "eslint-config-prettier": "^10.1.8",
@@ -97,6 +97,11 @@
     "vite": "^8.3.5",
     "vitest": "^5.0.5"
   },
+  "overrides": {
+    "@azure/identity": {
+      "@azure/msal-node": "$@azure/msal-node"
+    }
+  },
   "build": {
     "appId": "uk.co.truenorthit.truetunes",
     "productName": "True Tunes",
@@ -105,6 +110,15 @@
       "provider": "github",
       "owner": "TrueNorthIT",
       "repo": "TrueTunes"
+    },
+    "electronFuses": {
+      "runAsNode": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true,
+      "grantFileProtocolExtraPrivileges": true,
+      "resetAdHocDarwinSignature": true
     },
     "asarUnpack": [
       "native/smtc/build/Release/smtc.node"
