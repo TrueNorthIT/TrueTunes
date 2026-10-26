@@ -32,7 +32,9 @@ jobs:
       - run: npm ci
 
       # The `stories` Vitest project renders every Storybook story in real Chromium.
-      - run: npx playwright install --with-deps chromium
+      # Browser only: ubuntu-latest ships Google Chrome, so Chromium's system libraries are already there. --with-deps
+      # added an apt install from the Ubuntu mirror that sometimes crawled (11-12 min instead of ~20 s).
+      - run: npx playwright install chromium
 
       - run: npm run lint
 
