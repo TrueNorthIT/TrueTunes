@@ -136,7 +136,7 @@ export function TrackRow({
             <span className={styles.artist}>
               <span className={styles.dash} aria-hidden="true">
                 {' '}
-                —{' '}
+                ·{' '}
               </span>
               {artists}
             </span>
