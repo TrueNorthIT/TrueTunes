@@ -1027,7 +1027,7 @@ describe('HomePanel', () => {
         notFound: false,
       });
       const { container } = render(<HomePanel {...defaultProps} playback={playing} />, { wrapper: makeWrapper() });
-      expect(screen.getByLabelText('Lyrics, open full lyrics')).toHaveAttribute('aria-busy', 'true');
+      expect(screen.getByRole('group', { name: 'Lyrics' })).toHaveAttribute('aria-busy', 'true');
       expect(container.querySelectorAll('[class*=lyricSkel]')).toHaveLength(5);
       expect(container.querySelector('[class*=bandSolo]')).toBeNull();
     });

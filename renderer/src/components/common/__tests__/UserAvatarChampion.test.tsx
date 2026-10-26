@@ -42,7 +42,7 @@ describe('UserAvatar: last week’s Queuedle champion', () => {
     const { container } = render(<UserAvatar name="Abbie" className="face" />, { wrapper: withChampion(champion) });
     const el = container.firstElementChild;
     expect(el).toHaveAttribute('aria-hidden', 'true');
-    expect(el?.className).toBe('face');
+    expect(el?.className).toBe('face initial'); // the caller's class plus the no-photo initial, no champion ring
     expect(el?.querySelector('svg')).toBeNull();
     expect(container.innerHTML).toBe(plain);
   });

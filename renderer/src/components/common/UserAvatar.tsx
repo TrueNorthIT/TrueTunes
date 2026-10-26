@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useImage } from '../../hooks/useImage';
 import { championLabel, useChampionFor } from '../../lib/champion';
 import styles from './UserAvatar.module.css';
@@ -51,11 +52,19 @@ export function UserAvatar({
 }) {
   const art = useImage(imageUrl ?? null);
   const champion = useChampionFor(name);
-  const style = art ? undefined : { background: avatarGradient(name) };
-  const content = art ? <img src={art} alt="" loading="lazy" /> : name.slice(0, 1).toUpperCase();
+  // No photo: the initial is drawn by CSS (::before from --initial), not a text node. It's decoration, so it
+  // must not count as visible text of the button around it (axe label-content-name-mismatch compares the two).
+  const style = art
+    ? undefined
+    : ({
+        background: avatarGradient(name),
+        '--initial': JSON.stringify(name.slice(0, 1).toUpperCase()),
+      } as CSSProperties);
+  const content = art ? <img src={art} alt="" loading="lazy" /> : null;
+  const cls = [className, art ? null : styles.initial];
   if (!champion) {
     return (
-      <div className={className} style={style} aria-hidden="true">
+      <div className={cls.filter(Boolean).join(' ') || undefined} style={style} aria-hidden="true">
         {content}
       </div>
     );
@@ -63,7 +72,7 @@ export function UserAvatar({
   const label = championLabel(champion);
   return (
     <div
-      className={[className, styles.champion].filter(Boolean).join(' ')}
+      className={[...cls, styles.champion].filter(Boolean).join(' ')}
       style={style}
       role="img"
       aria-label={label}

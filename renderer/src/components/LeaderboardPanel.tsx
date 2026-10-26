@@ -291,11 +291,13 @@ export function LeaderboardPanel() {
                       type="button"
                       className={styles.face}
                       onClick={() => void profile(u.userId)}
-                      aria-label={`${u.userId}${champ(u.userId)}, ${ordinal(CARD_PEOPLE + i + 1)}, ${queued(u.count)}, open profile`}
+                      // In the order it reads (rank, name, count), so the name contains the visible text.
+                      aria-label={`${CARD_PEOPLE + i + 1}. ${u.userId}, ${queued(u.count)}${champ(u.userId)}, open profile`}
                     >
-                      <span className={styles.faceRank}>{CARD_PEOPLE + i + 1}</span>
+                      {/* Spaces between the words (the flex row drops them), so the text reads "8 Name 36", not "8Name36". */}
+                      <span className={styles.faceRank}>{CARD_PEOPLE + i + 1}</span>{' '}
                       <UserAvatar name={u.userId} imageUrl={imageByUser.get(u.userId)} className={styles.faceAvatar} />
-                      <PersonName name={u.userId} className={styles.faceName} />
+                      <PersonName name={u.userId} className={styles.faceName} />{' '}
                       <span className={styles.faceCount}>{u.count.toLocaleString()}</span>
                     </button>
                   </li>

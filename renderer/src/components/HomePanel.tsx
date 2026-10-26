@@ -418,24 +418,19 @@ function NowPlayingBand({
       </div>
 
       {showLyrics && (
-        <div
-          className={styles.lyricsBox}
-          role="button"
-          tabIndex={0}
-          aria-label="Lyrics, open full lyrics"
-          aria-busy={lyricsPending}
-          onClick={openLyrics}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              openLyrics();
-            }
-          }}
-        >
-          <span className={styles.nowLabel}>Lyrics</span>
-          <span className={styles.lyricsOpen} aria-hidden="true">
-            <ArrowUpRight size={18} />
-          </span>
+        <div className={styles.lyricsBox} role="group" aria-label="Lyrics" aria-busy={lyricsPending}>
+          {/* The whole box opens the lyrics page: this button stretches over it (::after), so the lines aren't inside it. */}
+          <button
+            type="button"
+            className={styles.lyricsLink}
+            onClick={openLyrics}
+            aria-label="Lyrics, open full lyrics"
+          >
+            <span className={styles.nowLabel}>Lyrics</span>
+            <span className={styles.lyricsOpen} aria-hidden="true">
+              <ArrowUpRight size={18} />
+            </span>
+          </button>
           <div ref={boxRef} className={styles.lyricsScroll}>
             {lyricsPending ? (
               <div className={styles.lyricsSkel}>
