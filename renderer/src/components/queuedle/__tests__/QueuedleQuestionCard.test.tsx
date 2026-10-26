@@ -155,7 +155,13 @@ describe('QueuedleQuestionCard', () => {
 
     it('offers nothing for a track from an older game without service ids', () => {
       render(
-        <QueuedleQuestionCard question={question} revealed={true} pickedSide="left" onPick={() => {}} onNext={() => {}} />,
+        <QueuedleQuestionCard
+          question={question}
+          revealed={true}
+          pickedSide="left"
+          onPick={() => {}}
+          onNext={() => {}}
+        />,
         { wrapper: queueActionsWrapper() }
       );
       expect(screen.queryByRole('button', { name: /to queue/ })).toBeNull();
