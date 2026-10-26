@@ -2,6 +2,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { CosmosClient } from '@azure/cosmos';
 import { buildDjSet } from '../shared/dj';
 import { historyQuery } from '../shared/cosmosAdapters';
+import { londonDayKey } from '../shared/djDay';
 import type { RawEvent } from '../shared/aggregate';
 
 /** Who counts as "in the office" when the caller doesn't say. */
@@ -44,7 +45,8 @@ export async function djHandler(request: HttpRequest, context: InvocationContext
       users = [...new Set(resources.filter((e) => (e.timestamp ?? 0) >= activeSince && e.userId).map((e) => e.userId))];
     }
 
-    const result = buildDjSet(resources, { users, limit, excludeUris });
+    // Same day seed as the auto-queue, so this fallback preview agrees with it (#104).
+    const result = buildDjSet(resources, { users, limit, excludeUris, seed: londonDayKey(Date.now()) });
 
     context.log(
       `[dj] events=${resources.length} listeners=${result.listeners.length} tracks=${result.tracks.length} artists=${result.artists.length}`

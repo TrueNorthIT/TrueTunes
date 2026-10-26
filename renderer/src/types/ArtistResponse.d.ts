@@ -35,8 +35,9 @@ interface Item {
   type: string;
   href: string;
   items: Item2[];
-  total: number;
-  fastScrollUri: string;
+  /** Only on the page that reaches the end of the section. */
+  total?: number;
+  fastScrollUri?: string;
 }
 
 interface Item2 {

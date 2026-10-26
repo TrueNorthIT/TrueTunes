@@ -5,7 +5,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const here = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 let input = '';
 for await (const chunk of process.stdin) input += chunk;
@@ -18,14 +18,21 @@ try {
 }
 if (!file || !existsSync(file)) process.exit(0);
 
+const fromHere = relative(here, resolve(file));
+if (fromHere.startsWith('..') || fromHere.split(sep).includes('node_modules')) process.exit(0);
+
+// Lint from the checkout that owns the file: a worktree under .claude/worktrees/ has its own config, and its own
+// binaries unless it has no node_modules yet. The walk stops at `here` at the latest, which has the config.
+let root = dirname(resolve(file));
+while (!existsSync(join(root, 'eslint.config.mjs'))) root = dirname(root);
+const bin = existsSync(join(root, 'node_modules')) ? root : here;
 const rel = relative(root, resolve(file));
-if (rel.startsWith('..') || rel.split(sep).includes('node_modules')) process.exit(0);
 
 let cmd;
 if (rel.startsWith(`renderer${sep}`) && rel.endsWith('.css')) {
-  cmd = [join(root, 'node_modules/stylelint/bin/stylelint.mjs'), rel];
+  cmd = [join(bin, 'node_modules/stylelint/bin/stylelint.mjs'), rel];
 } else if (/\.tsx?$/.test(rel)) {
-  cmd = [join(root, 'node_modules/eslint/bin/eslint.js'), rel];
+  cmd = [join(bin, 'node_modules/eslint/bin/eslint.js'), rel];
 } else {
   process.exit(0);
 }

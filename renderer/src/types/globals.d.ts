@@ -89,15 +89,19 @@ interface StatsAlbum {
   imageUrl?: string;
   count: number;
 }
-interface StatsResult {
+interface StatsData {
   topUsers: StatsUser[];
   topTracks: StatsTrack[];
   topArtists: StatsArtist[];
   topAlbums: StatsAlbum[];
   totalEvents: number;
   periodStart: number;
-  error?: string;
+  error?: undefined;
 }
+/** A failed stats call (the IPC catch or a server 500): the error and none of the lists. */
+type StatsError = { error: string } & { [K in Exclude<keyof StatsData, 'error'>]?: undefined };
+/** Narrow with `stats.error === undefined` (not `!stats.error`, which an empty string defeats) to reach the lists. */
+type StatsResult = StatsData | StatsError;
 
 type GameItemCategory = 'track' | 'artist' | 'album';
 

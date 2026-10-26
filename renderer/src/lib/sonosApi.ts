@@ -188,11 +188,23 @@ function buildApi() {
 
       artist: (
         artistId: string,
-        params?: { serviceId?: string; accountId?: string; defaults?: string; muse2?: boolean }
+        params?: {
+          serviceId?: string;
+          accountId?: string;
+          defaults?: string;
+          muse2?: boolean;
+          count?: number;
+          offset?: number;
+        }
       ) =>
         call<ArtistResponse>('browseArtist', {
           pathParams: { artistId, ...defined({ serviceId: params?.serviceId, accountId: params?.accountId }) },
-          query: defined({ defaults: params?.defaults, muse2: params?.muse2 ? 'true' : undefined }),
+          query: defined({
+            defaults: params?.defaults,
+            muse2: params?.muse2 ? 'true' : undefined,
+            count: params?.count?.toString(),
+            offset: params?.offset?.toString(),
+          }),
         }),
 
       container: (

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { artistQueryOptions } from '../useArtistBrowse';
+import { ARTIST_PAGE, artistQueryOptions } from '../useArtistBrowse';
 import { runQueryFn } from '../../test/queryFn';
 import { fetchImage } from '../../lib/imageCache';
 
@@ -105,6 +105,40 @@ describe('artistQueryOptions — basic parsing', () => {
 
     const result = await runQueryFn(artistQueryOptions('art-1', 'svc', 'acc', undefined));
     expect(result.imageUrl).toBeNull();
+  });
+});
+
+describe('artistQueryOptions: paging releases', () => {
+  const albums = (from: number, n: number) =>
+    Array.from({ length: n }, (_, i) => ({
+      type: 'ITEM_ALBUM',
+      title: `Album ${from + i}`,
+      resource: { id: { objectId: `alb-${from + i}` } },
+    }));
+
+  it('fetches the next page while a full page has no total, and merges it', async () => {
+    // The BFF leaves `total` off every page but the last.
+    mockFetch.mockResolvedValueOnce({
+      data: makeArtistResponse({ sections: { items: [{ items: albums(0, ARTIST_PAGE) }] } }),
+    });
+    mockFetch.mockResolvedValueOnce({
+      data: makeArtistResponse({ sections: { items: [{ items: albums(ARTIST_PAGE, 19), total: ARTIST_PAGE + 19 }] } }),
+    });
+
+    const result = await runQueryFn(artistQueryOptions('art-1', 'svc', 'acc', undefined));
+    expect(result.albums).toHaveLength(ARTIST_PAGE + 19);
+    expect(result.albums[ARTIST_PAGE + 18].title).toBe(`Album ${ARTIST_PAGE + 18}`);
+    expect(mockFetch.mock.calls[1][0]).toMatchObject({
+      operationId: 'browseArtist',
+      query: { count: String(ARTIST_PAGE), offset: String(ARTIST_PAGE) },
+    });
+  });
+
+  it('stops after a short page, never asking past the end', async () => {
+    mockFetch.mockResolvedValueOnce({ data: makeArtistResponse() });
+    mockFetch.mockResolvedValueOnce({ data: { tracks: { items: [] } } }); // top songs
+    await runQueryFn(artistQueryOptions('art-1', 'svc', 'acc', undefined));
+    expect(mockFetch.mock.calls.filter(([req]) => req.operationId === 'browseArtist')).toHaveLength(1);
   });
 });
 
