@@ -1,28 +1,33 @@
+# Patch bumps merge themselves once `validate` passes (.github/workflows/dependabot-auto-merge.yml).
+# Minor bumps come as one grouped PR per ecosystem for review; majors come one PR each.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /
-    target-branch: develop
     schedule:
       interval: weekly
     groups:
-      npm-minor-patch:
-        update-types: [minor, patch]
+      npm-patch:
+        update-types: [patch]
+      npm-minor:
+        update-types: [minor]
 
   - package-ecosystem: npm
     directory: /server
-    target-branch: develop
     schedule:
       interval: weekly
     groups:
-      server-npm-minor-patch:
-        update-types: [minor, patch]
+      server-npm-patch:
+        update-types: [patch]
+      server-npm-minor:
+        update-types: [minor]
 
   - package-ecosystem: github-actions
     directory: /
-    target-branch: develop
     schedule:
       interval: weekly
     groups:
-      actions-minor-patch:
-        update-types: [minor, patch]
+      actions-patch:
+        update-types: [patch]
+      actions-minor:
+        update-types: [minor]
