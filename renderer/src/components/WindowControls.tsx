@@ -66,6 +66,7 @@ export const WindowControls = memo(function WindowControls() {
           submitting={polls.submitting}
           error={polls.error}
           onChoose={(choice) => void polls.answer(choice)}
+          onSkip={polls.skip}
           onClose={() => setPollOpen(false)}
         />
       )}
