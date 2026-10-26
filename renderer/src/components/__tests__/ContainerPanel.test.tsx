@@ -2,13 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ContainerPanel } from '../ContainerPanel';
+import { ShelfGoneError } from '../../lib/ytmSections';
 import type { SonosItem } from '../../types/sonos';
 import { queueActionsWrapper } from '../../test/queueActions';
 
 const mockUseLocation = vi.fn();
 const mockOpenItem = vi.fn();
 const mockResolveAndOpen = vi.fn();
-vi.mock('react-router-dom', () => ({ useLocation: () => mockUseLocation() }));
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', () => ({ useLocation: () => mockUseLocation(), useNavigate: () => mockNavigate }));
 vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ prefetchQuery: vi.fn() }) }));
 vi.mock('../../hooks/useImage', () => ({ useImage: () => null }));
 vi.mock('../../hooks/useOpenItem', () => ({ useOpenItem: () => mockOpenItem }));
@@ -81,6 +83,21 @@ describe('ContainerPanel', () => {
     mockUseContainerBrowse.mockReturnValue({ data: [], isLoading: false, error: null, refetch: vi.fn() });
     render(<ContainerPanel />, { wrapper: queueActionsWrapper() });
     expect(screen.getByText('Nothing here right now.')).toBeInTheDocument();
+  });
+
+  it('says kindly that a shelf dropped from Home has moved on, with a way back to Home', async () => {
+    mockUseContainerBrowse.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new ShelfGoneError('Quick picks'),
+      refetch: vi.fn(),
+    });
+    render(<ContainerPanel />, { wrapper: queueActionsWrapper() });
+    expect(screen.getByRole('status')).toHaveTextContent('That collection has moved on — Home has the latest.');
+    expect(screen.queryByText('Nothing here right now.')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Back to Home' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/');
   });
 
   it('lists songs as rows with a count, and adds one to the queue', async () => {

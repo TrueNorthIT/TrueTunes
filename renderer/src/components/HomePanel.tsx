@@ -35,6 +35,7 @@ import {
 } from '../lib/homeData';
 import { browseYtmItem, fetchYtmRootItems } from '../lib/ytmSections';
 import { useOpenItem } from '../hooks/useOpenItem';
+import { useShelvesOnScreen } from '../hooks/useShelvesOnScreen';
 import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
 import { useRecentlyPlayed } from '../hooks/useRecentlyPlayed';
 import { useRecentTracksByUser } from '../hooks/useRecentTracksByUser';
@@ -841,7 +842,7 @@ export function HomePanel({ isAuthed, ytm, ytmLoading, playback, queueItems = []
       },
     });
   };
-  const forYou = ytm?.forYou ?? [];
+  const forYou = useShelvesOnScreen(ytm?.forYou);
 
   return (
     <div className={styles.panel}>

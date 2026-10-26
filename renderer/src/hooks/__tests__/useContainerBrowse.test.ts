@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { containerQueryOptions, useContainerBrowse } from '../useContainerBrowse';
 import { homeKeys } from '../useYtmHome';
+import { ShelfGoneError } from '../../lib/ytmSections';
 import { runQueryFn } from '../../test/queryFn';
 import type { SonosItem } from '../../types/sonos';
 
@@ -45,9 +46,9 @@ describe('useContainerBrowse', () => {
   });
 
   it('returns error when response has error field', async () => {
-    mockFetch.mockResolvedValueOnce({ data: null, error: 'Not found' });
+    mockFetch.mockResolvedValue({ data: null, error: 'Not found' });
     const { result } = renderHook(() => useContainerBrowse('cont-1', 'svc', 'acc'), { wrapper });
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await waitFor(() => expect(result.current.isLoading).toBe(false), { timeout: 3000 }); // after the one retry
     expect(result.current.error).toBeTruthy();
   });
 });
@@ -108,7 +109,51 @@ describe('containerQueryOptions: expired YouTube Music shelf ids', () => {
     expect(browsed()).toEqual(['nr-1', 'root', 'nr-root']);
   });
 
-  it('stays empty for a genuinely empty container (no title match, or the same id)', async () => {
+  it('fails with ShelfGoneError, and refreshes Home, when Home no longer carries a shelf by that title', async () => {
+    mockFetch.mockImplementation(async (c: unknown) => {
+      const id = containerOf(c);
+      if (id === 'root') return { data: root };
+      if (id === 'home') return { data: { section: { items: [shelf('Mine', 'mine')] } } };
+      return { data: empty };
+    });
+    const onHomeStale = vi.fn();
+    await expect(
+      runQueryFn(containerQueryOptions('x', 'svc', 'acc', undefined, { title: 'Something else' }, onHomeStale))
+    ).rejects.toBeInstanceOf(ShelfGoneError);
+    expect(onHomeStale).toHaveBeenCalledOnce();
+  });
+
+  it('is not retried when the shelf has gone (other errors keep the one retry)', () => {
+    const retry = containerQueryOptions('x', 'svc', 'acc').retry as (n: number, e: Error) => boolean;
+    expect(retry(0, new ShelfGoneError('Quick picks'))).toBe(false);
+    expect(retry(0, new Error('busy'))).toBe(true);
+    expect(retry(1, new Error('busy'))).toBe(false);
+  });
+
+  it("doesn't call a shelf gone when it can't tell (another service's container, or Home failed to load)", async () => {
+    mockFetch.mockImplementation(async (c: unknown) => {
+      const id = containerOf(c);
+      if (id === 'root') return { data: root };
+      if (id === 'home') return { data: { section: { items: [shelf('Mine', 'mine')] } } };
+      return { data: empty };
+    });
+    const onHomeStale = vi.fn();
+    expect(
+      await runQueryFn(containerQueryOptions('x', 'other-svc', 'acc', undefined, { title: 'Gone' }, onHomeStale))
+    ).toEqual([]);
+    mockFetch.mockImplementation(async (c: unknown) => {
+      const id = containerOf(c);
+      if (id === 'root') return { data: root };
+      if (id === 'home') return { data: null, error: 'busy' };
+      return { data: empty };
+    });
+    expect(
+      await runQueryFn(containerQueryOptions('x', 'svc', 'acc', undefined, { title: 'Gone' }, onHomeStale))
+    ).toEqual([]);
+    expect(onHomeStale).not.toHaveBeenCalled();
+  });
+
+  it('stays empty for a genuinely empty container (the shelf found is the same id)', async () => {
     mockFetch.mockImplementation(async (c: unknown) => {
       const id = containerOf(c);
       if (id === 'root') return { data: root };
@@ -116,10 +161,6 @@ describe('containerQueryOptions: expired YouTube Music shelf ids', () => {
       return { data: empty };
     });
     const onRecovered = vi.fn();
-    expect(
-      await runQueryFn(containerQueryOptions('x', 'svc', 'acc', undefined, { title: 'Something else' }, onRecovered))
-    ).toEqual([]);
-    mockFetch.mockClear();
     expect(
       await runQueryFn(containerQueryOptions('mine', 'svc', 'acc', undefined, { title: 'Mine' }, onRecovered))
     ).toEqual([]);
@@ -222,5 +263,31 @@ describe('useContainerBrowse: refreshing Home after a recovery', () => {
     );
     await waitFor(() => expect(result.current.data).toHaveLength(1));
     expect(invalidate).toHaveBeenCalledWith({ queryKey: homeKeys.ytm });
+  });
+
+  it('refreshes Home quietly and reports the shelf gone, once, when it has dropped off Home', async () => {
+    const containerOf = (c: unknown) => (c as { pathParams?: { containerId?: string } }).pathParams?.containerId;
+    const item = (title: string, id: string) => ({
+      title,
+      resource: { type: 'CONTAINER', id: { objectId: id, serviceId: 'svc', accountId: 'acc' } },
+    });
+    mockFetch.mockImplementation(async (c: unknown) => {
+      const id = containerOf(c);
+      if (id === 'root') return { data: { sections: { items: [{ items: [item('Home', 'home')] }] } } };
+      if (id === 'home') return { data: { section: { items: [item('Quick picks', 'qp-2')] } } };
+      return { data: { section: { items: [] } } };
+    });
+    // The app's default of one retry: a gone shelf still isn't retried.
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: 1 } } });
+    const invalidate = vi.spyOn(qc, 'invalidateQueries');
+    const w = ({ children }: { children: React.ReactNode }) =>
+      createElement(QueryClientProvider, { client: qc }, children);
+    const { result } = renderHook(
+      () => useContainerBrowse('mix-1', 'svc', 'acc', undefined, { title: 'Mixed for you: chill' }),
+      { wrapper: w }
+    );
+    await waitFor(() => expect(result.current.error).toBeInstanceOf(ShelfGoneError));
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: homeKeys.ytm });
+    expect(mockFetch.mock.calls.filter(([c]) => containerOf(c) === 'mix-1')).toHaveLength(1);
   });
 });
