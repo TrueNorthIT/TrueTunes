@@ -1,6 +1,7 @@
 import { PublicClientApplication } from '@azure/msal-node';
 import type { SilentFlowRequest, InteractiveRequest } from '@azure/msal-node';
 import { shell } from 'electron';
+import { randomUUID } from 'crypto';
 import * as fs from 'fs/promises';
 
 export interface EntraUser {
@@ -34,14 +35,20 @@ export class EntraAuth {
           beforeCacheAccess: async (ctx) => {
             try {
               const data = await fs.readFile(cacheFile, 'utf8');
+              // MSAL keeps the raw string and re-parses it on every serialize(), so a
+              // corrupt file would fail every later save. Check it first; if bad, start empty.
+              JSON.parse(data);
               ctx.tokenCache.deserialize(data);
             } catch {
-              /* no cache file yet */
+              /* no cache file yet, or unreadable */
             }
           },
           afterCacheAccess: async (ctx) => {
             if (ctx.cacheHasChanged) {
-              await fs.writeFile(cacheFile, ctx.tokenCache.serialize(), 'utf8');
+              // Write then rename: overlapping writeFile calls to one path left a torn file.
+              const tmp = `${cacheFile}.${randomUUID()}.tmp`;
+              await fs.writeFile(tmp, ctx.tokenCache.serialize(), 'utf8');
+              await fs.rename(tmp, cacheFile);
             }
           },
         },
