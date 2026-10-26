@@ -46,4 +46,12 @@ describe('moreByReleases', () => {
   it('caps the shelf', () => {
     expect(moreByReleases(releases, current, new Map(), years, 2)).toHaveLength(2);
   });
+  it('puts releases with no known year after the dated ones', () => {
+    const r = moreByReleases(releases, current, new Map(), new Map([['visions', 2017]]));
+    expect(titles(r)).toEqual(['Visions of a Life', 'Blue Weekend', 'My Love Is Cool', 'Smile']);
+  });
+  it('shows up to 12 by default', () => {
+    const many = Array.from({ length: 20 }, (_, i) => item(`Album ${i}`, `a${i}`, 'Album'));
+    expect(moreByReleases(many, current, new Map(), new Map())).toHaveLength(12);
+  });
 });
