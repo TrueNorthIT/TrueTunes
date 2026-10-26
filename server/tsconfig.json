@@ -1,8 +1,10 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    // Emits CommonJS (no "type": "module"). jose 6 is ESM-only, so require('jose') needs require(esm): Node >= 20.19.
+    "module": "node20",
     "target": "ES2022",
     "lib": ["ES2022"],
+    "types": ["node"],
     "outDir": "dist",
     "rootDir": "src",
     "strict": true,
@@ -10,8 +12,7 @@
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
     "esModuleInterop": true,
-    "skipLibCheck": true,
-    "moduleResolution": "node"
+    "skipLibCheck": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "src/**/*.test.ts", "src/**/*.testkit.ts"]
