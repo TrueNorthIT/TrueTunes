@@ -13,8 +13,7 @@ export async function fetchYtmRootItems(): Promise<SonosItem[] | null> {
   if (r.error) return null;
   const d = r.data ?? {};
   const stack = ((d['sections'] as Record<string, unknown>)?.['items'] as unknown[])?.[0] as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   return (stack?.['items'] ?? []) as SonosItem[];
 }
 
