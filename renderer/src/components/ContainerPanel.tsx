@@ -1,6 +1,7 @@
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useContainerBrowse } from '../hooks/useContainerBrowse';
+import { ShelfGoneError } from '../lib/ytmSections';
 import { useOpenItem } from '../hooks/useOpenItem';
 import { useResolveAndOpen } from '../hooks/useResolveAndOpen';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
@@ -34,6 +35,7 @@ export function ContainerPanel() {
   const openItem = useOpenItem();
   const { resolveAndOpen } = useResolveAndOpen();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const {
     albumId: containerId,
@@ -44,7 +46,15 @@ export function ContainerPanel() {
     ? resolveAlbumParams(item)
     : { albumId: undefined, serviceId: undefined, accountId: undefined, defaults: undefined };
 
-  const { data, isLoading, error, refetch } = useContainerBrowse(containerId, serviceId, accountId, defaults);
+  // The shelf's title (and artwork, between same-titled shelves) lets an expired Home card be looked up again
+  // for a fresh id (see containerQueryOptions).
+  const { data, isLoading, error, refetch } = useContainerBrowse(
+    containerId,
+    serviceId,
+    accountId,
+    defaults,
+    item ? { title: item.title ?? item.name, art: getItemArt(item) } : undefined
+  );
 
   if (!item) return null;
 
@@ -129,6 +139,13 @@ export function ContainerPanel() {
                 <span className={`skeleton ${styles.skelLine}`} />
               </div>
             ))}
+          </div>
+        ) : error instanceof ShelfGoneError ? (
+          // YouTube Music dropped this shelf from Home after the card was drawn. Home is refreshing quietly in the
+          // background, so the way back is to Home.
+          <div className={styles.msg} role="status">
+            <p>That collection has moved on — Home has the latest.</p>
+            <PillButton onClick={() => void navigate('/')}>Back to Home</PillButton>
           </div>
         ) : error ? (
           <div className={styles.msg}>
