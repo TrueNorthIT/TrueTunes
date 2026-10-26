@@ -19,7 +19,7 @@ jobs:
       pull-requests: write # vitest-coverage-report-action comments on the PR
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
@@ -89,7 +89,7 @@ jobs:
     steps:
       # Pushes with a deploy key that may bypass the main ruleset. Deploy-key pushes DO trigger
       # workflows, so the bump commit carries [skip ci] to stop a publish loop.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ssh-key: ${{ secrets.VERSION_BUMP_DEPLOY_KEY }}
 
@@ -129,7 +129,7 @@ jobs:
       contents: write # electron-builder uploads the GitHub release
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.version.outputs.sha }}
 
