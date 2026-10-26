@@ -4,7 +4,8 @@ name: Dependabot fix
 # auto-merge is turned off first, and a fix that changes code is a review like any other.
 # Pushes go through the Claude GitHub App (not GITHUB_TOKEN), so `validate` re-runs on the fix.
 # Its commits start with [claude-fix]; a failure on one of those doesn't start another attempt.
-# Needs: the Claude GitHub App installed on the repo, and ANTHROPIC_API_KEY as both an Actions and a Dependabot secret
+# Needs: the Claude GitHub App installed on the repo, and CLAUDE_CODE_OAUTH_TOKEN (from `claude setup-token`, billed to
+# a Claude subscription) as both an Actions and a Dependabot secret
 # (runs that follow Dependabot's only see Dependabot secrets).
 on:
   workflow_run:
@@ -48,14 +49,14 @@ jobs:
             package-lock.json
             server/package-lock.json
 
-      # No install scripts: updated packages are third-party code, and this job holds an API key.
+      # No install scripts: updated packages are third-party code, and this job holds a Claude token.
       - run: npm ci --ignore-scripts
       - run: npm ci --ignore-scripts
         working-directory: server
 
       - uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_bots: 'dependabot[bot]'
           claude_args: >-
             --max-turns 60
