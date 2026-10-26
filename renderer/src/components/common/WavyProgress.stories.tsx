@@ -43,6 +43,9 @@ export const Paused: Story = { args: { paused: true } };
 /** What prefers-reduced-motion shows: flat and still even while playing. */
 export const ReducedMotion: Story = { args: { className: styles.reduceMotion } };
 export const AtStart: Story = { args: { progressPct: 0 } };
+/** A short flat line: the wave's height ramps up from nothing over the first wavelength. */
 export const JustStarted: Story = { args: { progressPct: 3 } };
+/** About one wavelength played: the ramp from flat to full height. */
+export const OneWavelength: Story = { args: { progressPct: 7 } };
 export const NearlyDone: Story = { args: { progressPct: 97 } };
 export const Finished: Story = { args: { progressPct: 100 } };

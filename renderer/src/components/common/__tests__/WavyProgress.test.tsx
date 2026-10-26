@@ -25,7 +25,19 @@ describe('WavyProgress', () => {
   it('marks itself paused, and keeps the wave out of the accessibility tree', () => {
     const { container } = render(<WavyProgress progressPct={50} paused />);
     expect(screen.getByRole('progressbar').className).toMatch(/paused/);
-    expect(container.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    container.querySelectorAll('svg').forEach((svg) => expect(svg).toHaveAttribute('aria-hidden', 'true'));
+  });
+
+  it('ramps the wave up across the first wavelength: ten strips of rising height, then the full wave', () => {
+    const { container } = render(<WavyProgress progressPct={50} />);
+    const envs = [...container.querySelectorAll<HTMLElement>('[style*="--strip-x"]')].map((el) =>
+      el.style.getPropertyValue('--env')
+    );
+    expect(envs).toHaveLength(11);
+    const ramp = envs.slice(0, 10).map(Number);
+    expect(ramp[0]).toBeLessThan(0.01);
+    ramp.slice(1).forEach((v, i) => expect(v).toBeGreaterThan(ramp[i]));
+    expect(envs[10]).toBe(''); // the full-height rest uses the default, 1
   });
 
   it('LiveWavyProgress follows the playback position store', () => {

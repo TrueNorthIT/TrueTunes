@@ -30,12 +30,27 @@
   transition: clip-path 0.4s linear;
 }
 
+/* One slice of the played line, from --strip-x: the ten ramp strips across the first wavelength (each at its own
+   fixed wave height, --env) and then the full-height rest. Each holds its own copy of the travelling wave, all on the
+   same animation, so they slide in step. */
+.strip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--strip-x);
+  overflow: hidden;
+}
+.stripFull {
+  right: 0;
+}
+
 /* Slides one wavelength to the right and loops; the path repeats every wavelength, so the loop is seamless.
-   Transform-only, so it runs on the compositor. Starts one wavelength left so there is always wave under the clip. */
+   Transform-only, so it runs on the compositor. Every copy starts one wavelength left of the bar's left edge, so the
+   copies line up in phase and there is always wave under each strip. */
 .travel {
   position: absolute;
   top: 0;
-  left: calc(-1 * var(--wave-len));
+  left: calc(-1 * (var(--wave-len) + var(--strip-x)));
   animation: wavyTravel 2.4s linear infinite;
   will-change: transform;
 }
@@ -51,7 +66,7 @@
   stroke-linecap: round;
   transform-box: fill-box;
   transform-origin: center;
-  transform: scaleY(1);
+  transform: scaleY(var(--env, 1));
   transition: transform 0.6s var(--ease);
 }
 

@@ -1,6 +1,6 @@
 import type React from 'react';
 import { usePlaybackPosition } from '../../hooks/playbackPosition';
-import { wavePath } from '../../lib/wavePath';
+import { envelopeStrips, wavePath } from '../../lib/wavePath';
 import styles from './WavyProgress.module.css';
 
 // Geometry in em, so the wave scales with the card's type. The stroke matches the flat bar it replaces.
@@ -10,9 +10,34 @@ const STROKE = 0.32;
 const HEIGHT = 2 * AMPLITUDE + STROKE;
 // Enough waves for the widest card (about 100em of bar), plus one to slide into while the wave travels.
 const CYCLES = 52;
-const WIDTH = CYCLES * WAVELENGTH;
 // Built once: the wave never changes shape, only where it is clipped and how far it has slid.
-const PATH = wavePath({ wavelength: WAVELENGTH, amplitude: AMPLITUDE, cycles: CYCLES, midY: HEIGHT / 2 });
+const wave = (cycles: number) => wavePath({ wavelength: WAVELENGTH, amplitude: AMPLITUDE, cycles, midY: HEIGHT / 2 });
+const PATH = wave(CYCLES);
+// The ramp strips are a tenth of a wavelength wide, so three waves cover one while it slides.
+const SHORT_CYCLES = 3;
+const SHORT_PATH = wave(SHORT_CYCLES);
+// The first wavelength rises from flat to full height (startEnvelope), so a just-started track shows a short flat
+// line growing into the wave. Each strip holds the travelling wave at a fixed height; the ramp stays put while the
+// wave slides under it.
+const RAMP = envelopeStrips(10);
+
+function Wave({ cycles, path }: { cycles: number; path: string }) {
+  const width = cycles * WAVELENGTH;
+  return (
+    <div className={styles.travel}>
+      <svg
+        className={styles.wave}
+        width={`${width}em`}
+        height={`${HEIGHT}em`}
+        viewBox={`0 0 ${width} ${HEIGHT}`}
+        aria-hidden="true"
+        focusable="false"
+      >
+        <path className={styles.path} d={path} vectorEffect="non-scaling-stroke" />
+      </svg>
+    </div>
+  );
+}
 
 const GEOMETRY = {
   '--wave-len': `${WAVELENGTH}em`,
@@ -49,17 +74,26 @@ export function WavyProgress({ progressPct, paused = false, label = 'Track progr
     >
       <div className={styles.rest} />
       <div className={styles.played}>
-        <div className={styles.travel}>
-          <svg
-            className={styles.wave}
-            width={`${WIDTH}em`}
-            height={`${HEIGHT}em`}
-            viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-            aria-hidden="true"
-            focusable="false"
+        {RAMP.map((s) => (
+          <div
+            key={s.from}
+            className={styles.strip}
+            style={
+              {
+                '--strip-x': `${s.from * WAVELENGTH}em`,
+                width: `${(s.to - s.from) * WAVELENGTH}em`,
+                '--env': s.scale,
+              } as React.CSSProperties
+            }
           >
-            <path className={styles.path} d={PATH} vectorEffect="non-scaling-stroke" />
-          </svg>
+            <Wave cycles={SHORT_CYCLES} path={SHORT_PATH} />
+          </div>
+        ))}
+        <div
+          className={`${styles.strip} ${styles.stripFull}`}
+          style={{ '--strip-x': `${WAVELENGTH}em` } as React.CSSProperties}
+        >
+          <Wave cycles={CYCLES} path={PATH} />
         </div>
       </div>
     </div>
