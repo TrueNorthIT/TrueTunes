@@ -14,7 +14,7 @@
 
 import type { RawEvent } from './aggregate';
 import { buildDjSet, type DjTrack } from './dj';
-import { londonDayStartMs } from './djDay';
+import { londonDayKey, londonDayStartMs } from './djDay';
 import { readUsedTrackKeys, reserveTrackKey, type DocStore } from './djDayLedger';
 import { decideAutoplay, emptySession, trackKey, type DjSession } from './autoplay';
 
@@ -139,7 +139,8 @@ export function createDjAutoplayService(deps: DjAutoplayDeps): DjAutoplayService
       users = [...new Set(recent.filter((e) => (e.timestamp ?? 0) >= activeSince && e.userId).map((e) => e.userId))];
     }
 
-    const base = { users, excludeUris: queueUris, excludeTrackKeys: used };
+    // Seeded by the London day: the opener varies day to day but holds all day (#104).
+    const base = { users, excludeUris: queueUris, excludeTrackKeys: used, seed: londonDayKey(now) };
     let candidates = buildDjSet(events, { ...base, limit: CANDIDATE_POOL, perArtistMax: 1 }).tracks;
     if (candidates.length < THIN_POOL) {
       candidates = buildDjSet(events, {
