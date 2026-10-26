@@ -1,6 +1,6 @@
 // The True Tunes Azure Functions: playlists, profiles, users, feedback, stats, DJ, games, polls and music stats.
 
-import { ipcMain, IpcMainInvokeEvent } from 'electron';
+import { ipcMain, IpcMainInvokeEvent, net } from 'electron';
 import * as telemetry from '../telemetry';
 import { config, saveConfig, PUBSUB_FUNCTION_URL } from '../state';
 import { fnFetch } from './entra';
@@ -36,7 +36,7 @@ export function register(): void {
       const params = new URLSearchParams();
       if (filter.owner) params.set('owner', filter.owner);
       if (filter.member) params.set('member', filter.member);
-      const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/playlists?${params}`);
+      const res = await net.fetch(`${PUBSUB_FUNCTION_URL}/api/playlists?${params}`);
       return await res.json();
     } catch (err) {
       return { error: String(err) };
@@ -45,7 +45,7 @@ export function register(): void {
 
   ipcMain.handle('playlist:get', async (_: IpcMainInvokeEvent, id: string) => {
     try {
-      const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(id)}`);
+      const res = await net.fetch(`${PUBSUB_FUNCTION_URL}/api/playlist/${encodeURIComponent(id)}`);
       return await res.json();
     } catch (err) {
       return { error: String(err) };
@@ -143,7 +143,7 @@ export function register(): void {
     const exclude = includeSelf ? '' : (config.displayName ?? '');
     const params = exclude ? `?exclude=${encodeURIComponent(exclude)}` : '';
     try {
-      const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/users${params}`);
+      const res = await net.fetch(`${PUBSUB_FUNCTION_URL}/api/users${params}`);
       const body = (await res.json()) as unknown;
       return Array.isArray(body) ? body : [];
     } catch {
@@ -153,7 +153,7 @@ export function register(): void {
 
   ipcMain.handle('profile:get', async (_: IpcMainInvokeEvent, userName: string) => {
     try {
-      const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/profile/${encodeURIComponent(userName)}`);
+      const res = await net.fetch(`${PUBSUB_FUNCTION_URL}/api/profile/${encodeURIComponent(userName)}`);
       return await res.json();
     } catch (err) {
       return { error: String(err) };
@@ -231,7 +231,7 @@ export function register(): void {
       let url = `${PUBSUB_FUNCTION_URL}/api/stats?period=${encodeURIComponent(period)}`;
       if (userId) url += `&userId=${encodeURIComponent(userId)}`;
       if (count) url += `&count=${count}`;
-      const res = await fetch(url);
+      const res = await net.fetch(url);
       return await res.json();
     } catch (err) {
       return { error: String(err) };
@@ -259,7 +259,7 @@ export function register(): void {
         if (opts.users?.length) params.set('users', opts.users.join(','));
         if (opts.limit) params.set('limit', String(opts.limit));
         if (opts.excludeUris?.length) params.set('exclude', opts.excludeUris.join(','));
-        const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/dj?${params}`);
+        const res = await net.fetch(`${PUBSUB_FUNCTION_URL}/api/dj?${params}`);
         return await res.json();
       } catch (err) {
         return { error: String(err) };
@@ -270,7 +270,7 @@ export function register(): void {
   ipcMain.handle('history:recent', async (_: IpcMainInvokeEvent, userId: string) => {
     try {
       const url = `${PUBSUB_FUNCTION_URL}/api/recently-played?userId=${encodeURIComponent(userId)}`;
-      const res = await fetch(url);
+      const res = await net.fetch(url);
       return await res.json();
     } catch (err) {
       return { error: String(err) };
@@ -281,7 +281,7 @@ export function register(): void {
     try {
       const d = date && date.length ? date : 'today';
       const url = `${PUBSUB_FUNCTION_URL}/api/game?date=${encodeURIComponent(d)}`;
-      const res = await fetch(url);
+      const res = await net.fetch(url);
       if (res.status === 404 || res.status === 202) {
         return { status: 'pending' };
       }
@@ -350,7 +350,7 @@ export function register(): void {
     try {
       const d = date && date.length ? date : 'today';
       const url = `${PUBSUB_FUNCTION_URL}/api/game-leaderboard?date=${encodeURIComponent(d)}`;
-      const res = await fetch(url);
+      const res = await net.fetch(url);
       return await res.json();
     } catch (err) {
       return { error: String(err) };
@@ -359,7 +359,7 @@ export function register(): void {
 
   ipcMain.handle('music:stats', async () => {
     try {
-      const res = await fetch(`${PUBSUB_FUNCTION_URL}/api/music-stats`);
+      const res = await net.fetch(`${PUBSUB_FUNCTION_URL}/api/music-stats`);
       return await res.json();
     } catch (err) {
       return { error: String(err) };
@@ -382,7 +382,7 @@ export function register(): void {
   ipcMain.handle('game:dates', async (_: IpcMainInvokeEvent, userName: string) => {
     try {
       const url = `${PUBSUB_FUNCTION_URL}/api/game-dates?userName=${encodeURIComponent(userName ?? '')}`;
-      const res = await fetch(url);
+      const res = await net.fetch(url);
       return await res.json();
     } catch (err) {
       return { error: String(err) };
@@ -392,7 +392,7 @@ export function register(): void {
   ipcMain.handle('game:my-score', async (_: IpcMainInvokeEvent, gameId: string, userName: string) => {
     try {
       const url = `${PUBSUB_FUNCTION_URL}/api/my-score?gameId=${encodeURIComponent(gameId)}&userName=${encodeURIComponent(userName)}`;
-      const res = await fetch(url);
+      const res = await net.fetch(url);
       return await res.json();
     } catch (err) {
       return { error: String(err) };
@@ -403,7 +403,7 @@ export function register(): void {
     try {
       const d = date && date.length ? date : 'today';
       const url = `${PUBSUB_FUNCTION_URL}/api/game-stats?date=${encodeURIComponent(d)}`;
-      const res = await fetch(url);
+      const res = await net.fetch(url);
       return await res.json();
     } catch (err) {
       return { error: String(err) };

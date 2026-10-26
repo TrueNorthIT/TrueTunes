@@ -1,6 +1,6 @@
 // Entra ID sign-in (MSAL), the Functions calls that act as the user, and their IPC.
 
-import { app, ipcMain } from 'electron';
+import { app, ipcMain, net } from 'electron';
 import * as path from 'path';
 import { EntraAuth, PRESENCE_SCOPE } from '../auth-entra';
 import type { EntraUser } from '../auth-entra';
@@ -46,13 +46,14 @@ export const entraIdToken = async (): Promise<string | null> => (entraAuth ? ent
 
 /**
  * fetch for the True Tunes functions that write or act as the user: adds the Entra ID
- * token, so the server takes the caller from it rather than from the body.
+ * token, so the server takes the caller from it rather than from the body. net.fetch, not
+ * Node's fetch, which opens a TLS connection per concurrent request on the main thread.
  */
 export async function fnFetch(url: string, init: RequestInit = {}): Promise<Response> {
   const token = await entraIdToken();
   const headers = new Headers(init.headers);
   if (token) headers.set('Authorization', `Bearer ${token}`);
-  return fetch(url, { ...init, headers });
+  return net.fetch(url, { ...init, headers });
 }
 
 export async function ensureEntraAuth(forcePrompt?: string): Promise<void> {
