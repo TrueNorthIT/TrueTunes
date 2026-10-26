@@ -46,7 +46,9 @@ export function TopNav({
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const [searchText, setSearchText] = useState(searchParams.get('q') ?? '');
+  const [searchText, setSearchText] = useState(() =>
+    location.pathname === '/search' ? (searchParams.get('q') ?? '') : ''
+  );
   const [profileOpen, setProfileOpen] = useState(false);
   const [nameValue, setNameValue] = useState('');
   const [groupOpen, setGroupOpen] = useState(false);
@@ -68,10 +70,6 @@ export function TopNav({
       .then(setAppVersion)
       .catch(() => {});
   }, []);
-
-  useEffect(() => {
-    if (profileOpen) setNameValue('');
-  }, [profileOpen]);
 
   useEffect(() => {
     if (!profileOpen) return;
@@ -109,12 +107,13 @@ export function TopNav({
   // The box empties when search is left, and follows the URL when ?q= changes (back, forward, a recent search),
   // but never rewrites what is being typed: "mr " is the same query as "mr", and arriving at an empty /search
   // (focusing the box) changes nothing.
-  const prevUrlQuery = useRef(urlQuery);
-  useEffect(() => {
+  // Adjusted during render, not in an effect (react.dev: "adjusting some state when a prop changes").
+  const [prevUrl, setPrevUrl] = useState({ isInSearch, urlQuery });
+  if (prevUrl.isInSearch !== isInSearch || prevUrl.urlQuery !== urlQuery) {
+    setPrevUrl({ isInSearch, urlQuery });
     if (!isInSearch) setSearchText('');
-    else if (urlQuery !== prevUrlQuery.current) setSearchText((t) => (t.trim() === urlQuery ? t : urlQuery));
-    prevUrlQuery.current = urlQuery;
-  }, [isInSearch, urlQuery]);
+    else if (urlQuery !== prevUrl.urlQuery && searchText.trim() !== urlQuery) setSearchText(urlQuery);
+  }
 
   // Search as you type: one search per pause. The first keystroke pushes /search and the rest replace it,
   // so Back leaves search in one step instead of walking back through every prefix.
@@ -287,7 +286,10 @@ export function TopNav({
                   <>
                     <button
                       className={`${styles.profileChip}${profileOpen ? ' ' + styles.profileChipOpen : ''}`}
-                      onClick={() => setProfileOpen((o) => !o)}
+                      onClick={() => {
+                        setNameValue('');
+                        setProfileOpen((o) => !o);
+                      }}
                       title="Sign in"
                     >
                       <span className={styles.profileSignIn}>Sign in</span>

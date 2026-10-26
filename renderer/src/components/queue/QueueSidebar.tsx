@@ -323,6 +323,11 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
     }
   }
 
+  function selectAlbumBlock(block: Set<number>, anchor: number) {
+    setSelected(block);
+    lastSelected.current = anchor;
+  }
+
   function handleDragStart(index: number, e: React.DragEvent) {
     if (readOnly) {
       e.preventDefault();
@@ -638,10 +643,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
                   <button
                     className={styles.selExpandBtn}
                     title={tooltip}
-                    onClick={() => {
-                      setSelected(block);
-                      lastSelected.current = anchor;
-                    }}
+                    onClick={() => selectAlbumBlock(block, anchor)}
                   >
                     Select album
                   </button>

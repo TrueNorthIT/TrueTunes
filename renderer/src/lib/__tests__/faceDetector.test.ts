@@ -28,8 +28,11 @@ describe('detectFaces', () => {
 
   it('loads MediaPipe once, from the bundled wasm and model', async () => {
     detect.mockReturnValue({ detections: [] });
-    await detectFaces(canvas());
-    await detectFaces(canvas());
+    // A fresh module, so the detector the first test cached doesn't hide the load (Vitest clears call counts per test).
+    vi.resetModules();
+    const fresh = await import('../faceDetector');
+    await fresh.detectFaces(canvas());
+    await fresh.detectFaces(canvas());
     expect(createFromOptions).toHaveBeenCalledTimes(1);
     const [fileset, options] = createFromOptions.mock.calls[0] as unknown as [
       Record<string, string>,

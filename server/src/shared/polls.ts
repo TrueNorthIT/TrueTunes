@@ -169,8 +169,7 @@ export function shouldPostPoll<T extends { liveFrom: string | null }>(
 }
 
 export type PollInputResult =
-  | { ok: true; value: { question: string; choices: string[] } }
-  | { ok: false; errors: string[] };
+  { ok: true; value: { question: string; choices: string[] } } | { ok: false; errors: string[] };
 
 const MIN_CHOICES = 2;
 const MAX_CHOICES = 6;
