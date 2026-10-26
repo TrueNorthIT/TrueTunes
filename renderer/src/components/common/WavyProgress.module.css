@@ -1,0 +1,97 @@
+/* Geometry (--wave-len, --wave-h, --wave-stroke) and the played fraction (--wavy-p, 0 to 1) come in from
+   WavyProgress.tsx; the path is drawn from the same numbers. */
+.wavy {
+  --wave-gap: 0.35em;
+  position: relative;
+  flex: 1; /* fills the row between the times */
+  min-width: 0;
+  height: var(--wave-h);
+  contain: layout paint;
+}
+
+/* The unplayed track: the flat bar, starting one gap after the wave (or at 0 before anything has played). Clipped
+   rather than resized, so the per-second tick repaints a thin strip and never re-runs layout. */
+.rest {
+  position: absolute;
+  inset: 0;
+  top: calc((var(--wave-h) - var(--wave-stroke)) / 2);
+  height: var(--wave-stroke);
+  border-radius: var(--r-pill);
+  background: var(--track);
+  clip-path: inset(0 0 0 calc(var(--wavy-p) * 100% + min(var(--wave-gap), var(--wavy-p) * 100em)) round var(--r-pill));
+  transition: clip-path 0.4s linear;
+}
+
+/* The played part: the whole wave, clipped to the played length. The round end softens the cut. */
+.played {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(0 calc((1 - var(--wavy-p)) * 100%) 0 0 round var(--r-pill));
+  transition: clip-path 0.4s linear;
+}
+
+/* Slides one wavelength to the right and loops; the path repeats every wavelength, so the loop is seamless.
+   Transform-only, so it runs on the compositor. Starts one wavelength left so there is always wave under the clip. */
+.travel {
+  position: absolute;
+  top: 0;
+  left: calc(-1 * var(--wave-len));
+  animation: wavyTravel 2.4s linear infinite;
+  will-change: transform;
+}
+.wave {
+  display: block;
+  overflow: visible;
+}
+/* Flattening squashes the geometry, not the stroke: vector-effect keeps the stroke at full thickness. */
+.path {
+  fill: none;
+  stroke: var(--title-rest);
+  stroke-width: var(--wave-stroke);
+  stroke-linecap: round;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scaleY(1);
+  transition: transform 0.6s var(--ease);
+}
+
+@keyframes wavyTravel {
+  to {
+    transform: translateX(var(--wave-len));
+  }
+}
+
+/* Paused: ease to a straight line and stop travelling (holding the phase, so play resumes without a jump).
+   0.01, not 0: a singular transform isn't painted at all. */
+.paused .travel {
+  animation-play-state: paused;
+}
+.paused .path {
+  transform: scaleY(0.01);
+}
+
+/* Reduced motion: a flat line, nothing moves. .reduceMotion lets Storybook show the state without the media query. */
+.reduceMotion .travel {
+  animation: none;
+}
+.reduceMotion .path {
+  transform: scaleY(0.01);
+}
+.reduceMotion .path,
+.reduceMotion .rest,
+.reduceMotion .played {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .travel {
+    animation: none;
+  }
+  .path {
+    transform: scaleY(0.01);
+  }
+  .path,
+  .rest,
+  .played {
+    transition: none;
+  }
+}

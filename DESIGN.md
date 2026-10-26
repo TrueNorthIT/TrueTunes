@@ -341,7 +341,7 @@ Borderless rows (TrackRow, ChartRow) with a 0.65em radius and 3.2em rounded thum
 Square art (ImageTile, 0.7–0.9em radius, or a circle for artists) over a two-line caption: title in Title-at-rest, sub in tertiary label. Hover or focus rises the tile 2px and gives the art the Art-lifted shadow.
 
 ### Now Playing card
-Lit Wall with the artwork wash, 16em hero artwork (12.5em under 1100px), feature title, artist meta, a thin progress bar (0.32em, `rgba(255,255,255,.14)` track and `.85` fill) with tabular times, and the queued-by chip. Its sibling, the live lyrics box, is a Wall card that masks lyrics top and bottom with a gradient. The active line grows to 1.45em in white and the rest sit at full label. The Lyrics page is this band at full size: the art grows with the window, and a solo layout replaces an empty lyrics card.
+Lit Wall with the artwork wash, 16em hero artwork (12.5em under 1100px), feature title, artist meta, a wavy progress line with tabular times (WavyProgress: the played part is a 0.32em `--title-rest` stroke shaped as a sine wave, 0.16em amplitude and 2em wavelength, travelling slowly forward; a 0.35em gap; then the flat 0.32em `--track`. Paused, the wave eases to a straight line over 0.6s and stops; under reduced motion it is a still, flat line), and the queued-by chip. Its sibling, the live lyrics box, is a Wall card that masks lyrics top and bottom with a gradient. The active line grows to 1.45em in white and the rest sit at full label. The Lyrics page is this band at full size: the art grows with the window, and a solo layout replaces an empty lyrics card.
 
 **Skinny Now Playing card:** the same card in px (16px radius, 10px art radius, 16px title, 13px meta), with the queued-by chip and the transport, docked under the queue.
 
@@ -395,7 +395,8 @@ Every custom property declared in `global.css` or `depth.css` is named in this f
 - **Do** reveal secondary actions (add buttons) on hover or `:focus-within`, and let every interactive element take the global focus ring.
 - **Do** use the material tokens for anything floating over content, and keep the reduced-transparency fallback.
 - **Do** use the shared Dialog for every modal, with the primary or destructive action last.
-- **Do** honour `prefers-reduced-motion`: stop skeleton pulses and image, hero or lyric transitions.
+- **Do** honour `prefers-reduced-motion`: stop skeleton pulses and image, hero or lyric transitions, and flatten the wavy progress line.
+- **Do** keep ambient motion (the wavy progress line, the EQ bars) on the compositor: animate `transform` and `opacity`, never layout, and run it only while audio is really playing.
 
 ### Don't:
 - **Don't** use purple, neon or glow, and keep generated hues off 250–330°.

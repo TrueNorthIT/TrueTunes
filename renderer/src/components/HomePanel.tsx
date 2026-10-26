@@ -61,7 +61,7 @@ import { withArtworkSize } from '../lib/artworkUrl';
 import { UserAvatar } from './common/UserAvatar';
 import { Artwork } from './common/Artwork';
 import { PlaybackTime } from './common/SeekBar';
-import { usePlaybackPosition } from '../hooks/playbackPosition';
+import { LiveWavyProgress } from './common/WavyProgress';
 import { QueuerChip } from './common/QueuerChip';
 import { useTrackContextMenu } from './common/ContextMenu';
 import { albumQueryOptions } from '../hooks/useAlbumBrowse';
@@ -276,21 +276,11 @@ function TrendRow({ rank, t, count, onAdd }: { rank: number; t: NavTrack; count:
 }
 
 /** The Now playing band's progress line: the one part of the band that moves every second. */
-function NowProgress() {
-  const pct = usePlaybackPosition((p) => p.progressPct);
+function NowProgress({ paused }: { paused: boolean }) {
   return (
     <div className={styles.nowProgress}>
       <PlaybackTime part="elapsed" className={styles.nowTime} />
-      <div
-        className={styles.nowBar}
-        role="progressbar"
-        aria-label="Track progress"
-        aria-valuenow={Math.round(pct)}
-        aria-valuemin={0}
-        aria-valuemax={100}
-      >
-        <div className={styles.nowFill} style={{ transform: `scaleX(${Math.min(1, Math.max(0, pct / 100))})` }} />
-      </div>
+      <LiveWavyProgress paused={paused} />
       <PlaybackTime part="duration" className={styles.nowTime} />
     </div>
   );
@@ -401,7 +391,7 @@ function NowPlayingBand({
               onOpen={() => void profile(queuer.user)}
             />
           )}
-          <NowProgress />
+          <NowProgress paused={!playback.isPlaying} />
           {aboutLoading && !blurb && (
             <div className={styles.about} aria-label="About this track" aria-busy="true">
               {['100%', '92%', '58%'].map((w) => (
