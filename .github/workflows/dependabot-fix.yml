@@ -1,0 +1,81 @@
+name: Dependabot fix
+
+# When `validate` fails on a Dependabot PR, Claude tries to fix it on the PR branch. Its fix always waits for a person:
+# auto-merge is turned off first, and a fix that changes code is a review like any other.
+# Pushes go through the Claude GitHub App (not GITHUB_TOKEN), so `validate` re-runs on the fix.
+# Its commits start with [claude-fix]; a failure on one of those doesn't start another attempt.
+# Needs: the Claude GitHub App installed on the repo, and CLAUDE_CODE_OAUTH_TOKEN (from `claude setup-token`, billed to
+# a Claude subscription) as both an Actions and a Dependabot secret
+# (runs that follow Dependabot's only see Dependabot secrets).
+on:
+  workflow_run:
+    workflows: [Publish]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read # gh run view --log-failed
+  id-token: write # Claude GitHub App token
+
+jobs:
+  fix:
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      startsWith(github.event.workflow_run.head_branch, 'dependabot/') &&
+      !contains(github.event.workflow_run.head_commit.message, '[claude-fix]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PR: ${{ github.event.workflow_run.pull_requests[0].number }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
+    steps:
+      # Dependabot's own branch in this repo (never a fork), so checking out its head is the point.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+          fetch-depth: 0
+
+      - name: Turn off auto-merge
+        run: gh pr merge "$PR" --disable-auto || true
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+
+      # No install scripts: updated packages are third-party code, and this job holds a Claude token.
+      - run: npm ci --ignore-scripts
+      - run: npm ci --ignore-scripts
+        working-directory: server
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: 'dependabot[bot]'
+          claude_args: >-
+            --max-turns 60
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(gh run view:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(npm run:*),Bash(npx tsc:*),Bash(npx eslint:*),Bash(npx vitest:*),Bash(npx prettier:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*)"
+          prompt: |
+            Dependabot PR #${{ env.PR }} in ${{ github.repository }} failed CI (workflow run ${{ env.RUN_ID }}).
+            You are on its branch, with dependencies installed using --ignore-scripts. Read CLAUDE.md first.
+
+            1. Find the cause: `gh run view ${{ env.RUN_ID }} --log-failed` and `gh pr view ${{ env.PR }}`.
+            2. Fix the code so it works with the updated dependencies. Fix the cause properly: never disable a lint rule
+               to get past it, skip or weaken a test, add --legacy-peer-deps or npm overrides, or pin the dependency
+               back to the old version.
+            3. Run the checks that cover your change (`npm run typecheck`, `npm run lint`, and the affected test files
+               with `npx vitest run --config renderer/vitest.config.ts <files>`; for server/ use its own npm scripts).
+               CI runs the full suite after you push.
+            4. Commit with a message starting `[claude-fix]`, and `git push`.
+            5. Comment on the PR (`gh pr comment ${{ env.PR }}`) with the cause, what you changed and why, and what a
+               reviewer should check. Write in UK English.
+
+            If the fix isn't contained (a migration across many files, a toolchain that doesn't support the new major
+            yet, or a peer dependency that has no compatible release), don't push. Comment on the PR explaining why,
+            what the upgrade would take, and whether `@dependabot ignore this major version` is the right call.
