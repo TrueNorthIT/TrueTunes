@@ -83,7 +83,16 @@ async function shoot(which, { id, title }) {
   });
   await page.evaluate(async () => {
     await document.fonts.ready;
-    await Promise.all([...document.images].map((i) => i.decode().catch(() => {})));
+    // A lazy image off screen never loads, so its decode() never settles: wait for the visible ones, at most 5 s.
+    const onScreen = (i) => {
+      const r = i.getBoundingClientRect();
+      return r.bottom > 0 && r.right > 0 && r.top < innerHeight && r.left < innerWidth;
+    };
+    const images = [...document.images].filter((i) => i.loading !== 'lazy' || onScreen(i));
+    await Promise.race([
+      Promise.all(images.map((i) => i.decode().catch(() => {}))),
+      new Promise((r) => setTimeout(r, 5000)),
+    ]);
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   });
   return PNG.sync.read(await page.screenshot({ animations: 'disabled', caret: 'hide' }));

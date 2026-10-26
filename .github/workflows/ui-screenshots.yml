@@ -8,6 +8,10 @@ name: UI screenshots
 on:
   pull_request:
     types: [opened, synchronize, reopened, closed]
+  # warm-cache: a cache saved by a PR run is visible to that PR only, so the browser is cached from main for every PR.
+  push:
+    branches: [main]
+    paths: [package-lock.json, .github/workflows/ui-screenshots.yml]
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -17,13 +21,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  warm-cache:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Playwright version
+        id: playwright
+        run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/playwright-core'].version")" >> "$GITHUB_OUTPUT"
+
+      - id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      # Only the download: nothing launches the browser here, so no system libraries.
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx -y "playwright@${{ steps.playwright.outputs.version }}" install chromium
+
   screenshots:
     if: >-
       github.event.action != 'closed' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30 # apt has taken 11 min on a slow mirror
     permissions:
       contents: write # push to pr-screenshots
       pull-requests: write # the comment
