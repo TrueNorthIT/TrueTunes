@@ -45,6 +45,7 @@ const items: GameItem[] = [
     name,
     subtitle,
     imageUrl: category === 'artist' ? portrait : art[i % art.length],
+    ...(category === 'track' && { uri: `track-${i}`, serviceId: 'svc', accountId: 'acc' }),
     count: 40 + ((i * 37) % 90),
     topQueuer: candidates[i % candidates.length],
     queuerCandidates: candidates,
@@ -189,6 +190,36 @@ export const QuestionRevealed: Story = {
   }),
   play: async ({ canvasElement }) => {
     await within(canvasElement).findByRole('button', { name: 'Next' });
+  },
+};
+
+/** Round three answered, with a track as the challenger: right-click it for the track menu (queue, playlists). */
+export const QuestionRevealedTrack: Story = {
+  beforeEach: stub({
+    phase: 'main',
+    currentIdx: 2,
+    pickedSide: questions[2].winner,
+    mainGuesses: allRight.slice(0, 3),
+    bonusSelections: [],
+  }),
+  play: async ({ canvasElement }) => {
+    await within(canvasElement).findByText(questions[2].right.name);
+  },
+};
+
+/** Already played today: the scores, the room and your answers, where each track has the track menu. */
+export const Results: Story = {
+  beforeEach: () => {
+    const restore = stub(null)();
+    localStorage.setItem(
+      `queuedle-played:${GAME_ID}`,
+      JSON.stringify({ mainScore: 7, bonusScore: 6, guesses: allRight })
+    );
+    return restore;
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByText('Your answers');
   },
 };
 

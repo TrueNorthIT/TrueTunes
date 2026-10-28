@@ -1,5 +1,7 @@
 import { Music } from 'lucide-react';
 import { PillButton } from '../common/PillButton';
+import { useTrackContextMenu } from '../common/ContextMenu';
+import { gameTrackMenu } from '../../lib/homeData';
 import styles from '../../styles/Queuedle.module.css';
 
 interface Props {
@@ -33,7 +35,11 @@ function Side({
   pickedSide: 'left' | 'right' | null;
   onPick: (side: 'left' | 'right') => void;
 }) {
+  const { showTrackMenu } = useTrackContextMenu();
   const yours = revealed && pickedSide === side;
+  // A track's context menu (queue, playlists) opens once the round is revealed, never before the pick (it would
+  // spoil the round).
+  const menu = revealed ? gameTrackMenu(item) : null;
   const slideFrom = isCarryover && carryFrom !== null && carryFrom !== side ? carryFrom : null;
   const cls = [
     styles.side,
@@ -77,7 +83,13 @@ function Side({
     </>
   );
 
-  if (revealed) return <div className={cls}>{body}</div>;
+  if (revealed) {
+    return (
+      <div className={cls} onContextMenu={menu ? (e) => showTrackMenu(menu, e) : undefined}>
+        {body}
+      </div>
+    );
+  }
   return (
     <button type="button" className={cls} onClick={() => onPick(side)} disabled={pickedSide !== null}>
       {body}

@@ -1,4 +1,4 @@
-import { artistItem } from './itemHelpers';
+import { artistItem, trackPayload } from './itemHelpers';
 import type { SonosItem } from '../types/sonos';
 
 // Pure data helpers behind the Home page.
@@ -37,6 +37,19 @@ export function statsTrackToItem(t: Omit<StatsTrack, 'count'> & { count?: number
       id: { objectId: t.uri, serviceId: t.serviceId ?? '', accountId: t.accountId ?? '' },
     },
   };
+}
+
+/** A Queuedle track, queueable only with all three ids (games generated before #100 have no service ids). */
+export function gameTrackToItem(item: GameItem): SonosItem | null {
+  if (item.category !== 'track' || !item.serviceId || !item.accountId) return null;
+  return statsTrackToItem({ ...item, trackName: item.name, artist: item.subtitle });
+}
+
+/** What the track context menu takes for a Queuedle track; null where `gameTrackToItem` is. */
+export function gameTrackMenu(item: GameItem): { track: PlaylistTrack; sonosItem: SonosItem } | null {
+  const sonosItem = gameTrackToItem(item);
+  if (!sonosItem || !item.uri) return null;
+  return { track: trackPayload({ ...item, uri: item.uri, trackName: item.name, artist: item.subtitle }), sonosItem };
 }
 
 export function statsArtistToItem(a: StatsArtist): SonosItem {

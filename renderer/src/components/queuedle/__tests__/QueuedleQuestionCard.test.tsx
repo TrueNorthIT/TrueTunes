@@ -1,6 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueuedleQuestionCard } from '../QueuedleQuestionCard';
+
+const { showTrackMenu } = vi.hoisted(() => ({ showTrackMenu: vi.fn() }));
+vi.mock('../../common/ContextMenu', () => ({ useTrackContextMenu: () => ({ showTrackMenu }) }));
+beforeEach(() => showTrackMenu.mockClear());
 
 const question: GameQuestion = {
   index: 0,
@@ -115,5 +119,50 @@ describe('QueuedleQuestionCard', () => {
       />
     );
     expect(screen.getByRole('heading', { name: 'Which has the office queued more?' })).toBeInTheDocument();
+  });
+
+  describe('track context menu (#100)', () => {
+    const queueable: GameQuestion = {
+      ...question,
+      left: { ...question.left, uri: 'spotify:track:left', serviceId: '12', accountId: 'acc', imageUrl: 'art.jpg' },
+    };
+    const card = (revealed: boolean, q = queueable) => (
+      <QueuedleQuestionCard
+        question={q}
+        revealed={revealed}
+        pickedSide={revealed ? 'right' : null}
+        onPick={() => {}}
+        onNext={() => {}}
+      />
+    );
+
+    it('opens nothing before the reveal', () => {
+      render(card(false));
+      fireEvent.contextMenu(screen.getByText('Left Song'));
+      expect(showTrackMenu).not.toHaveBeenCalled();
+    });
+
+    it('opens the track menu on the revealed track, with the queueable item', () => {
+      render(card(true));
+      fireEvent.contextMenu(screen.getByText('Left Song'));
+      expect(showTrackMenu).toHaveBeenCalledTimes(1);
+      expect(showTrackMenu.mock.calls[0][0]).toMatchObject({
+        track: { uri: 'spotify:track:left', trackName: 'Left Song', artist: 'Left Artist' },
+        sonosItem: {
+          type: 'TRACK',
+          title: 'Left Song',
+          resource: { id: { objectId: 'spotify:track:left', serviceId: '12', accountId: 'acc' } },
+        },
+      });
+      // Artists and albums have no track menu.
+      fireEvent.contextMenu(screen.getByText('Right Artist'));
+      expect(showTrackMenu).toHaveBeenCalledTimes(1);
+    });
+
+    it('opens nothing for a track from an older game without service ids', () => {
+      render(card(true, question));
+      fireEvent.contextMenu(screen.getByText('Left Song'));
+      expect(showTrackMenu).not.toHaveBeenCalled();
+    });
   });
 });

@@ -7,6 +7,9 @@ export interface GameItem {
   subtitle: string;
   imageUrl?: string;
   uri?: string;
+  /** With `uri`, what a track needs to be queued from the game. */
+  serviceId?: string;
+  accountId?: string;
   count: number;
   topQueuer: string;
   queuerCandidates: string[];
@@ -91,6 +94,8 @@ function trackToItem(
     subtitle: entry.artist,
     imageUrl: entry.imageUrl,
     uri: entry.uri,
+    serviceId: entry.serviceId,
+    accountId: entry.accountId,
     count: entry.count,
     topQueuer: bonus.topQueuer,
     queuerCandidates: bonus.candidates,

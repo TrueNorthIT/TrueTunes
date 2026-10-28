@@ -1,13 +1,18 @@
 import { useImage } from '../../hooks/useImage';
 import { SectionCard } from '../common/SectionCard';
+import { useTrackContextMenu } from '../common/ContextMenu';
+import { gameTrackMenu } from '../../lib/homeData';
 import styles from '../../styles/Queuedle.module.css';
 
 function ReviewSide({ item, won, end }: { item: GameItem; won: boolean; end?: boolean }) {
   const art = useImage(item.imageUrl);
+  const { showTrackMenu } = useTrackContextMenu();
+  const menu = gameTrackMenu(item);
   const artClass = `${styles.reviewArt}${item.category === 'artist' ? ' ' + styles.round : ''}`;
   return (
     <span
       className={`${styles.reviewSide}${end ? ' ' + styles.reviewSideEnd : ''}${won ? ' ' + styles.reviewWon : ''}`}
+      onContextMenu={menu ? (e) => showTrackMenu(menu, e) : undefined}
     >
       {art ? <img src={art} className={artClass} alt="" /> : <span className={artClass} />}
       <span className={styles.reviewText}>
