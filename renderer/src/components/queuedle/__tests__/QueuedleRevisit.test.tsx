@@ -2,7 +2,7 @@
 // interactive play screens are stubbed). Covers leaving the Queuedle page and
 // coming back: the page must show "Your answers", not just the
 // "You've already played today" footer.
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -109,9 +109,16 @@ function stubServer(opts: {
 }
 
 beforeEach(() => {
+  // Today is GAME_ID in these tests. Pin the date (Date only, so real timers still run) so they
+  // don't depend on the wall clock.
+  vi.useFakeTimers({ toFake: ['Date'], now: new Date(`${GAME_ID}T12:00:00Z`) });
   vi.resetAllMocks();
   localStorage.clear();
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe('Queuedle revisit shows the question breakdown', () => {
