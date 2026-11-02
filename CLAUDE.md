@@ -143,6 +143,8 @@ npm run storybook         # http://localhost:6006; config in renderer/.storybook
 npm run build-storybook   # static build to storybook-static/ (gitignored)
 ```
 
+Published to GitHub Pages by `.github/workflows/storybook-pages.yml`: main at https://truenorthit.github.io/TrueTunes/, every other branch at `…/TrueTunes/branch/<branch>/` (linked from a comment on its PR, removed when the branch is deleted).
+
 Stories sit beside the component as `Foo.stories.tsx` (CSF, `args` for controls, `fn()` for callbacks) and are typechecked and linted with the rest of `renderer/`. Use them to tweak a component in isolation and to screenshot a deterministic state: the live app's data changes under you, and its transport controls play on the office speakers.
 
 - **Nothing in Storybook may reach Sonos.** There is no Electron, so `renderer/.storybook/preview.tsx` installs a fake `window.sonos` built from `renderer/src/test/sonosFake.ts`; every call is logged in the Actions panel and does nothing else. `getActiveProvider()` goes through it, so `TransportButtons` and `SeekBar` only log. Never point a story at a real bridge or URL.
