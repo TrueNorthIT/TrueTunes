@@ -51,7 +51,7 @@
   position: absolute;
   top: 0;
   left: calc(-1 * (var(--wave-len) + var(--strip-x)));
-  animation: wavyTravel 2.4s linear infinite;
+  animation: wavyTravel 1.5s linear infinite; /* keeps the speed the longer wave had */
   will-change: transform;
 }
 .wave {
