@@ -1,0 +1,96 @@
+name: Storybook Pages
+
+# Publishes Storybook to GitHub Pages (the gh-pages branch, see scripts/storybook-pages.sh):
+#   main          -> https://truenorthit.github.io/TrueTunes/
+#   other branch  -> https://truenorthit.github.io/TrueTunes/branch/<branch>/   (removed when the branch is deleted)
+# An open PR gets one comment linking its branch's preview. Dependabot and ui-screenshots/* branches get no preview,
+# and fork branches never push here.
+on:
+  push:
+    branches-ignore: ['gh-pages', 'dependabot/**', 'ui-screenshots/**']
+  delete:
+  pull_request:
+    types: [opened, reopened]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  deploy:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: storybook-pages-${{ github.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: write # push to gh-pages
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npx storybook build -c renderer/.storybook -o "$RUNNER_TEMP/sb" --quiet
+
+      - name: Publish
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          if [ "$BRANCH" = main ]; then dir=.; else dir="branch/$BRANCH"; fi
+          bash scripts/storybook-pages.sh "$dir" "$RUNNER_TEMP/sb"
+          echo "Storybook: https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/${dir#.}" >> "$GITHUB_STEP_SUMMARY"
+
+  remove:
+    if: github.event_name == 'delete' && github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Same group as the branch's deploy, so deleting a branch cancels a deploy still running for it.
+    concurrency:
+      group: storybook-pages-refs/heads/${{ github.event.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - env:
+          BRANCH: ${{ github.event.ref }}
+        run: bash scripts/storybook-pages.sh "branch/$BRANCH"
+
+  # One comment per PR, found by its marker. Posted when the PR opens (the branch's push has already deployed, or is
+  # deploying) and refreshed by each deploy so it names the current commit.
+  comment:
+    needs: deploy
+    if: >-
+      always() && (
+        (github.event_name == 'push' && github.ref_name != 'main' && needs.deploy.result == 'success') ||
+        (github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.event.pull_request.user.login != 'dependabot[bot]'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      BRANCH: ${{ github.head_ref || github.ref_name }}
+      PR: ${{ github.event.pull_request.number }}
+      SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - run: |
+          [ -n "$PR" ] || PR=$(gh pr list -R "$GITHUB_REPOSITORY" --head "$BRANCH" --state open --json number --jq '.[0].number')
+          [ -n "$PR" ] || exit 0
+          url="https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/branch/$BRANCH/"
+          body="$RUNNER_TEMP/body.md"
+          printf '<!-- storybook-preview -->\n### Storybook preview\n\n%s (at %s; Pages can take a minute to update)\n' "$url" "${SHA::7}" > "$body"
+          id=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/comments" \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- storybook-preview -->"))) | .id' | sed -n 1p)
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -F "body=@$body" --silent
+          else
+            gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -F "body=@$body" --silent
+          fi
