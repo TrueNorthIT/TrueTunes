@@ -4,12 +4,13 @@ import { envelopeStrips, wavePath } from '../../lib/wavePath';
 import styles from './WavyProgress.module.css';
 
 // Geometry in em, so the wave scales with the card's type. The stroke matches the flat bar it replaces.
-const WAVELENGTH = 2;
-const AMPLITUDE = 0.16;
-const STROKE = 0.32;
+// A short wavelength, a tall amplitude and a thin stroke read as a crisp wave; a long, shallow, thick one reads as a worm.
+const WAVELENGTH = 1.2;
+const AMPLITUDE = 0.24;
+const STROKE = 0.2;
 const HEIGHT = 2 * AMPLITUDE + STROKE;
 // Enough waves for the widest card (about 100em of bar), plus one to slide into while the wave travels.
-const CYCLES = 52;
+const CYCLES = 86;
 // Built once: the wave never changes shape, only where it is clipped and how far it has slid.
 const wave = (cycles: number) => wavePath({ wavelength: WAVELENGTH, amplitude: AMPLITUDE, cycles, midY: HEIGHT / 2 });
 const PATH = wave(CYCLES);
