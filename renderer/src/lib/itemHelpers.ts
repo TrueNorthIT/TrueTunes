@@ -30,7 +30,8 @@ export function normalizeForQueue(item: SonosItem): SonosItem {
   if (typeof item.id === 'object' || !rid?.objectId) return item;
 
   const imageUrl = (item.images as Record<string, string> | undefined)?.['tile1x1'] ?? item.imageUrl;
-  const artistName = (item as Record<string, string>)['subtitle'] ?? '';
+  // Browse tracks (artist top songs, playlists) carry `artists[]` rather than a `subtitle`.
+  const artistName = (item as Record<string, string>)['subtitle'] || item.artists?.[0]?.name || '';
 
   return {
     ...item,

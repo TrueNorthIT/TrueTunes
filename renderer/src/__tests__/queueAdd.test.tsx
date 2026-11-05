@@ -536,6 +536,22 @@ describe('handleAddToQueue — attribution', () => {
     expect(publish.mock.calls[0][0]).toMatchObject({ eventType: 'track', uri: 'obj1', trackName: 'Test Track' });
   });
 
+  it('publishes the artist for a browse-shaped track (artists[], no subtitle)', async () => {
+    const publish = vi.mocked(window.sonos.publishQueued).mockResolvedValue(undefined);
+    mockQueueWith([]);
+    await mountAndSettle();
+    await act(async () => {
+      await capturedAddToQueue!({
+        type: 'TRACK',
+        id: 'srn:track:obj9',
+        title: 'Top Song',
+        artists: [{ name: 'Some Artist' }],
+        resource: { type: 'TRACK', id: { objectId: 'obj9', serviceId: 'gm', accountId: 'acc1' } },
+      } as unknown as SonosItem);
+    });
+    expect(publish.mock.calls[0][0]).toMatchObject({ uri: 'obj9', trackName: 'Top Song', artist: 'Some Artist' });
+  });
+
   it('publishes nothing when attribute is false (DJ picks)', async () => {
     const publish = vi.mocked(window.sonos.publishQueued).mockResolvedValue(undefined);
     mockQueueWith([]);
