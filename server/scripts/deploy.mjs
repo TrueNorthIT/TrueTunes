@@ -101,8 +101,15 @@ async function main() {
     { param: 'authEnforce', env: 'AUTH_ENFORCE', default: 'false' },
   ].map((p) => ({ ...p, value: fromEnv(p.env) || p.default || '' }));
 
-  for (const p of params) {
-    if (!p.value) console.warn(`[deploy] ${p.env} is empty — ${p.ifEmpty} in this deploy.`);
+  // ARM replaces the Function App's appSettings wholesale, so an empty value here blanks the live
+  // setting (a deploy from a .env without these once wiped the GitHub token and Entra ids).
+  const missing = params.filter((p) => !p.value);
+  for (const p of missing) console.error(`[deploy] ${p.env} is empty — ${p.ifEmpty}.`);
+  if (missing.length && process.env.TRUETUNES_ALLOW_EMPTY !== 'true') {
+    throw new Error(
+      `Refusing to deploy: ${missing.map((p) => p.env).join(', ')} empty in .env would overwrite the live ` +
+        'settings with blanks. Add them to .env (or set TRUETUNES_ALLOW_EMPTY=true to blank them on purpose).'
+    );
   }
 
   const azCommand = process.platform === 'win32' ? 'az.cmd' : 'az';
