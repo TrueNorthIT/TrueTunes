@@ -23,9 +23,33 @@ import {
   resolveAlbumParams,
   resolveArtistParams,
   decodeDefaults,
+  normalizeForQueue,
 } from '../itemHelpers';
 import type { SonosItem, QueueItem } from '../../types/sonos';
 import type { ServiceSearch } from '../../types/ServiceSearch';
+
+describe('normalizeForQueue artist', () => {
+  const rid = { objectId: 't1', serviceId: 's', accountId: 'a' };
+
+  it('takes the artist from `artists` when a browse track has no subtitle', () => {
+    const item = {
+      title: 'Song',
+      resource: { type: 'TRACK', id: rid },
+      artists: [{ name: 'Band' }],
+    } as unknown as SonosItem;
+    expect(normalizeForQueue(item).track?.artist).toEqual({ name: 'Band' });
+  });
+
+  it('prefers the subtitle when there is one', () => {
+    const item = {
+      title: 'Song',
+      subtitle: 'Sub',
+      resource: { type: 'TRACK', id: rid },
+      artists: [{ name: 'Band' }],
+    } as unknown as SonosItem;
+    expect(normalizeForQueue(item).track?.artist).toEqual({ name: 'Sub' });
+  });
+});
 
 // ─── fmtDuration ─────────────────────────────────────────────────────────────
 
