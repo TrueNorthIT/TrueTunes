@@ -21,7 +21,7 @@
     "jose": "^6.2.15"
   },
   "devDependencies": {
-    "@types/node": "^24.19.2",
+    "@types/node": "^20.19.43",
     "typescript": "^7.0.2"
   }
 }

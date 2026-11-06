@@ -388,7 +388,7 @@
             },
             {
               "name": "WEBSITE_NODE_DEFAULT_VERSION",
-              "value": "~24"
+              "value": "~20"
             },
             {
               "name": "WEBSITE_RUN_FROM_PACKAGE",
