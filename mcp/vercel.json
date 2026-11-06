@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["lhr1"],
+  "functions": {
+    "api/**/*.ts": { "maxDuration": 60 }
+  },
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ."
+}

@@ -28,6 +28,7 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             server/package-lock.json
+            mcp/package-lock.json
 
       - run: npm ci
 
@@ -77,6 +78,12 @@ jobs:
           npm ci
           npm test
           npm run build
+
+      - name: MCP (Vercel) typecheck
+        working-directory: mcp
+        run: |
+          npm ci
+          npm run typecheck
 
   version:
     needs: validate

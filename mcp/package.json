@@ -1,0 +1,21 @@
+{
+  "name": "truetunes-mcp",
+  "version": "0.0.0",
+  "private": true,
+  "description": "True Tunes MCP server on Vercel: Claude queues to the office Sonos as the signed-in Entra user",
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/ws": "^8.18.2",
+    "typescript": "^6.0.3"
+  }
+}

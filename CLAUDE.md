@@ -2,11 +2,12 @@
 
 ## What this is
 
-Electron desktop Sonos client. Three distinct environments that compile and run separately:
+Electron desktop Sonos client. Four distinct environments that compile and run separately:
 
 - **Main process** (`src/`) — Node.js, TypeScript, compiled by `tsc`
 - **Renderer** (`renderer/`) — React + Vite, compiled by Vite/esbuild
 - **Server** (`server/`) — Azure Functions, separate `package.json` and `tsconfig.json`
+- **MCP** (`mcp/`) — Vercel functions (Root Directory `mcp`), separate `package.json` and `tsconfig.json`; `cd mcp && npm run typecheck`. Talks to Sonos through the cloud like the app, never imports from `src/`. See `mcp/README.md`
 
 The renderer never imports from `src/` and vice versa. Communication is strictly through IPC (`ipcMain.handle` / `ipcRenderer.invoke`) with the bridge defined in `src/preload.ts` and the renderer-side types in `renderer/src/types/globals.d.ts`.
 
