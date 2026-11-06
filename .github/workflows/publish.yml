@@ -63,6 +63,15 @@ jobs:
           reporter: java-junit
           fail-on-error: true
 
+      # The GitHub Repos ADO extension's Tests tab reads JUnit/TRX files from the run's artifacts (GitHub has no test results API).
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: renderer/junit.xml
+          if-no-files-found: ignore
+
       - name: Publish coverage report
         uses: davelosert/vitest-coverage-report-action@v2
         if: always()
