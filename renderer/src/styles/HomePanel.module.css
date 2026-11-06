@@ -703,17 +703,26 @@ button.tileMain {
   }
 }
 
+/* Stack the band before the Now playing card gets squeezed (a queue dragged to half the window leaves
+   ~900px): the card then has the full width, so the title and blurb aren't clamped with space to spare. */
+@container (max-width: 900px) {
+  .band {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lyricsBox {
+    height: 16em;
+  }
+  .aboutText {
+    -webkit-line-clamp: 6;
+    line-clamp: 6;
+  }
+}
+
 @container (max-width: 700px) {
   .picksLayout {
     grid-template-columns: 1fr 1fr;
   }
   .picksLead {
     grid-column: 1 / -1;
-  }
-  .band {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .lyricsBox {
-    height: 16em;
   }
 }
