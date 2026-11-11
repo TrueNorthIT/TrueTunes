@@ -492,6 +492,13 @@ interface SonosPreload {
   setGroupVolume: (volume: number) => Promise<unknown>;
   setQueueId: (queueId: string) => Promise<void>;
   loadContent: (payload: Record<string, unknown>) => Promise<unknown>;
+  /** Speak `text` or play an https `url` over the music on every player in the active group (or `playerIds`). */
+  playAudioClip: (clip: {
+    url?: string;
+    text?: string;
+    volume?: number;
+    playerIds?: string[];
+  }) => Promise<{ playerId: string; result: unknown }[] | { error: string }>;
   fetchImage: (url: string) => Promise<{ data: string; mimeType: string } | { error: string }>;
   refreshPlayback: () => Promise<void>;
   resync: () => Promise<void>;

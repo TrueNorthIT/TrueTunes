@@ -37,6 +37,7 @@ export const sonosDefaults: SonosPreload = {
   setGroupVolume: pending,
   setQueueId: () => Promise.resolve(),
   loadContent: pending,
+  playAudioClip: pending,
   setPlayModes: pending,
   skipToTrack: pending,
   seek: pending,
