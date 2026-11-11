@@ -2,7 +2,8 @@
 
 import { app, BrowserWindow, ipcMain, IpcMainInvokeEvent } from 'electron';
 import * as path from 'path';
-import { state } from '../state';
+import { state, config } from '../state';
+import { wsSend, discoveredGroups } from '../sonos-ws';
 
 // This file compiles to dist/ipc/, so the monitor pages (copied to dist/ by build:main) are one level up.
 export function openDebugWindow(): void {
@@ -44,6 +45,13 @@ export function openHttpDebugWindow(): void {
 export function register(): void {
   ipcMain.handle('debug:openWsMonitor', () => openDebugWindow());
   ipcMain.handle('debug:openHttpMonitor', () => openHttpDebugWindow());
+  // Dev-only: a raw WS frame for probing commands (e.g. audioClip) from the WS Monitor's DevTools.
+  ipcMain.handle('debug:wsInfo', () =>
+    app.isPackaged ? null : { householdId: config.householdId, groupId: config.groupId, groups: discoveredGroups }
+  );
+  ipcMain.handle('debug:wsRaw', (_e, header: Record<string, unknown>, payload: Record<string, unknown>) =>
+    app.isPackaged ? null : wsSend(header, payload ?? {})
+  );
   ipcMain.handle('debug:openDevTools', () => {
     if (!app.isPackaged) state.uiWin?.webContents.openDevTools();
   });

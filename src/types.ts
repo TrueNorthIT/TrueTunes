@@ -31,6 +31,14 @@ export interface AttributionEvent {
 
 // ─── Sonos fetch types ────────────────────────────────────────────────────────
 
+/** A sound for loadAudioClip: `text` is spoken (TTS), otherwise `url` (https) is played. */
+export interface AudioClipRequest {
+  url?: string;
+  text?: string;
+  volume?: number;
+  playerIds?: string[];
+}
+
 export interface FetchRequest {
   operationId: string;
   pathParams?: Record<string, string>;

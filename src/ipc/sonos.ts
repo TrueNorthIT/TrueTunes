@@ -2,7 +2,7 @@
 
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
 import WebSocket from 'ws';
-import type { FetchRequest, FetchResponse } from '../types';
+import type { AudioClipRequest, FetchRequest, FetchResponse } from '../types';
 import * as smtc from '../smtc';
 import { config, log, saveConfig } from '../state';
 import { sonosFetch } from '../sonos-api';
@@ -104,6 +104,36 @@ export function register(): void {
     if (!groupId) return { error: 'No active group' };
     if (!ws || ws.readyState !== WebSocket.OPEN) return { error: 'WS not connected' };
     return wsSend({ namespace: 'groupVolume', groupId, command: 'setVolume' }, { volume });
+  });
+
+  // Plays a sound over the music without touching the queue (Sonos ducks the music, then carries on).
+  // Clips play on one player each, so it goes to every player in the active group unless playerIds says otherwise.
+  ipcMain.handle('audioClip:play', (_event: IpcMainInvokeEvent, clip: AudioClipRequest) => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return { error: 'WS not connected' };
+    // shortcut: unofficial Google Translate TTS (no key, ~200 chars, could vanish); Azure Speech if this sticks.
+    const streamUrl = clip?.text
+      ? `https://translate.google.com/translate_tts?ie=UTF-8&tl=en-GB&client=tw-ob&q=${encodeURIComponent(clip.text)}`
+      : clip?.url;
+    if (!streamUrl?.startsWith('https://')) return { error: 'Need text or an https url' };
+    const volume = clip.volume ?? 30;
+    if (typeof volume !== 'number' || volume < 0 || volume > 100) return { error: 'Invalid volume' };
+    const playerIds = clip.playerIds ?? discoveredGroups.find((g) => g.id === config.groupId)?.playerIds ?? [];
+    if (!playerIds.length) return { error: 'No active group' };
+    const payload = {
+      name: 'TrueTunes',
+      appId: 'com.truetunes',
+      clipType: 'CUSTOM',
+      streamUrl,
+      priority: 'LOW',
+      volume,
+    };
+    return Promise.all(
+      playerIds.map((playerId) =>
+        wsSend({ namespace: 'audioClip', playerId, command: 'loadAudioClip' }, payload)
+          .catch((e: unknown) => ({ error: String(e) }))
+          .then((result) => ({ playerId, result }))
+      )
+    );
   });
 
   ipcMain.handle('playback:play', (_event: IpcMainInvokeEvent) => {

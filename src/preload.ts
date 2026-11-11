@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { FetchRequest, FetchResponse, AttributionMap, AttributionEvent } from './types';
+import type { AudioClipRequest, FetchRequest, FetchResponse, AttributionMap, AttributionEvent } from './types';
 import type { EntraUser } from './auth-entra';
 
 type VoidCallback = () => void;
@@ -11,6 +11,7 @@ export interface SonosAPI {
   openExternal: (url: string) => Promise<void>;
   setQueueId: (queueId: string) => Promise<void>;
   loadContent: (payload: Record<string, unknown>) => Promise<unknown>;
+  playAudioClip: (clip: AudioClipRequest) => Promise<{ playerId: string; result: unknown }[] | { error: string }>;
   fetchImage: (url: string) => Promise<{ data: string; mimeType: string } | { error: string }>;
   onAuthReady: (cb: VoidCallback) => Unsubscribe;
   onAuthExpired: (cb: VoidCallback) => Unsubscribe;
@@ -188,6 +189,7 @@ contextBridge.exposeInMainWorld('sonos', {
   },
   setQueueId: (queueId: string) => ipcRenderer.invoke('queue:setId', queueId),
   loadContent: (payload: Record<string, unknown>) => ipcRenderer.invoke('playback:loadContent', payload),
+  playAudioClip: (clip: AudioClipRequest) => ipcRenderer.invoke('audioClip:play', clip),
   fetchImage: (url: string) => ipcRenderer.invoke('image:fetch', url),
   getActiveGroup: () => ipcRenderer.invoke('group:getActive'),
   setGroup: (groupId: string) => ipcRenderer.invoke('group:set', groupId),
