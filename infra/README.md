@@ -231,14 +231,21 @@ nothing:
 
 `keyvault.tf` creates `truetunes-kv` (RBAC authorisation, soft delete 90 days), gives the Function App a
 system-assigned identity and grants it "Key Vault Secrets User". Terraform never holds a secret value: the four
-secret settings (`VESTABOARD_API_KEY`, `GITHUB_ISSUES_TOKEN`, `SONOS_USERNAME`, `SONOS_PASSWORD`) are always
+secret settings (`VESTABOARD_API_KEY`, `GITHUB_APP_PRIVATE_KEY`, `SONOS_USERNAME`, `SONOS_PASSWORD`) are always
 `@Microsoft.KeyVault(SecretUri=...)` references. A reference to a secret that does not exist hands the app the
 reference text, so the vault must hold all four before an apply that first introduces the references.
 
 To load or rotate a secret, by a person with "Key Vault Secrets Officer" on the vault (add your Entra object id to the
-`KEY_VAULT_SECRETS_OFFICERS` repository variable, a JSON list; the next deploy applies it): fill the four values in the root `.env` (all non-empty), then run
-`node infra/scripts/load-secrets.mjs` from the repo root with the admin identity signed in. Role assignments can take
-a few minutes. Check the Function App's Configuration page shows each setting with a green "Key Vault Reference"
+`KEY_VAULT_SECRETS_OFFICERS` repository variable, a JSON list; the next deploy applies it): fill `VESTABOARD_API_KEY`,
+`SONOS_USERNAME` and `SONOS_PASSWORD` in the root `.env` (all non-empty), then run `node infra/scripts/load-secrets.mjs`
+from the repo root with the admin identity signed in (from a worktree, pass the main checkout's `.env` path as the
+first argument). The fourth, the feedback GitHub App's private key, comes from the `.pem` GitHub gave you, not `.env`:
+
+```bash
+az keyvault secret set --vault-name truetunes-kv --name github-app-private-key --file <path-to.pem> --encoding utf-8 --query name
+```
+
+The App's id and installation id are not secret and sit in `functions.tf`. Role assignments can take a few minutes. Check the Function App's Configuration page shows each setting with a green "Key Vault Reference"
 tick, and that `/api/attribution` still answers. The vault name and secret names are mirrored in
 `scripts/load-secrets.mjs`; change both together.
 

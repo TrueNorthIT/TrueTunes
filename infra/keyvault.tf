@@ -6,10 +6,11 @@ data "azurerm_client_config" "current" {}
 locals {
   # App setting name => Key Vault secret name (vault secret names cannot contain underscores).
   key_vault_secrets = {
-    VESTABOARD_API_KEY  = "vestaboard-api-key"
-    GITHUB_ISSUES_TOKEN = "github-issues-token"
-    SONOS_USERNAME      = "sonos-username"
-    SONOS_PASSWORD      = "sonos-password"
+    VESTABOARD_API_KEY = "vestaboard-api-key"
+    # The feedback GitHub App's private key. Loaded from its .pem with az, not from .env (see README).
+    GITHUB_APP_PRIVATE_KEY = "github-app-private-key"
+    SONOS_USERNAME         = "sonos-username"
+    SONOS_PASSWORD         = "sonos-password"
   }
 }
 

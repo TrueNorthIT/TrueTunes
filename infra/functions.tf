@@ -31,6 +31,9 @@ locals {
       ENTRA_TENANT_ID             = var.entra_tenant_id
       ENTRA_CLIENT_ID             = var.entra_client_id
       AUTH_ENFORCE                = var.auth_enforce
+      # The "True Tunes Feedback" GitHub App that opens feedback issues. Ids, not secrets.
+      GITHUB_APP_ID              = "5728231"
+      GITHUB_APP_INSTALLATION_ID = "181238578"
     },
     local.secret_settings_as_references,
   )

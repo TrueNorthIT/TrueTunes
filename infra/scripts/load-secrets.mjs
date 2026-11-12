@@ -24,7 +24,6 @@ const subscription = process.env.TRUETUNES_SUBSCRIPTION;
 // .env variable => Key Vault secret name. Keep in step with `key_vault_secrets` in infra/keyvault.tf.
 const secrets = {
   VESTABOARD_API_KEY: 'vestaboard-api-key',
-  GITHUB_ISSUES_TOKEN: 'github-issues-token',
   SONOS_USERNAME: 'sonos-username',
   SONOS_PASSWORD: 'sonos-password',
 };
@@ -46,7 +45,8 @@ function readEnvFile(path) {
   return env;
 }
 
-const env = readEnvFile(resolve(repoRoot, '.env'));
+// A worktree has no .env of its own: pass the path to the main checkout's as the first argument.
+const env = readEnvFile(resolve(process.argv[2] ?? resolve(repoRoot, '.env')));
 const missing = Object.keys(secrets).filter((name) => !env[name]);
 if (missing.length) {
   console.error(
@@ -64,12 +64,19 @@ try {
     const file = join(dir, secretName);
     writeFileSync(file, env[name], { encoding: 'utf8', mode: 0o600 });
     const args = [
-      'keyvault', 'secret', 'set',
-      '--vault-name', vault,
-      '--name', secretName,
-      '--file', quote(file),
-      '--encoding', 'utf-8',
-      '--output', 'none',
+      'keyvault',
+      'secret',
+      'set',
+      '--vault-name',
+      vault,
+      '--name',
+      secretName,
+      '--file',
+      quote(file),
+      '--encoding',
+      'utf-8',
+      '--output',
+      'none',
       ...(subscription ? ['--subscription', subscription] : []),
     ];
     const result = spawnSync(az, args, { stdio: ['ignore', 'ignore', 'inherit'], shell: process.platform === 'win32' });
