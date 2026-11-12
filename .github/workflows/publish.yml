@@ -93,6 +93,15 @@ jobs:
           npm test
           npm run build
 
+      # The built web app, served by the gateway's own code on this runner, driven in Chromium: the demo journeys at
+      # phone and desktop size, then installability, the service worker's cache, the offline screen and the update
+      # flow. /demo is a pretend office in memory, and the run fails if the page calls /sonos, /fn, /img or the relay.
+      - name: Web app in a real browser
+        run: |
+          node scripts/web/journey.mjs --local
+          node scripts/web/journey.mjs --local --width 1280 --height 800
+          node scripts/web/pwa.mjs
+
   # Applies the Terraform in infra/ and publishes the functions in server/, for the commit that was pushed.
   # `version` (and so `publish`, the desktop release) needs this job: a new app build may call a new function or
   # setting, so the release must not go out unless both succeeded. Runs for every push to main, Dependabot merges

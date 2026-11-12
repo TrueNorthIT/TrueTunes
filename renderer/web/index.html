@@ -6,6 +6,14 @@
   <title>True Tunes</title>
   <meta name="description" content="The office's shared jukebox." />
   <meta name="theme-color" content="#12131f" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+  <!-- iOS reads these, not the manifest, when the app is added to the home screen -->
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="True Tunes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <!--
     The web app (PWA) entry. Everything goes through this origin (the gateway): /sonos, /fn, /img and the relay.
     connect-src lists the only other hosts the page may call, all of which let a browser read them: lyrics, the

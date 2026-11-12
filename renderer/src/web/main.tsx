@@ -8,7 +8,9 @@ import { App } from '../App';
 import { STALE } from '../lib/queryDefaults';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { SignIn } from './SignIn';
+import { Offline } from './Offline';
 import { DemoBadge } from './DemoBadge';
+import { createUpdates } from './updates';
 import '@fontsource-variable/manrope';
 import '../styles/global.css';
 import '../styles/depth.css';
@@ -41,14 +43,23 @@ async function boot(): Promise<void> {
   const el = document.getElementById('root');
   if (!el) throw new Error('No #root element found');
   const root = createRoot(el);
+  // Registers the service worker; a new version waits for the app's Update button (the bridge's update events).
+  const updates = createUpdates();
 
   if (isDemo) {
     document.documentElement.dataset.demo = '';
     // Loaded only here, so the real app never downloads the demo's catalogue.
     const { createDemoBackend, installDemoRuntime } = await import('./demo');
     installDemoRuntime();
-    window.sonos = createDemoBackend();
+    // The demo is the real app in every other way, so it gets the real Update button too.
+    window.sonos = { ...createDemoBackend(), onUpdateDownloaded: updates.onWaiting, installUpdate: updates.activate };
     renderApp(root, true);
+    return;
+  }
+
+  // Opened with no connection (the installed app, from the cached shell): say so, rather than fail to sign in.
+  if (!navigator.onLine) {
+    root.render(<Offline />);
     return;
   }
 
@@ -59,7 +70,7 @@ async function boot(): Promise<void> {
     redirectUri: `${location.origin}/auth/redirect`,
   });
   const signIn = (failed = false) =>
-    root.render(<SignIn failed={failed} onSignIn={() => auth.signIn().catch(() => signIn(true))} />);
+    root.render(<SignIn failed={failed} onSignIn={() => void auth.signIn().catch(() => signIn(true))} />);
 
   let user: EntraUser | null;
   try {
@@ -71,7 +82,7 @@ async function boot(): Promise<void> {
   // The way back from Microsoft lands on /auth/redirect; the app itself lives at /.
   if (location.pathname !== '/') history.replaceState(null, '', '/');
 
-  const bridge = createWebBridge({ auth, version: __APP_VERSION__ });
+  const bridge = createWebBridge({ auth, version: __APP_VERSION__, updates });
   window.sonos = bridge;
   if (!user) {
     signIn();
