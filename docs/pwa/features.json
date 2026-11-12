@@ -205,9 +205,9 @@
     {
       "id": "web-dj-autoplay",
       "area": "functions",
-      "description": "The DJ preview (the three upcoming picks) shows on the web. A web client never takes the enqueue lease, so a phone that goes to sleep cannot stall the office's filler.",
+      "description": "The DJ (autoplay) works on the web as on the desktop: the upcoming picks, the on/off switch, and the coordinator's filler position, so people's picks go in front of the DJ's. The web client takes part in the 30-second enqueue lease like any other client.",
       "bridge": ["djAutoplay"],
-      "how_verified": "unit test: the web bridge's request never asks for the lease",
+      "how_verified": "unit test: the web bridge sends the same request as the desktop (src/ipc/functions.ts)",
       "passes": false,
       "evidence": ""
     },

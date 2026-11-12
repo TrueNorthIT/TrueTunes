@@ -66,12 +66,57 @@ Piece 1: merge the pull request, watch the deploy, run the production checks for
 - **Demo route:** `/demo`. The Storybook mock backend never settles writes (by design, for stories). The demo needs
   controls that work, so it adds an in-memory simulation of playback, volume and the queue on top of the same
   fixtures. Nothing in it touches the network.
-- **The web client never takes the DJ enqueue lease.** A phone that sleeps while holding it would stall the office's
-  filler until the lease lapsed. It shows the preview only, like a dev build.
+- **The web client takes part in the DJ's enqueue lease like the desktop.** First decided the other way (preview
+  only, in case a sleeping phone held the lease), then reversed on reading the server: the lease lasts 30 seconds
+  (`LEASE_MS` in `server/src/shared/autoplay.ts`), so a sleeping phone delays the filler by half a minute at most,
+  while a client that never asks the coordinator does not learn `fillerUri` and would queue people's picks behind
+  the DJ's filler. `features.json` (`web-dj-autoplay`) was reworded to match.
 - **Live attribution events** on the desktop come from Azure Web PubSub. A browser connecting to
   `*.webpubsub.azure.com` would break the one-origin rule, so the first release loads the map from `/fn/attribution`
   on every queue change (the app already asks for that) and a gateway relay for the socket is its own entry in
   `features.json` (`gw-pubsub-relay`).
+
+### Phone shell (piece 6): the structure, decided before building
+
+On the web, a window too narrow for the full layout (under 1,144px, the same test as skinny mode) gets the phone
+shell instead of `SkinnyShell`. The desktop app keeps skinny mode untouched.
+
+```
+┌──────────────────────────┐
+│ page (scrolls)           │  the same routed panels as the desktop: Home, Search, Album, Artist, ...
+│                          │
+├──────────────────────────┤
+│ ▣ Title · Artist    ⏸    │  mini player: always there, one tap opens Now playing
+├──────────────────────────┤
+│ Home Search Queue Discover More │  tab bar, in the thumb's reach, above the home indicator
+└──────────────────────────┘
+```
+
+- **Five tabs: Home, Search, Queue, Discover, More.** The first four are what someone does with a phone in the
+  office: see what is on, find a song, look at the queue, get a suggestion. Leaderboard, Queuedle, the profile (which
+  holds playlists), speakers, feedback and sign-out are on the More page, two taps away. Five is the most a 390px bar
+  holds at 44px targets with labels; labels stay, because icons alone made the desktop nav need tooltips.
+- **Tabs are routes** (`/queue`, `/more` and `/now-playing` are new, web-only routes), not local state, so the
+  phone's back gesture and the browser's back button do what people expect, and a page can be linked.
+- **Now playing is one tap away everywhere**: the mini player sits above the tab bar on every page. It shows art,
+  title, artist, play/pause and a hairline of progress. Tapping it opens `/now-playing`: the art large, title and
+  artist (links), who queued it, the seek bar, previous / play-pause / next, volume, shuffle and repeat, the heart,
+  lyrics, and a way to the queue. Back closes it.
+- **The queue is a page**, not a drawer: the same `QueueSidebar` list (virtualised, with who queued each track), at
+  full width, with rows tall enough to tap.
+- **Search is a page with its own field at the top** (the desktop keeps the field in the nav pill). Opening the
+  Search tab focuses nothing until tapped, so the keyboard does not jump up uninvited; recent searches show first.
+- **Touch equivalents.** Hover-revealed controls (the quiet + on rows, the corner + on tiles) are always visible when
+  the device has no hover. Every context menu opens from a long-press and from a visible "more" button on the row,
+  and on a phone it is a bottom sheet rather than a popover at the pointer. The queue reorders without dragging: the
+  row's menu has Play next, Move up, Move down and Remove.
+- **Sizes.** Tap targets at least 44px (`--tap`, a new token), text never under 13px (already the rule), the page
+  gutter drops from 28px to 16px, and the shell pads for `env(safe-area-inset-*)`. Heights use `dvh`, so nothing
+  hides behind the browser's bars. Motion follows `prefers-reduced-motion` as elsewhere.
+- **Same materials.** The tab bar and the mini player are the frosted shell material (`--material-bg`,
+  `--material-filter`), like the desktop's nav pill and player bar; the ambient artwork layer sits behind the
+  whole shell. No new colours.
+- **The desktop browser** (1,144px and wider) gets the desktop layout unchanged, minus the window buttons.
 
 ## Things a reader might not expect
 
