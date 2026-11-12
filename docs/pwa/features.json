@@ -54,8 +54,8 @@
       "area": "gateway",
       "description": "Live 'who queued this' events reach the browser through the gateway (a relay to the Web PubSub socket), so the browser stays on one origin.",
       "how_verified": "server unit tests; mock-driven bridge test",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`cd server && npm test`: 633 pass (gatewayPubsub.test.ts, and real-ws tests of path-aware subprotocol selection and the 1 MiB frame cap in gatewayNode.test.ts). Web unit tests: 376 pass (attributionSocket.test.ts: 47 at first, more after review). An independent review compared the Sonos relay before and after statement by statement (unchanged) and found a reconnect-storm bug, fixed with tests. `node scripts/web/checks.mjs https://truetunes.tnapps.co.uk --pwa`: 52 of 52 PASS on 12 Nov 2026 after the deploy of a186d49 (#268, Publish run 43323677195): /pubsub/ws refuses an unsigned upgrade and a made-up token with 401, /pubsub/nope is 404. Not yet exercised with a real signed-in session: if it fails the web app falls back to refreshing the map on queue changes."
     },
     {
       "id": "web-build",
@@ -191,7 +191,7 @@
       "bridge": ["publishQueued", "refreshAttribution", "onAttributionMap", "onAttributionEvent"],
       "how_verified": "unit tests of the bridge; demo journey shows queued-by badges",
       "passes": true,
-      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (session.test.ts \"attribution\"). Badges in the demo: the queue shows who queued each track (journey screenshots). The owner signed in on production on 12 Nov 2026 in a desktop-width browser and sent a screenshot: now playing with its \"Queued by\" chip, the 22-track queue with times and queuer avatars, live lyrics, Picks, the Queuedle card, his profile and the Poll button all loaded."
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (session.test.ts \"attribution\"). Badges in the demo: the queue shows who queued each track (journey screenshots). The owner signed in on production on 12 Nov 2026 in a desktop-width browser and sent a screenshot: now playing with its \"Queued by\" chip, the 22-track queue with times and queuer avatars, live lyrics, Picks, the Queuedle card, his profile and the Poll button all loaded. Live events through the gateway relay shipped in #268 (see gw-pubsub-relay)."
     },
     {
       "id": "web-office-presence",
@@ -443,8 +443,8 @@
       "description": "A new version found while the app is launching (first seconds, nothing tapped, no other window open) takes over at once, so opening the app gets the latest. Found later, it waits: the app's existing Update button appears and activating it reloads onto the new version. Nothing activates under someone who is using the app.",
       "bridge": ["onUpdateDownloaded", "installUpdate"],
       "how_verified": "unit test of the bridge's update events; Playwright with two builds served in turn",
-      "passes": false,
-      "evidence": "Locally: `node scripts/web/pwa.mjs` passes 9 of 9 on 12 Nov, including \"opening the app after a deploy takes the new version by itself, with no button\" and the wait-for-Update case after a key press. Not yet merged or run in the pipeline."
+      "passes": true,
+      "evidence": "`node scripts/web/pwa.mjs` 9 of 9 in the pipeline (`validate` on #267 and #268) and locally four times in a row: a version found at launch takes over by itself with no button; one found after a key press waits and shows Update; Update activates it in a window that began with no worker and a second window follows. Deployed: production /sw.js (version 1.0.99) contains `activate-if-alone`."
     },
     {
       "id": "pwa-offline",
@@ -452,7 +452,7 @@
       "description": "Offline, the installed app opens to a clear offline screen instead of the browser's error page.",
       "how_verified": "Playwright with the network offline",
       "passes": true,
-      "evidence": "`node scripts/web/pwa.mjs` (locally and in `validate` on #265 (typecheck, lint, format, both builds, 2,142 renderer tests, the journeys and pwa.mjs in Chromium)): offline, / shows the offline screen with Try again, and /demo opens from the cache."
+      "evidence": "`node scripts/web/pwa.mjs` (locally and in `validate` on #265 (typecheck, lint, format, both builds, 2,142 renderer tests, the journeys and pwa.mjs in Chromium)): offline, / shows the offline screen with Try again, and /demo opens from the cache. After #267: the offline screen no longer reloads while the page is leaving (20 of 20 runs of the failing sequence pass)."
     },
     {
       "id": "one-origin",
@@ -484,7 +484,7 @@
       "description": "All of it is merged to main and deployed by the pipeline; https://truetunes.tnapps.co.uk/ serves the web app.",
       "how_verified": "the deploy job's result per merge; the production checks and the journey test run against the live address",
       "passes": false,
-      "evidence": "#264 (gateway) and #265 (web app) are merged and deployed; 12 Nov 2026, after the deploy of e51798b (#265, Publish run 43301237597). https://truetunes.tnapps.co.uk/ serves the web app. The phone shell is not merged yet."
+      "evidence": "#264 (gateway), #265 (web app), #266 (launch update), #267 (offline fix) and #268 (live attribution relay) are merged and deployed; production verified after each on 12 Nov 2026. https://truetunes.tnapps.co.uk/ serves the web app. The phone shell is not merged yet."
     }
   ]
 }

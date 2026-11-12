@@ -9,27 +9,33 @@ once the named check has run). This file says where the work stands and why thin
 
 ## Status
 
-| # | Piece | Branch / PR | State |
+| # | Piece | Pull request | State |
 | --- | --- | --- | --- |
-| 1 | Gateway: static hosting, `/fn`, `/img`, browser auth for the relay | #264 | merged, deployed, verified on production (12 Nov 2026) |
-| 2 | Web scaffold: web build, browser bridge, demo route | `feature/pwa-web` | built and reviewed; pull request next |
-| 3 | Sign-in and our Functions through `/fn` | `feature/pwa-web` (in the bridge) | built; sign-in reaches Microsoft's page; a real sign-in needs the owner |
-| 4 | Sonos reads through the gateway | `feature/pwa-web` (in the bridge) | built, unit-tested against fakes; live check needs a signed-in person |
-| 5 | Sonos commands (mock only) | `feature/pwa-web` (bridge and demo) | built; frames unit-tested; controls exercised in the demo |
-| 6 | Phone layout | `feature/pwa-phone` (an agent, in its own worktree) | in progress |
-| 7 | Installability | `feature/pwa-web` | built; `scripts/web/pwa.mjs` passes locally |
-
-Pieces 2 to 5 and 7 ship as one pull request from `feature/pwa-web`: the bridge covers sign-in, reads and commands
-together, and none of it is reachable until the web build is deployed.
+| 1 | Gateway: static hosting, `/fn`, `/img`, browser auth for the relay | #264 | merged, deployed, verified on production |
+| 2 to 5 | Web build, browser bridge, demo route, sign-in, reads and commands | #265 | merged, deployed, verified; the owner signed in on production and confirmed the desktop-width app loads |
+| 7 | Installability: manifest, service worker, update flow, offline screen | #265, #266, #267 | merged, deployed, verified |
+| | Live "queued by" events through the gateway (`/pubsub/ws`) | #268 | merged, deployed; refusals verified on production; not yet seen working with a real session |
+| 6 | Phone layout (target: iPhone 14) | `feature/pwa-phone` (an agent, in its own worktree) | in progress |
 
 ## Next
 
-1. Open the pull request for `feature/pwa-web`, merge when `validate` is green, watch `deploy`, then run
-   `node scripts/web/checks.mjs https://truetunes.tnapps.co.uk --pwa` and
-   `node scripts/web/journey.mjs https://truetunes.tnapps.co.uk` (phone and 1280x800).
-2. Review the phone shell branch (`feature/pwa-phone`): screenshots at 390x844 and 1280x800, the extended journey,
-   then its own pull request.
-3. Update `features.json` with the evidence from each, and write the final report.
+1. Review the phone shell branch when its agent reports: screenshots at iPhone 14 size and 1280x800, the extended
+   journey, an independent read, then its pull request, merge and production check.
+2. Update `features.json` with the evidence, and write the final report.
+
+## What went wrong along the way
+
+- **A deploy was skipped after #266.** The post-merge `validate` on main failed in the pipeline's own browser check
+  ("offline, the demo still opens from the cache"), which had passed on the pull request. `deploy` needs `validate`,
+  so nothing was deployed and production stayed on the previous version; nothing broke. The cause was real, not just
+  timing: the offline screen reloads itself when the connection returns, a browser can report "online" in the moment
+  the page is navigating away, and that reload beat the navigation (4 or 5 failures in 10 to 14 runs of the
+  sequence; 0 in 20 after the fix). Fixed in #267.
+- **#267's own CI then failed in a different step** of the same script: a 15-second wait for a page `load` event
+  after pressing Update. A waiting service worker takes over only once the old one is idle, which can take longer on
+  a slow runner, and messaging the old worker while waiting keeps it busy. The update checks now watch the caches
+  (the new worker prunes them when it activates) with a 90-second limit. Lesson recorded for anyone adding to
+  `scripts/web/pwa.mjs`: wait for outcomes, never for load events, and never poll the worker.
 
 ## Decisions, and why
 
