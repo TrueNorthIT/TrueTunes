@@ -1,4 +1,6 @@
 dist/
 renderer/dist/
+renderer/dist-web/
+server/web/
 node_modules/
 src/*.html
