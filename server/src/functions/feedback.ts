@@ -1,13 +1,21 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { authenticate, entraCheckFromEnv } from '../shared/auth';
-import { displayNameForOid } from '../lib/caller';
+import { displayNameForOid, githubLoginForOid } from '../lib/caller';
+import {
+  buildIssueBody,
+  createGithubIssuer,
+  githubAppConfigFromEnv,
+  GithubError,
+  type GithubIssuer,
+} from '../shared/githubIssues';
 
 // POST /api/feedback
 // Body: { type: 'bug' | 'feature', title: string, description?: string }
 //
-// Opens an issue on the True Tunes repo for the in-app feedback dialog, so the GitHub
-// token stays on the server (GITHUB_ISSUES_TOKEN: fine-grained, Issues read/write on
-// this one repo). Always needs a valid Entra token, even while AUTH_ENFORCE is off:
+// Opens an issue on the True Tunes repo for the in-app feedback dialog, as a GitHub App
+// (GITHUB_APP_ID, GITHUB_APP_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY: Issues read/write on
+// this one repo), so the credentials stay on the server. The reporter is assigned and
+// @mentioned when their profile has a githubLogin. Always needs a valid Entra token, even while AUTH_ENFORCE is off:
 // no client released before tokens calls this function.
 //
 // Returns:
@@ -19,13 +27,21 @@ import { displayNameForOid } from '../lib/caller';
 const REPO = 'TrueNorthIT/TrueTunes';
 const LABELS = { bug: 'bug', feature: 'enhancement' } as const;
 
+// One issuer for the life of the process, so the installation token cache is shared.
+let issuer: GithubIssuer | undefined;
+function issuerFromEnv(): GithubIssuer | null {
+  if (issuer) return issuer;
+  const config = githubAppConfigFromEnv();
+  return config ? (issuer = createGithubIssuer(config, REPO)) : null;
+}
+
 export async function feedbackHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const auth = await authenticate(request, context, entraCheckFromEnv(), true);
   if ('response' in auth) return auth.response;
   if (!auth.oid) return { status: 401, jsonBody: { error: 'sign-in required' } };
 
-  const token = process.env['GITHUB_ISSUES_TOKEN'];
-  if (!token) return { status: 500, jsonBody: { error: 'Feedback is not configured' } };
+  const github = issuerFromEnv();
+  if (!github) return { status: 500, jsonBody: { error: 'Feedback is not configured' } };
 
   let body: { type?: string; title?: unknown; description?: unknown };
   try {
@@ -41,34 +57,29 @@ export async function feedbackHandler(request: HttpRequest, context: InvocationC
   }
 
   let raisedBy: string | null = null;
+  let login: string | null = null;
   try {
     raisedBy = await displayNameForOid(auth.oid);
+    login = await githubLoginForOid(auth.oid);
   } catch (err) {
     context.warn('[feedback] profile lookup failed, sending unsigned:', err);
   }
-  const issueBody = [description, raisedBy ? `---\n**Raised by:** ${raisedBy}` : ''].filter(Boolean).join('\n\n');
 
   try {
-    const res = await fetch(`https://api.github.com/repos/${REPO}/issues`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/vnd.github+json',
-        'Content-Type': 'application/json',
-        'User-Agent': 'TrueTunes-feedback',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-      body: JSON.stringify({ title, body: issueBody, labels: [LABELS[type]] }),
+    const issue = await github.createIssue({
+      title,
+      body: buildIssueBody(description, raisedBy, login),
+      labels: [LABELS[type]],
+      assignee: login,
     });
-    if (!res.ok) {
-      context.error(`[feedback] GitHub ${res.status}: ${await res.text()}`);
-      return { status: 502, jsonBody: { error: `GitHub refused the issue (${res.status})` } };
-    }
-    const issue = (await res.json()) as { html_url: string };
     context.log(`[feedback] ${type} issue ${issue.html_url} by oid=${auth.oid}`);
     return { status: 201, jsonBody: { url: issue.html_url } };
   } catch (err) {
-    context.error('[feedback] failed:', err);
+    // The message carries a status at most, never a key, token or response body.
+    context.error('[feedback] failed:', err instanceof Error ? err.message : 'unknown error');
+    if (err instanceof GithubError && err.step === 'issue creation') {
+      return { status: 502, jsonBody: { error: `GitHub refused the issue (${err.status})` } };
+    }
     return { status: 502, jsonBody: { error: 'Could not reach GitHub' } };
   }
 }
