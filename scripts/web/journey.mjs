@@ -87,6 +87,8 @@ async function journey(name, run) {
     });
   }
 }
+/** The transport's own button, by its label: other buttons say "Play" too (Queuedle) or mention pausing (the DJ). */
+const transport = (label) => page.locator(`button[aria-label="${label}"]`);
 const expectVisible = (locator, timeout = 8000) => locator.first().waitFor({ state: 'visible', timeout });
 
 await journey('open the demo and see what is playing', async () => {
@@ -96,10 +98,10 @@ await journey('open the demo and see what is playing', async () => {
 });
 
 await journey('pause and resume', async () => {
-  await page.getByRole('button', { name: 'Pause' }).first().click();
-  await expectVisible(page.getByRole('button', { name: 'Play', exact: true }));
-  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
-  await expectVisible(page.getByRole('button', { name: 'Pause' }));
+  await transport('Pause').first().click();
+  await expectVisible(transport('Play'));
+  await transport('Play').first().click();
+  await expectVisible(transport('Pause'));
 });
 
 await journey('nothing scrolls sideways', async () => {

@@ -77,10 +77,15 @@ async function boot(): Promise<void> {
     signIn();
     return;
   }
-  // A silent refresh that needs the user (about once a day in a browser): back to the sign-in screen.
+  // "Expired" also fires when the gateway or Sonos is down, which the app's own Retry screen handles. Only when
+  // there is no token to be had (a silent refresh that needs the user, about once a day in a browser) does the
+  // sign-in screen come back.
   bridge.onAuthExpired(() => {
-    bridge.stop();
-    signIn();
+    void auth.idToken().then((token) => {
+      if (token) return;
+      bridge.stop();
+      signIn();
+    });
   });
   bridge.start();
   renderApp(root, false);
