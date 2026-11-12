@@ -3,7 +3,20 @@
 import { randomUUID } from 'crypto';
 import WebSocket from 'ws';
 import * as telemetry from './telemetry';
-import { config, state, log, broadcastToRenderers, saveConfig, BASE_URL, WS_URL, SPOOF_UA } from './state';
+import {
+  config,
+  state,
+  log,
+  broadcastToRenderers,
+  saveConfig,
+  sonosVia,
+  SONOS_GATEWAY_URL,
+  BASE_URL,
+  WS_URL,
+  SPOOF_UA,
+} from './state';
+import { entraIdToken } from './ipc/entra';
+import { gatewaySocketUrl, GATEWAY_WS_PROTOCOL } from './sonos-transport';
 import { discoverServiceCredentials } from './sonos-api';
 import { renewSession } from './sonos-session';
 
@@ -325,29 +338,44 @@ export async function connectWebSocket(): Promise<void> {
   // Guard against double-connect
   if (ws && ws.readyState <= WebSocket.OPEN) return;
 
-  // Fetch a fresh ticket from /api/mfe
-  let ticket: string | null;
-  try {
-    ticket = findTicket(await fetchMfeData());
-  } catch (err) {
-    console.error('[ws] Ticket fetch failed:', err instanceof Error ? err.message : err);
-    telemetry.exception(err, { phase: 'ws_ticket_fetch' });
-    scheduleReconnect();
-    return;
+  if (sonosVia() === 'gateway') {
+    // The gateway fetches the ticket and opens the Sonos socket itself; we only show the Entra ID token.
+    const bearer = await entraIdToken();
+    if (!bearer) {
+      console.error('[ws] No Entra token for the gateway');
+      telemetry.event('ws_ticket_missing', { sonosVia: 'gateway' });
+      scheduleReconnect();
+      return;
+    }
+    log('[ws] Connecting via gateway');
+    ws = new WebSocket(gatewaySocketUrl(SONOS_GATEWAY_URL), [GATEWAY_WS_PROTOCOL], {
+      headers: { Authorization: `Bearer ${bearer}` },
+    });
+  } else {
+    // Fetch a fresh ticket from /api/mfe
+    let ticket: string | null;
+    try {
+      ticket = findTicket(await fetchMfeData());
+    } catch (err) {
+      console.error('[ws] Ticket fetch failed:', err instanceof Error ? err.message : err);
+      telemetry.exception(err, { phase: 'ws_ticket_fetch' });
+      scheduleReconnect();
+      return;
+    }
+
+    if (!ticket) {
+      console.error('[ws] No ticket found in MFE response');
+      telemetry.event('ws_ticket_missing');
+      scheduleReconnect();
+      return;
+    }
+
+    log('[ws] Connecting, ticket:', ticket.slice(0, 8) + '…');
+
+    ws = new WebSocket(`${WS_URL}?ticket=${ticket}`, ['v1.api.smartspeaker.audio'], {
+      headers: { Origin: BASE_URL, 'User-Agent': SPOOF_UA },
+    });
   }
-
-  if (!ticket) {
-    console.error('[ws] No ticket found in MFE response');
-    telemetry.event('ws_ticket_missing');
-    scheduleReconnect();
-    return;
-  }
-
-  log('[ws] Connecting, ticket:', ticket.slice(0, 8) + '…');
-
-  ws = new WebSocket(`${WS_URL}?ticket=${ticket}`, ['v1.api.smartspeaker.audio'], {
-    headers: { Origin: BASE_URL, 'User-Agent': SPOOF_UA },
-  });
 
   ws.on('open', () => {
     log('[ws] Connected');

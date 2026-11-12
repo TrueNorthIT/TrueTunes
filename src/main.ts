@@ -29,12 +29,13 @@ import {
   loadSessionToken,
   clearSessionToken,
   validateSessionToken,
+  sonosVia,
   BASE_URL,
   SPOOF_UA,
   APP_INDEX,
   APP_URL,
 } from './state';
-import { acquireSession, signalSessionFailure } from './sonos-session';
+import { acquireSession, checkGateway, signalSessionFailure } from './sonos-session';
 import { singleFlight } from './single-flight';
 import * as sonosWs from './sonos-ws';
 import { ws, wsSend, discoveredGroups, connectWebSocket, resyncRendererState } from './sonos-ws';
@@ -212,12 +213,21 @@ async function signInEntra(): Promise<void> {
 }
 
 /**
- * Get the app a Sonos session and start it. A token still held (restored from storage) is used as is;
+ * Get the app a Sonos session and start it (via the gateway: just sign in to Entra and check the gateway).
+ * A token still held (restored from storage) is used as is;
  * otherwise sign in to Entra, then ask our Function for the session. Failing that the renderer shows
  * the error state, whose Retry button runs this again. Concurrent calls share one run.
  */
 const connectSonos = singleFlight(async (): Promise<void> => {
-  if (!state.sessionToken) {
+  if (sonosVia() === 'gateway') {
+    // No Sonos session here: the Entra sign-in is all it takes, and the gateway must accept it.
+    await signInEntra();
+    if (!(await checkGateway())) {
+      signalSessionFailure();
+      if (!state.uiWin || state.uiWin.isDestroyed()) createUIWindow();
+      return;
+    }
+  } else if (!state.sessionToken) {
     await signInEntra();
     if (!(await acquireSession())) {
       signalSessionFailure();
@@ -465,15 +475,21 @@ void app.whenReady().then(async () => {
     callback(false);
   });
 
-  // Try to restore a previously saved session; otherwise connectSonos fetches one from our Function
-  const storedToken = await loadSessionToken();
-  if (storedToken && (await validateSessionToken(storedToken))) {
-    state.sessionToken = storedToken;
-    log('[auth] Restored session from storage');
-    telemetry.event('app_started', { sessionRestored: true, appVersion: app.getVersion() });
+  // Try to restore a previously saved session; otherwise connectSonos fetches one from our Function.
+  // Via the gateway there is no Sonos session to restore, and session.enc is left alone.
+  const via = sonosVia();
+  if (via === 'gateway') {
+    telemetry.event('app_started', { sessionRestored: false, appVersion: app.getVersion(), sonosVia: via });
   } else {
-    if (storedToken) await clearSessionToken(); // clear invalid token
-    telemetry.event('app_started', { sessionRestored: false, appVersion: app.getVersion() });
+    const storedToken = await loadSessionToken();
+    if (storedToken && (await validateSessionToken(storedToken))) {
+      state.sessionToken = storedToken;
+      log('[auth] Restored session from storage');
+      telemetry.event('app_started', { sessionRestored: true, appVersion: app.getVersion(), sonosVia: via });
+    } else {
+      if (storedToken) await clearSessionToken(); // clear invalid token
+      telemetry.event('app_started', { sessionRestored: false, appVersion: app.getVersion(), sonosVia: via });
+    }
   }
   void connectSonos();
 

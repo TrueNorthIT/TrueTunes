@@ -1,10 +1,11 @@
 // Config, constants and runtime state shared by main.ts and the modules it wires up.
-// Imports nothing local, so anything can import it without a cycle.
+// Imports only the pure sonos-transport, so anything can import it without a cycle.
 
 import { app, BrowserWindow, safeStorage } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { pathToFileURL } from 'url';
+import { resolveSonosVia, type SonosVia } from './sonos-transport';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -37,6 +38,8 @@ export interface AppConfig {
   lastSeenVersion?: string;
   /** Width (px) of the docked queue column. */
   queueDockedWidth?: number;
+  /** How Sonos is reached: straight ('direct', the default) or through our gateway. TRUETUNES_SONOS_VIA overrides it. */
+  sonosVia?: SonosVia;
 }
 
 // YouTube Music service constants used for the nowPlaying fallback lookup.
@@ -50,6 +53,12 @@ export const PLATFORM_SERVICE_ID = '16751367';
 export const PLATFORM_ACCOUNT_ID = '123209393';
 
 export const PUBSUB_FUNCTION_URL = 'https://truetunes-fn.azurewebsites.net';
+
+/** The Sonos gateway; TRUETUNES_GATEWAY_URL points a dev build at another one. */
+export const SONOS_GATEWAY_URL = process.env['TRUETUNES_GATEWAY_URL'] || 'https://truetunes.tnapps.co.uk';
+
+/** The mode in force: TRUETUNES_SONOS_VIA, else the config, else 'direct'. */
+export const sonosVia = (): SonosVia => resolveSonosVia(config.sonosVia, process.env['TRUETUNES_SONOS_VIA']);
 
 export const config: AppConfig = {};
 
@@ -70,6 +79,7 @@ export async function loadConfig(): Promise<void> {
     if (typeof parsed.preferredCoordinatorId === 'string')
       config.preferredCoordinatorId = parsed.preferredCoordinatorId;
     if (typeof parsed.queueDockedWidth === 'number') config.queueDockedWidth = parsed.queueDockedWidth;
+    if (parsed.sonosVia === 'direct' || parsed.sonosVia === 'gateway') config.sonosVia = parsed.sonosVia;
   } catch {
     // No config file yet — use defaults
   }
@@ -86,6 +96,7 @@ export async function saveConfig(): Promise<void> {
       lastSeenVersion: config.lastSeenVersion,
       preferredCoordinatorId: config.preferredCoordinatorId,
       queueDockedWidth: config.queueDockedWidth,
+      sonosVia: config.sonosVia,
     };
     await fs.writeFile(configFilePath(), JSON.stringify(toSave, null, 2), 'utf8');
   } catch (err) {

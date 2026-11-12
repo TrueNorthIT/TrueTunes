@@ -2,7 +2,9 @@
 
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
 import { sendsSessionCookie } from '../sonos-cookie';
-import { state, SPOOF_UA } from '../state';
+import { state, sonosVia, SONOS_GATEWAY_URL, SPOOF_UA } from '../state';
+import { sonosImageRequest } from '../sonos-transport';
+import { entraIdToken } from './entra';
 
 export function register(): void {
   ipcMain.handle('image:fetch', async (_event: IpcMainInvokeEvent, url: string) => {
@@ -10,14 +12,17 @@ export function register(): void {
       return { error: 'Invalid URL' };
     }
     try {
-      const res = await fetch(url, {
-        headers: {
-          'User-Agent': SPOOF_UA,
-          ...(state.sessionToken && sendsSessionCookie(url)
-            ? { Cookie: `__Secure-next-auth.session-token=${state.sessionToken}` }
-            : {}),
-        },
+      const via = sonosVia();
+      const onSonosHost = sendsSessionCookie(url);
+      const target = sonosImageRequest(via, url, {
+        onSonosHost,
+        gatewayBase: SONOS_GATEWAY_URL,
+        bearer: via === 'gateway' && onSonosHost ? await entraIdToken() : null,
+        sessionToken: state.sessionToken,
+        userAgent: SPOOF_UA,
       });
+      if (!target) return { error: 'No Entra token' };
+      const res = await fetch(target.url, { headers: target.headers });
       if (!res.ok) return { error: `${res.status} ${res.statusText}` };
       const buf = Buffer.from(await res.arrayBuffer());
       const mimeType = res.headers.get('content-type')?.split(';')[0] ?? 'image/jpeg';

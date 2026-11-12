@@ -3,11 +3,15 @@
 import { randomUUID } from 'crypto';
 import type { FetchRequest, FetchResponse } from './types';
 import * as telemetry from './telemetry';
-import { renewSession } from './sonos-session';
+import { renewSession, signalSessionFailure } from './sonos-session';
+import { entraIdToken } from './ipc/entra';
+import { sonosAuthHeaders, toGatewayUrl } from './sonos-transport';
 import {
   config,
   state,
   log,
+  sonosVia,
+  SONOS_GATEWAY_URL,
   BASE_URL,
   SPOOF_UA,
   SEARCH_SERVICE_ID,
@@ -155,15 +159,21 @@ function buildUrl(
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
     .join('&');
 
-  return `${BASE_URL}${urlPath}${qs ? `?${qs}` : ''}`;
+  const url = `${BASE_URL}${urlPath}${qs ? `?${qs}` : ''}`;
+  return sonosVia() === 'gateway' ? (toGatewayUrl(SONOS_GATEWAY_URL, url) as string) : url;
 }
 
 // ─── HTTP fetch helper ────────────────────────────────────────────────────────
 
 /** `isRetry`: the service self-heal's retry. `authRetried`: the retry after a refreshed session token. */
 export async function sonosFetch(request: FetchRequest, isRetry = false, authRetried = false): Promise<FetchResponse> {
-  if (!state.sessionToken) {
-    return { error: 'No session token — please log in first' };
+  const via = sonosVia();
+  // Via the gateway the Entra ID token is the only credential; there is no Sonos session here.
+  const bearer = via === 'gateway' ? await entraIdToken() : null;
+  if (via === 'gateway' ? !bearer : !state.sessionToken) {
+    return {
+      error: via === 'gateway' ? 'No Entra token — please sign in first' : 'No session token — please log in first',
+    };
   }
 
   const operation = OPERATIONS[request.operationId];
@@ -199,12 +209,15 @@ export async function sonosFetch(request: FetchRequest, isRetry = false, authRet
 
   // Build headers once so we can log them before sending
   const reqHeaders: Record<string, string> = {
-    Cookie: `__Secure-next-auth.session-token=${state.sessionToken}`,
+    ...sonosAuthHeaders(via, {
+      bearer,
+      direct: state.sessionToken
+        ? { sessionToken: state.sessionToken, userAgent: SPOOF_UA, referer: `${BASE_URL}/en-us/web-app` }
+        : null,
+    }),
     'X-Sonos-Timezone': '+01:00',
     'X-Sonos-Debug': 'use-section-text=true',
     Accept: '*/*',
-    Referer: `${BASE_URL}/en-us/web-app`,
-    'User-Agent': SPOOF_UA,
     ...(request.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
     ...request.headers,
   };
@@ -298,6 +311,15 @@ export async function sonosFetch(request: FetchRequest, isRetry = false, authRet
     bodyText = attemptBodyText;
     resHeaders = attemptHeaders;
     break;
+  }
+
+  if (response.status === 401 && via === 'gateway') {
+    // The gateway heals Sonos 401s itself, so this is a bad Entra token or Sonos still refusing: one retry
+    // (with a freshly fetched token), then the error state.
+    telemetry.event('auth_401', { operationId: request.operationId, afterRefresh: authRetried, sonosVia: via });
+    if (!authRetried) return sonosFetch(request, isRetry, true);
+    signalSessionFailure();
+    return { error: '401 Unauthorized — gateway refused the request' };
   }
 
   if (response.status === 401) {

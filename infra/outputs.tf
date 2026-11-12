@@ -7,6 +7,27 @@ output "function_app_url" {
   value       = "https://${azurerm_windows_function_app.main.default_hostname}"
 }
 
+output "gateway_app_name" {
+  value = azurerm_linux_web_app.gateway.name
+}
+
+output "gateway_default_hostname" {
+  description = "Target of the CNAME for the custom domain, and the host the deploy smoke check calls."
+  value       = azurerm_linux_web_app.gateway.default_hostname
+}
+
+output "gateway_custom_domain" {
+  description = "Name of the CNAME record, and the host the app serves once gateway_custom_domain_enabled is true."
+  value       = local.gateway_custom_domain
+}
+
+output "gateway_domain_verification_id" {
+  description = "Value of the TXT record asuid.truetunes at the gateway's custom domain."
+  value       = azurerm_linux_web_app.gateway.custom_domain_verification_id
+  # The provider marks it sensitive; `terraform output -raw` still prints it.
+  sensitive = true
+}
+
 output "storage_account_name" {
   value = azurerm_storage_account.app.name
 }
