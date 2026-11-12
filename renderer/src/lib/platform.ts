@@ -3,3 +3,6 @@
 
 /** True in the web app, false in the Electron app. */
 export const isWeb = (): boolean => document.documentElement.dataset.platform === 'web';
+
+/** True while the web app shows the phone shell (PhoneShell marks the document). Read it in handlers, not in render. */
+export const isPhoneShell = (): boolean => document.documentElement.dataset.shell === 'phone';

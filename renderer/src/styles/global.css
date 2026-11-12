@@ -134,6 +134,12 @@
   --nav-h: 64px; /* 12px top gap + 44px pill + 8px clearance */
   --player-h: 112px; /* 64px bar + 24px bottom margin + 24px clearance */
   --card-size: clamp(140px, 16vw, 320px);
+  --gutter: 28px; /* page gutter, left and right; 16px in the phone shell */
+  --tap: 44px; /* smallest touch target in the phone shell */
+  --dock-h: 0px; /* the phone shell's mini player and tab bar; nothing on the desktop */
+  /* The notch and the home indicator. Read these, never env() itself, so a test or story can set them on :root. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 
   /* Motion: one pair for state changes that need a little room, one for hover and focus feedback. */
   --dur: 0.25s;
@@ -185,6 +191,32 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* The web app uses the dynamic viewport, so nothing hides behind a phone browser's bars, and turns off the
+   long-press callout: a long press opens the app's own menu (common/ContextMenu). */
+:root[data-platform='web'] body,
+:root[data-platform='web'] #root {
+  height: 100dvh;
+}
+:root[data-platform='web'] {
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The phone shell (components/phone/PhoneShell.tsx sets data-shell): a 16px gutter, no floating nav to clear at
+   the top, and the dock (mini player and tab bar) to clear at the bottom. Pages read the same three tokens as
+   on the desktop. --phone-top is the safe area plus the demo's strip (web/DemoBadge.module.css). */
+:root[data-shell='phone'] {
+  --gutter: 16px;
+  --dock-h: 124px; /* 8px gap + 56px mini player + 4px + 56px tab bar */
+  --phone-top: calc(var(--safe-top) + var(--demo-inset, 0px));
+  --nav-h: var(--phone-top);
+  --player-h: calc(var(--dock-h) + var(--safe-bottom));
+}
+/* Safari zooms the page when a field under 16px takes focus, so on the phone every field is at least that. */
+:root[data-shell='phone'] :is(input, textarea, select) {
+  font-size: max(16px, 1em);
 }
 
 /* ── Mini player window: strip all chrome, let the component paint itself ── */

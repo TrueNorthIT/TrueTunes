@@ -124,9 +124,121 @@
   color: var(--text-3);
 }
 
+.item:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.item:disabled:hover {
+  background: none;
+}
+/* Destructive (Remove): the word in Danger, tonal on hover. */
+.itemDanger,
+.itemDanger .itemIcon {
+  color: rgb(var(--danger));
+}
+.itemDanger:hover,
+.itemDanger:focus-visible {
+  background: rgba(var(--danger), 0.16);
+}
+
+/*
+ * The phone shell's menu: the same role=menu and items as a sheet from the bottom edge, in the thumb's reach.
+ * Same material and separator edge; rows are a full tap target high. The playlist list opens in place.
+ */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: var(--overlay);
+  animation: backdropIn var(--dur) var(--ease);
+  touch-action: none;
+}
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - var(--safe-top) - 48px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 8px calc(var(--safe-bottom) + 12px);
+  background: var(--material-bg);
+  -webkit-backdrop-filter: var(--material-filter);
+  backdrop-filter: var(--material-filter);
+  border-top: 1px solid var(--separator);
+  border-radius: var(--r-shell) var(--r-shell) 0 0;
+  box-shadow: var(--float-shadow);
+  animation: sheetIn var(--dur) var(--ease);
+  user-select: none;
+  outline: none;
+}
+.sheet .item {
+  min-height: calc(var(--tap) + 4px);
+  gap: 0.9em;
+  padding: 0 0.9em;
+  font-size: var(--fs-body);
+  white-space: normal;
+}
+.sheet .separator {
+  flex-shrink: 0;
+  margin: 0.4em 0.9em;
+}
+.sheet .emptyHint {
+  padding: 0.9em;
+}
+/* What the menu is for: the track, under a grabber that marks the sheet's edge. */
+.sheetHead {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1em;
+  padding: 8px 1.2em 0.8em;
+  text-align: center;
+}
+.grabber {
+  width: 36px;
+  height: 4px;
+  margin-bottom: 0.9em;
+  border-radius: var(--r-pill);
+  background: var(--glass);
+}
+.sheetTitle {
+  max-width: 100%;
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sheetSub {
+  max-width: 100%;
+  font-size: var(--fs-label);
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes sheetIn {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes backdropIn {
+  from {
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .menu,
-  .submenu {
+  .submenu,
+  .sheet,
+  .backdrop {
     animation: none;
   }
   .item,

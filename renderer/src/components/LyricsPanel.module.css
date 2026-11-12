@@ -6,7 +6,7 @@
   min-width: 0;
   height: 100%;
   overflow: hidden;
-  padding: calc(var(--nav-h) + 16px) 28px calc(var(--player-h) + 24px);
+  padding: calc(var(--nav-h) + 16px) var(--gutter) calc(var(--player-h) + 24px);
   container-type: inline-size;
 }
 

@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import { useLocation } from 'react-router-dom';
 import type { ReactNode, ErrorInfo } from 'react';
 import { PillButton } from './common/PillButton';
 import styles from '../styles/ErrorBoundary.module.css';
@@ -53,4 +54,10 @@ export class ErrorBoundary extends Component<Props, State> {
     }
     return this.props.children;
   }
+}
+
+/** A crash in one page leaves the shell (queue, player, nav) alive; navigating resets it. */
+export function RouteBoundary({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+  return <ErrorBoundary key={pathname}>{children}</ErrorBoundary>;
 }

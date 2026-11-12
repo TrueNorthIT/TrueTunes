@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { useImage } from '../../hooks/useImage';
 import { AddButton } from './AddButton';
+import { MoreButton } from './MoreButton';
+import { isWeb } from '../../lib/platform';
 import { ExplicitBadge } from './ExplicitBadge';
 import { TitleButton } from './TrackLinks';
 import { UserAvatar } from './UserAvatar';
@@ -161,6 +163,10 @@ export function TrackRow({
       )}
       {trailing != null && <span className={styles.trailing}>{trailing}</span>}
       {onAdd && <AddButton className={styles.add} label={addLabel ?? `Add ${title} to queue`} onClick={onAdd} />}
+      {/* Touch has no right-click: the web app gives the menu a visible button (CSS shows it where there is no hover). */}
+      {onContextMenu && isWeb() && (
+        <MoreButton className={styles.more} label={`More for ${title}`} onClick={onContextMenu} />
+      )}
       {onRemove && (
         <button
           type="button"

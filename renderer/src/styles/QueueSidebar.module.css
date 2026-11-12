@@ -659,6 +659,134 @@ button.groupLabel:hover {
   }
 }
 
+/*
+ * ── The phone shell's Queue page (variant="page") ──
+ * The same list at full width, as a page rather than a pane: no material of its own (the ambient layer shows
+ * through, as on every page), the header on top, and every control a full tap target. The list runs under the
+ * dock; the selection bar sits just above it.
+ */
+.sidebar.page {
+  width: 100%;
+  margin-left: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: none;
+  backdrop-filter: none;
+  border-left: none;
+  z-index: auto;
+}
+.sidebar.page .header {
+  order: 0;
+  padding: calc(var(--nav-h) + 16px) var(--gutter) 8px;
+  background: none;
+}
+.page .title {
+  font-size: var(--fs-title);
+  letter-spacing: -0.015em;
+}
+.page .room {
+  font-size: var(--fs-px-lg);
+}
+.page .iconBtn {
+  width: var(--tap);
+  height: var(--tap);
+  padding: 0;
+}
+.page .content {
+  padding: 0 8px calc(var(--player-h) + 24px);
+}
+.page .row {
+  min-height: 60px;
+  gap: 12px;
+  padding: 8px 4px 8px 8px;
+}
+.page .artWrap,
+.page .art,
+.page .artPh {
+  width: var(--tap);
+  height: var(--tap);
+}
+.page .name {
+  font-size: var(--fs-px-title);
+}
+.page .sub {
+  font-size: var(--fs-px-lg);
+}
+.page .subLine {
+  margin-top: 2px;
+}
+.page .dragHandle {
+  display: none;
+}
+/* The avatar keeps its size; the button around it is the tap target. */
+.page .queuer {
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  margin: 0 -8px;
+}
+.page .queuerAvatar,
+.page .djPick {
+  width: 28px;
+  height: 28px;
+}
+.page .djPick {
+  margin: 0 8px;
+}
+.page .djRow {
+  padding-right: 52px;
+}
+.page .djBreakLabel {
+  min-height: var(--tap);
+  padding: 0 14px;
+}
+.page .selBar {
+  position: fixed;
+  left: 8px;
+  right: 8px;
+  bottom: calc(var(--player-h) + 4px);
+  z-index: 149;
+  padding: 6px 6px 6px 16px;
+  border: 1px solid var(--separator);
+  border-radius: var(--r-lg);
+  background: var(--material-bg);
+  -webkit-backdrop-filter: var(--material-filter);
+  backdrop-filter: var(--material-filter);
+  box-shadow: var(--float-shadow);
+}
+.page .selBar span {
+  font-size: var(--fs-px-lg);
+}
+.page .confirmYes,
+.page .confirmNo,
+.page .selDelBtn,
+.page .selExpandBtn {
+  min-height: var(--tap);
+  padding: 0 16px;
+  font-size: var(--fs-px-lg);
+}
+.page .clearConfirm {
+  font-size: var(--fs-px-lg);
+}
+/* A finger leaves no hover behind: rows fill only while pressed or selected. */
+@media (hover: none) {
+  .page .row:hover {
+    background: none;
+  }
+  .page .row.selected,
+  .page .row.selected:hover {
+    background: rgba(var(--tint), 0.16);
+  }
+  .page .row.playing,
+  .page .row.playing:hover {
+    background: var(--surface-hi);
+  }
+  .page .row.played:hover {
+    opacity: 0.55;
+  }
+}
+
 /* Showing the previous room's queue while this one loads: nothing here may act on it. */
 .iconBtn:disabled,
 .confirmYes:disabled,

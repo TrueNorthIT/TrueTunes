@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Heart, ListMusic, ListPlus, ListStart, Lock, Plus, UserRound } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Heart, ListMusic, ListPlus, ListStart, Lock, Plus, UserRound } from 'lucide-react';
 import { useMyPlaylists, favouritesId, playlistKeys } from '../../hooks/usePlaylists';
 import { useDisplayName } from '../../hooks/useDisplayName';
 import { useQueueActions } from '../../hooks/useQueueActions';
@@ -10,6 +10,8 @@ import { useToast } from './Toast';
 import { Dialog } from './Dialog';
 import { PillButton } from './PillButton';
 import type { SonosItem } from '../../types/sonos';
+import { isPhoneShell, isWeb } from '../../lib/platform';
+import { installLongPress } from '../../lib/longPress';
 import dialog from './Dialog.module.css';
 import styles from '../../styles/ContextMenu.module.css';
 
@@ -24,9 +26,20 @@ function onMenuKeyDown(e: React.KeyboardEvent<HTMLElement>) {
   items[next]?.focus();
 }
 
+/** An extra item at the top of a menu, for what only its row can do (a queue row's Move up, Remove). */
+export interface MenuAction {
+  label: string;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
+  onSelect: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+}
+
 interface TrackMenuPayload {
   track: PlaylistTrack;
   sonosItem?: SonosItem;
+  /** Shown first, above the shared items. */
+  actions?: MenuAction[];
 }
 
 interface ContextMenuCtx {
@@ -54,6 +67,8 @@ interface MenuState {
   x: number;
   y: number;
   payload: TrackMenuPayload | null;
+  /** The phone shell's form: a sheet from the bottom edge instead of a popover at the pointer. */
+  sheet: boolean;
   submenuOpen: boolean;
   /** x: right of the item (open rightwards); flipX: left of the menu (open leftwards); y: the item's top. */
   submenuAnchor: SubmenuAnchor | null;
@@ -69,12 +84,15 @@ function PlaylistSubmenu({
   track,
   onClose,
   onOpenCreate,
+  onBack,
 }: {
-  anchor: SubmenuAnchor;
+  /** Null in the sheet: the list then renders in place, inside the sheet, with a way back. */
+  anchor: SubmenuAnchor | null;
   displayName: string | null | undefined;
   track: PlaylistTrack;
   onClose: () => void;
   onOpenCreate: () => void;
+  onBack?: () => void;
 }) {
   const { owned, joined, isLoading } = useMyPlaylists(displayName);
   const queryClient = useQueryClient();
@@ -105,23 +123,15 @@ function PlaylistSubmenu({
   // flipped to the left when it would run off the right, and lifted so the whole list stays on screen.
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || !anchor) return;
     const r = el.getBoundingClientRect();
     const left = anchor.x + r.width > window.innerWidth - 8 ? anchor.flipX - r.width : anchor.x;
     el.style.left = `${Math.max(8, left)}px`;
     el.style.top = `${Math.max(8, Math.min(anchor.y, window.innerHeight - r.height - 8))}px`;
   }, [anchor, allPlaylists.length, isLoading]);
 
-  return createPortal(
-    <div
-      ref={ref}
-      className={`page-scale ${styles.submenu}`}
-      style={{ left: anchor.x, top: anchor.y }}
-      role="menu"
-      aria-label="Add to playlist"
-      onMouseDown={(e) => e.stopPropagation()}
-      onKeyDown={onMenuKeyDown}
-    >
+  const items = (
+    <>
       {isLoading && <div className={styles.emptyHint}>Loading…</div>}
       {!isLoading && allPlaylists.length === 0 && <div className={styles.emptyHint}>No playlists yet</div>}
       {allPlaylists.map((pl) => (
@@ -144,6 +154,32 @@ function PlaylistSubmenu({
         <Plus className={styles.itemIcon} size={16} aria-hidden="true" />
         New playlist…
       </button>
+    </>
+  );
+
+  if (!anchor)
+    return (
+      <>
+        <button type="button" role="menuitem" className={styles.item} onClick={onBack}>
+          <ChevronLeft className={styles.itemIcon} size={16} aria-hidden="true" />
+          Add to playlist
+        </button>
+        <div className={styles.separator} role="separator" />
+        {items}
+      </>
+    );
+
+  return createPortal(
+    <div
+      ref={ref}
+      className={`page-scale ${styles.submenu}`}
+      style={{ left: anchor.x, top: anchor.y }}
+      role="menu"
+      aria-label="Add to playlist"
+      onMouseDown={(e) => e.stopPropagation()}
+      onKeyDown={onMenuKeyDown}
+    >
+      {items}
     </div>,
     document.body
   );
@@ -160,6 +196,7 @@ export function ContextMenuProvider({ children }: ProviderProps) {
     x: 0,
     y: 0,
     payload: null,
+    sheet: false,
     submenuOpen: false,
     submenuAnchor: null,
   });
@@ -178,8 +215,11 @@ export function ContextMenuProvider({ children }: ProviderProps) {
     const menuW = 200;
     const x = clamp(e.clientX, 8, window.innerWidth - menuW - 8);
     const y = clamp(e.clientY, 8, window.innerHeight - menuH - 8);
-    setMenuState({ open: true, x, y, payload, submenuOpen: false, submenuAnchor: null });
+    setMenuState({ open: true, x, y, payload, sheet: isPhoneShell(), submenuOpen: false, submenuAnchor: null });
   }, []);
+
+  // A finger held still is a right-click (iOS Safari sends no contextmenu of its own). Web only.
+  useEffect(() => (isWeb() ? installLongPress() : undefined), []);
 
   useEffect(() => {
     if (!menuState.open) return;
@@ -191,21 +231,26 @@ export function ContextMenuProvider({ children }: ProviderProps) {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') close();
     }
-    document.addEventListener('mousedown', onMouseDown);
+    // The sheet closes from its own backdrop: the mouse events a touch sends afterwards must not close it.
+    if (!menuState.sheet) document.addEventListener('mousedown', onMouseDown);
     document.addEventListener('keydown', onKeyDown);
     // Keep the whole menu on screen (it was clamped by a guessed height), then focus the menu itself, so
     // the arrow keys work but nothing is pre-selected: Enter straight after a right-click can't queue a track.
+    const opener = document.activeElement as HTMLElement | null;
     const menu = menuRef.current;
     if (menu) {
       const r = menu.getBoundingClientRect();
-      if (r.bottom > window.innerHeight - 8) menu.style.top = `${Math.max(8, window.innerHeight - r.height - 8)}px`;
+      if (!menuState.sheet && r.bottom > window.innerHeight - 8)
+        menu.style.top = `${Math.max(8, window.innerHeight - r.height - 8)}px`;
       menu.focus();
     }
     return () => {
       document.removeEventListener('mousedown', onMouseDown);
       document.removeEventListener('keydown', onKeyDown);
+      // The sheet covers the page, so focus goes back to the row or button it was opened from.
+      if (menuState.sheet && opener?.isConnected) opener.focus({ preventScroll: true });
     };
-  }, [menuState.open, close]);
+  }, [menuState.open, menuState.sheet, close]);
 
   function handleQueueNext() {
     if (menuState.payload?.sonosItem) void onQueueNext(menuState.payload.sonosItem);
@@ -241,6 +286,10 @@ export function ContextMenuProvider({ children }: ProviderProps) {
 
   // Hover opens the submenu; a click toggles it. (Hover used to toggle too, so hover-then-click closed it.)
   function handleOpenPlaylistSubmenu(e: React.MouseEvent, open?: boolean) {
+    if (menuState.sheet) {
+      setMenuState((s) => ({ ...s, submenuOpen: true }));
+      return;
+    }
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     setMenuState((s) => ({
       ...s,
@@ -266,66 +315,115 @@ export function ContextMenuProvider({ children }: ProviderProps) {
       {menuState.open &&
         menuState.payload &&
         createPortal(
-          <div
-            ref={menuRef}
-            className={`page-scale ${styles.menu}`}
-            style={{ left: menuState.x, top: menuState.y }}
-            role="menu"
-            tabIndex={-1}
-            aria-label={menuState.payload.track.trackName}
-            onMouseDown={(e) => e.stopPropagation()}
-            onKeyDown={onMenuKeyDown}
-          >
-            {menuState.payload.sonosItem && (
-              <>
-                <button type="button" role="menuitem" className={styles.item} onClick={handleQueueNext}>
-                  <ListStart className={styles.itemIcon} size={16} aria-hidden="true" />
-                  Queue next
-                </button>
-                <button type="button" role="menuitem" className={styles.item} onClick={handleAddToQueue}>
-                  <ListPlus className={styles.itemIcon} size={16} aria-hidden="true" />
-                  Add to queue
-                </button>
-                <div className={styles.separator} role="separator" />
-              </>
-            )}
-            {displayName && (
-              <button
-                type="button"
-                role="menuitem"
-                className={styles.item}
-                onClick={() => void handleAddToFavourites()}
-              >
-                <Heart className={styles.itemIcon} size={16} aria-hidden="true" />
-                Add to Favourites
-              </button>
-            )}
-            <button
-              type="button"
-              role="menuitem"
-              aria-haspopup="menu"
-              aria-expanded={menuState.submenuOpen}
-              className={`${styles.item}${menuState.submenuOpen ? ' ' + styles.itemOpen : ''}`}
-              onMouseEnter={(e) => handleOpenPlaylistSubmenu(e, true)}
-              onClick={(e) => handleOpenPlaylistSubmenu(e)}
+          <>
+            {menuState.sheet && <div className={styles.backdrop} onClick={close} />}
+            <div
+              ref={menuRef}
+              className={`page-scale ${menuState.sheet ? styles.sheet : styles.menu}`}
+              style={menuState.sheet ? undefined : { left: menuState.x, top: menuState.y }}
+              role="menu"
+              tabIndex={-1}
+              aria-label={menuState.payload.track.trackName}
+              onMouseDown={(e) => e.stopPropagation()}
+              onKeyDown={onMenuKeyDown}
             >
-              <ListMusic className={styles.itemIcon} size={16} aria-hidden="true" />
-              Add to playlist
-              <ChevronRight className={styles.itemTrail} size={15} aria-hidden="true" />
-            </button>
-            {menuState.payload.track.addedBy && (
-              <>
-                <div className={styles.separator} role="separator" />
-                <button type="button" role="menuitem" className={styles.item} onClick={handleOpenProfile}>
-                  <UserRound className={styles.itemIcon} size={16} aria-hidden="true" />
-                  View {menuState.payload.track.addedBy}'s profile
-                </button>
-              </>
-            )}
-          </div>,
+              {menuState.sheet && (
+                <div className={styles.sheetHead} aria-hidden="true">
+                  <span className={styles.grabber} />
+                  <span className={styles.sheetTitle}>{menuState.payload.track.trackName}</span>
+                  {menuState.payload.track.artist && (
+                    <span className={styles.sheetSub}>{menuState.payload.track.artist}</span>
+                  )}
+                </div>
+              )}
+              {menuState.sheet && menuState.submenuOpen ? (
+                <PlaylistSubmenu
+                  anchor={null}
+                  displayName={displayName}
+                  track={menuState.payload.track}
+                  onClose={close}
+                  onBack={() => setMenuState((s) => ({ ...s, submenuOpen: false }))}
+                  onOpenCreate={() => {
+                    setPendingTrack(menuState.payload!.track);
+                    setCreateOpen(true);
+                  }}
+                />
+              ) : (
+                <>
+                  {menuState.payload.actions && menuState.payload.actions.length > 0 && (
+                    <>
+                      {menuState.payload.actions.map((a) => (
+                        <button
+                          key={a.label}
+                          type="button"
+                          role="menuitem"
+                          className={`${styles.item}${a.danger ? ' ' + styles.itemDanger : ''}`}
+                          disabled={a.disabled}
+                          onClick={() => {
+                            a.onSelect();
+                            close();
+                          }}
+                        >
+                          <a.icon className={styles.itemIcon} size={16} aria-hidden="true" />
+                          {a.label}
+                        </button>
+                      ))}
+                      <div className={styles.separator} role="separator" />
+                    </>
+                  )}
+                  {menuState.payload.sonosItem && (
+                    <>
+                      <button type="button" role="menuitem" className={styles.item} onClick={handleQueueNext}>
+                        <ListStart className={styles.itemIcon} size={16} aria-hidden="true" />
+                        Queue next
+                      </button>
+                      <button type="button" role="menuitem" className={styles.item} onClick={handleAddToQueue}>
+                        <ListPlus className={styles.itemIcon} size={16} aria-hidden="true" />
+                        Add to queue
+                      </button>
+                      <div className={styles.separator} role="separator" />
+                    </>
+                  )}
+                  {displayName && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className={styles.item}
+                      onClick={() => void handleAddToFavourites()}
+                    >
+                      <Heart className={styles.itemIcon} size={16} aria-hidden="true" />
+                      Add to Favourites
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    aria-haspopup="menu"
+                    aria-expanded={menuState.submenuOpen}
+                    className={`${styles.item}${menuState.submenuOpen ? ' ' + styles.itemOpen : ''}`}
+                    onMouseEnter={menuState.sheet ? undefined : (e) => handleOpenPlaylistSubmenu(e, true)}
+                    onClick={(e) => handleOpenPlaylistSubmenu(e)}
+                  >
+                    <ListMusic className={styles.itemIcon} size={16} aria-hidden="true" />
+                    Add to playlist
+                    <ChevronRight className={styles.itemTrail} size={15} aria-hidden="true" />
+                  </button>
+                  {menuState.payload.track.addedBy && (
+                    <>
+                      <div className={styles.separator} role="separator" />
+                      <button type="button" role="menuitem" className={styles.item} onClick={handleOpenProfile}>
+                        <UserRound className={styles.itemIcon} size={16} aria-hidden="true" />
+                        View {menuState.payload.track.addedBy}'s profile
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          </>,
           document.body
         )}
-      {menuState.open && menuState.submenuOpen && menuState.submenuAnchor && menuState.payload && (
+      {menuState.open && !menuState.sheet && menuState.submenuOpen && menuState.submenuAnchor && menuState.payload && (
         <PlaylistSubmenu
           anchor={menuState.submenuAnchor}
           displayName={displayName}

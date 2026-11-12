@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 import { AddButton } from './AddButton';
+import { MoreButton } from './MoreButton';
+import { isWeb } from '../../lib/platform';
 import { RowThumb } from './TrackRow';
 import { TitleButton } from './TrackLinks';
 import styles from './rows.module.css';
@@ -87,6 +89,9 @@ export function ChartRow({
         <AddButton className={styles.add} label={addLabel ?? `Add ${title} to queue`} onClick={onAdd} />
       ) : (
         <span className={styles.addSpacer} />
+      )}
+      {onContextMenu && isWeb() && (
+        <MoreButton className={styles.more} label={`More for ${title}`} onClick={onContextMenu} />
       )}
     </li>
   );

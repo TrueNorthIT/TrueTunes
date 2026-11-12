@@ -8,7 +8,9 @@ import { getActiveProvider } from '../../providers';
 import { ExplicitBadge } from '../common/ExplicitBadge';
 import { Artwork } from '../common/Artwork';
 import { EqBars } from '../common/EqBars';
-import { useTrackContextMenu } from '../common/ContextMenu';
+import { Disc3, MicVocal } from 'lucide-react';
+import { useTrackContextMenu, type MenuAction } from '../common/ContextMenu';
+import { MoreButton } from '../common/MoreButton';
 import { UserAvatar } from '../common/UserAvatar';
 import type { NormalizedQueueItem } from '../../types/provider';
 import styles from '../../styles/QueueSidebar.module.css';
@@ -33,6 +35,10 @@ interface Props {
   onDragOver: (index: number, e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
   onDragEnd: () => void;
+  /** What the row's menu can do to the queue (Play next, Move up, Remove...). Web only. */
+  getActions?: (index: number) => MenuAction[];
+  /** The phone's Queue page: no drag or double-click, a ⋯ that opens the menu, and the artist as plain text. */
+  touch?: boolean;
 }
 
 function fmtClockTime(ms: number): string {
@@ -60,6 +66,8 @@ export const DraggableQueueRow = memo(function DraggableQueueRow({
   onDragOver,
   onDrop,
   onDragEnd,
+  getActions,
+  touch = false,
 }: Props) {
   const {
     artUrl,
@@ -81,6 +89,24 @@ export const DraggableQueueRow = memo(function DraggableQueueRow({
 
   const payload = trackPayload({ ...item.track, uri: item.track.id, trackName: item.track.title });
 
+  // A touch row has no artist link (too small a target beside the title), so the menu carries both ways out.
+  const openMenu = (e: React.MouseEvent) =>
+    showTrackMenu(
+      {
+        track: payload,
+        actions: [
+          ...(getActions?.(index) ?? []),
+          ...(touch && albumItem
+            ? [{ label: 'Go to album', icon: Disc3, onSelect: () => openItem(albumItem) } satisfies MenuAction]
+            : []),
+          ...(touch && artistItem
+            ? [{ label: 'Go to artist', icon: MicVocal, onSelect: () => openItem(artistItem) } satisfies MenuAction]
+            : []),
+        ],
+      },
+      e
+    );
+
   const art = <Artwork src={cachedArt} className={styles.art} placeholderClassName={styles.artPh} />;
 
   return (
@@ -90,14 +116,15 @@ export const DraggableQueueRow = memo(function DraggableQueueRow({
         isPlaying ? styles.playing : '',
         isSelected ? styles.selected : '',
         played && !isPlaying ? styles.played : '',
+        touch ? styles.touch : '',
       ]
         .filter(Boolean)
         .join(' ')}
       data-playing={isPlaying ? 'true' : undefined}
-      draggable
+      draggable={!touch}
       onClick={(e) => onRowClick(index, e)}
-      onDoubleClick={() => void getActiveProvider().skipToTrack(index + 1)}
-      onContextMenu={(e) => showTrackMenu({ track: payload }, e)}
+      onDoubleClick={touch ? undefined : () => void getActiveProvider().skipToTrack(index + 1)}
+      onContextMenu={openMenu}
       onDragStart={(e) => onDragStart(index, e)}
       onDragOver={(e) => onDragOver(index, e)}
       onDrop={onDrop}
@@ -147,7 +174,7 @@ export const DraggableQueueRow = memo(function DraggableQueueRow({
         </div>
         <div className={styles.subLine}>
           {artist &&
-            (artistItem ? (
+            (artistItem && !touch ? (
               <button
                 type="button"
                 className={styles.subLink}
@@ -187,6 +214,7 @@ export const DraggableQueueRow = memo(function DraggableQueueRow({
           <UserAvatar name={attribution.user} imageUrl={attributionImageUrl} className={styles.queuerAvatar} />
         </button>
       )}
+      {touch && <MoreButton label={`More for ${name}`} onClick={openMenu} />}
     </div>
   );
 });

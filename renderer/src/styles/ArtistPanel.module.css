@@ -16,7 +16,7 @@
 
 /* Every band after the hero: the 28px gutter; the one 1.4em rhythm comes from .panel's gap. */
 .band {
-  margin: 0 28px;
+  margin: 0 var(--gutter);
 }
 
 /* ── Hero: one shape for every artist ──
@@ -78,7 +78,7 @@
 .print {
   position: absolute;
   top: calc(var(--nav-h) + 0.6em);
-  right: 28px;
+  right: var(--gutter);
   width: var(--print);
   height: var(--print);
   border-radius: var(--r-tile);
@@ -115,7 +115,7 @@
 /* Bottom-left in every state, clear of where a print would hang, so the name never reflows when the state settles. */
 .heroText {
   position: absolute;
-  left: 28px;
+  left: var(--gutter);
   right: calc(var(--print) + 56px);
   bottom: 1.6em;
   display: flex;

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { isWeb } from '../lib/platform';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getActiveProvider } from '../providers';
 import { useNowPlaying } from '../hooks/useNowPlaying';
 import { useOpenItem } from '../hooks/useOpenItem';
 import { useFavourite } from '../hooks/usePlaylists';
+import { usePlayModeToggles, useVolumeControl } from '../hooks/usePlayerControls';
 import { useAttribution, resolveAttribution } from '../hooks/useAttribution';
 import { useUsers } from '../hooks/useUsers';
 import { UserAvatar } from './common/UserAvatar';
@@ -81,53 +81,8 @@ function VolumeIconGlyph({ volume }: { volume: number }) {
 
 function VolumeButton({ volume }: { volume: number }) {
   const [open, setOpen] = useState(false);
-  const [localVol, setLocalVol] = useState(volume);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const preMuteRef = useRef<number>(volume > 0 ? volume : 50);
-
-  // Sync incoming WS volume only when the user isn't actively dragging
-  const dragging = useRef(false);
-  useEffect(() => {
-    if (!dragging.current) setLocalVol(volume);
-  }, [volume]);
-
-  const commitVolume = (val: number) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      void getActiveProvider().setVolume(val);
-      dragging.current = false;
-    }, 150);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = Number(e.target.value);
-    setLocalVol(val);
-    if (val > 0) preMuteRef.current = val;
-    commitVolume(val);
-  };
-
-  const step = (delta: number) => {
-    setLocalVol((prev) => {
-      const next = Math.max(0, Math.min(100, prev + delta));
-      if (next === prev) return prev;
-      if (next > 0) preMuteRef.current = next;
-      commitVolume(next);
-      return next;
-    });
-  };
-
-  const toggleMute = () => {
-    if (localVol > 0) {
-      preMuteRef.current = localVol;
-      setLocalVol(0);
-      commitVolume(0);
-    } else {
-      const restored = preMuteRef.current > 0 ? preMuteRef.current : 50;
-      setLocalVol(restored);
-      commitVolume(restored);
-    }
-  };
+  const { localVol, muted, setVolume, step, toggleMute, startDrag } = useVolumeControl(volume);
 
   const handleEnter = () => {
     if (closeRef.current) {
@@ -145,11 +100,8 @@ function VolumeButton({ volume }: { volume: number }) {
   useEffect(() => {
     return () => {
       if (closeRef.current) clearTimeout(closeRef.current);
-      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, []);
-
-  const muted = localVol === 0;
 
   return (
     <div className={styles.volWrap} onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
@@ -172,10 +124,8 @@ function VolumeButton({ volume }: { volume: number }) {
             min={0}
             max={100}
             value={localVol}
-            onMouseDown={() => {
-              dragging.current = true;
-            }}
-            onChange={handleChange}
+            onMouseDown={startDrag}
+            onChange={(e) => setVolume(Number(e.target.value))}
           />
           <button
             className={styles.volStep}
@@ -242,18 +192,7 @@ export function PlayerBar({ isAuthed, playback, onShuffle }: Props) {
   const { data: users } = useUsers(isAuthed, true);
   const queuerImage = queuer ? users?.find((u) => u.userId === queuer.user)?.imageUrl : undefined;
 
-  const { shuffle: rawShuffle, repeat: rawRepeat } = playback;
-
-  const refresh = () => getActiveProvider().refreshPlayback();
-
-  const toggleShuffle = () => getActiveProvider().setPlayModes({ shuffle: !rawShuffle }).then(refresh).then(onShuffle);
-
-  const toggleRepeat = () => {
-    const next = rawRepeat === 'none' ? 'all' : rawRepeat === 'all' ? 'one' : 'none';
-    void getActiveProvider()
-      .setPlayModes({ repeat: next as 'none' | 'one' | 'all' })
-      .then(refresh);
-  };
+  const { toggleShuffle, toggleRepeat } = usePlayModeToggles(playback, onShuffle);
 
   if (!isVisible) return <div style={{ height: 'var(--player-h)', flexShrink: 0 }} />;
 
