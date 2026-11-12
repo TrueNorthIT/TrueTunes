@@ -9,14 +9,16 @@ terraform {
   }
 
   # State lives in a storage account that Terraform does not manage (README.md records how it was
-  # created). Auth is whatever the Azure CLI or the CI federated identity provides: the backend looks
-  # the access key up through ARM, so no key is stored here.
+  # created). The backend signs in to the blob with Entra ID (use_azuread_auth), so it never looks up an
+  # account key: locally it uses the Azure CLI's account, in GitHub Actions the ARM_USE_OIDC,
+  # ARM_CLIENT_ID and ARM_TENANT_ID environment variables select the federated identity. Either needs
+  # "Storage Blob Data Contributor" (or Reader, for plan) on the tfstate container.
   backend "azurerm" {
     resource_group_name  = "truetunes-rg"
     storage_account_name = "truetunestfstate"
     container_name       = "tfstate"
     key                  = "truetunes.tfstate"
-    subscription_id      = "919f287f-2e74-4eb4-a2d4-64506ddade51"
+    use_azuread_auth     = true
   }
 }
 

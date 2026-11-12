@@ -9,15 +9,8 @@ resource "azurerm_service_plan" "main" {
 locals {
   storage_connection_string = "DefaultEndpointsProtocol=https;AccountName=${azurerm_storage_account.app.name};EndpointSuffix=core.windows.net;AccountKey=${azurerm_storage_account.app.primary_access_key}"
 
-  # Secret app settings. A null value leaves the setting out, as the matching feature is then off.
-  secret_settings = {
-    VESTABOARD_API_KEY  = var.vestaboard_api_key
-    GITHUB_ISSUES_TOKEN = var.github_issues_token
-    SONOS_USERNAME      = var.sonos_username
-    SONOS_PASSWORD      = var.sonos_password
-  }
-
-  # With use_key_vault_references the secret settings point at the vault instead of carrying values.
+  # The secret settings are Key Vault references: Terraform never holds a value. The Function App resolves
+  # them with its own identity (keyvault.tf). Load the values with infra/scripts/load-secrets.mjs.
   secret_settings_as_references = {
     for name, secret in local.key_vault_secrets :
     name => "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/${secret})"
@@ -39,7 +32,7 @@ locals {
       ENTRA_CLIENT_ID             = var.entra_client_id
       AUTH_ENFORCE                = var.auth_enforce
     },
-    var.use_key_vault_references ? local.secret_settings_as_references : { for name, value in local.secret_settings : name => value if value != null },
+    local.secret_settings_as_references,
   )
 }
 
