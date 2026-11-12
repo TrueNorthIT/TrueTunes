@@ -19,7 +19,10 @@ export type SonosSession = ReturnType<typeof createSonosSession>;
 const NO_STORE = { 'Cache-Control': 'no-store' };
 
 export function createSonosSessionHandler(resolveSession: () => SonosSession, check?: EntraTokenCheck) {
-  return async function sonosSessionHandler(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+  return async function sonosSessionHandler(
+    request: HttpRequest,
+    context: InvocationContext
+  ): Promise<HttpResponseInit> {
     const auth = await authenticate(request, context, check ?? entraCheckFromEnv(), true);
     if ('response' in auth) return auth.response;
     if (!auth.oid) return { status: 401, jsonBody: { error: 'sign-in required' } };

@@ -70,7 +70,11 @@ for (const flag of [undefined, 'false']) {
     const handler = createSonosSessionHandler(() => session, check);
     const res = await withEnv({ AUTH_ENFORCE: flag }, () => handler(sonosRequest(), fakeContext().ctx));
     assert.equal(res.status, 401, 'Expected 401 for a request with no token, even though AUTH_ENFORCE is off');
-    assert.equal(typeof (res.jsonBody as Body).error, 'string', 'Expected a JSON body { error } explaining the refusal');
+    assert.equal(
+      typeof (res.jsonBody as Body).error,
+      'string',
+      'Expected a JSON body { error } explaining the refusal'
+    );
     assert.equal(calls.length, 0, 'Expected no session (and so no Sonos login) for an unauthenticated request');
     assert.equal((res.jsonBody as Body).token, undefined, 'Expected no token in the 401 body');
   });
@@ -81,12 +85,14 @@ test('REQ-2: a refresh request with no token gets 401 and does not touch the ses
   const { check } = await tenantKeys();
   const { session, calls } = stubSession(async () => 'sonos-token');
   const handler = createSonosSessionHandler(() => session, check);
-  const res = await withEnv({ AUTH_ENFORCE: undefined }, () => handler(sonosRequest(undefined, 'refresh=1'), fakeContext().ctx));
+  const res = await withEnv({ AUTH_ENFORCE: undefined }, () =>
+    handler(sonosRequest(undefined, 'refresh=1'), fakeContext().ctx)
+  );
   assert.equal(res.status, 401, 'Expected 401 for an unauthenticated refresh');
   assert.equal(calls.length, 0, 'Expected the session to be left alone, so no re-login can be forced anonymously');
 });
 
-test('REQ-2: a token signed by a key that is not the tenant\'s gets 401 and no session', async () => {
+test("REQ-2: a token signed by a key that is not the tenant's gets 401 and no session", async () => {
   const { check, sign, rogue } = await tenantKeys();
   const { session, calls } = stubSession(async () => 'sonos-token');
   const handler = createSonosSessionHandler(() => session, check);
@@ -125,7 +131,9 @@ test('REQ-2: an Authorization header that is not a Bearer token gets 401 and no 
   const { check } = await tenantKeys();
   const { session, calls } = stubSession(async () => 'sonos-token');
   const handler = createSonosSessionHandler(() => session, check);
-  const res = await withEnv({ AUTH_ENFORCE: 'false' }, () => handler(sonosRequest('Basic dXNlcjpwYXNz'), fakeContext().ctx));
+  const res = await withEnv({ AUTH_ENFORCE: 'false' }, () =>
+    handler(sonosRequest('Basic dXNlcjpwYXNz'), fakeContext().ctx)
+  );
   assert.equal(res.status, 401, 'Expected 401 for a Basic Authorization header');
   assert.equal(calls.length, 0, 'Expected no session for a malformed Authorization header');
 });
@@ -137,11 +145,17 @@ test('REQ-3: a valid tenant token gets 200 with the Sonos token and Cache-Contro
   const { check, sign } = await tenantKeys();
   const { session } = stubSession(async () => 'sonos-jwe-1.AbCdEf==');
   const handler = createSonosSessionHandler(() => session, check);
-  const res = await withEnv({ AUTH_ENFORCE: undefined }, async () => handler(sonosRequest(bearer(await sign())), fakeContext().ctx));
+  const res = await withEnv({ AUTH_ENFORCE: undefined }, async () =>
+    handler(sonosRequest(bearer(await sign())), fakeContext().ctx)
+  );
   assert.equal(res.status, 200, 'Expected 200 for a valid tenant token');
   assert.deepEqual(res.jsonBody, { token: 'sonos-jwe-1.AbCdEf==' }, 'Expected the body to be exactly { token }');
   const headers = new Headers(res.headers as ConstructorParameters<typeof Headers>[0]);
-  assert.equal(headers.get('cache-control'), 'no-store', 'Expected Cache-Control: no-store so the session token is never cached downstream');
+  assert.equal(
+    headers.get('cache-control'),
+    'no-store',
+    'Expected Cache-Control: no-store so the session token is never cached downstream'
+  );
 });
 
 // There is no allow-list: two different members of the tenant (different oids) both get the session.
@@ -154,7 +168,11 @@ test('REQ-3: different tenant members, with no allow-list, each get 200 and the 
       handler(sonosRequest(bearer(await sign({ oid }))), fakeContext().ctx)
     );
     assert.equal(res.status, 200, `Expected 200 for tenant member ${oid}`);
-    assert.deepEqual(res.jsonBody, { token: 'shared-sonos-token' }, `Expected the shared token for tenant member ${oid}`);
+    assert.deepEqual(
+      res.jsonBody,
+      { token: 'shared-sonos-token' },
+      `Expected the shared token for tenant member ${oid}`
+    );
   }
 });
 
@@ -190,7 +208,11 @@ test('REQ-6: when the Sonos login fails the caller gets 502 sonos-login-failed',
   const handler = createSonosSessionHandler(() => session, check);
   const res = await handler(sonosRequest(bearer(await sign())), fakeContext().ctx);
   assert.equal(res.status, 502, 'Expected 502 when Sonos cannot produce a session');
-  assert.deepEqual(res.jsonBody, { error: 'sonos-login-failed' }, 'Expected exactly { error: "sonos-login-failed" } and no detail of why');
+  assert.deepEqual(
+    res.jsonBody,
+    { error: 'sonos-login-failed' },
+    'Expected exactly { error: "sonos-login-failed" } and no detail of why'
+  );
 });
 
 // ── end to end: handler + real session logic + fake Sonos ─────────────────────
@@ -202,11 +224,24 @@ test('REQ-4: ten concurrent authenticated requests get the same token from one S
   const session = createSonosSession({ fetch: sonos.fetch, username: SONOS_USERNAME, password: SONOS_PASSWORD });
   const handler = createSonosSessionHandler(() => session, check);
   const jwt = await sign();
-  const responses = await Promise.all(Array.from({ length: 10 }, () => handler(sonosRequest(bearer(jwt)), fakeContext().ctx)));
-  assert.ok(responses.every((r) => r.status === 200), `Expected ten 200s, got ${responses.map((r) => r.status).join(',')}`);
+  const responses = await Promise.all(
+    Array.from({ length: 10 }, () => handler(sonosRequest(bearer(jwt)), fakeContext().ctx))
+  );
+  assert.ok(
+    responses.every((r) => r.status === 200),
+    `Expected ten 200s, got ${responses.map((r) => r.status).join(',')}`
+  );
   assert.equal(new Set(responses.map((r) => (r.jsonBody as Body).token)).size, 1, 'Expected one shared token');
-  assert.equal(sonos.counts.sessionsIssued, 1, `Expected Sonos to see one login, it issued ${sonos.counts.sessionsIssued} sessions`);
-  assert.equal(sonos.counts.loginAttempts, 1, `Expected Sonos to see one login attempt, it saw ${sonos.counts.loginAttempts}`);
+  assert.equal(
+    sonos.counts.sessionsIssued,
+    1,
+    `Expected Sonos to see one login, it issued ${sonos.counts.sessionsIssued} sessions`
+  );
+  assert.equal(
+    sonos.counts.loginAttempts,
+    1,
+    `Expected Sonos to see one login attempt, it saw ${sonos.counts.loginAttempts}`
+  );
 });
 
 // Sonos is rejecting the login (REQ-6): 502, the response and the logs never carry the password,
@@ -224,12 +259,22 @@ test('REQ-6: a failing Sonos login is a 502 with no password in the response or 
   const failed = await handler(sonosRequest(bearer(jwt)), ctx);
   assert.equal(failed.status, 502, 'Expected 502 when Okta answers MFA_REQUIRED');
   assert.deepEqual(failed.jsonBody, { error: 'sonos-login-failed' });
-  assert.ok(!JSON.stringify(failed.jsonBody).includes(SONOS_PASSWORD), 'Expected the password to be absent from the response body');
-  assert.ok(!logs.join('\n').includes(SONOS_PASSWORD), 'Expected the password to be absent from everything the handler logged');
+  assert.ok(
+    !JSON.stringify(failed.jsonBody).includes(SONOS_PASSWORD),
+    'Expected the password to be absent from the response body'
+  );
+  assert.ok(
+    !logs.join('\n').includes(SONOS_PASSWORD),
+    'Expected the password to be absent from everything the handler logged'
+  );
 
   sonos.fault = null;
   const recovered = await handler(sonosRequest(bearer(jwt)), fakeContext().ctx);
-  assert.equal(recovered.status, 200, 'Expected the next request to try the login again and succeed once Sonos is healthy');
+  assert.equal(
+    recovered.status,
+    200,
+    'Expected the next request to try the login again and succeed once Sonos is healthy'
+  );
   assert.equal(typeof (recovered.jsonBody as Body).token, 'string');
 });
 
@@ -262,8 +307,12 @@ test('REQ-4: getSonosSession() builds one session from SONOS_USERNAME and SONOS_
       assert.equal(getSonosSession(), session, 'Expected every request on this host to share one session instance');
       const first = await session.get();
       const second = await getSonosSession().get();
-      assert.equal(second, first, 'Expected the second request to reuse the first request\'s login');
-      assert.equal(sonos.counts.sessionsIssued, 1, `Expected one Sonos login, Sonos issued ${sonos.counts.sessionsIssued} sessions`);
+      assert.equal(second, first, "Expected the second request to reuse the first request's login");
+      assert.equal(
+        sonos.counts.sessionsIssued,
+        1,
+        `Expected one Sonos login, Sonos issued ${sonos.counts.sessionsIssued} sessions`
+      );
       assert.ok(sonos.isValid(first), 'Expected the service account from the app settings to have logged in');
     });
   } finally {

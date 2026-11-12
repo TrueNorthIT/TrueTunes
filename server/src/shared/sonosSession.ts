@@ -118,7 +118,9 @@ export function createSonosSession(deps: SonosSessionDeps): { get(opts?: { refre
       const html = await page.text();
       const rawState = /["']?stateToken["']?\s*[:=]\s*["']([^"']+)["']/.exec(html)?.[1];
       if (!rawState) throw new SonosLoginError('authorize: no stateToken in the sign-in page');
-      const stateToken = rawState.replace(/\\x([0-9A-Fa-f]{2})/g, (_, h: string) => String.fromCharCode(parseInt(h, 16)));
+      const stateToken = rawState.replace(/\\x([0-9A-Fa-f]{2})/g, (_, h: string) =>
+        String.fromCharCode(parseInt(h, 16))
+      );
 
       // 3. Okta primary authentication, bound to this authorize transaction
       const authn = await req('authn', `${new URL(pageUrl).origin}/api/v1/authn`, {
@@ -130,7 +132,8 @@ export function createSonosSession(deps: SonosSessionDeps): { get(opts?: { refre
       const result = await readJson<{ status?: unknown; _links?: { next?: { href?: string } } }>('authn', authn);
       if (result.status !== 'SUCCESS') {
         // Only the status word, never the body.
-        const status = typeof result.status === 'string' && /^[A-Z_]{1,40}$/.test(result.status) ? result.status : 'unknown';
+        const status =
+          typeof result.status === 'string' && /^[A-Z_]{1,40}$/.test(result.status) ? result.status : 'unknown';
         throw new SonosLoginError(`authn: Okta answered ${status}, not SUCCESS`);
       }
       const next = result._links?.next?.href;
@@ -158,7 +161,12 @@ export function createSonosSession(deps: SonosSessionDeps): { get(opts?: { refre
     let res: Response;
     try {
       res = await deps.fetch(`${PLAY}/api/mfe`, {
-        headers: { Cookie: `${SESSION_COOKIE}=${token}`, 'User-Agent': UA, Accept: '*/*', Referer: `${PLAY}/en-us/web-app` },
+        headers: {
+          Cookie: `${SESSION_COOKIE}=${token}`,
+          'User-Agent': UA,
+          Accept: '*/*',
+          Referer: `${PLAY}/en-us/web-app`,
+        },
       });
     } catch {
       throw new SonosLoginError('mfe: request failed');

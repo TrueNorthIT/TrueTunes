@@ -50,7 +50,9 @@ function parseCookies(header: string | null): Map<string, string> {
   return jar;
 }
 
-export function createFakeSonos(creds: { username: string; password: string } = { username: SONOS_USERNAME, password: SONOS_PASSWORD }) {
+export function createFakeSonos(
+  creds: { username: string; password: string } = { username: SONOS_USERNAME, password: SONOS_PASSWORD }
+) {
   const validTokens = new Set<string>();
   const requests: SonosCall[] = [];
   const counts = {
@@ -76,7 +78,13 @@ export function createFakeSonos(creds: { username: string; password: string } = 
     fetch: undefined as unknown as typeof fetch,
   };
 
-  const respond = (url: URL, status: number, body: string | null, headers: Record<string, string> = {}, cookies: string[] = []) => {
+  const respond = (
+    url: URL,
+    status: number,
+    body: string | null,
+    headers: Record<string, string> = {},
+    cookies: string[] = []
+  ) => {
     const h = new Headers(headers);
     for (const c of cookies) h.append('set-cookie', c);
     const res = new Response(body, { status, headers: h });
@@ -86,7 +94,8 @@ export function createFakeSonos(creds: { username: string; password: string } = 
   const json = (url: URL, status: number, body: unknown, cookies: string[] = []) =>
     respond(url, status, JSON.stringify(body), { 'content-type': 'application/json' }, cookies);
   const html = (url: URL, body: string) => respond(url, 200, body, { 'content-type': 'text/html' });
-  const redirect = (url: URL, location: string, cookies: string[] = []) => respond(url, 302, null, { location }, cookies);
+  const redirect = (url: URL, location: string, cookies: string[] = []) =>
+    respond(url, 302, null, { location }, cookies);
 
   sonos.fetch = (async (input: Parameters<typeof fetch>[0], init: RequestInit = {}) => {
     await new Promise<void>((done) => setImmediate(done));
@@ -131,7 +140,10 @@ export function createFakeSonos(creds: { username: string; password: string } = 
         const n = url.searchParams.get('txn');
         // Okta embeds the token as a JS string literal, with "-" written as the escape \x2D.
         const embedded = `state\\x2Dtoken\\x2D${n}`;
-        return html(url, `<html><script>var signInConfig = {"baseUrl":"${IDP}","stateToken":"${embedded}"};</script></html>`);
+        return html(
+          url,
+          `<html><script>var signInConfig = {"baseUrl":"${IDP}","stateToken":"${embedded}"};</script></html>`
+        );
       }
 
       // ── 3. Okta Classic primary authentication ────────────────────────────────
@@ -163,7 +175,10 @@ export function createFakeSonos(creds: { username: string; password: string } = 
         if (sonos.fault === 'locked-out') {
           return json(url, 200, { status: 'LOCKED_OUT', ...(echo ? { _debug: body } : {}) });
         }
-        return json(url, 200, { status: 'SUCCESS', _links: { next: { href: `${IDP}/login/token/redirect?txn=${txn}` } } });
+        return json(url, 200, {
+          status: 'SUCCESS',
+          _links: { next: { href: `${IDP}/login/token/redirect?txn=${txn}` } },
+        });
       }
 
       // ── 4. back through the next-auth callback ────────────────────────────────
@@ -173,7 +188,11 @@ export function createFakeSonos(creds: { username: string; password: string } = 
       }
       case `GET ${PLAY}/api/auth/callback/okta`: {
         const state = url.searchParams.get('state');
-        if (!state || cookies.get('__Secure-next-auth.state') !== state || !cookies.has('__Secure-next-auth.pkce.code_verifier')) {
+        if (
+          !state ||
+          cookies.get('__Secure-next-auth.state') !== state ||
+          !cookies.has('__Secure-next-auth.pkce.code_verifier')
+        ) {
           return redirect(url, '/en-us/web-app?error=OAuthCallback'); // relative Location, as next-auth sends
         }
         if (sonos.fault === 'no-session-cookie') return redirect(url, '/en-us/web-app');
@@ -191,7 +210,9 @@ export function createFakeSonos(creds: { username: string; password: string } = 
       // ── the validity check the Sonos app itself uses ──────────────────────────
       case `GET ${PLAY}/api/mfe`: {
         counts.mfeChecks++;
-        return validTokens.has(cookies.get(SESSION_COOKIE) ?? '') ? json(url, 200, {}) : json(url, 401, { error: 'unauthorised' });
+        return validTokens.has(cookies.get(SESSION_COOKIE) ?? '')
+          ? json(url, 200, {})
+          : json(url, 401, { error: 'unauthorised' });
       }
       default:
         return respond(url, 404, 'not found');
@@ -218,7 +239,11 @@ export function sonosRequest(authorization?: string, query = ''): HttpRequest {
 export function recordingContext() {
   const logs: string[] = [];
   const text = (a: unknown[]) =>
-    a.map((x) => (x instanceof Error ? `${x.message}\n${x.stack}` : typeof x === 'object' ? JSON.stringify(x) : String(x))).join(' ');
+    a
+      .map((x) =>
+        x instanceof Error ? `${x.message}\n${x.stack}` : typeof x === 'object' ? JSON.stringify(x) : String(x)
+      )
+      .join(' ');
   const record = (...a: unknown[]) => void logs.push(text(a));
   const ctx = { log: record, info: record, warn: record, error: record } as unknown as InvocationContext;
   return { ctx, logs };

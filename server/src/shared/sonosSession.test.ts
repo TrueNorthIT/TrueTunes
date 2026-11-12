@@ -19,7 +19,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { inspect } from 'node:util';
 import { createSonosSession, SonosLoginError } from './sonosSession';
-import { SESSION_COOKIE, SONOS_PASSWORD, SONOS_USERNAME, createFakeSonos, type FakeSonos, type LoginFault } from './sonosKit.testkit';
+import {
+  SESSION_COOKIE,
+  SONOS_PASSWORD,
+  SONOS_USERNAME,
+  createFakeSonos,
+  type FakeSonos,
+  type LoginFault,
+} from './sonosKit.testkit';
 
 const sessionFor = (sonos: FakeSonos, password = SONOS_PASSWORD) =>
   createSonosSession({ fetch: sonos.fetch, username: SONOS_USERNAME, password });
@@ -44,8 +51,15 @@ test('REQ-4: the first request logs in to Sonos and returns the value of the ses
   const sonos = createFakeSonos();
   const token = await sessionFor(sonos).get();
   assert.equal(sonos.counts.sessionsIssued, 1, 'Expected the login to end with Sonos issuing one session');
-  assert.ok(sonos.isValid(token), `Expected get() to return the ${SESSION_COOKIE} cookie value Sonos issued, got "${token}"`);
-  assert.equal(token, 'sonos-jwe-1.AbCdEf==', 'Expected the cookie value verbatim, including its trailing "=" characters');
+  assert.ok(
+    sonos.isValid(token),
+    `Expected get() to return the ${SESSION_COOKIE} cookie value Sonos issued, got "${token}"`
+  );
+  assert.equal(
+    token,
+    'sonos-jwe-1.AbCdEf==',
+    'Expected the cookie value verbatim, including its trailing "=" characters'
+  );
 });
 
 // Okta embeds the stateToken as a JS string literal with "-" written \x2D. The authn request
@@ -53,9 +67,15 @@ test('REQ-4: the first request logs in to Sonos and returns the value of the ses
 test('REQ-4: the login sends the service account and the decoded stateToken to Okta authn', async () => {
   const sonos = createFakeSonos();
   await sessionFor(sonos).get();
-  const authn = sonos.requests.filter((r) => r.method === 'POST' && r.url.href === 'https://login.sonos.com/api/v1/authn');
+  const authn = sonos.requests.filter(
+    (r) => r.method === 'POST' && r.url.href === 'https://login.sonos.com/api/v1/authn'
+  );
   assert.equal(authn.length, 1, 'Expected exactly one POST to https://login.sonos.com/api/v1/authn');
-  assert.match(authn[0].headers.get('content-type') ?? '', /application\/json/, 'Expected the authn body to be sent as JSON');
+  assert.match(
+    authn[0].headers.get('content-type') ?? '',
+    /application\/json/,
+    'Expected the authn body to be sent as JSON'
+  );
   assert.deepEqual(
     JSON.parse(authn[0].body),
     { username: SONOS_USERNAME, password: SONOS_PASSWORD, stateToken: 'state-token-1' },
@@ -69,8 +89,16 @@ test('REQ-4: ten requests in a row cause one Sonos login and all get the same to
   const session = sessionFor(sonos);
   const tokens: string[] = [];
   for (let i = 0; i < 10; i++) tokens.push(await session.get());
-  assert.equal(sonos.counts.loginAttempts, 1, `Expected one login attempt for ten requests, Sonos saw ${sonos.counts.loginAttempts}`);
-  assert.equal(sonos.counts.sessionsIssued, 1, `Expected one session issued, Sonos issued ${sonos.counts.sessionsIssued}`);
+  assert.equal(
+    sonos.counts.loginAttempts,
+    1,
+    `Expected one login attempt for ten requests, Sonos saw ${sonos.counts.loginAttempts}`
+  );
+  assert.equal(
+    sonos.counts.sessionsIssued,
+    1,
+    `Expected one session issued, Sonos issued ${sonos.counts.sessionsIssued}`
+  );
   assert.deepEqual(new Set(tokens).size, 1, 'Expected every request to receive the same cached token');
 });
 
@@ -79,8 +107,16 @@ test('REQ-4: ten concurrent requests cause one Sonos login and all get the same 
   const sonos = createFakeSonos();
   const session = sessionFor(sonos);
   const tokens = await tenOf(() => session.get());
-  assert.equal(sonos.counts.loginAttempts, 1, `Expected one login attempt for ten concurrent requests, Sonos saw ${sonos.counts.loginAttempts}`);
-  assert.equal(sonos.counts.sessionsIssued, 1, `Expected one session issued, Sonos issued ${sonos.counts.sessionsIssued}`);
+  assert.equal(
+    sonos.counts.loginAttempts,
+    1,
+    `Expected one login attempt for ten concurrent requests, Sonos saw ${sonos.counts.loginAttempts}`
+  );
+  assert.equal(
+    sonos.counts.sessionsIssued,
+    1,
+    `Expected one session issued, Sonos issued ${sonos.counts.sessionsIssued}`
+  );
   assert.deepEqual(new Set(tokens).size, 1, 'Expected every concurrent request to receive the same token');
 });
 
@@ -92,7 +128,11 @@ test('REQ-4: once logged in, a plain request makes no calls to Sonos', async () 
   const before = sonos.requests.length;
   await session.get();
   await session.get();
-  assert.equal(sonos.requests.length, before, 'Expected no further requests to Sonos (not even /api/mfe) for a cached, non-refresh get()');
+  assert.equal(
+    sonos.requests.length,
+    before,
+    'Expected no further requests to Sonos (not even /api/mfe) for a cached, non-refresh get()'
+  );
 });
 
 // ── REQ-5: refresh checks the cached session against Sonos ────────────────────
@@ -105,7 +145,11 @@ test('REQ-5: refresh with a session Sonos still accepts returns the same token w
   const first = await session.get();
   const second = await session.get({ refresh: true });
   assert.equal(second, first, 'Expected the same token back while Sonos still accepts it');
-  assert.equal(sonos.counts.loginAttempts, 1, `Expected no new login on refresh, Sonos saw ${sonos.counts.loginAttempts} login attempts`);
+  assert.equal(
+    sonos.counts.loginAttempts,
+    1,
+    `Expected no new login on refresh, Sonos saw ${sonos.counts.loginAttempts} login attempts`
+  );
   assert.equal(sonos.counts.mfeChecks, 1, 'Expected the cached session to be checked once with GET /api/mfe');
   const check = sonos.requests.find((r) => r.url.pathname === '/api/mfe');
   assert.ok(
@@ -124,7 +168,11 @@ test('REQ-5: refresh with a session Sonos rejects logs in again and returns the 
   const second = await session.get({ refresh: true });
   assert.notEqual(second, first, 'Expected a different token once Sonos rejected the cached one');
   assert.ok(sonos.isValid(second), 'Expected the returned token to be a session Sonos currently accepts');
-  assert.equal(sonos.counts.sessionsIssued, 2, `Expected exactly one new login, Sonos issued ${sonos.counts.sessionsIssued} sessions in all`);
+  assert.equal(
+    sonos.counts.sessionsIssued,
+    2,
+    `Expected exactly one new login, Sonos issued ${sonos.counts.sessionsIssued} sessions in all`
+  );
   const later = await session.get();
   assert.equal(later, second, 'Expected later plain requests to be served the new token');
   assert.equal(sonos.counts.sessionsIssued, 2, 'Expected no further login for the later plain request');
@@ -137,7 +185,11 @@ test('REQ-5: ten concurrent refreshes against a rejected session cause one new l
   const first = await session.get();
   sonos.expireAllSessions();
   const tokens = await tenOf(() => session.get({ refresh: true }));
-  assert.equal(sonos.counts.sessionsIssued, 2, `Expected one new login in all, Sonos issued ${sonos.counts.sessionsIssued} sessions`);
+  assert.equal(
+    sonos.counts.sessionsIssued,
+    2,
+    `Expected one new login in all, Sonos issued ${sonos.counts.sessionsIssued} sessions`
+  );
   assert.equal(new Set(tokens).size, 1, 'Expected every concurrent refresh to receive the same new token');
   assert.notEqual(tokens[0], first, 'Expected the new token, not the rejected one');
 });
@@ -192,8 +244,14 @@ for (const failure of failures) {
     const password = failure.password ?? SONOS_PASSWORD;
     const err = await failureOf(sessionFor(sonos, failure.password).get());
     assert.ok(err instanceof Error, 'Expected an Error to be thrown');
-    assert.ok(!err.message.includes(password), `Expected the password to be absent from the error message, got: ${err.message}`);
-    assert.ok(!inspect(err, { depth: 8 }).includes(password), 'Expected the password to be absent from the whole error (stack, cause and properties)');
+    assert.ok(
+      !err.message.includes(password),
+      `Expected the password to be absent from the error message, got: ${err.message}`
+    );
+    assert.ok(
+      !inspect(err, { depth: 8 }).includes(password),
+      'Expected the password to be absent from the whole error (stack, cause and properties)'
+    );
   });
 }
 
@@ -214,7 +272,10 @@ test('REQ-6: a failed login is not cached, so the next request tries again and c
   const attemptsAfterFailure = sonos.counts.loginAttempts;
   sonos.fault = null;
   const token = await session.get();
-  assert.ok(sonos.counts.loginAttempts > attemptsAfterFailure, 'Expected the next request to start a new login rather than replay the failure');
+  assert.ok(
+    sonos.counts.loginAttempts > attemptsAfterFailure,
+    'Expected the next request to start a new login rather than replay the failure'
+  );
   assert.ok(sonos.isValid(token), 'Expected the retry to return the session Sonos issued');
 });
 
@@ -227,7 +288,10 @@ test('REQ-6: concurrent requests during a failing login all fail, and the next o
   const results = await Promise.allSettled([session.get(), session.get(), session.get()]);
   for (const r of results) {
     assert.equal(r.status, 'rejected', 'Expected every caller of a failing login to be rejected');
-    assert.ok(r.status === 'rejected' && r.reason instanceof SonosLoginError, 'Expected each rejection to be a SonosLoginError');
+    assert.ok(
+      r.status === 'rejected' && r.reason instanceof SonosLoginError,
+      'Expected each rejection to be a SonosLoginError'
+    );
   }
   const attemptsAfterFailure = sonos.counts.loginAttempts;
   sonos.fault = null;
