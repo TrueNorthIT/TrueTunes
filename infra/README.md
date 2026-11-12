@@ -18,6 +18,7 @@ with OIDC workload identity federation, so GitHub holds no Azure secret. A perso
 | `cosmos.tf` | Cosmos DB account, database and containers |
 | `functions.tf` | Consumption plan, Function App and its app settings |
 | `keyvault.tf` | Key Vault, the Function App's access to it |
+| `gateway.tf` | The Sonos gateway: Linux plan, web app, its Key Vault access, optional custom domain and certificate |
 | `ci.tf` | The two GitHub Actions identities, their federated credentials and roles |
 | `scripts/load-secrets.mjs` | Copies the secrets from `.env` into the vault, by hand |
 | `imports.tf` | `import` blocks that adopted the live resources into state |
@@ -31,7 +32,8 @@ with OIDC workload identity federation, so GitHub holds no Azure secret. A perso
 validate ──► deploy ──► version ──► publish
              (infra apply,        (desktop app release)
               function publish,
-              smoke check)
+              gateway deploy,
+              smoke checks)
 ```
 
 `version` needs `deploy`, so the desktop app is released only if the Terraform apply and the function publish for the
@@ -46,10 +48,58 @@ The `deploy` job runs in the GitHub environment `production`, one at a time (`co
 3. Sign in with `azure/login`, then in `server/`: `npm ci`, `npm test`, `npm run build`, `npm prune --omit=dev`,
    `func azure functionapp publish` (replaces every function with this commit's).
 4. Smoke check: `GET /api/attribution` must answer 2xx (retries for a cold start).
+5. Deploy the gateway (below), then smoke check `GET https://<gateway default host>/healthz`.
 
 The workflow publishes `github.sha` of the push to `main` and nothing else, which is how the "deploy from a tree
 that contains `origin/main`" rule is kept. The Function App's Node version (`~22`) is Terraform's, in `functions.tf`;
 the workflow never sets it. The runner's own Node (`.nvmrc`) only builds.
+
+## Sonos gateway
+
+`gateway.tf` describes `truetunes-gw`, a small always-on Node HTTP + WebSocket service (`server/src/gateway/`, entry
+`dist/gateway/main.js`) that fronts all Sonos traffic. Azure Functions cannot hold a WebSocket open, so it runs on App
+Service (Linux, Node 22 LTS) in its own plan, `truetunes-gw-plan`, SKU **B1**. **B1 is always on and billed monthly
+whether or not anything calls it**; the Function App's consumption plan is not. The app has `always_on`, WebSockets
+and a health check on `/healthz`; HTTP/2 is left at the default (off). It reads `SONOS_USERNAME` and `SONOS_PASSWORD`
+through Key Vault references (its own system-assigned identity holds "Key Vault Secrets User"), plus `ENTRA_TENANT_ID`,
+`ENTRA_CLIENT_ID` and the Application Insights connection string. It is reachable at `https://truetunes-gw.azurewebsites.net`
+(see `terraform output gateway_default_hostname`) and, once DNS exists, at `https://truetunes.tnapps.co.uk`.
+
+**Deploy.** In the `deploy` job, after the functions are published and in the same `azure/login` session, the job zips
+`server/dist`, the production `node_modules` that `npm prune --omit=dev` left, and `package.json`, and runs
+`az webapp deploy --type zip --clean true --restart true` against `truetunes-gw`. Nothing is built on the server
+(`SCM_DO_BUILD_DURING_DEPLOYMENT=false`); the start command is `node dist/gateway/main.js`. The restart also makes
+the app resolve its Key Vault references again. The smoke check then calls `/healthz` on the `azurewebsites.net`
+host (it exists before DNS does) with retries and fails the job on a non-2xx.
+
+**Custom domain.** The `tnapps.co.uk` zone (resource group `truenorth-general`) is outside this pipeline, so a person
+creates two records first, then turns the binding on. In this order:
+
+1. Apply this directory **by hand, once, by a person** ("Running it locally"). The gateway adds an entry to the
+   `ci_plan_refresh` assignments in `ci.tf`, a role assignment of a custom role, which the deploy identity's condition
+   does not allow, so a CI apply of this change fails with an authorisation error. After that apply the app exists and
+   CI applies everything else.
+2. In the `tnapps.co.uk` zone create:
+
+   | Record | Name | Value |
+   | --- | --- | --- |
+   | CNAME | `truetunes` | `terraform output -raw gateway_default_hostname` (`truetunes-gw.azurewebsites.net`) |
+   | TXT | `asuid.truetunes` | `terraform output -raw gateway_domain_verification_id` |
+
+3. Set the repository variable (default `false` when unset), then merge anything or re-run `deploy`:
+
+   ```bash
+   gh variable set GATEWAY_CUSTOM_DOMAIN_ENABLED --repo TrueNorthIT/TrueTunes --body true
+   ```
+
+   For a local apply use `TF_VAR_gateway_custom_domain_enabled=true` or `gateway_custom_domain_enabled = true` in
+   `terraform.tfvars`.
+4. That apply adds the hostname binding, a free App Service managed certificate and the SNI binding. Azure checks the
+   two records when it creates the binding, and the managed certificate needs the CNAME to resolve; if the apply fails
+   on either, fix the record and apply again.
+
+Setting the variable before the records exist makes every `deploy` fail at the binding, which blocks the desktop
+release. The deploy smoke check uses the default host, so it does not prove the custom domain.
 
 ## CI identities
 
@@ -70,7 +120,7 @@ the one named can use the identity.
 | Role Based Access Control Administrator | resource group | `keyvault.tf` assigns Key Vault roles, which Contributor cannot do |
 | Storage Blob Data Contributor | `tfstate` container | read and write state and take its lock (Entra auth) |
 
-The RBAC Administrator role is broad (it can grant access), so its assignment has a condition: it may only add or
+The Key Vault assignment for the gateway (`gateway_secrets_user`) is within that condition, so CI can create it. The RBAC Administrator role is broad (it can grant access), so its assignment has a condition: it may only add or
 remove assignments of "Key Vault Secrets User" and "Key Vault Secrets Officer". It cannot make itself Owner, and it
 cannot change the role assignments in `ci.tf`: a change to those is applied by a person, and a CI apply that includes
 one fails with an authorisation error. Contributor also lets it change the state storage account's settings (not its
@@ -81,7 +131,7 @@ blobs).
 | Role | Scope | Why |
 | --- | --- | --- |
 | Reader | resource group | refresh every resource |
-| `truetunes-ci-plan-refresh` (custom) | Function App, app storage account, Cosmos account, Web PubSub, Log Analytics workspace | the `list*` actions the azurerm provider calls while refreshing, below |
+| `truetunes-ci-plan-refresh` (custom) | Function App, gateway web app, app storage account, Cosmos account, Web PubSub, Log Analytics workspace | the `list*` actions the azurerm provider calls while refreshing, below |
 | Storage Blob Data Reader | `tfstate` container | read state; plans run with `-lock=false` because the lock is a write |
 
 The custom role has these actions and nothing else (no write, no delete): `Microsoft.Web/sites/config/list/action`,
@@ -176,7 +226,7 @@ terraform init
 terraform plan
 ```
 
-Supply `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, `AUTH_ENFORCE` and `KEY_VAULT_SECRETS_OFFICERS` (matching the repository variables, or the apply will change them) as `TF_VAR_*` environment variables or an untracked
+Supply `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, `AUTH_ENFORCE`, `GATEWAY_CUSTOM_DOMAIN_ENABLED` (as `gateway_custom_domain_enabled`) and `KEY_VAULT_SECRETS_OFFICERS` (matching the repository variables, or the apply will change them) as `TF_VAR_*` environment variables or an untracked
 `terraform.tfvars` (see `terraform.tfvars.example`). There are no secret inputs. `*.tfvars` and `*.tfstate*` are
 git-ignored. Never paste an unredacted plan or `terraform show` output: the Function App's resolved settings and the
 provider's keys are in them.

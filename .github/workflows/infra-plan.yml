@@ -57,6 +57,7 @@ jobs:
       TF_VAR_entra_tenant_id: ${{ vars.ENTRA_TENANT_ID }}
       TF_VAR_entra_client_id: ${{ vars.ENTRA_CLIENT_ID }}
       TF_VAR_auth_enforce: ${{ vars.AUTH_ENFORCE }}
+      TF_VAR_gateway_custom_domain_enabled: ${{ vars.GATEWAY_CUSTOM_DOMAIN_ENABLED || 'false' }}
       # JSON list of object ids, e.g. ["<object id>"]; [] when the variable is unset.
       TF_VAR_key_vault_secrets_officers: ${{ vars.KEY_VAULT_SECRETS_OFFICERS || '[]' }}
       TF_IN_AUTOMATION: 'true'

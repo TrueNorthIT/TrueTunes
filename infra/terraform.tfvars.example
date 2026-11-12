@@ -4,3 +4,6 @@
 entra_tenant_id = "00000000-0000-0000-0000-000000000000"
 entra_client_id = "00000000-0000-0000-0000-000000000000"
 auth_enforce    = "false"
+
+# Leave false until the gateway's DNS records exist (README.md, "Sonos gateway"). In CI: GATEWAY_CUSTOM_DOMAIN_ENABLED.
+gateway_custom_domain_enabled = false

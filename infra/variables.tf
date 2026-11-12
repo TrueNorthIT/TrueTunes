@@ -30,6 +30,12 @@ variable "auth_enforce" {
   }
 }
 
+variable "gateway_custom_domain_enabled" {
+  type        = bool
+  description = "Bind truetunes.tnapps.co.uk to the Sonos gateway and give it a managed certificate. Set true only after the CNAME and asuid TXT records exist (README.md, \"Sonos gateway\"): the zone is outside this pipeline."
+  default     = false
+}
+
 variable "key_vault_secrets_officers" {
   type        = set(string)
   description = "Object ids of the people allowed to write secrets to the vault, for load-secrets.mjs. The secret values themselves are never Terraform inputs: the Function App reads them from Key Vault."

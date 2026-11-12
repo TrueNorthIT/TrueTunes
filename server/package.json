@@ -2,7 +2,7 @@
   "name": "true-tunes-server",
   "version": "1.0.0",
   "description": "Azure Functions — office presence features for true-tunes-2",
-  "main": "dist/{**/,}*.js",
+  "main": "dist/functions/*.js",
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
@@ -11,17 +11,20 @@
     "deploy": "node scripts/deploy.mjs",
     "test": "tsc -p tsconfig.test.json && node --test dist-test/shared/*.test.js dist-test/lib/*.test.js",
     "sim:queuedle": "tsc -p tsconfig.sim.json && node dist-test/sim/scripts/sim-queuedle.js",
-    "sim:dj": "tsc -p tsconfig.test.json && node scripts/sim-dj.mjs"
+    "sim:dj": "tsc -p tsconfig.test.json && node scripts/sim-dj.mjs",
+    "start:gateway": "node dist/gateway/main.js"
   },
   "dependencies": {
     "@azure/cosmos": "^4.10.1",
     "@azure/functions": "^4.17.0",
     "@azure/storage-blob": "^12.34.0",
     "@azure/web-pubsub": "^1.1.3",
-    "jose": "^6.2.15"
+    "jose": "^6.2.15",
+    "ws": "^8.22.2"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
+    "@types/ws": "^8.18.2",
     "typescript": "^7.0.2"
   }
 }

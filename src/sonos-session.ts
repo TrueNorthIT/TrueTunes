@@ -12,6 +12,7 @@ import {
   saveSessionToken,
   clearSessionToken,
   PUBSUB_FUNCTION_URL,
+  SONOS_GATEWAY_URL,
 } from './state';
 
 // True once Sonos has rejected a token we held: the next request must be a refresh, not a plain read.
@@ -23,12 +24,17 @@ async function fetchToken(refresh: boolean): Promise<boolean> {
     if (!res.ok) {
       // 401: no valid Entra sign-in. 502 { error: 'sonos-login-failed' }: the server could not log in to Sonos.
       console.error(`[session] /api/sonos-session ${res.status}`);
-      telemetry.event('sonos_session_failed', { statusCode: res.status, refresh });
+      telemetry.event('sonos_session_failed', { statusCode: res.status, refresh, sonosVia: 'direct' });
       return false;
     }
     const body = (await res.json()) as { token?: unknown };
     if (typeof body.token !== 'string' || !body.token) {
-      telemetry.event('sonos_session_failed', { statusCode: res.status, refresh, reason: 'no token' });
+      telemetry.event('sonos_session_failed', {
+        statusCode: res.status,
+        refresh,
+        reason: 'no token',
+        sonosVia: 'direct',
+      });
       return false;
     }
     if (body.token !== state.sessionToken) {
@@ -44,7 +50,28 @@ async function fetchToken(refresh: boolean): Promise<boolean> {
     return true;
   } catch (err) {
     console.error('[session] /api/sonos-session unreachable:', err instanceof Error ? err.message : err);
-    telemetry.event('sonos_session_failed', { statusCode: 0, refresh });
+    telemetry.event('sonos_session_failed', { statusCode: 0, refresh, sonosVia: 'direct' });
+    return false;
+  }
+}
+
+/**
+ * Gateway mode's "session": there is no Sonos token here, so start-up just checks the gateway accepts our
+ * Entra token and can reach Sonos (a read of /api/mfe, as direct mode's token check does). 401: bad or missing
+ * Entra token. 502 sonos-login-failed / sonos-unreachable: the gateway can't get to Sonos.
+ */
+export async function checkGateway(): Promise<boolean> {
+  try {
+    const res = await fnFetch(`${SONOS_GATEWAY_URL}/sonos/api/mfe`);
+    if (!res.ok) {
+      console.error(`[session] gateway /sonos/api/mfe ${res.status}`);
+      telemetry.event('sonos_session_failed', { statusCode: res.status, refresh: false, sonosVia: 'gateway' });
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('[session] gateway unreachable:', err instanceof Error ? err.message : err);
+    telemetry.event('sonos_session_failed', { statusCode: 0, refresh: false, sonosVia: 'gateway' });
     return false;
   }
 }

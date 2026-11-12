@@ -140,6 +140,7 @@ resource "azurerm_role_definition" "ci_plan_refresh" {
 resource "azurerm_role_assignment" "ci_plan_refresh" {
   for_each = {
     function_app  = azurerm_windows_function_app.main.id
+    gateway       = azurerm_linux_web_app.gateway.id
     storage       = azurerm_storage_account.app.id
     cosmos        = azurerm_cosmosdb_account.main.id
     web_pubsub    = azurerm_web_pubsub.main.id
