@@ -166,6 +166,10 @@ test('PS-3: validPubSubUrl accepts a wss URL on webpubsub.azure.com and nothing 
     'wss://user:pass@truetunes-wps.webpubsub.azure.com/client',
     'wss://user@truetunes-wps.webpubsub.azure.com/client',
     'wss://truetunes-wps.webpubsub.azure.com@evil.example/client',
+    'wss://.webpubsub.azure.com/client',
+    'wss://a..webpubsub.azure.com/client',
+    'wss://truetunes-wps.webpubsub.azure.com:8443/client',
+    'wss://truetunes-wps.webpubsub.azure.com:444/client',
   ]) {
     assert.equal(validPubSubUrl(bad), null, `Expected ${JSON.stringify(bad)} to be refused`);
   }

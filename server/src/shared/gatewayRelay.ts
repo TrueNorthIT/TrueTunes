@@ -304,6 +304,9 @@ export interface PubSubRelayDeps {
   log?: (msg: string) => void;
 }
 
+/** One or more non-empty labels, then Web PubSub's own domain. */
+const PUBSUB_HOST = /^[a-z0-9-]+(\.[a-z0-9-]+)*\.webpubsub\.azure\.com$/;
+
 /** The client access URL if it is a plain wss URL on Azure Web PubSub's own domain; anything else is null. */
 export function validPubSubUrl(raw: unknown): string | null {
   if (typeof raw !== 'string') return null;
@@ -313,8 +316,8 @@ export function validPubSubUrl(raw: unknown): string | null {
   } catch {
     return null;
   }
-  if (url.protocol !== 'wss:' || url.username || url.password) return null;
-  return url.hostname.endsWith('.webpubsub.azure.com') ? url.href : null;
+  if (url.protocol !== 'wss:' || url.username || url.password || url.port !== '') return null;
+  return PUBSUB_HOST.test(url.hostname) ? url.href : null;
 }
 
 export function createPubSubRelay(deps: PubSubRelayDeps): {

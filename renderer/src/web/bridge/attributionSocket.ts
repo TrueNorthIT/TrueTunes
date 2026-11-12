@@ -28,7 +28,10 @@ export function createAttributionSocket(o: {
   name: () => string | undefined;
   /** A group message's event, for `attribution.ingest`, which decides what enters the map. */
   onEvent: (event: AttributionEvent) => void;
+  /** 0 to 1, for the reconnect jitter. Injectable so tests are deterministic. */
+  random?: () => number;
 }): AttributionSocket {
+  const random = o.random ?? (() => Math.random());
   let ws: WebSocket | null = null;
   let running = false;
   let attempts = 0;
@@ -55,7 +58,8 @@ export function createAttributionSocket(o: {
 
   function scheduleReconnect(): void {
     if (!running || timer) return;
-    const delay = Math.min(1000 * 2 ** attempts, 60_000);
+    // Plus 0 to 500 ms, so every tab does not come back in the same instant after a gateway restart.
+    const delay = Math.min(1000 * 2 ** attempts, 60_000) + Math.floor(random() * 500);
     attempts++;
     timer = setTimeout(() => {
       timer = null;
@@ -107,11 +111,14 @@ export function createAttributionSocket(o: {
     ws = sock;
     sock.addEventListener('open', () => {
       if (ws !== sock) return;
-      attempts = 0;
+      // Not a success yet: the gateway accepts the upgrade before it asks the Function for the connection, so a
+      // failure there closes this socket again at once. The backoff resets on the first frame from the server.
       sock.send(JSON.stringify({ type: 'joinGroup', group: GROUP }));
     });
     sock.addEventListener('message', (e) => {
-      if (ws === sock) handleMessage((e as MessageEvent).data);
+      if (ws !== sock) return;
+      attempts = 0; // Web PubSub's own 'connected' frame: the upstream really is open
+      handleMessage((e as MessageEvent).data);
     });
     sock.addEventListener('close', () => {
       if (ws !== sock) return; // replaced or stopped on purpose

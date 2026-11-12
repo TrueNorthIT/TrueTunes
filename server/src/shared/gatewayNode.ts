@@ -7,6 +7,13 @@ import zlib from 'node:zlib';
 import type { ClientSocket, UpstreamSocket } from './gatewayRelay';
 import type { StaticFile, StaticLookup } from './gatewayWeb';
 
+/**
+ * Options of the gateway's WebSocketServer. `maxPayload` limits only the frames a client sends to the gateway:
+ * commands and subscriptions on /sonos/ws, small JSON on /pubsub/ws. Frames coming from Sonos or Web PubSub arrive
+ * on the upstream sockets, which this does not touch, so the Sonos path is safe (`ws`'s default is 100 MiB).
+ */
+export const WS_SERVER_OPTIONS = { maxPayload: 1024 * 1024 };
+
 export const MAX_BODY_BYTES = 10 * 1024 * 1024;
 
 export class BodyTooLargeError extends Error {

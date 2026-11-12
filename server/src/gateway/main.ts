@@ -23,11 +23,19 @@ import {
   handleProtocols,
 } from '../shared/gatewayRelay';
 import { FUNCTIONS_ORIGIN } from '../shared/gatewayWeb';
-import { BodyTooLargeError, adaptWs, createStaticFiles, readBodyCapped } from '../shared/gatewayNode';
+import {
+  BodyTooLargeError,
+  WS_SERVER_OPTIONS,
+  adaptWs,
+  createStaticFiles,
+  readBodyCapped,
+} from '../shared/gatewayNode';
 
 /** The built web app: server/web beside dist/ in the deployed zip (WEB_ROOT overrides it for a local run). */
 const WEB_ROOT = process.env['WEB_ROOT'] || path.join(__dirname, '..', '..', 'web');
 const HEARTBEAT_MS = 30_000;
+/** A handshake that hangs ends in the relay's 1011 path instead of leaving the client open. */
+const HANDSHAKE_TIMEOUT_MS = 30_000;
 const log = (line: string) => console.log(line);
 
 const session = createSonosSession({
@@ -60,14 +68,16 @@ const relay = createRelay({
   session,
   fetch: (...args) => fetch(...args),
   // No `origin` option, so ws sends no Origin header.
-  connectUpstream: (url, protocols) => adaptWs(new WebSocket(url, protocols)),
+  connectUpstream: (url, protocols) =>
+    adaptWs(new WebSocket(url, protocols, { handshakeTimeout: HANDSHAKE_TIMEOUT_MS })),
   log,
 });
 
 const pubsubRelay = createPubSubRelay({
   fetch: (...args) => fetch(...args),
   functionsOrigin: FUNCTIONS_ORIGIN,
-  connectUpstream: (url, protocols) => adaptWs(new WebSocket(url, protocols)),
+  connectUpstream: (url, protocols) =>
+    adaptWs(new WebSocket(url, protocols, { handshakeTimeout: HANDSHAKE_TIMEOUT_MS })),
   log,
 });
 
@@ -114,11 +124,24 @@ const server = http.createServer((req, res) => {
 // ── WebSocket upgrades: /sonos/ws and /pubsub/ws only ──
 // A browser also offers its token as a `bearer.<token>` subprotocol; only the path's own protocol is ever selected.
 // One server and one heartbeat cover both relays' client sockets.
-const wss = new WebSocketServer({ noServer: true, handleProtocols });
+const wss = new WebSocketServer({ noServer: true, handleProtocols, ...WS_SERVER_OPTIONS });
 const alive = new WeakMap<WebSocket, boolean>();
 
 function refuse(socket: Duplex, line: string) {
   socket.end(`${line}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
+}
+
+/** /pubsub/ws only: the credential for /api/connect (the token just verified) and the display name from the query. */
+function acceptPubSub(req: http.IncomingMessage, ws: WebSocket): Promise<void> {
+  const credential = credentialFromHeaders(req.headers) ?? '';
+  let username = '';
+  try {
+    // Not a secret, but only the path is ever logged, never the query string.
+    username = new URL(req.url ?? '/', 'http://gateway').searchParams.get('username') ?? '';
+  } catch {
+    /* a malformed request line: connect without a name */
+  }
+  return pubsubRelay.accept(adaptWs(ws), { credential, username });
 }
 
 async function handleUpgrade(req: http.IncomingMessage, socket: Duplex, head: Buffer): Promise<void> {
@@ -134,10 +157,6 @@ async function handleUpgrade(req: http.IncomingMessage, socket: Duplex, head: Bu
       log(`[gateway] upgrade ${route} 401`);
       return refuse(socket, 'HTTP/1.1 401 Unauthorized');
     }
-    // The credential string for /api/connect: the same token that was just verified.
-    const credential = credentialFromHeaders(req.headers) ?? '';
-    // The display name (not a secret). Only the path is ever logged, never the query string.
-    const username = new URL(req.url ?? '/', 'http://gateway').searchParams.get('username') ?? '';
     wss.handleUpgrade(req, socket, head, (ws) => {
       const opened = Date.now();
       alive.set(ws, true);
@@ -145,8 +164,7 @@ async function handleUpgrade(req: http.IncomingMessage, socket: Duplex, head: Bu
       ws.on('error', () => undefined); // the adapter's own error listener reports it to the relay
       ws.on('close', (code) => log(`[gateway] ws ${route} closed ${code} ${Date.now() - opened}ms oid=${caller.oid}`));
       log(`[gateway] ws ${route} open oid=${caller.oid}`);
-      const accepted =
-        route === '/sonos/ws' ? relay.accept(adaptWs(ws)) : pubsubRelay.accept(adaptWs(ws), { credential, username });
+      const accepted = route === '/sonos/ws' ? relay.accept(adaptWs(ws)) : acceptPubSub(req, ws);
       accepted.catch((err) => {
         console.error(`[gateway] relay failed: ${err instanceof Error ? err.message : String(err)}`);
         ws.close(1011, 'internal');

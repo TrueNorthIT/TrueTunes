@@ -1,9 +1,12 @@
 // The live "who queued this" channel: /pubsub/ws through the gateway, mirroring src/pubsub.ts. Fakes only.
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { createWebBridge } from '../index';
 import { FakeWebSocket, fakeAuth, json, makeBridge, tick, type FakeAuth, type Harness } from './helpers';
 
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
 
 const PROTOCOL = 'json.webpubsub.azure.v1';
 const ITEM = {
@@ -182,6 +185,58 @@ describe('incoming events (the desktop’s rules)', () => {
     expect((await seen.mapNow())?.['x-sonos:track:9']).toBeUndefined();
   });
 
+  it.each([
+    ['a uri that is not a string', queued({ uri: 42 })],
+    ['a uri of __proto__', queued({ uri: '__proto__' })],
+    ['a uri of constructor', queued({ uri: 'constructor' })],
+    ['a uri of prototype', queued({ uri: 'prototype' })],
+    ['a uri over 500 characters', queued({ uri: 'u'.repeat(501) })],
+    ['a user that is not a string', queued({ user: { name: 'x' } })],
+    ['no user', queued({ user: undefined })],
+    ['a trackName that is not a string', queued({ trackName: 5 })],
+    ['an artist that is not a string', queued({ artist: ['a'] })],
+    ['an imageUrl that is not a string', queued({ imageUrl: {} })],
+    ['a timestamp that is not a number', queued({ timestamp: '1234' })],
+    ['an eventType that is neither track nor album', queued({ eventType: 'playlist' })],
+  ])('ignores an event with %s, so it reaches neither the map nor the listeners', async (_name, event) => {
+    const h = makeBridge();
+    const seen = watch(h);
+    const ws = await startedOpen(h);
+    ws.receive(group(event) as never);
+    expect(seen.events).toEqual([]);
+    const map = await seen.mapNow();
+    expect(Object.keys(map ?? {})).toEqual([]);
+    expect(({} as Record<string, unknown>)['user']).toBeUndefined(); // nothing leaked onto Object.prototype
+  });
+
+  it('treats a missing trackName or artist as empty, and caps long strings at 500 characters', async () => {
+    const h = makeBridge();
+    const seen = watch(h);
+    const ws = await startedOpen(h);
+    ws.receive(
+      group(queued({ trackName: undefined, artist: undefined, user: 'n'.repeat(900), album: 'a'.repeat(900) })) as never
+    );
+    const [event] = seen.events;
+    expect(event.trackName).toBe('');
+    expect(event.artist).toBe('');
+    expect(event.user).toHaveLength(500);
+    expect((event as unknown as { album: string }).album).toHaveLength(500);
+    expect((await seen.mapNow())?.['x-sonos:track:9']).toEqual({
+      user: 'n'.repeat(500),
+      timestamp: 1234,
+      trackName: '',
+      artist: '',
+    });
+  });
+
+  it('passes on only the fields it knows', async () => {
+    const h = makeBridge();
+    const seen = watch(h);
+    const ws = await startedOpen(h);
+    ws.receive(group(queued({ evil: 'x', serviceId: '72711', album: 'Al' })) as never);
+    expect(seen.events).toEqual([queued({ serviceId: '72711', album: 'Al' })]);
+  });
+
   it('ignores malformed frames and carries on', async () => {
     const h = makeBridge();
     const seen = watch(h);
@@ -300,6 +355,7 @@ describe('publishing', () => {
 });
 
 describe('reconnecting', () => {
+  beforeEach(() => void vi.spyOn(Math, 'random').mockReturnValue(0)); // no jitter, unless a test says so
   async function startedWithTimers(auth?: FakeAuth) {
     vi.useFakeTimers();
     const h = makeBridge(auth ? { auth } : {});
@@ -324,19 +380,45 @@ describe('reconnecting', () => {
     }
   });
 
-  it('resets the backoff when a connection opens', async () => {
+  it('keeps backing off when every attempt opens and is then closed at once (the gateway accepts, then fails the connect)', async () => {
+    await startedWithTimers();
+    let count = 1;
+    for (const delay of [1000, 2000, 4000, 8000, 16000, 32000, 60000, 60000]) {
+      last().open(); // the 101 arrives...
+      last().drop(); // ...then the relay closes 1011
+      await vi.advanceTimersByTimeAsync(delay - 1);
+      expect(FakeWebSocket.pubsub).toHaveLength(count);
+      await vi.advanceTimersByTimeAsync(1);
+      count++;
+      expect(FakeWebSocket.pubsub).toHaveLength(count);
+    }
+  });
+
+  it('resets the backoff after the first frame from the server, not on open', async () => {
     await startedWithTimers();
     for (const delay of [1000, 2000, 4000]) {
+      last().open();
       last().drop();
       await vi.advanceTimersByTimeAsync(delay);
     }
     last().open();
+    last().receive({ type: 'system', event: 'connected', userId: 'x' } as never);
     last().drop();
     const count = FakeWebSocket.pubsub.length;
     await vi.advanceTimersByTimeAsync(999);
     expect(FakeWebSocket.pubsub).toHaveLength(count);
     await vi.advanceTimersByTimeAsync(1);
     expect(FakeWebSocket.pubsub).toHaveLength(count + 1);
+  });
+
+  it('adds up to 500 ms of jitter to each delay', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    await startedWithTimers();
+    last().drop();
+    await vi.advanceTimersByTimeAsync(1000 + 498);
+    expect(FakeWebSocket.pubsub).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(FakeWebSocket.pubsub).toHaveLength(2);
   });
 
   it('joins the group again on every new connection', async () => {
