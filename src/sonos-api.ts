@@ -3,12 +3,11 @@
 import { randomUUID } from 'crypto';
 import type { FetchRequest, FetchResponse } from './types';
 import * as telemetry from './telemetry';
+import { renewSession } from './sonos-session';
 import {
   config,
   state,
   log,
-  broadcastToRenderers,
-  clearSessionToken,
   BASE_URL,
   SPOOF_UA,
   SEARCH_SERVICE_ID,
@@ -16,12 +15,6 @@ import {
   PLATFORM_SERVICE_ID,
   PLATFORM_ACCOUNT_ID,
 } from './state';
-
-// main.ts owns the auth window; it passes this in so this module needn't import main.
-let createAuthWindow: () => void = () => {};
-export function init(deps: { createAuthWindow: () => void }): void {
-  createAuthWindow = deps.createAuthWindow;
-}
 
 // ─── Operation registry ───────────────────────────────────────────────────────
 
@@ -167,7 +160,8 @@ function buildUrl(
 
 // ─── HTTP fetch helper ────────────────────────────────────────────────────────
 
-export async function sonosFetch(request: FetchRequest, isRetry = false): Promise<FetchResponse> {
+/** `isRetry`: the service self-heal's retry. `authRetried`: the retry after a refreshed session token. */
+export async function sonosFetch(request: FetchRequest, isRetry = false, authRetried = false): Promise<FetchResponse> {
   if (!state.sessionToken) {
     return { error: 'No session token — please log in first' };
   }
@@ -200,6 +194,8 @@ export async function sonosFetch(request: FetchRequest, isRetry = false): Promis
   // passed one explicitly or the operation has none) — used by the self-heal.
   const defaultServiceId =
     operation.path.includes(':serviceId') && !request.pathParams?.serviceId ? config.serviceId : undefined;
+
+  const sentToken = state.sessionToken;
 
   // Build headers once so we can log them before sending
   const reqHeaders: Record<string, string> = {
@@ -305,18 +301,11 @@ export async function sonosFetch(request: FetchRequest, isRetry = false): Promis
   }
 
   if (response.status === 401) {
-    log('[api] 401 — auth expired, re-showing auth window');
-    telemetry.event('auth_expired', { operationId: request.operationId });
-    state.authConfirmed = false;
-    state.sessionToken = null;
-    void clearSessionToken();
-    broadcastToRenderers('auth:expired');
-    if (state.authWin) {
-      state.authWin.show();
-    } else {
-      createAuthWindow();
-    }
-    return { error: '401 Unauthorized — re-authenticating' };
+    log('[api] 401 — Sonos rejected the session token');
+    telemetry.event('auth_401', { operationId: request.operationId, afterRefresh: authRetried });
+    // One fresh token, one retry; concurrent 401s share the refresh. Only if that fails does the user see anything.
+    if (await renewSession(sentToken, authRetried)) return sonosFetch(request, isRetry, true);
+    return { error: '401 Unauthorized — no Sonos session' };
   }
 
   // Self-heal a bad default service: re-select and retry once. Only for

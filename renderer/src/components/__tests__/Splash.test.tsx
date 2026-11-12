@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 import { Splash } from '../Splash';
 
 describe('Splash', () => {
@@ -11,6 +11,19 @@ describe('Splash', () => {
   it('is visible before ready', () => {
     const { container } = render(<Splash ready={false} />);
     expect(container.querySelector('[class*="splash"]')).toBeTruthy();
+  });
+
+  it('shows the error and a Retry button that calls onRetry when failed', () => {
+    const onRetry = vi.fn();
+    render(<Splash ready={false} failed onRetry={onRetry} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('Can’t reach Sonos sign-in.');
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it('has no Retry button while loading', () => {
+    render(<Splash ready={false} />);
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
   });
 
   it('disappears after ready + fade timeout', () => {

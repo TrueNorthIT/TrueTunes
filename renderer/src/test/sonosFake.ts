@@ -27,6 +27,8 @@ export const sonosDefaults: SonosPreload = {
   fetchImage: pending,
   onAuthReady: noop,
   onAuthExpired: noop,
+  onAuthFailed: noop,
+  retrySonosAuth: () => Promise.resolve(),
   onWsMessage: noop,
   onWsReady: noop,
   onWsGroups: noop,

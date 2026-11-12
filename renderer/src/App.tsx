@@ -2,7 +2,7 @@ import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState, type Re
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { getActiveProvider } from './providers';
-import { useAuth } from './hooks/useAuth';
+import { useAuth, useAuthFailure } from './hooks/useAuth';
 import { useGroups } from './hooks/useGroups';
 import { usePlayback } from './hooks/usePlayback';
 import { useMediaSession } from './hooks/useMediaSession';
@@ -64,6 +64,7 @@ const LyricsPanel = lazy(() => import('./components/LyricsPanel').then((m) => ({
 const MainApp = memo(function MainApp() {
   const queryClient = useQueryClient();
   const isAuthed = useAuth();
+  const authFailure = useAuthFailure();
   const groups = useGroups();
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const { showToast } = useToast();
@@ -262,7 +263,7 @@ const MainApp = memo(function MainApp() {
   return (
     <QueueActionsProvider value={queueActions}>
       <ContextMenuProvider>
-        <Splash ready={splashReady} />
+        <Splash ready={splashReady} failed={authFailure.failed} onRetry={authFailure.retry} />
         {skinny ? (
           <SkinnyShell
             autoplay={autoplay}

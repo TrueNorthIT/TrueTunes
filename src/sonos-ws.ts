@@ -5,6 +5,7 @@ import WebSocket from 'ws';
 import * as telemetry from './telemetry';
 import { config, state, log, broadcastToRenderers, saveConfig, BASE_URL, WS_URL, SPOOF_UA } from './state';
 import { discoverServiceCredentials } from './sonos-api';
+import { renewSession } from './sonos-session';
 
 // main.ts owns the taskbar thumbnail buttons; it passes this in so this module needn't import main.
 let updateThumbar: (isPlaying: boolean) => void = () => {};
@@ -194,17 +195,20 @@ function findTicket(obj: unknown, depth = 0): string | null {
   return null;
 }
 
-/** Fetch /api/mfe directly from the main process using the captured session cookie. */
-async function fetchMfeData(): Promise<unknown> {
-  if (!state.sessionToken) throw new Error('No session token');
+/** Fetch /api/mfe directly from the main process using the session cookie. */
+async function fetchMfeData(renewed = false): Promise<unknown> {
+  const sentToken = state.sessionToken;
+  if (!sentToken) throw new Error('No session token');
   const res = await fetch(`${BASE_URL}/api/mfe`, {
     headers: {
-      Cookie: `__Secure-next-auth.session-token=${state.sessionToken}`,
+      Cookie: `__Secure-next-auth.session-token=${sentToken}`,
       'User-Agent': SPOOF_UA,
       Accept: '*/*',
       Referer: `${BASE_URL}/en-us/web-app`,
     },
   });
+  // Sonos rejected the token: ask for a fresh one and try once more.
+  if (res.status === 401 && (await renewSession(sentToken, renewed))) return fetchMfeData(true);
   if (!res.ok) throw new Error(`MFE fetch ${res.status}`);
   return res.json();
 }
