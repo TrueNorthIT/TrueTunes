@@ -1,11 +1,19 @@
 // The web app's "a new version is ready": the service worker (renderer/web/sw.js). A new build installs beside
-// the running one and waits; the app's Update button (through the bridge's update events) tells it to take over,
-// and the page reloads onto it. Nothing here activates a version on its own.
+// the running one and waits.
+//   - Found while the app is launching (the first seconds of a page load, before the user has touched anything,
+//     and with no other window open): it takes over at once and the page reloads onto it, so opening the app
+//     gets the latest version.
+//   - Found later, or with another window open: the app's Update button (through the bridge's update events)
+//     tells it to take over. Nothing reloads under someone who is using the app.
 
 import type { UpdateSource } from './bridge/types';
 
 /** How often a long-open page asks whether a new build has shipped (the desktop's updater polls on the same beat). */
 const CHECK_EVERY_MS = 15 * 60_000;
+/** How long after a page load still counts as launching. */
+const LAUNCH_MS = 10_000;
+/** How long the worker gets to take over at launch before the Update button is offered instead. */
+const TAKE_OVER_MS = 1500;
 
 function versionOf(worker: ServiceWorker): Promise<string> {
   return new Promise((resolve) => {
@@ -36,9 +44,14 @@ export function createUpdates(): UpdateSource {
       controlled = true;
     });
 
+    // Launching: the page has just loaded and nobody has tapped or typed yet.
+    let touched = false;
+    const touch = () => void (touched = true);
+    window.addEventListener('pointerdown', touch, { once: true, capture: true });
+    window.addEventListener('keydown', touch, { once: true, capture: true });
+    const launching = () => !touched && performance.now() < LAUNCH_MS;
+
     const announce = (worker: ServiceWorker) => {
-      // The very first install replaces nothing, so it is not an update.
-      if (!sw.controller) return;
       waiting = worker;
       void versionOf(worker).then((v) => {
         version = v;
@@ -49,11 +62,24 @@ export function createUpdates(): UpdateSource {
     void sw
       .register('/sw.js')
       .then((registration) => {
-        const watch = (next: ServiceWorker | null) =>
+        /** A new version is installed and waiting. `atLaunch`: it was found while the app was launching. */
+        const ready = (worker: ServiceWorker, atLaunch: boolean) => {
+          // The very first install replaces nothing, so it is not an update.
+          if (!sw.controller) return;
+          if (!atLaunch || touched) return announce(worker);
+          // The worker takes over only if this is the app's one window; if it does not, offer the button.
+          worker.postMessage('activate-if-alone');
+          setTimeout(() => {
+            if (worker.state === 'installed') announce(worker);
+          }, TAKE_OVER_MS);
+        };
+        const watch = (next: ServiceWorker | null) => {
+          const atLaunch = launching();
           next?.addEventListener('statechange', () => {
-            if (next.state === 'installed') announce(next);
+            if (next.state === 'installed') ready(next, atLaunch);
           });
-        if (registration.waiting) announce(registration.waiting);
+        };
+        if (registration.waiting) ready(registration.waiting, launching());
         // One may already be installing when the registration resolves.
         watch(registration.installing);
         registration.addEventListener('updatefound', () => watch(registration.installing));

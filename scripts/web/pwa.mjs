@@ -139,6 +139,8 @@ const versionOn = (p) =>
       })
   );
 const before = await versionOn(first);
+// Someone is using the app: a key press ends "launching", so the update below must wait for the button.
+await first.keyboard.press('Shift');
 
 await stopGateway();
 const swPath = path.join(webRoot, 'sw.js');
@@ -183,6 +185,37 @@ await check('the other open window follows onto the new version', async () => {
   await second.waitForFunction(() => document.body.innerText.includes('Crooked Shoreline'), null, { timeout: 20000 });
   const now = await versionOn(second);
   assert(now === '99.0.0', `the second window is on ${now}`);
+});
+
+// ── a third version ships while the app is closed, and then the app is opened ──
+await first.close();
+await second.close();
+await stopGateway();
+writeFileSync(
+  swPath,
+  readFileSync(swPath, 'utf8')
+    .replace('"id":"second000000"', '"id":"third0000000"')
+    .replace('"version":"99.0.0"', '"version":"100.0.0"')
+);
+await startGateway();
+
+await check('opening the app after a deploy takes the new version by itself, with no button', async () => {
+  const launch = await visitor.newPage();
+  await launch.goto(`${base}/demo`);
+  const deadline = Date.now() + 25000;
+  let now = '';
+  while (Date.now() < deadline) {
+    now = await versionOn(launch).catch(() => 'reloading');
+    if (now === '100.0.0') break;
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  assert(now === '100.0.0', `the launched app is on ${now}`);
+  await launch.waitForFunction(() => document.body.innerText.includes('Crooked Shoreline'), null, { timeout: 20000 });
+  assert(
+    (await launch.getByRole('button', { name: 'Update' }).count()) === 0,
+    'the Update button is showing after a launch'
+  );
+  return `launched onto ${now}`;
 });
 
 await browser.close();
