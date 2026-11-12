@@ -1,0 +1,6 @@
+# Copy to terraform.tfvars (git-ignored) or export as TF_VAR_<name>. In CI these come from the GitHub
+# repository variables ENTRA_TENANT_ID, ENTRA_CLIENT_ID and AUTH_ENFORCE. None is a secret; the secrets
+# live in Key Vault and are never Terraform inputs.
+entra_tenant_id = "00000000-0000-0000-0000-000000000000"
+entra_client_id = "00000000-0000-0000-0000-000000000000"
+auth_enforce    = "false"
