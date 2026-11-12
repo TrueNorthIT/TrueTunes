@@ -129,7 +129,7 @@
       "bridge": ["getDisplayName", "setDisplayName", "renameUser"],
       "how_verified": "unit tests of the bridge's request mapping",
       "passes": true,
-      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (session.test.ts \"identity\", functions.test.ts \"renameUser\", review.test.ts: one name per account)."
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (session.test.ts \"identity\", functions.test.ts \"renameUser\", review.test.ts: one name per account). The owner signed in on production on 12 Nov 2026 in a desktop-width browser and sent a screenshot: now playing with its \"Queued by\" chip, the 22-track queue with times and queuer avatars, live lyrics, Picks, the Queuedle card, his profile and the Poll button all loaded."
     },
     {
       "id": "web-fn-reads",
@@ -154,7 +154,7 @@
       ],
       "how_verified": "unit tests asserting each call's method, path and query against the desktop's (src/ipc/functions.ts)",
       "passes": true,
-      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (functions.test.ts: a 38-row request table against src/ipc/functions.ts). An independent review compared every call with the desktop."
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (functions.test.ts: a 38-row request table against src/ipc/functions.ts). An independent review compared every call with the desktop. The owner signed in on production on 12 Nov 2026 in a desktop-width browser and sent a screenshot: now playing with its \"Queued by\" chip, the 22-track queue with times and queuer avatars, live lyrics, Picks, the Queuedle card, his profile and the Poll button all loaded."
     },
     {
       "id": "web-fn-writes",
@@ -191,7 +191,7 @@
       "bridge": ["publishQueued", "refreshAttribution", "onAttributionMap", "onAttributionEvent"],
       "how_verified": "unit tests of the bridge; demo journey shows queued-by badges",
       "passes": true,
-      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (session.test.ts \"attribution\"). Badges in the demo: the queue shows who queued each track (journey screenshots)."
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (session.test.ts \"attribution\"). Badges in the demo: the queue shows who queued each track (journey screenshots). The owner signed in on production on 12 Nov 2026 in a desktop-width browser and sent a screenshot: now playing with its \"Queued by\" chip, the 22-track queue with times and queuer avatars, live lyrics, Picks, the Queuedle card, his profile and the Poll button all loaded."
     },
     {
       "id": "web-office-presence",
@@ -218,7 +218,7 @@
       "bridge": ["fetch", "setQueueId"],
       "how_verified": "unit tests: URL building per operation, retry, discovery; a test that the operation table matches src/sonos-api.ts",
       "passes": true,
-      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (sonosHttp.test.ts: the operation table diffed against src/sonos-api.ts, URL building, headers, retries, 401, discovery, self-heal)."
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (sonosHttp.test.ts: the operation table diffed against src/sonos-api.ts, URL building, headers, retries, 401, discovery, self-heal). The owner signed in on production on 12 Nov 2026 in a desktop-width browser and sent a screenshot: now playing with its \"Queued by\" chip, the 22-track queue with times and queuer avatars, live lyrics, Picks, the Queuedle card, his profile and the Poll button all loaded."
     },
     {
       "id": "web-sonos-relay",
@@ -227,7 +227,7 @@
       "bridge": ["onWsMessage", "onWsReady", "onWsGroups", "getActiveGroup", "setGroup", "refreshPlayback", "resync"],
       "how_verified": "unit tests against a fake WebSocket that plays Sonos's side",
       "passes": true,
-      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (sonosSocket.test.ts against a fake WebSocket: bootstrap order, group restore, active-group filtering, sticky replay, backoff, refused-token refresh, stop). Not yet confirmed with a signed-in session by the owner."
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (sonosSocket.test.ts against a fake WebSocket: bootstrap order, group restore, active-group filtering, sticky replay, backoff, refused-token refresh, stop). The owner signed in on production on 12 Nov 2026 in a desktop-width browser and sent a screenshot: now playing with its \"Queued by\" chip, the 22-track queue with times and queuer avatars, live lyrics, Picks, the Queuedle card, his profile and the Poll button all loaded."
     },
     {
       "id": "web-sonos-commands",
@@ -265,7 +265,7 @@
       "bridge": ["fetchImage"],
       "how_verified": "unit tests of the routing",
       "passes": true,
-      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (app.test.ts \"fetchImage\": play.sonos.com through /sonos, everything else through /img)."
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (app.test.ts \"fetchImage\": play.sonos.com through /sonos, everything else through /img). The owner signed in on production on 12 Nov 2026 in a desktop-width browser and sent a screenshot: now playing with its \"Queued by\" chip, the 22-track queue with times and queuer avatars, live lyrics, Picks, the Queuedle card, his profile and the Poll button all loaded."
     },
     {
       "id": "web-genius-off",
@@ -418,8 +418,8 @@
       "area": "pages",
       "description": "On a desktop browser (1280x800) the web app shows the full layout, without Electron's window controls.",
       "how_verified": "screenshot of the demo route at 1280x800",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "Screenshot of /demo at 1280x800 (reproduce: `node scripts/web/journey.mjs --local --width 1280 --height 800 --shots <dir>`): the full layout with no window buttons and no mini-player button. The owner signed in on production on 12 Nov 2026 in a desktop-width browser and sent a screenshot: now playing with its \"Queued by\" chip, the 22-track queue with times and queuer avatars, live lyrics, Picks, the Queuedle card, his profile and the Poll button all loaded. He reported that desktop size looks good in the browser."
     },
     {
       "id": "pwa-manifest",
@@ -440,11 +440,11 @@
     {
       "id": "pwa-update-flow",
       "area": "installability",
-      "description": "A new version waits; the app's existing Update button appears and activating it reloads onto the new version. Nothing activates mid-session without the user.",
+      "description": "A new version found while the app is launching (first seconds, nothing tapped, no other window open) takes over at once, so opening the app gets the latest. Found later, it waits: the app's existing Update button appears and activating it reloads onto the new version. Nothing activates under someone who is using the app.",
       "bridge": ["onUpdateDownloaded", "installUpdate"],
       "how_verified": "unit test of the bridge's update events; Playwright with two builds served in turn",
-      "passes": true,
-      "evidence": "`node scripts/web/pwa.mjs` (locally and in `validate` on #265 (typecheck, lint, format, both builds, 2,142 renderer tests, the journeys and pwa.mjs in Chromium)): a second build installs and waits, the page stays on the old version and shows Update, the button activates it and reloads, in a window that began with no worker, and a second open window follows."
+      "passes": false,
+      "evidence": "Locally: `node scripts/web/pwa.mjs` passes 9 of 9 on 12 Nov, including \"opening the app after a deploy takes the new version by itself, with no button\" and the wait-for-Update case after a key press. Not yet merged or run in the pipeline."
     },
     {
       "id": "pwa-offline",

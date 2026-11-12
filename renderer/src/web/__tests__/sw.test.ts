@@ -44,11 +44,15 @@ function boot() {
         Promise.resolve(rs.forEach((r) => store.set(keyOf(r), { precached: keyOf(r), cache: r.cache }))),
     });
   };
+  let windows = 1;
   const self = {
     location: { origin: ORIGIN },
     addEventListener: (type: string, fn: (event: never) => void) => void (listeners[type] = fn),
     skipWaiting: () => Promise.resolve(void skipped++),
-    clients: { claim: () => Promise.resolve(void claimed++) },
+    clients: {
+      claim: () => Promise.resolve(void claimed++),
+      matchAll: () => Promise.resolve(Array.from({ length: windows }, () => ({}))),
+    },
   };
   const caches = {
     open,
@@ -89,7 +93,23 @@ function boot() {
     listeners[type]({ waitUntil: (p: Promise<unknown>) => void (work = p) } as never);
     await work;
   };
-  return { listeners, stores, fetched, dispatchFetch, lifecycle, skipped: () => skipped, claimed: () => claimed };
+  /** Sends the worker a message and waits for whatever it asked the browser to wait for. */
+  const message = async (data: string, open = 1) => {
+    windows = open;
+    let work: Promise<unknown> = Promise.resolve();
+    listeners['message']({ data, ports: [], waitUntil: (p: Promise<unknown>) => void (work = p) } as never);
+    await work;
+  };
+  return {
+    listeners,
+    stores,
+    fetched,
+    dispatchFetch,
+    lifecycle,
+    message,
+    skipped: () => skipped,
+    claimed: () => claimed,
+  };
 }
 
 describe('the service worker', () => {
@@ -116,6 +136,17 @@ describe('the service worker', () => {
     expect(sw.skipped()).toBe(0);
     sw.listeners['message']({ data: 'activate', ports: [] } as never);
     expect(sw.skipped()).toBe(1);
+  });
+
+  it('takes over at launch when the app has one window open', async () => {
+    await sw.message('activate-if-alone', 1);
+    expect(sw.skipped()).toBe(1);
+  });
+
+  it('does not take over at launch while another window is open: that session keeps its version', async () => {
+    await sw.message('activate-if-alone', 2);
+    await sw.message('activate-if-alone', 3);
+    expect(sw.skipped()).toBe(0);
   });
 
   it('tells the page its version when asked', () => {
