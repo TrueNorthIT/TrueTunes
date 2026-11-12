@@ -166,12 +166,12 @@ export const SPOOF_UA =
 /** Runtime state shared across modules. A plain object because an imported `let` can't be assigned from outside its module. */
 export const state = {
   sessionToken: null as string | null,
-  authWin: null as BrowserWindow | null,
   uiWin: null as BrowserWindow | null,
   miniWin: null as BrowserWindow | null,
   debugWin: null as BrowserWindow | null,
   httpDebugWin: null as BrowserWindow | null,
-  authConfirmed: false, // prevents onAuthReady firing on every /api/content/ 200
+  authConfirmed: false, // a Sonos session is in place and onAuthReady has run
+  authFailed: false, // no Sonos session could be had: the renderer shows the error state with Retry
   isNewVersion: false,
 };
 

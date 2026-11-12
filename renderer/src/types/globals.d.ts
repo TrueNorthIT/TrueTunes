@@ -483,6 +483,8 @@ interface SonosPreload {
   openExternal: (url: string) => Promise<void>;
   onAuthReady: (cb: VoidCallback) => Unsubscribe;
   onAuthExpired: (cb: VoidCallback) => Unsubscribe;
+  onAuthFailed: (cb: VoidCallback) => Unsubscribe;
+  retrySonosAuth: () => Promise<void>;
   fetch: (request: FetchRequest) => Promise<FetchResponse>;
   onWsMessage: (cb: (header: unknown, payload: unknown) => void) => Unsubscribe;
   onWsReady: (cb: VoidCallback) => Unsubscribe;

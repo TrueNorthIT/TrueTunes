@@ -1,14 +1,18 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { PillButton } from './common/PillButton';
 import styles from '../styles/Splash.module.css';
 
 interface Props {
   ready: boolean;
+  /** The Sonos session could not be had: swap the loading line for a message and Retry. */
+  failed?: boolean;
+  onRetry?: () => void;
 }
 
 const MIN_MS = 900;
 
 /** Covers the window while sign-in, the speaker groups and Home load, so the shell never flashes empty. */
-export function Splash({ ready }: Props) {
+export function Splash({ ready, failed = false, onRetry }: Props) {
   const [fading, setFading] = useState(false);
   const [gone, setGone] = useState(false);
   const mountRef = useRef(0);
@@ -38,7 +42,16 @@ export function Splash({ ready }: Props) {
     >
       <div className={styles.inner}>
         <div className={styles.name}>True Tunes</div>
-        <div className={styles.bar} aria-hidden="true" />
+        {failed ? (
+          <div className={styles.failure} role="alert">
+            <p className={styles.message}>Can&rsquo;t reach Sonos sign-in.</p>
+            <PillButton variant="primary" onClick={onRetry}>
+              Retry
+            </PillButton>
+          </div>
+        ) : (
+          <div className={styles.bar} aria-hidden="true" />
+        )}
       </div>
     </div>
   );

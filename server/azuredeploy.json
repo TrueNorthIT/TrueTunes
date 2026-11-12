@@ -31,6 +31,20 @@
         "description": "Fine-grained GitHub token, Issues read/write on TrueNorthIT/TrueTunes only, for the feedback function. Pulled from .env (GITHUB_ISSUES_TOKEN) by `npm run deploy`. Blank disables feedback."
       }
     },
+    "sonosUsername": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Sonos service account username, for the sonos-session function. Pulled from .env (SONOS_USERNAME) by `npm run deploy`. Blank disables the shared Sonos session."
+      }
+    },
+    "sonosPassword": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Sonos service account password, for the sonos-session function. Pulled from .env (SONOS_PASSWORD) by `npm run deploy`. Blank disables the shared Sonos session."
+      }
+    },
     "entraTenantId": {
       "type": "string",
       "defaultValue": "",
@@ -441,6 +455,14 @@
             {
               "name": "GITHUB_ISSUES_TOKEN",
               "value": "[parameters('githubIssuesToken')]"
+            },
+            {
+              "name": "SONOS_USERNAME",
+              "value": "[parameters('sonosUsername')]"
+            },
+            {
+              "name": "SONOS_PASSWORD",
+              "value": "[parameters('sonosPassword')]"
             },
             {
               "name": "ENTRA_TENANT_ID",

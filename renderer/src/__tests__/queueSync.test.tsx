@@ -9,7 +9,10 @@ import { App } from '../App';
 
 const { pb } = vi.hoisted(() => ({ pb: { version: null as string | null } }));
 
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => true }));
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => true,
+  useAuthFailure: () => ({ failed: false, retry: () => {} }),
+}));
 vi.mock('../hooks/useGroups', () => ({
   useGroups: () => [{ id: 'g1', name: 'Room', coordinatorId: 'c1', playerIds: [] }],
 }));

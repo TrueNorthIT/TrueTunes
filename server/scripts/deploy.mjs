@@ -1,7 +1,7 @@
 // Deploy the Azure Functions infrastructure AND publish the function code.
 //
 // Step 1: `az deployment group create` — applies the ARM template.
-//         Reads VESTABOARD_API_KEY, GITHUB_ISSUES_TOKEN, ENTRA_TENANT_ID,
+//         Reads VESTABOARD_API_KEY, GITHUB_ISSUES_TOKEN, SONOS_USERNAME, SONOS_PASSWORD, ENTRA_TENANT_ID,
 //         ENTRA_CLIENT_ID and AUTH_ENFORCE from the root .env (gitignored) and
 //         passes them as ARM parameters, so the secrets are never committed.
 // Step 2: `func azure functionapp publish <appName>` — uploads the compiled
@@ -95,6 +95,8 @@ async function main() {
       ifEmpty: 'Vestaboard messages will be disabled',
     },
     { param: 'githubIssuesToken', env: 'GITHUB_ISSUES_TOKEN', secret: true, ifEmpty: 'in-app feedback will fail' },
+    { param: 'sonosUsername', env: 'SONOS_USERNAME', secret: true, ifEmpty: 'the shared Sonos session will fail' },
+    { param: 'sonosPassword', env: 'SONOS_PASSWORD', secret: true, ifEmpty: 'the shared Sonos session will fail' },
     { param: 'entraTenantId', env: 'ENTRA_TENANT_ID', ifEmpty: 'caller tokens cannot be verified' },
     { param: 'entraClientId', env: 'ENTRA_CLIENT_ID', ifEmpty: 'caller tokens cannot be verified' },
     // Transitional: 'true' rejects requests without a token. Unset means 'false'.

@@ -29,6 +29,20 @@
   color: var(--text);
 }
 
+/* Sign-in failed: the message and its button, clear of the drag region so the button takes clicks. */
+.failure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1em;
+  -webkit-app-region: no-drag;
+}
+.message {
+  margin: 0;
+  font-size: var(--fs-body);
+  color: var(--text-2);
+}
+
 /* Indeterminate: a short segment sweeping a faint track. */
 .bar {
   position: relative;
