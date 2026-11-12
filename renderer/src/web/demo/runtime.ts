@@ -32,6 +32,9 @@ class MemoryStorage implements Storage {
 const json = (body: unknown) =>
   new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
+/** The gateway's own paths: the real office, even on this origin (sonos, fn, img, and the pubsub relay). */
+const GATEWAY_PATH = /^\/(sonos|fn|img|pubsub)(\/|$)/;
+
 function demoFetch(real: typeof fetch): typeof fetch {
   return (input, init) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
@@ -48,7 +51,7 @@ function demoFetch(real: typeof fetch): typeof fetch {
       return Promise.reject(new TypeError(`Blocked by the demo backend: ${url}`));
     }
     // The gateway's own API paths are the real office, even on this origin.
-    if (/^\/(sonos|fn|img)(\/|$|\?)/.test(new URL(url, window.location.href).pathname)) {
+    if (GATEWAY_PATH.test(new URL(url, window.location.href).pathname)) {
       return Promise.reject(new TypeError(`Blocked by the demo backend: ${url}`));
     }
     return real(input, init);
@@ -85,7 +88,8 @@ export function installDemoRuntime(): () => void {
   // Nothing in the demo may open a socket to another host (the real Sonos gateway is one).
   window.WebSocket = new Proxy(realWebSocket, {
     construct(target, args: ConstructorParameters<typeof WebSocket>) {
-      if (new URL(String(args[0]), window.location.href).host !== window.location.host) {
+      const to = new URL(String(args[0]), window.location.href);
+      if (to.host !== window.location.host || GATEWAY_PATH.test(to.pathname)) {
         throw new DOMException(`Blocked by the demo backend: ${String(args[0])}`, 'SecurityError');
       }
       return Reflect.construct(target, args);

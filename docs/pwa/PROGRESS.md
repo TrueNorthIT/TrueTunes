@@ -79,10 +79,13 @@ together, and none of it is reachable until the web build is deployed.
   (`LEASE_MS` in `server/src/shared/autoplay.ts`), so a sleeping phone delays the filler by half a minute at most,
   while a client that never asks the coordinator does not learn `fillerUri` and would queue people's picks behind
   the DJ's filler. `features.json` (`web-dj-autoplay`) was reworded to match.
-- **Live attribution events** on the desktop come from Azure Web PubSub. A browser connecting to
-  `*.webpubsub.azure.com` would break the one-origin rule, so the first release loads the map from `/fn/attribution`
-  on every queue change (the app already asks for that) and a gateway relay for the socket is its own entry in
-  `features.json` (`gw-pubsub-relay`).
+- **Live attribution events** come from Azure Web PubSub, as on the desktop, through the gateway so the browser stays
+  on one origin: `GET /pubsub/ws?username=<name>` (authorised like `/sonos/ws`, token as a `bearer.<token>`
+  subprotocol) calls `/api/connect` with the caller's token, checks the access URL (`wss:`, `*.webpubsub.azure.com`,
+  no userinfo) and pipes frames both ways; any failure closes the client with 1011. The bridge
+  (`attributionSocket.ts`) joins the `office` group, feeds events to `attribution.ingest` and broadcasts on
+  `publishQueued`; it is an addition, so a failed socket leaves the map refresh on queue change working as before.
+  It reconnects under a new name after a rename.
 
 ### Phone shell (piece 6): the structure, decided before building
 

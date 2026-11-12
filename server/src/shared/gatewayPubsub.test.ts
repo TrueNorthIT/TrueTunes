@@ -95,16 +95,28 @@ test('PS-1: a token in the header or as a bearer.<token> subprotocol is admitted
   const bearer = GOOD_TOKEN;
   assert.deepEqual(await authoriseUpgrade({ authorization: GOOD_AUTH }, stubVerify().verify), { oid: GOOD_OID });
   assert.deepEqual(
-    await authoriseUpgrade({ 'sec-websocket-protocol': `${PUBSUB_SUBPROTOCOL}, bearer.${bearer}` }, stubVerify().verify),
+    await authoriseUpgrade(
+      { 'sec-websocket-protocol': `${PUBSUB_SUBPROTOCOL}, bearer.${bearer}` },
+      stubVerify().verify
+    ),
     { oid: GOOD_OID }
   );
 });
 
 test('PS-1: credentialFromHeaders gives the Authorization value as sent, or the subprotocol token as a Bearer credential', () => {
   assert.equal(credentialFromHeaders({ authorization: 'Bearer abc' }), 'Bearer abc');
-  assert.equal(credentialFromHeaders({ 'sec-websocket-protocol': `${PUBSUB_SUBPROTOCOL}, bearer.x.y.z` }), 'Bearer x.y.z');
-  assert.equal(credentialFromHeaders({ 'sec-websocket-protocol': [PUBSUB_SUBPROTOCOL, 'bearer.x.y.z'] }), 'Bearer x.y.z');
-  assert.equal(credentialFromHeaders({ authorization: 'Bearer abc', 'sec-websocket-protocol': 'bearer.other' }), 'Bearer abc');
+  assert.equal(
+    credentialFromHeaders({ 'sec-websocket-protocol': `${PUBSUB_SUBPROTOCOL}, bearer.x.y.z` }),
+    'Bearer x.y.z'
+  );
+  assert.equal(
+    credentialFromHeaders({ 'sec-websocket-protocol': [PUBSUB_SUBPROTOCOL, 'bearer.x.y.z'] }),
+    'Bearer x.y.z'
+  );
+  assert.equal(
+    credentialFromHeaders({ authorization: 'Bearer abc', 'sec-websocket-protocol': 'bearer.other' }),
+    'Bearer abc'
+  );
   assert.equal(credentialFromHeaders({ 'sec-websocket-protocol': PUBSUB_SUBPROTOCOL }), undefined);
   assert.equal(credentialFromHeaders({}), undefined);
 });

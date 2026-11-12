@@ -241,7 +241,7 @@ describe('publishing', () => {
     const sent = (ws.pubsubFrames[1] as { data: unknown }).data;
     expect(sent).toEqual(JSON.parse(String(posts[0].body)));
     expect((await seen.mapNow())?.[ITEM.uri]?.user).toBe('Test User'); // the local map
-    expect(seen.events.at(-1)?.uri).toBe(ITEM.uri); // the local event
+    expect(seen.events[seen.events.length - 1]?.uri).toBe(ITEM.uri); // the local event
   });
 
   it('sends an album as an album, which the map will not take', async () => {
@@ -538,7 +538,7 @@ describe('when the live channel cannot connect', () => {
 
     await h.bridge.publishQueued(ITEM);
     expect(h.fake.to('/fn/log-event', 'POST')).toHaveLength(1);
-    expect(seen.events.at(-1)?.uri).toBe(ITEM.uri);
+    expect(seen.events[seen.events.length - 1]?.uri).toBe(ITEM.uri);
     expect((await seen.mapNow())?.[ITEM.uri]?.user).toBe('Test User');
 
     const before = h.fake.to('/fn/attribution').length;
@@ -547,7 +547,7 @@ describe('when the live channel cannot connect', () => {
     );
     await h.bridge.refreshAttribution();
     expect(h.fake.to('/fn/attribution').length).toBe(before + 1);
-    expect(seen.maps.at(-1)?.['x-sonos:track:7']?.user).toBe('Pat');
+    expect(seen.maps[seen.maps.length - 1]?.['x-sonos:track:7']?.user).toBe('Pat');
   });
 
   it('a failure in the live channel does not stop the start-up load or the Sonos relay', async () => {
