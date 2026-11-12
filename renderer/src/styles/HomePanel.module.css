@@ -684,6 +684,10 @@ button.tileMain {
   .band {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   }
+  /* After .band at the same specificity, or the two-column rule above wins and a lyric-less card gets half width. */
+  .bandSolo {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .nowArt {
     width: 12.5em;
     height: 12.5em;
