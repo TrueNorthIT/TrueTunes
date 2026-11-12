@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" style="background:#12131f">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>True Tunes</title>
+  <meta name="description" content="The office's shared jukebox." />
+  <meta name="theme-color" content="#12131f" />
+  <!--
+    The web app (PWA) entry. Everything goes through this origin (the gateway): /sonos, /fn, /img and the relay.
+    connect-src lists the only other hosts the page may call, all of which let a browser read them: lyrics, the
+    art CDNs, our image storage, and Microsoft sign-in and Graph. csp.test.ts checks this list.
+    script-src: 'wasm-unsafe-eval' is for the MediaPipe face detector. The dev server relaxes the policy
+    (devCsp in vite.web.config.ts). frame-ancestors is sent as a header by the gateway.
+  -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; connect-src 'self' wss://truetunes.tnapps.co.uk https://lrclib.net https://i.ytimg.com https://yt3.googleusercontent.com https://lh3.googleusercontent.com https://i.scdn.co https://mosaic.scdn.co https://*.mzstatic.com https://truetunesfoywo62izs34i.blob.core.windows.net https://login.microsoftonline.com https://graph.microsoft.com; font-src 'self' data:; manifest-src 'self'; worker-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'">
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="../src/web/main.tsx"></script>
+</body>
+</html>

@@ -2,6 +2,7 @@ import { memo, useEffect, useState } from 'react';
 import { Minus, Maximize2, Minimize2, X, DownloadCloud, Vote } from 'lucide-react';
 import { usePolls } from '../hooks/usePolls';
 import { PollAnswerDialog } from './polls/PollAnswerDialog';
+import { isWeb } from '../lib/platform';
 import styles from '../styles/WindowControls.module.css';
 
 export const WindowControls = memo(function WindowControls() {
@@ -9,14 +10,17 @@ export const WindowControls = memo(function WindowControls() {
   const [updateVersion, setUpdateVersion] = useState<string | null>(null);
   const [pollOpen, setPollOpen] = useState(false);
   const polls = usePolls();
+  // A browser draws its own window buttons; the web app keeps only Update and Poll.
+  const web = isWeb();
 
   useEffect(() => {
+    if (web) return;
     window.sonos
       .isWindowMaximized()
       .then(setIsMaximized)
       .catch(() => {});
     return window.sonos.onWindowMaximized(setIsMaximized);
-  }, []);
+  }, [web]);
 
   useEffect(() => window.sonos.onUpdateDownloaded(setUpdateVersion), []);
 
@@ -26,7 +30,9 @@ export const WindowControls = memo(function WindowControls() {
         <button
           className={styles.titleBarUpdateBtn}
           onClick={() => void window.sonos.installUpdate()}
-          title={`v${updateVersion} ready — click to restart and install`}
+          title={
+            web ? 'A new version is ready: click to reload' : `v${updateVersion} ready — click to restart and install`
+          }
         >
           <DownloadCloud size={13} />
           <span>Update</span>
@@ -42,23 +48,27 @@ export const WindowControls = memo(function WindowControls() {
           <span>Poll</span>
         </button>
       )}
-      <button className={styles.winBtn} onClick={() => void window.sonos.minimizeWindow()} title="Minimise">
-        <Minus size={13} />
-      </button>
-      <button
-        className={styles.winBtn}
-        onClick={() => void window.sonos.maximizeWindow()}
-        title={isMaximized ? 'Restore' : 'Maximise'}
-      >
-        {isMaximized ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
-      </button>
-      <button
-        className={`${styles.winBtn} ${styles.closeBtn}`}
-        onClick={() => void window.sonos.closeWindow()}
-        title="Close"
-      >
-        <X size={13} />
-      </button>
+      {!web && (
+        <>
+          <button className={styles.winBtn} onClick={() => void window.sonos.minimizeWindow()} title="Minimise">
+            <Minus size={13} />
+          </button>
+          <button
+            className={styles.winBtn}
+            onClick={() => void window.sonos.maximizeWindow()}
+            title={isMaximized ? 'Restore' : 'Maximise'}
+          >
+            {isMaximized ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+          </button>
+          <button
+            className={`${styles.winBtn} ${styles.closeBtn}`}
+            onClick={() => void window.sonos.closeWindow()}
+            title="Close"
+          >
+            <X size={13} />
+          </button>
+        </>
+      )}
       {pollOpen && polls.current && (
         <PollAnswerDialog
           poll={polls.current}
