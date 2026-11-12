@@ -92,6 +92,8 @@ async function boot(): Promise<void> {
   // there is no token to be had (a silent refresh that needs the user, about once a day in a browser) does the
   // sign-in screen come back.
   bridge.onAuthExpired(() => {
+    // A dropped connection also leaves no token to refresh; that is not a reason to ask for a sign-in.
+    if (!navigator.onLine) return;
     void auth.idToken().then((token) => {
       if (token) return;
       bridge.stop();
