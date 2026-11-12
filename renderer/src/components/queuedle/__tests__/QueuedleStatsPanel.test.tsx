@@ -39,7 +39,9 @@ beforeEach(() => {
 });
 
 describe('Queuedle stats highlighting', () => {
-  it('lets you highlight seven others alongside yourself, then stops', async () => {
+  // The first render of the panel in this file is cold and takes most of the test's time (the clicks
+  // and assertions are ~150ms). On a busy machine that alone has passed the default 5s, so allow more.
+  it('lets you highlight seven others alongside yourself, then stops', { timeout: 20_000 }, async () => {
     renderQ(<QueuedleStatsPanel />);
     await waitFor(() => expect(isOn('Rich')).toBe(true));
     ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'].forEach((p) => fireEvent.click(chip(p)));
