@@ -1,7 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import zlib from 'node:zlib';
 import { Readable } from 'node:stream';
-import { BodyTooLargeError, adaptWs, readBodyCapped, type WsLike } from './gatewayNode';
+import { WebSocket, WebSocketServer } from 'ws';
+import { BodyTooLargeError, adaptWs, createStaticFiles, readBodyCapped, type WsLike } from './gatewayNode';
+import { selectSubprotocol } from './gatewayRelay';
 
 test('readBodyCapped joins chunks in order', async () => {
   const body = await readBodyCapped(Readable.from([Buffer.from('ab'), Buffer.from('cd')]), 10);
@@ -67,4 +73,112 @@ test('adaptWs gives close reasons as strings and passes open, error and close() 
   assert.deepEqual(events, [['close', 1001, 'going away'], ['open'], ['error', err]]);
   s.close(1011, 'bad');
   assert.deepEqual(f.closes, [[1011, 'bad']]);
+});
+
+// ── createStaticFiles: the web app's files from disk ──
+
+function webRoot(): { root: string; secret: string } {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tt-gw-'));
+  const root = path.join(dir, 'web');
+  fs.mkdirSync(path.join(root, 'assets'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'index.html'), '<!doctype html><title>True Tunes</title>');
+  fs.writeFileSync(path.join(root, 'assets', 'index-abc.js'), `console.log(${JSON.stringify('x'.repeat(4000))})`);
+  fs.writeFileSync(path.join(root, 'manifest.webmanifest'), '{}');
+  fs.writeFileSync(path.join(root, 'icon.png'), Buffer.from([0x89, 0x50]));
+  fs.writeFileSync(path.join(root, 'model.tflite'), Buffer.from([1, 2]));
+  fs.writeFileSync(path.join(root, '.env'), 'SECRET=1');
+  const secret = path.join(dir, 'secret.txt');
+  fs.writeFileSync(secret, 'outside the root');
+  return { root, secret };
+}
+
+test('createStaticFiles serves a file with its content type', () => {
+  const files = createStaticFiles(webRoot().root);
+  assert.equal(files('/index.html')?.type, 'text/html; charset=utf-8');
+  assert.match(Buffer.from(files('/index.html')?.body ?? []).toString(), /True Tunes/);
+  assert.equal(files('/assets/index-abc.js')?.type, 'text/javascript; charset=utf-8');
+  assert.equal(files('/manifest.webmanifest')?.type, 'application/manifest+json');
+  assert.equal(files('/icon.png')?.type, 'image/png');
+  assert.equal(files('/model.tflite')?.type, 'application/octet-stream');
+});
+
+test('createStaticFiles gives a brotli copy of large text files only, and it decodes to the original', () => {
+  const files = createStaticFiles(webRoot().root);
+  const js = files('/assets/index-abc.js');
+  assert.ok(js?.br, 'Expected a compressed copy of a 4 kB script');
+  assert.ok(js.br.length < js.body.length);
+  assert.deepEqual(zlib.brotliDecompressSync(js.br), Buffer.from(js.body));
+  assert.equal(files('/icon.png')?.br, undefined);
+  assert.equal(files('/index.html')?.br, undefined, 'A tiny file is not worth compressing');
+});
+
+test('createStaticFiles returns the same object for a second request (read once)', () => {
+  const files = createStaticFiles(webRoot().root);
+  assert.equal(files('/index.html'), files('/index.html'));
+});
+
+test('createStaticFiles cannot be made to read outside its root, or a dot-file inside it', () => {
+  const { root } = webRoot();
+  const files = createStaticFiles(root);
+  for (const p of [
+    '/../secret.txt',
+    '/assets/../../secret.txt',
+    '/%2e%2e/secret.txt',
+    '/..%2fsecret.txt',
+    '/assets/..%5c..%5csecret.txt',
+    '\\..\\secret.txt',
+    '/..\\secret.txt',
+    '//secret.txt',
+    'secret.txt',
+    '/.env',
+    '/%2eenv',
+    '/assets/%00',
+    // other spellings of a file that exists: one spelling per file, so the cache cannot be grown
+    '//index.html',
+    '/assets//index-abc.js',
+    '/%61ssets/index-abc.js',
+    '/assets/index-abc%2ejs',
+    '/index.html/',
+    '/%',
+    '/',
+    '/assets',
+    '/missing.js',
+  ]) {
+    assert.equal(files(p), null, `Expected no file for ${JSON.stringify(p)}`);
+  }
+});
+
+test('createStaticFiles over a folder that does not exist has no files', () => {
+  const files = createStaticFiles(path.join(os.tmpdir(), 'tt-gw-does-not-exist'));
+  assert.equal(files('/index.html'), null);
+});
+
+// ── a real ws server with the gateway's subprotocol rule ──
+
+test('a ws client offering the Sonos subprotocol and a bearer entry is answered with the Sonos subprotocol only', async () => {
+  const wss = new WebSocketServer({ port: 0, handleProtocols: selectSubprotocol });
+  await new Promise<void>((done) => wss.once('listening', done));
+  const { port } = wss.address() as { port: number };
+  try {
+    const offered = await new Promise<string>((resolve, reject) => {
+      wss.once('connection', (_socket, req) => resolve(String(req.headers['sec-websocket-protocol'])));
+      const ws = new WebSocket(`ws://127.0.0.1:${port}`, ['v1.api.smartspeaker.audio', 'bearer.aaa.bbb-ccc_ddd']);
+      ws.once('open', () => {
+        assert.equal(ws.protocol, 'v1.api.smartspeaker.audio');
+        ws.close();
+      });
+      ws.once('error', reject);
+    });
+    assert.match(offered, /bearer\.aaa\.bbb-ccc_ddd/, 'The token entry reaches the server as a request header');
+    await assert.rejects(
+      new Promise<void>((resolve, reject) => {
+        const ws = new WebSocket(`ws://127.0.0.1:${port}`, ['bearer.aaa.bbb-ccc_ddd']);
+        ws.once('open', () => resolve());
+        ws.once('error', reject);
+      }),
+      'A client that does not offer the Sonos subprotocol is not connected'
+    );
+  } finally {
+    await new Promise<void>((done) => wss.close(() => done()));
+  }
 });

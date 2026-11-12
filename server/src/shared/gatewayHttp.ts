@@ -5,7 +5,9 @@
 //   GET /healthz       200 { ok: true }; no sign-in, no Sonos call
 //   ANY /sonos/api/*   needs `Authorization: Bearer <Entra ID token>` (always: there is no AUTH_ENFORCE
 //                      loophole here); forwarded to play.sonos.com, answered unchanged
-//   anything else      404
+//   ANY /fn/*          the Function App, for a signed-in caller (gatewayWeb.ts)
+//   GET /img?url=      artwork from a named list of hosts, for a signed-in caller (gatewayWeb.ts)
+//   GET anything else  the web app's static files, when the entry point serves them (gatewayWeb.ts); else 404
 //
 // This is a plain function over plain objects. The Node `http` wiring, the Entra check (`verify`) and the
 // Sonos session are injected, so nothing here imports Azure or touches the network by itself.
@@ -13,6 +15,7 @@
 // Nothing secret is ever logged or returned: the session token, the Entra token and the Sonos password
 // appear in no log line, and a failure is reported by name only ('sonos-login-failed', 'sonos-unreachable').
 import { SonosLoginError } from './sonosSession';
+import { functionsRoute, imageRoute, staticRoute, type StaticLookup, type WebRouteKit } from './gatewayWeb';
 
 export const SONOS_ORIGIN = 'https://play.sonos.com';
 export const SESSION_COOKIE = '__Secure-next-auth.session-token';
@@ -48,6 +51,8 @@ export interface GatewayDeps {
   fetch: typeof fetch;
   verify: Verify;
   log?: (msg: string) => void;
+  /** The built web app's files by URL path. Without it the gateway serves no static files (404). */
+  staticFile?: StaticLookup;
 }
 
 /** Request headers the gateway never forwards: the client's identity and connection details. */
@@ -102,14 +107,25 @@ export function createGatewayHandler(deps: GatewayDeps): (req: GatewayRequest) =
   const log = deps.log ?? (() => {});
 
   /** The headers to forward: the client's ordinary ones, filtered whatever their case. */
-  function forwardedHeaders(headers: GatewayRequest['headers']): Record<string, string> {
+  function forwardedHeaders(headers: GatewayRequest['headers'], keep?: string): Record<string, string> {
     const out: Record<string, string> = {};
     for (const [name, value] of Object.entries(headers)) {
-      if (value === undefined || DROPPED_REQUEST_HEADERS.has(name.trim().toLowerCase())) continue;
+      const lower = name.trim().toLowerCase();
+      if (value === undefined || (DROPPED_REQUEST_HEADERS.has(lower) && lower !== keep)) continue;
       out[name] = Array.isArray(value) ? value.join(', ') : value;
     }
     return out;
   }
+
+  function responseHeaders(upstream: Headers): Record<string, string> {
+    const out: Record<string, string> = {};
+    upstream.forEach((value, name) => {
+      if (!DROPPED_RESPONSE_HEADERS.has(name.toLowerCase())) out[name] = value;
+    });
+    return out;
+  }
+
+  const web: WebRouteKit = { fetch: deps.fetch, verify: deps.verify, log, json, forwardedHeaders, responseHeaders };
 
   return async function handle(req: GatewayRequest): Promise<GatewayResponse> {
     const queryAt = req.url.indexOf('?');
@@ -118,8 +134,14 @@ export function createGatewayHandler(deps: GatewayDeps): (req: GatewayRequest) =
 
     if (req.method === 'GET' && path === '/healthz') return json(200, { ok: true });
 
-    // Only /sonos/api/... is forwarded. Anything else, in any spelling, is 404 and goes nowhere.
-    if (!path.startsWith('/sonos/api/')) return json(404, { error: 'not found' });
+    if (path === '/fn' || path.startsWith('/fn/')) return functionsRoute(req, path.slice('/fn/'.length), query, web);
+    if (path === '/img') return imageRoute(req, query, web);
+
+    // Under /sonos only /sonos/api/... is forwarded. Anything else, in any spelling, goes nowhere: it is the
+    // web app's file if there is one, and otherwise 404.
+    if (!path.startsWith('/sonos/api/')) {
+      return (deps.staticFile && staticRoute(req, path, deps.staticFile)) || json(404, { error: 'not found' });
+    }
 
     const authorization = req.headers['authorization'];
     let caller: { oid: string } | null;
@@ -184,10 +206,7 @@ export function createGatewayHandler(deps: GatewayDeps): (req: GatewayRequest) =
       return json(502, { error: 'sonos-unreachable' });
     }
 
-    const headers: Record<string, string> = {};
-    upstream.headers.forEach((value, name) => {
-      if (!DROPPED_RESPONSE_HEADERS.has(name.toLowerCase())) headers[name] = value;
-    });
+    const headers = responseHeaders(upstream.headers);
     try {
       // shortcut: the response is buffered whole, not streamed; fine for Sonos's JSON and album art.
       return { status: upstream.status, headers, body: new Uint8Array(await upstream.arrayBuffer()) };

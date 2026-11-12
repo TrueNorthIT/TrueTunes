@@ -37,7 +37,7 @@
 //   GW-6  Closing either side closes the other; an upstream failure closes the client with 1011.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { authoriseUpgrade, createRelay } from './gatewayRelay';
+import { authoriseUpgrade, createRelay, selectSubprotocol } from './gatewayRelay';
 import { createSonosSession } from './sonosSession';
 import { OID, tenantKeys } from './authKit.testkit';
 import { SONOS_PASSWORD, SONOS_USERNAME, createFakeSonos } from './sonosKit.testkit';
@@ -165,6 +165,66 @@ test('GW-1: authoriseUpgrade never admits a caller when verify throws', async ()
     null,
     'Expected a failed token check to refuse the upgrade (null, or a rejection the entry point refuses with)'
   );
+});
+
+// ── GW-1 for browsers: the token as a subprotocol value ──
+
+const GOOD_TOKEN_ONLY = GOOD_AUTH.slice('Bearer '.length);
+
+test('GW-1: a browser’s token offered as a bearer.<token> subprotocol is checked like an Authorization header', async () => {
+  const v = stubVerify();
+  const who = await authoriseUpgrade(
+    { 'sec-websocket-protocol': `${SONOS_SUBPROTOCOL}, bearer.${GOOD_TOKEN_ONLY}` },
+    v.verify
+  );
+  assert.deepEqual(who, { oid: GOOD_OID });
+  assert.deepEqual(v.calls, [GOOD_AUTH], 'Expected verify to be given the token as a Bearer credential');
+});
+
+test('GW-1: the bearer subprotocol may come first, without spaces, or as repeated headers', async () => {
+  for (const offered of [
+    `bearer.${GOOD_TOKEN_ONLY},${SONOS_SUBPROTOCOL}`,
+    [SONOS_SUBPROTOCOL, `bearer.${GOOD_TOKEN_ONLY}`],
+    `bearer.${GOOD_TOKEN_ONLY}`,
+  ]) {
+    const who = await authoriseUpgrade({ 'sec-websocket-protocol': offered }, stubVerify().verify);
+    assert.deepEqual(who, { oid: GOOD_OID }, `Expected ${JSON.stringify(offered)} to be admitted`);
+  }
+});
+
+test('GW-1: a bearer subprotocol that does not verify, or is empty, is refused', async () => {
+  for (const offered of [`${SONOS_SUBPROTOCOL}, bearer.forged`, `${SONOS_SUBPROTOCOL}, bearer.`, SONOS_SUBPROTOCOL]) {
+    const who = await authoriseUpgrade({ 'sec-websocket-protocol': offered }, stubVerify().verify);
+    assert.equal(who, null, `Expected ${offered} to be refused`);
+  }
+});
+
+test('GW-1: an Authorization header wins over a bearer subprotocol (the desktop path is unchanged)', async () => {
+  const v = stubVerify();
+  const who = await authoriseUpgrade(
+    {
+      authorization: 'Bearer not-a-colleague',
+      'sec-websocket-protocol': `${SONOS_SUBPROTOCOL}, bearer.${GOOD_TOKEN_ONLY}`,
+    },
+    v.verify
+  );
+  assert.equal(who, null);
+  assert.deepEqual(v.calls, ['Bearer not-a-colleague']);
+});
+
+test('GW-1: a genuine tenant token is admitted as a subprotocol, and a forged one is not', async () => {
+  const { check, sign, rogue } = await tenantKeys();
+  const verify = bearerVerifier(check);
+  const offer = (token: string) => ({ 'sec-websocket-protocol': `${SONOS_SUBPROTOCOL}, bearer.${token}` });
+  assert.deepEqual(await authoriseUpgrade(offer(await sign()), verify), { oid: OID });
+  assert.equal(await authoriseUpgrade(offer(await sign(undefined, { key: rogue })), verify), null);
+});
+
+test('GW-1: the server selects the Sonos subprotocol only, never the entry carrying the token', () => {
+  assert.equal(selectSubprotocol(new Set([SONOS_SUBPROTOCOL, 'bearer.abc.def.ghi'])), SONOS_SUBPROTOCOL);
+  assert.equal(selectSubprotocol(new Set(['bearer.abc.def.ghi', SONOS_SUBPROTOCOL])), SONOS_SUBPROTOCOL);
+  assert.equal(selectSubprotocol(new Set(['bearer.abc.def.ghi'])), false);
+  assert.equal(selectSubprotocol(new Set()), false);
 });
 
 // Through the REAL Entra check: only a genuine tenant token is admitted.

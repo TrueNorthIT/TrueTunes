@@ -1,22 +1,25 @@
-// The Sonos gateway: a thin Node process that fronts Sonos for the True Tunes desktop app.
+// The Sonos gateway: a thin Node process that fronts Sonos for the True Tunes desktop app and serves the
+// True Tunes web app (its files, and the Function App under /fn, so a browser stays on one origin).
 // Callers authenticate with an Entra ID token; the gateway holds the Sonos session.
 //
 // Runs on Azure App Service (Linux, Node 22): `node dist/gateway/main.js`, listening on PORT.
-// All the logic is in shared/gatewayHttp.ts (HTTP) and shared/gatewayRelay.ts (WebSocket);
+// All the logic is in shared/gatewayHttp.ts and gatewayWeb.ts (HTTP) and shared/gatewayRelay.ts (WebSocket);
 // this file only wires them to node:http and `ws`.
 //
 // Logs one line per request and per socket open/close. Never headers, query strings, bodies,
 // tokens, tickets or the session.
 import http from 'node:http';
+import path from 'node:path';
 import type { Duplex } from 'node:stream';
 import { WebSocket, WebSocketServer } from 'ws';
 import { entraCheckFromEnv, verifyEntraToken } from '../shared/auth';
 import { createSonosSession } from '../shared/sonosSession';
 import { createGatewayHandler } from '../shared/gatewayHttp';
-import { authoriseUpgrade, createRelay } from '../shared/gatewayRelay';
-import { BodyTooLargeError, adaptWs, readBodyCapped } from '../shared/gatewayNode';
+import { authoriseUpgrade, createRelay, selectSubprotocol } from '../shared/gatewayRelay';
+import { BodyTooLargeError, adaptWs, createStaticFiles, readBodyCapped } from '../shared/gatewayNode';
 
-const SUBPROTOCOL = 'v1.api.smartspeaker.audio';
+/** The built web app: server/web beside dist/ in the deployed zip (WEB_ROOT overrides it for a local run). */
+const WEB_ROOT = process.env['WEB_ROOT'] || path.join(__dirname, '..', '..', 'web');
 const HEARTBEAT_MS = 30_000;
 const log = (line: string) => console.log(line);
 
@@ -38,7 +41,13 @@ async function verify(authorization: string | undefined): Promise<{ oid: string 
   }
 }
 
-const handler = createGatewayHandler({ session, fetch: (...args) => fetch(...args), verify, log });
+const handler = createGatewayHandler({
+  session,
+  fetch: (...args) => fetch(...args),
+  verify,
+  log,
+  staticFile: createStaticFiles(WEB_ROOT),
+});
 
 const relay = createRelay({
   session,
@@ -89,10 +98,8 @@ const server = http.createServer((req, res) => {
 });
 
 // ── WebSocket upgrades: /sonos/ws only ──
-const wss = new WebSocketServer({
-  noServer: true,
-  handleProtocols: (protocols) => (protocols.has(SUBPROTOCOL) ? SUBPROTOCOL : false),
-});
+// A browser also offers its token as a `bearer.<token>` subprotocol; only the Sonos one is ever selected.
+const wss = new WebSocketServer({ noServer: true, handleProtocols: selectSubprotocol });
 const alive = new WeakMap<WebSocket, boolean>();
 
 function refuse(socket: Duplex, line: string) {
