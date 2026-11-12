@@ -20,3 +20,8 @@ output "appinsights_connection_string" {
   value       = azurerm_application_insights.main.connection_string
   sensitive   = true
 }
+
+output "key_vault_name" {
+  description = "Vault for load-secrets.mjs."
+  value       = azurerm_key_vault.main.name
+}

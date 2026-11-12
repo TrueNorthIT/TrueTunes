@@ -1,13 +1,11 @@
-// Deploy the Azure Functions infrastructure AND publish the function code.
+// Build and publish the function code to the existing Function App.
 //
-// Step 1: `az deployment group create` — applies the ARM template.
-//         Reads VESTABOARD_API_KEY, GITHUB_ISSUES_TOKEN, ENTRA_TENANT_ID,
-//         ENTRA_CLIENT_ID and AUTH_ENFORCE from the root .env (gitignored) and
-//         passes them as ARM parameters, so the secrets are never committed.
-// Step 2: `func azure functionapp publish <appName>` — uploads the compiled
-//         function code to the Function App.
+// The Azure resources and the Function App's settings are Terraform's (infra/), not this script's:
+// run `terraform apply` there for anything that is not code. An ARM deployment would overwrite
+// Terraform-managed settings, so there is none.
+//
+// `func azure functionapp publish <appName>` uploads the compiled function code.
 
-import { readFileSync, existsSync } from 'node:fs';
 import { spawn, spawnSync } from 'node:child_process';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,32 +13,10 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const serverDir = resolve(__dirname, '..');
 const repoRoot = resolve(serverDir, '..');
-const envPath = resolve(repoRoot, '.env');
-const templatePath = resolve(serverDir, 'azuredeploy.json');
-const resourceGroup = process.env.TRUETUNES_RG ?? 'truetunes-rg';
 const functionAppName = process.env.TRUETUNES_FN_APP ?? 'truetunes-fn';
 // Optional: target a subscription other than the az CLI default, without changing that default.
 const subscription = process.env.TRUETUNES_SUBSCRIPTION;
 const subscriptionArgs = subscription ? ['--subscription', subscription] : [];
-
-function readEnvFile(path) {
-  if (!existsSync(path)) return {};
-  const raw = readFileSync(path, 'utf8');
-  const env = {};
-  for (const line of raw.split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const idx = trimmed.indexOf('=');
-    if (idx < 0) continue;
-    const key = trimmed.slice(0, idx).trim();
-    let value = trimmed.slice(idx + 1).trim();
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-      value = value.slice(1, -1);
-    }
-    env[key] = value;
-  }
-  return env;
-}
 
 function runChild(commandLabel, command, args, options = {}) {
   return new Promise((resolveP, rejectP) => {
@@ -83,61 +59,8 @@ function assertDeployableTree() {
 
 async function main() {
   assertDeployableTree();
-  const env = readEnvFile(envPath);
-  const fromEnv = (name) => env[name] ?? process.env[name] ?? '';
 
-  // ARM parameter ← .env variable. Secrets are redacted in the printed command.
-  const params = [
-    {
-      param: 'vestaboardApiKey',
-      env: 'VESTABOARD_API_KEY',
-      secret: true,
-      ifEmpty: 'Vestaboard messages will be disabled',
-    },
-    { param: 'githubIssuesToken', env: 'GITHUB_ISSUES_TOKEN', secret: true, ifEmpty: 'in-app feedback will fail' },
-    { param: 'entraTenantId', env: 'ENTRA_TENANT_ID', ifEmpty: 'caller tokens cannot be verified' },
-    { param: 'entraClientId', env: 'ENTRA_CLIENT_ID', ifEmpty: 'caller tokens cannot be verified' },
-    // Transitional: 'true' rejects requests without a token. Unset means 'false'.
-    { param: 'authEnforce', env: 'AUTH_ENFORCE', default: 'false' },
-  ].map((p) => ({ ...p, value: fromEnv(p.env) || p.default || '' }));
-
-  // ARM replaces the Function App's appSettings wholesale, so an empty value here blanks the live
-  // setting (a deploy from a .env without these once wiped the GitHub token and Entra ids).
-  const missing = params.filter((p) => !p.value);
-  for (const p of missing) console.error(`[deploy] ${p.env} is empty — ${p.ifEmpty}.`);
-  if (missing.length && process.env.TRUETUNES_ALLOW_EMPTY !== 'true') {
-    throw new Error(
-      `Refusing to deploy: ${missing.map((p) => p.env).join(', ')} empty in .env would overwrite the live ` +
-        'settings with blanks. Add them to .env (or set TRUETUNES_ALLOW_EMPTY=true to blank them on purpose).'
-    );
-  }
-
-  const azCommand = process.platform === 'win32' ? 'az.cmd' : 'az';
-  const azArgs = [
-    'deployment',
-    'group',
-    'create',
-    '--resource-group',
-    resourceGroup,
-    '--template-file',
-    templatePath,
-    '--mode',
-    'Incremental',
-    '--parameters',
-    ...params.map((p) => `${p.param}=${p.value}`),
-    ...subscriptionArgs,
-  ];
-
-  const secretPrefixes = params.filter((p) => p.secret).map((p) => `${p.param}=`);
-  const printableArgs = azArgs.map((a) => {
-    const prefix = secretPrefixes.find((s) => a.startsWith(s));
-    return prefix ? `${prefix}***REDACTED***` : a;
-  });
-  console.log(`[deploy] Step 1/2 — ARM deploy`);
-  console.log(`[deploy] az ${printableArgs.map((a) => (a.includes(' ') ? `"${a}"` : a)).join(' ')}`);
-  await runChild('az deployment', azCommand, azArgs);
-
-  console.log(`\n[deploy] Step 2/2 — Build & publish function code`);
+  console.log('[deploy] Build & publish function code');
   const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   await runChild('npm build', npmCommand, ['run', 'build'], { cwd: serverDir });
 

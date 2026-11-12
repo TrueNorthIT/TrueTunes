@@ -12,6 +12,8 @@ There is one environment, so there are no modules, workspaces or per-environment
 | `pubsub.tf` | Web PubSub and the `office` hub |
 | `cosmos.tf` | Cosmos DB account, database and containers |
 | `functions.tf` | Consumption plan, Function App and its app settings |
+| `keyvault.tf` | Key Vault, the Function App's access to it |
+| `scripts/load-secrets.mjs` | One-off: copies the secrets from `.env` into the vault |
 | `imports.tf` | `import` blocks that adopted the live resources into state |
 | `outputs.tf` | Function URL, App Insights connection string and so on |
 
@@ -82,6 +84,32 @@ The first plan after the import reports `19 to import, 0 to add, 1 to change, 0 
 change is the Function App's `app_settings`: the provider marks it sensitive and the import did not,
 so Terraform shows an in-place update with the note "The value is unchanged". No individual setting
 differs. A second plan after that apply reports no changes.
+
+## Key Vault and secrets
+
+`keyvault.tf` creates `truetunes-kv` (RBAC authorisation, soft delete 90 days), gives the Function App a
+system-assigned identity and grants it "Key Vault Secrets User". Terraform never holds a secret value.
+The four secret settings (`VESTABOARD_API_KEY`, `GITHUB_ISSUES_TOKEN`, `SONOS_USERNAME`,
+`SONOS_PASSWORD`) switch from literal values to `@Microsoft.KeyVault(SecretUri=...)` references when
+`use_key_vault_references` is `true`. It defaults to `false`, because a reference to a secret that does
+not exist yet would hand the app the reference text instead of the value.
+
+Order, by a person, with the admin identity signed in:
+
+1. Set `key_vault_secrets_officers` to your Entra object id, then `terraform apply`. This creates the
+   vault and adds the identity to the Function App; the app settings are unchanged. Apply a second time:
+   the provider only reports the identity's principal id once it exists, so the "Key Vault Secrets User"
+   assignment for it appears in the second plan.
+2. Fill `SONOS_USERNAME`, `SONOS_PASSWORD`, `VESTABOARD_API_KEY` and `GITHUB_ISSUES_TOKEN` in the root `.env`
+   (all four must be non-empty), then run `node infra/scripts/load-secrets.mjs` from the repo root.
+   Role assignments can take a few minutes to take effect.
+3. Set `use_key_vault_references = true` and `terraform apply` again. Check the Function App's
+   Configuration page shows each setting with a green "Key Vault Reference" tick, and that
+   `/api/attribution` still answers.
+4. The secret variables are no longer needed; drop them from the environment. To roll back, set the
+   variable to `false` and apply (that needs the literal values back in `TF_VAR_*`).
+
+The vault name and secret names are mirrored in `scripts/load-secrets.mjs`; change both together.
 
 ## Things to know
 

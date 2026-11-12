@@ -17,6 +17,12 @@ locals {
     SONOS_PASSWORD      = var.sonos_password
   }
 
+  # With use_key_vault_references the secret settings point at the vault instead of carrying values.
+  secret_settings_as_references = {
+    for name, secret in local.key_vault_secrets :
+    name => "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/${secret})"
+  }
+
   app_settings = merge(
     {
       WEBSITE_RUN_FROM_PACKAGE    = "1"
@@ -33,7 +39,7 @@ locals {
       ENTRA_CLIENT_ID             = var.entra_client_id
       AUTH_ENFORCE                = var.auth_enforce
     },
-    { for name, value in local.secret_settings : name => value if value != null },
+    var.use_key_vault_references ? local.secret_settings_as_references : { for name, value in local.secret_settings : name => value if value != null },
   )
 }
 
@@ -55,6 +61,10 @@ resource "azurerm_windows_function_app" "main" {
   storage_account_access_key = azurerm_storage_account.app.primary_access_key
 
   app_settings = local.app_settings
+
+  identity {
+    type = "SystemAssigned"
+  }
 
   site_config {
     ftps_state          = "Disabled"
