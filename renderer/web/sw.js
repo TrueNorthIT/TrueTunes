@@ -8,8 +8,9 @@
 //   - nothing else. It never answers or stores a request to /sonos, /fn, /img, /pubsub, /healthz or /auth, a request to
 //     another origin, a request that is not a GET, or any request carrying Authorization. Those go to the
 //     network untouched, every time.
-//   - a new version installs beside the running one and WAITS. It takes over only when the page says so (the
-//     app's Update button), or when every window of the old version has closed.
+//   - a new version installs beside the running one and WAITS. It takes over when the page says so (the app's
+//     Update button), at launch if the app has just been opened and this is its only window, or when every
+//     window of the old version has closed. Never under someone who is in the middle of using it.
 //
 // __tests__/sw.test.ts runs this file against fake events; keep `route` the one place that decides.
 
@@ -60,6 +61,14 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('message', (event) => {
   if (event.data === 'activate') void self.skipWaiting();
+  // Asked at launch: take over only if that page is the one open window, so no other session reloads under its user.
+  if (event.data === 'activate-if-alone') {
+    event.waitUntil(
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+        if (windows.length <= 1) return self.skipWaiting();
+      })
+    );
+  }
   if (event.data === 'version') event.ports[0]?.postMessage(BUILD.version);
 });
 

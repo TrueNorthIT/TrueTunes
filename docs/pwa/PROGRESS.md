@@ -157,6 +157,11 @@ shell instead of `SkinnyShell`. The desktop app keeps skinny mode untouched.
 - **The shell is cache-first.** An installed version stays whole (its shell and its own hashed files) until the user
   presses Update or every window of it has closed, so a deploy never leaves a running page asking the server for a
   file that no longer exists. Scripts, styles and fonts are stored at install for the same reason.
+- **Opening the app gets the latest version** (asked for by the owner on 12 Nov, after the first deploy). A new
+  version found while the app is launching (the first ten seconds of a page load, before any tap or key press) takes
+  over at once and the page reloads onto it, but only if that page is the app's one open window: the worker itself
+  counts the windows (`activate-if-alone`), so another open session is never reloaded under its user. Found later,
+  or with another window open, it waits for the Update button as before.
 - **Update flow.** A new worker installs and waits. `renderer/src/web/updates.ts` turns that into the bridge's
   `onUpdateDownloaded`; the existing Update button calls `installUpdate`, which tells the worker to take over and
   the page reloads. Other open windows follow the new worker. The page asks for a new version every 15 minutes and
