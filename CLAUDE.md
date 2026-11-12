@@ -173,8 +173,7 @@ Every routed page has a story under `Pages/` (`*.page.stories.tsx` beside the pa
    - Add the method to `renderer/src/lib/sonosApi.ts`
 
 3. If it needs Azure infrastructure:
-   - Add the resource to `server/azuredeploy.json`
-   - Redeploy: `az deployment group create --resource-group truetunes-rg --template-file server/azuredeploy.json --mode Incremental`
+   - Add the resource to `infra/` (Terraform, see `infra/README.md`) and run `terraform plan` there; a human applies it
 
 4. If it has UI: reuse `common/` components, style with tokens only (see "UI: design system and shared components"), and add a `Foo.stories.tsx` for any new shared component in `renderer/src/components/common/`.
 
@@ -206,11 +205,12 @@ Resource group: `truetunes-rg` (uksouth)
 | App Insights  | `truetunes-ai`           |
 | Log Analytics | `truetunes-law`          |
 
-Deploy: `cd server && npm run deploy` — wraps `az deployment group create` and reads `VESTABOARD_API_KEY`, `GITHUB_ISSUES_TOKEN`, `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID` and `AUTH_ENFORCE` from the root `.env`, passing them as ARM parameters so the secrets are never committed. It then runs `func azure functionapp publish`, which **replaces every function** with what's in this checkout.
+The resources and the Function App's settings are Terraform, in `infra/` (see `infra/README.md`; state is in the `truetunestfstate` storage account). The old ARM template is gone. Secrets (`VESTABOARD_API_KEY`, `GITHUB_ISSUES_TOKEN`, `SONOS_USERNAME`, `SONOS_PASSWORD`) live in the `truetunes-kv` Key Vault once `use_key_vault_references` is on, and the Function App reads them through its managed identity; `infra/scripts/load-secrets.mjs` loads them from `.env` once. Never run `terraform apply` without a person reading the plan, and never paste an unredacted plan: `app_settings` hold live secrets.
+
+Code deploy: `cd server && npm run deploy` builds and runs `func azure functionapp publish`, which **replaces every function** with what's in this checkout. It no longer touches settings or resources.
 
 - **Function auth.** Functions that write or act as a user check the caller's Entra ID token (`server/src/shared/auth.ts`, `lib/caller.ts`); the main process sends it via `fnFetch`. Without a token a request is let through (and logged) until `AUTH_ENFORCE=true`, which is transitional. Read-only functions stay anonymous. No browser calls the functions, so they send no CORS headers.
 - **Deploy from a tree that contains `origin/main`.** Deploying a feature branch that's behind main deletes main's newer functions from production (this removed `music-stats` and `track-meta` once). Merge main first, or deploy the merge from a throwaway worktree.
-- **The Function App runs Node `~22`** (`WEBSITE_NODE_DEFAULT_VERSION` in `azuredeploy.json`), and it must name a version the Windows worker has installed. `~24` took production down on 2026-11-06: the worker had nothing newer than 22.23, so the host fell back to Node 0.x and every function returned 503 (`SyntaxError: Use of const in strict mode`), although `az functionapp list-runtimes` lists 24. Before changing it, check what's installed: `az rest --url https://truetunes-fn.scm.azurewebsites.net/api/diagnostics/runtime --resource https://management.azure.com/` (the `nodejs` list). Then watch `/api/attribution` after the change. The desktop app is separate: it runs Electron's own Node, and `.nvmrc`/CI use 24.
-- `deploy.mjs` refuses to run when a setting it passes is empty in `.env`, because ARM replaces the app settings wholesale and would blank the live value.
+- **The Function App runs Node `~22`** (`node_version` in `infra/functions.tf`, which sets `WEBSITE_NODE_DEFAULT_VERSION`), and it must name a version the Windows worker has installed. `~24` took production down on 2026-11-06: the worker had nothing newer than 22.23, so the host fell back to Node 0.x and every function returned 503 (`SyntaxError: Use of const in strict mode`), although `az functionapp list-runtimes` lists 24. Before changing it, check what's installed: `az rest --url https://truetunes-fn.scm.azurewebsites.net/api/diagnostics/runtime --resource https://management.azure.com/` (the `nodejs` list). Then watch `/api/attribution` after the change. The desktop app is separate: it runs Electron's own Node, and `.nvmrc`/CI use 24.
 - `az` and `func` use whichever Azure CLI account is active: pick the TrueNorth admin identity first (the `azswap` profiles skill).
 - A fresh worktree has no `server/node_modules`; run `npm ci` in `server/` first, or tsc falls back to the root's TypeScript 6 and fails with TS5107.

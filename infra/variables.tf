@@ -59,3 +59,15 @@ variable "sonos_password" {
   default     = null
   sensitive   = true
 }
+
+variable "use_key_vault_references" {
+  type        = bool
+  description = "false: the secret app settings carry their literal values (from the variables above). true: they become Key Vault references. Turn on only after infra/scripts/load-secrets.mjs has loaded every secret, or the app will read the unresolved reference text."
+  default     = false
+}
+
+variable "key_vault_secrets_officers" {
+  type        = set(string)
+  description = "Object ids of the people (or pipeline identity) allowed to write secrets to the vault, for load-secrets.mjs."
+  default     = []
+}

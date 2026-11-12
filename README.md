@@ -80,7 +80,8 @@ server/               Azure Functions (office presence backend)
     connect.ts        Web PubSub connection negotiation
     log-event.ts      Records queue events to Cosmos DB
     stats.ts          Queries Cosmos DB for leaderboard data
-  azuredeploy.json    ARM template — deploys all Azure infrastructure
+
+infra/                Terraform — all Azure infrastructure (see infra/README.md)
 
 .github/workflows/
   publish.yml         CI — validate (lint + typecheck + tests) → version bump → publish
@@ -107,13 +108,11 @@ server/               Azure Functions (office presence backend)
 
 ## Infrastructure
 
-All Azure resources are defined in `server/azuredeploy.json`. Deploy with:
+All Azure resources are defined in Terraform under `infra/`; see `infra/README.md` for state, secrets
+(Key Vault) and how to plan and apply. Publishing the function code is separate:
 
 ```bash
-az deployment group create \
-  --resource-group <your-rg> \
-  --template-file server/azuredeploy.json \
-  --mode Incremental
+cd server && npm run deploy
 ```
 
 Resources created:
@@ -122,7 +121,7 @@ Resources created:
 - **Cosmos DB** — stores queue event history
 - **Log Analytics Workspace + Application Insights** — telemetry
 
-The deployment outputs `APPINSIGHTS_CONNECTION_STRING` — add it as a GitHub Actions secret and to your local `.env`.
+`terraform output appinsights_connection_string` gives `APPINSIGHTS_CONNECTION_STRING` — add it as a GitHub Actions secret and to your local `.env`.
 
 ---
 
@@ -135,4 +134,4 @@ The publish job requires these GitHub Actions secrets:
 | Secret | Description |
 |---|---|
 | `GITHUB_TOKEN` | Auto-provided by Actions |
-| `APPINSIGHTS_CONNECTION_STRING` | From ARM template output |
+| `APPINSIGHTS_CONNECTION_STRING` | From the Terraform output |
