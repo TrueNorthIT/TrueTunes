@@ -1,6 +1,7 @@
-// Office attribution ("who queued this?"). There is no Web PubSub connection in the browser for this release:
-// the map comes from /fn/attribution and the user's own queues are announced locally. `ingest` is where a live
-// event source plugs in later: hand it the events and the map and the listeners follow.
+// Office attribution ("who queued this?"). The map comes from /fn/attribution and the user's own queues are
+// announced locally and logged. The live part, other people's events arriving as they happen and our own going out,
+// is attributionSocket.ts (Web PubSub through the gateway): it hands events to `ingest`, and `publishQueued`
+// broadcasts through it. If that socket is down, nothing here depends on it.
 
 import { channel } from './events';
 import type { FnFetch } from './functions';
@@ -21,7 +22,12 @@ interface QueuedItem {
 /** What the server records: the renderer's AttributionEvent plus what the stats and the DJ read back. */
 type QueuedEvent = AttributionEvent & Omit<QueuedItem, 'eventType' | 'uri' | 'trackName' | 'artist'>;
 
-export function createAttribution(fn: FnFetch, userName: () => string | undefined) {
+export function createAttribution(
+  fn: FnFetch,
+  userName: () => string | undefined,
+  /** Tells the office live (attributionSocket.ts); does nothing when there is no connection. */
+  broadcast: (event: AttributionEvent) => void = () => {}
+) {
   let map: AttributionMap = {};
   const maps = channel<AttributionMap>();
   const events = channel<AttributionEvent>({ sticky: false });
@@ -104,6 +110,7 @@ export function createAttribution(fn: FnFetch, userName: () => string | undefine
           timestamp: Date.now(),
         };
         record(logged);
+        broadcast(logged);
         logEvent(logged);
       }
       // The user's own attribution goes back to the listeners at once; nothing would echo it.
