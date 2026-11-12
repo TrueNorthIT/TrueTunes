@@ -77,17 +77,19 @@ export async function authoriseUpgrade(
   headers: Record<string, string | string[] | undefined>,
   verify: Verify
 ): Promise<{ oid: string } | null> {
-  const authorization = headers['authorization'];
-  let credential = typeof authorization === 'string' ? authorization : undefined;
-  if (credential === undefined) {
-    const token = tokenFromProtocols(headers['sec-websocket-protocol']);
-    if (token) credential = `Bearer ${token}`;
-  }
   try {
-    return await verify(credential);
+    return await verify(credentialFromHeaders(headers));
   } catch {
     return null;
   }
+}
+
+/** The Authorization value an upgrade carries: the header, else a browser's `bearer.<token>` subprotocol as "Bearer <token>". */
+export function credentialFromHeaders(headers: Record<string, string | string[] | undefined>): string | undefined {
+  const authorization = headers['authorization'];
+  if (typeof authorization === 'string') return authorization;
+  const token = tokenFromProtocols(headers['sec-websocket-protocol']);
+  return token ? `Bearer ${token}` : undefined;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -118,6 +120,22 @@ export function selectSubprotocol(offered: Set<string>): string | false {
   return offered.has(SONOS_WS_PROTOCOL) ? SONOS_WS_PROTOCOL : false;
 }
 
+export const PUBSUB_WS_PROTOCOL = 'json.webpubsub.azure.v1';
+
+/**
+ * The subprotocol for the path being upgraded: Sonos's on /sonos/ws, Web PubSub's on /pubsub/ws, and none (the
+ * upgrade fails) if that path's own protocol was not offered or the path is neither. Never a bearer entry.
+ */
+export function selectSubprotocolForPath(path: string, offered: Set<string>): string | false {
+  const wanted = path === '/sonos/ws' ? SONOS_WS_PROTOCOL : path === '/pubsub/ws' ? PUBSUB_WS_PROTOCOL : undefined;
+  return wanted && offered.has(wanted) ? wanted : false;
+}
+
+/** `handleProtocols` for the gateway's WebSocketServer: the choice depends on the path of the upgrade request. */
+export function handleProtocols(offered: Set<string>, request: { url?: string }): string | false {
+  return selectSubprotocolForPath((request.url ?? '/').split('?')[0] ?? '/', offered);
+}
+
 /** Close codes that may be put in a close frame (RFC 6455 section 7.4.1); 1005, 1006 and 1015 may not. */
 const isSendable = (code: number): boolean =>
   (code >= 1000 && code <= 1014 && code !== 1004 && code !== 1005 && code !== 1006) || (code >= 3000 && code <= 4999);
@@ -126,6 +144,110 @@ const passOn = (code: number): number | undefined => (isSendable(code) ? code : 
 
 /** Frames held while the upstream is still connecting. */
 const MAX_BUFFERED_FRAMES = 1000;
+
+/** What differs between relays: what is logged when the upstream cannot be reached. */
+interface PipeOptions {
+  log: (msg: string) => void;
+  /** Logged when the upstream cannot be obtained or opened. A fixed line: never the cause, which can quote a secret. */
+  connectFailed: string;
+  /** Logged when the upstream socket reports an error. */
+  upstreamError: string;
+}
+
+/**
+ * The part every relay shares: pipes `client` to the upstream that `openUpstream` yields, frames both ways,
+ * untouched and in order. `openUpstream` may take a while (a ticket, a connect call); `gone()` tells it the client
+ * has already left, so it can return undefined instead of opening anything. Whichever side closes, the other is
+ * closed too; anything that goes wrong closes the client with 1011.
+ */
+async function pipe(
+  client: ClientSocket,
+  openUpstream: (gone: () => boolean) => Promise<UpstreamSocket | undefined>,
+  o: PipeOptions
+): Promise<void> {
+  let upstream: UpstreamSocket | undefined;
+  let upstreamOpen = false;
+  let finished = false;
+  const early: SocketData[] = []; // client frames sent before the upstream opened
+
+  const safely = (action: () => void) => {
+    try {
+      action();
+    } catch {
+      /* the socket is already gone */
+    }
+  };
+
+  /** Ends the relay: the sockets named are closed, once, and nothing more is forwarded. */
+  const end = (closeClient?: { code?: number }, closeUpstream?: { code?: number }) => {
+    if (finished) return;
+    finished = true;
+    early.length = 0;
+    if (closeClient) safely(() => client.close(closeClient.code));
+    if (closeUpstream && upstream) safely(() => upstream?.close(closeUpstream.code));
+  };
+
+  const failed = () => end({ code: 1011 }, {});
+
+  // Listen before anything is awaited: the app sends its first command as soon as its socket is open.
+  client.on('message', (data) => {
+    if (finished) return;
+    if (upstream && upstreamOpen) {
+      try {
+        upstream.send(data);
+      } catch {
+        failed();
+      }
+    } else if (early.length < MAX_BUFFERED_FRAMES) {
+      early.push(data);
+    } else {
+      // shortcut: a client that floods the relay before the upstream answers is cut off, not slowed down.
+      end({ code: 1008 }, {});
+    }
+  });
+  client.on('close', (code) => end(undefined, { code: passOn(code) }));
+  client.on('error', () => end(undefined, { code: 1011 }));
+
+  try {
+    upstream = await openUpstream(() => finished);
+    if (!upstream) return; // the client left while the upstream was being arranged
+  } catch {
+    o.log(o.connectFailed);
+    failed();
+    return;
+  }
+
+  const remote = upstream;
+  remote.on('open', () => {
+    if (finished) return;
+    upstreamOpen = true;
+    for (const data of early.splice(0)) {
+      try {
+        remote.send(data);
+      } catch {
+        failed();
+        return;
+      }
+    }
+  });
+  remote.on('message', (data) => {
+    if (finished) return;
+    try {
+      client.send(data);
+    } catch {
+      failed();
+    }
+  });
+  remote.on('error', () => {
+    if (!finished) o.log(o.upstreamError);
+    failed();
+  });
+  remote.on('close', (code) => {
+    // Closed before it ever opened: the connection failed. Afterwards: pass the close on.
+    if (upstreamOpen) end({ code: passOn(code) }, undefined);
+    else failed();
+  });
+}
 
 export function createRelay(deps: RelayDeps): { accept(client: ClientSocket): Promise<void> } {
   const log = deps.log ?? (() => {});
@@ -151,90 +273,77 @@ export function createRelay(deps: RelayDeps): { accept(client: ClientSocket): Pr
   }
 
   return {
-    async accept(client) {
-      let upstream: UpstreamSocket | undefined;
-      let upstreamOpen = false;
-      let finished = false;
-      const early: SocketData[] = []; // client frames sent before the upstream opened
-
-      const safely = (action: () => void) => {
-        try {
-          action();
-        } catch {
-          /* the socket is already gone */
+    accept: (client) =>
+      pipe(
+        client,
+        async (gone) => {
+          const ticket = await fetchTicket();
+          if (gone()) return undefined; // the client left while the ticket was being fetched
+          return deps.connectUpstream(`${SONOS_WS_URL}?ticket=${ticket}`, [SONOS_WS_PROTOCOL]);
+        },
+        {
+          log,
+          connectFailed: '[relay] could not get a Sonos ticket or open the Sonos socket',
+          upstreamError: '[relay] the Sonos socket reported an error',
         }
-      };
+      ),
+  };
+}
 
-      /** Ends the relay: the sockets named are closed, once, and nothing more is forwarded. */
-      const end = (closeClient?: { code?: number }, closeUpstream?: { code?: number }) => {
-        if (finished) return;
-        finished = true;
-        early.length = 0;
-        if (closeClient) safely(() => client.close(closeClient.code));
-        if (closeUpstream && upstream) safely(() => upstream?.close(closeUpstream.code));
-      };
+// ── /pubsub/ws: the caller's own Azure Web PubSub connection ──
+//
+// The desktop app gets a client access URL from POST /api/connect and opens it itself. A browser may only talk to
+// its own origin, so the gateway makes that call with the caller's token, opens the URL, and pipes frames. The URL
+// carries an access token: like the Sonos ticket it is never logged or sent to the client.
 
-      const failed = () => end({ code: 1011 }, {});
+export interface PubSubRelayDeps {
+  fetch: typeof fetch;
+  /** The Function App's origin, e.g. https://truetunes-fn.azurewebsites.net */
+  functionsOrigin: string;
+  connectUpstream: (url: string, protocols: string[]) => UpstreamSocket;
+  log?: (msg: string) => void;
+}
 
-      // Listen before anything is awaited: the app sends its first command as soon as its socket is open.
-      client.on('message', (data) => {
-        if (finished) return;
-        if (upstream && upstreamOpen) {
-          try {
-            upstream.send(data);
-          } catch {
-            failed();
-          }
-        } else if (early.length < MAX_BUFFERED_FRAMES) {
-          early.push(data);
-        } else {
-          // shortcut: a client that floods the relay before Sonos answers is cut off, not slowed down.
-          end({ code: 1008 }, {});
+/** The client access URL if it is a plain wss URL on Azure Web PubSub's own domain; anything else is null. */
+export function validPubSubUrl(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== 'wss:' || url.username || url.password) return null;
+  return url.hostname.endsWith('.webpubsub.azure.com') ? url.href : null;
+}
+
+export function createPubSubRelay(deps: PubSubRelayDeps): {
+  /** `credential` is the caller's Authorization value as authorised; `username` the display name. */
+  accept(client: ClientSocket, caller: { credential: string; username: string }): Promise<void>;
+} {
+  const log = deps.log ?? (() => {});
+  return {
+    accept: (client, { credential, username }) =>
+      pipe(
+        client,
+        async (gone) => {
+          const res = await deps.fetch(`${deps.functionsOrigin}/api/connect?username=${encodeURIComponent(username)}`, {
+            method: 'POST',
+            headers: { Authorization: credential },
+            signal: AbortSignal.timeout(SONOS_TIMEOUT_MS),
+          });
+          if (!res.ok) throw new Error(`connect answered ${res.status}`);
+          const body: unknown = await res.json();
+          const url = validPubSubUrl((body as { webPubSubUrl?: unknown } | null)?.webPubSubUrl);
+          if (!url) throw new Error('connect gave no usable URL');
+          if (gone()) return undefined;
+          return deps.connectUpstream(url, [PUBSUB_WS_PROTOCOL]);
+        },
+        {
+          log,
+          connectFailed: '[relay] could not get a Web PubSub connection',
+          upstreamError: '[relay] the Web PubSub socket reported an error',
         }
-      });
-      client.on('close', (code) => end(undefined, { code: passOn(code) }));
-      client.on('error', () => end(undefined, { code: 1011 }));
-
-      try {
-        const ticket = await fetchTicket();
-        if (finished) return; // the client left while the ticket was being fetched
-        upstream = deps.connectUpstream(`${SONOS_WS_URL}?ticket=${ticket}`, [SONOS_WS_PROTOCOL]);
-      } catch {
-        log('[relay] could not get a Sonos ticket or open the Sonos socket');
-        failed();
-        return;
-      }
-
-      const sonos = upstream;
-      sonos.on('open', () => {
-        if (finished) return;
-        upstreamOpen = true;
-        for (const data of early.splice(0)) {
-          try {
-            sonos.send(data);
-          } catch {
-            failed();
-            return;
-          }
-        }
-      });
-      sonos.on('message', (data) => {
-        if (finished) return;
-        try {
-          client.send(data);
-        } catch {
-          failed();
-        }
-      });
-      sonos.on('error', () => {
-        if (!finished) log('[relay] the Sonos socket reported an error');
-        failed();
-      });
-      sonos.on('close', (code) => {
-        // Closed before it ever opened: the connection failed. Afterwards: pass the close on.
-        if (upstreamOpen) end({ code: passOn(code) }, undefined);
-        else failed();
-      });
-    },
+      ),
   };
 }

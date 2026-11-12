@@ -7,7 +7,7 @@ import zlib from 'node:zlib';
 import { Readable } from 'node:stream';
 import { WebSocket, WebSocketServer } from 'ws';
 import { BodyTooLargeError, adaptWs, createStaticFiles, readBodyCapped, type WsLike } from './gatewayNode';
-import { selectSubprotocol } from './gatewayRelay';
+import { handleProtocols, selectSubprotocol } from './gatewayRelay';
 
 test('readBodyCapped joins chunks in order', async () => {
   const body = await readBodyCapped(Readable.from([Buffer.from('ab'), Buffer.from('cd')]), 10);
@@ -178,6 +178,37 @@ test('a ws client offering the Sonos subprotocol and a bearer entry is answered 
       }),
       'A client that does not offer the Sonos subprotocol is not connected'
     );
+  } finally {
+    await new Promise<void>((done) => wss.close(() => done()));
+  }
+});
+
+test('a ws client on /pubsub/ws is answered with the Web PubSub subprotocol only, and the two paths do not accept each other’s', async () => {
+  const wss = new WebSocketServer({ port: 0, handleProtocols });
+  await new Promise<void>((done) => wss.once('listening', done));
+  const { port } = wss.address() as { port: number };
+  const connect = (path: string, protocols: string[]) =>
+    new Promise<string>((resolve, reject) => {
+      const ws = new WebSocket(`ws://127.0.0.1:${port}${path}`, protocols);
+      ws.once('open', () => {
+        const chosen = ws.protocol;
+        ws.close();
+        resolve(chosen);
+      });
+      ws.once('error', reject);
+    });
+  try {
+    assert.equal(
+      await connect('/pubsub/ws?username=Alex%20B', ['json.webpubsub.azure.v1', 'bearer.x.y.z']),
+      'json.webpubsub.azure.v1'
+    );
+    assert.equal(
+      await connect('/sonos/ws', ['v1.api.smartspeaker.audio', 'bearer.x.y.z']),
+      'v1.api.smartspeaker.audio'
+    );
+    await assert.rejects(connect('/pubsub/ws', ['v1.api.smartspeaker.audio', 'bearer.x.y.z']));
+    await assert.rejects(connect('/sonos/ws', ['json.webpubsub.azure.v1', 'bearer.x.y.z']));
+    await assert.rejects(connect('/pubsub/ws', ['bearer.x.y.z']));
   } finally {
     await new Promise<void>((done) => wss.close(() => done()));
   }

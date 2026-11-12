@@ -443,6 +443,16 @@ for (const path of [
   });
 }
 
+for (const path of ['/pubsub', '/pubsub/', '/pubsub/ws', '/pubsub/ws?username=A', '/pubsub/nope']) {
+  test(`WEB-4: ${path} over plain HTTP is a 404, never the app shell`, async () => {
+    for (const auth of [undefined, null]) {
+      const res = await web().send(path, auth === null ? { auth: null } : {});
+      assert.equal(res.status, 404);
+      assert.ok(!bodyText(res).includes('True Tunes'));
+    }
+  });
+}
+
 test('WEB-4: only GET and HEAD reach the static files', async () => {
   const res = await web().send('/', { method: 'POST', body: 'x', auth: null });
   assert.equal(res.status, 404);

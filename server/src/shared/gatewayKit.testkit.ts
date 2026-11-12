@@ -472,3 +472,54 @@ export async function outcomeOf(p: Promise<unknown>, ms = 500): Promise<'resolve
   clearTimeout(timer);
   return result;
 }
+
+// ── the fake Function App, for the Web PubSub relay ──────────────────────────
+
+export const PUBSUB_SUBPROTOCOL = 'json.webpubsub.azure.v1';
+export const FUNCTIONS_URL = 'https://truetunes-fn.azurewebsites.net';
+/** Shaped like the real client access URL: its access_token is a secret. */
+export const PUBSUB_ACCESS_TOKEN = 'wps-access-token-SECRET';
+export const PUBSUB_URL = `wss://truetunes-wps.webpubsub.azure.com/client/hubs/office?access_token=${PUBSUB_ACCESS_TOKEN}`;
+
+export interface FunctionsCall {
+  method: string;
+  url: URL;
+  headers: Headers;
+  body: Buffer;
+}
+
+/** What POST /api/connect does when told to misbehave. */
+export type ConnectFault = 'status' | 'no-url' | 'not-json' | 'network';
+
+/** A fake truetunes-fn: hand `.fetch` to the relay as its `fetch`. Every call is recorded. */
+export function createFakeFunctions() {
+  const calls: FunctionsCall[] = [];
+  const fn = {
+    calls,
+    /** The URL /api/connect hands out. */
+    webPubSubUrl: PUBSUB_URL as unknown,
+    fault: null as ConnectFault | null,
+    fetch: (async (input: Parameters<typeof fetch>[0], init: RequestInit = {}) => {
+      if (typeof input !== 'string' && !(input instanceof URL)) throw new Error('The fake needs fetch(url, init)');
+      const call: FunctionsCall = {
+        method: (init.method ?? 'GET').toUpperCase(),
+        url: new URL(String(input)),
+        headers: new Headers(init.headers),
+        body: init.body == null ? Buffer.alloc(0) : Buffer.from(String(init.body)),
+      };
+      calls.push(call);
+      await new Promise<void>((done) => setImmediate(done));
+      if (fn.fault === 'network')
+        throw new TypeError(`fetch failed: ${call.url.href} ${call.headers.get('authorization')}`);
+      if (fn.fault === 'status') return reply(500, 'boom');
+      if (fn.fault === 'not-json') return reply(200, '<html>no</html>', { 'content-type': 'text/html' });
+      if (fn.fault === 'no-url') return reply(200, JSON.stringify({ clientAccessUrl: PUBSUB_URL }));
+      return reply(200, JSON.stringify({ webPubSubUrl: fn.webPubSubUrl, hub: 'office' }), {
+        'content-type': 'application/json',
+      });
+    }) as typeof fetch,
+  };
+  return fn;
+}
+
+export type FakeFunctions = ReturnType<typeof createFakeFunctions>;

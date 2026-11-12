@@ -15,7 +15,14 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { entraCheckFromEnv, verifyEntraToken } from '../shared/auth';
 import { createSonosSession } from '../shared/sonosSession';
 import { createGatewayHandler } from '../shared/gatewayHttp';
-import { authoriseUpgrade, createRelay, selectSubprotocol } from '../shared/gatewayRelay';
+import {
+  authoriseUpgrade,
+  createPubSubRelay,
+  createRelay,
+  credentialFromHeaders,
+  handleProtocols,
+} from '../shared/gatewayRelay';
+import { FUNCTIONS_ORIGIN } from '../shared/gatewayWeb';
 import { BodyTooLargeError, adaptWs, createStaticFiles, readBodyCapped } from '../shared/gatewayNode';
 
 /** The built web app: server/web beside dist/ in the deployed zip (WEB_ROOT overrides it for a local run). */
@@ -53,6 +60,13 @@ const relay = createRelay({
   session,
   fetch: (...args) => fetch(...args),
   // No `origin` option, so ws sends no Origin header.
+  connectUpstream: (url, protocols) => adaptWs(new WebSocket(url, protocols)),
+  log,
+});
+
+const pubsubRelay = createPubSubRelay({
+  fetch: (...args) => fetch(...args),
+  functionsOrigin: FUNCTIONS_ORIGIN,
   connectUpstream: (url, protocols) => adaptWs(new WebSocket(url, protocols)),
   log,
 });
@@ -97,9 +111,10 @@ const server = http.createServer((req, res) => {
   void handleRequest(req, res);
 });
 
-// ── WebSocket upgrades: /sonos/ws only ──
-// A browser also offers its token as a `bearer.<token>` subprotocol; only the Sonos one is ever selected.
-const wss = new WebSocketServer({ noServer: true, handleProtocols: selectSubprotocol });
+// ── WebSocket upgrades: /sonos/ws and /pubsub/ws only ──
+// A browser also offers its token as a `bearer.<token>` subprotocol; only the path's own protocol is ever selected.
+// One server and one heartbeat cover both relays' client sockets.
+const wss = new WebSocketServer({ noServer: true, handleProtocols });
 const alive = new WeakMap<WebSocket, boolean>();
 
 function refuse(socket: Duplex, line: string) {
@@ -108,24 +123,31 @@ function refuse(socket: Duplex, line: string) {
 
 async function handleUpgrade(req: http.IncomingMessage, socket: Duplex, head: Buffer): Promise<void> {
   socket.on('error', () => undefined);
-  if (pathOf(req.url) !== '/sonos/ws') {
-    log(`[gateway] upgrade ${pathOf(req.url)} 404`);
+  const route = pathOf(req.url);
+  if (route !== '/sonos/ws' && route !== '/pubsub/ws') {
+    log(`[gateway] upgrade ${route} 404`);
     return refuse(socket, 'HTTP/1.1 404 Not Found');
   }
   try {
     const caller = await authoriseUpgrade(req.headers, verify);
     if (!caller) {
-      log('[gateway] upgrade /sonos/ws 401');
+      log(`[gateway] upgrade ${route} 401`);
       return refuse(socket, 'HTTP/1.1 401 Unauthorized');
     }
+    // The credential string for /api/connect: the same token that was just verified.
+    const credential = credentialFromHeaders(req.headers) ?? '';
+    // The display name (not a secret). Only the path is ever logged, never the query string.
+    const username = new URL(req.url ?? '/', 'http://gateway').searchParams.get('username') ?? '';
     wss.handleUpgrade(req, socket, head, (ws) => {
       const opened = Date.now();
       alive.set(ws, true);
       ws.on('pong', () => alive.set(ws, true));
       ws.on('error', () => undefined); // the adapter's own error listener reports it to the relay
-      ws.on('close', (code) => log(`[gateway] ws /sonos/ws closed ${code} ${Date.now() - opened}ms oid=${caller.oid}`));
-      log(`[gateway] ws /sonos/ws open oid=${caller.oid}`);
-      relay.accept(adaptWs(ws)).catch((err) => {
+      ws.on('close', (code) => log(`[gateway] ws ${route} closed ${code} ${Date.now() - opened}ms oid=${caller.oid}`));
+      log(`[gateway] ws ${route} open oid=${caller.oid}`);
+      const accepted =
+        route === '/sonos/ws' ? relay.accept(adaptWs(ws)) : pubsubRelay.accept(adaptWs(ws), { credential, username });
+      accepted.catch((err) => {
         console.error(`[gateway] relay failed: ${err instanceof Error ? err.message : String(err)}`);
         ws.close(1011, 'internal');
       });
