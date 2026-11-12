@@ -44,6 +44,21 @@ jobs:
 
       - run: npm run build
 
+      # The web app (PWA): the same renderer built for a browser. The deploy job ships this exact build inside the
+      # gateway zip, so what was tested is what is served. The Entra ids are public identifiers, not secrets.
+      - name: Build the web app
+        run: npm run build:web
+        env:
+          VITE_ENTRA_TENANT_ID: ${{ vars.ENTRA_TENANT_ID }}
+          VITE_ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: web-app
+          path: renderer/dist-web
+          if-no-files-found: error
+          retention-days: 7
+
       - run: npm run test:main
 
       - name: Test with coverage
@@ -77,6 +92,15 @@ jobs:
           npm ci
           npm test
           npm run build
+
+      # The built web app, served by the gateway's own code on this runner, driven in Chromium: the demo journeys at
+      # phone and desktop size, then installability, the service worker's cache, the offline screen and the update
+      # flow. /demo is a pretend office in memory, and the run fails if the page calls /sonos, /fn, /img or the relay.
+      - name: Web app in a real browser
+        run: |
+          node scripts/web/journey.mjs --local
+          node scripts/web/journey.mjs --local --width 1280 --height 800
+          node scripts/web/pwa.mjs
 
   # Applies the Terraform in infra/ and publishes the functions in server/, for the commit that was pushed.
   # `version` (and so `publish`, the desktop release) needs this job: a new app build may call a new function or
@@ -178,13 +202,28 @@ jobs:
           curl --silent --show-error --fail --retry 8 --retry-delay 15 --retry-all-errors --max-time 30 --output /dev/null "$url"
           echo "$url answered 2xx"
 
+      # The web app built by `validate` in this same run; the gateway serves it from server/web (WEB_ROOT).
+      # Downloaded after the functions are published, so it is not swept into the Function App's package.
+      - uses: actions/download-artifact@v8
+        with:
+          name: web-app
+          path: server/web
+
       # The gateway (server/dist/gateway/main.js) runs on App Service, not in the Function App. The zip is the
-      # already-built dist/, the production node_modules left by `npm prune` above and package.json; the app has
-      # SCM_DO_BUILD_DURING_DEPLOYMENT=false (infra/gateway.tf), so nothing is built on the server. The sign-in is
-      # the azure/login session above; the deploy restarts the app, which also re-resolves its Key Vault references.
+      # already-built dist/, the production node_modules left by `npm prune` above, package.json and web/ (the web
+      # app's files); the app has SCM_DO_BUILD_DURING_DEPLOYMENT=false (infra/gateway.tf), so nothing is built on the
+      # server. The sign-in is the azure/login session above; the deploy restarts the app, which also re-resolves its
+      # Key Vault references.
       - name: Deploy the gateway
+        env:
+          ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
         run: |
-          (cd server && zip --quiet --recurse-paths ../gateway.zip dist node_modules package.json)
+          # The web app must be there, be installable, and have been built with the Entra ids (an unset
+          # repository variable would otherwise ship an app nobody can sign in to).
+          test -f server/web/index.html
+          test -s server/web/sw.js
+          grep --recursive --quiet --fixed-strings "$ENTRA_CLIENT_ID" server/web/assets
+          (cd server && zip --quiet --recurse-paths ../gateway.zip dist node_modules package.json web)
           az webapp deploy --resource-group truetunes-rg --name "$(terraform -chdir=infra output -raw gateway_app_name)" \
             --src-path gateway.zip --type zip --clean true --restart true --timeout 600000
 
@@ -194,6 +233,13 @@ jobs:
           url="https://$(terraform -chdir=infra output -raw gateway_default_hostname)/healthz"
           curl --silent --show-error --fail --retry 10 --retry-delay 15 --retry-all-errors --max-time 30 --output /dev/null "$url"
           echo "$url answered 2xx"
+
+      # The web app the gateway now serves: the shell at /, and the paths a browser must be refused without a sign-in.
+      # Read-only, and every API request it makes is one that must be refused. Node resolves `ws` from server/.
+      - name: Web app smoke check
+        run: |
+          cp scripts/web/checks.mjs server/web-checks.mjs
+          (cd server && node web-checks.mjs "https://$(terraform -chdir=../infra output -raw gateway_default_hostname)" --pwa)
 
   version:
     # deploy: the release waits for the infra apply and the function publish of the same commit (a skipped or failed

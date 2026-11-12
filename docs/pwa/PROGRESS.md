@@ -11,17 +11,25 @@ once the named check has run). This file says where the work stands and why thin
 
 | # | Piece | Branch / PR | State |
 | --- | --- | --- | --- |
-| 1 | Gateway: static hosting, `/fn`, `/img`, browser auth for the relay | `feature/pwa-gateway` | in progress |
-| 2 | Web scaffold: web build, browser bridge, demo route | | not started |
-| 3 | Sign-in and our Functions through `/fn` | | not started |
-| 4 | Sonos reads through the gateway | | not started |
-| 5 | Sonos commands (mock only) | | not started |
-| 6 | Phone layout | | not started |
-| 7 | Installability | | not started |
+| 1 | Gateway: static hosting, `/fn`, `/img`, browser auth for the relay | #264 | merged, deployed, verified on production (12 Nov 2026) |
+| 2 | Web scaffold: web build, browser bridge, demo route | `feature/pwa-web` | built and reviewed; pull request next |
+| 3 | Sign-in and our Functions through `/fn` | `feature/pwa-web` (in the bridge) | built; sign-in reaches Microsoft's page; a real sign-in needs the owner |
+| 4 | Sonos reads through the gateway | `feature/pwa-web` (in the bridge) | built, unit-tested against fakes; live check needs a signed-in person |
+| 5 | Sonos commands (mock only) | `feature/pwa-web` (bridge and demo) | built; frames unit-tested; controls exercised in the demo |
+| 6 | Phone layout | `feature/pwa-phone` (an agent, in its own worktree) | in progress |
+| 7 | Installability | `feature/pwa-web` | built; `scripts/web/pwa.mjs` passes locally |
+
+Pieces 2 to 5 and 7 ship as one pull request from `feature/pwa-web`: the bridge covers sign-in, reads and commands
+together, and none of it is reachable until the web build is deployed.
 
 ## Next
 
-Piece 1: merge the pull request, watch the deploy, run the production checks for the `gw-*` entries. Then piece 2.
+1. Open the pull request for `feature/pwa-web`, merge when `validate` is green, watch `deploy`, then run
+   `node scripts/web/checks.mjs https://truetunes.tnapps.co.uk --pwa` and
+   `node scripts/web/journey.mjs https://truetunes.tnapps.co.uk` (phone and 1280x800).
+2. Review the phone shell branch (`feature/pwa-phone`): screenshots at 390x844 and 1280x800, the extended journey,
+   then its own pull request.
+3. Update `features.json` with the evidence from each, and write the final report.
 
 ## Decisions, and why
 
@@ -66,16 +74,104 @@ Piece 1: merge the pull request, watch the deploy, run the production checks for
 - **Demo route:** `/demo`. The Storybook mock backend never settles writes (by design, for stories). The demo needs
   controls that work, so it adds an in-memory simulation of playback, volume and the queue on top of the same
   fixtures. Nothing in it touches the network.
-- **The web client never takes the DJ enqueue lease.** A phone that sleeps while holding it would stall the office's
-  filler until the lease lapsed. It shows the preview only, like a dev build.
+- **The web client takes part in the DJ's enqueue lease like the desktop.** First decided the other way (preview
+  only, in case a sleeping phone held the lease), then reversed on reading the server: the lease lasts 30 seconds
+  (`LEASE_MS` in `server/src/shared/autoplay.ts`), so a sleeping phone delays the filler by half a minute at most,
+  while a client that never asks the coordinator does not learn `fillerUri` and would queue people's picks behind
+  the DJ's filler. `features.json` (`web-dj-autoplay`) was reworded to match.
 - **Live attribution events** on the desktop come from Azure Web PubSub. A browser connecting to
   `*.webpubsub.azure.com` would break the one-origin rule, so the first release loads the map from `/fn/attribution`
   on every queue change (the app already asks for that) and a gateway relay for the socket is its own entry in
   `features.json` (`gw-pubsub-relay`).
 
+### Phone shell (piece 6): the structure, decided before building
+
+On the web, a window too narrow for the full layout (under 1,144px, the same test as skinny mode) gets the phone
+shell instead of `SkinnyShell`. The desktop app keeps skinny mode untouched.
+
+```
+┌──────────────────────────┐
+│ page (scrolls)           │  the same routed panels as the desktop: Home, Search, Album, Artist, ...
+│                          │
+├──────────────────────────┤
+│ ▣ Title · Artist    ⏸    │  mini player: always there, one tap opens Now playing
+├──────────────────────────┤
+│ Home Search Queue Discover More │  tab bar, in the thumb's reach, above the home indicator
+└──────────────────────────┘
+```
+
+- **Five tabs: Home, Search, Queue, Discover, More.** The first four are what someone does with a phone in the
+  office: see what is on, find a song, look at the queue, get a suggestion. Leaderboard, Queuedle, the profile (which
+  holds playlists), speakers, feedback and sign-out are on the More page, two taps away. Five is the most a 390px bar
+  holds at 44px targets with labels; labels stay, because icons alone made the desktop nav need tooltips.
+- **Tabs are routes** (`/queue`, `/more` and `/now-playing` are new, web-only routes), not local state, so the
+  phone's back gesture and the browser's back button do what people expect, and a page can be linked.
+- **Now playing is one tap away everywhere**: the mini player sits above the tab bar on every page. It shows art,
+  title, artist, play/pause and a hairline of progress. Tapping it opens `/now-playing`: the art large, title and
+  artist (links), who queued it, the seek bar, previous / play-pause / next, volume, shuffle and repeat, the heart,
+  lyrics, and a way to the queue. Back closes it.
+- **The queue is a page**, not a drawer: the same `QueueSidebar` list (virtualised, with who queued each track), at
+  full width, with rows tall enough to tap.
+- **Search is a page with its own field at the top** (the desktop keeps the field in the nav pill). Opening the
+  Search tab focuses nothing until tapped, so the keyboard does not jump up uninvited; recent searches show first.
+- **Touch equivalents.** Hover-revealed controls (the quiet + on rows, the corner + on tiles) are always visible when
+  the device has no hover. Every context menu opens from a long-press and from a visible "more" button on the row,
+  and on a phone it is a bottom sheet rather than a popover at the pointer. The queue reorders without dragging: the
+  row's menu has Play next, Move up, Move down and Remove.
+- **Sizes.** Tap targets at least 44px (`--tap`, a new token), text never under 13px (already the rule), the page
+  gutter drops from 28px to 16px, and the shell pads for `env(safe-area-inset-*)`. Heights use `dvh`, so nothing
+  hides behind the browser's bars. Motion follows `prefers-reduced-motion` as elsewhere.
+- **Same materials.** The tab bar and the mini player are the frosted shell material (`--material-bg`,
+  `--material-filter`), like the desktop's nav pill and player bar; the ambient artwork layer sits behind the
+  whole shell. No new colours.
+- **The desktop browser** (1,144px and wider) gets the desktop layout unchanged, minus the window buttons.
+
+### Bridge and entry (pieces 2 to 5)
+
+- **Two independent reviews shaped the bridge.** The first pass (an agent, tests first, 239 tests) mirrored the
+  desktop; a second agent compared it with `src/` line by line and found no wrong frame, path or payload, but did
+  find: a group switch lost when localStorage is blocked (commands would have gone to the wrong speakers), token
+  expiry never reaching the user, the display name not tied to the account, the wrong account picked when two are
+  cached, and a resync that restarted a stopped relay. All fixed, with tests (282 in `renderer/src/web`).
+- **"Expired" versus "failed".** The bridge fires both when the gateway refuses or Sonos is down, as the desktop does.
+  The web entry shows the sign-in screen only when there is really no token (`auth.idToken()` is null); otherwise
+  the app's own Retry state handles it.
+- **The display name is stored per account** (`tt.displayName.<oid>`), unlike the desktop's single name.
+- **MSAL 5 redirect flow.** `redirectUri` is `<origin>/auth/redirect`; the gateway serves the app shell there and
+  `auth.init()` runs `handleRedirectPromise()` before React or the router exists, so the `#code=...` fragment never
+  meets the HashRouter. MSAL then returns to the page the sign-in started from.
+- **Media-key integration is off on the web.** The desktop's silent audio loop and OS play/pause handlers
+  (`useMediaSession`) would put True Tunes on a phone's lock screen, where a headphone button or an incoming call
+  could pause the office's speakers.
+- **No changelog on the web.** "What's new" reads the desktop releases from api.github.com, which is not on the
+  one-origin list, so the button and the new-version prompt are hidden.
+
+### Installability (piece 7)
+
+- **The service worker is hand-written** (`renderer/web/sw.js`, about 90 lines), not a library: the rules about what
+  must never be cached are the whole point, and one `route()` function states them. The build fills in its id,
+  version and file list (`serviceWorker()` in `vite.web.config.ts`).
+- **The shell is cache-first.** An installed version stays whole (its shell and its own hashed files) until the user
+  presses Update or every window of it has closed, so a deploy never leaves a running page asking the server for a
+  file that no longer exists. Scripts, styles and fonts are stored at install for the same reason.
+- **Update flow.** A new worker installs and waits. `renderer/src/web/updates.ts` turns that into the bridge's
+  `onUpdateDownloaded`; the existing Update button calls `installUpdate`, which tells the worker to take over and
+  the page reloads. Other open windows follow the new worker. The page asks for a new version every 15 minutes and
+  when it becomes visible. The demo gets the same button, which is how the flow is tested.
+- **Offline.** Opened with no connection, the entry shows an offline screen (from the cached shell) with Try again,
+  and reloads itself when the connection returns. The demo works offline.
+- **Icons** are the desktop app's icon at 192, 512 and 180 (iOS); its mark sits inside the maskable safe zone, so
+  the 512 doubles as the maskable icon.
+
 ## Things a reader might not expect
 
-(Filled in as they happen.)
+- **A shell with `NODE_ENV=development` builds a development web app**, which has no service worker. Claude Code's
+  shell sets it; CI does not. Local production builds need `NODE_ENV=production npm run build:web`.
+- **The local gateway keeps the web app's files in memory**, so it must be restarted after a rebuild.
+- **`/fn` needs a sign-in even for read functions** that are anonymous when the desktop calls the Function App
+  directly.
+- **The pipeline's `deploy` job now needs the `web-app` artifact from `validate`** of the same run, and refuses to
+  zip the gateway without `server/web/index.html`.
 
 ## Waiting for the owner
 

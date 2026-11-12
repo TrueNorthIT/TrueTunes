@@ -22,32 +22,32 @@
       "area": "gateway",
       "description": "`ANY /fn/<path>` is forwarded to https://truetunes-fn.azurewebsites.net/api/<path> for a caller with a valid Entra ID token. The caller's Authorization header goes through untouched and the gateway adds no credential. /fn/sonos-session is refused, so the Sonos session cannot be fetched through the gateway.",
       "how_verified": "server unit tests (gatewayHttp.test.ts); curl on production shows 401 without a token",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`cd server && npm test` (585 pass); `node scripts/web/checks.mjs https://truetunes.tnapps.co.uk`: 28 of 28 PASS on 12 Nov 2026 after the deploy of aa722d7 (Publish run 43287133370). Production: /fn/stats 401 with no token and with a made-up one; /fn/sonos-session 404 in four spellings."
     },
     {
       "id": "gw-img",
       "area": "gateway",
       "description": "`GET /img?url=` fetches artwork from a named list of https hosts for a signed-in caller. Any other host, scheme, port or a redirect is refused; only image responses are passed back. It is not an open proxy.",
       "how_verified": "server unit tests; curl on production shows a refusal for a host not on the list",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`cd server && npm test` (585 pass); `node scripts/web/checks.mjs https://truetunes.tnapps.co.uk`: 28 of 28 PASS on 12 Nov 2026 after the deploy of aa722d7 (Publish run 43287133370). Production: three hosts off the list refused with 403; a listed host 401 without a token."
     },
     {
       "id": "gw-relay-browser-auth",
       "area": "gateway",
       "description": "The WebSocket relay accepts a browser, which cannot set headers: the Entra ID token travels as a `bearer.<token>` WebSocket subprotocol value, never in the URL. The desktop's Authorization header path still works.",
       "how_verified": "server unit tests (gatewayRelay.test.ts); a local run of the gateway accepts and refuses real `ws` clients; production refuses an unauthenticated upgrade",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`cd server && npm test` (585 pass); `node scripts/web/checks.mjs https://truetunes.tnapps.co.uk`: 28 of 28 PASS on 12 Nov 2026 after the deploy of aa722d7 (Publish run 43287133370). Unit: gatewayRelay.test.ts (bearer subprotocol), gatewayNode.test.ts (a real ws server selects only the Sonos subprotocol). Local run of the built gateway and production both refuse a made-up token as a subprotocol and as a header with 401."
     },
     {
       "id": "gw-auth-refused",
       "area": "gateway",
       "description": "Nothing under /sonos/api/auth is forwarded, and unauthenticated calls to /sonos, /fn and the relay are refused, on production.",
       "how_verified": "curl and a `ws` client against https://truetunes.tnapps.co.uk",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`cd server && npm test` (585 pass); `node scripts/web/checks.mjs https://truetunes.tnapps.co.uk`: 28 of 28 PASS on 12 Nov 2026 after the deploy of aa722d7 (Publish run 43287133370). Production: /sonos/api/..., /sonos/api/auth/session, /fn/... and the relay all refuse a caller with no token (401, the gateway's own \"sign-in required\")."
     },
     {
       "id": "gw-pubsub-relay",
@@ -205,9 +205,9 @@
     {
       "id": "web-dj-autoplay",
       "area": "functions",
-      "description": "The DJ preview (the three upcoming picks) shows on the web. A web client never takes the enqueue lease, so a phone that goes to sleep cannot stall the office's filler.",
+      "description": "The DJ (autoplay) works on the web as on the desktop: the upcoming picks, the on/off switch, and the coordinator's filler position, so people's picks go in front of the DJ's. The web client takes part in the 30-second enqueue lease like any other client.",
       "bridge": ["djAutoplay"],
-      "how_verified": "unit test: the web bridge's request never asks for the lease",
+      "how_verified": "unit test: the web bridge sends the same request as the desktop (src/ipc/functions.ts)",
       "passes": false,
       "evidence": ""
     },

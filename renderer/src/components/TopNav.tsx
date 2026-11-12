@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, KeyboardEvent } from 'react';
+import { isWeb } from '../lib/platform';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useImage } from '../hooks/useImage';
@@ -363,11 +364,14 @@ export function TopNav({
               </div>
             )}
 
-            <button className={styles.iconBtn} onClick={onChangelogOpen} title="What's new">
-              <Lightbulb size={15} />
-            </button>
+            {/* What's new reads the desktop releases from GitHub, which the web app does not call. */}
+            {!isWeb() && (
+              <button className={styles.iconBtn} onClick={onChangelogOpen} title="What's new">
+                <Lightbulb size={15} />
+              </button>
+            )}
 
-            {import.meta.env.DEV && (
+            {import.meta.env.DEV && !isWeb() && (
               <button
                 className={styles.iconBtn}
                 onClick={() => {

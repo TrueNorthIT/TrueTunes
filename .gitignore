@@ -169,3 +169,7 @@ infra/**/.terraform/
 !*.tfvars.example
 crash.log
 *.tfplan
+
+# The web app (PWA) build, and the copy the deploy job puts inside the gateway zip
+renderer/dist-web/
+server/web/

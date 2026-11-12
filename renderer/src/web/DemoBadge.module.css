@@ -1,0 +1,14 @@
+/* A quiet chip in the corner, above everything, that never takes a tap meant for the app. */
+.badge {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 8px);
+  left: calc(env(safe-area-inset-left) + 8px);
+  z-index: 3000;
+  padding: 0.2em 0.8em;
+  border-radius: var(--r-pill);
+  background: rgba(var(--attention), 0.16);
+  color: rgb(var(--attention));
+  font-size: var(--fs-px);
+  font-weight: 600;
+  pointer-events: none;
+}

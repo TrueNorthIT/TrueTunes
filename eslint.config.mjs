@@ -13,7 +13,17 @@ const RAW_SIZE = String.raw`/^(?!var\(|inherit|0$|50%$|100%$)/`;
 export default tseslint.config(
   // Ignore build output and generated files
   // mcp/ is its own Next.js package (the Vercel MCP server) with its own typecheck and tests.
-  { ignores: ['**/dist/**', 'node_modules/**', 'storybook-static/**', 'mcp/**'] },
+  {
+    ignores: [
+      '**/dist/**',
+      '**/dist-web/**',
+      'server/web/**',
+      'server/dist-test/**',
+      'node_modules/**',
+      'storybook-static/**',
+      'mcp/**',
+    ],
+  },
 
   // ── All TypeScript (main process + renderer) ─────────────────────────────────
   {
