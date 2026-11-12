@@ -236,7 +236,13 @@ export interface Harness {
 
 /** A bridge whose fetch, socket and storage are all fakes. The usual gateway routes are in place. */
 export function makeBridge(
-  opts: { auth?: FakeAuth; updates?: UpdateSource; gatewayBase?: string; storage?: Record<string, string>; blockedStorage?: boolean } = {}
+  opts: {
+    auth?: FakeAuth;
+    updates?: UpdateSource;
+    gatewayBase?: string;
+    storage?: Record<string, string>;
+    blockedStorage?: boolean;
+  } = {}
 ): Harness {
   localStorage.clear();
   for (const [k, v] of Object.entries(opts.storage ?? {})) localStorage.setItem(k, v);

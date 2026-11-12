@@ -13,6 +13,8 @@ const REFRESH_WITHIN_MS = 5 * 60_000;
 export interface MsalClient {
   handleRedirectPromise(): Promise<{ account: AccountInfo } | null>;
   getAllAccounts(): AccountInfo[];
+  getActiveAccount(): AccountInfo | null;
+  setActiveAccount(account: AccountInfo | null): void;
   acquireTokenSilent(request: {
     scopes: string[];
     account: AccountInfo;
@@ -56,6 +58,14 @@ export function createMsalAuth(
   let client: MsalClient | null = null;
   let account: AccountInfo | null = null;
   let current: EntraUser | null = null;
+  /** Concurrent callers that all need a forced refresh share one request. */
+  let forcing: ReturnType<MsalClient['acquireTokenSilent']> | null = null;
+  const forceRefresh = (c: MsalClient, a: AccountInfo) => {
+    forcing ??= c.acquireTokenSilent({ scopes: SCOPES, account: a, forceRefresh: true }).finally(() => {
+      forcing = null;
+    });
+    return forcing;
+  };
 
   return {
     async init() {
@@ -66,7 +76,8 @@ export function createMsalAuth(
       } catch {
         /* a failed or cancelled redirect leaves nobody signed in, whatever the cache holds */
       }
-      account = redirected?.account ?? client.getAllAccounts()[0] ?? null;
+      if (redirected) client.setActiveAccount(redirected.account);
+      account = redirected?.account ?? client.getActiveAccount() ?? client.getAllAccounts()[0] ?? null;
       current = account ? userOf(account) : null;
       return current;
     },
@@ -80,6 +91,7 @@ export function createMsalAuth(
     async signOut() {
       const c = await getClient();
       for (const a of c.getAllAccounts()) await c.clearCache({ account: a });
+      c.setActiveAccount(null);
       account = null;
       current = null;
     },
@@ -89,10 +101,11 @@ export function createMsalAuth(
     async idToken(opts) {
       if (!client || !account) return null;
       try {
-        const request = { scopes: SCOPES, account, forceRefresh: !!opts?.forceRefresh };
-        let result = await client.acquireTokenSilent(request);
-        if (!request.forceRefresh && expiryMs(result.idTokenClaims) - Date.now() < REFRESH_WITHIN_MS) {
-          result = await client.acquireTokenSilent({ ...request, forceRefresh: true });
+        let result = opts?.forceRefresh
+          ? await forceRefresh(client, account)
+          : await client.acquireTokenSilent({ scopes: SCOPES, account, forceRefresh: false });
+        if (!opts?.forceRefresh && expiryMs(result.idTokenClaims) - Date.now() < REFRESH_WITHIN_MS) {
+          result = await forceRefresh(client, account);
         }
         return result.idToken || null;
       } catch {

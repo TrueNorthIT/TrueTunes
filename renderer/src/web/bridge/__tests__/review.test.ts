@@ -83,7 +83,10 @@ describe('identity per account', () => {
       claims.push(c.json());
       return json({});
     });
-    const b = createWebBridge({ ...a.env, auth: fakeAuth({ signedIn: { oid: 'oid-2', name: 'Bea', email: 'b@x.test' } }) });
+    const b = createWebBridge({
+      ...a.env,
+      auth: fakeAuth({ signedIn: { oid: 'oid-2', name: 'Bea', email: 'b@x.test' } }),
+    });
     const doneB = vi.fn();
     b.onEntraReady(doneB);
     expect(await b.getDisplayName()).toBeNull();
@@ -106,7 +109,12 @@ describe('msal accounts and single-flight', () => {
     idTokenClaims: { oid: `oid-${username}` },
   });
   const CONFIG = { clientId: 'c', tenantId: 't', redirectUri: 'https://app.test/' };
-  const result = (over = {}) => ({ idToken: 'id', accessToken: 'at', idTokenClaims: { exp: Date.now() / 1000 + 3600 }, ...over });
+  const result = (over = {}) => ({
+    idToken: 'id',
+    accessToken: 'at',
+    idTokenClaims: { exp: Date.now() / 1000 + 3600 },
+    ...over,
+  });
 
   function client(over: Partial<MsalClient> = {}) {
     const c = {

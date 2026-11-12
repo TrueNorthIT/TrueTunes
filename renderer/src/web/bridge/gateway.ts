@@ -19,22 +19,31 @@ export function createGateway(o: {
   base: string;
   /** The token is no use: the app shows its sign-in / error state (the desktop's signalSessionFailure). */
   onRefused: () => void;
+  /** There is no token to send: the user must sign in again (the normal daily expiry in a browser). */
+  onExpired: () => void;
 }): Gateway {
   const send = (path: string, init: RequestInit, token: string) => {
     const headers = new Headers(init.headers);
     headers.set('Authorization', `Bearer ${token}`);
-    return o.fetch(`${o.base}${path}`, { ...init, headers });
+    return o.fetch(`${o.base}${path}`, { ...init, headers, cache: 'no-store' });
   };
 
   return {
     async fetch(path, init = {}) {
       const token = await o.auth.idToken();
-      if (!token) return null;
+      if (!token) {
+        o.onExpired();
+        return null;
+      }
       const res = await send(path, init, token);
       if (res.status !== 401) return res;
 
       const fresh = await o.auth.idToken({ forceRefresh: true });
-      const retried = fresh ? await send(path, init, fresh) : res;
+      if (!fresh) {
+        o.onExpired();
+        return res;
+      }
+      const retried = await send(path, init, fresh);
       if (retried.status === 401) o.onRefused();
       return retried;
     },

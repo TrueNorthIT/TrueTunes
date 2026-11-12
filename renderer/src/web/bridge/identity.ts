@@ -3,7 +3,8 @@
 import type { FnFetch } from './functions';
 import type { Store } from './storage';
 
-export const NAME_KEY = 'tt.displayName';
+/** One name per Entra account: a second user on the same browser never inherits the first one's. */
+export const nameKey = (oid: string) => `tt.displayName.${oid}`;
 
 export interface Identity {
   name(): string | undefined;
@@ -15,9 +16,7 @@ export interface Identity {
   resolve(user: EntraUser): Promise<void>;
 }
 
-export function createIdentity(fn: FnFetch, store: Store): Identity {
-  let name = store.get(NAME_KEY) ?? undefined;
-
+export function createIdentity(fn: FnFetch, store: Store, currentOid: () => string | undefined): Identity {
   async function claim(oid: string, displayName: string): Promise<boolean> {
     try {
       const res = await fn('profile/claim', {
@@ -43,23 +42,23 @@ export function createIdentity(fn: FnFetch, store: Store): Identity {
     }
   }
 
-  const setName = (next: string) => {
-    name = next;
-    store.set(NAME_KEY, next);
+  const read = (oid: string | undefined) => (oid ? (store.get(nameKey(oid)) ?? undefined) : undefined);
+  const write = (oid: string | undefined, next: string) => {
+    if (oid) store.set(nameKey(oid), next);
   };
 
   return {
-    name: () => name,
-    setName,
+    name: () => read(currentOid()),
+    setName: (next) => write(currentOid(), next),
     clear() {
-      name = undefined;
-      store.remove(NAME_KEY);
+      const oid = currentOid();
+      if (oid) store.remove(nameKey(oid));
     },
     claim,
     async resolve(user) {
-      if (!name) setName((await lookup(user.oid)) ?? user.name);
+      if (!read(user.oid)) write(user.oid, (await lookup(user.oid)) ?? user.name);
       // Awaited: the functions resolve a token's caller through this claim, so it must land before the first write.
-      await claim(user.oid, name ?? '');
+      await claim(user.oid, read(user.oid) ?? '');
     },
   };
 }
