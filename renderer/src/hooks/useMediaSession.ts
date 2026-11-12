@@ -3,6 +3,13 @@ import { getActiveProvider } from '../providers';
 import { useTrackDetails } from './useTrackDetails';
 import type { PlaybackState } from './usePlayback';
 import { getPlaybackPosition } from './playbackPosition';
+import { isWeb } from '../lib/platform';
+
+/**
+ * Desktop only. In a browser tab or an installed web app the silent loop would put True Tunes on the phone's lock
+ * screen and hand its play/pause to headphone buttons and incoming calls, which would stop the office's speakers.
+ */
+const hasMediaSession = (): boolean => !isWeb() && 'mediaSession' in navigator;
 
 /**
  * Publishes the current track to the OS media overlay (Windows System Media
@@ -58,7 +65,7 @@ export function useMediaSession(playback: PlaybackState) {
 
   // Keep the silent session alive/suspended in step with whether anything is "now playing".
   useEffect(() => {
-    if (!('mediaSession' in navigator)) return;
+    if (!hasMediaSession()) return;
 
     if (playback.isVisible) {
       const audio = ensureSilentLoop();
@@ -88,7 +95,7 @@ export function useMediaSession(playback: PlaybackState) {
       })
       .catch(() => {});
 
-    if (!('mediaSession' in navigator)) return;
+    if (!hasMediaSession()) return;
     navigator.mediaSession.metadata = new MediaMetadata({
       title: trackName || 'True Tunes',
       artist: artistName || undefined,
@@ -99,13 +106,13 @@ export function useMediaSession(playback: PlaybackState) {
 
   // Playback state — drives the play/pause glyph in the OS overlay
   useEffect(() => {
-    if (!('mediaSession' in navigator) || !playback.isVisible) return;
+    if (!hasMediaSession() || !playback.isVisible) return;
     navigator.mediaSession.playbackState = playback.isPlaying ? 'playing' : 'paused';
   }, [playback.isVisible, playback.isPlaying]);
 
   // Position/duration — drives the scrub bar in the OS overlay
   useEffect(() => {
-    if (!('mediaSession' in navigator) || !playback.isVisible) return;
+    if (!hasMediaSession() || !playback.isVisible) return;
     if (!playback.durationMs || playback.durationMs <= 0) return;
     try {
       navigator.mediaSession.setPositionState({
@@ -121,7 +128,7 @@ export function useMediaSession(playback: PlaybackState) {
 
   // Transport action handlers — wired once, always delegate to the active provider
   useEffect(() => {
-    if (!('mediaSession' in navigator)) return;
+    if (!hasMediaSession()) return;
 
     const provider = () => getActiveProvider();
     navigator.mediaSession.setActionHandler('play', () => {
