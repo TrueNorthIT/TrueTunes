@@ -20,6 +20,8 @@ if (!file || !existsSync(file)) process.exit(0);
 
 const fromHere = relative(here, resolve(file));
 if (fromHere.startsWith('..') || fromHere.split(sep).includes('node_modules')) process.exit(0);
+// mcp/ is its own package (the Vercel MCP server), ignored by the root eslint config.
+if (fromHere.split(sep)[0] === 'mcp') process.exit(0);
 
 // Lint from the checkout that owns the file: a worktree under .claude/worktrees/ has its own config, and its own
 // binaries unless it has no node_modules yet. The walk stops at `here` at the latest, which has the config.

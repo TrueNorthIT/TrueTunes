@@ -2,11 +2,12 @@
 
 ## What this is
 
-Electron desktop Sonos client. Three distinct environments that compile and run separately:
+Electron desktop Sonos client. Four distinct environments that compile and run separately:
 
 - **Main process** (`src/`) — Node.js, TypeScript, compiled by `tsc`
 - **Renderer** (`renderer/`) — React + Vite, compiled by Vite/esbuild
 - **Server** (`server/`) — Azure Functions, separate `package.json` and `tsconfig.json`
+- **MCP server** (`mcp/`) — Next.js on Vercel (project `truetunes-mcp`, https://truetunes-mcp.vercel.app/mcp): people sign in with Entra and drive the office Sonos from Claude or another chat app, credited on the leaderboard. Its own `package.json`; check it with `npm --prefix mcp run typecheck` and `npm --prefix mcp test` (the root ESLint skips it). Vercel deploys it from `main` only, and only when `mcp/` changed; Vercel blocks a deployment whose commit author isn't a member of its Vercel team.
 
 The renderer never imports from `src/` and vice versa. Communication is strictly through IPC (`ipcMain.handle` / `ipcRenderer.invoke`) with the bridge defined in `src/preload.ts` and the renderer-side types in `renderer/src/types/globals.d.ts`.
 
