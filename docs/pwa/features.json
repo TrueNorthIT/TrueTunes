@@ -1,0 +1,490 @@
+{
+  "about": "Every capability of the True Tunes web app (PWA) and the plumbing under it. `passes` turns true only after the check in `how_verified` has run and passed; `evidence` is the command or screenshot that showed it. Derived from the SonosPreload contract (renderer/src/types/globals.d.ts, 97 methods, each named in exactly one `bridge` list below) and the routes in renderer/src/App.tsx. Never delete or loosen an entry to make the list look finished.",
+  "features": [
+    {
+      "id": "gw-static",
+      "area": "gateway",
+      "description": "The gateway serves the built web app's files: `/` and unknown extension-less paths give index.html (SPA fallback), files under the web root are served with their type, nothing outside the root can be read, and reserved prefixes (/sonos, /fn, /img, /healthz) never fall through to it.",
+      "how_verified": "server unit tests (gatewayStatic.test.ts, gatewayHttp.test.ts); then curl against production",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "gw-cache-headers",
+      "area": "gateway",
+      "description": "index.html, the service worker and the manifest are served `no-cache`; hashed files under /assets/ are `public, max-age=31536000, immutable`.",
+      "how_verified": "server unit tests; `curl -sI` of each on production",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "gw-fn",
+      "area": "gateway",
+      "description": "`ANY /fn/<path>` is forwarded to https://truetunes-fn.azurewebsites.net/api/<path> for a caller with a valid Entra ID token. The caller's Authorization header goes through untouched and the gateway adds no credential. /fn/sonos-session is refused, so the Sonos session cannot be fetched through the gateway.",
+      "how_verified": "server unit tests (gatewayHttp.test.ts); curl on production shows 401 without a token",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "gw-img",
+      "area": "gateway",
+      "description": "`GET /img?url=` fetches artwork from a named list of https hosts for a signed-in caller. Any other host, scheme, port or a redirect is refused; only image responses are passed back. It is not an open proxy.",
+      "how_verified": "server unit tests; curl on production shows a refusal for a host not on the list",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "gw-relay-browser-auth",
+      "area": "gateway",
+      "description": "The WebSocket relay accepts a browser, which cannot set headers: the Entra ID token travels as a `bearer.<token>` WebSocket subprotocol value, never in the URL. The desktop's Authorization header path still works.",
+      "how_verified": "server unit tests (gatewayRelay.test.ts); a local run of the gateway accepts and refuses real `ws` clients; production refuses an unauthenticated upgrade",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "gw-auth-refused",
+      "area": "gateway",
+      "description": "Nothing under /sonos/api/auth is forwarded, and unauthenticated calls to /sonos, /fn and the relay are refused, on production.",
+      "how_verified": "curl and a `ws` client against https://truetunes.tnapps.co.uk",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "gw-pubsub-relay",
+      "area": "gateway",
+      "description": "Live 'who queued this' events reach the browser through the gateway (a relay to the Web PubSub socket), so the browser stays on one origin.",
+      "how_verified": "server unit tests; mock-driven bridge test",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "web-build",
+      "area": "scaffold",
+      "description": "A web build of the renderer (`npm run build:web`) from the same components, with its own entry and index.html; the pipeline builds it and ships it inside the gateway zip. The Electron build is unchanged.",
+      "how_verified": "`npm run build:web` and `npm run build` both succeed; the deploy job's log; production serves the app shell",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "web-bridge-contract",
+      "area": "scaffold",
+      "description": "A browser implementation of `window.sonos` that satisfies the whole SonosPreload type, chosen at start-up when there is no Electron preload.",
+      "how_verified": "`npm run typecheck` (fails if a method is missing); unit tests of the bridge",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "web-electron-only-hidden",
+      "area": "scaffold",
+      "description": "Window controls, the mini player window, the debug windows and taskbar/media-key integration are hidden or no-ops on the web.",
+      "bridge": [
+        "minimizeWindow",
+        "maximizeWindow",
+        "closeWindow",
+        "isWindowMaximized",
+        "onWindowMaximized",
+        "openWsMonitor",
+        "openHttpMonitor",
+        "openDevTools",
+        "openMiniPlayer",
+        "closeMiniPlayer",
+        "updateNowPlayingSmtc",
+        "getQueueDockedWidth",
+        "setQueueDockedWidth"
+      ],
+      "how_verified": "unit test of the web bridge's no-ops; screenshot of the web shell with no window controls",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "web-demo-route",
+      "area": "scaffold",
+      "description": "/demo runs the whole app against the bundled mock backend: lazy-loaded, no sign-in, labelled as a demo, with playback, volume and queue changes simulated in memory. It never calls /sonos, /fn or the relay.",
+      "how_verified": "Playwright journey test against the local gateway and against production, asserting no request leaves for /sonos, /fn or the relay",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "web-sign-in",
+      "area": "auth",
+      "description": "Sign-in with @azure/msal-browser, redirect flow, cache in localStorage, on the existing app registration and one of its registered redirect addresses. Sign out and switch account work.",
+      "bridge": ["getEntraUser", "entraSignOut", "entraReLogin", "onEntraReady"],
+      "how_verified": "unit tests with a fake MSAL client; Playwright reaches the Microsoft sign-in page with the right client id and redirect_uri. A real sign-in needs the owner.",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "web-auth-state",
+      "area": "auth",
+      "description": "The app's ready, expired and failed states on the web: ready once signed in and the relay is up, failed (with Retry) when the gateway refuses the token.",
+      "bridge": ["onAuthReady", "onAuthExpired", "onAuthFailed", "retrySonosAuth"],
+      "how_verified": "unit tests of the bridge",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "web-display-name",
+      "area": "auth",
+      "description": "The display name: looked up from the profile for this Entra account, claimed, kept in localStorage, and changeable.",
+      "bridge": ["getDisplayName", "setDisplayName", "renameUser"],
+      "how_verified": "unit tests of the bridge's request mapping",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "web-fn-reads",
+      "area": "functions",
+      "description": "Our Functions' read calls go through /fn with the caller's token: users, profiles, stats, recently played, the DJ set, music stats, the daily game and its boards, playlists, polls.",
+      "bridge": [
+        "fetchUsers",
+        "fetchUserProfile",
+        "fetchStats",
+        "fetchRecentlyPlayed",
+        "fetchDjSet",
+        "fetchMusicStats",
+        "fetchDailyGame",
+        "fetchGameLeaderboard",
+        "fetchGameDates",
+        "fetchMyScore",
+        "fetchGameStats",
+        "fetchPlaylists",
+        "fetchPlaylist",
+        "fetchPolls",
+        "pollAdminList"
+      ],
+      "how_verified": "unit tests asserting each call's method, path and query against the desktop's (src/ipc/functions.ts)",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "web-fn-writes",
+      "area": "functions",
+      "description": "Our Functions' write calls through /fn: playlists (create, update, delete, tracks, join, image), favourites, profile image, Queuedle score, poll answer and admin, feedback, track metadata.",
+      "bridge": [
+        "ensureFavourites",
+        "createPlaylist",
+        "updatePlaylist",
+        "deletePlaylist",
+        "addTrackToPlaylist",
+        "removeTrackFromPlaylist",
+        "reorderPlaylistTracks",
+        "joinPlaylist",
+        "uploadPlaylistImage",
+        "uploadProfileImage",
+        "submitGameScore",
+        "answerPoll",
+        "pollAdminCreate",
+        "pollAdminUpdate",
+        "pollAdminDelete",
+        "pollAdminReorder",
+        "submitFeedback",
+        "reportTrackMeta"
+      ],
+      "how_verified": "unit tests asserting method, path and body against a fake fetch. Never run against production.",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "web-attribution",
+      "area": "functions",
+      "description": "Who queued what: the map is loaded from /fn/attribution and refreshed when the queue changes; queueing publishes the event (/fn/log-event) and shows the badge at once.",
+      "bridge": ["publishQueued", "refreshAttribution", "onAttributionMap", "onAttributionEvent"],
+      "how_verified": "unit tests of the bridge; demo journey shows queued-by badges",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "web-office-presence",
+      "area": "functions",
+      "description": "Office presence from Microsoft Graph for the Discover room. Falls back to 'none' (the room is inferred from recent queueing) when there is no consent.",
+      "bridge": ["fetchOfficePresence"],
+      "how_verified": "unit test of the fallback and of the Graph mapping",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "web-dj-autoplay",
+      "area": "functions",
+      "description": "The DJ preview (the three upcoming picks) shows on the web. A web client never takes the enqueue lease, so a phone that goes to sleep cannot stall the office's filler.",
+      "bridge": ["djAutoplay"],
+      "how_verified": "unit test: the web bridge's request never asks for the lease",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "web-sonos-http",
+      "area": "sonos",
+      "description": "Sonos reads through /sonos/api: every operationId the renderer uses maps to the same method and path as the desktop, with household, service, group and queue ids filled in, GETs retried on 5xx, and the default music service discovered and self-healed.",
+      "bridge": ["fetch", "setQueueId"],
+      "how_verified": "unit tests: URL building per operation, retry, discovery; a test that the operation table matches src/sonos-api.ts",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "web-sonos-relay",
+      "area": "sonos",
+      "description": "Live state over the relay: connect with the token subprotocol, bootstrap (household, devices, subscriptions), groups, playback and volume pushes for the active group only, reconnect with backoff, resync.",
+      "bridge": ["onWsMessage", "onWsReady", "onWsGroups", "getActiveGroup", "setGroup", "refreshPlayback", "resync"],
+      "how_verified": "unit tests against a fake WebSocket that plays Sonos's side",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "web-sonos-commands",
+      "area": "sonos",
+      "description": "Playback and volume commands over the relay, with the same frames as the desktop.",
+      "bridge": [
+        "play",
+        "pause",
+        "skipNext",
+        "skipPrev",
+        "skipToTrack",
+        "seek",
+        "setGroupVolume",
+        "setPlayModes",
+        "loadContent",
+        "playAudioClip"
+      ],
+      "how_verified": "unit tests asserting each frame against a fake WebSocket; controls exercised in the demo journey. Never sent to the real system.",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "web-queue-edits",
+      "area": "sonos",
+      "description": "Queue edits: reorder (the same batch algorithm as the desktop), remove, clear.",
+      "bridge": ["reorderQueue", "removeFromQueue", "clearQueue"],
+      "how_verified": "unit tests written first for the batch algorithm and the requests it sends; demo journey reorders and removes",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "web-images",
+      "area": "sonos",
+      "description": "Artwork: hosts that allow it are fetched directly; the rest go through /img (or /sonos/api for Sonos-hosted art).",
+      "bridge": ["fetchImage"],
+      "how_verified": "unit tests of the routing",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "web-genius-off",
+      "area": "sonos",
+      "description": "Genius is left out of the web app for this release: every Genius call answers 'no result'.",
+      "bridge": ["geniusDescription", "geniusArtist", "geniusAlbumYear", "geniusArtistAlbums", "geniusAlbumAbout"],
+      "how_verified": "unit test; artist and album pages render without the Genius sections",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "web-app-misc",
+      "area": "scaffold",
+      "description": "Version, 'new version' changelog prompt, external links (a new tab) and telemetry (a no-op on the web for this release).",
+      "bridge": ["getVersion", "isNewVersion", "openExternal", "trackEvent"],
+      "how_verified": "unit tests of the bridge",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "phone-shell",
+      "area": "phone",
+      "description": "A phone shell replaces skinny mode on the web: thumb-reach navigation, now playing one tap away, the queue as a full view, search and browse as first-class pages. Safe-area insets, dynamic viewport units, reduced motion honoured.",
+      "how_verified": "story at 390x844 and 1280x800 (page story and app-shell story), screenshots reviewed; story tests (axe) pass",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "phone-now-playing",
+      "area": "phone",
+      "description": "Now playing on a phone: art, title, artist, who queued it, play/pause, skip, seek, volume, lyrics.",
+      "how_verified": "demo journey at 390px: pause and resume, change volume; screenshot",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "phone-queue",
+      "area": "phone",
+      "description": "The queue as a full view on a phone, with who queued each track, and touch ways to play next, reorder (no drag needed) and remove.",
+      "how_verified": "demo journey at 390px: reorder and remove; screenshot",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "phone-touch-menus",
+      "area": "phone",
+      "description": "Every right-click action has a touch equivalent (long-press or a menu button). Tap targets are at least 44px; no text under 13px.",
+      "how_verified": "story test measuring target sizes; demo journey queues a track from a touch menu",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "page-home",
+      "area": "pages",
+      "description": "Home (/) usable at 390px with touch only.",
+      "how_verified": "page story screenshot at 390x844 reviewed; no horizontal overflow (asserted in the journey test)",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "page-search",
+      "area": "pages",
+      "description": "Search (/search) usable at 390px: type, see results, open one, queue a track.",
+      "how_verified": "demo journey; screenshot at 390x844",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "page-discover",
+      "area": "pages",
+      "description": "Discover (/discover) usable at 390px.",
+      "how_verified": "page story screenshot at 390x844; overflow assertion",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "page-album",
+      "area": "pages",
+      "description": "Album (/album/:id) usable at 390px: track list, queue a track, queue all.",
+      "how_verified": "demo journey opens an album and queues a track; screenshot",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "page-artist",
+      "area": "pages",
+      "description": "Artist (/artist/:id) usable at 390px.",
+      "how_verified": "page story screenshot at 390x844; overflow assertion",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "page-container",
+      "area": "pages",
+      "description": "Container (/container/:id) usable at 390px.",
+      "how_verified": "page story screenshot at 390x844; overflow assertion",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "page-leaderboard",
+      "area": "pages",
+      "description": "Leaderboard (/leaderboard) and music stats (/leaderboard/stats) usable at 390px.",
+      "how_verified": "demo journey opens the leaderboard; screenshots of both",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "page-queuedle",
+      "area": "pages",
+      "description": "Queuedle (/queuedle) and its stats (/queuedle/stats) usable at 390px.",
+      "how_verified": "page story screenshots at 390x844; a round played in the demo (mock only)",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "page-lyrics",
+      "area": "pages",
+      "description": "Lyrics (/lyrics) usable at 390px.",
+      "how_verified": "page story screenshot at 390x844; overflow assertion",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "page-profile",
+      "area": "pages",
+      "description": "Profile (/profile/:userName) usable at 390px.",
+      "how_verified": "page story screenshot at 390x844; overflow assertion",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "page-playlist",
+      "area": "pages",
+      "description": "Playlist (/playlist/:id) usable at 390px.",
+      "how_verified": "page story screenshot at 390x844; overflow assertion",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "dialogs-phone",
+      "area": "pages",
+      "description": "Feedback, polls, the changelog and the add-to-playlist dialogs are usable at 390px.",
+      "how_verified": "story screenshots at 390x844",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "desktop-browser-layout",
+      "area": "pages",
+      "description": "On a desktop browser (1280x800) the web app shows the full layout, without Electron's window controls.",
+      "how_verified": "screenshot of the demo route at 1280x800",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "pwa-manifest",
+      "area": "installability",
+      "description": "A valid web app manifest: name, icons (192, 512, maskable), start_url, scope, standalone display, theme and background colours; iOS home-screen tags.",
+      "how_verified": "Playwright reads the manifest from the served app and checks the fields and that every icon loads; Chromium reports the page installable",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "pwa-service-worker",
+      "area": "installability",
+      "description": "A service worker that caches the app shell and hashed assets and never caches /sonos, /fn, /img, the relay, sign-in responses or any request carrying Authorization.",
+      "how_verified": "unit tests of the worker's routing decision; Playwright checks registration and the cache contents after a session",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "pwa-update-flow",
+      "area": "installability",
+      "description": "A new version waits; the app's existing Update button appears and activating it reloads onto the new version. Nothing activates mid-session without the user.",
+      "bridge": ["onUpdateDownloaded", "installUpdate"],
+      "how_verified": "unit test of the bridge's update events; Playwright with two builds served in turn",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "pwa-offline",
+      "area": "installability",
+      "description": "Offline, the installed app opens to a clear offline screen instead of the browser's error page.",
+      "how_verified": "Playwright with the network offline",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "one-origin",
+      "area": "whole",
+      "description": "The browser only calls truetunes.tnapps.co.uk plus the third-party hosts that allow it (art CDNs, lrclib.net, our blob storage, Microsoft Graph and sign-in). The page's Content-Security-Policy enforces it.",
+      "how_verified": "CSP test; Playwright records every request host in the demo journey",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "session-stays-server-side",
+      "area": "whole",
+      "description": "The Sonos session never reaches the browser: the gateway strips Set-Cookie, refuses /api/auth and /fn/sonos-session, and the web bundle contains no session handling.",
+      "how_verified": "server unit tests; grep of the built web bundle; curl on production",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "desktop-unchanged",
+      "area": "whole",
+      "description": "The Electron app behaves as before: its suites are green, the main process is not restructured, and the desktop build output has no web-only code paths active.",
+      "how_verified": "`npm run typecheck`, `npm run test:run`, `npm run test:main`, `npm run build`; diff of src/ is empty or additive",
+      "passes": false,
+      "evidence": ""
+    },
+    {
+      "id": "deployed",
+      "area": "whole",
+      "description": "All of it is merged to main and deployed by the pipeline; https://truetunes.tnapps.co.uk/ serves the web app.",
+      "how_verified": "the deploy job's result per merge; the production checks and the journey test run against the live address",
+      "passes": false,
+      "evidence": ""
+    }
+  ]
+}

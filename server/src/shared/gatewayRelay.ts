@@ -52,17 +52,39 @@ export interface RelayDeps {
   log?: (msg: string) => void;
 }
 
+/** A browser cannot set headers on a WebSocket, so it offers its Entra ID token as this subprotocol value. */
+export const BEARER_PROTOCOL_PREFIX = 'bearer.';
+
+/** The token a browser offered as a `bearer.<token>` subprotocol, if any. */
+function tokenFromProtocols(offered: string | string[] | undefined): string | undefined {
+  const all = (Array.isArray(offered) ? offered.join(',') : (offered ?? '')).split(',');
+  const token = all
+    .map((p) => p.trim())
+    .find((p) => p.startsWith(BEARER_PROTOCOL_PREFIX))
+    ?.slice(BEARER_PROTOCOL_PREFIX.length);
+  return token || undefined;
+}
+
 /**
  * Who is opening the socket: the Entra token on the upgrade request, checked by `verify`. A null means
  * the upgrade is to be refused with 401 before any relay or Sonos socket exists. Fails closed.
+ *
+ * The desktop app sends `Authorization: Bearer <token>`. A browser sends the same token as a
+ * `bearer.<token>` entry in Sec-WebSocket-Protocol, beside the Sonos subprotocol: a request header like
+ * Authorization, so the token is in no URL. The server never selects that entry (see selectSubprotocol).
  */
 export async function authoriseUpgrade(
   headers: Record<string, string | string[] | undefined>,
   verify: Verify
 ): Promise<{ oid: string } | null> {
   const authorization = headers['authorization'];
+  let credential = typeof authorization === 'string' ? authorization : undefined;
+  if (credential === undefined) {
+    const token = tokenFromProtocols(headers['sec-websocket-protocol']);
+    if (token) credential = `Bearer ${token}`;
+  }
   try {
-    return await verify(typeof authorization === 'string' ? authorization : undefined);
+    return await verify(credential);
   } catch {
     return null;
   }
@@ -89,6 +111,11 @@ function findTicket(value: unknown, depth = 0): string | null {
     if (hit) return hit;
   }
   return null;
+}
+
+/** The subprotocol the gateway answers an upgrade with: Sonos's, or none (the upgrade fails). Never a bearer entry. */
+export function selectSubprotocol(offered: Set<string>): string | false {
+  return offered.has(SONOS_WS_PROTOCOL) ? SONOS_WS_PROTOCOL : false;
 }
 
 /** Close codes that may be put in a close frame (RFC 6455 section 7.4.1); 1005, 1006 and 1015 may not. */
