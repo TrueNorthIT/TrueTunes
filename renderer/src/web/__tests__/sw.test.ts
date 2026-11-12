@@ -167,6 +167,8 @@ describe('the service worker', () => {
     ['a Sonos API call', req('/sonos/api/groups/v1/households/x/groups')],
     ['a Sonos API call carrying the token', req('/sonos/api/x', { auth: true })],
     ['the relay path', req('/sonos/ws')],
+    ['the Web PubSub relay path', req('/pubsub/ws?username=Alex')],
+    ['anything else under /pubsub', req('/pubsub/nope')],
     ['a Functions call', req('/fn/stats?period=week')],
     ['an image through the gateway', req('/img?url=https%3A%2F%2Fwww.gstatic.com%2Fa.png')],
     ['the health check', req('/healthz')],

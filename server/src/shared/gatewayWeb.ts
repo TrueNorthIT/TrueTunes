@@ -175,7 +175,7 @@ export async function imageRoute(req: GatewayRequest, query: string, kit: WebRou
 }
 
 /** First path segments that belong to the API: a miss under them is a 404, never the app shell. */
-const RESERVED = new Set(['sonos', 'fn', 'img', 'healthz']);
+const RESERVED = new Set(['sonos', 'fn', 'img', 'pubsub', 'healthz']);
 /** Files a browser must revalidate every time, so a new deploy is seen at once. */
 const NO_CACHE = new Set(['/index.html', '/sw.js', '/manifest.webmanifest']);
 const SHELL = '/index.html';

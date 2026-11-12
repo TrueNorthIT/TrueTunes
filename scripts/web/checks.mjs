@@ -1,6 +1,6 @@
 // What the True Tunes web app's host must do for someone who is NOT signed in: serve the app shell with the
 // right cache headers, and refuse everything else. Safe to run against production: it only reads, and every
-// request it makes to /sonos, /fn, /img and the relay is one that must be refused.
+// request it makes to /sonos, /fn, /img and the relays is one that must be refused.
 //
 //   node scripts/web/checks.mjs https://truetunes.tnapps.co.uk          gateway only (no web app deployed yet)
 //   node scripts/web/checks.mjs https://truetunes.tnapps.co.uk --app    also the app shell and its assets
@@ -81,8 +81,17 @@ check(
   'the relay refuses a made-up token in the Authorization header (401)',
   (await upgrade('/sonos/ws', ['v1.api.smartspeaker.audio'], { Authorization: 'Bearer not.a.token' })) === 401
 );
+check(
+  'the pubsub relay refuses an upgrade with no token (401)',
+  (await upgrade('/pubsub/ws?username=check', ['json.webpubsub.azure.v1'])) === 401
+);
+check(
+  'the pubsub relay refuses a made-up token offered as a subprotocol (401)',
+  (await upgrade('/pubsub/ws?username=check', ['json.webpubsub.azure.v1', 'bearer.not.a.token'])) === 401
+);
 check('no other path upgrades (404)', (await upgrade('/other', ['v1.api.smartspeaker.audio'])) === 404);
-for (const path of ['/sonos/nope', '/assets/nope-000.js', '/.env', '/%2e%2e/package.json']) {
+check('/pubsub/nope does not upgrade (404)', (await upgrade('/pubsub/nope', ['json.webpubsub.azure.v1'])) === 404);
+for (const path of ['/sonos/nope', '/pubsub/nope', '/assets/nope-000.js', '/.env', '/%2e%2e/package.json']) {
   const res = await fetch(`${base}${path}`);
   check(`${path} is 404, not the app shell`, res.status === 404, String(res.status));
 }

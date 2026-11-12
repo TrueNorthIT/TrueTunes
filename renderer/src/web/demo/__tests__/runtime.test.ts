@@ -72,4 +72,28 @@ describe('installDemoRuntime', () => {
     undo();
     expect(window.WebSocket).toBe(real);
   });
+
+  it('refuses this origin’s gateway paths, including /pubsub, for fetch and for WebSocket', async () => {
+    const undo = installDemoRuntime();
+    try {
+      for (const path of [
+        '/sonos/api/x',
+        '/fn/attribution',
+        '/img?url=x',
+        '/pubsub/ws',
+        '/pubsub/ws?username=A',
+        '/pubsub',
+      ]) {
+        await expect(fetch(path)).rejects.toThrow(/Blocked by the demo/);
+        await expect(fetch(`${window.location.origin}${path}`)).rejects.toThrow(/Blocked by the demo/);
+      }
+      for (const path of ['/pubsub/ws', '/pubsub/ws?username=A%20B', '/sonos/ws']) {
+        const url = `${window.location.origin.replace(/^http/, 'ws')}${path}`;
+        expect(() => new WebSocket(url)).toThrow(/Blocked/);
+        expect(() => new WebSocket(path, ['json.webpubsub.azure.v1'])).toThrow(/Blocked/);
+      }
+    } finally {
+      undo();
+    }
+  });
 });

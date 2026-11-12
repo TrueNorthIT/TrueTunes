@@ -130,7 +130,9 @@ export function fakeAuth(over: Partial<Pick<FakeAuth, 'token' | 'signedIn' | 'gr
 export type Frame = [Record<string, unknown>, unknown];
 
 export class FakeWebSocket extends EventTarget {
+  /** The Sonos relay's sockets. The live attribution sockets (`/pubsub/ws`) are in `pubsub`, so tests of one never count the other. */
   static instances: FakeWebSocket[] = [];
+  static pubsub: FakeWebSocket[] = [];
   /** Called with every frame the app sends, to play the Sonos side. */
   static server: ((ws: FakeWebSocket, frame: Frame) => void) | null = null;
   static OPEN = 1;
@@ -142,13 +144,20 @@ export class FakeWebSocket extends EventTarget {
     readonly protocols?: string | string[]
   ) {
     super();
-    FakeWebSocket.instances.push(this);
+    (new URL(url, 'http://x').pathname === '/pubsub/ws' ? FakeWebSocket.pubsub : FakeWebSocket.instances).push(this);
   }
 
+  /** What the app sent: a Sonos frame is `[header, payload]`; a Web PubSub frame is an object (see `pubsubFrames`). */
   send(data: string): void {
     const frame = JSON.parse(data) as Frame;
     this.sent.push(frame);
+    if (!Array.isArray(frame)) return; // a Web PubSub frame: nothing plays the Sonos side
     FakeWebSocket.server?.(this, frame);
+  }
+
+  /** The Web PubSub frames the app sent, in order. */
+  get pubsubFrames(): Array<Record<string, unknown>> {
+    return this.sent as unknown as Array<Record<string, unknown>>;
   }
 
   close(): void {
@@ -247,6 +256,7 @@ export function makeBridge(
   localStorage.clear();
   for (const [k, v] of Object.entries(opts.storage ?? {})) localStorage.setItem(k, v);
   FakeWebSocket.instances = [];
+  FakeWebSocket.pubsub = [];
   FakeWebSocket.server = null;
   const auth = opts.auth ?? fakeAuth();
   const fake = new FakeFetch();

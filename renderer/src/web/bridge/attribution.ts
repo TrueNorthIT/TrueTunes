@@ -1,6 +1,7 @@
-// Office attribution ("who queued this?"). There is no Web PubSub connection in the browser for this release:
-// the map comes from /fn/attribution and the user's own queues are announced locally. `ingest` is where a live
-// event source plugs in later: hand it the events and the map and the listeners follow.
+// Office attribution ("who queued this?"). The map comes from /fn/attribution and the user's own queues are
+// announced locally and logged. The live part, other people's events arriving as they happen and our own going out,
+// is attributionSocket.ts (Web PubSub through the gateway): it hands events to `ingest`, and `publishQueued`
+// broadcasts through it. If that socket is down, nothing here depends on it.
 
 import { channel } from './events';
 import type { FnFetch } from './functions';
@@ -21,7 +22,54 @@ interface QueuedItem {
 /** What the server records: the renderer's AttributionEvent plus what the stats and the DJ read back. */
 type QueuedEvent = AttributionEvent & Omit<QueuedItem, 'eventType' | 'uri' | 'trackName' | 'artist'>;
 
-export function createAttribution(fn: FnFetch, userName: () => string | undefined) {
+const MAX_TEXT = 500;
+const FORBIDDEN_URIS = new Set(['__proto__', 'constructor', 'prototype']);
+const OPTIONAL_TEXT = ['serviceId', 'accountId', 'artistId', 'album', 'albumId', 'imageUrl'] as const;
+
+/**
+ * An event from another client is untrusted: any signed-in colleague can send any frame. Returns a copy holding
+ * only the known fields, strings capped at 500 characters, or null when it is not a usable queued event. A
+ * well-formed desktop event passes through unchanged.
+ */
+export function cleanLiveEvent(raw: unknown): AttributionEvent | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const e = raw as Record<string, unknown>;
+  const { type, eventType, uri, user, timestamp } = e;
+  if (type !== 'queued' || typeof uri !== 'string' || !uri || uri.length > MAX_TEXT || FORBIDDEN_URIS.has(uri)) {
+    return null;
+  }
+  if (typeof user !== 'string' || typeof timestamp !== 'number' || !Number.isFinite(timestamp)) return null;
+  if (eventType !== undefined && eventType !== 'track' && eventType !== 'album') return null;
+  const text = (v: unknown): string | null | undefined =>
+    v === undefined ? undefined : typeof v === 'string' ? v.slice(0, MAX_TEXT) : null;
+  const trackName = text(e['trackName']) ?? '';
+  const artist = text(e['artist']) ?? '';
+  const extras: Record<string, string> = {};
+  for (const key of OPTIONAL_TEXT) {
+    const v = text(e[key]);
+    if (v === null) return null;
+    if (v !== undefined) extras[key] = v;
+  }
+  if (e['trackName'] !== undefined && typeof e['trackName'] !== 'string') return null;
+  if (e['artist'] !== undefined && typeof e['artist'] !== 'string') return null;
+  return {
+    type,
+    ...(eventType ? { eventType } : {}),
+    user: user.slice(0, MAX_TEXT),
+    uri,
+    trackName,
+    artist,
+    ...extras,
+    timestamp,
+  };
+}
+
+export function createAttribution(
+  fn: FnFetch,
+  userName: () => string | undefined,
+  /** Tells the office live (attributionSocket.ts); does nothing when there is no connection. */
+  broadcast: (event: AttributionEvent) => void = () => {}
+) {
   let map: AttributionMap = {};
   const maps = channel<AttributionMap>();
   const events = channel<AttributionEvent>({ sticky: false });
@@ -79,8 +127,9 @@ export function createAttribution(fn: FnFetch, userName: () => string | undefine
     },
 
     /** An event from elsewhere (a live source): updates the map, then tells the listeners. */
-    ingest(event: AttributionEvent): void {
-      if (event.type !== 'queued' || !event.uri) return;
+    ingest(raw: AttributionEvent): void {
+      const event = cleanLiveEvent(raw);
+      if (!event) return;
       record(event);
       events.emit(event);
     },
@@ -104,6 +153,7 @@ export function createAttribution(fn: FnFetch, userName: () => string | undefine
           timestamp: Date.now(),
         };
         record(logged);
+        broadcast(logged);
         logEvent(logged);
       }
       // The user's own attribution goes back to the listeners at once; nothing would echo it.

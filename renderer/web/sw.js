@@ -5,7 +5,7 @@
 // What it does:
 //   - keeps the app shell (index.html, the manifest, the icons) and hashed /assets/ files, so the installed app
 //     opens at once and opens offline;
-//   - nothing else. It never answers or stores a request to /sonos, /fn, /img, /healthz or /auth, a request to
+//   - nothing else. It never answers or stores a request to /sonos, /fn, /img, /pubsub, /healthz or /auth, a request to
 //     another origin, a request that is not a GET, or any request carrying Authorization. Those go to the
 //     network untouched, every time.
 //   - a new version installs beside the running one and WAITS. It takes over when the page says so (the app's
@@ -20,7 +20,7 @@ const BUILD = /*__BUILD__*/ { id: 'dev', version: 'dev', shell: [] };
 const CACHE = `true-tunes-${BUILD.id}`;
 const SHELL = '/index.html';
 /** Paths that are the API, the relay or the way back from sign-in: never ours to answer. */
-const NEVER = /^\/(sonos|fn|img|healthz|auth)(\/|$)/;
+const NEVER = /^\/(sonos|fn|img|pubsub|healthz|auth)(\/|$)/;
 
 /**
  * What to do with a request: 'shell' (a page load: the cached app shell), 'asset' (a hashed build file: cache
