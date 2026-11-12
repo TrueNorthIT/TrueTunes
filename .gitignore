@@ -160,3 +160,12 @@ server/dist-test/
 # Storybook static build
 storybook-static/
 .claude/worktrees/
+
+# Terraform
+infra/**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+*.tfplan
