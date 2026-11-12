@@ -6,16 +6,16 @@
       "area": "gateway",
       "description": "The gateway serves the built web app's files: `/` and unknown extension-less paths give index.html (SPA fallback), files under the web root are served with their type, nothing outside the root can be read, and reserved prefixes (/sonos, /fn, /img, /healthz) never fall through to it.",
       "how_verified": "server unit tests (gatewayStatic.test.ts, gatewayHttp.test.ts); then curl against production",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`node scripts/web/checks.mjs https://truetunes.tnapps.co.uk --pwa`: 48 of 48 PASS on 12 Nov 2026, after the deploy of e51798b (#265, Publish run 43301237597): / , /demo and /auth/redirect serve the shell; missing files, dot-files and traversal are 404; /sonos/nope is 404. Unit: server gatewayWeb.test.ts, gatewayNode.test.ts."
     },
     {
       "id": "gw-cache-headers",
       "area": "gateway",
       "description": "index.html, the service worker and the manifest are served `no-cache`; hashed files under /assets/ are `public, max-age=31536000, immutable`.",
       "how_verified": "server unit tests; `curl -sI` of each on production",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`node scripts/web/checks.mjs https://truetunes.tnapps.co.uk --pwa`: 48 of 48 PASS on 12 Nov 2026, after the deploy of e51798b (#265, Publish run 43301237597): the shell, the manifest and sw.js are `no-cache`; every /assets file the shell names is `public, max-age=31536000, immutable`."
     },
     {
       "id": "gw-fn",
@@ -62,16 +62,16 @@
       "area": "scaffold",
       "description": "A web build of the renderer (`npm run build:web`) from the same components, with its own entry and index.html; the pipeline builds it and ships it inside the gateway zip. The Electron build is unchanged.",
       "how_verified": "`npm run build:web` and `npm run build` both succeed; the deploy job's log; production serves the app shell",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`npm run build:web` and `npm run build` both succeed locally and in `validate` on #265 (typecheck, lint, format, both builds, 2,142 renderer tests, the journeys and pwa.mjs in Chromium). The deploy job shipped the validate artifact; production serves the shell (12 Nov 2026, after the deploy of e51798b (#265, Publish run 43301237597))."
     },
     {
       "id": "web-bridge-contract",
       "area": "scaffold",
       "description": "A browser implementation of `window.sonos` that satisfies the whole SonosPreload type, chosen at start-up when there is no Electron preload.",
       "how_verified": "`npm run typecheck` (fails if a method is missing); unit tests of the bridge",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`npm run typecheck` passes (WebBridge extends SonosPreload). `npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files)."
     },
     {
       "id": "web-electron-only-hidden",
@@ -93,16 +93,16 @@
         "setQueueDockedWidth"
       ],
       "how_verified": "unit test of the web bridge's no-ops; screenshot of the web shell with no window controls",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (app.test.ts: the no-ops). Screenshot of /demo at 1280x800 on 12 Nov: no window buttons, no mini-player button; reproduce with `node scripts/web/journey.mjs --local --width 1280 --height 800 --shots <dir>`. Media-key integration is off on the web (useMediaSession)."
     },
     {
       "id": "web-demo-route",
       "area": "scaffold",
       "description": "/demo runs the whole app against the bundled mock backend: lazy-loaded, no sign-in, labelled as a demo, with playback, volume and queue changes simulated in memory. It never calls /sonos, /fn or the relay.",
       "how_verified": "Playwright journey test against the local gateway and against production, asserting no request leaves for /sonos, /fn or the relay",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`node scripts/web/journey.mjs https://truetunes.tnapps.co.uk` at 390x844 and 1280x800: all steps PASS on 12 Nov 2026, after the deploy of e51798b (#265, Publish run 43301237597), including \"the demo made no request to /sonos, /fn, /img, the relay or another host\". Same against the local gateway in `validate` on #265 (typecheck, lint, format, both builds, 2,142 renderer tests, the journeys and pwa.mjs in Chromium). Journeys beyond pause/resume are added with the phone shell."
     },
     {
       "id": "web-sign-in",
@@ -110,8 +110,8 @@
       "description": "Sign-in with @azure/msal-browser, redirect flow, cache in localStorage, on the existing app registration and one of its registered redirect addresses. Sign out and switch account work.",
       "bridge": ["getEntraUser", "entraSignOut", "entraReLogin", "onEntraReady"],
       "how_verified": "unit tests with a fake MSAL client; Playwright reaches the Microsoft sign-in page with the right client id and redirect_uri. A real sign-in needs the owner.",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (auth.test.ts, fake MSAL). Playwright on production: the Sign in button lands on login.microsoftonline.com with redirect_uri=https://truetunes.tnapps.co.uk/auth/redirect and no error. The owner signed in for real on production on 12 Nov 2026 and reported that it works."
     },
     {
       "id": "web-auth-state",
@@ -119,8 +119,8 @@
       "description": "The app's ready, expired and failed states on the web: ready once signed in and the relay is up, failed (with Retry) when the gateway refuses the token.",
       "bridge": ["onAuthReady", "onAuthExpired", "onAuthFailed", "retrySonosAuth"],
       "how_verified": "unit tests of the bridge",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (session.test.ts \"start and the auth state\", sonosHttp.test.ts \"401\", review.test.ts)."
     },
     {
       "id": "web-display-name",
@@ -128,8 +128,8 @@
       "description": "The display name: looked up from the profile for this Entra account, claimed, kept in localStorage, and changeable.",
       "bridge": ["getDisplayName", "setDisplayName", "renameUser"],
       "how_verified": "unit tests of the bridge's request mapping",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (session.test.ts \"identity\", functions.test.ts \"renameUser\", review.test.ts: one name per account)."
     },
     {
       "id": "web-fn-reads",
@@ -153,8 +153,8 @@
         "pollAdminList"
       ],
       "how_verified": "unit tests asserting each call's method, path and query against the desktop's (src/ipc/functions.ts)",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (functions.test.ts: a 38-row request table against src/ipc/functions.ts). An independent review compared every call with the desktop."
     },
     {
       "id": "web-fn-writes",
@@ -181,8 +181,8 @@
         "reportTrackMeta"
       ],
       "how_verified": "unit tests asserting method, path and body against a fake fetch. Never run against production.",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (functions.test.ts). Never run against production."
     },
     {
       "id": "web-attribution",
@@ -190,8 +190,8 @@
       "description": "Who queued what: the map is loaded from /fn/attribution and refreshed when the queue changes; queueing publishes the event (/fn/log-event) and shows the badge at once.",
       "bridge": ["publishQueued", "refreshAttribution", "onAttributionMap", "onAttributionEvent"],
       "how_verified": "unit tests of the bridge; demo journey shows queued-by badges",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (session.test.ts \"attribution\"). Badges in the demo: the queue shows who queued each track (journey screenshots)."
     },
     {
       "id": "web-office-presence",
@@ -199,8 +199,8 @@
       "description": "Office presence from Microsoft Graph for the Discover room. Falls back to 'none' (the room is inferred from recent queueing) when there is no consent.",
       "bridge": ["fetchOfficePresence"],
       "how_verified": "unit test of the fallback and of the Graph mapping",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (presence.test.ts: the desktop's resolveRoster tests ported, batching, the no-consent fallback)."
     },
     {
       "id": "web-dj-autoplay",
@@ -208,8 +208,8 @@
       "description": "The DJ (autoplay) works on the web as on the desktop: the upcoming picks, the on/off switch, and the coordinator's filler position, so people's picks go in front of the DJ's. The web client takes part in the 30-second enqueue lease like any other client.",
       "bridge": ["djAutoplay"],
       "how_verified": "unit test: the web bridge sends the same request as the desktop (src/ipc/functions.ts)",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (functions.test.ts: djAutoplay and fetchDjSet send the desktop's requests)."
     },
     {
       "id": "web-sonos-http",
@@ -217,8 +217,8 @@
       "description": "Sonos reads through /sonos/api: every operationId the renderer uses maps to the same method and path as the desktop, with household, service, group and queue ids filled in, GETs retried on 5xx, and the default music service discovered and self-healed.",
       "bridge": ["fetch", "setQueueId"],
       "how_verified": "unit tests: URL building per operation, retry, discovery; a test that the operation table matches src/sonos-api.ts",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (sonosHttp.test.ts: the operation table diffed against src/sonos-api.ts, URL building, headers, retries, 401, discovery, self-heal)."
     },
     {
       "id": "web-sonos-relay",
@@ -226,8 +226,8 @@
       "description": "Live state over the relay: connect with the token subprotocol, bootstrap (household, devices, subscriptions), groups, playback and volume pushes for the active group only, reconnect with backoff, resync.",
       "bridge": ["onWsMessage", "onWsReady", "onWsGroups", "getActiveGroup", "setGroup", "refreshPlayback", "resync"],
       "how_verified": "unit tests against a fake WebSocket that plays Sonos's side",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (sonosSocket.test.ts against a fake WebSocket: bootstrap order, group restore, active-group filtering, sticky replay, backoff, refused-token refresh, stop). Not yet confirmed with a signed-in session by the owner."
     },
     {
       "id": "web-sonos-commands",
@@ -264,8 +264,8 @@
       "description": "Artwork: hosts that allow it are fetched directly; the rest go through /img (or /sonos/api for Sonos-hosted art).",
       "bridge": ["fetchImage"],
       "how_verified": "unit tests of the routing",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (app.test.ts \"fetchImage\": play.sonos.com through /sonos, everything else through /img)."
     },
     {
       "id": "web-genius-off",
@@ -282,8 +282,8 @@
       "description": "Version, 'new version' changelog prompt, external links (a new tab) and telemetry (a no-op on the web for this release).",
       "bridge": ["getVersion", "isNewVersion", "openExternal", "trackEvent"],
       "how_verified": "unit tests of the bridge",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (app.test.ts)."
     },
     {
       "id": "phone-shell",
@@ -426,16 +426,16 @@
       "area": "installability",
       "description": "A valid web app manifest: name, icons (192, 512, maskable), start_url, scope, standalone display, theme and background colours; iOS home-screen tags.",
       "how_verified": "Playwright reads the manifest from the served app and checks the fields and that every icon loads; Chromium reports the page installable",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`node scripts/web/checks.mjs https://truetunes.tnapps.co.uk --pwa`: 48 of 48 PASS on 12 Nov 2026, after the deploy of e51798b (#265, Publish run 43301237597) (name, standalone, start_url and scope /, 192 and 512 icons and a maskable one, every icon loads). Chromium on production: 0 manifest errors, 0 installability errors."
     },
     {
       "id": "pwa-service-worker",
       "area": "installability",
       "description": "A service worker that caches the app shell and hashed assets and never caches /sonos, /fn, /img, the relay, sign-in responses or any request carrying Authorization.",
       "how_verified": "unit tests of the worker's routing decision; Playwright checks registration and the cache contents after a session",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (sw.test.ts: 13 kinds of request left to the network with nothing stored). `node scripts/web/pwa.mjs` in `validate` on #265 (typecheck, lint, format, both builds, 2,142 renderer tests, the journeys and pwa.mjs in Chromium). Production after a visit: the worker controls the page and the cache holds nothing outside the shell, manifest, icons and /assets."
     },
     {
       "id": "pwa-update-flow",
@@ -443,32 +443,32 @@
       "description": "A new version waits; the app's existing Update button appears and activating it reloads onto the new version. Nothing activates mid-session without the user.",
       "bridge": ["onUpdateDownloaded", "installUpdate"],
       "how_verified": "unit test of the bridge's update events; Playwright with two builds served in turn",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`node scripts/web/pwa.mjs` (locally and in `validate` on #265 (typecheck, lint, format, both builds, 2,142 renderer tests, the journeys and pwa.mjs in Chromium)): a second build installs and waits, the page stays on the old version and shows Update, the button activates it and reloads, in a window that began with no worker, and a second open window follows."
     },
     {
       "id": "pwa-offline",
       "area": "installability",
       "description": "Offline, the installed app opens to a clear offline screen instead of the browser's error page.",
       "how_verified": "Playwright with the network offline",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`node scripts/web/pwa.mjs` (locally and in `validate` on #265 (typecheck, lint, format, both builds, 2,142 renderer tests, the journeys and pwa.mjs in Chromium)): offline, / shows the offline screen with Try again, and /demo opens from the cache."
     },
     {
       "id": "one-origin",
       "area": "whole",
       "description": "The browser only calls truetunes.tnapps.co.uk plus the third-party hosts that allow it (art CDNs, lrclib.net, our blob storage, Microsoft Graph and sign-in). The page's Content-Security-Policy enforces it.",
       "how_verified": "CSP test; Playwright records every request host in the demo journey",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (csp.test.ts pins connect-src). Production: before sign-in the page calls only truetunes.tnapps.co.uk; the demo journey fails on any other host and passes."
     },
     {
       "id": "session-stays-server-side",
       "area": "whole",
       "description": "The Sonos session never reaches the browser: the gateway strips Set-Cookie, refuses /api/auth and /fn/sonos-session, and the web bundle contains no session handling.",
       "how_verified": "server unit tests; grep of the built web bundle; curl on production",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "Server tests (585): Set-Cookie stripped, /api/auth refused, /fn/sonos-session refused in ten spellings. Production: /fn/sonos-session is 404 in four spellings. The built web bundle has no \"session-token\", \"next-auth\" or \"__Secure\" strings (grep on 12 Nov)."
     },
     {
       "id": "desktop-unchanged",
@@ -484,7 +484,7 @@
       "description": "All of it is merged to main and deployed by the pipeline; https://truetunes.tnapps.co.uk/ serves the web app.",
       "how_verified": "the deploy job's result per merge; the production checks and the journey test run against the live address",
       "passes": false,
-      "evidence": ""
+      "evidence": "#264 (gateway) and #265 (web app) are merged and deployed; 12 Nov 2026, after the deploy of e51798b (#265, Publish run 43301237597). https://truetunes.tnapps.co.uk/ serves the web app. The phone shell is not merged yet."
     }
   ]
 }
