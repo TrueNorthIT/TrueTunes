@@ -11,17 +11,25 @@ once the named check has run). This file says where the work stands and why thin
 
 | # | Piece | Branch / PR | State |
 | --- | --- | --- | --- |
-| 1 | Gateway: static hosting, `/fn`, `/img`, browser auth for the relay | `feature/pwa-gateway` | in progress |
-| 2 | Web scaffold: web build, browser bridge, demo route | | not started |
-| 3 | Sign-in and our Functions through `/fn` | | not started |
-| 4 | Sonos reads through the gateway | | not started |
-| 5 | Sonos commands (mock only) | | not started |
-| 6 | Phone layout | | not started |
-| 7 | Installability | | not started |
+| 1 | Gateway: static hosting, `/fn`, `/img`, browser auth for the relay | #264 | merged, deployed, verified on production (12 Nov 2026) |
+| 2 | Web scaffold: web build, browser bridge, demo route | `feature/pwa-web` | built and reviewed; pull request next |
+| 3 | Sign-in and our Functions through `/fn` | `feature/pwa-web` (in the bridge) | built; sign-in reaches Microsoft's page; a real sign-in needs the owner |
+| 4 | Sonos reads through the gateway | `feature/pwa-web` (in the bridge) | built, unit-tested against fakes; live check needs a signed-in person |
+| 5 | Sonos commands (mock only) | `feature/pwa-web` (bridge and demo) | built; frames unit-tested; controls exercised in the demo |
+| 6 | Phone layout | `feature/pwa-phone` (an agent, in its own worktree) | in progress |
+| 7 | Installability | `feature/pwa-web` | built; `scripts/web/pwa.mjs` passes locally |
+
+Pieces 2 to 5 and 7 ship as one pull request from `feature/pwa-web`: the bridge covers sign-in, reads and commands
+together, and none of it is reachable until the web build is deployed.
 
 ## Next
 
-Piece 1: merge the pull request, watch the deploy, run the production checks for the `gw-*` entries. Then piece 2.
+1. Open the pull request for `feature/pwa-web`, merge when `validate` is green, watch `deploy`, then run
+   `node scripts/web/checks.mjs https://truetunes.tnapps.co.uk --pwa` and
+   `node scripts/web/journey.mjs https://truetunes.tnapps.co.uk` (phone and 1280x800).
+2. Review the phone shell branch (`feature/pwa-phone`): screenshots at 390x844 and 1280x800, the extended journey,
+   then its own pull request.
+3. Update `features.json` with the evidence from each, and write the final report.
 
 ## Decisions, and why
 
@@ -118,9 +126,52 @@ shell instead of `SkinnyShell`. The desktop app keeps skinny mode untouched.
   whole shell. No new colours.
 - **The desktop browser** (1,144px and wider) gets the desktop layout unchanged, minus the window buttons.
 
+### Bridge and entry (pieces 2 to 5)
+
+- **Two independent reviews shaped the bridge.** The first pass (an agent, tests first, 239 tests) mirrored the
+  desktop; a second agent compared it with `src/` line by line and found no wrong frame, path or payload, but did
+  find: a group switch lost when localStorage is blocked (commands would have gone to the wrong speakers), token
+  expiry never reaching the user, the display name not tied to the account, the wrong account picked when two are
+  cached, and a resync that restarted a stopped relay. All fixed, with tests (282 in `renderer/src/web`).
+- **"Expired" versus "failed".** The bridge fires both when the gateway refuses or Sonos is down, as the desktop does.
+  The web entry shows the sign-in screen only when there is really no token (`auth.idToken()` is null); otherwise
+  the app's own Retry state handles it.
+- **The display name is stored per account** (`tt.displayName.<oid>`), unlike the desktop's single name.
+- **MSAL 5 redirect flow.** `redirectUri` is `<origin>/auth/redirect`; the gateway serves the app shell there and
+  `auth.init()` runs `handleRedirectPromise()` before React or the router exists, so the `#code=...` fragment never
+  meets the HashRouter. MSAL then returns to the page the sign-in started from.
+- **Media-key integration is off on the web.** The desktop's silent audio loop and OS play/pause handlers
+  (`useMediaSession`) would put True Tunes on a phone's lock screen, where a headphone button or an incoming call
+  could pause the office's speakers.
+- **No changelog on the web.** "What's new" reads the desktop releases from api.github.com, which is not on the
+  one-origin list, so the button and the new-version prompt are hidden.
+
+### Installability (piece 7)
+
+- **The service worker is hand-written** (`renderer/web/sw.js`, about 90 lines), not a library: the rules about what
+  must never be cached are the whole point, and one `route()` function states them. The build fills in its id,
+  version and file list (`serviceWorker()` in `vite.web.config.ts`).
+- **The shell is cache-first.** An installed version stays whole (its shell and its own hashed files) until the user
+  presses Update or every window of it has closed, so a deploy never leaves a running page asking the server for a
+  file that no longer exists. Scripts, styles and fonts are stored at install for the same reason.
+- **Update flow.** A new worker installs and waits. `renderer/src/web/updates.ts` turns that into the bridge's
+  `onUpdateDownloaded`; the existing Update button calls `installUpdate`, which tells the worker to take over and
+  the page reloads. Other open windows follow the new worker. The page asks for a new version every 15 minutes and
+  when it becomes visible. The demo gets the same button, which is how the flow is tested.
+- **Offline.** Opened with no connection, the entry shows an offline screen (from the cached shell) with Try again,
+  and reloads itself when the connection returns. The demo works offline.
+- **Icons** are the desktop app's icon at 192, 512 and 180 (iOS); its mark sits inside the maskable safe zone, so
+  the 512 doubles as the maskable icon.
+
 ## Things a reader might not expect
 
-(Filled in as they happen.)
+- **A shell with `NODE_ENV=development` builds a development web app**, which has no service worker. Claude Code's
+  shell sets it; CI does not. Local production builds need `NODE_ENV=production npm run build:web`.
+- **The local gateway keeps the web app's files in memory**, so it must be restarted after a rebuild.
+- **`/fn` needs a sign-in even for read functions** that are anonymous when the desktop calls the Function App
+  directly.
+- **The pipeline's `deploy` job now needs the `web-app` artifact from `validate`** of the same run, and refuses to
+  zip the gateway without `server/web/index.html`.
 
 ## Waiting for the owner
 
