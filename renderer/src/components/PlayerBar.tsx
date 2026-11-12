@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { isWeb } from '../lib/platform';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getActiveProvider } from '../providers';
 import { useNowPlaying } from '../hooks/useNowPlaying';
@@ -369,9 +370,12 @@ export function PlayerBar({ isAuthed, playback, onShuffle }: Props) {
           >
             <MicVocal size={14} />
           </button>
-          <button className={styles.ctrl} onClick={() => void window.sonos.openMiniPlayer()} title="Mini player">
-            <PictureInPicture2 size={14} />
-          </button>
+          {/* The mini player is its own always-on-top window: Electron only. */}
+          {!isWeb() && (
+            <button className={styles.ctrl} onClick={() => void window.sonos.openMiniPlayer()} title="Mini player">
+              <PictureInPicture2 size={14} />
+            </button>
+          )}
         </div>
       </div>
     </div>

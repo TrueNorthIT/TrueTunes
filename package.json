@@ -14,6 +14,8 @@
     "build:native": "node-gyp rebuild --directory native/smtc",
     "build:renderer": "vite build --config renderer/vite.config.ts",
     "build": "npm run build:main && npm run build:renderer",
+    "build:web": "vite build --config renderer/vite.web.config.ts",
+    "dev:web": "vite --config renderer/vite.web.config.ts",
     "dev:renderer": "vite --config renderer/vite.config.ts",
     "dev": "npm run build:main && concurrently -k \"npm run dev:renderer\" \"electron . --remote-debugging-port=9333\"",
     "start": "npm run build && electron .",

@@ -39,6 +39,7 @@ import { usePrefetchNextLyrics } from './hooks/usePrefetchNextLyrics';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Splash } from './components/Splash';
 import { effectiveDockedWidth } from './lib/queueWidth';
+import { isWeb } from './lib/platform';
 
 import styles from './styles/App.module.css';
 
@@ -154,7 +155,7 @@ const MainApp = memo(function MainApp() {
     window.sonos
       .isNewVersion()
       .then((isNew) => {
-        if (isNew) setChangelogOpen(true);
+        if (isNew && !isWeb()) setChangelogOpen(true);
       })
       .catch(() => {});
   }, [isAuthed, groups.length]);
