@@ -2,12 +2,18 @@
 // localStorage, the scopes of the desktop's auth-entra.ts. Everything that is ours is here; the library sits
 // behind the small MsalClient interface so tests can fake it.
 
-import { createStandardPublicClientApplication, type AccountInfo } from '@azure/msal-browser';
+import { CacheLookupPolicy, createStandardPublicClientApplication, type AccountInfo } from '@azure/msal-browser';
 import type { WebAuth } from './types';
 
 const SCOPES = ['openid', 'profile', 'email'];
 /** An ID token this close to its own expiry is refreshed: MSAL's silent flow only looks at the access token's. */
 const REFRESH_WITHIN_MS = 5 * 60_000;
+/**
+ * Cache, then the refresh token, and stop there. MSAL's default goes on to a hidden iframe when the refresh token
+ * has expired (about daily in a browser); that cannot work here (the page's policy allows no frames, and it would
+ * need a bridge page), so it would only hang for ten seconds before the sign-in screen appears anyway.
+ */
+const SILENT = { cacheLookupPolicy: CacheLookupPolicy.AccessTokenAndRefreshToken } as const;
 
 /** The part of MSAL's PublicClientApplication this module uses. */
 export interface MsalClient {
@@ -19,6 +25,7 @@ export interface MsalClient {
     scopes: string[];
     account: AccountInfo;
     forceRefresh?: boolean;
+    cacheLookupPolicy?: CacheLookupPolicy;
   }): Promise<{ idToken: string; accessToken: string; idTokenClaims?: object }>;
   loginRedirect(request: { scopes: string[]; prompt?: string }): Promise<void>;
   /** Clears the account and its tokens from this browser's cache, without navigating. */
@@ -61,7 +68,7 @@ export function createMsalAuth(
   /** Concurrent callers that all need a forced refresh share one request. */
   let forcing: ReturnType<MsalClient['acquireTokenSilent']> | null = null;
   const forceRefresh = (c: MsalClient, a: AccountInfo) => {
-    forcing ??= c.acquireTokenSilent({ scopes: SCOPES, account: a, forceRefresh: true }).finally(() => {
+    forcing ??= c.acquireTokenSilent({ scopes: SCOPES, account: a, forceRefresh: true, ...SILENT }).finally(() => {
       forcing = null;
     });
     return forcing;
@@ -103,7 +110,7 @@ export function createMsalAuth(
       try {
         let result = opts?.forceRefresh
           ? await forceRefresh(client, account)
-          : await client.acquireTokenSilent({ scopes: SCOPES, account, forceRefresh: false });
+          : await client.acquireTokenSilent({ scopes: SCOPES, account, forceRefresh: false, ...SILENT });
         if (!opts?.forceRefresh && expiryMs(result.idTokenClaims) - Date.now() < REFRESH_WITHIN_MS) {
           result = await forceRefresh(client, account);
         }
@@ -116,7 +123,7 @@ export function createMsalAuth(
     async graphToken(scopes) {
       if (!client || !account) return null;
       try {
-        return (await client.acquireTokenSilent({ scopes, account })).accessToken || null;
+        return (await client.acquireTokenSilent({ scopes, account, ...SILENT })).accessToken || null;
       } catch {
         return null;
       }

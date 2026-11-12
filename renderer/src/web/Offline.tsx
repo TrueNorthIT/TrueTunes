@@ -2,8 +2,13 @@ import { useEffect } from 'react';
 import { PillButton } from '../components/common/PillButton';
 import styles from './SignIn.module.css';
 
-/** Shown when the app opens with no connection: the office's speakers cannot be reached from here. */
-export function Offline() {
+interface Props {
+  /** 'offline': no connection. 'failed': the app could not start (a file would not load, say). */
+  reason?: 'offline' | 'failed';
+}
+
+/** Shown in place of the app when it cannot start: no connection, or a start-up failure. Never a blank page. */
+export function Offline({ reason = 'offline' }: Props) {
   // Back online: straight into the app.
   useEffect(() => {
     const reload = () => location.reload();
@@ -16,7 +21,9 @@ export function Offline() {
       <div className={styles.inner}>
         <h1 className={styles.name}>True Tunes</h1>
         <p className={styles.line} role="status">
-          You&rsquo;re offline. True Tunes needs a connection to reach the office.
+          {reason === 'offline'
+            ? 'You’re offline. True Tunes needs a connection to reach the office.'
+            : 'True Tunes couldn’t start. Check your connection and try again.'}
         </p>
         <PillButton variant="primary" className={styles.button} onClick={() => location.reload()}>
           Try again

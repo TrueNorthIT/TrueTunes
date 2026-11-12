@@ -27,8 +27,14 @@ export function createUpdates(): UpdateSource {
   const sw = 'serviceWorker' in navigator ? navigator.serviceWorker : null;
   // Not in dev: the dev server's modules must never be cached.
   if (sw && import.meta.env.PROD) {
-    // If another window takes the update, this one's cached files go with the old version: follow it.
-    if (sw.controller) sw.addEventListener('controllerchange', () => location.reload());
+    // When a new worker takes over (this window's Update button, or another window's), the old version's cached
+    // files go with it: reload onto the new one. A page that started with no worker gets its first one from the
+    // very first install, which replaces nothing, so that one change is let pass.
+    let controlled = !!sw.controller;
+    sw.addEventListener('controllerchange', () => {
+      if (controlled) location.reload();
+      controlled = true;
+    });
 
     const announce = (worker: ServiceWorker) => {
       // The very first install replaces nothing, so it is not an update.
@@ -43,14 +49,16 @@ export function createUpdates(): UpdateSource {
     void sw
       .register('/sw.js')
       .then((registration) => {
-        if (registration.waiting) announce(registration.waiting);
-        registration.addEventListener('updatefound', () => {
-          const next = registration.installing;
+        const watch = (next: ServiceWorker | null) =>
           next?.addEventListener('statechange', () => {
             if (next.state === 'installed') announce(next);
           });
-        });
+        if (registration.waiting) announce(registration.waiting);
+        // One may already be installing when the registration resolves.
+        watch(registration.installing);
+        registration.addEventListener('updatefound', () => watch(registration.installing));
         const check = () => void registration.update().catch(() => {});
+        check();
         setInterval(check, CHECK_EVERY_MS);
         document.addEventListener('visibilitychange', () => {
           if (document.visibilityState === 'visible') check();

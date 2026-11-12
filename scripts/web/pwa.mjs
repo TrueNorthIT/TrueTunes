@@ -119,7 +119,27 @@ await check('offline, the demo still opens from the cache', async () => {
 });
 
 // ── a second version ships ──
-const before = await controllerVersion();
+// Two windows of a brand-new visitor: the first loads before any worker exists (the case where a page gets its
+// worker mid-session), the second after. The update must reload both.
+const visitor = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+const first = await visitor.newPage();
+await first.goto(`${base}/demo`);
+await first.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 15000 });
+const second = await visitor.newPage();
+await second.goto(`${base}/demo`);
+await second.waitForFunction(() => document.body.innerText.includes('Crooked Shoreline'), null, { timeout: 20000 });
+const versionOn = (p) =>
+  p.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const channel = new MessageChannel();
+        channel.port1.onmessage = (e) => resolve(e.data);
+        navigator.serviceWorker.controller.postMessage('version', [channel.port2]);
+        setTimeout(() => resolve('no answer'), 3000);
+      })
+  );
+const before = await versionOn(first);
+
 await stopGateway();
 const swPath = path.join(webRoot, 'sw.js');
 writeFileSync(
@@ -131,30 +151,38 @@ writeFileSync(
 await startGateway();
 
 await check('a new version installs and waits: the page stays on the old one and shows Update', async () => {
-  await page.evaluate(async () => (await navigator.serviceWorker.getRegistration()).update());
-  await page.getByRole('button', { name: 'Update' }).waitFor({ timeout: 15000 });
-  const still = await controllerVersion();
+  await first.evaluate(async () => (await navigator.serviceWorker.getRegistration()).update());
+  await first.getByRole('button', { name: 'Update' }).waitFor({ timeout: 15000 });
+  const still = await versionOn(first);
   assert(still === before, `the page moved to ${still} without being asked`);
-  const waiting = await page.evaluate(async () => !!(await navigator.serviceWorker.getRegistration()).waiting);
+  const waiting = await first.evaluate(async () => !!(await navigator.serviceWorker.getRegistration()).waiting);
   assert(waiting, 'no worker is waiting');
   return `still on ${still}`;
 });
 
-await check('the Update button activates the new version and reloads onto it', async () => {
-  await Promise.all([
-    page.waitForEvent('load', { timeout: 15000 }),
-    page.getByRole('button', { name: 'Update' }).click(),
-  ]);
-  await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 15000 });
-  const now = await controllerVersion();
-  assert(now === '99.0.0', `expected 99.0.0, the page is on ${now}`);
-  await seesNowPlaying();
-  const caches_ = await page.evaluate(() => caches.keys());
-  assert(
-    caches_.length === 1 && caches_[0] === 'true-tunes-second000000',
-    `old caches left behind: ${caches_.join(', ')}`
-  );
-  return `now on ${now}`;
+await check(
+  'the Update button activates the new version and reloads onto it, in a window that began with no worker',
+  async () => {
+    const reloadedSecond = second.waitForEvent('load', { timeout: 15000 });
+    await Promise.all([
+      first.waitForEvent('load', { timeout: 15000 }),
+      first.getByRole('button', { name: 'Update' }).click(),
+    ]);
+    await first.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 15000 });
+    const now = await versionOn(first);
+    assert(now === '99.0.0', `expected 99.0.0, the page is on ${now}`);
+    await first.waitForFunction(() => document.body.innerText.includes('Crooked Shoreline'), null, { timeout: 20000 });
+    const names = await first.evaluate(() => caches.keys());
+    assert(names.length === 1 && names[0] === 'true-tunes-second000000', `old caches left behind: ${names.join(', ')}`);
+    await reloadedSecond;
+    return `now on ${now}`;
+  }
+);
+
+await check('the other open window follows onto the new version', async () => {
+  await second.waitForFunction(() => document.body.innerText.includes('Crooked Shoreline'), null, { timeout: 20000 });
+  const now = await versionOn(second);
+  assert(now === '99.0.0', `the second window is on ${now}`);
 });
 
 await browser.close();

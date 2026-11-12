@@ -46,7 +46,11 @@ const serviceWorker = (): Plugin => ({
       .sort();
     const shell = ['/manifest.webmanifest', ...icons, ...assets];
     const template = readFileSync(path.resolve(__dirname, 'web', 'sw.js'), 'utf8');
-    const id = createHash('sha256').update(html).update(template).update(shell.join(' ')).digest('hex').slice(0, 12);
+    // Everything the worker keeps goes into the id: hashed files by name, the manifest and icons by content
+    // (their names never change), so a new icon reaches installed apps too.
+    const hash = createHash('sha256').update(html).update(template).update(shell.join(' '));
+    for (const file of ['/manifest.webmanifest', ...icons]) hash.update(readFileSync(path.join(out, file)));
+    const id = hash.digest('hex').slice(0, 12);
     const marker = /\/\*__BUILD__\*\/ \{[^;]*\};/;
     if (!marker.test(template)) throw new Error('web/sw.js has no /*__BUILD__*/ marker');
     writeFileSync(

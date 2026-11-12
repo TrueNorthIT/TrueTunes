@@ -47,6 +47,10 @@ function demoFetch(real: typeof fetch): typeof fetch {
     if (/^(https?|wss?):\/\//i.test(url) && new URL(url).origin !== window.location.origin) {
       return Promise.reject(new TypeError(`Blocked by the demo backend: ${url}`));
     }
+    // The gateway's own API paths are the real office, even on this origin.
+    if (/^\/(sonos|fn|img)(\/|$|\?)/.test(new URL(url, window.location.href).pathname)) {
+      return Promise.reject(new TypeError(`Blocked by the demo backend: ${url}`));
+    }
     return real(input, init);
   };
 }

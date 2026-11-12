@@ -34,15 +34,25 @@ function renderApp(root: Root, demo: boolean): void {
       {demo && <DemoBadge />}
     </ErrorBoundary>
   );
-  requestIdleCallback?.(() => void import('../lib/faceDetector').then((m) => m.warmFaceDetector()), {
-    timeout: 5000,
-  });
+  // Safari has no requestIdleCallback: a short wait does the same job there.
+  const whenIdle = window.requestIdleCallback ?? ((run: () => void) => setTimeout(run, 2000));
+  whenIdle(() => void import('../lib/faceDetector').then((m) => m.warmFaceDetector()), { timeout: 5000 });
 }
 
-async function boot(): Promise<void> {
-  const el = document.getElementById('root');
-  if (!el) throw new Error('No #root element found');
-  const root = createRoot(el);
+/**
+ * Whether the gateway can be reached. `navigator.onLine` alone is not trusted to say no: some VPNs and virtual
+ * adapters report offline while connected. /healthz is a plain GET that reaches nothing beyond the gateway.
+ */
+async function connected(): Promise<boolean> {
+  if (navigator.onLine) return true;
+  try {
+    return (await fetch('/healthz', { cache: 'no-store', signal: AbortSignal.timeout(4000) })).ok;
+  } catch {
+    return false;
+  }
+}
+
+async function boot(root: Root): Promise<void> {
   // Registers the service worker; a new version waits for the app's Update button (the bridge's update events).
   const updates = createUpdates();
 
@@ -58,7 +68,7 @@ async function boot(): Promise<void> {
   }
 
   // Opened with no connection (the installed app, from the cached shell): say so, rather than fail to sign in.
-  if (!navigator.onLine) {
+  if (!(await connected())) {
     root.render(<Offline />);
     return;
   }
@@ -92,16 +102,20 @@ async function boot(): Promise<void> {
   // there is no token to be had (a silent refresh that needs the user, about once a day in a browser) does the
   // sign-in screen come back.
   bridge.onAuthExpired(() => {
-    // A dropped connection also leaves no token to refresh; that is not a reason to ask for a sign-in.
-    if (!navigator.onLine) return;
-    void auth.idToken().then((token) => {
-      if (token) return;
+    void (async () => {
+      // A dropped connection also leaves no token to refresh; that is not a reason to ask for a sign-in.
+      if (!(await connected()) || (await auth.idToken())) return;
       bridge.stop();
       signIn();
-    });
+    })();
   });
   bridge.start();
   renderApp(root, false);
 }
 
-void boot();
+const rootElement = document.getElementById('root');
+if (!rootElement) throw new Error('No #root element found');
+const root = createRoot(rootElement);
+// Whatever goes wrong while starting (a file that will not load after a deploy, storage that is locked down),
+// the user gets a screen with a way forward, never a blank page.
+boot(root).catch(() => root.render(<Offline reason="failed" />));

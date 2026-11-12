@@ -1,5 +1,6 @@
 // The logic createMsalAuth owns, against a fake MSAL client. The library itself is not tested here.
 import { describe, it, expect, vi } from 'vitest';
+import { CacheLookupPolicy } from '@azure/msal-browser';
 import type { AccountInfo } from '@azure/msal-browser';
 import { createMsalAuth, type MsalClient } from '../auth';
 
@@ -107,7 +108,19 @@ describe('idToken', () => {
       scopes: SCOPES,
       account: expect.objectContaining({ username: 'ann@example.com' }),
       forceRefresh: false,
+      // cache, then the refresh token, never MSAL's hidden-iframe fallback (it would hang for ten seconds here)
+      cacheLookupPolicy: CacheLookupPolicy.AccessTokenAndRefreshToken,
     });
+  });
+
+  it('never lets a forced refresh or a Graph token fall back to the hidden iframe either', async () => {
+    const acquire = vi.fn<MsalClient['acquireTokenSilent']>().mockResolvedValue(result());
+    const { auth } = await signedIn({ acquireTokenSilent: acquire });
+    await auth.idToken({ forceRefresh: true });
+    await auth.graphToken(['https://graph.microsoft.com/Presence.Read.All']);
+    for (const [request] of acquire.mock.calls)
+      expect(request.cacheLookupPolicy).toBe(CacheLookupPolicy.AccessTokenAndRefreshToken);
+    expect(acquire).toHaveBeenCalledTimes(2);
   });
 
   it('refreshes once more when the ID token itself is within five minutes of expiry', async () => {
