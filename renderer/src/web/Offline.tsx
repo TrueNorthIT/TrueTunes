@@ -9,11 +9,22 @@ interface Props {
 
 /** Shown in place of the app when it cannot start: no connection, or a start-up failure. Never a blank page. */
 export function Offline({ reason = 'offline' }: Props) {
-  // Back online: straight into the app.
+  // Back online: straight into the app. Not while the page is already on its way somewhere else (the demo link,
+  // say): a browser can report "online" in that moment, and a reload then would win over where the user was going.
   useEffect(() => {
-    const reload = () => location.reload();
+    let leaving = false;
+    const leave = () => void (leaving = true);
+    const reload = () => {
+      if (!leaving) location.reload();
+    };
     window.addEventListener('online', reload);
-    return () => window.removeEventListener('online', reload);
+    window.addEventListener('beforeunload', leave);
+    window.addEventListener('pagehide', leave);
+    return () => {
+      window.removeEventListener('online', reload);
+      window.removeEventListener('beforeunload', leave);
+      window.removeEventListener('pagehide', leave);
+    };
   }, []);
 
   return (
