@@ -50,7 +50,7 @@ const relay = createRelay({
 
 const pathOf = (url: string | undefined) => (url ?? '/').split('?')[0] ?? '/';
 
-const server = http.createServer(async (req, res) => {
+async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
   const started = Date.now();
   const path = pathOf(req.url);
   let status = 500;
@@ -82,6 +82,10 @@ const server = http.createServer(async (req, res) => {
   } finally {
     log(`[gateway] ${req.method} ${path} ${status} ${Date.now() - started}ms`);
   }
+}
+
+const server = http.createServer((req, res) => {
+  void handleRequest(req, res);
 });
 
 // ── WebSocket upgrades: /sonos/ws only ──
@@ -95,7 +99,7 @@ function refuse(socket: Duplex, line: string) {
   socket.end(`${line}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
 }
 
-server.on('upgrade', async (req, socket, head) => {
+async function handleUpgrade(req: http.IncomingMessage, socket: Duplex, head: Buffer): Promise<void> {
   socket.on('error', () => undefined);
   if (pathOf(req.url) !== '/sonos/ws') {
     log(`[gateway] upgrade ${pathOf(req.url)} 404`);
@@ -123,6 +127,10 @@ server.on('upgrade', async (req, socket, head) => {
     console.error(`[gateway] upgrade failed: ${err instanceof Error ? err.message : String(err)}`);
     refuse(socket, 'HTTP/1.1 500 Internal Server Error');
   }
+}
+
+server.on('upgrade', (req, socket, head) => {
+  void handleUpgrade(req, socket, head);
 });
 
 // Ping every 30 s: drops clients that never pong, and keeps App Service's ~4 minute idle timeout at bay.
