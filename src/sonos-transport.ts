@@ -7,12 +7,15 @@ export type SonosVia = 'direct' | 'gateway';
 const SONOS_HOST = 'play.sonos.com';
 export const GATEWAY_WS_PROTOCOL = 'v1.api.smartspeaker.audio';
 
-/** The mode to use: the env override (TRUETUNES_SONOS_VIA) wins over the config, and anything else is 'direct'. */
+/**
+ * The mode to use: the env override (TRUETUNES_SONOS_VIA) wins over the config, and anything else is 'gateway'.
+ * 'direct' (the app holds a Sonos session and talks to Sonos itself) stays available as the fallback.
+ */
 export function resolveSonosVia(configured: unknown, envValue: string | undefined): SonosVia {
   const valid = (v: unknown): v is SonosVia => v === 'direct' || v === 'gateway';
   if (valid(envValue)) return envValue;
   if (valid(configured)) return configured;
-  return 'direct';
+  return 'gateway';
 }
 
 /** `https://play.sonos.com/api/x?y=1` → `{base}/sonos/api/x?y=1`; null for any other URL. */

@@ -12,14 +12,15 @@ import {
 const BASE = 'https://truetunes.tnapps.co.uk';
 const UA = 'Mozilla/test';
 
-test('mode: defaults to direct; config and env choose; env wins; junk falls back to direct', () => {
-  assert.equal(resolveSonosVia(undefined, undefined), 'direct');
+test('mode: defaults to gateway; config and env choose; env wins; junk falls back to gateway', () => {
+  assert.equal(resolveSonosVia(undefined, undefined), 'gateway');
+  assert.equal(resolveSonosVia('direct', undefined), 'direct');
   assert.equal(resolveSonosVia('gateway', undefined), 'gateway');
   assert.equal(resolveSonosVia('direct', 'gateway'), 'gateway');
   assert.equal(resolveSonosVia('gateway', 'direct'), 'direct');
   assert.equal(resolveSonosVia('gateway', 'bogus'), 'gateway'); // an invalid override is ignored
-  assert.equal(resolveSonosVia('bogus', undefined), 'direct');
-  assert.equal(resolveSonosVia(42, ''), 'direct');
+  assert.equal(resolveSonosVia('bogus', undefined), 'gateway');
+  assert.equal(resolveSonosVia(42, ''), 'gateway');
 });
 
 test('URL mapping keeps path and query under /sonos', () => {
