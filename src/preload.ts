@@ -15,6 +15,10 @@ export interface SonosAPI {
   fetchImage: (url: string) => Promise<{ data: string; mimeType: string } | { error: string }>;
   onAuthReady: (cb: VoidCallback) => Unsubscribe;
   onAuthExpired: (cb: VoidCallback) => Unsubscribe;
+  /** The main process could not get a Sonos session from our server. */
+  onAuthFailed: (cb: VoidCallback) => Unsubscribe;
+  /** Retry button: sign in again if need be and refetch the Sonos session. Failure arrives as onAuthFailed. */
+  retrySonosAuth: () => Promise<void>;
   fetch: (request: FetchRequest) => Promise<FetchResponse>;
   onWsMessage: (cb: (header: unknown, payload: unknown) => void) => Unsubscribe;
   onWsReady: (cb: VoidCallback) => Unsubscribe;
@@ -130,6 +134,7 @@ export interface SonosAPI {
 
 // Buffer early IPC events that may fire before React mounts and registers listeners.
 let _authReady = false;
+let _authFailed = false;
 let _wsReady = false;
 let _wsGroups: unknown[] | null = null;
 let _attributionMap: AttributionMap | null = null;
@@ -137,9 +142,13 @@ let _entraUser: EntraUser | null = null;
 
 ipcRenderer.on('auth:ready', () => {
   _authReady = true;
+  _authFailed = false;
 });
 ipcRenderer.on('auth:expired', () => {
   _authReady = false;
+});
+ipcRenderer.on('auth:failed', () => {
+  _authFailed = true;
 });
 ipcRenderer.on('ws:ready', () => {
   _wsReady = true;
@@ -169,6 +178,13 @@ contextBridge.exposeInMainWorld('sonos', {
     ipcRenderer.on('auth:expired', listener);
     return () => ipcRenderer.removeListener('auth:expired', listener);
   },
+  onAuthFailed: (cb: VoidCallback): Unsubscribe => {
+    if (_authFailed) cb();
+    const listener = () => cb();
+    ipcRenderer.on('auth:failed', listener);
+    return () => ipcRenderer.removeListener('auth:failed', listener);
+  },
+  retrySonosAuth: () => ipcRenderer.invoke('auth:retrySonos'),
   fetch: (request: FetchRequest): Promise<FetchResponse> => ipcRenderer.invoke('api:fetch', request),
   onWsMessage: (cb: (header: unknown, payload: unknown) => void): Unsubscribe => {
     const listener = (_e: unknown, [h, p]: [unknown, unknown]) => cb(h, p);

@@ -7,7 +7,11 @@ import { config, state, saveConfig } from '../state';
 import { claimDisplayName } from './entra';
 import { initPubSub } from './attribution';
 
-export function register(): void {
+export function register(deps: { retrySonosSession: () => Promise<void> }): void {
+  // The error state's Retry: signs in again if need be and refetches the Sonos session. Failure is
+  // reported to the renderers as auth:failed, not thrown.
+  ipcMain.handle('auth:retrySonos', () => deps.retrySonosSession());
+
   ipcMain.handle('app:version', () => app.getVersion());
   ipcMain.handle('app:isNewVersion', () => state.isNewVersion);
   // http(s) only: the renderer never needs another scheme, and shell.openExternal

@@ -26,7 +26,6 @@ import {
   broadcastToRenderers,
   loadConfig,
   saveConfig,
-  saveSessionToken,
   loadSessionToken,
   clearSessionToken,
   validateSessionToken,
@@ -35,8 +34,8 @@ import {
   APP_INDEX,
   APP_URL,
 } from './state';
-import * as sonosApi from './sonos-api';
-import { discoverServiceCredentials } from './sonos-api';
+import { acquireSession, signalSessionFailure } from './sonos-session';
+import { singleFlight } from './single-flight';
 import * as sonosWs from './sonos-ws';
 import { ws, wsSend, discoveredGroups, connectWebSocket, resyncRendererState } from './sonos-ws';
 import { installIpcGuard } from './ipc/guard';
@@ -157,57 +156,17 @@ function updateThumbar(isPlaying: boolean): void {
 
 // ─── App windows ──────────────────────────────────────────────────────────────
 
-function createAuthWindow(): void {
-  state.authWin = new BrowserWindow({
-    width: 1024,
-    height: 768,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-    },
-  });
-
-  void state.authWin.loadURL(`${BASE_URL}`);
-
-  // Spoof UA and capture session cookie on all play.sonos.com requests
+/**
+ * Request hooks for the default session: the User-Agent spoof the Sonos BFF needs, and CORS headers for
+ * two cases the renderer's fetch() would otherwise be blocked on:
+ *  1. Local Sonos devices — plain HTTP, RFC 1918 addresses
+ *  2. External image CDNs (gstatic, ytimg, music.youtube.com) that don't send Access-Control-Allow-Origin.
+ */
+function installSessionHooks(): void {
   session.defaultSession.webRequest.onBeforeSendHeaders({ urls: [`${BASE_URL}/*`] }, (details, callback) => {
-    const headers = { ...details.requestHeaders };
-    headers['User-Agent'] = SPOOF_UA;
-
-    const cookieHeader = headers['Cookie'] ?? headers['cookie'] ?? '';
-    const match = cookieHeader.match(/__Secure-next-auth\.session-token=([^;]+)/);
-    if (match) {
-      const token = match[1];
-      if (token !== state.sessionToken) {
-        const isSignIn = state.sessionToken === null; // first launch or after a 401, not a cookie refresh
-        state.sessionToken = token;
-        void saveSessionToken(token);
-        log('[auth] Session token captured:', token.slice(0, 20) + '…');
-        if (isSignIn) {
-          // The old service choice may belong to another account. Without a
-          // householdId yet (first launch), bootstrap selects instead.
-          config.serviceId = undefined;
-          config.accountId = undefined;
-          if (config.householdId) void discoverServiceCredentials();
-        }
-      }
-    }
-
-    callback({ requestHeaders: headers });
+    callback({ requestHeaders: { ...details.requestHeaders, 'User-Agent': SPOOF_UA } });
   });
 
-  // A successful /api/content/ response confirms the session is live
-  session.defaultSession.webRequest.onCompleted({ urls: [`${BASE_URL}/api/content/*`] }, (details) => {
-    if (details.statusCode === 200 && state.authWin) {
-      log('[auth] /api/content/ 200 — auth confirmed');
-      void onAuthReady();
-    }
-  });
-
-  // Inject CORS headers for two cases:
-  //  1. Local Sonos devices — plain HTTP, RFC 1918 addresses
-  //  2. External image CDNs (gstatic, ytimg, music.youtube.com) that don't
-  //     send Access-Control-Allow-Origin, blocking the renderer's fetch().
   const IMAGE_CDN =
     /^https:\/\/(www\.gstatic\.com|music\.youtube\.com|i\.ytimg\.com|yt3\.googleusercontent\.com|lh3\.googleusercontent\.com)\//;
   session.defaultSession.webRequest.onHeadersReceived(
@@ -238,19 +197,44 @@ function createAuthWindow(): void {
   );
 }
 
-async function onAuthReady(): Promise<void> {
-  if (state.authConfirmed) return; // fire only once per login
-  state.authConfirmed = true;
-  telemetry.event('auth_success');
+let entraReady = false;
 
-  state.authWin?.hide();
-
+/** Entra sign-in (silent, else the system browser). A failure is logged, not thrown: the session fetch then reports it. */
+async function signInEntra(): Promise<void> {
+  if (entraReady) return;
   try {
     await ensureEntraAuth();
+    entraReady = true;
   } catch (err) {
     console.error('[entra] Auth failed:', err);
     telemetry.exception(err, { phase: 'entra_auth' });
   }
+}
+
+/**
+ * Get the app a Sonos session and start it. A token still held (restored from storage) is used as is;
+ * otherwise sign in to Entra, then ask our Function for the session. Failing that the renderer shows
+ * the error state, whose Retry button runs this again. Concurrent calls share one run.
+ */
+const connectSonos = singleFlight(async (): Promise<void> => {
+  if (!state.sessionToken) {
+    await signInEntra();
+    if (!(await acquireSession())) {
+      signalSessionFailure();
+      if (!state.uiWin || state.uiWin.isDestroyed()) createUIWindow();
+      return;
+    }
+  }
+  await onAuthReady();
+});
+
+async function onAuthReady(): Promise<void> {
+  if (state.authConfirmed) return; // fire only once per login
+  state.authConfirmed = true;
+  state.authFailed = false;
+  telemetry.event('auth_success');
+
+  await signInEntra();
 
   if (!state.uiWin) {
     createUIWindow();
@@ -266,8 +250,7 @@ async function onAuthReady(): Promise<void> {
 /**
  * Keep an app window on the app. A stray link (changelog markdown, lyrics
  * credits) would otherwise replace the whole UI: web links go to the system
- * browser instead, anything else is refused. Not for the auth window, which
- * navigates through the Sonos sign-in on purpose.
+ * browser instead, anything else is refused.
  */
 function guardNavigation(win: BrowserWindow): void {
   win.webContents.on('will-navigate', (event) => {
@@ -317,6 +300,8 @@ function createUIWindow(): void {
     if (state.authConfirmed) {
       broadcastToRenderers('auth:ready');
       resyncRendererState();
+    } else if (state.authFailed) {
+      broadcastToRenderers('auth:failed');
     }
   });
 }
@@ -383,7 +368,6 @@ function createMiniPlayerWindow(): void {
 
 // ─── Wiring ───────────────────────────────────────────────────────────────────
 
-sonosApi.init({ createAuthWindow });
 sonosWs.init({ updateThumbar });
 
 // The IPC sender check goes on first: it wraps ipcMain.handle, so only handlers
@@ -392,7 +376,7 @@ installIpcGuard();
 
 sonosIpc.register();
 debugIpc.register();
-appIpc.register();
+appIpc.register({ retrySonosSession: connectSonos });
 windowsIpc.register({ createMiniPlayerWindow });
 entraIpc.register();
 functionsIpc.register();
@@ -473,28 +457,28 @@ void app.whenReady().then(async () => {
   if (config.displayName) telemetry.setContext({ userId: config.displayName });
 
   session.defaultSession.setUserAgent(SPOOF_UA);
+  installSessionHooks();
   // Nothing in the app asks for a browser permission (camera, mic, notifications, clipboard
-  // read, geolocation...), so no page in this session, including the Sonos sign-in, gets one.
+  // read, geolocation...), so no page in this session gets one.
   session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
     log('[security] denied permission request:', permission);
     callback(false);
   });
 
-  // Try to restore a previously saved session — skip auth window if still valid
+  // Try to restore a previously saved session; otherwise connectSonos fetches one from our Function
   const storedToken = await loadSessionToken();
   if (storedToken && (await validateSessionToken(storedToken))) {
     state.sessionToken = storedToken;
     log('[auth] Restored session from storage');
     telemetry.event('app_started', { sessionRestored: true, appVersion: app.getVersion() });
-    void onAuthReady();
   } else {
     if (storedToken) await clearSessionToken(); // clear invalid token
     telemetry.event('app_started', { sessionRestored: false, appVersion: app.getVersion() });
-    createAuthWindow();
   }
+  void connectSonos();
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createAuthWindow();
+    if (BrowserWindow.getAllWindows().length === 0) createUIWindow();
   });
 });
 
