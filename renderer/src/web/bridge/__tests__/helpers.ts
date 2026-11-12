@@ -236,7 +236,13 @@ export interface Harness {
 
 /** A bridge whose fetch, socket and storage are all fakes. The usual gateway routes are in place. */
 export function makeBridge(
-  opts: { auth?: FakeAuth; updates?: UpdateSource; gatewayBase?: string; storage?: Record<string, string> } = {}
+  opts: {
+    auth?: FakeAuth;
+    updates?: UpdateSource;
+    gatewayBase?: string;
+    storage?: Record<string, string>;
+    blockedStorage?: boolean;
+  } = {}
 ): Harness {
   localStorage.clear();
   for (const [k, v] of Object.entries(opts.storage ?? {})) localStorage.setItem(k, v);
@@ -257,7 +263,7 @@ export function makeBridge(
     fetch: fake.fetch,
     // The fake stands in for the browser's class; it implements only what the bridge uses.
     WebSocket: FakeWebSocket as unknown as typeof WebSocket,
-    storage: localStorage,
+    storage: opts.blockedStorage ? blockedStorage() : localStorage,
     updates: opts.updates,
   };
   const bridge = createWebBridge(env);
@@ -290,4 +296,12 @@ export async function startReady(h: Harness): Promise<FakeWebSocket> {
 /** Lets queued microtasks run (late-subscriber deliveries). */
 export async function tick(): Promise<void> {
   for (let i = 0; i < 5; i++) await Promise.resolve();
+}
+
+/** A Storage whose every call throws (blocked site data). */
+export function blockedStorage(): Storage {
+  const boom = () => {
+    throw new Error('blocked');
+  };
+  return { getItem: boom, setItem: boom, removeItem: boom, clear: boom, key: boom, length: 0 };
 }

@@ -69,7 +69,7 @@ export function createWebBridge(env: WebBridgeEnv): WebBridge {
   };
 
   // ─── The pieces ──────────────────────────────────────────────────────────────────────────────
-  const gateway = createGateway({ auth, fetch: doFetch, base, onRefused: signalFailure });
+  const gateway = createGateway({ auth, fetch: doFetch, base, onRefused: signalFailure, onExpired: signalExpired });
   const sonos = createSonosHttp({ gateway, config });
   const socket = createSonosSocket({
     auth,
@@ -81,7 +81,7 @@ export function createWebBridge(env: WebBridgeEnv): WebBridge {
     onExpired: signalExpired,
   });
   const fn = createFnFetch(gateway);
-  const identity = createIdentity(fn, store);
+  const identity = createIdentity(fn, store, () => auth.user()?.oid);
   const attribution = createAttribution(fn, identity.name);
   const functions = createFunctions(fn, identity, () => auth.user()?.oid);
   const commands = createCommands(socket, config);
@@ -175,8 +175,8 @@ export function createWebBridge(env: WebBridgeEnv): WebBridge {
     getEntraUser: () => Promise.resolve(auth.user()),
     onEntraReady: (cb) => entraReady.on(cb),
     async entraSignOut() {
+      identity.clear(); // before signing out: the name is stored under the signed-in account
       await auth.signOut();
-      identity.clear();
       entraReady.clear();
       stop();
     },

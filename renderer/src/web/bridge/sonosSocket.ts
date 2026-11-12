@@ -337,9 +337,9 @@ export function createSonosSocket(o: {
     },
     resync() {
       if (!isOpen()) {
-        // The socket is down: connect afresh (the bootstrap runs when it opens)
-        stopped = false;
-        void connect();
+        // The socket is down: connect afresh (the bootstrap runs when it opens), unless it was stopped on
+        // purpose: only start() restarts it.
+        if (!stopped) void connect();
         return;
       }
       if (groups.length === 0) return; // bootstrap has not finished

@@ -5,7 +5,7 @@ afterEach(() => vi.useRealTimers());
 
 describe('start and the auth state', () => {
   it('claims the name, checks the gateway, then announces auth and opens the relay', async () => {
-    const h = makeBridge({ storage: { 'tt.displayName': 'Joe' } });
+    const h = makeBridge({ storage: { 'tt.displayName.oid-1': 'Joe' } });
     const authed = vi.fn();
     h.bridge.onAuthReady(authed);
     h.bridge.start();
@@ -119,7 +119,7 @@ describe('start and the auth state', () => {
 
 describe('identity', () => {
   it('uses the stored name without a lookup, claims it, and announces the Entra user', async () => {
-    const h = makeBridge({ storage: { 'tt.displayName': 'Joe' } });
+    const h = makeBridge({ storage: { 'tt.displayName.oid-1': 'Joe' } });
     const user = vi.fn();
     h.bridge.onEntraReady(user);
     h.bridge.start();
@@ -140,7 +140,7 @@ describe('identity', () => {
     await vi.waitFor(() => expect(user).toHaveBeenCalled());
     expect(h.fake.to('/fn/profile/lookup')[0].query.get('oid')).toBe('oid-1');
     expect(await h.bridge.getDisplayName()).toBe('Existing Name');
-    expect(h.storage.getItem('tt.displayName')).toBe('Existing Name');
+    expect(h.storage.getItem('tt.displayName.oid-1')).toBe('Existing Name');
     expect(h.fake.to('/fn/profile/claim')[0].json()).toEqual({ oid: 'oid-1', displayName: 'Existing Name' });
   });
 
@@ -160,7 +160,7 @@ describe('identity', () => {
   });
 
   it('carries on when the claim fails', async () => {
-    const h = makeBridge({ storage: { 'tt.displayName': 'Joe' } });
+    const h = makeBridge({ storage: { 'tt.displayName.oid-1': 'Joe' } });
     h.fake.on('POST', '/fn/profile/claim', () => Promise.reject(new Error('x')));
     const user = vi.fn();
     h.bridge.onEntraReady(user);
@@ -195,11 +195,11 @@ describe('identity', () => {
       expect(await h.bridge.setDisplayName('Newname')).toBeNull();
       expect(h.fake.to('/fn/profile/claim')[0].json()).toEqual({ oid: 'oid-1', displayName: 'Newname' });
       expect(await h.bridge.getDisplayName()).toBe('Newname');
-      expect(h.storage.getItem('tt.displayName')).toBe('Newname');
+      expect(h.storage.getItem('tt.displayName.oid-1')).toBe('Newname');
     });
 
     it('refuses a name another account owns', async () => {
-      const h = makeBridge({ storage: { 'tt.displayName': 'Joe' } });
+      const h = makeBridge({ storage: { 'tt.displayName.oid-1': 'Joe' } });
       h.fake.on('POST', '/fn/profile/claim', () => text('', 409));
       expect(await h.bridge.setDisplayName('Taken')).toEqual({ error: 'taken' });
       expect(await h.bridge.getDisplayName()).toBe('Joe');
@@ -212,7 +212,7 @@ describe('identity', () => {
     });
 
     it('an empty name skips the claim', async () => {
-      const h = makeBridge({ storage: { 'tt.displayName': 'Joe' } });
+      const h = makeBridge({ storage: { 'tt.displayName.oid-1': 'Joe' } });
       expect(await h.bridge.setDisplayName('')).toBeNull();
       expect(h.fake.calls).toHaveLength(0);
       expect(await h.bridge.getDisplayName()).toBe('');
@@ -220,10 +220,10 @@ describe('identity', () => {
   });
 
   it('entraSignOut forgets the name and signs out of the browser cache', async () => {
-    const h = makeBridge({ storage: { 'tt.displayName': 'Joe' } });
+    const h = makeBridge({ storage: { 'tt.displayName.oid-1': 'Joe' } });
     await h.bridge.entraSignOut();
     expect(h.auth.signOutCalls).toBe(1);
-    expect(h.storage.getItem('tt.displayName')).toBeNull();
+    expect(h.storage.getItem('tt.displayName.oid-1')).toBeNull();
     expect(await h.bridge.getDisplayName()).toBeNull();
   });
 
@@ -302,7 +302,7 @@ describe('attribution', () => {
 
     it('tells local listeners, logs the event, and updates the map late subscribers see', async () => {
       vi.useFakeTimers({ now: 1_700_000_000_000 });
-      const h = makeBridge({ storage: { 'tt.displayName': 'Joe' } });
+      const h = makeBridge({ storage: { 'tt.displayName.oid-1': 'Joe' } });
       h.fake.on('POST', '/fn/log-event', () => json({}));
       const events = vi.fn();
       h.bridge.onAttributionEvent(events);
@@ -349,7 +349,7 @@ describe('attribution', () => {
     });
 
     it('an album event is logged but leaves the map alone', async () => {
-      const h = makeBridge({ storage: { 'tt.displayName': 'Joe' } });
+      const h = makeBridge({ storage: { 'tt.displayName.oid-1': 'Joe' } });
       h.fake.on('POST', '/fn/log-event', () => json({}));
       const late = vi.fn();
       await h.bridge.publishQueued({ ...item, eventType: 'album', uri: 'spotify:album:1' });
@@ -361,7 +361,7 @@ describe('attribution', () => {
 
     it('retries the log 1 s then 2 s later, three attempts in all', async () => {
       vi.useFakeTimers();
-      const h = makeBridge({ storage: { 'tt.displayName': 'Joe' } });
+      const h = makeBridge({ storage: { 'tt.displayName.oid-1': 'Joe' } });
       h.fake.on('POST', '/fn/log-event', () => text('', 500));
       await h.bridge.publishQueued(item);
       await vi.advanceTimersByTimeAsync(0);
@@ -380,7 +380,7 @@ describe('attribution', () => {
 
     it('stops retrying once a log lands, and survives a network error', async () => {
       vi.useFakeTimers();
-      const h = makeBridge({ storage: { 'tt.displayName': 'Joe' } });
+      const h = makeBridge({ storage: { 'tt.displayName.oid-1': 'Joe' } });
       let n = 0;
       h.fake.on('POST', '/fn/log-event', () => (++n === 1 ? Promise.reject(new Error('x')) : json({})));
       await h.bridge.publishQueued(item);
@@ -389,7 +389,7 @@ describe('attribution', () => {
     });
 
     it('with no uri nothing is logged, but listeners still hear the event', async () => {
-      const h = makeBridge({ storage: { 'tt.displayName': 'Joe' } });
+      const h = makeBridge({ storage: { 'tt.displayName.oid-1': 'Joe' } });
       const events = vi.fn();
       h.bridge.onAttributionEvent(events);
       await h.bridge.publishQueued({ ...item, uri: '' });

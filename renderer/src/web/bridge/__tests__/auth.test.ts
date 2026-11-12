@@ -36,6 +36,8 @@ function fakeClient(over: Partial<MsalClient> = {}) {
       calls.push('redirect');
       return Promise.resolve(null);
     }),
+    getActiveAccount: vi.fn((): AccountInfo | null => null),
+    setActiveAccount: vi.fn(),
     getAllAccounts: vi.fn((): AccountInfo[] => {
       calls.push('accounts');
       return [];

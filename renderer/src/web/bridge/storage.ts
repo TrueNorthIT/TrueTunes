@@ -1,4 +1,6 @@
-// localStorage that never throws: it can be blocked (private windows, site settings) and the app must still run.
+// A key-value store over localStorage that never throws. Site data can be blocked (private windows, settings), so
+// an in-memory Map always wins and writes go through to storage best-effort: a preference set this page load
+// holds even when it cannot be persisted.
 
 export interface Store {
   get(key: string): string | null;
@@ -7,8 +9,10 @@ export interface Store {
 }
 
 export function createStore(storage: Storage | undefined): Store {
+  const memory = new Map<string, string | null>();
   return {
     get(key) {
+      if (memory.has(key)) return memory.get(key) ?? null;
       try {
         return storage?.getItem(key) ?? null;
       } catch {
@@ -16,13 +20,15 @@ export function createStore(storage: Storage | undefined): Store {
       }
     },
     set(key, value) {
+      memory.set(key, value);
       try {
         storage?.setItem(key, value);
       } catch {
-        /* blocked: the preference just does not persist */
+        /* blocked: held in memory only */
       }
     },
     remove(key) {
+      memory.set(key, null);
       try {
         storage?.removeItem(key);
       } catch {
