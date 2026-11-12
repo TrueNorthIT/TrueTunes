@@ -1,0 +1,130 @@
+name: Infra plan
+
+# Shows what a pull request would change in Azure, as one comment that is updated on each push.
+# The plan runs as the truetunes-ci-plan managed identity, which can read but cannot change any resource (see
+# infra/README.md, "CI identities"). It signs in by OIDC; the federated credential accepts the `pull_request`
+# subject of this repository only.
+
+on:
+  pull_request:
+    paths:
+      - 'infra/**'
+      - '.github/workflows/infra-plan.yml'
+
+permissions: {}
+
+concurrency:
+  group: infra-plan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  # Needs no Azure access, so it also runs for fork and Dependabot pull requests.
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: '~> 1.12'
+          terraform_wrapper: false
+
+      - working-directory: infra
+        run: |
+          terraform fmt -check -recursive -diff
+          terraform init -backend=false -input=false
+          terraform validate
+
+  plan:
+    needs: check
+    # Fork and Dependabot pull requests get no OIDC token (or a read-only one), so they are skipped, not failed.
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # the azurerm provider and backend request the OIDC token
+      pull-requests: write # the plan comment
+    env:
+      ARM_USE_OIDC: 'true'
+      ARM_CLIENT_ID: ${{ vars.AZURE_PLAN_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      TF_VAR_entra_tenant_id: ${{ vars.ENTRA_TENANT_ID }}
+      TF_VAR_entra_client_id: ${{ vars.ENTRA_CLIENT_ID }}
+      TF_VAR_auth_enforce: ${{ vars.AUTH_ENFORCE }}
+      # JSON list of object ids, e.g. ["<object id>"]; [] when the variable is unset.
+      TF_VAR_key_vault_secrets_officers: ${{ vars.KEY_VAULT_SECRETS_OFFICERS || '[]' }}
+      TF_IN_AUTOMATION: 'true'
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      # Nothing below can work until infra/README.md's "CI bootstrap" has been done, so say so rather than fail.
+      - name: Check that Azure sign-in is possible
+        id: gate
+        run: |
+          if [ -z "$ACTIONS_ID_TOKEN_REQUEST_URL" ] || [ -z "$ARM_CLIENT_ID" ] || [ -z "$ARM_TENANT_ID" ] || [ -z "$ARM_SUBSCRIPTION_ID" ]; then
+            echo "::notice::No OIDC token or no AZURE_* repository variables; skipping the plan (see infra/README.md, CI bootstrap)."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.gate.outputs.run == 'true'
+        uses: actions/checkout@v7
+
+      - if: steps.gate.outputs.run == 'true'
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: '~> 1.12'
+          terraform_wrapper: false
+
+      # -lock=false: the identity has read access to the state blob, and taking the lock writes to it.
+      # The raw plan stays in plan.log and is printed only if the plan itself fails. What is posted is the list of
+      # resource addresses and actions: the Function App's app_settings and the provider's keys are in the plan.
+      - name: Terraform plan
+        id: plan
+        if: steps.gate.outputs.run == 'true'
+        working-directory: infra
+        run: |
+          terraform init -input=false
+          terraform plan -input=false -lock=false -out=tfplan -no-color > plan.log 2>&1 || { cat plan.log; exit 1; }
+          terraform show -json tfplan | jq -r '
+            [.resource_changes[]? | select((.change.actions != ["no-op"] and .change.actions != ["read"]) or .change.importing != null)] as $c
+            | ($c[] | "\(.change.actions | join("+")) \(.address)"),
+              "Plan: \([$c[] | select(.change.actions | index("create"))] | length) to add, \([$c[] | select(.change.actions == ["update"])] | length) to change, \([$c[] | select(.change.actions | index("delete"))] | length) to destroy."
+          ' > "$RUNNER_TEMP/summary.txt"
+
+      - name: Comment on the pull request
+        if: always() && steps.gate.outputs.run == 'true'
+        env:
+          PLAN_OUTCOME: ${{ steps.plan.outcome }}
+          PR: ${{ github.event.pull_request.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          {
+            echo '<!-- terraform-plan -->'
+            echo "### Terraform plan for \`${SHA:0:7}\`"
+            echo
+            if [ "$PLAN_OUTCOME" = "success" ]; then
+              echo '```'
+              cat "$RUNNER_TEMP/summary.txt"
+              echo '```'
+              echo
+              echo 'create, update, delete and replace (`delete+create`) per resource. Attribute values are not shown.'
+            else
+              echo "The plan failed: [see the run]($RUN_URL)."
+            fi
+          } > "$RUNNER_TEMP/comment.md"
+          id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
+            --jq '[.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- terraform-plan -->")))][0].id // empty' | head -n 1)
+          if [ -n "$id" ]; then
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -F body=@"$RUNNER_TEMP/comment.md" > /dev/null
+          else
+            gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -F body=@"$RUNNER_TEMP/comment.md" > /dev/null
+          fi

@@ -1,5 +1,6 @@
-// Loads the Function App's secrets from the root .env into Key Vault. Run once by a person, after the
-// first `terraform apply` has created the vault and before `use_key_vault_references` is turned on.
+// Loads the Function App's secrets from the root .env into Key Vault. Run by a person, once, and again
+// whenever a secret changes. The Function App's settings are Key Vault references, so the vault must
+// hold all four before the app can read them. Nothing in CI or Terraform ever holds a value.
 //
 //   node infra/scripts/load-secrets.mjs
 //

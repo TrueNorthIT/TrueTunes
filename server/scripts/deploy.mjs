@@ -1,5 +1,8 @@
 // Build and publish the function code to the existing Function App.
 //
+// Normal deploys run in GitHub Actions (.github/workflows/publish.yml, job `deploy`), which does not use this
+// script. It remains for an emergency publish from a laptop.
+//
 // The Azure resources and the Function App's settings are Terraform's (infra/), not this script's:
 // run `terraform apply` there for anything that is not code. An ARM deployment would overwrite
 // Terraform-managed settings, so there is none.

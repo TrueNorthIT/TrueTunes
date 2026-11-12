@@ -78,8 +78,108 @@ jobs:
           npm test
           npm run build
 
-  version:
+  # Applies the Terraform in infra/ and publishes the functions in server/, for the commit that was pushed.
+  # `version` (and so `publish`, the desktop release) needs this job: a new app build may call a new function or
+  # setting, so the release must not go out unless both succeeded. Runs for every push to main, Dependabot merges
+  # included, since those change what is deployed too.
+  # Signs in as the truetunes-ci-deploy managed identity by OIDC: the federated credential accepts only this
+  # repository's `production` environment, so there is no Azure secret in GitHub. See infra/README.md.
+  deploy:
     needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    # One apply at a time. A run waiting behind another is replaced by a newer one; the newer commit contains the
+    # older, so nothing is lost.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write # azure/login and the azurerm provider/backend request the OIDC token
+    env:
+      # azurerm provider and backend: sign in with the GitHub OIDC token, not the Azure CLI.
+      ARM_USE_OIDC: 'true'
+      ARM_CLIENT_ID: ${{ vars.AZURE_DEPLOY_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      TF_VAR_entra_tenant_id: ${{ vars.ENTRA_TENANT_ID }}
+      TF_VAR_entra_client_id: ${{ vars.ENTRA_CLIENT_ID }}
+      TF_VAR_auth_enforce: ${{ vars.AUTH_ENFORCE }}
+      # JSON list of object ids, e.g. ["<object id>"]; [] when the variable is unset.
+      TF_VAR_key_vault_secrets_officers: ${{ vars.KEY_VAULT_SECRETS_OFFICERS || '[]' }}
+      TF_IN_AUTOMATION: 'true'
+
+    steps:
+      # The pushed commit itself (github.sha), never a branch head that moved on while the job waited.
+      - uses: actions/checkout@v7
+
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: '~> 1.12'
+          terraform_wrapper: false
+
+      - name: Terraform init, format and validate
+        working-directory: infra
+        run: |
+          terraform init -input=false
+          terraform fmt -check -recursive
+          terraform validate
+
+      # The plan is saved and applied as is, so what runs is what was planned. No raw plan is printed: the Function
+      # App's app_settings and the provider's keys are in it. Only resource addresses and actions go to the log.
+      - name: Terraform plan
+        working-directory: infra
+        run: |
+          terraform plan -input=false -lock-timeout=10m -out=tfplan -no-color > plan.log 2>&1 || { cat plan.log; exit 1; }
+          terraform show -json tfplan | jq -r '
+            [.resource_changes[]? | select((.change.actions != ["no-op"] and .change.actions != ["read"]) or .change.importing != null)] as $c
+            | ($c[] | "\(.change.actions | join("+")) \(.address)"),
+              "Plan: \([$c[] | select(.change.actions | index("create"))] | length) to add, \([$c[] | select(.change.actions == ["update"])] | length) to change, \([$c[] | select(.change.actions | index("delete"))] | length) to destroy."
+          ' | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Terraform apply
+        working-directory: infra
+        run: terraform apply -input=false -lock-timeout=10m tfplan
+
+      - uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_DEPLOY_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Build and test the functions
+        working-directory: server
+        run: |
+          npm ci
+          npm test
+          npm run build
+          npm prune --omit=dev
+
+      # The Function App's own Node version stays ~22 (infra/functions.tf); this runner's Node only builds.
+      # `func publish` replaces every function with this checkout's, which is why it only ever runs from main.
+      - name: Publish the functions
+        working-directory: server
+        run: |
+          npm install --global azure-functions-core-tools@4
+          func azure functionapp publish "$(terraform -chdir=../infra output -raw function_app_name)" --javascript
+
+      - name: Smoke check
+        run: |
+          url="$(terraform -chdir=infra output -raw function_app_url)/api/attribution"
+          curl --silent --show-error --fail --retry 8 --retry-delay 15 --retry-all-errors --max-time 30 --output /dev/null "$url"
+          echo "$url answered 2xx"
+
+  version:
+    # deploy: the release waits for the infra apply and the function publish of the same commit (a skipped or failed
+    # deploy skips this job, and so publish).
+    needs: [validate, deploy]
     # No release for a Dependabot merge: its update lands on main and ships with the next human-merged release.
     # Auto-merges (GITHUB_TOKEN) start no run at all, but a person merging a Dependabot PR does, and github.actor
     # is then that person. So look at the pushed commit instead:

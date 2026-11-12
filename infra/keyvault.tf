@@ -24,19 +24,21 @@ resource "azurerm_key_vault" "main" {
   soft_delete_retention_days = 90
 }
 
-# The Function App reads its secrets through its own system-assigned identity.
-#
-# When the identity is added to an existing app, the provider does not mark its principal id as "known
-# after apply", so a plan made in the same run cannot use it. The assignment is therefore created once
-# the id is in state: the first apply adds the identity (and the vault), the second adds this. Later
-# plans see the id and this resource is stable.
+# The Function App reads its secrets through its own system-assigned identity, which has been in state
+# since the vault was first applied. (Adding an identity to an app that has none makes the provider
+# hide its principal id until after apply, so a rebuilt environment would need two applies, the second
+# for this assignment.)
 resource "azurerm_role_assignment" "function_app_secrets_user" {
-  count = azurerm_windows_function_app.main.identity[0].principal_id == null ? 0 : 1
-
   scope                = azurerm_key_vault.main.id
   role_definition_name = "Key Vault Secrets User"
   principal_id         = azurerm_windows_function_app.main.identity[0].principal_id
   principal_type       = "ServicePrincipal"
+}
+
+# The assignment used to carry a count of 0 or 1; production holds it at index 0.
+moved {
+  from = azurerm_role_assignment.function_app_secrets_user[0]
+  to   = azurerm_role_assignment.function_app_secrets_user
 }
 
 # Whoever runs infra/scripts/load-secrets.mjs needs to be able to write secrets.
