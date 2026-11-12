@@ -1,23 +1,40 @@
 import type { HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { CosmosClient, type Container } from '@azure/cosmos';
 import { authenticate, entraCheckFromEnv, type EntraTokenCheck } from '../shared/auth';
+import { isGithubLogin } from '../shared/githubIssues';
 
 let profiles: Container | undefined;
 
-/** The display name whose profile this Entra oid has claimed, or null. */
-export async function displayNameForOid(oid: string): Promise<string | null> {
+function profilesContainer(): Container {
   if (!profiles) {
     const connStr = process.env['COSMOS_CONNECTION_STRING'];
     if (!connStr) throw new Error('Cosmos not configured');
     profiles = new CosmosClient(connStr).database(process.env['COSMOS_DATABASE'] ?? 'truetunes').container('profiles');
   }
-  const { resources } = await profiles.items
-    .query<{ id: string }>({
+  return profiles;
+}
+
+/** The display name whose profile this Entra oid has claimed, or null. */
+export async function displayNameForOid(oid: string): Promise<string | null> {
+  const { resources } = await profilesContainer()
+    .items.query<{ id: string }>({
       query: 'SELECT c.id FROM c WHERE c.entraOid = @oid OFFSET 0 LIMIT 1',
       parameters: [{ name: '@oid', value: oid }],
     })
     .fetchAll();
   return resources[0]?.id ?? null;
+}
+
+/** The GitHub username on the profile this Entra oid has claimed, or null if none or not a valid username. */
+export async function githubLoginForOid(oid: string): Promise<string | null> {
+  const { resources } = await profilesContainer()
+    .items.query<{ githubLogin?: unknown }>({
+      query: 'SELECT c.githubLogin FROM c WHERE c.entraOid = @oid OFFSET 0 LIMIT 1',
+      parameters: [{ name: '@oid', value: oid }],
+    })
+    .fetchAll();
+  const login = resources[0]?.githubLogin;
+  return isGithubLogin(login) ? login : null;
 }
 
 /**
