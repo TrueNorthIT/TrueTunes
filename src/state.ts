@@ -38,7 +38,7 @@ export interface AppConfig {
   lastSeenVersion?: string;
   /** Width (px) of the docked queue column. */
   queueDockedWidth?: number;
-  /** How Sonos is reached: straight ('direct', the default) or through our gateway. TRUETUNES_SONOS_VIA overrides it. */
+  /** How Sonos is reached: through our gateway (the default) or straight ('direct', the fallback). TRUETUNES_SONOS_VIA overrides it. */
   sonosVia?: SonosVia;
 }
 
@@ -57,7 +57,7 @@ export const PUBSUB_FUNCTION_URL = 'https://truetunes-fn.azurewebsites.net';
 /** The Sonos gateway; TRUETUNES_GATEWAY_URL points a dev build at another one. */
 export const SONOS_GATEWAY_URL = process.env['TRUETUNES_GATEWAY_URL'] || 'https://truetunes.tnapps.co.uk';
 
-/** The mode in force: TRUETUNES_SONOS_VIA, else the config, else 'direct'. */
+/** The mode in force: TRUETUNES_SONOS_VIA, else the config, else 'gateway'. */
 export const sonosVia = (): SonosVia => resolveSonosVia(config.sonosVia, process.env['TRUETUNES_SONOS_VIA']);
 
 export const config: AppConfig = {};

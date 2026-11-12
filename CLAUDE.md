@@ -62,7 +62,7 @@ Live data (now playing, queue, picks) changes between shots, so for before/after
 
 ### Sonos API
 
-All Sonos HTTP calls go through `src/sonos-api.ts` → `sonosFetch()` → play.sonos.com BFF. The renderer calls `window.sonos.fetch({ operationId, pathParams, query, body })` — operationIds are defined in `SonosWebPlayerAPI.yaml` at the repo root.
+All Sonos HTTP calls go through `src/sonos-api.ts` → `sonosFetch()`. By default they reach Sonos through our gateway (`https://truetunes.tnapps.co.uk/sonos/...`, code in `server/src/gateway/`), which holds the Sonos session; the app sends only its Entra ID token and holds no Sonos session. The WebSocket is relayed the same way (`/sonos/ws`). `src/sonos-transport.ts` is the one place that decides URLs and headers per mode. Setting `sonosVia: "direct"` in `config.json`, or `TRUETUNES_SONOS_VIA=direct`, makes the app talk to the play.sonos.com BFF itself with a session from the `sonos-session` function, as it did before the gateway. The renderer calls `window.sonos.fetch({ operationId, pathParams, query, body })` — operationIds are defined in `SonosWebPlayerAPI.yaml` at the repo root.
 
 `renderer/src/lib/sonosApi.ts` is the typed wrapper around `window.sonos.fetch` — add new API calls here.
 
