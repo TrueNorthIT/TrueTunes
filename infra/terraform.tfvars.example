@@ -1,0 +1,10 @@
+# Copy to terraform.tfvars (git-ignored) or export as TF_VAR_<name>. Never commit real values.
+entra_tenant_id = "00000000-0000-0000-0000-000000000000"
+entra_client_id = "00000000-0000-0000-0000-000000000000"
+auth_enforce    = "false"
+
+# Secrets: prefer environment variables so they stay out of files.
+#   TF_VAR_vestaboard_api_key
+#   TF_VAR_github_issues_token
+#   TF_VAR_sonos_username
+#   TF_VAR_sonos_password
