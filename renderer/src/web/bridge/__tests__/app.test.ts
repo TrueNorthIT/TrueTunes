@@ -7,7 +7,10 @@ afterEach(() => vi.restoreAllMocks());
 describe('fetchImage', () => {
   const bytes = new Uint8Array([104, 105, 255, 0, 1]);
   const b64 = btoa(String.fromCharCode(...bytes));
-  const image = (type = 'image/png') => () => new Response(bytes, { status: 200, headers: { 'content-type': type } });
+  const image =
+    (type = 'image/png') =>
+    () =>
+      new Response(bytes, { status: 200, headers: { 'content-type': type } });
 
   it('sends a play.sonos.com image through the gateway with the bearer', async () => {
     const h = makeBridge();
@@ -46,7 +49,13 @@ describe('fetchImage', () => {
 
   it('refuses a URL that is not http(s)', async () => {
     const h = makeBridge();
-    for (const bad of ['file:///etc/passwd', 'javascript:alert(1)', 'data:image/png;base64,AA', '', undefined as unknown as string]) {
+    for (const bad of [
+      'file:///etc/passwd',
+      'javascript:alert(1)',
+      'data:image/png;base64,AA',
+      '',
+      undefined as unknown as string,
+    ]) {
       expect(await h.bridge.fetchImage(bad)).toEqual({ error: 'Invalid URL' });
     }
     expect(h.fake.calls).toHaveLength(0);

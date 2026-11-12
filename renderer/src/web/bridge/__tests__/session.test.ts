@@ -243,7 +243,9 @@ describe('identity', () => {
 describe('attribution', () => {
   it('loads the map at start and replays it to a late subscriber', async () => {
     const h = makeBridge();
-    h.fake.on('GET', '/fn/attribution', () => json({ 'spotify:1': { user: 'Ann', timestamp: 5, trackName: 'T', artist: 'A' } }));
+    h.fake.on('GET', '/fn/attribution', () =>
+      json({ 'spotify:1': { user: 'Ann', timestamp: 5, trackName: 'T', artist: 'A' } })
+    );
     const early = vi.fn();
     h.bridge.onAttributionMap(early);
     await startReady(h);

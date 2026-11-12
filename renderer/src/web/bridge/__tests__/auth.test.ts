@@ -64,7 +64,7 @@ describe('init', () => {
     expect(auth.user()).toBeNull();
   });
 
-  it('answers the user from the account\'s claims: oid, name, and the sign-in name as email', async () => {
+  it("answers the user from the account's claims: oid, name, and the sign-in name as email", async () => {
     const { auth } = await signedIn();
     expect(auth.user()).toEqual({ oid: 'oid-ann', name: 'Ann Claim', email: 'ann@example.com' });
   });
@@ -101,7 +101,11 @@ describe('idToken', () => {
     const { auth, client } = await signedIn();
     expect(await auth.idToken()).toBe('id-1');
     expect(client.acquireTokenSilent).toHaveBeenCalledTimes(1);
-    expect(client.acquireTokenSilent).toHaveBeenCalledWith({ scopes: SCOPES, account: expect.objectContaining({ username: 'ann@example.com' }), forceRefresh: false });
+    expect(client.acquireTokenSilent).toHaveBeenCalledWith({
+      scopes: SCOPES,
+      account: expect.objectContaining({ username: 'ann@example.com' }),
+      forceRefresh: false,
+    });
   });
 
   it('refreshes once more when the ID token itself is within five minutes of expiry', async () => {
@@ -116,7 +120,9 @@ describe('idToken', () => {
   });
 
   it('does not refresh a token with more than five minutes left', async () => {
-    const acquire = vi.fn<MsalClient['acquireTokenSilent']>().mockResolvedValue(result({ idTokenClaims: { exp: minutes(6) } }));
+    const acquire = vi
+      .fn<MsalClient['acquireTokenSilent']>()
+      .mockResolvedValue(result({ idTokenClaims: { exp: minutes(6) } }));
     const { auth } = await signedIn({ acquireTokenSilent: acquire });
     await auth.idToken();
     expect(acquire).toHaveBeenCalledTimes(1);
@@ -175,7 +181,9 @@ describe('graphToken', () => {
   });
 
   it('is null without consent (any failure), and never redirects', async () => {
-    const { auth, client } = await signedIn({ acquireTokenSilent: () => Promise.reject(new Error('consent_required')) });
+    const { auth, client } = await signedIn({
+      acquireTokenSilent: () => Promise.reject(new Error('consent_required')),
+    });
     expect(await auth.graphToken(['x'])).toBeNull();
     expect(client.loginRedirect).not.toHaveBeenCalled();
   });

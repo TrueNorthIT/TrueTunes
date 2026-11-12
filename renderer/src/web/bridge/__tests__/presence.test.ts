@@ -69,7 +69,13 @@ describe('resolveRoster', () => {
   it('a rostered no-show is not in the room', () => {
     const roster = resolveRoster(REAL, NAMES);
     expect(roster.inOffice).not.toContain('Simrah');
-    expect(isInOffice(REAL.find((p) => p.id === 'o-simrah')!)).toBe(false);
+    expect(
+      isInOffice({
+        id: 'o-simrah',
+        availability: 'Offline',
+        workLocation: { workLocationType: 'office', source: 'scheduled' },
+      })
+    ).toBe(false);
   });
 
   it('excludes people working from home even while fully available', () => {
@@ -130,7 +136,13 @@ describe('fetchPresences', () => {
 
 describe('fetchOfficePresence', () => {
   const GRAPH = 'https://graph.microsoft.com/v1.0/communications/getPresencesByUserId';
-  const none = (error?: string) => ({ inOffice: [], basis: 'none', observed: 0, detail: [], ...(error ? { error } : {}) });
+  const none = (error?: string) => ({
+    inOffice: [],
+    basis: 'none',
+    observed: 0,
+    detail: [],
+    ...(error ? { error } : {}),
+  });
 
   it('says so when nobody is signed in', async () => {
     const h = makeBridge({ auth: fakeAuth({ signedIn: null }) });
@@ -165,7 +177,7 @@ describe('fetchOfficePresence', () => {
     expect(r).toMatchObject({ inOffice: ['Ann'], basis: 'sensed', observed: 1 });
     expect(h.auth.graphCalls).toEqual([[PRESENCE_SCOPE]]);
     expect(PRESENCE_SCOPE).toBe('https://graph.microsoft.com/Presence.Read.All');
-    const graph = h.fake.calls.find((c) => c.url === GRAPH)!;
+    const graph = h.fake.calls.filter((c) => c.url === GRAPH)[0];
     expect(graph.headers['authorization']).toBe('Bearer graph-tok');
     expect(graph.json()).toEqual({ ids: ['o1', 'o2'] });
     // the Functions call carries the Entra token, Graph carries the Graph token and nothing else

@@ -1,6 +1,6 @@
 // Fakes for the web bridge tests. Nothing here reaches a network: an unmatched request throws.
 
-import { vi } from 'vitest';
+import { vi, expect, afterEach } from 'vitest';
 import type { WebAuth, WebBridge, WebBridgeEnv, UpdateSource } from '../types';
 import { createWebBridge } from '../index';
 
@@ -44,7 +44,8 @@ export class FakeFetch {
     const url = String(input);
     const headers: Record<string, string> = {};
     new Headers(init?.headers).forEach((v, k) => (headers[k] = v));
-    const path = url.startsWith(BASE) ? url.slice(BASE.length) : url;
+    // the gateway under any base a test gives it; other hosts (Graph, a CDN) keep their full URL
+    const path = url.replace(/^https?:\/\/(gw\.test|localhost:8080)/, '');
     const u = new URL(url, BASE);
     const body = init?.body;
     const call: Call = {
@@ -215,7 +216,10 @@ export function withCorrId(header: Record<string, unknown>, corrId: unknown): Re
 /** The Sonos HTTP calls the bootstrap makes (service discovery). */
 export function routeDiscovery(fake: FakeFetch): void {
   fake.on('GET', '/sonos/api/content/v1/households/HH1/integrations/registrations', () =>
-    json([{ 'service-id': '16751367', 'account-id': 'x' }, { 'service-id': '72711', 'account-id': '9' }])
+    json([
+      { 'service-id': '16751367', 'account-id': 'x' },
+      { 'service-id': '72711', 'account-id': '9' },
+    ])
   );
   fake.on('GET', '/sonos/api/content/v2/households/HH1/services/72711/accounts/9/containers/root/browse', () =>
     json({ ok: true })
@@ -256,8 +260,18 @@ export function makeBridge(
     storage: localStorage,
     updates: opts.updates,
   };
-  return { bridge: createWebBridge(env), auth, fake, env, storage: localStorage };
+  const bridge = createWebBridge(env);
+  made.push(bridge);
+  return { bridge, auth, fake, env, storage: localStorage };
 }
+
+export const last = <T>(items: T[]): T | undefined => items[items.length - 1];
+
+// A bridge left running would keep reconnecting into the next test's sockets.
+const made: WebBridge[] = [];
+afterEach(() => {
+  for (const b of made.splice(0)) b.stop();
+});
 
 /** Starts the bridge, opens the socket and waits for the bootstrap to finish. */
 export async function startReady(h: Harness): Promise<FakeWebSocket> {

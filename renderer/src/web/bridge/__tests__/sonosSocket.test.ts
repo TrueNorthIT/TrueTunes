@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { FakeWebSocket, fakeAuth, makeBridge, playSonos, startReady, tick, DEVICES, type Frame } from './helpers';
+import { FakeWebSocket, fakeAuth, makeBridge, playSonos, startReady, tick, last, type Frame } from './helpers';
 
 afterEach(() => vi.useRealTimers());
 
@@ -24,14 +24,28 @@ describe('connection', () => {
     expect(ws.url).not.toContain('tok-1');
   });
 
-  it('derives the relay URL from the page when none is given', async () => {
-    const h = makeBridge();
+  it.each([
+    ['', `ws://${location.host}/sonos/ws`],
+    ['https://gw.test', 'wss://gw.test/sonos/ws'],
+    ['http://localhost:8080/', 'ws://localhost:8080/sonos/ws'],
+  ])('derives the relay URL when none is given (gateway base %j)', async (gatewayBase, want) => {
+    const h = makeBridge({ gatewayBase });
     delete h.env.socketUrl;
     const { createWebBridge } = await import('../index');
     const bridge = createWebBridge(h.env);
     bridge.start();
     await vi.waitFor(() => expect(FakeWebSocket.instances).toHaveLength(1));
-    expect(FakeWebSocket.last().url).toBe(`ws://${location.host}/sonos/ws`);
+    expect(FakeWebSocket.last().url).toBe(want);
+    bridge.stop();
+  });
+
+  it('takes a socketUrl with or without the path', async () => {
+    const h = makeBridge();
+    h.env.socketUrl = 'wss://relay.test/sonos/ws';
+    const { createWebBridge } = await import('../index');
+    createWebBridge(h.env).start();
+    await vi.waitFor(() => expect(FakeWebSocket.instances).toHaveLength(1));
+    expect(FakeWebSocket.last().url).toBe('wss://relay.test/sonos/ws');
   });
 
   it('does not open a second socket on a second start', async () => {
@@ -120,7 +134,11 @@ describe('bootstrap', () => {
     expect(await h.bridge.getActiveGroup()).toBe('RINCON_C');
     await h.bridge.play();
     expect(ws.commands('playback', 'play')[0][0]['groupId']).toBe('RINCON_C:2');
-    expect(msgs.every(([hd]) => (hd as { groupId: string }).groupId === 'RINCON_C:2')).toBe(true);
+    const state = msgs
+      .map(([hd]) => hd as Frame[0])
+      .filter((hd) => hd['namespace'] === 'playbackExtended' || hd['namespace'] === 'groupVolume');
+    expect(state.length).toBeGreaterThan(0);
+    expect(state.every((hd) => hd['groupId'] === 'RINCON_C:2')).toBe(true);
   });
 
   it('falls back to the first group when the preferred one has gone', async () => {
@@ -129,11 +147,13 @@ describe('bootstrap', () => {
     expect(await h.bridge.getActiveGroup()).toBe('RINCON_A');
   });
 
-  it('forwards only the active group\'s playback and volume pushes', async () => {
+  it("forwards only the active group's playback and volume pushes", async () => {
     const h = makeBridge();
     const ws = await startReady(h);
     const msgs: Array<{ ns: string; group: unknown }> = [];
-    h.bridge.onWsMessage((hd) => msgs.push({ ns: (hd as Frame[0])['namespace'] as string, group: (hd as Frame[0])['groupId'] }));
+    h.bridge.onWsMessage((hd) =>
+      msgs.push({ ns: (hd as Frame[0])['namespace'] as string, group: (hd as Frame[0])['groupId'] })
+    );
     await tick();
     msgs.length = 0;
     ws.receive(PB_PUSH('RINCON_C:2'));
@@ -185,7 +205,12 @@ describe('late subscribers', () => {
     expect(ready).toHaveBeenCalledTimes(1);
     expect(groups).toHaveBeenCalledTimes(1);
     expect(authed).toHaveBeenCalledTimes(1);
-    expect(msgs.map(([hd, p]) => [hd['namespace'], (p as { n?: number; volume?: number }).n ?? (p as { volume: number }).volume])).toEqual([
+    expect(
+      msgs.map(([hd, p]) => [
+        hd['namespace'],
+        (p as { n?: number; volume?: number }).n ?? (p as { volume: number }).volume,
+      ])
+    ).toEqual([
       ['playbackExtended', 7],
       ['groupVolume', 33],
     ]);
@@ -221,22 +246,56 @@ describe('send', () => {
     FakeWebSocket.server = (s, [hd]) =>
       queueMicrotask(() => s.receive([{ ...hd, response: 'x' }, { answer: hd['command'] }]));
     expect(await h.bridge.skipNext()).toEqual({ answer: 'skipToNextTrack' });
-    expect(ws.sent.at(-1)?.[0]['corrId']).toMatch(/^[0-9a-f-]{36}$/);
+    expect(last(ws.sent)?.[0]['corrId']).toMatch(/^[0-9a-f-]{36}$/);
   });
 });
 
 describe('commands', () => {
   const GROUP = 'RINCON_A:1';
   const table: Array<[string, (b: ReturnType<typeof makeBridge>['bridge']) => Promise<unknown>, Frame]> = [
-    ['play', (b) => b.play(), [{ namespace: 'playback', groupId: GROUP, command: 'play' }, { allowTvPauseRestore: true, deviceFeedback: 'NONE' }]],
-    ['pause', (b) => b.pause(), [{ namespace: 'playback', groupId: GROUP, command: 'pause' }, { allowTvPauseRestore: true, deviceFeedback: 'NONE' }]],
+    [
+      'play',
+      (b) => b.play(),
+      [
+        { namespace: 'playback', groupId: GROUP, command: 'play' },
+        { allowTvPauseRestore: true, deviceFeedback: 'NONE' },
+      ],
+    ],
+    [
+      'pause',
+      (b) => b.pause(),
+      [
+        { namespace: 'playback', groupId: GROUP, command: 'pause' },
+        { allowTvPauseRestore: true, deviceFeedback: 'NONE' },
+      ],
+    ],
     ['skipNext', (b) => b.skipNext(), [{ namespace: 'playback', groupId: GROUP, command: 'skipToNextTrack' }, {}]],
     ['skipPrev', (b) => b.skipPrev(), [{ namespace: 'playback', groupId: GROUP, command: 'skipBack' }, {}]],
-    ['skipToTrack', (b) => b.skipToTrack(4), [{ namespace: 'playback', groupId: GROUP, command: 'skipToTrack' }, { trackNumber: 4 }]],
-    ['seek', (b) => b.seek(12345), [{ namespace: 'playback', groupId: GROUP, command: 'seek' }, { positionMillis: 12345 }]],
-    ['setPlayModes', (b) => b.setPlayModes({ shuffle: true }), [{ namespace: 'playback', groupId: GROUP, command: 'setPlayModes' }, { playModes: { shuffle: true } }]],
-    ['loadContent', (b) => b.loadContent({ type: 'CUSTOM' }), [{ namespace: 'playback', groupId: GROUP, command: 'loadContent' }, { type: 'CUSTOM' }]],
-    ['setGroupVolume', (b) => b.setGroupVolume(35), [{ namespace: 'groupVolume', groupId: GROUP, command: 'setVolume' }, { volume: 35 }]],
+    [
+      'skipToTrack',
+      (b) => b.skipToTrack(4),
+      [{ namespace: 'playback', groupId: GROUP, command: 'skipToTrack' }, { trackNumber: 4 }],
+    ],
+    [
+      'seek',
+      (b) => b.seek(12345),
+      [{ namespace: 'playback', groupId: GROUP, command: 'seek' }, { positionMillis: 12345 }],
+    ],
+    [
+      'setPlayModes',
+      (b) => b.setPlayModes({ shuffle: true }),
+      [{ namespace: 'playback', groupId: GROUP, command: 'setPlayModes' }, { playModes: { shuffle: true } }],
+    ],
+    [
+      'loadContent',
+      (b) => b.loadContent({ type: 'CUSTOM' }),
+      [{ namespace: 'playback', groupId: GROUP, command: 'loadContent' }, { type: 'CUSTOM' }],
+    ],
+    [
+      'setGroupVolume',
+      (b) => b.setGroupVolume(35),
+      [{ namespace: 'groupVolume', groupId: GROUP, command: 'setVolume' }, { volume: 35 }],
+    ],
   ];
 
   it.each(table)('%s sends its frame to the active group', async (_name, call, [header, payload]) => {
@@ -250,10 +309,13 @@ describe('commands', () => {
     expect(ws.sent).toHaveLength(before + 1);
   });
 
-  it.each(table.filter(([n]) => n !== 'setGroupVolume'))('%s says the socket is down before it connects', async (_name, call) => {
-    const h = makeBridge();
-    expect(await call(h.bridge)).toEqual({ error: 'WS not connected' });
-  });
+  it.each(table.filter(([n]) => n !== 'setGroupVolume'))(
+    '%s says the socket is down before it connects',
+    async (_name, call) => {
+      const h = makeBridge();
+      expect(await call(h.bridge)).toEqual({ error: 'WS not connected' });
+    }
+  );
 
   it('setGroupVolume validates before it sends', async () => {
     const h = makeBridge();
@@ -309,9 +371,15 @@ describe('commands', () => {
       const h = makeBridge();
       await startReady(h);
       expect(await h.bridge.playAudioClip({})).toEqual({ error: 'Need text or an https url' });
-      expect(await h.bridge.playAudioClip({ url: 'http://x.test/a.mp3' })).toEqual({ error: 'Need text or an https url' });
-      expect(await h.bridge.playAudioClip({ url: 'https://x.test/a.mp3', volume: 101 })).toEqual({ error: 'Invalid volume' });
-      expect(await h.bridge.playAudioClip({ url: 'https://x.test/a.mp3', playerIds: [] })).toEqual({ error: 'No active group' });
+      expect(await h.bridge.playAudioClip({ url: 'http://x.test/a.mp3' })).toEqual({
+        error: 'Need text or an https url',
+      });
+      expect(await h.bridge.playAudioClip({ url: 'https://x.test/a.mp3', volume: 101 })).toEqual({
+        error: 'Invalid volume',
+      });
+      expect(await h.bridge.playAudioClip({ url: 'https://x.test/a.mp3', playerIds: [] })).toEqual({
+        error: 'No active group',
+      });
     });
 
     it('turns a failed player into an error entry', async () => {
@@ -348,7 +416,7 @@ describe('setGroup, refreshPlayback, resync', () => {
     expect(await h.bridge.getActiveGroup()).toBe('RINCON_A');
   });
 
-  it('after a switch the old group\'s replayed state is gone and the new group\'s push is forwarded', async () => {
+  it("after a switch the old group's replayed state is gone and the new group's push is forwarded", async () => {
     const h = makeBridge();
     const ws = await startReady(h);
     ws.receive(PB_PUSH('RINCON_A:1', 1));
@@ -360,7 +428,7 @@ describe('setGroup, refreshPlayback, resync', () => {
     // only what the re-subscribes answered for the new group
     expect(seen.every((g) => g === 'RINCON_C:2')).toBe(true);
     ws.receive(PB_PUSH('RINCON_C:2', 2));
-    expect(seen.at(-1)).toBe('RINCON_C:2');
+    expect(last(seen)).toBe('RINCON_C:2');
   });
 
   it('refreshPlayback re-subscribes the active group when connected, and is quiet when not', async () => {
@@ -494,7 +562,12 @@ describe('reconnect', () => {
   it('ignores a frame that is not JSON', async () => {
     const h = makeBridge();
     const ws = await startReady(h);
+    const msgs = vi.fn();
+    h.bridge.onWsMessage(msgs);
+    await tick();
+    msgs.mockClear();
     ws.dispatchEvent(new MessageEvent('message', { data: 'not json' }));
-    expect(DEVICES.length).toBe(3);
+    ws.dispatchEvent(new MessageEvent('message', { data: '"a string"' }));
+    expect(msgs).not.toHaveBeenCalled();
   });
 });

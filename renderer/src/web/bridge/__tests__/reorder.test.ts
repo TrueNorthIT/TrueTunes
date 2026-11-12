@@ -16,7 +16,10 @@ function applyBatch(queue: number[], { items, positions }: Batch): number[] {
 }
 
 const apply = (n: number, batches: Batch[]) =>
-  batches.reduce(applyBatch, Array.from({ length: n }, (_, i) => i));
+  batches.reduce(
+    applyBatch,
+    Array.from({ length: n }, (_, i) => i)
+  );
 
 /** What the user asked for: the selection, in order, goes before the first unselected item at or after `insertBefore`. */
 function expected(n: number, from: number[], insertBefore: number): number[] {
@@ -65,10 +68,13 @@ describe('computeReorderBatches', () => {
   });
 
   it('yields the requested order for many random selections', () => {
+    // mulberry32: seeded, so a failure reproduces
     let seed = 12345;
     const rnd = (n: number) => {
-      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-      return seed % n;
+      seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return Math.floor((((t ^ (t >>> 14)) >>> 0) / 4294967296) * n);
     };
     for (let round = 0; round < 500; round++) {
       const n = 2 + rnd(14);

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 import { OPERATIONS } from '../sonosHttp';
-import { BASE, fakeAuth, json, text, makeBridge, startReady, type Harness } from './helpers';
+import { BASE, fakeAuth, json, text, makeBridge, startReady, last, type Harness } from './helpers';
 
 afterEach(() => vi.useRealTimers());
 
@@ -10,7 +10,7 @@ afterEach(() => vi.useRealTimers());
 
 describe('operation table', () => {
   it('matches src/sonos-api.ts entry for entry', () => {
-    const source = readFileSync(fileURLToPath(new URL('../../../../../src/sonos-api.ts', import.meta.url)), 'utf8');
+    const source = readFileSync(resolve(__dirname, '../../../../../src/sonos-api.ts'), 'utf8');
     const table = source.slice(source.indexOf('const OPERATIONS'), source.indexOf('// ─── URL builder'));
     const desktop: Record<string, { method: string; path: string }> = {};
     const re = /(\w+):\s*\{\s*method:\s*'(\w+)',\s*path:\s*'([^']+)',?\s*\}/g;
@@ -264,7 +264,7 @@ describe('service discovery', () => {
     h.fake.on('GET', ROOT, () => text('', 404));
     h.fake.on('GET', /albums\/AL\/browse/, () => json({}));
     await h.bridge.fetch({ operationId: 'browseAlbum', pathParams: { albumId: 'AL' } });
-    expect(h.fake.calls.at(-1)?.path).toContain('/services/72711/accounts/9/albums/AL/browse');
+    expect(last(h.fake.calls)?.path).toContain('/services/72711/accounts/9/albums/AL/browse');
   });
 
   it('re-selects the service once on ERROR_SERVICE_NOT_CONFIGURED', async () => {
