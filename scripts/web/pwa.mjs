@@ -138,6 +138,22 @@ const versionOn = (p) =>
         setTimeout(() => resolve('no answer'), 3000);
       })
   );
+/**
+ * Waits for the build with this id to have taken over, then answers the version the page is running under.
+ * A waiting worker only takes over once the old one is idle, so this must not message the worker while it
+ * waits (that would keep it busy for ever): it watches the caches instead, which the new worker prunes to its
+ * own when it activates. Polled, because the page reloads in between and a slow runner takes its time.
+ */
+async function reaches(p, id, ms = 90000) {
+  const deadline = Date.now() + ms;
+  while (Date.now() < deadline) {
+    const names = await p.evaluate(() => caches.keys()).catch(() => null);
+    if (names && names.length === 1 && names[0] === `true-tunes-${id}`) break;
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  await p.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 30000 }).catch(() => {});
+  return versionOn(p).catch(() => 'unreachable');
+}
 const before = await versionOn(first);
 // Someone is using the app: a key press ends "launching", so the update below must wait for the button.
 await first.keyboard.press('Shift');
@@ -165,26 +181,20 @@ await check('a new version installs and waits: the page stays on the old one and
 await check(
   'the Update button activates the new version and reloads onto it, in a window that began with no worker',
   async () => {
-    const reloadedSecond = second.waitForEvent('load', { timeout: 15000 });
-    await Promise.all([
-      first.waitForEvent('load', { timeout: 15000 }),
-      first.getByRole('button', { name: 'Update' }).click(),
-    ]);
-    await first.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 15000 });
-    const now = await versionOn(first);
+    await first.getByRole('button', { name: 'Update' }).click();
+    const now = await reaches(first, 'second000000');
     assert(now === '99.0.0', `expected 99.0.0, the page is on ${now}`);
     await first.waitForFunction(() => document.body.innerText.includes('Crooked Shoreline'), null, { timeout: 20000 });
     const names = await first.evaluate(() => caches.keys());
     assert(names.length === 1 && names[0] === 'true-tunes-second000000', `old caches left behind: ${names.join(', ')}`);
-    await reloadedSecond;
     return `now on ${now}`;
   }
 );
 
 await check('the other open window follows onto the new version', async () => {
-  await second.waitForFunction(() => document.body.innerText.includes('Crooked Shoreline'), null, { timeout: 20000 });
-  const now = await versionOn(second);
+  const now = await reaches(second, 'second000000');
   assert(now === '99.0.0', `the second window is on ${now}`);
+  await second.waitForFunction(() => document.body.innerText.includes('Crooked Shoreline'), null, { timeout: 20000 });
 });
 
 // ── a third version ships while the app is closed, and then the app is opened ──
@@ -202,13 +212,7 @@ await startGateway();
 await check('opening the app after a deploy takes the new version by itself, with no button', async () => {
   const launch = await visitor.newPage();
   await launch.goto(`${base}/demo`);
-  const deadline = Date.now() + 25000;
-  let now = '';
-  while (Date.now() < deadline) {
-    now = await versionOn(launch).catch(() => 'reloading');
-    if (now === '100.0.0') break;
-    await new Promise((r) => setTimeout(r, 500));
-  }
+  const now = await reaches(launch, 'third0000000');
   assert(now === '100.0.0', `the launched app is on ${now}`);
   await launch.waitForFunction(() => document.body.innerText.includes('Crooked Shoreline'), null, { timeout: 20000 });
   assert(
