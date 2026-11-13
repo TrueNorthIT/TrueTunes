@@ -412,7 +412,9 @@ await phoneJourney('move a queue row from its menu and see the order change', as
   const at = order.indexOf(playing);
   const [first, second] = [order[at + 1], order[at + 2]];
   if (!first || !second) throw new Error(`fewer than two rows are up next (${order.join(', ')})`);
-  await press(page.locator(`button[aria-label="More for ${first}"]`));
+  // force: Playwright's stability check waits on animation frames, which headless WebKit on Windows stops
+  // delivering on this page (its frame rate collapses here), so the tap would never start.
+  await press(page.locator(`button[aria-label="More for ${first}"]`), { force: true });
   await expectVisible(page.getByRole('menu'));
   await audit('The row menu (bottom sheet)');
   await press(menuItem('Move down'));
@@ -425,7 +427,7 @@ await phoneJourney('move a queue row from its menu and see the order change', as
     [first, second]
   );
   // And back to the front of the line with Play next.
-  await press(page.locator(`button[aria-label="More for ${first}"]`));
+  await press(page.locator(`button[aria-label="More for ${first}"]`), { force: true });
   await press(menuItem('Play next'));
   await expectGone(page.getByRole('menu'));
   await page.waitForFunction(
