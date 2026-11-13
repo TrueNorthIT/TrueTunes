@@ -1,94 +1,61 @@
-# Handover: brief A (shell and shared components)
+# Handover: brief A (shell and shared components): finished
 
-Branch `feature/pwa-phone-a-shared`, from `origin/feature/pwa-phone-followup`. Wound down on the coordinator's
-instruction; nothing is half-written in the code, but the last verification steps were not run (see "Next step").
-
-Reinstalled: a reboot left a partial `node_modules`; I deleted it, then ran `npm ci --ignore-scripts` at the root and
-`npm ci && npm run build` in `server/` (msal-browser 5.29.0, `server/dist/gateway/main.js` built). Everything below
-after "Checks" ran against that install; the screenshots were taken earlier against a build made with the main
-checkout's packages, so the owner-visible CSS/DOM they show should be re-taken (cheap).
+Branch `feature/pwa-phone-a-shared` (from `origin/feature/pwa-phone-followup`). Reinstalled at the coordinator's request:
+`npm ci --ignore-scripts` at the root and `npm ci && npm run build` in `server/` (msal-browser 5.29.0).
 
 ## Items
 
-Feedback (mine):
+Feedback items:
 
-- **5, top offset: done.** `global.css`: `--safe-top-extra` (24px only in `display-mode: standalone` + `@supports (-webkit-touch-callout: none)`),
-  `--status-h` (inset + demo strip), `--phone-top = --status-h + --safe-top-extra`. `.statusBar` stays at `--status-h`
-  (kept in the installed app: iOS's own edge is only a soft blur, so our strip still keeps scrolling content off the clock;
-  not removed). `DESIGN.md` names both tokens and the source of 24px. Checked in Chromium with the inset and the extra
-  forced on: Discover title cap top at about 119px (Demo strip included), Home greeting likewise, all >= 71px. Needs the owner's phone.
-- **3, dock space: done.** `PhoneShell.module.css`, `global.css`: padding `6px 8px var(--dock-pad)`, gap 2px, mini 52px,
-  tab 50px; `--dock-pad: max(10px, safe-bottom - 13px)` (21px at 34); `--dock-h: 110px`; `--player-h = dock-h + dock-pad`.
-  Measured dock heights: 121px with inset 0 (was 125) and 132px with the 34px inset (was 159): 27px of content back
-  when installed, 4px in Safari. Labels end about 24px above the edge. No side-by-side before/after image was made.
-- **7, swipe down: done.** New `renderer/src/lib/swipeDismiss.ts` (`swipeIntent`, `shouldDismiss`, `installSwipeDismiss`,
-  `useSwipeDismiss`) and `lib/__tests__/swipeDismiss.test.ts` (15 tests pass). Used by `NowPlayingPage.tsx` (grab handle
-  added, chevron kept) and `ContextMenu.tsx` (sheet). Proved with CDP touch swipes in Chromium: a long drag closes Now
-  playing, a short slow drag and a 30px twitch stay, a drag on the seek bar stays, a long drag on the sheet closes it.
-  Scrolled-content and horizontal cases are in the unit tests. `overscroll-behavior: contain` on both. Dialogs untouched (brief F;
-  suggestion: only a field-less dialog presented as a sheet may call `useSwipeDismiss`). Needs a real phone (pull to refresh).
-- **4, Now playing redesign: done.** `NowPlayingPage.tsx`, `PhoneNowPlaying.module.css`; `common/SeekBar.tsx` gained an
-  optional `thumbClassName` (thumb and pointer drag, seeks on release; desktop unchanged). Bands: handle/chevron, art with
-  a 32px queuer face on its corner (44px target, name "Queued by X", champion ring kept), centred title and one
-  "Artist · Album" line, progress with thumb, prev/play/next, quieter volume (no number), one tonal tool bar
-  (shuffle, repeat, heart, lyrics, queue; on = chip plus dot, heart also fills). Fits 390x664 without scrolling
-  (scrollHeight == clientHeight at 664 and 844). `DESIGN.md` Now playing bullet rewritten, Swipe to dismiss bullet added.
-  I judged it calm, close to the reference. Not done: screenshot beside the owner's two images; no WebKit run.
-  **Journey change needed (brief B's file `scripts/web/journey.mjs`):** Now playing's shuffle, repeat and heart are now
-  icon buttons in a `role=toolbar` ("More player controls") and keep their aria-labels; Lyrics and Queue are icon
-  buttons named "Lyrics" and "Queue" (were pills); the queued-by chip is now a button named "Queued by X, open profile"
-  with no visible text; the volume number is gone; previous/next remain but shuffle/repeat are no longer in the transport row.
-  Also add: drag Now playing down and see it close; drag the sheet down and see it gone (my `swipe.cjs` does this with CDP).
+- **5 top offset: done.** `global.css`: `--safe-top-extra` (24px only in `display-mode: standalone` with `@supports (-webkit-touch-callout: none)`),
+  `--status-h`, `--phone-top = --status-h + --safe-top-extra`. `.statusBar` stays at `--status-h`. DESIGN.md names both. Checked with an
+  injected stylesheet (`--safe-top: 47px !important`, extra forced on): first lines of Discover/Home sit at or below about 119px (demo strip included). Needs the owner's phone.
+- **3 dock: done.** Padding `6px 8px var(--dock-pad)`, gap 2, mini 52, tab 50, `--dock-pad: max(10px, safe-bottom - 13px)`, `--dock-h: 110px`.
+  Measured (injected stylesheet, so the layout really moved): 121px with inset 0 (was 125), 132px with the 34px inset (was 159): 27px back installed.
+- **7 swipe down: done.** `lib/swipeDismiss.ts` (+15 tests), used by Now playing and the bottom sheet; proved with CDP touch swipes in Chromium. Dialogs untouched (brief F: only a field-less dialog sheet could use `useSwipeDismiss`). Real phone needed.
+- **4 Now playing: done.** See DESIGN.md. Fits 390x664 (no scroll). `SeekBar` got an optional `thumbClassName` (drag). Artist/album links are 44px.
+  Small "Now playing" label under the grab handle (the story test needs a visible h1).
 
-Brief's own:
+Brief items: 1 done (More button order proved in a built bundle: 0 shown at 1280x800 with a mouse, 21 of 21 by touch); 2 done (below); 3 done (InfoTip prefix; Toast had it);
+4 done (InfoTip tap, test); 5 done (+ and ⋯ overlap 10px, 34px glyph gap; no empty chart column); 6 superseded; 7 done (frosted strip behind Back once the page scrolls;
+looked at Album and Artist scrolled in Chromium and WebKit); 8 looked, no change; 9 done.
 
-- **1, More button order: done in CSS, partly proved.** `rows.module.css`: `:global(:root) .more { display: none }` beats
-  `MoreButton.module.css` whatever the bundle order. Proved in a built bundle at 1280x800 with a mouse: 0 displayed "More for" buttons
-  on `#/`, `#/discover`, `#/leaderboard` (15, 21, 10 in the DOM). At 390x844 touch: 21 of 21 shown on Discover.
-- **2, transparency check: partly.** Looked at the open sheet (opaque, last item clears the 34px inset) and the dock over
-  Discover content (legible). Not done: Home/Queue/Search/Album scrolled shots in the default headless shell versus full Chromium.
-- **3, `-webkit-backdrop-filter`: done.** `InfoTip.module.css` had it missing; `Toast.module.css` already had it.
-- **4, InfoTip by touch: done.** `InfoTip.tsx`: a touch tap pins it open, a tap on the button again or anywhere else closes it
-  (pointerdown capture); mouse unchanged. Test added. Checked in Chromium on Home picks: one tap opens it (screenshot taken).
-- **5, rows: done.** `rows.module.css`: + and ⋯ overlap 10px past the gap (tracks: `calc(-0.75em - 10px)`; chart: `-10px`), each target
-  still 44px; chart grid's last two columns are `auto` and the spacer is hidden on the phone, so no empty column.
-  The overlap fix was written after the last screenshot: re-check by eye (the earlier screenshot showed glyphs still 44px apart, which is why it was changed).
-- **6: superseded by feedback 4.**
-- **7, Back button: done, not eyeballed.** `PhoneShell.tsx` (`backStrip`, `onScrollCapture`) and `PhoneShell.module.css`: a dense frosted strip
-  behind Back fades in once the page scrolls more than 8px (ignores sideways shelves); at rest there is none, so Artist/Profile heroes still run under the top.
-  My last screenshot run (album/artist scrolled) used the scroller that I then fixed; **look at `album-scrolled` and `artist-scrolled` again.**
-- **8, Demo badge at 1280x800: looked, no change.** Bottom-left in the margin under the player bar, covers nothing.
-- **9, DESIGN.md: done** for dock, tokens, Now playing, swipe.
+Item 2, transparency: in the default headless shell (no blur) page text read through the dock's tab row and its bottom area (0.88 alpha).
+Fixed: `--material-bg-dense` is now 0.98 (depth.css, DESIGN.md). Re-shot: nothing readable; a 2% ghost remains in Playwright WebKit. This also answers brief B's report about the bottom 34px of the dock.
 
-## Checks (against the proper install)
+Additions from others: `common/README.md` Dialog line (done); section headers (`SectionCard`, `Carousel`) keep the action on the title's row (phone only, looked at on Home: "Trending in the office · this week" wraps beside See all; "Picks for who's in" wraps beside Queue all/See all with the faces strip under);
+ArtCard overlap: looked, it is the demo's art (a big flat circle in the cover image under the text), not a layout bug, not changed; Public checkbox row (`ContextMenu.module.css`): row and box 44px, tapped the label in the demo at 390x844 and the box checked;
+DESIGN.md Heroes/Top result line added.
 
-- `npm run typecheck`: passes (no output after the two tsc commands).
-- `npm run lint`: 0 errors, 133 warnings (existing); designmd lint 0 errors.
-- `npm run format:check`: found two files, fixed with `prettier --write` (NowPlayingPage.tsx, swipeDismiss.ts): **that fix is in the final commit, re-run to confirm clean**.
-- `npx vitest run ... --project unit --maxWorkers=2 renderer/src/components/common renderer/src/lib/__tests__/swipeDismiss.test.ts renderer/src/components/phone`: passed, exit 0 (earlier common-only run: 12 files, 95 tests).
-- Not run: `NODE_ENV=production npm run build:web` against the proper install, `journey.mjs --local` at 390x844 and 1280x800
-  (so no data on the queue-menu flake), the story suite (`--project stories --maxWorkers=2`, required last, and needed since
-  `common/` changed and `PhoneDock.stories.tsx`, plus a Now playing story, may need updating), WebKit.
+Also changed: `PhoneShell.module.css` `pageIn` starts at opacity 0.6 (not 0): the story test `Now Playing` asserts `toBeVisible` on the heading right at mount and flaked (also on the base branch's page: 1 of 3 runs) against a fully clear page.
 
-## Next step
+## Checks (against the proper install, final tree)
 
-1. `npx prettier --check` on touched files; `NODE_ENV=production npm run build:web`.
-2. `node scripts/web/journey.mjs --local` and `--width 1280 --height 800`; update the Now playing steps (or report to B as above).
-3. Re-take screenshots (scratch scripts in `C:\Users\JOSEPH~1\AppData\Local\Temp\claude\bf829d869854efdf\be5ee6da-af84-47ed-837e-e87a6683388d\scratchpad\a\`: `shots.cjs`, `more.cjs`, `swipe.cjs`; they serve `renderer/dist-web` on 9101 and need `playwright` from the root install); look at album/artist scrolled and the row pair; WebKit pass.
-4. Brief item 2 shots; the story suite last.
+- `npm run typecheck`: passes. `npm run lint`: 0 errors, 133 warnings. `format:check` on `renderer/src/**`: clean.
+- unit (`--maxWorkers=2`): designSync, `components/common`, `components/phone`, swipeDismiss, HomePanel: 15 files, 175 tests pass.
+- `NODE_ENV=production npm run build:web`: builds.
+- story suite (`--project stories --maxWorkers=2`): 49 files, 224 tests pass.
+- `journey.mjs --local --width 1280 --height 800`: all passed (4 phone-only steps skipped).
+- `journey.mjs --local` (390x844): 13 steps pass except two. Fixed by me: the earlier "tap target" failures on Now playing (links were 40px; now 44px) and the first pass of this run was clean. **Then two steps began failing consistently: "move a queue row from its menu and see the order change"
+  (`page.evaluate ... null reading 'getAttribute'`: the playing row's More button was not found, journey line 394) and "a long press opens the same menu" (`getByRole('menu')` not visible in 3s).**
+  They failed identically with my Now playing, section-header and ContextMenu CSS changes reverted (checked), so I do not think my last changes cause them; but an earlier run on this branch passed all 13, so I cannot say they are only load flake. Please judge on the merged tree.
+- `journey.mjs --local --safe-area` fails its last step "no uncaught errors" with `Cannot read properties of null (reading 'style')`: the flag's init script touches `document.documentElement` before it exists (journey.mjs line ~80, brief B). Per brief D the flag also has no effect (the shell overrides inline insets). My safe-area shots used an injected `:root { --safe-top: 47px !important; --safe-bottom: 34px !important }` and the layout moved (dock 132px).
 
-## Screenshots (all in `...\scratchpad\a\out\`, from the earlier build)
+## Journey changes needed (brief B's file)
 
-Looked at: `chromium-844safe-nowplaying.png`, `chromium-664-nowplaying.png`, `chromium-844safe-discover.png`, `chromium-album-scrolled.png` (not actually scrolled),
-`chromium-discover-rows.png`, `chromium-sheet.png`, `chromium-desktop-home.png`, `chromium-844safe-home.png`. Taken, not looked at: the rest in that folder.
+Now playing: shuffle, repeat, heart are icon buttons in `role=toolbar` "More player controls", keeping aria-labels; Lyrics and Queue are icon buttons (names "Lyrics", "Queue"); the queued-by control is a button "Queued by X, open profile" with no visible text; no volume number. Add steps: drag Now playing down and see it close; drag the sheet down and see it gone (my CDP script `scratchpad\a\swipe.cjs` does it).
 
-## Files I do not own
+## The status strip over hero art (for the coordinator)
 
-None changed. Needed: `scripts/web/journey.mjs` (see feedback 4 above).
+The frosted strip (`.statusBar`, `--status-h` high: inset plus demo strip, so 73px with the insets on) is `--material-bg-dense` (now 98% opaque navy) plus a blur, `pointer-events: none`; it is opaque in effect, so a hero running up to the top edge is hidden under it. Making it clear over a hero is a small, safe change: fade it in only once the page has scrolled, exactly as the Back strip now does
+(`scrolled` state and `onScrollCapture` in `PhoneShell.tsx`; give `.statusBar` `opacity: 0` and a `[data-on]` rule, and show it on every page, not just `showBack`). At rest nothing then sits under it that is not meant to (titles start below `--phone-top`); the cost is that on the installed iOS app the system's own soft edge is all that sits under the clock until the first scroll. I did not do it.
 
-## Unverified / concerns
+## Screenshots (all in `C:\Users\JOSEPH~1\AppData\Local\Temp\claude\bf829d869854efdf\be5ee6da-af84-47ed-837e-e87a6683388d\scratchpad\a\out2\` and `...\out\`)
 
-- Everything touch-specific on a real iPhone (swipe, pull to refresh, the 24px extra, tap-to-open InfoTip).
-- Playwright's chromium `shots.cjs` simulates safe areas by overriding `--safe-top`/`--safe-bottom`; the standalone extra was forced the same way.
-- The overlapped + hit area is 34px wide where the pair meets (brief allows it).
-- Row `.more` base rule now uses `:global(:root)` for specificity; the queue's own `MoreButton` has no rows class and is unchanged.
+Looked at: `out\chromium-844safe-nowplaying.png`, `out\chromium-664-nowplaying.png`, `out\chromium-844safe-discover.png`, `out\chromium-sheet.png`, `out\chromium-desktop-home.png`,
+`out2\chromium-album-scrolled.png`, `out2\chromium-artist-scrolled.png`, `out2\chromium-queue.png`, `out2\crop-shell-queue.png`, `out2\webkit-album-scrolled.png`, `out2\webkit-profile-scrolled.png`, `out2\home-picks.png`, `out2\home-trending.png`.
+Taken, not looked at: the rest of those folders (profile-scrolled in Chromium, search, home-scrolled, `new-playlist.png`, `playlist-sheet.png`, final `np664-final.png`/`np844-final.png`). No WebKit shot of the final Now playing page, no before/after side by side, no shot beside the owner's two images. Scripts: `shots.cjs`, `back.cjs`, `more.cjs`, `home.cjs`, `swipe.cjs` in `scratchpad\a`.
+
+## Not done / unverified
+
+Everything touch-specific on a real iPhone (swipe, pull to refresh, the 24px extra, InfoTip tap); Container and Playlist pages with the Back strip were not opened (Album, Artist, Profile were); WebKit journey run (`--device "iPhone 14"`) was not run; no gateway or browser of mine is left running.
