@@ -108,12 +108,7 @@
       "id": "web-sign-in",
       "area": "auth",
       "description": "Sign-in with @azure/msal-browser, redirect flow, cache in localStorage, on the existing app registration and one of its registered redirect addresses. Sign out and switch account work.",
-      "bridge": [
-        "getEntraUser",
-        "entraSignOut",
-        "entraReLogin",
-        "onEntraReady"
-      ],
+      "bridge": ["getEntraUser", "entraSignOut", "entraReLogin", "onEntraReady"],
       "how_verified": "unit tests with a fake MSAL client; Playwright reaches the Microsoft sign-in page with the right client id and redirect_uri. A real sign-in needs the owner.",
       "passes": true,
       "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (auth.test.ts, fake MSAL). Playwright on production: the Sign in button lands on login.microsoftonline.com with redirect_uri=https://truetunes.tnapps.co.uk/auth/redirect and no error. The owner signed in for real on production on 12 Nov 2026 and reported that it works."
@@ -122,12 +117,7 @@
       "id": "web-auth-state",
       "area": "auth",
       "description": "The app's ready, expired and failed states on the web: ready once signed in and the relay is up, failed (with Retry) when the gateway refuses the token.",
-      "bridge": [
-        "onAuthReady",
-        "onAuthExpired",
-        "onAuthFailed",
-        "retrySonosAuth"
-      ],
+      "bridge": ["onAuthReady", "onAuthExpired", "onAuthFailed", "retrySonosAuth"],
       "how_verified": "unit tests of the bridge",
       "passes": true,
       "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (session.test.ts \"start and the auth state\", sonosHttp.test.ts \"401\", review.test.ts)."
@@ -136,11 +126,7 @@
       "id": "web-display-name",
       "area": "auth",
       "description": "The display name: looked up from the profile for this Entra account, claimed, kept in localStorage, and changeable.",
-      "bridge": [
-        "getDisplayName",
-        "setDisplayName",
-        "renameUser"
-      ],
+      "bridge": ["getDisplayName", "setDisplayName", "renameUser"],
       "how_verified": "unit tests of the bridge's request mapping",
       "passes": true,
       "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (session.test.ts \"identity\", functions.test.ts \"renameUser\", review.test.ts: one name per account). The owner signed in on production on 12 Nov 2026 in a desktop-width browser and sent a screenshot: now playing with its \"Queued by\" chip, the 22-track queue with times and queuer avatars, live lyrics, Picks, the Queuedle card, his profile and the Poll button all loaded."
@@ -202,12 +188,7 @@
       "id": "web-attribution",
       "area": "functions",
       "description": "Who queued what: the map is loaded from /fn/attribution and refreshed when the queue changes; queueing publishes the event (/fn/log-event) and shows the badge at once.",
-      "bridge": [
-        "publishQueued",
-        "refreshAttribution",
-        "onAttributionMap",
-        "onAttributionEvent"
-      ],
+      "bridge": ["publishQueued", "refreshAttribution", "onAttributionMap", "onAttributionEvent"],
       "how_verified": "unit tests of the bridge; demo journey shows queued-by badges",
       "passes": true,
       "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (session.test.ts \"attribution\"). Badges in the demo: the queue shows who queued each track (journey screenshots). The owner signed in on production on 12 Nov 2026 in a desktop-width browser and sent a screenshot: now playing with its \"Queued by\" chip, the 22-track queue with times and queuer avatars, live lyrics, Picks, the Queuedle card, his profile and the Poll button all loaded. Live events through the gateway relay shipped in #268 (see gw-pubsub-relay)."
@@ -216,9 +197,7 @@
       "id": "web-office-presence",
       "area": "functions",
       "description": "Office presence from Microsoft Graph for the Discover room. Falls back to 'none' (the room is inferred from recent queueing) when there is no consent.",
-      "bridge": [
-        "fetchOfficePresence"
-      ],
+      "bridge": ["fetchOfficePresence"],
       "how_verified": "unit test of the fallback and of the Graph mapping",
       "passes": true,
       "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (presence.test.ts: the desktop's resolveRoster tests ported, batching, the no-consent fallback)."
@@ -227,9 +206,7 @@
       "id": "web-dj-autoplay",
       "area": "functions",
       "description": "The DJ (autoplay) works on the web as on the desktop: the upcoming picks, the on/off switch, and the coordinator's filler position, so people's picks go in front of the DJ's. The web client takes part in the 30-second enqueue lease like any other client.",
-      "bridge": [
-        "djAutoplay"
-      ],
+      "bridge": ["djAutoplay"],
       "how_verified": "unit test: the web bridge sends the same request as the desktop (src/ipc/functions.ts)",
       "passes": true,
       "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (functions.test.ts: djAutoplay and fetchDjSet send the desktop's requests)."
@@ -238,10 +215,7 @@
       "id": "web-sonos-http",
       "area": "sonos",
       "description": "Sonos reads through /sonos/api: every operationId the renderer uses maps to the same method and path as the desktop, with household, service, group and queue ids filled in, GETs retried on 5xx, and the default music service discovered and self-healed.",
-      "bridge": [
-        "fetch",
-        "setQueueId"
-      ],
+      "bridge": ["fetch", "setQueueId"],
       "how_verified": "unit tests: URL building per operation, retry, discovery; a test that the operation table matches src/sonos-api.ts",
       "passes": true,
       "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (sonosHttp.test.ts: the operation table diffed against src/sonos-api.ts, URL building, headers, retries, 401, discovery, self-heal). The owner signed in on production on 12 Nov 2026 in a desktop-width browser and sent a screenshot: now playing with its \"Queued by\" chip, the 22-track queue with times and queuer avatars, live lyrics, Picks, the Queuedle card, his profile and the Poll button all loaded."
@@ -250,15 +224,7 @@
       "id": "web-sonos-relay",
       "area": "sonos",
       "description": "Live state over the relay: connect with the token subprotocol, bootstrap (household, devices, subscriptions), groups, playback and volume pushes for the active group only, reconnect with backoff, resync.",
-      "bridge": [
-        "onWsMessage",
-        "onWsReady",
-        "onWsGroups",
-        "getActiveGroup",
-        "setGroup",
-        "refreshPlayback",
-        "resync"
-      ],
+      "bridge": ["onWsMessage", "onWsReady", "onWsGroups", "getActiveGroup", "setGroup", "refreshPlayback", "resync"],
       "how_verified": "unit tests against a fake WebSocket that plays Sonos's side",
       "passes": true,
       "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (sonosSocket.test.ts against a fake WebSocket: bootstrap order, group restore, active-group filtering, sticky replay, backoff, refused-token refresh, stop). The owner signed in on production on 12 Nov 2026 in a desktop-width browser and sent a screenshot: now playing with its \"Queued by\" chip, the 22-track queue with times and queuer avatars, live lyrics, Picks, the Queuedle card, his profile and the Poll button all loaded."
@@ -287,11 +253,7 @@
       "id": "web-queue-edits",
       "area": "sonos",
       "description": "Queue edits: reorder (the same batch algorithm as the desktop), remove, clear.",
-      "bridge": [
-        "reorderQueue",
-        "removeFromQueue",
-        "clearQueue"
-      ],
+      "bridge": ["reorderQueue", "removeFromQueue", "clearQueue"],
       "how_verified": "unit tests written first for the batch algorithm and the requests it sends; demo journey reorders and removes",
       "passes": true,
       "evidence": "Unit: reorder.test.ts (written first: single moves, runs, non-contiguous selections, 500 seeded random selections). Demo journey moves and removes queue rows by touch (`node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026)."
@@ -300,9 +262,7 @@
       "id": "web-images",
       "area": "sonos",
       "description": "Artwork: hosts that allow it are fetched directly; the rest go through /img (or /sonos/api for Sonos-hosted art).",
-      "bridge": [
-        "fetchImage"
-      ],
+      "bridge": ["fetchImage"],
       "how_verified": "unit tests of the routing",
       "passes": true,
       "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (app.test.ts \"fetchImage\": play.sonos.com through /sonos, everything else through /img). The owner signed in on production on 12 Nov 2026 in a desktop-width browser and sent a screenshot: now playing with its \"Queued by\" chip, the 22-track queue with times and queuer avatars, live lyrics, Picks, the Queuedle card, his profile and the Poll button all loaded."
@@ -311,13 +271,7 @@
       "id": "web-genius-off",
       "area": "sonos",
       "description": "Genius is left out of the web app for this release: every Genius call answers 'no result'.",
-      "bridge": [
-        "geniusDescription",
-        "geniusArtist",
-        "geniusAlbumYear",
-        "geniusArtistAlbums",
-        "geniusAlbumAbout"
-      ],
+      "bridge": ["geniusDescription", "geniusArtist", "geniusAlbumYear", "geniusArtistAlbums", "geniusAlbumAbout"],
       "how_verified": "unit test; artist and album pages render without the Genius sections",
       "passes": false,
       "evidence": ""
@@ -326,12 +280,7 @@
       "id": "web-app-misc",
       "area": "scaffold",
       "description": "Version, 'new version' changelog prompt, external links (a new tab) and telemetry (a no-op on the web for this release).",
-      "bridge": [
-        "getVersion",
-        "isNewVersion",
-        "openExternal",
-        "trackEvent"
-      ],
+      "bridge": ["getVersion", "isNewVersion", "openExternal", "trackEvent"],
       "how_verified": "unit tests of the bridge",
       "passes": true,
       "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (app.test.ts)."
@@ -492,10 +441,7 @@
       "id": "pwa-update-flow",
       "area": "installability",
       "description": "A new version found while the app is launching (first seconds, nothing tapped, no other window open) takes over at once, so opening the app gets the latest. Found later, it waits: the app's existing Update button appears and activating it reloads onto the new version. Nothing activates under someone who is using the app.",
-      "bridge": [
-        "onUpdateDownloaded",
-        "installUpdate"
-      ],
+      "bridge": ["onUpdateDownloaded", "installUpdate"],
       "how_verified": "unit test of the bridge's update events; Playwright with two builds served in turn",
       "passes": true,
       "evidence": "`node scripts/web/pwa.mjs` 9 of 9 in the pipeline (`validate` on #267 and #268) and locally four times in a row: a version found at launch takes over by itself with no button; one found after a key press waits and shows Update; Update activates it in a window that began with no worker and a second window follows. Deployed: production /sw.js (version 1.0.99) contains `activate-if-alone`."
