@@ -8,6 +8,7 @@
 //            --device "iPhone 14"   Playwright's descriptor for it: WebKit, 390x844 at 3x, touch, Safari's user agent
 //                                   (npx playwright install webkit first; CI installs only Chromium, the default)
 //            --cpu 6                Chromium only: slow the page's CPU 6x, to shake out steps that only pass on a fast machine
+//            --no-ambient-filter    switch off the backdrop's 120px blur: it makes Playwright's software-rendered WebKit on Windows draw about 1 frame a second on the queue page
 //            --safe-area           give the page an iPhone 14's insets (47px top, 34px bottom) through the
 //                                   --safe-top / --safe-bottom tokens, which no desktop browser has of its own
 //
@@ -34,6 +35,7 @@ const height = Number(opt('--height', device?.viewport.height ?? 844));
 const shots = opt('--shots', null);
 const safeArea = args.includes('--safe-area');
 const cpu = Number(opt('--cpu', 1));
+const noAmbient = args.includes('--no-ambient-filter');let forcedTaps = 0;
 const local = args.includes('--local');
 let base = args.find((a) => /^https?:\/\//.test(a))?.replace(/\/+$/, '');
 if (!local && !base) {
@@ -79,6 +81,19 @@ const context = await browser.newContext(
     : { viewport: { width, height }, deviceScaleFactor: 2, hasTouch: touch, isMobile: touch }
 );
 const page = await context.newPage();
+if (noAmbient) {
+  await page.addInitScript(() => {
+    const add = () => {
+      if (document.getElementById('journey-no-ambient') || !document.documentElement) return;
+      const s = document.createElement('style');
+      s.id = 'journey-no-ambient';
+      s.textContent = 'img[class*="_img_"] { filter: none !important; }';
+      document.documentElement.appendChild(s);
+    };
+    add();
+    document.addEventListener('readystatechange', add);
+  });
+}
 if (cpu > 1 && browser.browserType().name() === 'chromium') {
   // A slow phone, or a laptop with other work running: timing a step must not depend on a fast machine.
   await (await context.newCDPSession(page)).send('Emulation.setCPUThrottlingRate', { rate: cpu });
@@ -155,6 +170,7 @@ const press = async (locator, options) => {
   } catch (err) {
     if (!/stable/.test(String(err.message))) throw err;
     await expectVisible(target);
+    forcedTaps++;
     return act({ ...options, force: true });
   }
 };
@@ -645,6 +661,7 @@ await journey('no uncaught errors in the page', async () => {
   if (pageErrors.length) throw new Error(pageErrors[0]);
 });
 
+if (forcedTaps) console.log(`NOTE  ${forcedTaps} tap(s) needed the forced fallback (the stable wait hung)`);
 await browser.close();
 gateway?.stop();
 const what = `${width}x${height}${deviceName ? ` (${deviceName}, ${browser.browserType().name()})` : ''}${safeArea ? ' with safe areas' : ''}`;
