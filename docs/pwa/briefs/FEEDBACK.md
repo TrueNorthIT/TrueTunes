@@ -76,3 +76,40 @@ card's top edge, tighter than the card's other padding.
 **Ownership.** `common/TopResultCard.tsx` and `TopResultCard.module.css` move to brief E (brief A leaves them
 alone). If the same bug turns up in a component another brief owns, report it with the WebKit screenshot rather
 than fixing it. Scope the change to the phone shell.
+
+---
+
+## 3. The dock leaves a lot of empty space at the bottom — brief A
+
+![The dock on an iPhone 14](feedback/03-dock-bottom-space.jpg)
+
+> We leave a lot of space on the table at the bottom
+
+**What the screenshot shows.** The same Search page; his red arrow points down from the "Discover" tab label to
+the bottom edge of the screen. Under the tab labels there is about 40px of empty bar before the screen ends.
+Scaling from the image (924px wide for 390 CSS px): the dock as a whole (mini player, tab bar and the space under
+it) takes roughly 156px of the 844px screen, nearly a fifth.
+
+**Where it comes from.** `PhoneShell.module.css` pads the dock with `padding: 8px 8px var(--safe-bottom)`, and
+`global.css` sets `--dock-h: 124px` ("8px gap + 56px mini player + 4px + 56px tab bar"). On this phone the bottom
+safe area is the full 34px home-indicator inset, so the space under the labels is that 34px plus the tab bar's own
+slack under its label.
+
+**Coordinator's reading.**
+
+- The full 34px inset is conservative. The home indicator itself is a thin bar a few pixels tall sitting about 8px
+  above the bottom edge; nothing needs to stay clear of the whole 34px, only of the indicator. Let the tab row sit
+  lower: pad the bottom by the inset minus about 12 to 14px (and never less than a small fixed minimum, for
+  phones and browsers where the inset is 0), so the labels end roughly 20px above the screen edge and still clear
+  the indicator. Keep every tab's hit area at least 44px high; the hit area may extend into the inset.
+- Then look at the dock's total height. 56px for the mini player and 56px for the tab row, plus gaps, is generous
+  for a bar that is on every page. See how much comes back from tightening the tab row's internal padding (the
+  slack above the icon and under the label), the 8px top gap and the 4px between the two, without the mini
+  player's play button or any tab dropping under 44px. Whatever you choose, `--dock-h` must stay the single place
+  the pages read the dock's height from, so nothing ends up hidden under it.
+- Check both ways the phone runs the app: installed to the home screen (inset 34px, as in this screenshot) and in
+  Safari with its toolbar showing (inset 0, and a shorter viewport, about 390x664). With `--safe-area` the journey
+  simulates the first; without it, the second.
+- Show the before and after side by side, and say how many pixels of content came back.
+
+**Ownership.** Brief A (the dock, the tab bar, `PhoneShell.module.css`, `global.css`). Phone shell only.
