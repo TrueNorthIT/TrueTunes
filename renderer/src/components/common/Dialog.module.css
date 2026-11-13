@@ -195,6 +195,7 @@ textarea.input {
 }
 :global(:root[data-shell='phone']) .body {
   padding: 0.9em 1.2em 1.2em;
+  overscroll-behavior: contain; /* a scroll at the end of a long form must not pull the page behind it */
 }
 :global(:root[data-shell='phone']) .actions {
   padding: 0 1.2em 1.2em;

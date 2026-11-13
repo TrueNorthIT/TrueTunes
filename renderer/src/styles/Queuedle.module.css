@@ -1017,6 +1017,11 @@ button.side:disabled {
   letter-spacing: -0.015em;
   color: var(--text);
 }
+.stageActions {
+  display: flex;
+  align-items: center;
+  gap: 1.1em;
+}
 .stageSub {
   margin-top: 0.2em;
   font-size: var(--fs-label);
@@ -1511,4 +1516,112 @@ button.side:disabled {
 :global(:root[data-shell='phone']) .segment,
 :global(:root[data-shell='phone']) .calendarCell {
   min-height: var(--tap);
+}
+
+/* The game on the phone: the page scrolls like any other (no fixed stage), the two prints are compact rows
+   sitting at the foot of the screen where a thumb is, and the bonus round is one column with 44px choices. */
+:global(:root[data-shell='phone']) .pageStage {
+  height: auto;
+  min-height: calc(100dvh - var(--nav-h) - var(--player-h) - 40px);
+}
+:global(:root[data-shell='phone']) .question {
+  flex: none;
+  grid-template-columns: 1fr;
+  grid-template-rows: none;
+  margin-top: auto;
+  gap: 0.5em;
+}
+:global(:root[data-shell='phone']) .side {
+  display: grid;
+  grid-template-columns: 4em minmax(0, 1fr);
+  grid-template-areas:
+    'art text'
+    'foot foot';
+  gap: 0.35em 0.9em;
+  padding: 0.75em 0.9em;
+}
+:global(:root[data-shell='phone']) .sideArtBox {
+  grid-area: art;
+  container-type: normal;
+  width: 4em;
+  height: 4em;
+}
+:global(:root[data-shell='phone']) .sideArt {
+  width: 100%;
+  height: 100%;
+}
+:global(:root[data-shell='phone']) .sideText {
+  grid-area: text;
+  align-self: center;
+}
+:global(:root[data-shell='phone']) .itemName {
+  min-height: 0;
+}
+:global(:root[data-shell='phone']) .sideFoot {
+  grid-area: foot;
+}
+:global(:root[data-shell='phone']) .bonusStage {
+  flex: none;
+}
+:global(:root[data-shell='phone']) .stageHead {
+  display: contents;
+}
+:global(:root[data-shell='phone']) .stageTitles {
+  flex: none;
+  margin-bottom: 1em;
+}
+:global(:root[data-shell='phone']) .bonusGrid {
+  flex: none;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: none;
+  grid-auto-rows: auto;
+}
+:global(:root[data-shell='phone']) .bonusCard {
+  container-type: normal;
+}
+:global(:root[data-shell='phone']) .bonusCardBody {
+  height: auto;
+  grid-template: 'art info' auto 'picks picks' auto / 2.9em minmax(0, 1fr);
+  gap: 0.7em 0.6em;
+}
+:global(:root[data-shell='phone']) .candidates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4em;
+}
+:global(:root[data-shell='phone']) .candidate {
+  min-height: var(--tap);
+}
+/* Submit stays in reach above the dock however far the list is scrolled. */
+:global(:root[data-shell='phone']) .stageActions {
+  order: 2;
+  position: sticky;
+  bottom: 0; /* the panel's own bottom padding already clears the dock, and sticky counts it */
+  z-index: 1;
+  justify-content: space-between;
+  margin-top: 1em;
+  padding: 0.5em 0.5em 0.5em 1.1em;
+  border-radius: var(--r-card);
+  background: var(--bg-1);
+  box-shadow: var(--float-shadow);
+}
+/* One column here, so the leaderboard must not stay pinned: it would ride over the answers list below it. */
+:global(:root[data-shell='phone']) .boardCard {
+  position: static;
+}
+/* Next stays in reach above the dock on a short screen (Safari with its toolbar showing). */
+:global(:root[data-shell='phone']) .nextRow {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+}
+:global(:root[data-shell='phone']) .nextRow:has(button) {
+  padding: 0.4em 0.5em 0.4em 1.1em;
+  border-radius: var(--r-card);
+  background: var(--bg-1);
+  box-shadow: var(--float-shadow);
+}
+
+:global(:root[data-shell='phone']) .prompt {
+  margin-bottom: 0.5em;
 }

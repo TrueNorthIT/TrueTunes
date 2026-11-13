@@ -2,6 +2,7 @@ import { useId, useLayoutEffect, useRef } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { isPhoneShell } from '../../lib/platform';
 import styles from './Dialog.module.css';
 
 interface Props {
@@ -50,8 +51,12 @@ export function Dialog({
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     dialog.showModal();
     // React's autoFocus fires before showModal(), while the dialog is still hidden, so focus is placed here.
+    // On the phone shell a text field is never focused by itself: that raises the keyboard over the dialog
+    // before it has been read. Focus lands on [data-autofocus] or the dialog (named by its title).
     const first = dialog.querySelector<HTMLElement>(
-      '[data-autofocus], input:not([type=checkbox]):not(:disabled), textarea:not(:disabled)'
+      isPhoneShell()
+        ? '[data-autofocus]'
+        : '[data-autofocus], input:not([type=checkbox]):not(:disabled), textarea:not(:disabled)'
     );
     (first ?? dialog).focus();
     return () => {
