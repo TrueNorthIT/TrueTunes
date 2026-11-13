@@ -113,3 +113,62 @@ slack under its label.
 - Show the before and after side by side, and say how many pixels of content came back.
 
 **Ownership.** Brief A (the dock, the tab bar, `PhoneShell.module.css`, `global.css`). Phone shell only.
+
+---
+
+## 4. Now playing is very busy — brief A
+
+![Now playing on an iPhone 14](feedback/04-now-playing-busy.jpg)
+
+The owner's reference, Storyshelf, a podcast PWA he is building on the same design system:
+
+![Storyshelf's player, for comparison](feedback/04-reference-storyshelf.png)
+
+> This now playing card is VERY busy, got a huge who queued chip when just a face icon would serve, plus two
+> massive queue and lyrics buttons. Compare with storyshelf, a podcast pwa im developing based on the same design
+> system. Its obviously different but its a lot calmer
+
+**What the screenshot shows.** `/now-playing`, with his red brackets around two things: the "Queued by Joe Pitts"
+chip (a full pill with avatar and text, on its own row), and the two large Lyrics and Queue pill buttons across
+the bottom. Top to bottom the page has seven bands: art; title with the heart at the far right; artist; the
+queued-by chip; the progress bar and times; five transport buttons (shuffle, previous, play/pause, next, repeat);
+the volume slider with its number; the two pills.
+
+**What the reference does differently.** Same navy ground, same type, same big circular play button, and it reads
+as calm because:
+
+- the title is centred with **one** quiet line under it that carries all the secondary text;
+- the transport row has **three** controls, not five;
+- every secondary action sits in **one** tonal bar at the bottom, as plain icons with no labels and no pills;
+- nothing has its own chip or its own row unless it is a primary control;
+- the progress bar has a thumb, so it reads as something to drag.
+
+**Coordinator's reading.** Redesign the page towards the reference's calm; do not copy it (it has no volume, no
+queuer and no heart). A direction, for the agent to build and show, not a spec:
+
+- **Queued by**: a face, not a chip. The shared avatar (so last week's Queuedle champion keeps the ring) at a
+  small size, placed where it reads as "who put this on" without a row of its own: beside the title and artist
+  block, or on the artwork's corner like a print's label. It keeps the accessible name "Queued by Joe Pitts" and
+  still opens that person's profile, with a 44px hit area. Nothing shown when nobody is credited.
+- **Title block**: the title (with the explicit badge) and one secondary line, "SOFT PLAY · Heavier Jelly", artist
+  and album still links. Consider centring it as the reference does. This replaces brief A's own item 6 (the
+  loose gap between title and artist).
+- **Transport**: previous, play/pause, next only.
+- **One tool row** at the bottom, a single tonal bar of icon buttons: shuffle, repeat, the heart, lyrics, queue.
+  Each 44px, each with an accessible name and a tooltip-equivalent label for screen readers; shuffle, repeat and
+  the heart show their on state without relying on colour alone (DESIGN.md: "Not By Colour Alone"). No labelled
+  pills.
+- **Volume** stays, because this is the office's remote and volume is one of the things people open it for, but
+  quieter: no reason for it to weigh as much as the progress bar. Keep the number if it earns its place.
+- **Progress**: give the bar a thumb so it reads as draggable (the desktop's bar has none; this is the phone page
+  only), and keep the 44px drag area.
+- The result should have about five bands, with clear breathing room, and still fit 390x664 (Safari with its
+  toolbar showing) without scrolling.
+
+Build it, screenshot it at 390x844 and 390x664 in Chromium and WebKit, put it beside the owner's two screenshots,
+and judge honestly whether it is as calm as the reference. Update the Now playing part of the Phone shell section
+in `DESIGN.md` in the same commit, and the journey's Now playing steps if a control moved (the journey is brief
+B's file: describe the change needed in your report rather than editing it, unless B has finished).
+
+**Ownership.** Brief A (`components/phone/NowPlayingPage.tsx`, `PhoneNowPlaying.module.css`). Phone shell only: the
+desktop's player bar and Home's Now playing card do not change.

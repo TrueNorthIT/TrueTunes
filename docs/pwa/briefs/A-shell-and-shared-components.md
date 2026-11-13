@@ -50,8 +50,8 @@ Not yours: page panels and their stylesheets (D, E), `MorePage.tsx` and `PhoneMo
    keep each hit area 44px, but make the pair read as a pair (overlap the hit areas' padding, or reduce the gap),
    and give no column to a button that is not there.
 
-6. **Now playing.** The gap between the title and the artist is loose because each is a 44px link. Keep the 44px
-   hit areas but set the two lines as one block, the way the desktop's Now playing card does.
+6. **Now playing.** Superseded by item 4 in `FEEDBACK.md`: the owner finds the page very busy and has sent a
+   reference. Do that redesign instead of this small fix; it is the largest single item in this brief.
 
 7. **The Back button** floats over scrolled content and covers part of a hero's pill when the page scrolls under
    it. Decide and build the better behaviour (for example a top strip in the dense material that the page scrolls
