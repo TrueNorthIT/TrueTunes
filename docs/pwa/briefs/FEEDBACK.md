@@ -186,27 +186,27 @@ desktop's player bar and Home's Now playing card do not change.
 at the top; the page title "Discover" starts about 68px down. The tops of its letters are visibly soft: a blur
 band under the status bar reaches down far enough to catch the title's cap height. The rest of the word is sharp.
 
-**Where it may come from. Find out which before fixing.**
+**Where it comes from: the system. Confirmed by the owner.** He followed up: "Its the system for the blur, saw
+the same thing on story shelf" (his other PWA on the same design system). iOS draws its own soft edge under the
+status bar over a home-screen web app's content, and it reaches a little below the top safe area. We cannot remove
+it or restyle it; we can only keep our content clear of it at rest.
 
-- Ours: `.statusBar` in `PhoneShell.module.css` is a strip `--phone-top` high (the top safe area, 47px here) with
-  the frosted material's backdrop blur, and `global.css` starts the phone shell's pages at `--nav-h: var(--phone-top)`
-  with whatever padding the page adds. If the strip, its blur's soft edge, or a fade under it reaches below 47px,
-  it will sit on the title.
-- The system's: recent iOS versions draw their own soft edge under the status bar over web content in a home-screen
-  app, and it extends a little below the inset. "It applies a blur" reads as the owner meaning Safari does. If so
-  we cannot remove it, only stay clear of it.
+**Coordinator's reading.** The fix is the small one he asked for: start the page's content a little lower, on
+every page of the phone shell, so that at rest nothing sits in the soft band. "A tickle" is of the order of 8 to
+12px, not a new header. Do it in one place (the phone shell's top offset in `global.css`, as its own named token so
+it can be tuned), not per page, and then check every way a page starts: a plain title (Discover, Queue, More),
+Home's greeting, the search field, pages with a Back button, pages whose hero runs up under the strip (Artist,
+Profile, and the Album hero once item 1 makes it full bleed: those are meant to go under it, so the offset applies
+to their text and buttons, not their art), the Now playing page's close button, and the Demo strip in `/demo`.
 
-**Coordinator's reading.** Either way the fix he is asking for is small: start the page's content a little lower,
-on every page of the phone shell, so that at rest nothing sits in the soft band. "A tickle" is of the order of 8
-to 12px, not a new header. Do it in one place (the phone shell's top offset in `global.css`, as its own named
-token so it can be tuned), not per page, and then check every way a page starts: a plain title (Discover, Queue,
-More), Home's greeting, the search field, pages with a Back button, pages whose hero runs up under the strip
-(Artist, Profile, and the Album hero once item 1 makes it full bleed: those are meant to go under it, so the
-offset applies to their text and buttons, not their art), the Now playing page's close button, and the Demo strip
-in `/demo`.
+Two things follow from it being the system's:
 
-If the band turns out to be ours, also make it end cleanly at the safe area so it does not blur anything that is
-at rest below it.
+- Our own `.statusBar` strip in `PhoneShell.module.css` (a strip `--phone-top` high with the frosted material's
+  backdrop blur) now sits under a blur the system already draws. Consider whether ours is still needed in the
+  installed app, or whether it doubles the effect; it is still needed in Safari proper and in other browsers,
+  where the system draws nothing. Do not remove it without saying what each case then looks like.
+- Content scrolling under the top will be softened by the system whatever we do. That is fine and expected; the
+  requirement is only about where things sit **at rest**.
 
 This cannot be confirmed in Playwright (its WebKit draws no backdrop blur, and no system chrome). Build it so the
 offset is one token, say what value you chose and why, and list it in your report as needing the owner's phone.
