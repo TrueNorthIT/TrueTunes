@@ -2,7 +2,7 @@
 // finger while it is dragged down from the top of its own content, and goes if it is let go far enough or flicked.
 // Horizontal drags, drags that start on a control (the seek bar, the volume slider, a button) and drags in
 // scrolled content never start it. Left-edge back swipes are the browser's and are not touched.
-import { useEffect, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
 
 /** Let go past this share of the panel's height and it closes. */
 export const DISMISS_FRACTION = 0.25;
@@ -104,8 +104,13 @@ export function useSwipeDismiss(
   enabled = true,
   controls?: string,
 ) {
+  // The latest callback, so a re-render in the middle of a drag does not drop the gesture.
+  const latest = useRef(onDismiss);
+  useLayoutEffect(() => {
+    latest.current = onDismiss;
+  });
   useEffect(() => {
     const el = ref.current;
-    return el && enabled ? installSwipeDismiss(el, onDismiss, controls) : undefined;
-  }, [ref, onDismiss, enabled, controls]);
+    return el && enabled ? installSwipeDismiss(el, () => latest.current(), controls) : undefined;
+  }, [ref, enabled, controls]);
 }
