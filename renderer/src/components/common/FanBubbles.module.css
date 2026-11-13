@@ -92,3 +92,10 @@
     transition: none;
   }
 }
+
+/* Phone shell: a pick card is a 16:9 print only ~200px tall, so a full cloud (six faces stand about 10.6em tall) would
+   run over the caption and the +. Draw it smaller and tuck it nearer the edge, clear of the two-line reason (54%). */
+:global(:root[data-shell='phone']) .cloud {
+  --cloud-scale: 0.72;
+  right: 1em;
+}
