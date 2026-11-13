@@ -51,8 +51,9 @@ export function normalizePlaybackPayload(payload: PlaybackPayload): NormalizedPl
   return {
     status,
     isPlaying: status === 'playing',
-    positionMs: payload?.playback?.positionMillis ?? 0,
-    durationMs: track?.durationMillis ?? 0,
+    positionMs: payload?.playback?.positionMillis ?? null,
+    durationMs: track?.durationMillis || null,
+    playbackKnown: !!(payload?.playback?.playbackState || payload?.playback?.positionMillis != null),
     currentTrack: track ? normalizeTrack(track) : null,
     shuffle: payload?.playback?.playModes?.shuffle ?? false,
     repeatMode: repeatOne ? 'one' : repeatAll ? 'all' : 'none',

@@ -57,6 +57,50 @@ const positionOf = (positionMs: number, durationMs: number): PlaybackPosition =>
   trackEndsAtMs: Date.now() + durationMs - positionMs,
 });
 
+/** A normalised payload with every field settled: what the hook and the per-group cache hold. */
+export type MergedPlayback = NormalizedPlaybackState & { positionMs: number; durationMs: number };
+interface Known {
+  state: MergedPlayback;
+  /** When `state.positionMs` was true. */
+  at: number;
+}
+
+/**
+ * Sonos sends partial messages too (playback only, metadata only, empty command responses). A field a message does
+ * not carry is unknown, not zero: it keeps what we knew for the same track. A different track starts from scratch.
+ */
+export function mergePlayback(prev: Known | undefined, n: NormalizedPlaybackState, now: number): Known {
+  const base = prev?.state;
+  const hasTrack = !!n.currentTrack?.title;
+  const track = hasTrack ? n.currentTrack : (base?.currentTrack ?? null);
+  if (!prev || !base || !track) {
+    return { state: { ...n, positionMs: n.positionMs ?? 0, durationMs: n.durationMs ?? 0 }, at: now };
+  }
+  if (!hasTrack && !n.playbackKnown) return prev; // an empty message: nothing changes
+
+  const same = base.currentTrack?.id === track.id && base.currentTrack?.title === track.title;
+  const durationMs = n.durationMs ?? (same ? base.durationMs : 0);
+  const estimate = Math.min(base.positionMs + (base.isPlaying ? now - prev.at : 0), base.durationMs || Infinity);
+  const positionMs = n.positionMs ?? (same ? estimate : 0);
+  const from = n.playbackKnown ? n : base; // status, modes and queue cursors come together in the playback block
+  return {
+    state: {
+      ...n,
+      currentTrack: track,
+      positionMs,
+      durationMs,
+      status: from.status,
+      isPlaying: from.isPlaying,
+      shuffle: from.shuffle,
+      repeatMode: from.repeatMode,
+      queueId: from.queueId,
+      queueVersion: from.queueVersion,
+      queueItemId: from.queueItemId,
+    },
+    at: now,
+  };
+}
+
 export function usePlayback(activeGroupId: string | null) {
   const [state, setState] = useState<PlaybackState>(IDLE_STATE);
   useEffect(() => {
@@ -76,7 +120,7 @@ export function usePlayback(activeGroupId: string | null) {
   const queueVersionRef = useRef<string | null>(null);
 
   // Cache normalized state per groupId so we can restore on group switch
-  const groupCache = useRef<Map<string, NormalizedPlaybackState>>(new Map());
+  const groupCache = useRef<Map<string, Known>>(new Map());
 
   // Track activeGroupId in a ref so the subscription handler (registered once) always sees the current value
   const activeGroupIdRef = useRef(activeGroupId);
@@ -84,7 +128,7 @@ export function usePlayback(activeGroupId: string | null) {
     activeGroupIdRef.current = activeGroupId;
   }, [activeGroupId]);
 
-  const applyState = useCallback((normalized: NormalizedPlaybackState) => {
+  const applyState = useCallback((normalized: MergedPlayback) => {
     const {
       status,
       isPlaying,
@@ -168,13 +212,14 @@ export function usePlayback(activeGroupId: string | null) {
     const provider = getActiveProvider();
     const unsubPlayback = provider.subscribePlayback(
       (msgGroupId, normalized) => {
-        // Cache for every group
-        if (msgGroupId) groupCache.current.set(msgGroupId, normalized);
+        // Cache for every group, merged with what that group last said
+        const known = mergePlayback(groupCache.current.get(msgGroupId ?? ''), normalized, Date.now());
+        groupCache.current.set(msgGroupId ?? '', known);
 
         // Only apply to UI if it's for the active group (or group isn't known yet)
         if (msgGroupId && activeGroupIdRef.current && msgGroupId !== activeGroupIdRef.current) return;
 
-        applyState(normalized);
+        applyState(known.state);
       },
       (vol) => setState((prev) => ({ ...prev, volume: vol }))
     );
@@ -199,7 +244,7 @@ export function usePlayback(activeGroupId: string | null) {
       // or by the API response etag on the first add.
       queueIdRef.current = null;
       queueVersionRef.current = null;
-      const cached = groupCache.current.get(groupId);
+      const cached = groupCache.current.get(groupId)?.state;
       if (cached) {
         // Reset currentObjectId to force downstream reload
         setState((prev) => ({ ...prev, currentObjectId: null }));

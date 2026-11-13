@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { FakeWebSocket, fakeAuth, makeBridge, playSonos, startReady, tick, last, type Frame } from './helpers';
+import { DEVICES, FakeWebSocket, fakeAuth, makeBridge, playSonos, startReady, tick, last, type Frame } from './helpers';
 
 afterEach(() => vi.useRealTimers());
 
@@ -569,5 +569,129 @@ describe('reconnect', () => {
     ws.dispatchEvent(new MessageEvent('message', { data: 'not json' }));
     ws.dispatchEvent(new MessageEvent('message', { data: '"a string"' }));
     expect(msgs).not.toHaveBeenCalled();
+  });
+});
+
+describe('partial playback messages', () => {
+  const FULL = (groupId: string): Frame => [
+    { namespace: 'playbackExtended', groupId, type: 'extendedPlaybackStatus' },
+    {
+      playback: { playbackState: 'PLAYBACK_STATE_PLAYING', positionMillis: 5000 },
+      metadata: { currentItem: { track: { name: 'T', durationMillis: 180000 } } },
+    },
+  ];
+
+  it('does not hand the renderer an empty subscribe response that lands after the status push', async () => {
+    const h = makeBridge();
+    playSonos();
+    // The push arrives before the subscribe response, which is empty
+    FakeWebSocket.server = (ws, [header]) => {
+      const ns = header['namespace'];
+      const reply = (p: unknown) => queueMicrotask(() => ws.receive([{ ...header, success: true }, p]));
+      if (header['command'] === 'getHouseholds') return reply({ households: [{ id: 'HH1' }] });
+      if (ns === 'devices') {
+        reply({});
+        return queueMicrotask(() =>
+          queueMicrotask(() => ws.receive([{ namespace: 'devices', name: 'devicesStatus' }, { devices: DEVICES }]))
+        );
+      }
+      if (ns === 'playbackExtended') {
+        ws.receive(FULL(String(header['groupId'])));
+        return reply({});
+      }
+      reply({});
+    };
+    const msgs: unknown[] = [];
+    h.bridge.onWsMessage((hd, p) => {
+      if ((hd as { namespace: string }).namespace === 'playbackExtended') msgs.push(p);
+    });
+    h.bridge.start();
+    await vi.waitFor(() => expect(FakeWebSocket.instances).toHaveLength(1));
+    FakeWebSocket.last().open();
+    await vi.waitFor(() => expect(FakeWebSocket.last().commands('groupVolume', 'subscribe')).toHaveLength(2));
+    await tick();
+    expect(msgs.length).toBeGreaterThan(0);
+    for (const p of msgs) expect(p).toHaveProperty('playback.playbackState');
+  });
+
+  it('replays the last full status with later partial messages merged in', async () => {
+    const h = makeBridge();
+    const ws = await startReady(h);
+    ws.receive(FULL('RINCON_A:1'));
+    ws.receive([
+      { namespace: 'playbackExtended', groupId: 'RINCON_A:1' },
+      { playback: { playbackState: 'PLAYBACK_STATE_PAUSED', positionMillis: 9000 } },
+    ]);
+    ws.receive([{ namespace: 'playbackExtended', groupId: 'RINCON_A:1' }, {}]);
+    const got: unknown[] = [];
+    h.bridge.onWsMessage((hd, p) => {
+      if ((hd as { namespace: string }).namespace === 'playbackExtended') got.push(p);
+    });
+    await tick();
+    expect(got).toHaveLength(1);
+    expect(got[0]).toMatchObject({
+      playback: { playbackState: 'PLAYBACK_STATE_PAUSED', positionMillis: 9000 },
+      metadata: { currentItem: { track: { durationMillis: 180000 } } },
+    });
+  });
+});
+
+describe('coming back to the app', () => {
+  const visible = (state: 'visible' | 'hidden') =>
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
+  afterEach(() => visible('visible'));
+
+  it('reconnects at once, resetting the backoff, when the socket is down', async () => {
+    vi.useFakeTimers();
+    const h = makeBridge();
+    playSonos();
+    h.bridge.start();
+    await vi.advanceTimersByTimeAsync(0);
+    for (let i = 0; i < 4; i++) {
+      FakeWebSocket.last().drop();
+      await vi.advanceTimersByTimeAsync(30_000);
+    }
+    const before = FakeWebSocket.instances.length;
+    FakeWebSocket.last().drop();
+    document.dispatchEvent(new Event('visibilitychange'));
+    window.dispatchEvent(new Event('pageshow')); // fires together: one wake
+    await vi.advanceTimersByTimeAsync(300);
+    expect(FakeWebSocket.instances).toHaveLength(before + 1);
+  });
+
+  it('refreshes playback on an open socket, and does nothing while hidden', async () => {
+    vi.useFakeTimers();
+    const h = makeBridge();
+    playSonos();
+    h.bridge.start();
+    await vi.advanceTimersByTimeAsync(0);
+    FakeWebSocket.last().open();
+    await vi.advanceTimersByTimeAsync(0);
+    const ws = FakeWebSocket.last();
+    const n = ws.commands('playbackExtended', 'subscribe').length;
+    visible('hidden');
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(500);
+    expect(ws.commands('playbackExtended', 'subscribe')).toHaveLength(n);
+    visible('visible');
+    document.dispatchEvent(new Event('visibilitychange'));
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(300);
+    expect(ws.commands('playbackExtended', 'subscribe')).toHaveLength(n + 1);
+  });
+
+  it('drops a half-open socket that does not answer and connects again', async () => {
+    vi.useFakeTimers();
+    const h = makeBridge();
+    playSonos();
+    h.bridge.start();
+    await vi.advanceTimersByTimeAsync(0);
+    FakeWebSocket.last().open();
+    await vi.advanceTimersByTimeAsync(0);
+    const count = FakeWebSocket.instances.length;
+    FakeWebSocket.server = null; // the phone slept: nothing answers any more
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(300 + 5000);
+    expect(FakeWebSocket.instances).toHaveLength(count + 1);
   });
 });
