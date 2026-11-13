@@ -54,7 +54,23 @@
 }
 
 /* ── Phone shell and touch (the web app) ── */
+/* Name, bar, value on one line; a sub-value ("49 artists from 136 songs") gets the line under it, the full width,
+   instead of squeezing the bar to a dot and cutting itself short. An unranked list has no place column (its empty
+   cell only cost a gap, so the names sat in from the card's edge). */
 :global(:root[data-shell='phone']) .row {
-  grid-template-columns: var(--rank-col) minmax(4em, 8em) minmax(2em, 1fr) auto minmax(0, max-content);
-  column-gap: 0.5em;
+  grid-template-columns: minmax(4em, 8em) minmax(2em, 1fr) auto;
+  column-gap: 0.6em;
+  row-gap: 0.1em;
+}
+:global(:root[data-shell='phone']) .bars[data-ranked] .row {
+  grid-template-columns: var(--rank-col) minmax(4em, 8em) minmax(2em, 1fr) auto;
+}
+:global(:root[data-shell='phone']) .bars:not([data-ranked]) .rank {
+  display: none;
+}
+:global(:root[data-shell='phone']) .sub {
+  grid-column: 1 / -1;
+}
+:global(:root[data-shell='phone']) .bars[data-ranked] .sub {
+  grid-column: 2 / -1;
 }

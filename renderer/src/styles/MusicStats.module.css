@@ -223,3 +223,9 @@
   color: var(--text-3);
   margin: 0 0 1em;
 }
+
+/* ── Phone shell ── */
+/* auto-fit with a 26em floor is wider than the phone's card, which pushed every card 6px past the gutter. */
+:global(:root[data-shell='phone']) .twoUp {
+  grid-template-columns: minmax(0, 1fr);
+}
