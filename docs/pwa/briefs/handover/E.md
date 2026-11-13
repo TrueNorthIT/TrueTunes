@@ -1,80 +1,83 @@
-# Handover: brief E (detail pages), second pass half-finished
+# Handover: brief E (detail pages), second pass finished except Lyrics plain/none
 
-Branch `feature/pwa-phone-e-pages2`. First pass (feedback 1 and 2, accepted) is commit f3113f2. The second pass was
-stopped mid-way: the only uncommitted-until-now change is the Artist "Top songs" CSS (item 1 below), **built but not
-yet looked at in a screenshot**. Treat it as half-finished.
+Branch `feature/pwa-phone-e-pages2`. Commits: f3113f2 (hero, top result card), 95d4d5c (artist duration), then the
+second-pass commit(s) on top (playlist "with" fix, formatting, this file).
 
-## First pass (accepted)
+## Items
 
-- Feedback 1 (album/playlist hero): done. `common/HeroBand.module.css`, `album/AlbumPanel.tsx`,
-  `styles/AlbumPanel.module.css`, `PlaylistPanel.tsx`, `styles/PlaylistPanel.module.css`.
-- Feedback 2 (top result card full width): done. `common/TopResultCard.module.css`. WebKit card 348px in 390.
-- Page review: Album done; Artist, Profile, Search looked at (no change except below); Lyrics and Container not verified.
+First pass: feedback 1 (album/playlist hero) done; feedback 2 (top result card, WebKit 348px full width) done.
 
-## Second pass, item by item
+Second pass (coordinator's list):
+1. Artist Top songs: DONE. `styles/ArtistPanel.module.css`: on the phone shell the row's 4th cell (duration) is
+   hidden, because the title cell was about 130px; I dropped rather than shrank since shrinking gains only a few px
+   and the duration is on the album page. Looked at in Chromium (`p2\cr-artist-1.png`) and WebKit
+   (`p2\wksafe-artist-1.png`): "Distant Satellites", "Burning Morning" now whole; album subtitles still truncate
+   ("Paper Lanterns at Lo…"), which is the secondary line, acceptable.
+2. Playlist "with": DONE. `PlaylistPanel.tsx`, `styles/PlaylistPanel.module.css`: on the phone "with" is rendered inside
+   the first collaborator's `li` as one nowrap unit (the standalone word stays for desktop); the "Created …" date is one
+   nowrap span, on its own line on the phone with no leading dot. Looked at: `p2\crsafe-playlist-0.png`,
+   `p2\wksafe-playlist-0.png`. Remaining small risk: the dots between "Playlist · Private · 9 tracks" are separate
+   spans and could orphan at a line end on a much narrower phone (fits at 390).
+3. Container page: DONE (nothing to fix). Reached from Home's "Quick picks" shelf (`#/container/shelf-quick`).
+   Chromium and WebKit: heading, counts, Songs card and the two-column albums grid look right, no overflow.
+   `p2\cr-container-0.png`, `cr-container-1.png`, WebKit `wksafe-container-*.png` (not individually opened).
+4. Lyrics: PARTLY. Synced: looked at (`p2\crlyr2-lyrics-0.png` Chromium; first pass `wk-lyrics-0.png` WebKit). In the demo
+   the first line is shown dim near the bottom of a tall, otherwise empty lyrics card and no line is highlighted, because
+   the lyrics clock was before the first synced line (first line at 0:10) while the demo's progress had moved on;
+   so "current line highlighted" was NOT seen, and the current line is not hidden behind the dock in what I saw.
+   Plain and none: NOT produced: my script overrides `window.fetch` for lrclib after load, but all three screenshots
+   (`crplain-lyrics-plain-0.png`, `crnone-lyrics-none-0.png`) show the same synced content, so the override was not
+   used (cached query or a different fetch path). Text size/offset not measured. Next step: get the lyrics query to miss
+   (change track or override before the app starts, e.g. `page.addInitScript` wrapping `fetch` before `/demo` runs
+   its runtime install), or add a Storybook-style fixture.
+5. Safe areas: DONE for the layout, using an injected stylesheet `:root{--safe-top:47px!important;--safe-bottom:34px!important}`
+   (confirmed it moved the layout: `--phone-top` 73px = 47 + the 26px demo strip; album scroll height 1882 -> 1916).
+   Album, Playlist, Artist, Search, Lyrics in Chromium (`p2\crsafe-*.png`) and all of Playlist, Artist, Container, Profile,
+   Album, Search in WebKit (`p2\wksafe-*.png`, only playlist and artist-1 opened). Findings: the shell's own frosted
+   `.statusBar` strip (`--phone-top` tall, in this build nearly opaque in screenshots) covers the top 73px, so the hero
+   art visibly begins under it at y=73; the scrim and the Back button (at about y=100) are legible, and nothing
+   interactive sits in the top 47px or the bottom 34px (tab labels end about 60px above the screen edge). Whether the
+   art should show through the strip is brief A's call (item 5 in FEEDBACK.md); my margin already pulls the art up
+   to the page's top edge.
+6. Cross-branch margin: done, no change needed (see below).
+7. WebKit: done for Album, Artist, Container, Playlist, Profile, Search (iPhone 14 descriptor, 390x664) plus
+   Lyrics synced (first pass). Overflow check false everywhere; the aspect-ratio mismatch detector found nothing.
 
-1. Artist "Top songs" titles truncated: **half-finished, unverified.** Added to `styles/ArtistPanel.module.css` (phone
-   shell only): `.songsList > li > :nth-child(4) { display: none }` (hides the duration cell; the shared phone chart
-   row in `common/rows.module.css` places cells in explicit grid columns, so hiding it leaves an empty `auto` column).
-   Why drop rather than shrink: the title cell was about 130px, shrinking the duration gains only a few px. The
-   duration is on the album page. `NODE_ENV=production npm run build:web` ran fine with it. Next step: run the
-   screenshot script (below) with `--only=more` in Chromium, look at `cr-artist-1.png` against the before shot, then
-   WebKit. If it looks wrong, delete the rule.
-2. Playlist stranded "with": **not done.** In `PlaylistPanel.tsx` the `.people` row is flex-wrap; "with" is a sibling of
-   the `.collabs` list (which is `display: contents` on the phone). Idea: wrap "with" and the first collaborator in one
-   nowrap flex group, or make "with" `white-space: nowrap` and glue it to the first collaborator's button so it never
-   ends a line; also stop the "·" before "Created …" orphaning (put the dot inside the Created span).
-3. Container page: **not done.** Route `/container/:id` needs `location.state.item`; reach it by tapping a Discover or
-   Search tile that opens a container. It does not use HeroBand.
-4. Lyrics (synced, plain, none): **not done.** My one WebKit look showed an empty lyrics card (probably not loaded yet at
-   1.2s, or the demo has no lyrics for the playing track). See `renderer/src/test/fixtures` for how to get each case.
-5. Safe areas: **not done.** My earlier attempt was invalid (inline `--safe-top` was reset by the shell). Use
-   `node scripts/web/journey.mjs --local --safe-area --shots <dir>` (it injects the insets itself, read how at about
-   line 80 of the script) or copy its mechanism into the screenshot script.
-6. Cross-branch fact (read-only, done). On `origin/feature/pwa-phone-a-shared`: `global.css` has
-   `--safe-top-extra: 0px` (24px in installed iOS), `--status-h`, `--phone-top: calc(var(--status-h) + var(--safe-top-extra))`,
-   and `--nav-h: var(--phone-top)`. `PhoneShell.module.css` additionally sets `.page[data-back] { --nav-h: calc(var(--phone-top) + var(--tap) + 4px) }`
-   and `.searchPage { --nav-h: calc(var(--phone-top) + 48px + 4px) }`. My HeroBand margin is
-   `calc(-1 * (var(--nav-h) + 16px))`, and AlbumPanel/PlaylistPanel pad their top by `calc(var(--nav-h) + 16px)`, both
-   read in the same scope, so the hero still reaches the top edge after A merges, with no change needed. My scrim height
-   is `calc(var(--nav-h) + var(--tap) + 16px)`, so it just gets a bit taller there (harmless). Only break: if A (or
-   anyone) changes the panels' top padding away from `nav-h + 16px`, the margin must match it.
-7. WebKit for everything: first-pass pages were checked in WebKit; second-pass items not yet.
+### The hero margin and brief A's tokens (read-only)
+On `origin/feature/pwa-phone-a-shared`: `--phone-top = --status-h + --safe-top-extra` (24px extra in installed iOS),
+`--nav-h = --phone-top` and `.page[data-back] { --nav-h: phone-top + tap + 4px }`, `.searchPage { --nav-h: phone-top + 48px + 4px }`.
+`HeroBand.module.css` writes the art's top margin as `calc(-1 * (var(--nav-h) + 16px))` and Album/Playlist pad their top by
+`calc(var(--nav-h) + 16px)`; both read the same `--nav-h` in the same scope, so the art still reaches the top after A
+merges. The only break would be a change to the panels' `nav-h + 16px` padding. The scrim height uses
+`--nav-h + --tap + 16px` (a little taller on A's branch, harmless).
 
-## Checks run (first pass, at f3113f2; not re-run after the Artist CSS)
-
-- `npm run typecheck`: pass. `npm run lint`: 0 errors, 16 warnings (pre-existing). `npm run format:check`: pass.
+## Checks on the final tree
+- `npm run typecheck`: pass.
+- `npm run lint` (after `rm -rf server/dist-test`): 0 errors, 16 warnings (pre-existing).
+- `npm run format:check`: "All matched files use Prettier code style!" (after prettier on ArtistPanel.module.css).
 - `npx vitest run --config renderer/vitest.config.ts --project unit --maxWorkers=2 renderer/src/components/album renderer/src/components/artist renderer/src/components/search renderer/src/components/__tests__`: 22 files, 367 tests pass.
-- `NODE_ENV=production npm run build:web`: ok (also after the Artist CSS).
-- `node scripts/web/journey.mjs --local`: flaky: passes on some runs; when it fails it is the two queue-menu steps ("move a queue row from its menu", "a long press opens the same menu"). Desktop `--width 1280 --height 800`: pass.
-- Still to run after finishing: typecheck, lint, format:check, the vitest line above, both journeys.
+- `NODE_ENV=production npm run build:web`: built.
+- `node scripts/web/journey.mjs --local` (390x844): FAILS on 2 runs out of 2 at the end, always and only the two known queue-menu steps ("move a queue row from its menu and see the order change", "a long press opens the same menu"); every other step incl. the every-page audit passes. Earlier in this session it passed on some runs. Not investigated (brief B is fixing the script).
+- `node scripts/web/journey.mjs --local --width 1280 --height 800`: "All journey steps passed" (4 phone-only skipped).
 
-## Screenshot script (outside the repo)
-
-`C:\Users\JOSEPH~1\AppData\Local\Temp\claude\bf829d869854efdf\be5ee6da-af84-47ed-837e-e87a6683388d\scratchpad\shots.cjs`
-Usage: `node shots.cjs "$(pwd)" chromium|webkit <outdir> <tag> [--only=search|album|playlist|more]`. It starts the local
-gateway on port 9105 itself, closes the browser and kills the gateway at the end. It also prints any element whose
-aspect-ratio box does not match (the WebKit bug pattern). The `--safe` flag does NOT work (see item 5).
-Needs `renderer/dist-web` built first.
-
-## Screenshots (absolute; all under the scratchpad `after\` folder above)
-
-Looked at: `cr-album-0.png`, `cr-playlist-0.png`, `cr-artist-0.png`, `cr-artist-1.png` (this is the "before" for item 1),
-`cr-profile-0.png`, `cr-profile-2.png`, `cr-search-none-0.png`, `wk-search-velvet-0.png`, `wk-album-0.png`,
-`wk-playlist-0.png`, `wk-lyrics-0.png`, `wk-search-seeall-0.png`, `safe-album-0.png` (invalid safe-area attempt).
-Taken but not looked at: other numbered scroll shots (`*-1.png` ...) and `wk-artist-*`, `wk-profile-*`.
-None exists for the Artist change (item 1).
+## Screenshots (absolute; scratchpad `C:\Users\JOSEPH~1\AppData\Local\Temp\claude\bf829d869854efdf\be5ee6da-af84-47ed-837e-e87a6683388d\scratchpad\`)
+`p2\` holds the second pass; `after\` the first pass. Opened and judged: p2\cr-artist-1, cr-container-0, cr-container-1,
+crsafe-album-0, crsafe-playlist-0, crsafe-search-0, crsafe-artist-0, wksafe-playlist-0, wksafe-artist-1,
+crlyr-lyrics-0, crlyr2-lyrics-0, crplain-lyrics-plain-0, crnone-lyrics-none-0. Taken, not opened: the other numbered scroll
+shots and wksafe-container/profile/album/search.
+Scripts: `rest.cjs` (cases artist,container,lyrics,lyrics-plain,lyrics-none,album,playlist,search,profile; `--safe`
+injects the stylesheet; starts and stops its own gateway on 9105), `shots.cjs` (first pass). Port 9105 is clear.
 
 ## Changes needed in files I do not own
+- DESIGN.md (brief A): Phone shell section: album/playlist heroes full bleed (5/4 art, folded meta line, top scrim),
+  Top result card without aspect-ratio on the phone. No new tokens.
+- Brief A: decide whether the hero art should show through the frosted status strip in the installed app (today the
+  strip hides the top 73px of the art, by design of `.statusBar`).
+- Journey (brief B): `--safe-area` sets the insets inline and the shell resets them; inject a stylesheet with
+  `!important` instead.
 
-- DESIGN.md (brief A): Phone shell section should say Album/Playlist heroes are full bleed (5/4 art, folded meta line,
-  top scrim) and the Top result card has no aspect-ratio on the phone.
-- None for code.
-
-## Unverified or wrong
-
-- Item 1 unverified (above). Journey flake in the queue-menu steps (brief B/A area), not investigated.
-- WebKit on Windows shows a scrollbar gutter and thin text; the real phone does not.
-- First-pass gaps still open: album with a very long title, playlist being renamed (hero), top result with an artist
-  photo / no art in WebKit.
-- node_modules was half-installed after the reboot; I re-ran `npm ci` at root and `server/` (complete now).
+## Unverified / wrong
+- Lyrics plain and none, and a highlighted synced line: not seen (above).
+- Real-phone look (blur, installed iOS offset) needs the owner's phone.
+- Playlist hero with a long title, owner renaming, album with a very long title, top result with an artist photo/no art
+  in WebKit: not checked.
