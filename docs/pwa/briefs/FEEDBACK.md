@@ -44,3 +44,35 @@ the artist, "17 songs · 46 min", then the Add to queue pill.
 
 **Ownership.** `common/HeroBand.tsx` and `HeroBand.module.css` move to brief E for this (brief A leaves them
 alone). The desktop layout must not change: scope it to the phone shell.
+
+---
+
+## 2. Search: the top result card is half width — brief E
+
+![Search results on an iPhone 14](feedback/02-search-top-result.jpg)
+
+> On search results this top card is half width, should be full
+
+**What the screenshot shows.** `/search` in Safari, query "soft play". The Top result card
+(`common/TopResultCard`) is about 255px wide and 190px tall, pinned left, with empty page to its right (his red
+arrows span that gap). The Songs card under it is full width. The "Top result" label also sits hard against the
+card's top edge, tighter than the card's other padding.
+
+**Coordinator's reading.**
+
+- The card should span the full width of the page, like the Songs card under it.
+- This is very likely a **Safari-only layout bug**, not a design choice: in Chromium the same card is full width
+  (the journey's screenshots show it so). `TopResultCard.module.css` gives the stacked card `aspect-ratio: 4 / 3`
+  with `max-height: 22em`; 255x190 is exactly 4:3, which suggests WebKit clamps the height and then derives the
+  width from it. The base branch already fixed the same thing in `ArtCard.module.css` ("WebKit sizes a stretched
+  grid item with an aspect ratio from its (empty) height") with an explicit `width: 100%`. Treat that as a lead to
+  confirm in WebKit (`--device "iPhone 14"`), not as the answer.
+- Then **look for the same pattern everywhere else**: any element on a phone page that combines `aspect-ratio`
+  with a `max-height`, `max-width` or a stretched grid or flex cell. Home's pick cards, image tiles, heroes and
+  the Now playing art are the candidates. Chromium will not show it; only WebKit will.
+- Fix the label's top padding while there: it should sit on the card's normal inset, on the top scrim.
+- Check it with an artist (photo), an album or song (cover), and a result with no art (the Lit Wall fallback).
+
+**Ownership.** `common/TopResultCard.tsx` and `TopResultCard.module.css` move to brief E (brief A leaves them
+alone). If the same bug turns up in a component another brief owns, report it with the WebKit screenshot rather
+than fixing it. Scope the change to the phone shell.

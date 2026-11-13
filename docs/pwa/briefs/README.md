@@ -50,7 +50,7 @@ No file is in two briefs. A file not listed belongs to nobody: an agent that nee
 | `scripts/web/journey.mjs`, `components/queue/**`, `QueueSidebar.module.css` | B |
 | `components/phone/MorePage.*`, `PhoneMore.module.css`, `scripts/web/pwa.mjs` | C |
 | Home, Discover, Leaderboard, `musicStats/**`, `stats/**`, Queuedle stats, `common/FanBubbles.*` | D |
-| Album, Artist, Container, Playlist, Profile, Lyrics, Search, `common/HeroBand.*` | E |
+| Album, Artist, Container, Playlist, Profile, Lyrics, Search, `common/HeroBand.*`, `common/TopResultCard.*` | E |
 | `queuedle/**` (except the stats files), `common/Dialog.*`, Feedback, `polls/**` | F |
 
 ## After they report (the coordinator's part)

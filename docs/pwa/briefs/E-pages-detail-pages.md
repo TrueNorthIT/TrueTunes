@@ -15,8 +15,9 @@ Read `COMMON.md` in this folder first.
 - `renderer/src/components/ProfilePanel.tsx`, `renderer/src/styles/ProfilePanel.module.css`
 - `renderer/src/components/LyricsPanel.tsx`, `LyricsPanel.module.css`
 - `renderer/src/components/search/**`
-- `renderer/src/components/common/HeroBand.tsx` and `HeroBand.module.css` (the one shared component that is
-  yours: the Album and Playlist hero; see item 1 in `FEEDBACK.md`)
+- `renderer/src/components/common/HeroBand.tsx` and `HeroBand.module.css` (the Album and Playlist hero; item 1 in
+  `FEEDBACK.md`) and `common/TopResultCard.tsx` and `TopResultCard.module.css` (Search's top result; item 2).
+  These two are the only shared components that are yours.
 
 Nothing else. Shared components (`common/**`), `global.css`, the shell and the Back button belong to brief A; the
 queue to brief B.
