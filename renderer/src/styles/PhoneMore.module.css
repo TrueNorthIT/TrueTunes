@@ -81,6 +81,7 @@
 .rowLabel {
   font-size: var(--fs-body);
   font-weight: 500;
+  overflow-wrap: anywhere;
 }
 .rowDetail {
   font-size: var(--fs-label);
@@ -139,6 +140,22 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Diagnostics: a quiet text link above the version, still a full-height tap target. */
+.quiet {
+  align-self: center;
+  min-height: var(--tap);
+  padding: 0 1.2em;
+  border: none;
+  background: none;
+  color: var(--text-3);
+  font: inherit;
+  font-size: var(--fs-small);
+  cursor: pointer;
+}
+.quiet:focus-visible {
+  outline-offset: -2px;
 }
 
 .version {
