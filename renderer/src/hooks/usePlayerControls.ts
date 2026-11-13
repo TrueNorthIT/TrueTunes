@@ -6,10 +6,12 @@ import type { PlaybackState } from './usePlayback';
  * The volume a player shows and sets: follows the group's volume unless the user is mid-drag, and sends a change
  * 150ms after the last one. Shared by the player bar's popover and the phone's Now playing slider.
  */
-export function useVolumeControl(volume: number) {
+export function useVolumeControl(volume: number, { sendOnUnmount = false }: { sendOnUnmount?: boolean } = {}) {
   const [localVol, setLocalVol] = useState(volume);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const preMuteRef = useRef<number>(volume > 0 ? volume : 50);
+  /** A change waiting out its 150ms, or null. */
+  const pendingRef = useRef<number | null>(null);
 
   // Sync incoming WS volume only when the user isn't actively dragging
   const dragging = useRef(false);
@@ -19,7 +21,9 @@ export function useVolumeControl(volume: number) {
 
   const commitVolume = (val: number) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    pendingRef.current = val;
     debounceRef.current = setTimeout(() => {
+      pendingRef.current = null;
       void getActiveProvider().setVolume(val);
       dragging.current = false;
     }, 150);
@@ -56,8 +60,10 @@ export function useVolumeControl(volume: number) {
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      // The phone's slider lives on a page that can close within the 150ms: the last change still goes out.
+      if (sendOnUnmount && pendingRef.current !== null) void getActiveProvider().setVolume(pendingRef.current);
     };
-  }, []);
+  }, [sendOnUnmount]);
 
   return {
     localVol,

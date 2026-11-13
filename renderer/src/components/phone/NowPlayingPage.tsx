@@ -43,7 +43,7 @@ function VolumeGlyph({ volume }: { volume: number }) {
 
 /** The room's volume as one long slider: the player bar's popover, laid flat for a thumb. */
 function VolumeRow({ volume, disabled }: { volume: number; disabled: boolean }) {
-  const { localVol, muted, setVolume, toggleMute, startDrag } = useVolumeControl(volume);
+  const { localVol, muted, setVolume, toggleMute, startDrag } = useVolumeControl(volume, { sendOnUnmount: true });
   return (
     <div className={styles.volume}>
       <button

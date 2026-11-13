@@ -118,3 +118,14 @@
     transition: none;
   }
 }
+
+/* ── Phone shell and touch (the web app) ── */
+/* A recent search: a full tap target high; the pill is drawn in the padding box, so it keeps its size. */
+:global(:root[data-shell='phone']) .recent {
+  min-height: var(--tap);
+  border-block: 6px solid transparent;
+  background-clip: padding-box;
+}
+:global(:root[data-shell='phone']) .recents {
+  gap: 0 0.6em;
+}
