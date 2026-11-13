@@ -378,10 +378,7 @@ export function createSonosSocket(o: {
     const dead = new Promise<never>((_, reject) => {
       timer = setTimeout(() => reject(new Error('no answer')), PROBE_MS);
     });
-    Promise.race([
-      send({ namespace: 'playbackExtended', groupId: config.groupId, command: 'subscribe' }, {}),
-      dead,
-    ])
+    Promise.race([send({ namespace: 'playbackExtended', groupId: config.groupId, command: 'subscribe' }, {}), dead])
       .catch(() => {
         if (ws !== sock) return;
         record({ at: Date.now(), kind: 'probe-failed' });

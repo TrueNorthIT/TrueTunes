@@ -592,9 +592,7 @@ describe('partial playback messages', () => {
       if (ns === 'devices') {
         reply({});
         return queueMicrotask(() =>
-          queueMicrotask(() =>
-            ws.receive([{ namespace: 'devices', name: 'devicesStatus' }, { devices: DEVICES }])
-          )
+          queueMicrotask(() => ws.receive([{ namespace: 'devices', name: 'devicesStatus' }, { devices: DEVICES }]))
         );
       }
       if (ns === 'playbackExtended') {
