@@ -204,6 +204,12 @@ async function scrollQueue(to) {
           ? el.scrollTop + el.clientHeight >= el.scrollHeight - 2 &&
             byIndex[byIndex.length - 1].getBoundingClientRect().bottom >= rows[0].parentElement.getBoundingClientRect().bottom - 2
           : el.scrollTop === 0 && Number(byIndex[0].dataset.index) === 0;
+      // The list can grow after the first scroll (the queue re-fetches when its version changes, and the DJ's
+      // rows arrive), so the end moves further away: scroll again rather than wait for a position that is gone.
+      if (!atTarget) {
+        el.scrollTo(0, where === 'end' ? el.scrollHeight : 0);
+        el.dispatchEvent(new Event('scroll'));
+      }
       // ...and nothing is still moving: the same rows in the same places on two looks in a row.
       const sig = `${atTarget}|${byIndex.map((r) => r.dataset.index + ':' + Math.round(r.getBoundingClientRect().top)).join()}`;
       const steady = window.__queueSig === sig;
