@@ -164,8 +164,8 @@
   max-height: calc(100dvh - var(--safe-top) - 48px);
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 0 8px calc(var(--safe-bottom) + 12px);
-  background: var(--material-bg);
+  padding: 0 8px calc(var(--safe-bottom) + 20px);
+  background: var(--material-bg-dense);
   -webkit-backdrop-filter: var(--material-filter);
   backdrop-filter: var(--material-filter);
   border-top: 1px solid var(--separator);

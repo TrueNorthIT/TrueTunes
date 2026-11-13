@@ -42,7 +42,7 @@
   right: 0;
   z-index: 141;
   height: var(--phone-top);
-  background: var(--material-bg);
+  background: var(--material-bg-dense);
   -webkit-backdrop-filter: var(--material-filter);
   backdrop-filter: var(--material-filter);
   pointer-events: none;
@@ -61,7 +61,7 @@
   padding: 0;
   border: 1px solid var(--separator);
   border-radius: var(--r-round);
-  background: var(--material-bg);
+  background: var(--material-bg-dense);
   -webkit-backdrop-filter: var(--material-filter);
   backdrop-filter: var(--material-filter);
   box-shadow: var(--float-shadow);
@@ -86,7 +86,7 @@
   /* One sheet of the shell material for both bars: nothing shows sharp between them, and one blur to draw. */
   border-top: 1px solid var(--separator);
   border-radius: var(--r-shell) var(--r-shell) 0 0;
-  background: var(--material-bg);
+  background: var(--material-bg-dense);
   -webkit-backdrop-filter: var(--material-filter);
   backdrop-filter: var(--material-filter);
   box-shadow: var(--float-shadow);
@@ -292,7 +292,7 @@
   padding: 0 2px 0 14px;
   border: 1px solid var(--separator);
   border-radius: var(--r-shell);
-  background: var(--material-bg);
+  background: var(--material-bg-dense);
   -webkit-backdrop-filter: var(--material-filter);
   backdrop-filter: var(--material-filter);
   box-shadow: var(--float-shadow);

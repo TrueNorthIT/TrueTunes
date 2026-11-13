@@ -750,7 +750,7 @@ button.groupLabel:hover {
   padding: 6px 6px 6px 16px;
   border: 1px solid var(--separator);
   border-radius: var(--r-lg);
-  background: var(--material-bg);
+  background: var(--material-bg-dense);
   -webkit-backdrop-filter: var(--material-filter);
   backdrop-filter: var(--material-filter);
   box-shadow: var(--float-shadow);

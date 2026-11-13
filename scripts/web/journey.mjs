@@ -256,6 +256,13 @@ function auditInPage(phoneShell) {
   return problems;
 }
 async function audit(where) {
+  // A page fades in as it opens (and a sheet rises): measure it once it has arrived, not part-way.
+  if (phone)
+    await page.waitForFunction(() => {
+      const main = document.querySelector('main');
+      return !main || getComputedStyle(main).opacity === '1';
+    });
+  await settle();
   const problems = await page.evaluate(auditInPage, phone);
   if (problems.length)
     throw new Error(

@@ -4,12 +4,16 @@
  * The window background is --bg (global.css).
  *
  *   --material-bg     nav pill, player bar, queue sidebar
+ *   --material-bg-dense  the phone shell's dock, bottom sheet and status strip: the same frosted navy, denser,
+ *                     because their labels sit right on top of scrolling rows and must read even where a
+ *                     browser draws no blur
  *   --material-filter backdrop-filter for those
  *   --material-edge   inset highlight on those
  *   --float-shadow    the floating shadow, edge included
  */
 :root {
   --material-bg: rgba(22, 23, 38, 0.62);
+  --material-bg-dense: rgba(22, 23, 38, 0.88);
   --material-filter: blur(30px) saturate(1.8);
   --material-edge: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   /* Floating shadow: nav, player, dropdowns, context menu, toasts, Dialog. */
@@ -20,6 +24,7 @@
 @media (prefers-reduced-transparency: reduce) {
   :root {
     --material-bg: #1b1d2e;
+    --material-bg-dense: #1b1d2e;
     --material-filter: none;
   }
 }
