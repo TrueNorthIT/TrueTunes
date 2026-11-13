@@ -24,12 +24,14 @@ export function QueuedleBonusScreen({ winningItems, selections, onSelect, onSubm
           </h2>
           <p className={styles.stageSub}>For each winner, pick the colleague who has queued it the most.</p>
         </div>
-        <span className={styles.submitCount} role="status">
-          {answered} of {selections.length} answered
-        </span>
-        <PillButton variant="primary" onClick={onSubmit} disabled={!allAnswered || submitting}>
-          {submitting ? 'Submitting…' : 'Submit'}
-        </PillButton>
+        <div className={styles.stageActions}>
+          <span className={styles.submitCount} role="status">
+            {answered} of {selections.length} answered
+          </span>
+          <PillButton variant="primary" onClick={onSubmit} disabled={!allAnswered || submitting}>
+            {submitting ? 'Submitting…' : 'Submit'}
+          </PillButton>
+        </div>
       </div>
       <ol className={styles.bonusGrid}>
         {winningItems.map((item, i) => (
