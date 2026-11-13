@@ -212,6 +212,118 @@ describe('401 from the gateway', () => {
   });
 });
 
+// ─── the browse lane ─────────────────────────────────────────────────────────────
+
+describe('browse lane', () => {
+  const browse = (h: Harness, id: string) =>
+    h.bridge.fetch({
+      operationId: 'browseContainer',
+      pathParams: { householdId: 'HH1', serviceId: '72711', accountId: '9', containerId: id },
+    });
+  const settle = () => new Promise<void>((r) => setTimeout(r, 20));
+
+  /** Browses answer only when released; `started` is the order their requests went out, `maxInFlight` the peak. */
+  function held(h: Harness) {
+    const open: Array<(r?: Response) => void> = [];
+    const state = { started: [] as string[], inFlight: 0, maxInFlight: 0 };
+    h.fake.on('GET', /\/browse/, (c) => {
+      state.started.push(/containers\/([^/]+)\/browse/.exec(c.path)?.[1] ?? '?');
+      state.maxInFlight = Math.max(state.maxInFlight, ++state.inFlight);
+      return new Promise<Response>((resolve) =>
+        open.push((r = json({ ok: 1 })) => {
+          state.inFlight--;
+          resolve(r);
+        })
+      );
+    });
+    /** Answers the oldest open request, then lets the next waiting one start. */
+    const releaseOne = async (r?: Response) => {
+      open.shift()?.(r);
+      await settle();
+    };
+    return { state, open, releaseOne };
+  }
+
+  it('never has more than 3 browses in flight', async () => {
+    const h = makeBridge();
+    const g = held(h);
+    const all = Array.from({ length: 10 }, (_, i) => browse(h, `c${i}`));
+    await settle();
+    expect(g.state.started).toHaveLength(3);
+    for (let i = 0; i < 10; i++) await g.releaseOne();
+    expect((await Promise.all(all)).every((r) => 'data' in r)).toBe(true);
+    expect(g.state.started).toHaveLength(10);
+    expect(g.state.maxInFlight).toBe(3);
+  });
+
+  it('lets a call that is not a browse go out at once while browses wait', async () => {
+    const h = makeBridge();
+    const g = held(h);
+    const all = Array.from({ length: 10 }, (_, i) => browse(h, `c${i}`));
+    await settle();
+    h.fake.on('GET', '/sonos/api/mfe', () => json({ mfe: 1 }));
+    expect(await h.bridge.fetch({ operationId: 'getMfe' })).toEqual({ data: { mfe: 1 } });
+    expect(g.state.started).toHaveLength(3);
+    for (let i = 0; i < 10; i++) await g.releaseOne();
+    await Promise.all(all);
+  });
+
+  it('starts the waiting browses newest first', async () => {
+    const h = makeBridge();
+    const g = held(h);
+    const all = Array.from({ length: 6 }, (_, i) => browse(h, `c${i}`));
+    await settle();
+    expect(g.state.started).toEqual(['c0', 'c1', 'c2']);
+    for (let i = 0; i < 6; i++) await g.releaseOne();
+    await Promise.all(all);
+    expect(g.state.started).toEqual(['c0', 'c1', 'c2', 'c5', 'c4', 'c3']);
+  });
+
+  it('frees the slot when a browse errors, answers badly or fails to reach the gateway', async () => {
+    vi.useFakeTimers();
+    const h = makeBridge();
+    const g = held(h);
+    const hold = Array.from({ length: 3 }, (_, i) => browse(h, `c${i}`));
+    await vi.advanceTimersByTimeAsync(20);
+    h.fake.on('GET', /containers\/d0\/browse/, () => text('nope', 404)); // an error response
+    h.fake.on('GET', /containers\/d1\/browse/, () => text('<html>', 200)); // not JSON
+    h.fake.on('GET', /containers\/d2\/browse/, () => {
+      throw new Error('offline'); // the request itself fails (retried, then given up)
+    });
+    const rest = ['d0', 'd1', 'd2'].map((id) => browse(h, id));
+    await vi.advanceTimersByTimeAsync(20);
+    for (let i = 0; i < 3; i++) g.open.shift()?.(); // free the three held slots: the others now run, one after another
+    await vi.advanceTimersByTimeAsync(5000);
+    const out = await Promise.all(rest);
+    expect(out.every((r) => 'error' in r)).toBe(true);
+    await Promise.all(hold);
+    // every slot is back: three new browses start together
+    const again = ['e0', 'e1', 'e2'].map((id) => browse(h, id));
+    await vi.advanceTimersByTimeAsync(20);
+    expect(g.state.started.slice(-3).sort()).toEqual(['e0', 'e1', 'e2']);
+    g.open.splice(0).forEach((r) => r());
+    await Promise.all(again);
+  });
+
+  it('a browse whose request is retried (401 refresh, or a service re-select) does not deadlock a full lane', async () => {
+    const auth = fakeAuth({ token: 'old', refreshed: 'new' });
+    const h = makeBridge({ auth });
+    const g = held(h);
+    const first = Array.from({ length: 3 }, (_, i) => browse(h, `c${i}`));
+    await settle();
+    // the fourth waits; when it runs its first answer is a 401, so the gateway helper retries it
+    const fourth = browse(h, 'c3');
+    await settle();
+    let n = 0;
+    h.fake.on('GET', /containers\/c3\/browse/, () => (++n === 1 ? text('', 401) : json({ ok: 'c3' })));
+    await g.releaseOne();
+    expect(await fourth).toEqual({ data: { ok: 'c3' } });
+    expect(n).toBe(2);
+    for (let i = 0; i < 2; i++) await g.releaseOne();
+    await Promise.all(first);
+  });
+});
+
 // ─── service self-heal ───────────────────────────────────────────────────────────
 
 /** Boots the bridge with a household but no service: the first registrations answer is empty. */

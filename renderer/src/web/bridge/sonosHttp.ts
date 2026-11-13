@@ -334,5 +334,29 @@ export function createSonosHttp(o: { gateway: Gateway; config: SonosConfig }): S
     return inFlight;
   }
 
-  return { fetch: sonosFetch, discoverServiceCredentials };
+  // ─── The browse lane ───────────────────────────────────────────────────────────
+  // The gateway speaks HTTP/1.1, so the browser holds six connections to it. Home's picks fire dozens of catalogue
+  // browses at launch (about 1.7 s each at Sonos) and would take all six, starving everything else. At most
+  // LANE_MAX browses run at once; the rest wait here, newest first (a browse the user has just asked for must not sit
+  // behind background ones). Only operations named browse* (album, artist, container, playlist) go through it. The
+  // retries inside sonosFetch and the service probe above call sonosFetch directly, so they never take a second slot
+  // (the probe must not: browses waiting on the discovery hold slots themselves).
+  const LANE_MAX = 3;
+  let laneActive = 0;
+  const laneWaiting: Array<() => void> = [];
+
+  async function laneFetch(request: FetchRequest, isRetry?: boolean): Promise<FetchResponse> {
+    if (!request.operationId.startsWith('browse')) return sonosFetch(request, isRetry);
+    if (laneActive < LANE_MAX) laneActive++;
+    else await new Promise<void>((resolve) => laneWaiting.push(resolve)); // the slot is handed over on release
+    try {
+      return await sonosFetch(request, isRetry);
+    } finally {
+      const next = laneWaiting.pop(); // newest first
+      if (next) next();
+      else laneActive--;
+    }
+  }
+
+  return { fetch: laneFetch, discoverServiceCredentials };
 }
