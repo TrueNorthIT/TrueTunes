@@ -7,7 +7,8 @@
 //   options: --width 390 --height 844 --shots <dir>
 //            --device "iPhone 14"   Playwright's descriptor for it: WebKit, 390x844 at 3x, touch, Safari's user agent
 //                                   (npx playwright install webkit first; CI installs only Chromium, the default)
-//            --safe-area            give the page an iPhone 14's insets (47px top, 34px bottom) through the
+//            --cpu 6                Chromium only: slow the page's CPU 6x, to shake out steps that only pass on a fast machine
+//            --safe-area           give the page an iPhone 14's insets (47px top, 34px bottom) through the
 //                                   --safe-top / --safe-bottom tokens, which no desktop browser has of its own
 //
 // At phone size the app shows the phone shell and every step is a tap; at 1280 wide it shows the desktop layout
@@ -32,6 +33,7 @@ const width = Number(opt('--width', device?.viewport.width ?? 390));
 const height = Number(opt('--height', device?.viewport.height ?? 844));
 const shots = opt('--shots', null);
 const safeArea = args.includes('--safe-area');
+const cpu = Number(opt('--cpu', 1));
 const local = args.includes('--local');
 let base = args.find((a) => /^https?:\/\//.test(a))?.replace(/\/+$/, '');
 if (!local && !base) {
@@ -77,6 +79,10 @@ const context = await browser.newContext(
     : { viewport: { width, height }, deviceScaleFactor: 2, hasTouch: touch, isMobile: touch }
 );
 const page = await context.newPage();
+if (cpu > 1 && browser.browserType().name() === 'chromium') {
+  // A slow phone, or a laptop with other work running: timing a step must not depend on a fast machine.
+  await (await context.newCDPSession(page)).send('Emulation.setCPUThrottlingRate', { rate: cpu });
+}
 if (safeArea) {
   await page.addInitScript(() => {
     const set = () => {
@@ -168,9 +174,12 @@ async function queueCount() {
   return Number.parseInt(label ?? '', 10);
 }
 /** The queue's list is virtual: bring its end (or its start) into the window. */
-const scrollQueue = (to) =>
-  page.evaluate((where) => {
-    for (let el = document.querySelector('[data-playing="true"]'); el; el = el.parentElement) {
+async function scrollQueue(to) {
+  // The scroller is found from any mounted row (the playing row itself is unmounted while the list is scrolled away
+  // from it), and the step then waits for the virtual list to catch up: it re-renders its window a moment after
+  // the scroll (about 400ms with the CPU slowed 6x), and a script that reads rows before that finds none.
+  await page.evaluate((where) => {
+    for (let el = document.querySelector('[data-index]'); el; el = el.parentElement) {
       if (/auto|scroll/.test(getComputedStyle(el).overflowY) && el.scrollHeight > el.clientHeight) {
         el.scrollTo(0, where === 'end' ? el.scrollHeight : 0);
         // Playwright's WebKit does not always dispatch the scroll event for a script's scrollTo (the list really
@@ -180,7 +189,31 @@ const scrollQueue = (to) =>
         return;
       }
     }
+    throw new Error('no scrolling queue list found');
   }, to);
+  await page.waitForFunction(
+    (where) => {
+      const rows = [...document.querySelectorAll('[data-index]')];
+      if (!rows.length) return false;
+      let el = rows[0];
+      while (el && !(/auto|scroll/.test(getComputedStyle(el).overflowY) && el.scrollHeight > el.clientHeight)) el = el.parentElement;
+      if (!el) return false;
+      const byIndex = rows.sort((a, b) => Number(a.dataset.index) - Number(b.dataset.index));
+      const atTarget =
+        where === 'end'
+          ? el.scrollTop + el.clientHeight >= el.scrollHeight - 2 &&
+            byIndex[byIndex.length - 1].getBoundingClientRect().bottom >= rows[0].parentElement.getBoundingClientRect().bottom - 2
+          : el.scrollTop === 0 && Number(byIndex[0].dataset.index) === 0;
+      // ...and nothing is still moving: the same rows in the same places on two looks in a row.
+      const sig = `${atTarget}|${byIndex.map((r) => r.dataset.index + ':' + Math.round(r.getBoundingClientRect().top)).join()}`;
+      const steady = window.__queueSig === sig;
+      window.__queueSig = sig;
+      return atTarget && steady;
+    },
+    to,
+    { polling: 150, timeout: 10000 }
+  );
+}
 /** The queue rows on screen, top to bottom, by title (each row's ⋯ is named for its track). */
 const queueOrder = () =>
   page.evaluate(() =>
@@ -433,12 +466,10 @@ await phoneJourney('move a queue row from its menu and see the order change', as
   const at = order.indexOf(playing);
   const [first, second] = [order[at + 1], order[at + 2]];
   if (!first || !second) throw new Error(`fewer than two rows are up next (${order.join(', ')})`);
-  // force: Playwright's stability check waits on animation frames, which headless WebKit on Windows stops
-  // delivering on this page (its frame rate collapses here), so the tap would never start.
-  await press(page.locator(`button[aria-label="More for ${first}"]`), { force: true });
+  await press(page.locator(`button[aria-label="More for ${first}"]`));
   await expectVisible(page.getByRole('menu'));
   await audit('The row menu (bottom sheet)');
-  await press(menuItem('Move down'), { force: true });
+  await press(menuItem('Move down'));
   await expectGone(page.getByRole('menu'));
   await page.waitForFunction(
     ([a, b]) => {
@@ -448,8 +479,8 @@ await phoneJourney('move a queue row from its menu and see the order change', as
     [first, second]
   );
   // And back to the front of the line with Play next.
-  await press(page.locator(`button[aria-label="More for ${first}"]`), { force: true });
-  await press(menuItem('Play next'), { force: true });
+  await press(page.locator(`button[aria-label="More for ${first}"]`));
+  await press(menuItem('Play next'));
   await expectGone(page.getByRole('menu'));
   await page.waitForFunction(
     ([a, b]) => {
