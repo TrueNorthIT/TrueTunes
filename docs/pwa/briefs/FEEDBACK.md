@@ -233,3 +233,48 @@ duration while the track stays on screen; a phone reconnects (and so replays the
 app comes back from the background, and does not get the window "focus" refresh that heals the desktop.
 
 **Ownership.** Brief G.
+
+---
+
+## 7. Swipe down to dismiss panels — brief A
+
+![The top of the Now playing page, the close chevron circled](feedback/07-swipe-down-to-dismiss.jpg)
+
+> You should be able to swipe down to dismiss panels
+
+**What the screenshot shows.** The top of `/now-playing`, with his red circle around the small chevron at the top
+left, which today is the only way to close the page (apart from the browser's back).
+
+**Coordinator's reading.** "Panels" is plural: anything that slides up over the app should go away with a
+downward swipe, the way it does everywhere else on the phone.
+
+- **Now playing**: drag the page down and it follows the finger; let go past a threshold (about a quarter of the
+  height, or a quick flick) and it closes, otherwise it springs back. Closing does exactly what the chevron does
+  (the page is a route: go back), so the browser's back button and the swipe stay in step. Add the small grab
+  handle at the top centre that says "this can be pulled", as the owner's Storyshelf reference has (item 4's
+  second screenshot), and keep the chevron: it is the accessible, non-gesture way.
+- **The bottom sheet** (the row menu and its playlist list): the same gesture closes it. It already draws a grab
+  handle.
+- **Dialogs**: not the form dialogs. DESIGN.md says a stray tap must not lose typed text, and a stray swipe is the
+  same thing. A dialog with no fields that is presented as a sheet may take the gesture; that is brief F's file
+  (`common/Dialog`), so describe what you would do there rather than doing it.
+
+What makes it feel right, and what must not break:
+
+- Only a mostly vertical, downward drag starts it. A horizontal drag on the seek bar or the volume slider must
+  never start a dismiss, and neither may a drag that begins on a button.
+- If the panel's own content is scrolled, the gesture scrolls the content first and only starts dismissing once it
+  is at the top (the sheet's long playlist list; Now playing on a short screen).
+- In Safari proper a downward pull at the top of a page triggers the browser's pull-to-refresh: contain it on
+  these panels (`overscroll-behavior`), and check it does not reload the app.
+- Leave the left-edge back swipe alone.
+- `prefers-reduced-motion`: no follow-the-finger animation and no spring; the gesture still closes the panel.
+- Write the gesture once, as a small hook or helper beside `lib/longPress.ts`, with unit tests for the threshold,
+  the flick, the horizontal-drag and scrolled-content cases, and use it in both places.
+- The journey should prove it (drag Now playing down and land back where you were; drag the sheet down and see it
+  gone). The journey is brief B's file: describe the two steps in your report unless B has finished.
+
+It can only be judged properly on a real phone: say so in your report and list it for the owner.
+
+**Ownership.** Brief A (`components/phone/NowPlayingPage.tsx`, `common/ContextMenu.tsx`, their stylesheets, a new
+helper in `renderer/src/lib/` and its test, which this item adds to brief A's files). Phone shell only.
