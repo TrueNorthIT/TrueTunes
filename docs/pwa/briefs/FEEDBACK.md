@@ -172,3 +172,43 @@ B's file: describe the change needed in your report rather than editing it, unle
 
 **Ownership.** Brief A (`components/phone/NowPlayingPage.tsx`, `PhoneNowPlaying.module.css`). Phone shell only: the
 desktop's player bar and Home's Now playing card do not change.
+
+---
+
+## 5. Page titles sit a touch too high: the top blur catches them — brief A
+
+![The top of the Discover page on an iPhone 14](feedback/05-top-safe-zone-title.jpg)
+
+> We need just a tickle more at the top for safari safe zone. It applies a blur you can see its just catching the
+> top of the title
+
+**What the screenshot shows.** A crop of the top of `/discover` at 3x. The status bar (clock, signal, battery) is
+at the top; the page title "Discover" starts about 68px down. The tops of its letters are visibly soft: a blur
+band under the status bar reaches down far enough to catch the title's cap height. The rest of the word is sharp.
+
+**Where it may come from. Find out which before fixing.**
+
+- Ours: `.statusBar` in `PhoneShell.module.css` is a strip `--phone-top` high (the top safe area, 47px here) with
+  the frosted material's backdrop blur, and `global.css` starts the phone shell's pages at `--nav-h: var(--phone-top)`
+  with whatever padding the page adds. If the strip, its blur's soft edge, or a fade under it reaches below 47px,
+  it will sit on the title.
+- The system's: recent iOS versions draw their own soft edge under the status bar over web content in a home-screen
+  app, and it extends a little below the inset. "It applies a blur" reads as the owner meaning Safari does. If so
+  we cannot remove it, only stay clear of it.
+
+**Coordinator's reading.** Either way the fix he is asking for is small: start the page's content a little lower,
+on every page of the phone shell, so that at rest nothing sits in the soft band. "A tickle" is of the order of 8
+to 12px, not a new header. Do it in one place (the phone shell's top offset in `global.css`, as its own named
+token so it can be tuned), not per page, and then check every way a page starts: a plain title (Discover, Queue,
+More), Home's greeting, the search field, pages with a Back button, pages whose hero runs up under the strip
+(Artist, Profile, and the Album hero once item 1 makes it full bleed: those are meant to go under it, so the
+offset applies to their text and buttons, not their art), the Now playing page's close button, and the Demo strip
+in `/demo`.
+
+If the band turns out to be ours, also make it end cleanly at the safe area so it does not blur anything that is
+at rest below it.
+
+This cannot be confirmed in Playwright (its WebKit draws no backdrop blur, and no system chrome). Build it so the
+offset is one token, say what value you chose and why, and list it in your report as needing the owner's phone.
+
+**Ownership.** Brief A (`global.css`, `PhoneShell.module.css`). Phone shell only.
