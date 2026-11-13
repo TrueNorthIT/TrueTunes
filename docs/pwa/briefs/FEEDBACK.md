@@ -212,3 +212,24 @@ This cannot be confirmed in Playwright (its WebKit draws no backdrop blur, and n
 offset is one token, say what value you chose and why, and list it in your report as needing the owner's phone.
 
 **Ownership.** Brief A (`global.css`, `PhoneShell.module.css`). Phone shell only.
+
+---
+
+## 6. The playing track often has no time and no progress — brief G
+
+![Home on an iPhone 14 with an empty progress bar](feedback/06-no-progress.png)
+
+> It doesnt always grab the now playing time it knows the song is playing but not the progress - we see this
+> occasionally on desktop and switching speaker groups fixes it. But its happening a lot on mobile
+
+**What the screenshot shows.** Home, with "Worms On Tarmac" playing: the right title, artist, album, art and
+queued-by chip, and the mini player shows the pause button, so the app knows it is playing. But Home's Now playing
+card has an empty progress line and no times, and the mini player's progress hairline is empty.
+
+**This is a functional bug, not styling**, and it is in code the desktop app shares. It has its own brief,
+`G-playback-position.md`, which carries the analysis: in short, the playback hook treats every message from Sonos
+as the whole truth and fills what a message lacks with zeros, so one partial message after a full one wipes the
+duration while the track stays on screen; a phone reconnects (and so replays the suspect message) every time the
+app comes back from the background, and does not get the window "focus" refresh that heals the desktop.
+
+**Ownership.** Brief G.

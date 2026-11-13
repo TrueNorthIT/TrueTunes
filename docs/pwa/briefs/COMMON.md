@@ -1,7 +1,7 @@
 # Phone shell follow-ups: what every agent needs
 
 Read this whole file, then `FEEDBACK.md` (the owner's notes from a real iPhone 14: every item carrying your letter
-is part of your brief and comes first), then your own brief (`A` to `F` in this folder), before you touch anything.
+is part of your brief and comes first), then your own brief (`A` to `G` in this folder), before you touch anything.
 You start with no other context.
 
 ## What this is

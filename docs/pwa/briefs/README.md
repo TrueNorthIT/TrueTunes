@@ -1,6 +1,6 @@
 # Phone shell follow-ups: the briefs
 
-The phone shell shipped on 13 November as work in progress (#269). What is left is split into six pieces for cheaper
+The phone shell shipped on 13 November as work in progress (#269). What is left is split into seven pieces for cheaper
 agents (Sonnet), each with its own files so they can run at the same time. **Nothing here has been started.**
 
 ## Base
@@ -19,10 +19,12 @@ and a timing fix in the journey). Every agent branches from it.
 | [D](D-pages-home-discover-charts.md) | Pages by eye: Home, Discover, Leaderboard, Music stats, Queuedle stats | an hour or two |
 | [E](E-pages-detail-pages.md) | Pages by eye: Album, Artist, Container, Playlist, Profile, Lyrics, Search | an hour or two |
 | [F](F-queuedle-and-dialogs.md) | Queuedle mid-game and the dialogs (feedback, polls, new playlist), including the keyboard | an hour or two |
+| [G](G-playback-position.md) | A functional bug: the playing track loses its time and progress, often on the phone and sometimes on the desktop. Fix in the shared playback hook, reconnect and refresh when the phone comes back to the app, and a diagnostics page | half a day |
 
-All six can run in parallel. If only some are started, the order of value is **A, B, F, C, E, D**: A fixes the
-defects the owner has already seen, B is the only one that says anything about Safari, F covers the screens nobody
-has looked at at all.
+All seven can run in parallel. If only some are started, the order of value is **G, A, E, B, F, C, D**: G is the
+only functional bug and the owner hits it often; A and E carry most of his feedback (the dock, Now playing, the
+top offset; the album hero and the search card); B is the only one that says anything about Safari's engine as a
+whole; F covers the screens nobody has looked at at all.
 
 ## The owner's feedback
 
@@ -52,16 +54,18 @@ No file is in two briefs. A file not listed belongs to nobody: an agent that nee
 | Home, Discover, Leaderboard, `musicStats/**`, `stats/**`, Queuedle stats, `common/FanBubbles.*` | D |
 | Album, Artist, Container, Playlist, Profile, Lyrics, Search, `common/HeroBand.*`, `common/TopResultCard.*` | E |
 | `queuedle/**` (except the stats files), `common/Dialog.*`, Feedback, `polls/**` | F |
+| `hooks/usePlayback.ts`, `hooks/playbackPosition.ts`, `providers/sonos/**`, `web/bridge/sonosSocket.ts` and `index.ts`, `App.tsx` (two named things), a new `phone/DiagnosticsPage.tsx` | G |
 
 ## After they report (the coordinator's part)
 
-1. Merge the branches into `feature/pwa-phone-followup` in the order A, B, C, D, E, F, applying the changes agents
+1. Merge the branches into `feature/pwa-phone-followup` in the order G, A, B, C, D, E, F, applying the changes agents
    asked for in files they did not own.
 2. Run everything: `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm run test:run`,
    `npm run test:main`, the server tests, both builds, the journey at 390x844 and 1280x800 (and in WebKit if B got
    it passing), and `scripts/web/pwa.mjs` three times.
 3. Look at the screenshots at iPhone 14 size and at 1280x800.
-4. An independent read limited to: does anything change for the Electron app or the web at desktop width.
+4. An independent read limited to: does anything change for the Electron app or the web at desktop width. Brief G
+   changes the shared playback hook on purpose: have that diff reviewed line by line against the desktop.
 5. One pull request, merge when green, watch the deploy, run the checks and the phone journey against production.
 6. Update `docs/pwa/features.json` and `PROGRESS.md`, then the final report.
 
