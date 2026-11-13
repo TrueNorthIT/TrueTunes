@@ -1533,7 +1533,7 @@ button.side:disabled {
 }
 :global(:root[data-shell='phone']) .side {
   display: grid;
-  grid-template-columns: 5.5em minmax(0, 1fr);
+  grid-template-columns: 4.6em minmax(0, 1fr);
   grid-template-areas:
     'art text'
     'foot foot';
@@ -1543,8 +1543,8 @@ button.side:disabled {
 :global(:root[data-shell='phone']) .sideArtBox {
   grid-area: art;
   container-type: normal;
-  width: 5.5em;
-  height: 5.5em;
+  width: 4.6em;
+  height: 4.6em;
 }
 :global(:root[data-shell='phone']) .sideArt {
   width: 100%;
@@ -1609,4 +1609,16 @@ button.side:disabled {
 /* One column here, so the leaderboard must not stay pinned: it would ride over the answers list below it. */
 :global(:root[data-shell='phone']) .boardCard {
   position: static;
+}
+/* Next stays in reach above the dock on a short screen (Safari with its toolbar showing). */
+:global(:root[data-shell='phone']) .nextRow {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+}
+:global(:root[data-shell='phone']) .nextRow:has(button) {
+  padding: 0.4em 0.5em 0.4em 1.1em;
+  border-radius: var(--r-card);
+  background: var(--bg-1);
+  box-shadow: var(--float-shadow);
 }
