@@ -152,12 +152,7 @@ export function MorePage({
         <section className={styles.group} aria-label="Places">
           <ul className={styles.rows}>
             <Row icon={Trophy} label="Leaderboard" onClick={() => void navigate('/leaderboard')} />
-            <Row
-              icon={Gamepad2}
-              label="Queuedle"
-              detail="The daily game"
-              onClick={() => void navigate('/queuedle')}
-            />
+            <Row icon={Gamepad2} label="Queuedle" detail="The daily game" onClick={() => void navigate('/queuedle')} />
           </ul>
         </section>
 
@@ -182,7 +177,11 @@ export function MorePage({
                 icon={RefreshCw}
                 label="Reconnect"
                 detail={
-                  groups.length === 1 ? `Connected to ${groups[0].name}` : groups.length ? undefined : 'No speakers found'
+                  groups.length === 1
+                    ? `Connected to ${groups[0].name}`
+                    : groups.length
+                      ? undefined
+                      : 'No speakers found'
                 }
                 trail={null}
                 onClick={onResync}

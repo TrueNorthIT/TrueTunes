@@ -137,9 +137,12 @@
   --gutter: 28px; /* page gutter, left and right; 16px in the phone shell */
   --tap: 44px; /* smallest touch target in the phone shell */
   --dock-h: 0px; /* the phone shell's mini player and tab bar; nothing on the desktop */
-  /* The notch and the home indicator. Read these, never env() itself, so a test or story can set them on :root. */
+  /* The notch, the home indicator and a landscape phone's sides. Read these, never env() itself, so a test or a
+     story can set them on :root (Chromium has no insets to emulate). */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
 
   /* Motion: one pair for state changes that need a little room, one for hover and focus feedback. */
   --dur: 0.25s;

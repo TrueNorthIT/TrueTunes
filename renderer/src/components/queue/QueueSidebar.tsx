@@ -10,7 +10,18 @@ import {
 } from 'react';
 import { defaultRangeExtractor, useVirtualizer, type Range, type Virtualizer } from '@tanstack/react-virtual';
 import { useQueries } from '@tanstack/react-query';
-import { Loader2, Disc3, RotateCw, LocateFixed, ListX, Play, ListStart, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
+import {
+  Loader2,
+  Disc3,
+  RotateCw,
+  LocateFixed,
+  ListX,
+  Play,
+  ListStart,
+  ArrowUp,
+  ArrowDown,
+  Trash2,
+} from 'lucide-react';
 import { applyReorderLocally, expandToAlbumBlock, projectPlayTimes } from '../../lib/queueHelpers';
 import { usePlaybackPosition } from '../../hooks/playbackPosition';
 import { reportTrackMeta } from '../../lib/trackMetaReporter';

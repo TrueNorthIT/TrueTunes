@@ -48,3 +48,9 @@
     transition: none;
   }
 }
+
+/* Phone shell: a full tap target high. */
+:global(:root[data-shell='phone']) .pill {
+  min-height: var(--tap);
+  padding: 0 1.3em;
+}

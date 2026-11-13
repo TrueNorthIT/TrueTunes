@@ -44,3 +44,33 @@
 .corner:hover {
   background: var(--overlay-strong);
 }
+
+/* Phone shell: every + is a full tap target. Quiet grows; the discs over art keep their size and are drawn
+   inside the larger button, so a corner + does not swallow a small tile. */
+:global(:root[data-shell='phone']) .add {
+  width: var(--tap);
+  height: var(--tap);
+}
+:global(:root[data-shell='phone']) .art,
+:global(:root[data-shell='phone']) .corner {
+  background: none;
+}
+/* The disc and the glyph share the button's one grid cell (no positioning: the parent places the button). */
+:global(:root[data-shell='phone']) .art::before,
+:global(:root[data-shell='phone']) .corner::before {
+  content: '';
+  grid-area: 1 / 1;
+  width: 2.6em;
+  height: 2.6em;
+  border-radius: var(--r-round);
+  background: var(--glass);
+}
+:global(:root[data-shell='phone']) .corner::before {
+  width: 2.2em;
+  height: 2.2em;
+  background: var(--overlay);
+}
+:global(:root[data-shell='phone']) .art > svg,
+:global(:root[data-shell='phone']) .corner > svg {
+  grid-area: 1 / 1;
+}

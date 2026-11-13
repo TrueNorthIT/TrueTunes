@@ -69,7 +69,12 @@ function SearchField({ disabled }: { disabled: boolean }) {
         disabled={disabled}
       />
       {searchText && (
-        <button type="button" className={styles.searchClear} aria-label="Clear search" onClick={() => setSearchText('')}>
+        <button
+          type="button"
+          className={styles.searchClear}
+          aria-label="Clear search"
+          onClick={() => setSearchText('')}
+        >
           <X size={18} aria-hidden="true" />
         </button>
       )}

@@ -10,6 +10,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* A landscape phone's notch side; nothing in portrait. */
+  padding: 0 var(--safe-right) 0 var(--safe-left);
   background: var(--bg);
 }
 
@@ -73,16 +75,21 @@
 /* ── Dock: mini player over tab bar ── */
 .dock {
   position: fixed;
-  left: 0;
-  right: 0;
+  left: var(--safe-left);
+  right: var(--safe-right);
   bottom: 0;
   z-index: 150;
   display: flex;
   flex-direction: column;
-  pointer-events: none;
-}
-.dock > * {
-  pointer-events: auto;
+  gap: 4px;
+  padding: 8px 8px var(--safe-bottom);
+  /* One sheet of the shell material for both bars: nothing shows sharp between them, and one blur to draw. */
+  border-top: 1px solid var(--separator);
+  border-radius: var(--r-shell) var(--r-shell) 0 0;
+  background: var(--material-bg);
+  -webkit-backdrop-filter: var(--material-filter);
+  backdrop-filter: var(--material-filter);
+  box-shadow: var(--float-shadow);
 }
 /* The keyboard is up: the bars would ride up over the field being typed in, so they step out of the way. */
 :global(:root:has(input:not([type='range'], [type='checkbox'], [type='radio'], [type='file']):focus, textarea:focus))
@@ -96,18 +103,14 @@
   display: flex;
   align-items: center;
   height: 56px;
-  margin: 0 8px 4px;
-  border: 1px solid var(--separator);
+  flex-shrink: 0;
   border-radius: var(--r-lg);
-  background: var(--material-bg);
-  -webkit-backdrop-filter: var(--material-filter);
-  backdrop-filter: var(--material-filter);
-  box-shadow: var(--float-shadow);
+  background: var(--surface-hi);
   overflow: hidden;
 }
-/* The playing artwork's colour, layered over the material and never replacing it (as on the player bar). */
+/* The playing artwork's colour washed in from the art, over the dock's material (as on the player bar). */
 .miniTinted {
-  background: linear-gradient(105deg, rgba(var(--bar-tint), 0.18) 0%, rgba(var(--tint), 0.03) 60%), var(--material-bg);
+  background: linear-gradient(105deg, rgba(var(--bar-tint), 0.22) 0%, rgba(var(--tint), 0.06) 60%);
 }
 .miniOpen {
   flex: 1;
@@ -214,12 +217,7 @@
 .tabBar {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  padding: 0 4px var(--safe-bottom);
-  border-top: 1px solid var(--separator);
-  background: var(--material-bg);
-  -webkit-backdrop-filter: var(--material-filter);
-  backdrop-filter: var(--material-filter);
-  box-shadow: var(--material-edge);
+  flex-shrink: 0;
 }
 .tab {
   display: flex;

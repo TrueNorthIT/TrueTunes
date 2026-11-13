@@ -58,3 +58,20 @@
   color: var(--text);
   text-decoration: underline;
 }
+
+/* Phone shell: less padding (the gutter is 16px, so the card's is too), and "See all" a full tap target that
+   does not push the header taller. */
+:global(:root[data-shell='phone']) .card {
+  padding: 1.15em;
+}
+:global(:root[data-shell='phone']) .featured {
+  padding: 1.15em;
+}
+:global(:root[data-shell='phone']) .seeAll {
+  display: inline-flex;
+  align-items: center;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  margin-block: -0.9em;
+  justify-content: flex-end;
+}
