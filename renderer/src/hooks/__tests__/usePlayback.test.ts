@@ -743,7 +743,9 @@ describe('usePlayback — partial messages keep what is known', () => {
   it('keeps state and position through a metadata-only payload', () => {
     vi.useFakeTimers(); // time must not pass between the two messages
     vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
-    onTestFinished(() => vi.useRealTimers());
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     const { result } = renderHook(() => usePlayback('g1'));
     firePlayback(full());
     firePlayback({ metadata: track('T', 180000) });

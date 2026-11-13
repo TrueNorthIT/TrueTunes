@@ -267,13 +267,10 @@
 .created {
   display: contents;
 }
-/* Phone: the dot travels with "Created …", so a wrapped line never starts or ends on a lone dot. */
+/* Phone: the creation date always takes its own line (no dot), so a wrap can never leave a dot at a line's start. */
 :global(:root[data-shell='phone']) .created {
   display: block;
   white-space: nowrap;
-}
-/* Phone: the creation date always takes its own line (no dot), so a wrap can never leave a dot at a line's start. */
-:global(:root[data-shell='phone']) .created {
   flex-basis: 100%;
 }
 :global(:root[data-shell='phone']) .created > span {

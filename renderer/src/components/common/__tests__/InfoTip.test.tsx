@@ -134,7 +134,9 @@ describe('InfoTip', () => {
 
   it('a touch tap opens it, a tap elsewhere closes it, and a mouse click does not pin it', () => {
     document.documentElement.dataset.platform = 'web';
-    onTestFinished(() => delete document.documentElement.dataset.platform);
+    onTestFinished(() => {
+      delete document.documentElement.dataset.platform;
+    });
     const { button } = setup();
     fireEvent.pointerDown(button, { pointerType: 'touch' });
     fireEvent.click(button, { detail: 1 });
