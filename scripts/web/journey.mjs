@@ -135,11 +135,17 @@ const expectGone = (locator, timeout = 8000) => locator.first().waitFor({ state:
  */
 const press = async (locator, options) => {
   const target = locator.first();
-  if (browser.browserType().name() === 'webkit') {
+  const act = (o) => (touch ? target.tap(o) : target.click(o));
+  if (browser.browserType().name() !== 'webkit') return act(options);
+  // Normally: Playwright's own checks, so a control that is covered or still moving fails the step.
+  // Only if the stable wait itself never completes: wait for it to be visible, then tap without it.
+  try {
+    return await act({ ...options, timeout: 6000 });
+  } catch (err) {
+    if (!/stable/.test(String(err.message))) throw err;
     await expectVisible(target);
-    options = { ...options, force: true };
+    return act({ ...options, force: true });
   }
-  return touch ? target.tap(options) : target.click(options);
 };
 const hash = () => page.evaluate(() => location.hash);
 async function goTo(route) {
