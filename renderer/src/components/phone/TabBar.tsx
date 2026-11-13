@@ -24,7 +24,7 @@ interface Props {
  */
 export function TabBar({ active, moreWaiting }: Props) {
   return (
-    <nav className={styles.tabBar} aria-label="Main">
+    <nav className={styles.tabBar} aria-label="Main" data-diag="tabs">
       {TABS.map(({ to, label, icon: Icon }) => {
         const waiting = to === '/more' ? moreWaiting : null;
         return (

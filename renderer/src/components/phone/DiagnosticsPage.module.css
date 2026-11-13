@@ -24,3 +24,25 @@
   padding: 0.4em 0;
   overflow-wrap: anywhere;
 }
+.section {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--text);
+  margin: 1.2em 0 0.4em;
+}
+.derived {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+  padding: 0.2em 0;
+}
+.measure {
+  min-height: var(--tap);
+  padding: 0 var(--gutter);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-body);
+  font-weight: 600;
+}

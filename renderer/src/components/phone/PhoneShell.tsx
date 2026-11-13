@@ -135,7 +135,7 @@ export function PhoneShell({
   const moreWaiting = polls.current ? 'a poll is waiting' : updateVersion ? 'an update is ready' : null;
 
   return (
-    <div className={styles.shell}>
+    <div className={styles.shell} data-diag="shell">
       <AmbientBackdrop nowPlayingArt={playback.artUrl} />
       <div className={styles.statusBar} aria-hidden="true" />
       <div
@@ -223,7 +223,7 @@ export function PhoneShell({
         </main>
       </div>
       {!playerOpen && (
-        <div className={styles.dock}>
+        <div className={styles.dock} data-diag="dock">
           <PhoneMiniPlayer np={np} isAuthed={isAuthed} />
           <TabBar active={lastTab} moreWaiting={moreWaiting} />
         </div>

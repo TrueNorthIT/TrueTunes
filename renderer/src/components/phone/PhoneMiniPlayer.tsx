@@ -33,6 +33,7 @@ export function PhoneMiniPlayer({ np, isAuthed }: Props) {
     <section
       className={`${styles.mini}${dominantColor ? ' ' + styles.miniTinted : ''}`}
       aria-label="Mini player"
+      data-diag="mini"
       style={dominantColor ? ({ '--bar-tint': dominantColor } as React.CSSProperties) : undefined}
     >
       {/* Named by what it shows (title, artist) plus what it does, so the visible words are in the name. */}
