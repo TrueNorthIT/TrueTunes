@@ -231,6 +231,46 @@
     opacity: 1;
   }
 }
+.phoneOnly {
+  display: none;
+}
+:global(:root[data-shell='phone']) .phoneOnly {
+  display: inline;
+}
 :global(:root[data-shell='phone']) .face {
   min-height: var(--tap);
+}
+/* The collaborators join the owner's row and wrap with it, instead of dropping to a line of their own after "with". */
+:global(:root[data-shell='phone']) .collabs {
+  display: contents;
+}
+/* Phone: "with" belongs to the first collaborator (one nowrap unit), so it can never end a line on its own. The
+   standalone word is for the desktop. */
+.withInline {
+  display: none;
+}
+:global(:root[data-shell='phone']) .with {
+  display: none;
+}
+:global(:root[data-shell='phone']) .firstCollab {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  white-space: nowrap;
+}
+:global(:root[data-shell='phone']) .withInline {
+  display: inline;
+  font-size: var(--fs-body);
+  color: var(--text-3);
+}
+/* The dot travels with "Created …", so a wrapped line never starts or ends on a lone dot. */
+.created {
+  white-space: nowrap;
+}
+/* Phone: the creation date always takes its own line (no dot), so a wrap can never leave a dot at a line's start. */
+:global(:root[data-shell='phone']) .created {
+  flex-basis: 100%;
+}
+:global(:root[data-shell='phone']) .created > span {
+  display: none;
 }

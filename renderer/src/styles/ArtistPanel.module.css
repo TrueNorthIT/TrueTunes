@@ -628,3 +628,9 @@
   right: 0.1em;
   bottom: 0.1em;
 }
+
+/* Phone: the row's duration (its 4th cell) gives way so the title keeps the room: at 390px the title cell was about
+   130px and "Distant Satellites" cut after nine letters. The duration is on the album page. */
+:global(:root[data-shell='phone']) .songsList > li > :nth-child(4) {
+  display: none;
+}

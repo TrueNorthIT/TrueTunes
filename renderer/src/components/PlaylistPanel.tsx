@@ -434,8 +434,13 @@ export function PlaylistPanel() {
                   <>
                     <span className={styles.with}>with</span>
                     <ul className={styles.collabs} aria-label="Collaborators">
-                      {collaborators.slice(0, 4).map((m) => (
-                        <li key={m}>
+                      {collaborators.slice(0, 4).map((m, i) => (
+                        <li key={m} className={i === 0 ? styles.firstCollab : undefined}>
+                          {i === 0 && (
+                            <span className={styles.withInline} aria-hidden="true">
+                              with
+                            </span>
+                          )}
                           <button
                             type="button"
                             className={styles.face}
@@ -457,6 +462,7 @@ export function PlaylistPanel() {
                 )}
               </div>
               <div className={styles.metaLine}>
+                <span className={styles.phoneOnly}>{playlist.isFavourites ? 'Favourites' : 'Playlist'} ·</span>
                 <span className={styles.privacy}>
                   {playlist.isPublic ? <Globe size={14} aria-hidden="true" /> : <Lock size={14} aria-hidden="true" />}
                   {playlist.isPublic ? 'Public' : 'Private'}
@@ -464,10 +470,9 @@ export function PlaylistPanel() {
                 <span aria-hidden="true">·</span>
                 <span>{metaLine}</span>
                 {playlist.createdAt && (
-                  <>
-                    <span aria-hidden="true">·</span>
-                    <span>Created {new Date(playlist.createdAt).toLocaleDateString()}</span>
-                  </>
+                  <span className={styles.created}>
+                    <span aria-hidden="true">·</span> Created {new Date(playlist.createdAt).toLocaleDateString()}
+                  </span>
                 )}
               </div>
               <div className={styles.actions}>

@@ -148,3 +148,15 @@
     transform: none;
   }
 }
+
+/* Phone shell: no aspect-ratio box. WebKit clamps the height by max-height and then derives the width from it (a
+   half-width card), so the card is full width with a minimum height and grows with its text. */
+:global(:root[data-shell='phone']) .card {
+  width: 100%;
+  aspect-ratio: auto;
+  max-height: none;
+  min-height: 16em;
+}
+:global(:root[data-shell='phone']) .content {
+  padding-top: 3.5em;
+}

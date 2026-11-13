@@ -209,28 +209,33 @@ export function AlbumPanel({ playback }: Props) {
           }
           corner={<OfficeChip count={queuedHere} />}
         >
-          {artistParts.length > 0 && (
-            <div className={styles.artist}>
-              {artistParts.length === 1 && data?.artistItem ? (
-                <button className={styles.link} onClick={openArtist}>
-                  {artistParts[0]}
-                </button>
-              ) : (
-                artistParts.map((name, i) => (
-                  <Fragment key={i}>
-                    {i > 0 && ', '}
-                    <button
-                      className={styles.link}
-                      onClick={() => void resolveAndOpen(name, 'artist', { serviceId, accountId })}
-                    >
-                      {name}
-                    </button>
-                  </Fragment>
-                ))
-              )}
+          <div className={styles.sub}>
+            {artistParts.length > 0 && (
+              <div className={styles.artist}>
+                {artistParts.length === 1 && data?.artistItem ? (
+                  <button className={styles.link} onClick={openArtist}>
+                    {artistParts[0]}
+                  </button>
+                ) : (
+                  artistParts.map((name, i) => (
+                    <Fragment key={i}>
+                      {i > 0 && ', '}
+                      <button
+                        className={styles.link}
+                        onClick={() => void resolveAndOpen(name, 'artist', { serviceId, accountId })}
+                      >
+                        {name}
+                      </button>
+                    </Fragment>
+                  ))
+                )}
+              </div>
+            )}
+            <div className={styles.kindInline}>
+              {isStation ? 'Station' : isPlaylistOrProgram ? 'Playlist' : 'Album'}
             </div>
-          )}
-          {data && <div className={styles.metaLine}>{meta}</div>}
+            {data && <div className={styles.metaLine}>{meta}</div>}
+          </div>
           {/* No whole-station add: it would replace the shared queue. Its songs add one at a time below. */}
           {!isStation && (
             <div className={styles.actions}>
