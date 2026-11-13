@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { usePlayback } from '../usePlayback';
 import { getPlaybackPosition } from '../playbackPosition';
@@ -741,6 +741,11 @@ describe('usePlayback — partial messages keep what is known', () => {
   });
 
   it('keeps state and position through a metadata-only payload', () => {
+    vi.useFakeTimers(); // time must not pass between the two messages
+    vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     const { result } = renderHook(() => usePlayback('g1'));
     firePlayback(full());
     firePlayback({ metadata: track('T', 180000) });
@@ -757,6 +762,87 @@ describe('usePlayback — partial messages keep what is known', () => {
     firePlayback(full('C', 5000));
     expect(getPlaybackPosition().durationMs).toBe(180000);
     expect(getPlaybackPosition().positionMs).toBe(5000);
+  });
+
+  describe('as time passes', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('an empty message does not rewind the clock, re-send the queue id or touch state', () => {
+      const { result } = renderHook(() => usePlayback('g1'));
+      firePlayback(full());
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(getPlaybackPosition().positionMs).toBe(100_000);
+      const before = result.current.playback;
+      vi.mocked(window.sonos.setQueueId).mockClear();
+      firePlayback({});
+      expect(getPlaybackPosition().positionMs).toBe(100_000);
+      act(() => {
+        vi.advanceTimersByTime(2000);
+      });
+      expect(getPlaybackPosition().positionMs).toBe(102_000);
+      expect(window.sonos.setQueueId).not.toHaveBeenCalled();
+      expect(result.current.playback).toBe(before);
+    });
+
+    it('sends the queue id only when it changes', () => {
+      renderHook(() => usePlayback('g1'));
+      const calls = () => vi.mocked(window.sonos.setQueueId).mock.calls.length;
+      firePlayback(full());
+      expect(calls()).toBe(1);
+      firePlayback({ metadata: track('T', 180000) });
+      expect(calls()).toBe(1);
+      firePlayback(full());
+      expect(calls()).toBe(1);
+      firePlayback(
+        makePayload({
+          playback: { playbackState: 'PLAYBACK_STATE_PLAYING', positionMillis: 1, queueId: 'q2', playModes: {} },
+          metadata: track('T', 180000),
+        })
+      );
+      expect(calls()).toBe(2);
+    });
+
+    it('takes a new queue version from a playback block that carries nothing else', () => {
+      const { result } = renderHook(() => usePlayback('g1'));
+      firePlayback(full());
+      firePlayback({ playback: { queueVersion: 'v2' } });
+      expect(result.current.playback.queueVersion).toBe('v2');
+      expect(result.current.playback.queueId).toBe('q1');
+      expect(result.current.playback.isPlaying).toBe(true);
+      expect(getPlaybackPosition().positionMs).toBe(40000);
+      expect(getPlaybackPosition().durationMs).toBe(180000);
+    });
+
+    it('estimates a missing position only while it is still inside the track', () => {
+      renderHook(() => usePlayback('g1'));
+      firePlayback(full());
+      act(() => {
+        vi.advanceTimersByTime(100_000);
+      });
+      firePlayback({ metadata: track('T', 180000) });
+      expect(getPlaybackPosition().positionMs).toBe(140_000);
+      act(() => {
+        vi.advanceTimersByTime(100_000);
+      });
+      firePlayback({ metadata: track('T', 180000) });
+      expect(getPlaybackPosition().positionMs).toBe(0);
+    });
+
+    it('merges a message with no group id into the active group', () => {
+      renderHook(() => usePlayback('g1'));
+      firePlayback(full());
+      act(() => {
+        wsHandler!({ namespace: 'playbackExtended' }, { metadata: track('T', undefined) });
+      });
+      expect(getPlaybackPosition().durationMs).toBe(180000);
+    });
   });
 
   it('keeps a group cache entry whole when a later partial arrives', () => {

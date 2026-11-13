@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, onTestFinished } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { InfoTip } from '../InfoTip';
@@ -125,7 +125,18 @@ describe('InfoTip', () => {
     ).not.toBeNull();
   });
 
+  it('in Electron a touch tap does not pin it (hover only, as before)', () => {
+    const { button } = setup();
+    fireEvent.pointerDown(button, { pointerType: 'touch' });
+    fireEvent.click(button, { detail: 1 });
+    expect(screen.queryByRole('tooltip')).toBeNull();
+  });
+
   it('a touch tap opens it, a tap elsewhere closes it, and a mouse click does not pin it', () => {
+    document.documentElement.dataset.platform = 'web';
+    onTestFinished(() => {
+      delete document.documentElement.dataset.platform;
+    });
     const { button } = setup();
     fireEvent.pointerDown(button, { pointerType: 'touch' });
     fireEvent.click(button, { detail: 1 });

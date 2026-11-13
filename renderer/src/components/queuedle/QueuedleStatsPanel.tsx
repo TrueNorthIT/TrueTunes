@@ -11,6 +11,7 @@ import {
   listPlayers,
 } from '../../lib/queuedleStats';
 import type { QueuedleDay } from '../../lib/queuedleStats';
+import { isWeb } from '../../lib/platform';
 import { formatWeekRange } from '../../lib/queuedleWeek';
 import { PersonChip } from '../common/PersonChip';
 import { PillButton } from '../common/PillButton';
@@ -144,7 +145,7 @@ function RatingChart({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: st
         <svg
           width={width}
           height={height}
-          onPointerDown={onMove}
+          onPointerDown={isWeb() ? onMove : undefined}
           onPointerMove={onMove}
           onPointerLeave={clearUnlessTouch(() => setHover(null))}
           role="img"

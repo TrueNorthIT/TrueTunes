@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Info } from 'lucide-react';
+import { isWeb } from '../../lib/platform';
 import styles from './InfoTip.module.css';
 
 interface Props {
@@ -84,7 +85,8 @@ export function InfoTip({ label, children, className, icon }: Props) {
         data-tap-ok=""
         aria-describedby={open ? id : undefined}
         onPointerDown={(e) => {
-          touch.current = e.pointerType === 'mouse' ? null : { wasOpen: open };
+          // tap-to-pin is the web app's (a touchscreen laptop running Electron keeps hover)
+          touch.current = e.pointerType === 'mouse' || !isWeb() ? null : { wasOpen: open };
         }}
         onClick={(e) => {
           e.stopPropagation();
