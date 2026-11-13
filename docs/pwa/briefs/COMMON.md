@@ -48,6 +48,13 @@ PORT=<your port> WEB_ROOT="$(pwd)/renderer/dist-web" node server/dist/gateway/ma
 - For your own screenshots use Playwright with `viewport: { width: 390, height: 844 }, deviceScaleFactor: 3,
   isMobile: true, hasTouch: true`, and launch with `chromium.launch({ channel: 'chromium' })`: the default headless
   shell draws **no backdrop blur**, so frosted surfaces look transparent in it when they are not.
+- **Check in WebKit as well, every brief.** Safari is the real target and the owner has already found a layout
+  bug that only Safari's engine shows (`FEEDBACK.md`, item 2: a card with `aspect-ratio` and a `max-height`
+  collapsing to half width). Chromium screenshots alone do not prove a layout. `npx playwright install webkit`,
+  then either the journey's `--device "iPhone 14"` or your own script with
+  `const { webkit, devices } = require('playwright')` and `browser.newContext({ ...devices['iPhone 14'] })`.
+  Playwright's WebKit on Windows draws no backdrop blur and renders the font too thin: ignore those two things
+  (the owner's real phone shows both correctly) and judge sizes, positions and overflow.
 - `npm run storybook` (port 6006) has `Pages/Phone shell` (every route in the shell) and `Phone/Dock`.
 - **Look at your screenshots.** Open them with the Read tool and judge them: alignment, nothing clipped or
   overlapping, nothing cramped, text legible, a thumb can reach and hit things. "It renders" and "the automated
