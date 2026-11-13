@@ -196,6 +196,7 @@ async function queueCount() {
 }
 /** The queue's list is virtual: bring its end (or its start) into the window. */
 async function scrollQueue(to) {
+  await page.locator('[data-index]').first().waitFor({ state: 'attached', timeout: 10000 }); // the page may still be opening
   // The scroller is found from any mounted row (the playing row itself is unmounted while the list is scrolled away
   // from it), and the step then waits for the virtual list to catch up: it re-renders its window a moment after
   // the scroll (about 400ms with the CPU slowed 6x), and a script that reads rows before that finds none.
@@ -253,6 +254,62 @@ const queueOrder = () =>
       .map((r) => r.title)
   );
 const queueRow = (title) => page.locator('div[draggable]', { hasText: title });
+
+/**
+ * A finger dragged straight down by dy px from a point, over ms: touch events, which is what the swipe-down gesture
+ * (lib/swipeDismiss.ts) listens to. Chromium takes them through its own input driver, as a real finger would; WebKit has
+ * no such driver here, so the same events are dispatched at the element under the finger.
+ */
+async function touchDrag(from, dy, ms) {
+  const steps = Math.max(4, Math.round(dy / 20));
+  if (browser.browserType().name() === 'chromium') {
+    const cdp = await context.newCDPSession(page);
+    const at = (i) => [{ x: from.x, y: Math.round(from.y + (dy * i) / steps) }];
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: at(0) });
+    for (let i = 1; i <= steps; i++) {
+      await page.waitForTimeout(ms / steps);
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: at(i) });
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await cdp.detach();
+    return;
+  }
+  await page.evaluate(
+    async ({ x, y, dy, ms, steps }) => {
+      const target = document.elementFromPoint(x, y);
+      // WebKit on desktop has no Touch constructor: a plain event carrying the fields the gesture reads.
+      const touch = (yy) => ({ identifier: 1, target, clientX: x, clientY: yy, pageX: x, pageY: yy });
+      const send = (type, yy, list = true) => {
+        const e = new Event(type, { bubbles: true, cancelable: true });
+        Object.defineProperty(e, 'touches', { value: list ? [touch(yy)] : [] });
+        Object.defineProperty(e, 'changedTouches', { value: [touch(yy)] });
+        target.dispatchEvent(e);
+      };
+      send('touchstart', y);
+      for (let i = 1; i <= steps; i++) {
+        await new Promise((r) => setTimeout(r, ms / steps));
+        send('touchmove', y + (dy * i) / steps);
+      }
+      send('touchend', y + dy, false);
+    },
+    { x: from.x, y: from.y, dy, ms, steps }
+  );
+}
+/** A point inside `within` (or the page) that is not on a control, so a drag from it is a swipe and not a tap or a slider. */
+const freePoint = (within, fromY, toY) =>
+  page.evaluate(
+    ({ within, fromY, toY }) => {
+      const root = within ? document.querySelector(within) : document.body;
+      const controls = 'button, a, input, select, textarea, [role="slider"], [data-no-swipe]';
+      const x = Math.round(window.innerWidth / 2);
+      for (let y = fromY; y < toY; y += 6) {
+        const el = document.elementFromPoint(x, y);
+        if (el && root?.contains(el) && !el.closest(controls) && !el.closest('nav, section[aria-label="Mini player"]')) return { x, y };
+      }
+      return null;
+    },
+    { within, fromY, toY }
+  );
 
 /**
  * What must hold on every page. Sideways: the document is no wider than the window, and nothing in it is either,
@@ -582,6 +639,46 @@ await phoneJourney('remove a row from the queue and see it gone', async () => {
   await press(menuItem('Remove from queue'));
   await expectGone(page.locator(`button[aria-label="More for ${queuedTitle}"]`));
   await expectVisible(page.locator(`[aria-label="${count - 1} tracks"]`));
+});
+
+await phoneJourney('drag Now playing down: a short drag springs back, a long one closes it', async () => {
+  await backToTheTabs();
+  await press(page.locator('section[aria-label="Mini player"] button'));
+  await expectHash(/^#\/now-playing$/);
+  await page.waitForTimeout(900);
+  // Not on the seek bar or a button: a free spot in the upper half of the page.
+  const from = await freePoint(null, 110, 360);
+  if (!from) throw new Error('found no spot on Now playing that is not a control');
+  await touchDrag(from, 60, 700);
+  await page.waitForTimeout(600);
+  if ((await hash()) !== '#/now-playing') throw new Error(`a short drag closed Now playing (${await hash()})`);
+  await touchDrag(from, 420, 450);
+  await expectHash(/^#\/(?!now-playing)/);
+  await expectVisible(page.locator('section[aria-label="Mini player"]'));
+});
+
+await phoneJourney("drag a row's bottom sheet down: a short drag keeps it, a long one closes it", async () => {
+  await backToTheTabs();
+  await press(tab('/queue'));
+  await expectHash(/^#\/queue$/);
+  await scrollQueue('start');
+  const [title] = await queueOrder();
+  await press(page.locator(`button[aria-label="More for ${title}"]`));
+  await expectVisible(page.getByRole('menu'));
+  await page.waitForTimeout(700); // it rises into place
+  const box = await page.getByRole('menu').first().boundingBox();
+  // The sheet's grab handle, or its top edge: anywhere that is not a field.
+  const from = (await freePoint('[role="menu"]', Math.round(box.y) + 2, Math.round(box.y + box.height))) ?? {
+    x: Math.round(box.x + box.width / 2),
+    y: Math.round(box.y) + 8,
+  };
+  await touchDrag(from, 40, 800);
+  await page.waitForTimeout(600);
+  await expectVisible(page.getByRole('menu'), 2000).catch(() => {
+    throw new Error('a short drag closed the sheet');
+  });
+  await touchDrag(from, 320, 400);
+  await expectGone(page.getByRole('menu'));
 });
 
 await phoneJourney('open the Leaderboard from More', async () => {

@@ -40,3 +40,11 @@ Not yet adapted to other briefs: A's redesigned Now playing and F's one-column Q
 
 - The frame-rate numbers are from Playwright's software-rendered WebKit on a loaded Windows machine; real iPhone behaviour not measured.
 - Nothing of mine is left running (checked 9102, 9103; the journey's own 87xx gateways exit with it). Scratch files were deleted.
+
+## Update on the merged tree (origin/feature/pwa-phone-followup 36ea267 merged in)
+
+- Journey changes: two new steps, "drag Now playing down" (a 60px slow drag springs back, a 420px drag closes) and "drag a row's bottom sheet down" (40px keeps it, 320px closes). They use touch events (Chromium's input driver; in WebKit plain `touchstart/move/end` events, since desktop WebKit has no `Touch` constructor) and a free spot found by "not a control", not a layout position. `scrollQueue` now waits for the list to exist first. The Now playing redesign broke no existing selector (the steps use the "Volume" slider, "Close the player" and the Mini player section). The Queuedle bonus round is not clicked by any step.
+- `--safe-area` last-step failure (null `documentElement`): not present on the merged tree (it was the old init script, fixed earlier).
+- Queue-menu steps: pass on the merged tree (5 of 5 Chromium runs, plus WebKit).
+- Search top-result card in WebKit: now passes.
+- Counts: Chromium 390x844 5 of 5 (plus more); `--safe-area` 1 of 1; 1280x800 1 of 1; WebKit `--device "iPhone 14" --no-ambient-filter`: 844 15 of 15 and 664 15 of 15 (after the two script fixes above; the first merged-tree WebKit run had only those two new steps failing, `Touch` constructor and a queue list not yet rendered); `node scripts/web/pwa.mjs`: all installability checks passed. typecheck, lint (0 errors, 16 warnings), format:check pass.
