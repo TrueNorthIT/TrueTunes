@@ -79,8 +79,12 @@ const context = await browser.newContext(
 const page = await context.newPage();
 if (safeArea) {
   await page.addInitScript(() => {
-    document.documentElement.style.setProperty('--safe-top', '47px');
-    document.documentElement.style.setProperty('--safe-bottom', '34px');
+    const set = () => {
+      document.documentElement?.style.setProperty('--safe-top', '47px');
+      document.documentElement?.style.setProperty('--safe-bottom', '34px');
+    };
+    set(); // the document may not have a root yet in a fresh frame
+    document.addEventListener('readystatechange', set);
   });
 }
 
