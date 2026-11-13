@@ -231,6 +231,16 @@
     opacity: 1;
   }
 }
+.phoneOnly {
+  display: none;
+}
+:global(:root[data-shell='phone']) .phoneOnly {
+  display: inline;
+}
 :global(:root[data-shell='phone']) .face {
   min-height: var(--tap);
+}
+/* The collaborators join the owner's row and wrap with it, instead of dropping to a line of their own after "with". */
+:global(:root[data-shell='phone']) .collabs {
+  display: contents;
 }

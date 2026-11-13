@@ -457,6 +457,7 @@ export function PlaylistPanel() {
                 )}
               </div>
               <div className={styles.metaLine}>
+                <span className={styles.phoneOnly}>{playlist.isFavourites ? 'Favourites' : 'Playlist'} ·</span>
                 <span className={styles.privacy}>
                   {playlist.isPublic ? <Globe size={14} aria-hidden="true" /> : <Lock size={14} aria-hidden="true" />}
                   {playlist.isPublic ? 'Public' : 'Private'}

@@ -85,11 +85,43 @@
 }
 
 /* ── Phone shell and touch (the web app) ── */
-/* Phone shell: the corner chip joins the column under the art instead of lying over it. */
+/*
+ * No card. The art runs edge to edge and up under the top strip (the page pads its top by --nav-h plus 16px and
+ * its sides by the gutter, so a negative margin of the same size takes that back), a scrim keeps the Back button
+ * legible on a pale cover, and the text is one tight block under it: title, one secondary line, the action. The
+ * kind ("Album") folds into the secondary line, so its own label is hidden.
+ */
+:global(:root[data-shell='phone']) .header {
+  display: block;
+  padding: 0;
+  margin-bottom: 1.2em;
+  background: none !important; /* the inline wash from the artwork; the art is the feature now */
+  border-radius: 0;
+}
+:global(:root[data-shell='phone']) .artWrap {
+  width: calc(100% + 2 * var(--gutter));
+  height: auto;
+  aspect-ratio: 5 / 4;
+  margin: calc(-1 * (var(--nav-h) + 16px)) calc(-1 * var(--gutter)) 0;
+  border-radius: 0 0 var(--r-card) var(--r-card);
+  box-shadow: none;
+}
+:global(:root[data-shell='phone']) .artWrap::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: calc(var(--nav-h) + var(--tap) + 16px);
+  background: linear-gradient(to bottom, var(--overlay), transparent);
+  pointer-events: none;
+}
 :global(:root[data-shell='phone']) .corner {
   position: static;
-  order: 2;
+  margin-top: 0.8em;
 }
 :global(:root[data-shell='phone']) .meta {
-  order: 3;
+  gap: 0.3em;
+  padding: 0.9em 0 0;
+}
+:global(:root[data-shell='phone']) .kind {
+  display: none;
 }

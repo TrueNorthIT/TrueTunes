@@ -176,6 +176,34 @@
 }
 
 /* ── Phone shell and touch (the web app) ── */
+/* The artist, the kind and the counts are one line (wrapping if it must), not three. Elsewhere the wrapper is
+   invisible and the kind is carried by the hero's own label. */
+.sub {
+  display: contents;
+}
+.kindInline {
+  display: none;
+}
+:global(:root[data-shell='phone']) .sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.35em;
+  font-size: var(--fs-label);
+  color: var(--text-2);
+}
+:global(:root[data-shell='phone']) .sub > * {
+  font-size: inherit;
+}
+:global(:root[data-shell='phone']) .kindInline {
+  display: block;
+  color: var(--text-3);
+}
+:global(:root[data-shell='phone']) .sub > * + *::before {
+  content: '·';
+  margin-right: 0.35em;
+  color: var(--text-3);
+}
 :global(:root[data-shell='phone']) .link {
   min-width: var(--tap);
   min-height: var(--tap);
