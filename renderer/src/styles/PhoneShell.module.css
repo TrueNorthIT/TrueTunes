@@ -41,7 +41,7 @@
   left: 0;
   right: 0;
   z-index: 141;
-  height: var(--phone-top);
+  height: var(--status-h);
   background: var(--material-bg-dense);
   -webkit-backdrop-filter: var(--material-filter);
   backdrop-filter: var(--material-filter);
@@ -81,8 +81,8 @@
   z-index: 150;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 8px 8px var(--safe-bottom);
+  gap: 2px;
+  padding: 6px 8px var(--dock-pad);
   /* One sheet of the shell material for both bars: nothing shows sharp between them, and one blur to draw. */
   border-top: 1px solid var(--separator);
   border-radius: var(--r-shell) var(--r-shell) 0 0;
@@ -102,7 +102,7 @@
   position: relative;
   display: flex;
   align-items: center;
-  height: 56px;
+  height: 52px;
   flex-shrink: 0;
   border-radius: var(--r-lg);
   background: var(--surface-hi);
@@ -225,7 +225,7 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  height: 56px;
+  height: 50px;
   color: var(--text-3);
   text-decoration: none;
   -webkit-user-drag: none;
