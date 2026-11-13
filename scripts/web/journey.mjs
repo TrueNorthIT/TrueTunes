@@ -152,6 +152,10 @@ const scrollQueue = (to) =>
     for (let el = document.querySelector('[data-playing="true"]'); el; el = el.parentElement) {
       if (/auto|scroll/.test(getComputedStyle(el).overflowY) && el.scrollHeight > el.clientHeight) {
         el.scrollTo(0, where === 'end' ? el.scrollHeight : 0);
+        // Playwright's WebKit does not always dispatch the scroll event for a script's scrollTo (the list really
+        // moves; only the event is missing, so the virtual list is never told and keeps its old window).
+        // A finger's scroll in Safari always does, so this stands in for it.
+        el.dispatchEvent(new Event('scroll'));
         return;
       }
     }
@@ -244,6 +248,13 @@ function auditInPage(phoneShell) {
       problems.push(`tap target: ${describe(e)} is ${Math.round(r.width)}x${Math.round(r.height)}`);
   }
 
+  // Safari zooms the page when a text field under 16px is focused.
+  for (const e of document.querySelectorAll('input, textarea, select')) {
+    if (!shown(e) || /^(checkbox|radio|range|button|submit|reset|file|hidden|color|image)$/.test(e.type)) continue;
+    const size = parseFloat(getComputedStyle(e).fontSize);
+    if (size < 15.99) problems.push(`text field under 16px: ${describe(e)} is ${size}px`);
+  }
+
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   const seen = new Set();
   for (let n = walker.nextNode(); n; n = walker.nextNode()) {
@@ -263,7 +274,12 @@ async function audit(where) {
       return !main || getComputedStyle(main).opacity === '1';
     });
   await settle();
-  const problems = await page.evaluate(auditInPage, phone);
+  // Rows can still be fading in (slower in WebKit than in Chromium): look again for up to 3 seconds.
+  let problems = await page.evaluate(auditInPage, phone);
+  for (let i = 0; i < 6 && problems.some((p) => p.startsWith('hidden control')); i++) {
+    await page.waitForTimeout(500);
+    problems = await page.evaluate(auditInPage, phone);
+  }
   if (problems.length)
     throw new Error(
       `${where}: ${problems.length} problem(s)\n${[...new Set(problems)].slice(0, 8).join('\n')}${problems.length > 8 ? '\n…' : ''}`
