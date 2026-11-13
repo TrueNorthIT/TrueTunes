@@ -76,13 +76,16 @@ export function mergePlayback(prev: Known | undefined, n: NormalizedPlaybackStat
   if (!prev || !base || !track) {
     return { state: { ...n, positionMs: n.positionMs ?? 0, durationMs: n.durationMs ?? 0 }, at: now };
   }
-  if (!hasTrack && !n.playbackKnown) return prev; // an empty message: nothing changes
+  const carriesCursor = !!(n.queueId || n.queueVersion || n.queueItemId);
+  if (!hasTrack && !n.playbackKnown && !carriesCursor) return prev; // an empty message: nothing changes
 
   const same = base.currentTrack?.id === track.id && base.currentTrack?.title === track.title;
   const durationMs = n.durationMs ?? (same ? base.durationMs : 0);
-  const estimate = Math.min(base.positionMs + (base.isPlaying ? now - prev.at : 0), base.durationMs || Infinity);
-  const positionMs = n.positionMs ?? (same ? estimate : 0);
-  const from = n.playbackKnown ? n : base; // status, modes and queue cursors come together in the playback block
+  // Carry the position on by the time that has passed, but only while that is still inside the track: after a long
+  // gap (a group switched back to, a phone woken) it is unknown, not the end of the track.
+  const estimate = base.positionMs + (base.isPlaying ? now - prev.at : 0);
+  const positionMs = n.positionMs ?? (same && (!base.durationMs || estimate < base.durationMs) ? estimate : 0);
+  const from = n.playbackKnown ? n : base; // status and play modes come together in the playback block
   return {
     state: {
       ...n,
@@ -93,9 +96,10 @@ export function mergePlayback(prev: Known | undefined, n: NormalizedPlaybackStat
       isPlaying: from.isPlaying,
       shuffle: from.shuffle,
       repeatMode: from.repeatMode,
-      queueId: from.queueId,
-      queueVersion: from.queueVersion,
-      queueItemId: from.queueItemId,
+      // each cursor from the message that carries it
+      queueId: n.queueId ?? base.queueId,
+      queueVersion: n.queueVersion ?? base.queueVersion,
+      queueItemId: n.queueItemId ?? base.queueItemId,
     },
     at: now,
   };
@@ -147,7 +151,7 @@ export function usePlayback(activeGroupId: string | null) {
     lastUpdateAtRef.current = Date.now();
     isPlayingRef.current = isPlaying;
 
-    if (queueId) {
+    if (queueId && queueId !== queueIdRef.current) {
       queueIdRef.current = queueId;
       void window.sonos.setQueueId(queueId);
     }
@@ -213,8 +217,12 @@ export function usePlayback(activeGroupId: string | null) {
     const unsubPlayback = provider.subscribePlayback(
       (msgGroupId, normalized) => {
         // Cache for every group, merged with what that group last said
-        const known = mergePlayback(groupCache.current.get(msgGroupId ?? ''), normalized, Date.now());
-        groupCache.current.set(msgGroupId ?? '', known);
+        // (a message with no group id belongs to the active group, as the check below treats it)
+        const key = msgGroupId ?? activeGroupIdRef.current ?? '';
+        const prev = groupCache.current.get(key);
+        const known = mergePlayback(prev, normalized, Date.now());
+        if (known === prev) return; // an empty message: nothing changed, so the clock and state are left alone
+        groupCache.current.set(key, known);
 
         // Only apply to UI if it's for the active group (or group isn't known yet)
         if (msgGroupId && activeGroupIdRef.current && msgGroupId !== activeGroupIdRef.current) return;
