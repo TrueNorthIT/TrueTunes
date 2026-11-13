@@ -222,6 +222,60 @@ await check('opening the app after a deploy takes the new version by itself, wit
   return `launched onto ${now}`;
 });
 
+// ── another version ships while a phone is in use ──
+// The phone shell has no title bar: a waiting version shows as a dot on the More tab (the demo also has a poll waiting) and an Update row on More.
+await stopGateway();
+writeFileSync(
+  swPath,
+  readFileSync(swPath, 'utf8')
+    .replace('"id":"third0000000"', '"id":"fourth000000"')
+    .replace('"version":"100.0.0"', '"version":"101.0.0"')
+);
+await startGateway();
+const phoneContext = await browser.newContext({
+  viewport: { width: 390, height: 844 },
+  deviceScaleFactor: 2,
+  isMobile: true,
+  hasTouch: true,
+});
+const phone = await phoneContext.newPage();
+await phone.goto(`${base}/demo`);
+await phone.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 15000 });
+await phone.waitForFunction(() => document.body.innerText.includes('Crooked Shoreline'), null, { timeout: 20000 });
+// Someone is using the app: a tap ends "launching", so the next version must wait for the button.
+await phone.touchscreen.tap(195, 300);
+await stopGateway();
+writeFileSync(
+  swPath,
+  readFileSync(swPath, 'utf8')
+    .replace('"id":"fourth000000"', '"id":"fifth0000000"')
+    .replace('"version":"101.0.0"', '"version":"102.0.0"')
+);
+await startGateway();
+
+await check('on a phone, a waiting version shows as a dot on the More tab (the demo also has a poll waiting) and an Update row on More', async () => {
+  await phone.evaluate(async () => (await navigator.serviceWorker.getRegistration()).update());
+  const more = phone.getByRole('link', { name: /^More, / });
+  await more.waitFor({ timeout: 15000 }).catch(async () => {
+    const tabs = await phone.locator('nav a').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? e.textContent));
+    throw new Error(`no More tab with a waiting update; tabs: ${tabs.join(' | ') || 'none (not the phone shell?)'}`);
+  });
+  assert((await more.locator('[class*="tabDot"]').count()) === 1, 'the More tab has no dot');
+  await more.tap();
+  const update = phone.getByRole('button', { name: /^Update/ });
+  await update.waitFor({ timeout: 5000 });
+  const box = await update.boundingBox();
+  assert(box && box.height >= 44, 'the Update row is under 44px high');
+});
+
+await check('on a phone, tapping the Update row activates the new version and the page comes back on it', async () => {
+  await phone.getByRole('button', { name: /^Update/ }).tap();
+  const now = await reaches(phone, 'fifth0000000');
+  assert(now === '102.0.0', `expected 102.0.0, the phone is on ${now}`);
+  await phone.waitForFunction(() => document.body.innerText.includes('Crooked Shoreline'), null, { timeout: 20000 });
+  return `now on ${now}`;
+});
+
 await browser.close();
 await stopGateway();
 rmSync(path.dirname(webRoot), { recursive: true, force: true });
