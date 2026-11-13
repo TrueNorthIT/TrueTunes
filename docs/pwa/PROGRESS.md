@@ -15,13 +15,22 @@ once the named check has run). This file says where the work stands and why thin
 | 2 to 5 | Web build, browser bridge, demo route, sign-in, reads and commands | #265 | merged, deployed, verified; the owner signed in on production and confirmed the desktop-width app loads |
 | 7 | Installability: manifest, service worker, update flow, offline screen | #265, #266, #267 | merged, deployed, verified |
 | | Live "queued by" events through the gateway (`/pubsub/ws`) | #268 | merged, deployed; refusals verified on production; not yet seen working with a real session |
-| 6 | Phone layout (target: iPhone 14) | `feature/pwa-phone` (an agent, in its own worktree) | in progress |
+| 6 | Phone layout (target: iPhone 14) | this pull request, then follow-ups from `feature/pwa-phone` | shipped as work in progress on 13 Nov at the owner's request: usable, with known defects below |
 
 ## Next
 
-1. Review the phone shell branch when its agent reports: screenshots at iPhone 14 size and 1280x800, the extended
-   journey, an independent read, then its pull request, merge and production check.
-2. Update `features.json` with the evidence, and write the final report.
+The phone shell went out before it was finished, because phones had nothing usable. Still to do, in order:
+
+1. **Tab bar and bottom sheet are too transparent.** Page content shows through the tab labels, and the mini player
+   ghosts through the foot of the sheet. Make both read as the solid frosted material the mini player has.
+2. **Safari.** Nothing has been run in WebKit or with the iPhone 14 safe areas (47px top, 34px bottom) simulated.
+   The journey has a Chromium run only.
+3. **Screens not yet reviewed by eye** at phone size: Discover, Artist, Container, Leaderboard and music stats,
+   Queuedle and its stats, Lyrics, Profile, Playlist, and the dialogs. The journey checks them for sideways scroll,
+   44px targets and 13px text, which is not the same as looking.
+4. On web at desktop width, check that the row "more" button stays hidden on hover devices (it depends on the
+   order two stylesheets are bundled in).
+5. The final report.
 
 ## What went wrong along the way
 
