@@ -129,7 +129,14 @@ const transport = (label) => page.locator(`button[aria-label="${label}"]`);
 const expectVisible = (locator, timeout = 8000) => locator.first().waitFor({ state: 'visible', timeout });
 const expectGone = (locator, timeout = 8000) => locator.first().waitFor({ state: 'detached', timeout });
 /** A finger on a phone, the mouse on a desktop. */
-const press = (locator, options) => (touch ? locator.first().tap(options) : locator.first().click(options));
+// In WebKit the tap skips Playwright's "stable" wait, which hangs on the queue page there: the wait runs on
+// animation frames and headless WebKit on Windows stops delivering them (measured: a rAF loop ran 1 frame in 2s
+// on the queue page, 7 in 1s elsewhere). Visibility is still asserted by the steps themselves.
+const noStableWait = browser.browserType().name() === 'webkit' ? { force: true } : {};
+const press = (locator, options) => {
+  const o = { ...noStableWait, ...options };
+  return touch ? locator.first().tap(o) : locator.first().click(o);
+};
 const hash = () => page.evaluate(() => location.hash);
 async function goTo(route) {
   await page.evaluate((r) => {
