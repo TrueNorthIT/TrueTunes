@@ -1529,22 +1529,22 @@ button.side:disabled {
   grid-template-columns: 1fr;
   grid-template-rows: none;
   margin-top: auto;
-  gap: 0.7em;
+  gap: 0.5em;
 }
 :global(:root[data-shell='phone']) .side {
   display: grid;
-  grid-template-columns: 4.6em minmax(0, 1fr);
+  grid-template-columns: 4em minmax(0, 1fr);
   grid-template-areas:
     'art text'
     'foot foot';
-  gap: 0.6em 0.9em;
-  padding: 0.9em;
+  gap: 0.35em 0.9em;
+  padding: 0.75em 0.9em;
 }
 :global(:root[data-shell='phone']) .sideArtBox {
   grid-area: art;
   container-type: normal;
-  width: 4.6em;
-  height: 4.6em;
+  width: 4em;
+  height: 4em;
 }
 :global(:root[data-shell='phone']) .sideArt {
   width: 100%;
@@ -1559,7 +1559,6 @@ button.side:disabled {
 }
 :global(:root[data-shell='phone']) .sideFoot {
   grid-area: foot;
-  min-height: var(--tap);
 }
 :global(:root[data-shell='phone']) .bonusStage {
   flex: none;
@@ -1621,4 +1620,8 @@ button.side:disabled {
   border-radius: var(--r-card);
   background: var(--bg-1);
   box-shadow: var(--float-shadow);
+}
+
+:global(:root[data-shell='phone']) .prompt {
+  margin-bottom: 0.5em;
 }
