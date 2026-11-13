@@ -29,7 +29,7 @@
 }
 @keyframes pageIn {
   from {
-    opacity: 0;
+    opacity: 0.6; /* never fully clear: a page is always there to be read or asserted on */
   }
 }
 
@@ -41,11 +41,32 @@
   left: 0;
   right: 0;
   z-index: 141;
-  height: var(--phone-top);
+  height: var(--status-h);
   background: var(--material-bg-dense);
   -webkit-backdrop-filter: var(--material-filter);
   backdrop-filter: var(--material-filter);
   pointer-events: none;
+}
+
+/* Behind Back: a strip of the dense material that fades in once the page has scrolled, so content never shows
+   around the button or covers a hero's pill. At rest there is none, so a hero can still run up under the top. */
+.backStrip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 139;
+  height: calc(var(--phone-top) + var(--tap) + 8px);
+  border-bottom: 1px solid var(--separator);
+  background: var(--material-bg-dense);
+  -webkit-backdrop-filter: var(--material-filter);
+  backdrop-filter: var(--material-filter);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease-fast);
+}
+.backStrip[data-on] {
+  opacity: 1;
 }
 
 /* Back: the desktop's history pill as one round button, top left, on pages inside a tab. */
@@ -81,8 +102,8 @@
   z-index: 150;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 8px 8px var(--safe-bottom);
+  gap: 2px;
+  padding: 6px 8px var(--dock-pad);
   /* One sheet of the shell material for both bars: nothing shows sharp between them, and one blur to draw. */
   border-top: 1px solid var(--separator);
   border-radius: var(--r-shell) var(--r-shell) 0 0;
@@ -102,7 +123,7 @@
   position: relative;
   display: flex;
   align-items: center;
-  height: 56px;
+  height: 52px;
   flex-shrink: 0;
   border-radius: var(--r-lg);
   background: var(--surface-hi);
@@ -225,7 +246,7 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  height: 56px;
+  height: 50px;
   color: var(--text-3);
   text-decoration: none;
   -webkit-user-drag: none;
@@ -362,6 +383,7 @@
     animation: none;
   }
   .tabIcon,
+  .backStrip,
   .miniFill {
     transition: none;
   }

@@ -155,3 +155,12 @@
   width: var(--tap);
   height: var(--tap);
 }
+
+/* Phone shell: a long title wraps beside the controls instead of pushing them onto a row of their own. */
+:global(:root[data-shell='phone']) .title {
+  flex: 1 1 0;
+  min-width: 0;
+}
+:global(:root[data-shell='phone']) .controls {
+  flex-shrink: 0;
+}

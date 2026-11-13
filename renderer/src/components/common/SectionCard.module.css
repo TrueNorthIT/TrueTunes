@@ -75,3 +75,17 @@
   margin-block: -0.9em;
   justify-content: flex-end;
 }
+
+/* Phone shell: the title and its actions share the first row (a long title wraps beside them, never pushes
+   "See all" onto a row of its own); anything else in the header (the faces) takes the row under. */
+:global(:root[data-shell='phone']) .title {
+  flex: 1 1 0;
+  min-width: 0;
+}
+:global(:root[data-shell='phone']) .actions {
+  flex-shrink: 0;
+}
+:global(:root[data-shell='phone']) .head > :not(.title, .actions) {
+  order: 2;
+  flex: 1 0 100%;
+}

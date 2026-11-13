@@ -1,4 +1,4 @@
-import type React from 'react';
+import React, { useRef, useState } from 'react';
 import { getActiveProvider } from '../../providers';
 import { usePlaybackPosition } from '../../hooks/playbackPosition';
 import { fmtTime } from '../../lib/itemHelpers';
@@ -14,6 +14,8 @@ interface Props {
   className: string;
   trackClassName: string;
   fillClassName: string;
+  /** A round handle on the fill's end (the phone's Now playing). It also makes the bar draggable. */
+  thumbClassName?: string;
   title?: string;
 }
 
@@ -26,9 +28,17 @@ export function SeekBar({
   className,
   trackClassName,
   fillClassName,
+  thumbClassName,
   title,
 }: Props) {
-  const pct = Math.min(100, Math.max(0, progressPct || 0));
+  // While a finger drags the thumb, the bar shows where it is, not where playback is; it seeks on release.
+  const [dragPct, setDragPct] = useState<number | null>(null);
+  const dragged = useRef(false);
+  const pct = dragPct ?? Math.min(100, Math.max(0, progressPct || 0));
+  const fraction = (e: React.PointerEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    return Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  };
 
   const seekTo = (ms: number) => {
     if (!durationMs) return;
@@ -37,6 +47,10 @@ export function SeekBar({
   };
 
   const onClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (dragged.current) {
+      dragged.current = false;
+      return;
+    }
     const rect = e.currentTarget.getBoundingClientRect();
     seekTo(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)) * durationMs);
   };
@@ -62,6 +76,35 @@ export function SeekBar({
     <div
       className={className}
       onClick={onClick}
+      onPointerDown={
+        thumbClassName
+          ? (e) => {
+              if (e.pointerType === 'mouse' && e.button !== 0) return;
+              dragged.current = false;
+              e.currentTarget.setPointerCapture(e.pointerId);
+              setDragPct(fraction(e) * 100);
+            }
+          : undefined
+      }
+      onPointerMove={
+        thumbClassName
+          ? (e) => {
+              if (dragPct === null) return;
+              dragged.current = true;
+              setDragPct(fraction(e) * 100);
+            }
+          : undefined
+      }
+      onPointerUp={
+        thumbClassName
+          ? (e) => {
+              if (dragPct === null) return;
+              if (dragged.current) seekTo(fraction(e) * durationMs);
+              setDragPct(null);
+            }
+          : undefined
+      }
+      onPointerCancel={thumbClassName ? () => setDragPct(null) : undefined}
       onKeyDown={onKeyDown}
       role="slider"
       tabIndex={0}
@@ -75,6 +118,7 @@ export function SeekBar({
       <div className={trackClassName}>
         <div className={fillClassName} style={{ transform: `scaleX(${pct / 100})` }} />
       </div>
+      {thumbClassName && <span className={thumbClassName} style={{ left: `${pct}%` }} aria-hidden="true" />}
     </div>
   );
 }
