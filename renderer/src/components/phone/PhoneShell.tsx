@@ -8,14 +8,15 @@ import { usePolls } from '../../hooks/usePolls';
 import { useSearchBox } from '../../hooks/useSearchBox';
 import type { NormalizedGroup, NormalizedQueueItem } from '../../types/provider';
 import { AmbientBackdrop } from '../AmbientBackdrop';
-import { RouteBoundary } from '../ErrorBoundary';
+import { RouteBoundary } from '../RouteBoundary';
 import { useToast } from '../common/Toast';
 import { QueueSidebar } from '../queue/QueueSidebar';
 import { SearchPanel } from '../search/SearchPanel';
 import { MorePage } from './MorePage';
 import { NowPlayingPage } from './NowPlayingPage';
 import { PhoneMiniPlayer } from './PhoneMiniPlayer';
-import { TabBar, tabOf, type PhoneTab } from './TabBar';
+import { TabBar } from './TabBar';
+import { isTabRoot, tabOf, type PhoneTab } from '../../lib/phoneTabs';
 import styles from '../../styles/PhoneShell.module.css';
 
 interface Props {
@@ -126,9 +127,8 @@ export function PhoneShell({
   if (here && here !== lastTab) setLastTab(here);
 
   const playerOpen = pathname === '/now-playing';
-  const isTabRoot = here !== null && pathname === here;
   const canGoBack = ((window.history.state as { idx?: number } | null)?.idx ?? 0) > 0;
-  const showBack = !isTabRoot && !playerOpen;
+  const showBack = !isTabRoot(pathname) && !playerOpen;
   const moreWaiting = polls.current ? 'a poll is waiting' : updateVersion ? 'an update is ready' : null;
 
   return (

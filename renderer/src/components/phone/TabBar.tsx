@@ -1,8 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { Compass, Ellipsis, Home, ListMusic, Search, type LucideIcon } from 'lucide-react';
+import type { PhoneTab } from '../../lib/phoneTabs';
 import styles from '../../styles/PhoneShell.module.css';
-
-export type PhoneTab = '/' | '/search' | '/queue' | '/discover' | '/more';
 
 const TABS: Array<{ to: PhoneTab; label: string; icon: LucideIcon }> = [
   { to: '/', label: 'Home', icon: Home },
@@ -11,14 +10,6 @@ const TABS: Array<{ to: PhoneTab; label: string; icon: LucideIcon }> = [
   { to: '/discover', label: 'Discover', icon: Compass },
   { to: '/more', label: 'More', icon: Ellipsis },
 ];
-
-/** The tab a path belongs to, or null for a page reached from inside one (an album, an artist, the lyrics). */
-export function tabOf(pathname: string): PhoneTab | null {
-  if (pathname === '/') return '/';
-  for (const tab of ['/search', '/queue', '/discover', '/more'] as const) if (pathname === tab) return tab;
-  if (/^\/(leaderboard|queuedle|profile|playlist)(\/|$)/.test(pathname)) return '/more';
-  return null;
-}
 
 interface Props {
   /** The tab to light: where you are, or the tab you came from on a page that belongs to none. */

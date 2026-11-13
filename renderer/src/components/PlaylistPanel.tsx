@@ -194,7 +194,12 @@ export function PlaylistPanel() {
     return [
       ...(canReorder
         ? [
-            { label: 'Move up', icon: ArrowUp, disabled: index === 0, onSelect: () => void moveTrack(index, index - 1) },
+            {
+              label: 'Move up',
+              icon: ArrowUp,
+              disabled: index === 0,
+              onSelect: () => void moveTrack(index, index - 1),
+            },
             {
               label: 'Move down',
               icon: ArrowDown,

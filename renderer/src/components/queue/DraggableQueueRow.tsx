@@ -90,22 +90,16 @@ export const DraggableQueueRow = memo(function DraggableQueueRow({
   const payload = trackPayload({ ...item.track, uri: item.track.id, trackName: item.track.title });
 
   // A touch row has no artist link (too small a target beside the title), so the menu carries both ways out.
-  const openMenu = (e: React.MouseEvent) =>
-    showTrackMenu(
-      {
-        track: payload,
-        actions: [
-          ...(getActions?.(index) ?? []),
-          ...(touch && albumItem
-            ? [{ label: 'Go to album', icon: Disc3, onSelect: () => openItem(albumItem) } satisfies MenuAction]
-            : []),
-          ...(touch && artistItem
-            ? [{ label: 'Go to artist', icon: MicVocal, onSelect: () => openItem(artistItem) } satisfies MenuAction]
-            : []),
-        ],
-      },
-      e
-    );
+  const openMenu = (e: React.MouseEvent) => {
+    const places: MenuAction[] = touch
+      ? [
+          ...(albumItem ? [{ label: 'Go to album', icon: Disc3, onSelect: () => openItem(albumItem) }] : []),
+          ...(artistItem ? [{ label: 'Go to artist', icon: MicVocal, onSelect: () => openItem(artistItem) }] : []),
+        ]
+      : [];
+    if (places[0]) places[0].divider = true;
+    showTrackMenu({ track: payload, actions: [...(getActions?.(index) ?? []), ...places] }, e);
+  };
 
   const art = <Artwork src={cachedArt} className={styles.art} placeholderClassName={styles.artPh} />;
 

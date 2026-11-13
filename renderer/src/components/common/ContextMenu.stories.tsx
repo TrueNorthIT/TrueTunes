@@ -5,7 +5,8 @@ import { fn, userEvent, within } from 'storybook/test';
 import { covers } from '../../../.storybook/fixtures';
 import { displayNameKeys } from '../../hooks/useDisplayName';
 import { QueueActionsProvider } from '../../hooks/useQueueActions';
-import { ContextMenuProvider, CreatePlaylistDialog, useTrackContextMenu } from './ContextMenu';
+import { ArrowDown, ArrowUp, ListStart, Trash2 } from 'lucide-react';
+import { ContextMenuProvider, CreatePlaylistDialog, useTrackContextMenu, type MenuAction } from './ContextMenu';
 import { ToastProvider } from './Toast';
 import { TrackRow } from './TrackRow';
 
@@ -21,8 +22,15 @@ const track: PlaylistTrack = {
   addedAt: 1_700_000_000_000,
 };
 
+const rowActions: MenuAction[] = [
+  { label: 'Play next', icon: ListStart, onSelect: fn() },
+  { label: 'Move up', icon: ArrowUp, disabled: true, onSelect: fn() },
+  { label: 'Move down', icon: ArrowDown, onSelect: fn() },
+  { label: 'Remove from queue', icon: Trash2, danger: true, onSelect: fn() },
+];
+
 /** A row that opens the menu on right-click, as every list in the app does. */
-function Surface() {
+function Surface({ withActions = false }: { withActions?: boolean }) {
   const { showTrackMenu } = useTrackContextMenu();
   return (
     <ul style={{ listStyle: 'none', margin: 0, padding: 0, maxWidth: '36em' }}>
@@ -30,7 +38,16 @@ function Surface() {
         title={track.trackName}
         artists={track.artist}
         imageUrl={track.imageUrl}
-        onContextMenu={(e) => showTrackMenu({ track, sonosItem: { name: track.trackName, type: 'TRACK' } }, e)}
+        onContextMenu={(e) =>
+          showTrackMenu(
+            {
+              track,
+              sonosItem: { name: track.trackName, type: 'TRACK' },
+              actions: withActions ? rowActions : undefined,
+            },
+            e
+          )
+        }
       />
     </ul>
   );
@@ -68,6 +85,24 @@ export const Closed: Story = {};
 export const Open: Story = {
   play: async ({ canvasElement }) => {
     await userEvent.pointer({ keys: '[MouseRight]', target: within(canvasElement).getByText('Golden Hour') });
+  },
+};
+/**
+ * The phone shell's form: the same menu as a sheet from the bottom edge. Here the row also hands the menu actions
+ * of its own (a queue row's), which sit first.
+ */
+export const Sheet: Story = {
+  ...Open,
+  args: { children: <Surface withActions /> },
+  parameters: { platform: 'web', shell: 'phone' },
+  globals: { viewport: { value: 'iphone14' } },
+};
+/** The sheet's playlist list opens in place, with a way back. */
+export const SheetPlaylists: Story = {
+  ...Sheet,
+  play: async (context) => {
+    await Open.play?.(context);
+    await userEvent.click(within(document.body).getByRole('menuitem', { name: 'Add to playlist' }));
   },
 };
 /** Signed out of the office: there is no one to add to playlists for. */

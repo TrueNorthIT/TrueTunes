@@ -101,19 +101,52 @@ const preview: Preview = {
   ],
   // `parameters.backend = 'mock'` (the page stories) swaps in the synthetic backend (src/test/mockBackend.ts), freezes
   // the clock at 2026-10-26T12:00:00Z and serves artwork and lyrics locally. Every other story keeps the plain fake.
+  //
+  // The web app marks the document, and components and CSS read the marks (lib/platform.ts). A story asks for them:
+  // `parameters.platform = 'web'` is the web app (the whole <App /> then picks the phone shell in a narrow viewport);
+  // `parameters.shell = 'phone'` adds the phone shell's mark for a component shown outside it (its tokens, the
+  // context menu as a sheet); `parameters.safeArea = true` gives the document an iPhone 14's insets, which no desktop
+  // browser has. All three are undone after the story.
   beforeEach: ({ parameters }) => {
-    if (parameters.backend !== 'mock') return;
-    const previous = window.sonos;
-    window.sonos = createSonosFake(logCalls, { ...sonosDefaults, ...createMockBackend() });
-    const undoRuntime = installMockRuntime();
-    return () => {
-      window.sonos = previous;
-      undoRuntime();
-    };
+    const undo: Array<() => void> = [];
+    const root = document.documentElement;
+    if (parameters.platform === 'web') {
+      root.dataset.platform = 'web';
+      undo.push(() => delete root.dataset.platform);
+    }
+    if (parameters.shell === 'phone') {
+      root.dataset.shell = 'phone';
+      undo.push(() => delete root.dataset.shell);
+    }
+    if (parameters.safeArea) {
+      root.style.setProperty('--safe-top', '47px');
+      root.style.setProperty('--safe-bottom', '34px');
+      undo.push(() => {
+        root.style.removeProperty('--safe-top');
+        root.style.removeProperty('--safe-bottom');
+      });
+    }
+    if (parameters.backend === 'mock') {
+      const previous = window.sonos;
+      window.sonos = createSonosFake(logCalls, { ...sonosDefaults, ...createMockBackend() });
+      const undoRuntime = installMockRuntime();
+      undo.push(() => {
+        window.sonos = previous;
+        undoRuntime();
+      });
+    }
+    return () => undo.forEach((fn) => fn());
   },
   parameters: {
     layout: 'fullscreen',
     backgrounds: { disabled: true },
+    // The phone shell's test device: `globals: { viewport: { value: 'iphone14' } }` on a story.
+    viewport: {
+      options: {
+        iphone14: { name: 'iPhone 14', styles: { width: '390px', height: '844px' }, type: 'mobile' },
+        iphone14Safari: { name: 'iPhone 14, Safari bars', styles: { width: '390px', height: '664px' }, type: 'mobile' },
+      },
+    },
     // axe runs on every story in the story tests: a violation fails the test. Narrow exceptions go on the story, with a reason.
     a11y: { test: 'error' },
   },

@@ -28,9 +28,6 @@ function Hairline() {
 export function PhoneMiniPlayer({ np, isAuthed }: Props) {
   const navigate = useNavigate();
   const { displayTrack, displayArtist, cachedArt, dominantColor, isPlaying } = np;
-  const name = displayTrack
-    ? `Now playing: ${displayTrack}${displayArtist ? ` by ${displayArtist}` : ''}. Open the player`
-    : 'Nothing playing. Open the player';
 
   return (
     <section
@@ -38,7 +35,8 @@ export function PhoneMiniPlayer({ np, isAuthed }: Props) {
       aria-label="Mini player"
       style={dominantColor ? ({ '--bar-tint': dominantColor } as React.CSSProperties) : undefined}
     >
-      <button type="button" className={styles.miniOpen} aria-label={name} onClick={() => void navigate('/now-playing')}>
+      {/* Named by what it shows (title, artist) plus what it does, so the visible words are in the name. */}
+      <button type="button" className={styles.miniOpen} onClick={() => void navigate('/now-playing')}>
         {cachedArt ? (
           <img className={styles.miniArt} src={cachedArt} alt="" />
         ) : (
@@ -50,6 +48,7 @@ export function PhoneMiniPlayer({ np, isAuthed }: Props) {
           <span className={styles.miniTitle}>{displayTrack || 'Nothing playing'}</span>
           {displayArtist && <span className={styles.miniArtist}>{displayArtist}</span>}
         </span>
+        <span className={styles.srOnly}>, open Now playing</span>
       </button>
       <TransportButtons
         playOnly

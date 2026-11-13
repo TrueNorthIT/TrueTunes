@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createContext, Fragment, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -33,6 +33,8 @@ export interface MenuAction {
   onSelect: () => void;
   disabled?: boolean;
   danger?: boolean;
+  /** Starts a new group: a separator is drawn above it. */
+  divider?: boolean;
 }
 
 interface TrackMenuPayload {
@@ -353,20 +355,22 @@ export function ContextMenuProvider({ children }: ProviderProps) {
                   {menuState.payload.actions && menuState.payload.actions.length > 0 && (
                     <>
                       {menuState.payload.actions.map((a) => (
-                        <button
-                          key={a.label}
-                          type="button"
-                          role="menuitem"
-                          className={`${styles.item}${a.danger ? ' ' + styles.itemDanger : ''}`}
-                          disabled={a.disabled}
-                          onClick={() => {
-                            a.onSelect();
-                            close();
-                          }}
-                        >
-                          <a.icon className={styles.itemIcon} size={16} aria-hidden="true" />
-                          {a.label}
-                        </button>
+                        <Fragment key={a.label}>
+                          {a.divider && <div className={styles.separator} role="separator" />}
+                          <button
+                            type="button"
+                            role="menuitem"
+                            className={`${styles.item}${a.danger ? ' ' + styles.itemDanger : ''}`}
+                            disabled={a.disabled}
+                            onClick={() => {
+                              a.onSelect();
+                              close();
+                            }}
+                          >
+                            <a.icon className={styles.itemIcon} size={16} aria-hidden="true" />
+                            {a.label}
+                          </button>
+                        </Fragment>
                       ))}
                       <div className={styles.separator} role="separator" />
                     </>

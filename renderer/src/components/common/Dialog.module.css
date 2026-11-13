@@ -199,3 +199,6 @@ textarea.input {
 :global(:root[data-shell='phone']) .actions {
   padding: 0 1.2em 1.2em;
 }
+:global(:root[data-shell='phone']) .input {
+  min-height: var(--tap);
+}

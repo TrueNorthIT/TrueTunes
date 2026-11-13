@@ -1508,6 +1508,7 @@ button.side:disabled {
 }
 
 /* ── Phone shell and touch (the web app) ── */
-:global(:root[data-shell='phone']) .segment {
+:global(:root[data-shell='phone']) .segment,
+:global(:root[data-shell='phone']) .calendarCell {
   min-height: var(--tap);
 }
