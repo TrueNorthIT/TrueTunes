@@ -126,3 +126,14 @@
     transform: none;
   }
 }
+
+/* Touch on the web: the corner + is always there. */
+@media (hover: none) {
+  :global(:root[data-platform='web']) .add {
+    opacity: 1;
+  }
+}
+:global(:root[data-shell='phone']) .add {
+  top: 0;
+  right: 0;
+}

@@ -267,14 +267,14 @@ Exception: Queuedle's round names, Higher or Lower and Top Queuer, are names and
 
 ## Layout
 
-Pages scroll inside a panel padded 28px left and right, clearing the floating nav (`--nav-h` 64px) at the top and the floating player (`--player-h` 112px) at the bottom. Page roots carry `.page-scale` and are CSS containers (`container-type: inline-size`). They respond with `@container` queries at 1100px and 700px rather than viewport breakpoints. Home caps at 2400px wide, centred.
+Pages scroll inside a panel padded 28px left and right (`--gutter`), clearing the floating nav (`--nav-h` 64px) at the top and the floating player (`--player-h` 112px) at the bottom. Page roots carry `.page-scale` and are CSS containers (`container-type: inline-size`). They respond with `@container` queries at 1100px and 700px rather than viewport breakpoints. Home caps at 2400px wide, centred.
 
 - **Bands:** 1.4em between every band and column, horizontally and vertically, so the rhythm is one value.
 - **Grids:** asymmetric fr grids. Picks are 1.7fr / 1fr / 1fr (1.3 / 1 / 1 under 1100px, then 2 columns with the large card spanning). Now Playing / Lyrics is 1.35fr / 1fr. Trending / right column is 1.15fr / 1fr. Below 1100px these stack to one column.
 - **Auto-fill grids** for repeated tiles: Jump back in uses `minmax(8.5em, 1fr)`; people use `minmax(min(100%, 22em), 1fr)`.
 - **Inside cards:** 1.1em under a section head, 0.9em between row items, row padding 0.45em × 0.6em.
 - **Heroes:** the artist and Profile heroes run up behind the floating nav and fade into the page with no edge. The artist hero is one fixed shape, `clamp(340px, 42cqw, 580px)` high, in every state, so nothing jumps while the photo settles. Its text sits bottom left, clear of where a print would hang. Bands after a hero keep the 28px gutter and the 1.4em rhythm.
-- **Skinny mode:** the queue fills the window height and a Now Playing card docks at the bottom, laid out in one row once the window is 640px wide. There's no nav.
+- **Skinny mode:** the desktop app in a window under 1,144px wide. The queue fills the window height and a Now Playing card docks at the bottom, laid out in one row once the window is 640px wide. There's no nav. The web app never shows it: a window that narrow gets the phone shell instead (see Phone shell).
 - **Mini player:** a fixed 340 × 116px always-on-top window. The art fills the left edge; the label carries title, artist, queuer and time left.
 
 ## Elevation & Depth
@@ -356,7 +356,7 @@ The print and its label in miniature. The art fills the left edge, and the trans
 One modal (`common/Dialog`): a native `<dialog>` opened with `showModal()`, so the page behind is inert, Tab stays inside, Esc closes it and focus returns to the opener. Raised Navy, 1.2em radius, the Floating shadow, widths of 26, 36 or 64em. The sentence-case title names the dialog, beside a 2.2em round close button. The action row is right-aligned: secondary actions first, the primary or danger pill last. An outside click closes it, except in a form dialog, so a stray click can't lose typed text.
 
 ### Context menu
-A real `role=menu` of `menuitem` buttons on the frosted material (0.9em radius, separator edge, Floating shadow), with drawn icons, arrow-key movement and Tint Fill on the open item. Submenus stay on screen. Enter straight after a right-click can't queue anything.
+A real `role=menu` of `menuitem` buttons on the frosted material (0.9em radius, separator edge, Floating shadow), with drawn icons, arrow-key movement and Tint Fill on the open item. Submenus stay on screen. Enter straight after a right-click can't queue anything. A row can put actions of its own first (a queue row's Play next, Move up, Move down and Remove; a playlist row's Move up, Move down and Remove): they are how a finger does what the desktop does with a drag, a double-click or a hover, and they are on the web app's menu only. In the phone shell the same menu is a bottom sheet (see Phone shell).
 
 ### Toast
 The frosted material with a status dot and an optional action, such as Undo after "Queue all".
@@ -367,6 +367,29 @@ The frosted material with a status dot and an optional action, such as Undo afte
 
 ### Navigation
 Floating frosted pills (44px high, 22px radius) centred at the top of the window, offset by the docked queue width, which is recalculated on every resize so the shell never slides under the queue. Icon buttons inside are borderless, at 0.6 white. Hover brightens them to white on a `rgba(255,255,255,.08)` fill. The player bar is the same material, centred 24px above the bottom, with the playing track's dominant colour washed in from the left.
+
+### Phone shell (web app, narrow windows)
+The web app in a window under 1,144px wide: the test device is an iPhone 14 (390 × 844; about 390 × 664 in Safari with its bars showing). The desktop app is untouched; it keeps skinny mode. `components/phone/PhoneShell` marks the document (`data-shell="phone"`), and CSS reads that mark, so every rule below is the phone's alone.
+
+- **Structure:** the routed page fills the screen and scrolls under a dock at the bottom edge. The pages are the desktop's, with three routes of the phone's own: `/queue`, `/now-playing` and `/more`. The ambient artwork sits behind everything, as on the desktop. Heights are `100dvh`, never `100vh`, so nothing hides behind a browser's bars.
+- **Page tokens:** pages read the same three tokens as on the desktop, retuned: the gutter (`--gutter`) drops from 28px to 16px, section cards pad 1.15em to match, the top clearance (`--nav-h`) becomes `--phone-top` (the status bar's inset, plus the demo's strip when there is one) and the bottom clearance (`--player-h`) becomes the dock (`--dock-h`, 124px) plus the home indicator's inset.
+- **Safe areas:** `--safe-top`, `--safe-bottom`, `--safe-left` and `--safe-right` carry `env(safe-area-inset-*)`, and CSS reads the tokens, never `env()` itself, so a story or a test can set an iPhone's 47px and 34px on a desktop browser. A frosted strip `--phone-top` high covers the status bar, so a page scrolling under the notch stays clear of the clock; the dock pads its foot by `--safe-bottom`; Now playing and the bottom sheet pad for both.
+- **Dock:** one sheet of the frosted shell material for both bars (material, separator edge on top, 22px top corners, Floating shadow), so nothing shows sharp between them. It steps out of the way while a text field has focus, so the keyboard never pushes it over the field.
+- **Mini player:** on every page but Now playing. A 56px pill on the dock (16px radius, Lit Wall, the artwork's colour washed in from the left as on the player bar): 40px art, title (14px, 600) over artist (13px), the player bar's inverted play/pause disc (36px in a full tap target) and a 2px hairline of progress along its foot. The pill opens Now playing.
+- **Tab bar:** five labelled tabs, each a link 56px high: Home, Search, Queue, Discover, More. Tabs are routes, so Back steps through them. The current tab takes the desktop nav's lit icon on a Tint Chip pill, with its 13px label lit and heavier, so it is never colour alone. A page that belongs to no tab (an album, an artist, the lyrics) keeps the tab it was opened from lit. An orange dot on More, and the words in its name, say a poll or an update is waiting there.
+- **Back:** pages inside a tab get one round frosted button (a full tap target) at the top left, the desktop's history pill in miniature; the page starts below it.
+- **Now playing page:** the Now Playing card and the player bar as one full screen with no dock, the artwork's colour washed in from the top (0.3 at most, gone by 65%). Top to bottom: close (a chevron; Back does the same), the art as a square that takes whatever height is left (so the controls stay on screen at 664px), title and artist as links, the heart, the queued-by chip, the seek bar (a full tap target round a 4px track) with tabular times, shuffle / previous / the 72px inverted play disc / next / repeat, the volume slider, then Lyrics and Queue. It rises 24px as it fades in.
+- **Queue page:** the queue sidebar's list at full width with no material of its own, its header on top. Rows are 60px with 44px art and a ⋯. A tap selects a row (every tap adds or removes one, since a finger has no Ctrl) and the selection bar floats above the dock; the row's menu has Play now, Play next, Move up, Move down, Remove, Go to album and Go to artist.
+- **Search page:** the field heads the page as a floating frosted pill (48px, 16px text so Safari doesn't zoom), with the results scrolling under it. Opening the tab focuses nothing, so the keyboard stays down until the field is tapped.
+- **More page:** tonal cards of 56px rows on Wall: you (Lit Wall, a larger face), what is waiting (a poll, a new version, in the title bar's tonal orange and green), Leaderboard and Queuedle, the speakers when there is more than one group and Reconnect, feedback and sign out, then the version.
+- **Bottom-sheet menu:** the context menu's phone form. The same `role=menu`, items, arrow keys and Esc, as a sheet from the bottom edge on the frosted material (22px top corners, separator edge, a grabber, the track's title and artist as its heading), over a backdrop (`--overlay`) that closes it. Items are 48px high. "Add to playlist" opens in place, with a way back, instead of beside it. It slides up over `--dur`.
+- **Motion:** a page fades in over `--dur`; the sheet and Now playing rise. All three are still under `prefers-reduced-motion`.
+
+**The Finger Rule.** In the phone shell every control is at least `--tap` (44px) in both directions, and no text is under 13px. A control that must stay small on the line (a text link, the ⓘ) keeps its size and takes its target from an `::after`; a tonal pill takes it from a transparent block border (`background-clip: padding-box`), so it looks no taller. Every field is at least 16px.
+
+**The No Hover Rule.** Where the device cannot hover (`@media (hover: none)`), the web app shows what hover reveals: the quiet + on rows, the corner + on tiles, the reason on a pick card. Every context menu opens from a long press (500ms, held still: iOS sends no `contextmenu` of its own) and from a visible ⋯ on every row that has one. Nothing needs a drag, a double-click or a right-click: the row's menu does it. Shelves swipe, so their arrows go.
+
+**The One Tap Row Rule.** In the phone shell a track or chart row is one target: the title's link covers the whole row and opens what the title opens, with the + and the ⋯ above it. Artist names in rows stop being links there (the artist is one tap further, on the album's page), and the album column, the duration, the number beside art and who added it give their room to the title.
 
 ### Loading
 Skeletons (the global `.skeleton` class: tint at 0.18, pulsing between 0.45 and 1 opacity over 1.4s) sit at the exact size and pitch of the content they replace (lyric lines at the real line pitch, tiles at tile size), so nothing shifts on load. They hold still at 0.7 under `prefers-reduced-motion`. When results refresh (search as you type, a new Discover room), the previous content stays on screen until the new content arrives.
@@ -385,7 +408,8 @@ Every custom property declared in `global.css` or `depth.css` is named in this f
 - **Colour aliases:** `--bg-1` (Raised Navy), `--label` and `--text` (Gallery Light), `--label-2` (secondary label), `--title-rest`, `--on-art`, `--on-art-2`, `--separator`, `--border` and `--border-2` are the CSS names of the colours in the front matter.
 - **Chart colours:** `--series-1`, `--series-2`, `--series-3`, `--series-4`, `--series-5`, `--series-6`, `--series-7` and `--series-8` are the categorical series colours in the stats charts (the first three are the colour-blind-safe trio), and `--ramp-lo` and `--ramp-hi` the ends of the sequential ramp in the heatmaps.
 - **Scrims:** `--scrim-top` is the light top fade on image cards and heroes, `--scrim-text` the fade under the Top result's text block.
-- **Sizing and rhythm:** `--page-scale` is the fluid page base, `--card-size` the width of shelf cards.
+- **Sizing and rhythm:** `--page-scale` is the fluid page base, `--card-size` the width of shelf cards, `--gutter` the page's left and right padding (28px; 16px in the phone shell).
+- **Phone shell and touch:** `--tap` (44px) is the smallest touch target, `--dock-h` the height of the phone shell's dock (0 on the desktop), `--phone-top` what a phone page clears at the top, and `--safe-top`, `--safe-bottom`, `--safe-left` and `--safe-right` the device's safe-area insets.
 - **Motion:** `--dur` and `--ease` for state changes, `--dur-fast` and `--ease-fast` for hover and focus feedback.
 - **Focus ring:** `--focus-width` and `--focus-color`.
 

@@ -1,0 +1,27 @@
+/* The ⋯ that opens a row's menu: the quiet + button's sibling, a full tap target. */
+.more {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--tap);
+  height: var(--tap);
+  border: none;
+  border-radius: var(--r-round);
+  background: none;
+  color: var(--text-3);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-fast),
+    color var(--dur-fast) var(--ease-fast);
+}
+.more:hover,
+.more:active {
+  background: var(--bg-2);
+  color: var(--text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .more {
+    transition: none;
+  }
+}

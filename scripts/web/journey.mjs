@@ -5,24 +5,46 @@
 //   node scripts/web/journey.mjs --local                      build first: npm run build:web && (cd server && npm run build)
 //   node scripts/web/journey.mjs https://truetunes.tnapps.co.uk
 //   options: --width 390 --height 844 --shots <dir>
+//            --device "iPhone 14"   Playwright's descriptor for it: WebKit, 390x844 at 3x, touch, Safari's user agent
+//                                   (npx playwright install webkit first; CI installs only Chromium, the default)
+//            --safe-area            give the page an iPhone 14's insets (47px top, 34px bottom) through the
+//                                   --safe-top / --safe-bottom tokens, which no desktop browser has of its own
+//
+// At phone size the app shows the phone shell and every step is a tap; at 1280 wide it shows the desktop layout
+// and the steps that only exist on the phone (the tab bar, the row menus, the tap-target and type-size checks)
+// are skipped.
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
+import { chromium, devices, webkit } from 'playwright';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const args = process.argv.slice(2);
 const opt = (name, fallback) => (args.includes(name) ? args[args.indexOf(name) + 1] : fallback);
-const width = Number(opt('--width', 390));
-const height = Number(opt('--height', 844));
+const deviceName = opt('--device', null);
+const device = deviceName ? devices[deviceName] : null;
+if (deviceName && !device) {
+  console.error(`unknown device "${deviceName}" (see Playwright's device list, for example "iPhone 14")`);
+  process.exit(2);
+}
+const width = Number(opt('--width', device?.viewport.width ?? 390));
+const height = Number(opt('--height', device?.viewport.height ?? 844));
 const shots = opt('--shots', null);
+const safeArea = args.includes('--safe-area');
 const local = args.includes('--local');
 let base = args.find((a) => /^https?:\/\//.test(a))?.replace(/\/+$/, '');
 if (!local && !base) {
-  console.error('usage: node scripts/web/journey.mjs (--local | <base url>) [--width n] [--height n] [--shots dir]');
+  console.error(
+    'usage: node scripts/web/journey.mjs (--local | <base url>) [--width n] [--height n] [--device name] [--safe-area] [--shots dir]'
+  );
   process.exit(2);
 }
+
+/** The demo's signed-in viewer (renderer/src/test/fixtures/people.ts): what they queue carries this name. */
+const VIEWER = 'Wren Calloway';
+/** An album nobody in the demo has queued, so its first track is new to the queue. */
+const SEARCH_FOR = 'Slack Water';
 
 /** The gateway's own code serving the built web app, on a spare port. No Sonos or Entra settings: every API path refuses. */
 async function startLocalGateway() {
@@ -47,14 +69,20 @@ async function startLocalGateway() {
 const gateway = local ? await startLocalGateway() : null;
 if (gateway) base = gateway.url;
 
-const browser = await chromium.launch();
-const context = await browser.newContext({
-  viewport: { width, height },
-  deviceScaleFactor: 2,
-  hasTouch: width < 800,
-  isMobile: width < 800,
-});
+const touch = device ? !!device.hasTouch : width < 800;
+const browser = await (device?.defaultBrowserType === 'webkit' ? webkit : chromium).launch();
+const context = await browser.newContext(
+  device
+    ? { ...device, viewport: { width, height } }
+    : { viewport: { width, height }, deviceScaleFactor: 2, hasTouch: touch, isMobile: touch }
+);
 const page = await context.newPage();
+if (safeArea) {
+  await page.addInitScript(() => {
+    document.documentElement.style.setProperty('--safe-top', '47px');
+    document.documentElement.style.setProperty('--safe-bottom', '34px');
+  });
+}
 
 // ── everything the page asks for, to prove the demo stays in its box ──
 const origin = new URL(base).origin;
@@ -70,6 +98,7 @@ page.on('websocket', (ws) => strayRequests.push(`WebSocket ${ws.url()}`));
 page.on('pageerror', (err) => pageErrors.push(err.message));
 
 let failed = 0;
+let skipped = 0;
 let step = 0;
 async function journey(name, run) {
   step++;
@@ -78,7 +107,7 @@ async function journey(name, run) {
     console.log(`PASS  ${name}`);
   } catch (err) {
     failed++;
-    console.log(`FAIL  ${name}\n      ${String(err.message ?? err).split('\n')[0]}`);
+    console.log(`FAIL  ${name}\n      ${String(err.message ?? err).split('\n').slice(0, 6).join('\n      ')}`);
   }
   if (shots) {
     mkdirSync(shots, { recursive: true });
@@ -87,29 +116,407 @@ async function journey(name, run) {
     });
   }
 }
+/** A step that only exists in the phone shell. */
+const phoneJourney = (name, run) =>
+  phone ? journey(name, run) : (skipped++, console.log(`SKIP  ${name} (not the phone shell)`));
+
 /** The transport's own button, by its label: other buttons say "Play" too (Queuedle) or mention pausing (the DJ). */
 const transport = (label) => page.locator(`button[aria-label="${label}"]`);
 const expectVisible = (locator, timeout = 8000) => locator.first().waitFor({ state: 'visible', timeout });
+const expectGone = (locator, timeout = 8000) => locator.first().waitFor({ state: 'detached', timeout });
+/** A finger on a phone, the mouse on a desktop. */
+const press = (locator, options) => (touch ? locator.first().tap(options) : locator.first().click(options));
+const hash = () => page.evaluate(() => location.hash);
+async function goTo(route) {
+  await page.evaluate((r) => {
+    location.hash = r;
+  }, route);
+  await page.waitForFunction((r) => location.hash === `#${r}`, route, { timeout: 5000 });
+  await settle();
+}
+/** Let a page load its data and finish its entrance: nothing in the demo is slower than this. */
+const settle = () => page.waitForTimeout(900);
+async function expectHash(pattern) {
+  await page.waitForFunction((src) => new RegExp(src).test(location.hash), pattern.source, { timeout: 8000 });
+}
+const tab = (route) => page.locator(`nav[aria-label="Main"] a[href="#${route}"]`);
+const menuItem = (name) => page.getByRole('menuitem', { name, exact: true });
+/** How many tracks the queue's header says it holds (the chip beside "Queue"). */
+async function queueCount() {
+  const label = await page.locator('[aria-label$=" tracks"]').first().getAttribute('aria-label', { timeout: 8000 });
+  return Number.parseInt(label ?? '', 10);
+}
+/** The queue's list is virtual: bring its end (or its start) into the window. */
+const scrollQueue = (to) =>
+  page.evaluate((where) => {
+    for (let el = document.querySelector('[data-playing="true"]'); el; el = el.parentElement) {
+      if (/auto|scroll/.test(getComputedStyle(el).overflowY) && el.scrollHeight > el.clientHeight) {
+        el.scrollTo(0, where === 'end' ? el.scrollHeight : 0);
+        return;
+      }
+    }
+  }, to);
+/** The queue rows on screen, top to bottom, by title (each row's ⋯ is named for its track). */
+const queueOrder = () =>
+  page.evaluate(() =>
+    [...document.querySelectorAll('button[aria-label^="More for "]')]
+      .map((b) => ({ title: b.getAttribute('aria-label').slice('More for '.length), y: b.getBoundingClientRect().top }))
+      .sort((a, b) => a.y - b.y)
+      .map((r) => r.title)
+  );
+const queueRow = (title) => page.locator('div[draggable]', { hasText: title });
+
+/**
+ * What must hold on every page. Sideways: the document is no wider than the window, and nothing in it is either,
+ * unless it sits in a container that scrolls sideways (a shelf, a wide chart in its card) or is a drawing (inside
+ * an svg, a progress bar or anything aria-hidden, which clip their own artwork).
+ * In the phone shell also: every control a finger can reach is at least 44px in its smaller dimension, no control
+ * is invisible (the desktop reveals some on hover; a phone must show them), and no text is under 13px.
+ * Not measured: a control marked data-tap-ok, whose 44px target is an ::after around it (text links on a line,
+ * the ⓘ); a checkbox or radio in a label, where the label is the target; a link inside a sentence.
+ */
+function auditInPage(phoneShell) {
+  const vw = window.innerWidth;
+  const describe = (e) => {
+    const cls = String(e.className?.baseVal ?? e.className ?? '')
+      .split(' ')
+      .filter(Boolean)
+      .map((c) => c.replace(/^_/, '').replace(/_[a-z0-9]+_\d+$/i, ''))
+      .slice(0, 2)
+      .join('.');
+    const label = e.getAttribute?.('aria-label') ?? (e.textContent ?? '').trim().slice(0, 30);
+    return `${e.tagName.toLowerCase()}${cls ? '.' + cls : ''} "${label}"`;
+  };
+  const shown = (e) => {
+    const r = e.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) return false;
+    for (let n = e; n && n.nodeType === 1; n = n.parentElement) {
+      const s = getComputedStyle(n);
+      if (s.display === 'none' || s.visibility === 'hidden') return false;
+    }
+    return true;
+  };
+  const opacity = (e) => {
+    let o = 1;
+    for (let n = e; n && n.nodeType === 1; n = n.parentElement) o *= Number(getComputedStyle(n).opacity);
+    return o;
+  };
+  const scrollsSideways = (e) => {
+    for (let n = e.parentElement; n; n = n.parentElement) {
+      const ox = getComputedStyle(n).overflowX;
+      if ((ox === 'auto' || ox === 'scroll') && n.scrollWidth > n.clientWidth) return true;
+    }
+    return false;
+  };
+  const problems = [];
+
+  if (document.documentElement.scrollWidth > vw)
+    problems.push(`sideways: the page is ${document.documentElement.scrollWidth}px wide in a ${vw}px window`);
+  const wide = [];
+  for (const e of document.querySelectorAll('body *')) {
+    if (e.tagName === 'IMG' || e.closest('svg, [aria-hidden="true"], [role="progressbar"], [role="img"]')) continue;
+    if (!shown(e)) continue;
+    const r = e.getBoundingClientRect();
+    if ((r.width > vw + 1 || r.right > vw + 1 || r.left < -1) && !scrollsSideways(e) && !wide.some((w) => w.contains(e))) {
+      wide.push(e);
+      problems.push(`sideways: ${describe(e)} runs from ${Math.round(r.left)} to ${Math.round(r.right)}`);
+    }
+  }
+  if (!phoneShell) return problems;
+
+  const controls =
+    'button, a[href], input, select, textarea, [role=button], [role=tab], [role=menuitem], [role=slider], [role=link]';
+  for (const e of document.querySelectorAll(controls)) {
+    if (!shown(e) || e.disabled || e.hasAttribute('data-tap-ok')) continue;
+    const style = getComputedStyle(e);
+    if (style.pointerEvents === 'none') continue;
+    if (opacity(e) < 0.05) {
+      problems.push(`hidden control: ${describe(e)}`);
+      continue;
+    }
+    const inSentence =
+      style.display === 'inline' &&
+      [...e.parentElement.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length > 1);
+    if (inSentence) continue;
+    const target = (e.type === 'checkbox' || e.type === 'radio') && e.closest('label') ? e.closest('label') : e;
+    const r = target.getBoundingClientRect();
+    if (Math.min(r.width, r.height) < 43.5)
+      problems.push(`tap target: ${describe(e)} is ${Math.round(r.width)}x${Math.round(r.height)}`);
+  }
+
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const seen = new Set();
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    const p = n.parentElement;
+    if (!n.textContent.trim() || !p || seen.has(p) || p.closest('svg, script, style') || !shown(p)) continue;
+    seen.add(p);
+    const size = parseFloat(getComputedStyle(p).fontSize);
+    if (size < 12.99) problems.push(`small text: ${describe(p)} is ${size}px`);
+  }
+  return problems;
+}
+async function audit(where) {
+  const problems = await page.evaluate(auditInPage, phone);
+  if (problems.length)
+    throw new Error(
+      `${where}: ${problems.length} problem(s)\n${[...new Set(problems)].slice(0, 8).join('\n')}${problems.length > 8 ? '\n…' : ''}`
+    );
+}
+
+// ── the journeys ──
+let phone = false;
+/** A step that failed part-way can leave Now playing or a menu open: start the next one from a page with tabs. */
+async function backToTheTabs() {
+  if (!phone) return;
+  await page.keyboard.press('Escape');
+  if (!(await tab('/').isVisible())) await goTo('/');
+}
 
 await journey('open the demo and see what is playing', async () => {
   await page.goto(`${base}/demo`, { waitUntil: 'load' });
   await expectVisible(page.getByText('Demo', { exact: true }));
   await expectVisible(page.getByText('Crooked Shoreline'), 15000);
+  phone = await page.evaluate(() => document.documentElement.dataset.shell === 'phone');
+  if (touch && width < 800 && !phone) throw new Error('a phone-sized window did not get the phone shell');
+  console.log(`      ${phone ? 'phone shell' : 'desktop layout'}, ${browser.browserType().name()}, ${width}x${height}`);
 });
 
 await journey('pause and resume', async () => {
-  await transport('Pause').first().click();
+  await press(transport('Pause'));
   await expectVisible(transport('Play'));
-  await transport('Play').first().click();
+  await press(transport('Play'));
   await expectVisible(transport('Pause'));
 });
 
-await journey('nothing scrolls sideways', async () => {
-  const [scrollWidth, innerWidth] = await page.evaluate(() => [
-    document.documentElement.scrollWidth,
-    window.innerWidth,
-  ]);
-  if (scrollWidth > innerWidth) throw new Error(`the page is ${scrollWidth}px wide in a ${innerWidth}px window`);
+await journey('change the volume', async () => {
+  const slider = page.locator('input[aria-label="Volume"]');
+  if (phone) {
+    // The mini player opens Now playing, where the volume is one long slider.
+    await press(page.locator('section[aria-label="Mini player"] button'));
+    await expectHash(/^#\/now-playing$/);
+    await expectVisible(slider);
+    const before = Number(await slider.inputValue());
+    const box = await slider.boundingBox();
+    await press(slider, { position: { x: box.width * 0.8, y: box.height / 2 } });
+    await page.waitForFunction((was) => Number(document.querySelector('input[aria-label="Volume"]').value) > was + 20, before);
+    const set = Number(await slider.inputValue());
+    // Leave and come back: the page then shows what the (pretend) speakers say, not what was dragged.
+    await press(page.locator('button[aria-label="Close the player"]'));
+    await expectVisible(page.locator('section[aria-label="Mini player"]'));
+    await page.waitForTimeout(400);
+    await press(page.locator('section[aria-label="Mini player"] button'));
+    await expectVisible(slider);
+    const now = Number(await slider.inputValue());
+    if (now !== set) throw new Error(`the volume was set to ${set} and came back as ${now}`);
+    await settle();
+    await audit('Now playing');
+    await press(page.locator('button[aria-label="Close the player"]'));
+    await expectVisible(page.locator('section[aria-label="Mini player"]'));
+  } else {
+    await page.locator('button[aria-label="Mute"]').hover();
+    await expectVisible(slider);
+    const before = Number(await slider.inputValue());
+    for (let i = 0; i < 5; i++) await page.locator('button[aria-label="Volume up"]').click();
+    await page.waitForFunction((want) => Number(document.querySelector('input[aria-label="Volume"]').value) === want, before + 5);
+    await page.mouse.move(10, 300);
+  }
+});
+
+let queuedTitle = '';
+let countBefore = 0;
+
+await journey('search the catalogue and see results', async () => {
+  await backToTheTabs();
+  if (phone) {
+    await press(tab('/queue'));
+    await expectHash(/^#\/queue$/);
+  }
+  countBefore = await queueCount();
+  if (phone) {
+    await press(tab('/search'));
+    await expectHash(/^#\/search/);
+    // Opening the tab must not pop the keyboard: nothing has focus until the field is tapped.
+    const focused = await page.evaluate(() => document.activeElement?.tagName);
+    if (focused === 'INPUT') throw new Error('the search field took focus when the Search tab opened');
+  }
+  const field = page.locator('[data-search-input]');
+  await press(field);
+  await field.pressSequentially(SEARCH_FOR, { delay: 20 });
+  await expectHash(/^#\/search\?q=/);
+  await expectVisible(page.locator('main').getByText(SEARCH_FOR, { exact: true }), 10000);
+  if (phone) {
+    // The keyboard is up: the dock steps aside, and comes back when the field is left.
+    await expectGone(page.locator('nav[aria-label="Main"]:visible'));
+    await field.press('Enter');
+    await expectVisible(tab('/search'));
+  }
+  await settle();
+  await audit('Search results');
+});
+
+await journey('open an album from the results', async () => {
+  // The top result is the album itself: its card is one button.
+  await press(page.locator(`main button[data-search-stop][aria-label*="${SEARCH_FOR}"]`));
+  await expectHash(/^#\/album\//);
+  await expectVisible(page.locator('main li button[aria-label^="Add "][aria-label$=" to queue"]'), 10000);
+  await settle();
+  await audit('Album');
+});
+
+await journey(`queue a track from it and see the queue grow, with ${VIEWER}'s name on it`, async () => {
+  const add = page.locator('main li button[aria-label^="Add "][aria-label$=" to queue"]').first();
+  queuedTitle = (await add.getAttribute('aria-label')).slice('Add '.length, -' to queue'.length);
+  await press(add);
+  if (phone) {
+    await press(tab('/queue'));
+    await expectHash(/^#\/queue$/);
+  }
+  await expectVisible(page.locator(`[aria-label="${countBefore + 1} tracks"]`));
+  await page.waitForTimeout(300);
+  await scrollQueue('end');
+  await expectVisible(queueRow(queuedTitle));
+  await expectVisible(queueRow(queuedTitle).locator(`button[aria-label="Queued by ${VIEWER}"]`));
+});
+
+await phoneJourney('move a queue row from its menu and see the order change', async () => {
+  await scrollQueue('start');
+  await page.waitForTimeout(400);
+  // Two rows that are up next: the two after whatever is playing.
+  const order = await queueOrder();
+  const playing = await page.evaluate(() =>
+    document.querySelector('[data-playing="true"] button[aria-label^="More for "]').getAttribute('aria-label').slice(9)
+  );
+  const at = order.indexOf(playing);
+  const [first, second] = [order[at + 1], order[at + 2]];
+  if (!first || !second) throw new Error(`fewer than two rows are up next (${order.join(', ')})`);
+  await press(page.locator(`button[aria-label="More for ${first}"]`));
+  await expectVisible(page.getByRole('menu'));
+  await audit('The row menu (bottom sheet)');
+  await press(menuItem('Move down'));
+  await expectGone(page.getByRole('menu'));
+  await page.waitForFunction(
+    ([a, b]) => {
+      const y = (t) => document.querySelector(`button[aria-label="More for ${t}"]`)?.getBoundingClientRect().top;
+      return y(b) < y(a);
+    },
+    [first, second]
+  );
+  // And back to the front of the line with Play next.
+  await press(page.locator(`button[aria-label="More for ${first}"]`));
+  await press(menuItem('Play next'));
+  await expectGone(page.getByRole('menu'));
+  await page.waitForFunction(
+    ([a, b]) => {
+      const y = (t) => document.querySelector(`button[aria-label="More for ${t}"]`)?.getBoundingClientRect().top;
+      return y(a) < y(b);
+    },
+    [first, second]
+  );
+});
+
+await phoneJourney('a long press opens the same menu', async () => {
+  await scrollQueue('start');
+  await page.waitForTimeout(400);
+  // A row in clear view: the list's own first row, above the fold and nowhere near the dock.
+  const [title] = await queueOrder();
+  const target = queueRow(title).getByText(title, { exact: true }).first();
+  const box = await target.boundingBox();
+  const point = { x: Math.round(box.x + 8), y: Math.round(box.y + box.height / 2) };
+  if (browser.browserType().name() === 'chromium') {
+    // A real finger held still: Chromium's own touch events, which become the pointer events the app listens for.
+    const cdp = await context.newCDPSession(page);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+    await expectVisible(page.getByRole('menu'), 3000);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  } else {
+    // WebKit has no such driver here: send the pointer events a held finger makes.
+    await target.dispatchEvent('pointerdown', { pointerType: 'touch', isPrimary: true, clientX: point.x, clientY: point.y });
+    await expectVisible(page.getByRole('menu'), 3000);
+    await target.dispatchEvent('pointerup', { pointerType: 'touch', isPrimary: true, clientX: point.x, clientY: point.y });
+  }
+  // Lifting the finger must not close it (the click a touch trails is swallowed) or open anything else.
+  await page.waitForTimeout(500);
+  await expectVisible(page.getByRole('menu'));
+  if ((await hash()) !== '#/queue') throw new Error(`the long press navigated to ${await hash()}`);
+  await page.keyboard.press('Escape');
+  await expectGone(page.getByRole('menu'));
+});
+
+await phoneJourney('remove a row from the queue and see it gone', async () => {
+  const count = await queueCount();
+  await scrollQueue('end');
+  await press(page.locator(`button[aria-label="More for ${queuedTitle}"]`));
+  await press(menuItem('Remove from queue'));
+  await expectGone(page.locator(`button[aria-label="More for ${queuedTitle}"]`));
+  await expectVisible(page.locator(`[aria-label="${count - 1} tracks"]`));
+});
+
+await phoneJourney('open the Leaderboard from More', async () => {
+  await press(tab('/more'));
+  await expectHash(/^#\/more$/);
+  await audit('More');
+  await press(page.getByRole('button', { name: 'Leaderboard', exact: true }));
+  await expectHash(/^#\/leaderboard$/);
+  await expectVisible(page.getByRole('heading', { name: 'Leaderboard' }));
+  // Back is the round button at the top left, and returns to More.
+  await press(page.locator('button[aria-label="Back"]'));
+  await expectHash(/^#\/more$/);
+});
+
+await journey(`every page: nothing scrolls sideways${phone ? ', every target is 44px, no text under 13px' : ''}`, async () => {
+  const routes = [
+    ['Home', '/'],
+    ['Search, empty', '/search'],
+    ['Search', '/search?q=velvet'],
+    ['Discover', '/discover'],
+    ['Leaderboard', '/leaderboard'],
+    ['Music stats', '/leaderboard/stats'],
+    ['Queuedle', '/queuedle'],
+    ['Queuedle stats', '/queuedle/stats'],
+    ['Lyrics', '/lyrics'],
+    ['Profile', '/profile/Tamsin%20Okoro-Vale'],
+    ['Playlist', '/playlist/pl-focus'],
+    ...(phone
+      ? [
+          ['Queue', '/queue'],
+          ['Now playing', '/now-playing'],
+          ['More', '/more'],
+        ]
+      : []),
+  ];
+  const failures = [];
+  const check = async (name) => {
+    await audit(name).catch((err) => failures.push(err.message));
+    if (shots) await page.screenshot({ path: path.join(shots, `page-${name.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.png`) });
+  };
+  for (const [name, route] of routes) {
+    await goTo(route);
+    await check(name);
+  }
+  // The album, the artist and the shelf pages open with the item they were tapped from, so they are tapped to.
+  await goTo('/search?q=velvet');
+  await press(page.locator('main button[aria-label$=", open album"]'));
+  await expectHash(/^#\/album\//);
+  await settle();
+  await check('Album');
+  await press(page.locator('main').getByRole('button', { name: 'The Velvet Anchors', exact: true }));
+  await expectHash(/^#\/artist\//);
+  await page.waitForTimeout(1500);
+  await check('Artist');
+  await goTo('/');
+  const tile = page.locator('main button[class*="tileMain"]').first();
+  await page.evaluate(() => {
+    const scroller = [...document.querySelectorAll('main *')].find(
+      (e) => e.scrollHeight > e.clientHeight + 40 && /auto|scroll/.test(getComputedStyle(e).overflowY)
+    );
+    scroller?.scrollTo(0, scroller.scrollHeight);
+  });
+  await tile.scrollIntoViewIfNeeded();
+  await press(tile);
+  await expectHash(/^#\/container\//);
+  await settle();
+  await check('Shelf (container)');
+  if (failures.length) throw new Error(failures.join('\n'));
 });
 
 await journey('the demo made no request to /sonos, /fn, /img, the relay or another host', async () => {
@@ -123,9 +530,10 @@ await journey('no uncaught errors in the page', async () => {
 
 await browser.close();
 gateway?.stop();
+const what = `${width}x${height}${deviceName ? ` (${deviceName}, ${browser.browserType().name()})` : ''}${safeArea ? ' with safe areas' : ''}`;
 console.log(
   failed
-    ? `\n${failed} journey step(s) failed at ${width}x${height} against ${base}`
-    : `\nAll journey steps passed at ${width}x${height} against ${base}`
+    ? `\n${failed} journey step(s) failed at ${what} against ${base}`
+    : `\nAll journey steps passed at ${what} against ${base}${skipped ? ` (${skipped} phone-only step(s) skipped)` : ''}`
 );
 process.exit(failed ? 1 : 0);

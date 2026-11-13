@@ -1,4 +1,4 @@
-import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { lazy, memo, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { getActiveProvider } from './providers';
@@ -24,6 +24,7 @@ import { SearchPanel } from './components/search/SearchPanel';
 import { useAutoplay } from './hooks/useAutoplay';
 import { QueueSidebar, type QueueSidebarHandle } from './components/queue/QueueSidebar';
 import { SkinnyShell } from './components/skinny/SkinnyShell';
+import { PhoneShell } from './components/phone/PhoneShell';
 import { useSkinnyMode } from './hooks/useSkinnyMode';
 import { MiniPlayerShell } from './components/MiniPlayer';
 import { ChampionProvider } from './components/ChampionProvider';
@@ -37,6 +38,7 @@ import { ContextMenuProvider } from './components/common/ContextMenu';
 import { ToastProvider, useToast } from './components/common/Toast';
 import { usePrefetchNextLyrics } from './hooks/usePrefetchNextLyrics';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { RouteBoundary } from './components/RouteBoundary';
 import { Splash } from './components/Splash';
 import { effectiveDockedWidth } from './lib/queueWidth';
 import { isWeb } from './lib/platform';
@@ -115,6 +117,8 @@ const MainApp = memo(function MainApp() {
   const queueSidebarRef = useRef<QueueSidebarHandle>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const skinny = useSkinnyMode();
+  // The web app has room for a real phone layout where the desktop app falls back to its slim remote.
+  const phone = skinny && isWeb();
   const handleResizeWidthLive = useCallback((width: number) => {
     shellRef.current?.style.setProperty('--docked-queue-w', `${width}px`);
   }, []);
@@ -261,11 +265,60 @@ const MainApp = memo(function MainApp() {
 
   const splashReady = isAuthed && groups.length > 0 && !ytmLoading;
 
+  // The routed pages: the same ones in the desktop layout and in the web app's phone shell.
+  const pages = (
+    <>
+      <Route
+        path="/"
+        element={
+          <HomePanel
+            isAuthed={isAuthed}
+            ytm={ytm}
+            ytmLoading={ytmLoading}
+            playback={playback}
+            queueItems={queueItems}
+          />
+        }
+      />
+      <Route path="/search" element={<SearchPanel />} />
+      <Route path="/discover" element={<DiscoverPanel queueItems={queueItems} />} />
+      <Route path="/album/:id" element={<AlbumPanel playback={playback} />} />
+      <Route
+        path="/artist/:id"
+        element={<ArtistPanel currentTrackName={playback.trackName} isPlaybackActive={playback.isPlaying} />}
+      />
+      <Route path="/container/:id" element={<ContainerPanel />} />
+      <Route path="/leaderboard" element={<LeaderboardPanel />} />
+      <Route path="/leaderboard/stats" element={<MusicStatsPanel />} />
+      <Route path="/queuedle" element={<QueuedlePanel />} />
+      <Route path="/queuedle/stats" element={<QueuedleStatsPanel />} />
+      <Route path="/lyrics" element={<LyricsPanel playback={playback} />} />
+      <Route path="/profile/:userName" element={<ProfilePanel />} />
+      <Route path="/playlist/:id" element={<PlaylistPanel />} />
+    </>
+  );
+
   return (
     <QueueActionsProvider value={queueActions}>
       <ContextMenuProvider>
         <Splash ready={splashReady} failed={authFailure.failed} onRetry={authFailure.retry} />
-        {skinny ? (
+        {phone ? (
+          <PhoneShell
+            autoplay={autoplay}
+            isAuthed={isAuthed}
+            playback={playback}
+            queueItems={queueItems}
+            queueLoading={queueLoading}
+            queueReadOnly={queuePlaceholder}
+            queueError={queueError}
+            reloadQueue={reloadQueue}
+            groups={groups}
+            activeGroupId={activeGroupId}
+            onGroupChange={handleGroupChange}
+            onFeedback={() => setFeedbackOpen(true)}
+            pages={pages}
+          />
+        ) : skinny ? (
           <SkinnyShell
             autoplay={autoplay}
             isAuthed={isAuthed}
@@ -306,37 +359,7 @@ const MainApp = memo(function MainApp() {
               <main className={styles.main}>
                 <RouteBoundary>
                   <Suspense fallback={null}>
-                    <Routes>
-                      <Route
-                        path="/"
-                        element={
-                          <HomePanel
-                            isAuthed={isAuthed}
-                            ytm={ytm}
-                            ytmLoading={ytmLoading}
-                            playback={playback}
-                            queueItems={queueItems}
-                          />
-                        }
-                      />
-                      <Route path="/search" element={<SearchPanel />} />
-                      <Route path="/discover" element={<DiscoverPanel queueItems={queueItems} />} />
-                      <Route path="/album/:id" element={<AlbumPanel playback={playback} />} />
-                      <Route
-                        path="/artist/:id"
-                        element={
-                          <ArtistPanel currentTrackName={playback.trackName} isPlaybackActive={playback.isPlaying} />
-                        }
-                      />
-                      <Route path="/container/:id" element={<ContainerPanel />} />
-                      <Route path="/leaderboard" element={<LeaderboardPanel />} />
-                      <Route path="/leaderboard/stats" element={<MusicStatsPanel />} />
-                      <Route path="/queuedle" element={<QueuedlePanel />} />
-                      <Route path="/queuedle/stats" element={<QueuedleStatsPanel />} />
-                      <Route path="/lyrics" element={<LyricsPanel playback={playback} />} />
-                      <Route path="/profile/:userName" element={<ProfilePanel />} />
-                      <Route path="/playlist/:id" element={<PlaylistPanel />} />
-                    </Routes>
+                    <Routes>{pages}</Routes>
                   </Suspense>
                 </RouteBoundary>
               </main>
@@ -371,12 +394,6 @@ const MainApp = memo(function MainApp() {
     </QueueActionsProvider>
   );
 });
-
-/** A crash in one page leaves the shell (queue, player, nav) alive; navigating resets it. */
-function RouteBoundary({ children }: { children: ReactNode }) {
-  const { pathname } = useLocation();
-  return <ErrorBoundary key={pathname}>{children}</ErrorBoundary>;
-}
 
 // ── Root ──────────────────────────────────────────────────────────────────────
 

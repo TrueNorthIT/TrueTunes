@@ -356,3 +356,133 @@
     transition: none;
   }
 }
+
+/* ── Touch (the web app) ── */
+/* ⋯ : the row's menu as a button. Only where there is no hover to right-click from. */
+.more {
+  display: none;
+}
+@media (hover: none) {
+  /* What hover reveals is always there for a finger: the +, the ×, and the ⋯. No grip: nothing drags. */
+  :global(:root[data-platform='web']) .add {
+    opacity: 1;
+  }
+  :global(:root[data-platform='web']) .more {
+    display: grid;
+  }
+  :global(:root[data-platform='web']) .handle {
+    display: none;
+  }
+  :global(:root[data-platform='web']) .row:hover:not(.selected) {
+    background: none;
+  }
+}
+
+/*
+ * ── Phone shell ──
+ * One row, one tap: the title's link is stretched over the whole row (an ::after on the positioned row, so the
+ * row opens what its title opens), and the + and ⋯ sit above it as full tap targets. The artist names stop being
+ * links here: a 20px link beside a 44px one is a mis-tap; the artist is one tap further, on the album's page.
+ * The album column and the duration give their room to the title.
+ */
+:global(:root[data-shell='phone']) .more {
+  display: grid;
+}
+:global(:root[data-shell='phone']) .track {
+  gap: 0.75em;
+  min-height: calc(var(--tap) + 0.9em);
+  padding: 0.3em 0 0.3em 0.45em;
+}
+:global(:root[data-shell='phone']) .title button,
+:global(:root[data-shell='phone']) .chartTitle button {
+  position: static;
+}
+:global(:root[data-shell='phone']) .title button::after,
+:global(:root[data-shell='phone']) .chartTitle button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: auto;
+  min-width: 0;
+  height: auto;
+  transform: none;
+  border-radius: var(--r-row);
+}
+:global(:root[data-shell='phone']) .artist button,
+:global(:root[data-shell='phone']) .chartArtist button {
+  pointer-events: none;
+}
+:global(:root[data-shell='phone']) .aside,
+:global(:root[data-shell='phone']) .trailing,
+:global(:root[data-shell='phone']) .chartHead {
+  display: none;
+}
+:global(:root[data-shell='phone']) .add,
+:global(:root[data-shell='phone']) .more,
+:global(:root[data-shell='phone']) .who {
+  position: relative;
+  z-index: 1;
+}
+/* The + and the ⋯ share the row's end: two full targets side by side, their glyphs 44px apart. */
+:global(:root[data-shell='phone']) .add + .more {
+  margin-left: -0.75em;
+}
+/* A row with art needs no number, and who added it and the × move into the row's menu ("View X's profile",
+   "Remove from playlist"): the title keeps the room. */
+:global(:root[data-shell='phone']) .lead:has(+ .artBtn),
+:global(:root[data-shell='phone']) .who,
+:global(:root[data-shell='phone']) .remove {
+  display: none;
+}
+:global(:root[data-shell='phone']) .track.withHandle {
+  padding-left: 0.45em;
+}
+/* Chart rows: rank, art, title over artist, the count, then the two buttons. The title cell's box dissolves so
+   the art and the title sit on the row's own grid, and the artist can go under the title. */
+:global(:root[data-shell='phone']) .chart {
+  grid-template-columns: 1.5em 3.2em minmax(0, 1fr) auto var(--tap) var(--tap);
+  grid-template-rows: 1fr 1fr;
+  column-gap: 0;
+  min-height: calc(var(--tap) + 0.9em);
+  padding: 0.3em 0 0.3em 0.45em;
+}
+:global(:root[data-shell='phone']) .chart > * {
+  grid-row: 1 / span 2;
+}
+:global(:root[data-shell='phone']) .chart .titleCell {
+  display: contents;
+}
+:global(:root[data-shell='phone']) .chart .rank {
+  grid-column: 1;
+  font-size: var(--fs-label);
+}
+:global(:root[data-shell='phone']) .chart .artBtn {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+:global(:root[data-shell='phone']) .chart .chartTitle {
+  grid-column: 3;
+  grid-row: 1;
+  align-self: end;
+  padding: 0 0.6em 0 0.75em;
+}
+:global(:root[data-shell='phone']) .chart .chartArtist {
+  grid-column: 3;
+  grid-row: 2;
+  align-self: start;
+  padding: 0 0.6em 0 0.75em;
+  font-size: var(--fs-label);
+}
+:global(:root[data-shell='phone']) .chart .plays {
+  grid-column: 4;
+  padding-right: 0.3em;
+  font-size: var(--fs-label);
+}
+:global(:root[data-shell='phone']) .chart .add,
+:global(:root[data-shell='phone']) .chart .addSpacer {
+  grid-column: 5;
+}
+:global(:root[data-shell='phone']) .chart .more {
+  grid-column: 6;
+  margin-left: 0;
+}

@@ -119,3 +119,39 @@
     transition: none;
   }
 }
+
+/* Phone shell: a shelf swipes, so the arrows go; it snaps to its tiles and runs to the screen's edge. */
+:global(:root[data-shell='phone']) .arrows {
+  display: none;
+}
+:global(:root[data-shell='phone']) .row {
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+:global(:root[data-shell='phone']) .row > * {
+  scroll-snap-align: start;
+}
+:global(:root[data-shell='phone']) .header {
+  flex-wrap: wrap;
+  row-gap: 10px;
+  margin-bottom: 14px;
+}
+:global(:root[data-shell='phone']) .search {
+  order: 3;
+  flex: 1 0 100%;
+  margin-left: 0;
+}
+:global(:root[data-shell='phone']) .searchBox {
+  flex: 1;
+  width: auto;
+  height: calc(var(--tap) + 2px);
+  padding: 0 4px 0 16px;
+}
+:global(:root[data-shell='phone']) .searchInput {
+  height: 100%;
+}
+:global(:root[data-shell='phone']) .searchClear {
+  width: var(--tap);
+  height: var(--tap);
+}

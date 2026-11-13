@@ -54,8 +54,8 @@
       "area": "gateway",
       "description": "Live 'who queued this' events reach the browser through the gateway (a relay to the Web PubSub socket), so the browser stays on one origin.",
       "how_verified": "server unit tests; mock-driven bridge test",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`cd server && npm test`: 633 pass (gatewayPubsub.test.ts, and real-ws tests of path-aware subprotocol selection and the 1 MiB frame cap in gatewayNode.test.ts). Web unit tests: 376 pass (attributionSocket.test.ts: 47 at first, more after review). An independent review compared the Sonos relay before and after statement by statement (unchanged) and found a reconnect-storm bug, fixed with tests. `node scripts/web/checks.mjs https://truetunes.tnapps.co.uk --pwa`: 52 of 52 PASS on 12 Nov 2026 after the deploy of a186d49 (#268, Publish run 43323677195): /pubsub/ws refuses an unsigned upgrade and a made-up token with 401, /pubsub/nope is 404. Not yet exercised with a real signed-in session: if it fails the web app falls back to refreshing the map on queue changes."
     },
     {
       "id": "web-build",
@@ -191,7 +191,7 @@
       "bridge": ["publishQueued", "refreshAttribution", "onAttributionMap", "onAttributionEvent"],
       "how_verified": "unit tests of the bridge; demo journey shows queued-by badges",
       "passes": true,
-      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (session.test.ts \"attribution\"). Badges in the demo: the queue shows who queued each track (journey screenshots). The owner signed in on production on 12 Nov 2026 in a desktop-width browser and sent a screenshot: now playing with its \"Queued by\" chip, the 22-track queue with times and queuer avatars, live lyrics, Picks, the Queuedle card, his profile and the Poll button all loaded."
+      "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (session.test.ts \"attribution\"). Badges in the demo: the queue shows who queued each track (journey screenshots). The owner signed in on production on 12 Nov 2026 in a desktop-width browser and sent a screenshot: now playing with its \"Queued by\" chip, the 22-track queue with times and queuer avatars, live lyrics, Picks, the Queuedle card, his profile and the Poll button all loaded. Live events through the gateway relay shipped in #268 (see gw-pubsub-relay)."
     },
     {
       "id": "web-office-presence",
@@ -246,8 +246,8 @@
         "playAudioClip"
       ],
       "how_verified": "unit tests asserting each frame against a fake WebSocket; controls exercised in the demo journey. Never sent to the real system.",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "Unit: sonosSocket.test.ts \"commands\" asserts every frame against a fake WebSocket, compared with src/ipc/sonos.ts by an independent review. Demo journey exercises play, pause and volume by touch (`node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026). Never sent to the real system."
     },
     {
       "id": "web-queue-edits",
@@ -255,8 +255,8 @@
       "description": "Queue edits: reorder (the same batch algorithm as the desktop), remove, clear.",
       "bridge": ["reorderQueue", "removeFromQueue", "clearQueue"],
       "how_verified": "unit tests written first for the batch algorithm and the requests it sends; demo journey reorders and removes",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "Unit: reorder.test.ts (written first: single moves, runs, non-contiguous selections, 500 seeded random selections). Demo journey moves and removes queue rows by touch (`node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026)."
     },
     {
       "id": "web-images",
@@ -291,47 +291,47 @@
       "description": "A phone shell replaces skinny mode on the web: thumb-reach navigation, now playing one tap away, the queue as a full view, search and browse as first-class pages. Safe-area insets, dynamic viewport units, reduced motion honoured.",
       "how_verified": "story at 390x844 and 1280x800 (page story and app-shell story), screenshots reviewed; story tests (axe) pass",
       "passes": false,
-      "evidence": ""
+      "evidence": "Shipped as work in progress at the owner's request (13 Nov). Built: tab bar (Home, Search, Queue, Discover, More), mini player, /now-playing, /queue, /more, bottom-sheet menu, long-press, touch rules. `node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026; story tests with axe pass (`npm run test:run`: 2,252). NOT passing yet: the tab bar and the foot of the bottom sheet are too transparent (page content shows through the tab labels), and nothing has been checked in WebKit or with iPhone 14 safe areas simulated."
     },
     {
       "id": "phone-now-playing",
       "area": "phone",
       "description": "Now playing on a phone: art, title, artist, who queued it, play/pause, skip, seek, volume, lyrics.",
       "how_verified": "demo journey at 390px: pause and resume, change volume; screenshot",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026 (\"pause and resume\", \"change the volume\"). Screenshot reviewed by eye on 13 Nov (`--shots`). Art, title, artist, queued-by chip, seek bar, transport, shuffle, repeat, volume, heart, Lyrics and Queue buttons."
     },
     {
       "id": "phone-queue",
       "area": "phone",
       "description": "The queue as a full view on a phone, with who queued each track, and touch ways to play next, reorder (no drag needed) and remove.",
       "how_verified": "demo journey at 390px: reorder and remove; screenshot",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026 (\"queue a track ... with Wren Calloway's name on it\", \"move a queue row from its menu\", \"remove a row\"). Screenshot reviewed by eye on 13 Nov (`--shots`). Row menu: Play now, Play next, Move up, Move down, Remove from queue."
     },
     {
       "id": "phone-touch-menus",
       "area": "phone",
       "description": "Every right-click action has a touch equivalent (long-press or a menu button). Tap targets are at least 44px; no text under 13px.",
       "how_verified": "story test measuring target sizes; demo journey queues a track from a touch menu",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026 (\"a long press opens the same menu\", and \"every page: nothing scrolls sideways, every target is 44px, no text under 13px\"). The bottom sheet opened from the row's more button was screenshotted and reviewed. Chromium only so far."
     },
     {
       "id": "page-home",
       "area": "pages",
       "description": "Home (/) usable at 390px with touch only.",
       "how_verified": "page story screenshot at 390x844 reviewed; no horizontal overflow (asserted in the journey test)",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026 (overflow, target and text-size check on every page). Screenshot reviewed by eye on 13 Nov (`--shots`). Known defect: the tab bar's transparency (see phone-shell)."
     },
     {
       "id": "page-search",
       "area": "pages",
       "description": "Search (/search) usable at 390px: type, see results, open one, queue a track.",
       "how_verified": "demo journey; screenshot at 390x844",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026 (\"search the catalogue and see results\"). Screenshot reviewed by eye on 13 Nov (`--shots`)."
     },
     {
       "id": "page-discover",
@@ -339,15 +339,15 @@
       "description": "Discover (/discover) usable at 390px.",
       "how_verified": "page story screenshot at 390x844; overflow assertion",
       "passes": false,
-      "evidence": ""
+      "evidence": "Shipped as work in progress. `node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026, including the overflow, 44px target and 13px text check on this page. Not yet reviewed by eye, so not marked as passing."
     },
     {
       "id": "page-album",
       "area": "pages",
       "description": "Album (/album/:id) usable at 390px: track list, queue a track, queue all.",
       "how_verified": "demo journey opens an album and queues a track; screenshot",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026 (\"open an album from the results\", \"queue a track from it\"). Screenshot reviewed by eye on 13 Nov (`--shots`)."
     },
     {
       "id": "page-artist",
@@ -355,7 +355,7 @@
       "description": "Artist (/artist/:id) usable at 390px.",
       "how_verified": "page story screenshot at 390x844; overflow assertion",
       "passes": false,
-      "evidence": ""
+      "evidence": "Shipped as work in progress. `node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026, including the overflow, 44px target and 13px text check on this page. Not yet reviewed by eye, so not marked as passing."
     },
     {
       "id": "page-container",
@@ -363,7 +363,7 @@
       "description": "Container (/container/:id) usable at 390px.",
       "how_verified": "page story screenshot at 390x844; overflow assertion",
       "passes": false,
-      "evidence": ""
+      "evidence": "Shipped as work in progress. `node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026, including the overflow, 44px target and 13px text check on this page. Not yet reviewed by eye, so not marked as passing."
     },
     {
       "id": "page-leaderboard",
@@ -371,7 +371,7 @@
       "description": "Leaderboard (/leaderboard) and music stats (/leaderboard/stats) usable at 390px.",
       "how_verified": "demo journey opens the leaderboard; screenshots of both",
       "passes": false,
-      "evidence": ""
+      "evidence": "Shipped as work in progress. `node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026, including the overflow, 44px target and 13px text check on this page. Not yet reviewed by eye, so not marked as passing."
     },
     {
       "id": "page-queuedle",
@@ -379,7 +379,7 @@
       "description": "Queuedle (/queuedle) and its stats (/queuedle/stats) usable at 390px.",
       "how_verified": "page story screenshots at 390x844; a round played in the demo (mock only)",
       "passes": false,
-      "evidence": ""
+      "evidence": "Shipped as work in progress. `node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026, including the overflow, 44px target and 13px text check on this page. Not yet reviewed by eye, so not marked as passing."
     },
     {
       "id": "page-lyrics",
@@ -387,7 +387,7 @@
       "description": "Lyrics (/lyrics) usable at 390px.",
       "how_verified": "page story screenshot at 390x844; overflow assertion",
       "passes": false,
-      "evidence": ""
+      "evidence": "Shipped as work in progress. `node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026, including the overflow, 44px target and 13px text check on this page. Not yet reviewed by eye, so not marked as passing."
     },
     {
       "id": "page-profile",
@@ -395,7 +395,7 @@
       "description": "Profile (/profile/:userName) usable at 390px.",
       "how_verified": "page story screenshot at 390x844; overflow assertion",
       "passes": false,
-      "evidence": ""
+      "evidence": "Shipped as work in progress. `node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026, including the overflow, 44px target and 13px text check on this page. Not yet reviewed by eye, so not marked as passing."
     },
     {
       "id": "page-playlist",
@@ -403,7 +403,7 @@
       "description": "Playlist (/playlist/:id) usable at 390px.",
       "how_verified": "page story screenshot at 390x844; overflow assertion",
       "passes": false,
-      "evidence": ""
+      "evidence": "Shipped as work in progress. `node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026, including the overflow, 44px target and 13px text check on this page. Not yet reviewed by eye, so not marked as passing."
     },
     {
       "id": "dialogs-phone",
@@ -411,7 +411,7 @@
       "description": "Feedback, polls, the changelog and the add-to-playlist dialogs are usable at 390px.",
       "how_verified": "story screenshots at 390x844",
       "passes": false,
-      "evidence": ""
+      "evidence": "Shipped as work in progress. Stylesheets for the feedback, poll and shared dialogs were adapted; not yet reviewed by eye at phone width."
     },
     {
       "id": "desktop-browser-layout",
@@ -443,8 +443,8 @@
       "description": "A new version found while the app is launching (first seconds, nothing tapped, no other window open) takes over at once, so opening the app gets the latest. Found later, it waits: the app's existing Update button appears and activating it reloads onto the new version. Nothing activates under someone who is using the app.",
       "bridge": ["onUpdateDownloaded", "installUpdate"],
       "how_verified": "unit test of the bridge's update events; Playwright with two builds served in turn",
-      "passes": false,
-      "evidence": "Locally: `node scripts/web/pwa.mjs` passes 9 of 9 on 12 Nov, including \"opening the app after a deploy takes the new version by itself, with no button\" and the wait-for-Update case after a key press. Not yet merged or run in the pipeline."
+      "passes": true,
+      "evidence": "`node scripts/web/pwa.mjs` 9 of 9 in the pipeline (`validate` on #267 and #268) and locally four times in a row: a version found at launch takes over by itself with no button; one found after a key press waits and shows Update; Update activates it in a window that began with no worker and a second window follows. Deployed: production /sw.js (version 1.0.99) contains `activate-if-alone`."
     },
     {
       "id": "pwa-offline",
@@ -452,7 +452,7 @@
       "description": "Offline, the installed app opens to a clear offline screen instead of the browser's error page.",
       "how_verified": "Playwright with the network offline",
       "passes": true,
-      "evidence": "`node scripts/web/pwa.mjs` (locally and in `validate` on #265 (typecheck, lint, format, both builds, 2,142 renderer tests, the journeys and pwa.mjs in Chromium)): offline, / shows the offline screen with Try again, and /demo opens from the cache."
+      "evidence": "`node scripts/web/pwa.mjs` (locally and in `validate` on #265 (typecheck, lint, format, both builds, 2,142 renderer tests, the journeys and pwa.mjs in Chromium)): offline, / shows the offline screen with Try again, and /demo opens from the cache. After #267: the offline screen no longer reloads while the page is leaving (20 of 20 runs of the failing sequence pass)."
     },
     {
       "id": "one-origin",
@@ -475,8 +475,8 @@
       "area": "whole",
       "description": "The Electron app behaves as before: its suites are green, the main process is not restructured, and the desktop build output has no web-only code paths active.",
       "how_verified": "`npm run typecheck`, `npm run test:run`, `npm run test:main`, `npm run build`; diff of src/ is empty or additive",
-      "passes": false,
-      "evidence": ""
+      "passes": true,
+      "evidence": "`npm run typecheck`, `npm run test:run` (2,252), `npm run test:main` (44) and `npm run build` pass on the phone-shell branch. `git diff 20fb376..HEAD -- src/` is empty: the main process is untouched. An independent review of the phone shell compared both sides of every changed shared file and found no visible or behavioural change in Electron, its skinny layout or the mini player."
     },
     {
       "id": "deployed",
@@ -484,7 +484,7 @@
       "description": "All of it is merged to main and deployed by the pipeline; https://truetunes.tnapps.co.uk/ serves the web app.",
       "how_verified": "the deploy job's result per merge; the production checks and the journey test run against the live address",
       "passes": false,
-      "evidence": "#264 (gateway) and #265 (web app) are merged and deployed; 12 Nov 2026, after the deploy of e51798b (#265, Publish run 43301237597). https://truetunes.tnapps.co.uk/ serves the web app. The phone shell is not merged yet."
+      "evidence": "#264 (gateway), #265 (web app), #266 (launch update), #267 (offline fix) and #268 (live attribution relay) are merged and deployed; production verified after each on 12 Nov 2026. https://truetunes.tnapps.co.uk/ serves the web app. The phone shell is not merged yet."
     }
   ]
 }

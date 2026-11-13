@@ -1,0 +1,368 @@
+/*
+ * The phone shell (web only, narrow windows): the routed page fills the screen and scrolls under a dock of
+ * two frosted bars, the mini player over the tab bar. Same materials as the desktop's nav pill and player
+ * bar (depth.css); the ambient artwork sits behind everything. Sizes are fixed px, like the other shell
+ * surfaces: nothing under 13px, every control at least --tap.
+ */
+.shell {
+  position: relative;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* A landscape phone's notch side; nothing in portrait. */
+  padding: 0 var(--safe-right) 0 var(--safe-left);
+  background: var(--bg);
+}
+
+/* The routed page: the same frame the desktop gives it (App.module.css), with the artwork's colour washed in. */
+.page {
+  composes: body from './App.module.css';
+}
+/* A page inside a tab has the back button to clear. */
+.page[data-back] {
+  --nav-h: calc(var(--phone-top) + var(--tap) + 4px);
+}
+.routes {
+  composes: main from './App.module.css';
+  animation: pageIn var(--dur) var(--ease);
+}
+@keyframes pageIn {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The status bar's strip: frosted, so a page scrolling under the notch stays out of the clock's way. Nothing
+   in a browser tab, where there is no inset. The demo's badge sits in it (web/DemoBadge.module.css). */
+.statusBar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 141;
+  height: var(--phone-top);
+  background: var(--material-bg);
+  -webkit-backdrop-filter: var(--material-filter);
+  backdrop-filter: var(--material-filter);
+  pointer-events: none;
+}
+
+/* Back: the desktop's history pill as one round button, top left, on pages inside a tab. */
+.back {
+  position: fixed;
+  top: calc(var(--phone-top) + 8px);
+  left: 12px;
+  z-index: 140;
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  padding: 0;
+  border: 1px solid var(--separator);
+  border-radius: var(--r-round);
+  background: var(--material-bg);
+  -webkit-backdrop-filter: var(--material-filter);
+  backdrop-filter: var(--material-filter);
+  box-shadow: var(--float-shadow);
+  color: var(--text);
+  cursor: pointer;
+}
+.back:active {
+  background: var(--row-hover);
+}
+
+/* ── Dock: mini player over tab bar ── */
+.dock {
+  position: fixed;
+  left: var(--safe-left);
+  right: var(--safe-right);
+  bottom: 0;
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 8px var(--safe-bottom);
+  /* One sheet of the shell material for both bars: nothing shows sharp between them, and one blur to draw. */
+  border-top: 1px solid var(--separator);
+  border-radius: var(--r-shell) var(--r-shell) 0 0;
+  background: var(--material-bg);
+  -webkit-backdrop-filter: var(--material-filter);
+  backdrop-filter: var(--material-filter);
+  box-shadow: var(--float-shadow);
+}
+/* The keyboard is up: the bars would ride up over the field being typed in, so they step out of the way. */
+:global(:root:has(input:not([type='range'], [type='checkbox'], [type='radio'], [type='file']):focus, textarea:focus))
+  .dock {
+  display: none;
+}
+
+/* ── Mini player ── */
+.mini {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: var(--r-lg);
+  background: var(--surface-hi);
+  overflow: hidden;
+}
+/* The playing artwork's colour washed in from the art, over the dock's material (as on the player bar). */
+.miniTinted {
+  background: linear-gradient(105deg, rgba(var(--bar-tint), 0.22) 0%, rgba(var(--tint), 0.06) 60%);
+}
+.miniOpen {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px 0 8px;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.miniOpen:focus-visible {
+  outline-offset: -2px;
+}
+.miniArt {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-md);
+  object-fit: cover;
+  display: grid;
+  place-items: center;
+  background: var(--bg-2);
+  color: var(--text-3);
+}
+.miniText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.miniTitle,
+.miniArtist {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.miniTitle {
+  font-size: var(--fs-px-lg);
+  font-weight: 600;
+  color: var(--text);
+}
+.miniArtist {
+  font-size: var(--fs-px);
+  color: var(--text-3);
+}
+/* Play/pause: the player bar's inverted disc, 36px, inside a full tap target. */
+.miniBtn {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.miniPlay {
+  position: relative;
+  color: var(--bg);
+}
+.miniPlay::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  border-radius: var(--r-round);
+  background: var(--text);
+}
+.miniPlay > svg {
+  position: relative;
+}
+.miniBtn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.miniTrack {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--track);
+}
+.miniFill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--on-art);
+  transform-origin: left center;
+  transition: transform 1s linear;
+}
+
+/* ── Tab bar ── */
+.tabBar {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  flex-shrink: 0;
+}
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 56px;
+  color: var(--text-3);
+  text-decoration: none;
+  -webkit-user-drag: none;
+}
+.tab:focus-visible {
+  outline-offset: -4px;
+  border-radius: var(--r-md);
+}
+/* Where you are: the desktop nav's lit icon on a tint chip, with the label lit and heavier beneath it. */
+.tabIcon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 28px;
+  border-radius: var(--r-pill);
+  transition:
+    background var(--dur-fast) var(--ease-fast),
+    color var(--dur-fast) var(--ease-fast);
+}
+.tabLabel {
+  font-size: var(--fs-px);
+  font-weight: 500;
+  line-height: 1.2;
+}
+.tabActive {
+  color: var(--on-art);
+}
+.tabActive .tabIcon {
+  background: rgba(var(--tint), 0.16);
+}
+.tabActive .tabLabel {
+  font-weight: 700;
+}
+/* Something is waiting on that page (a poll, an update). */
+.tabDot {
+  position: absolute;
+  top: 2px;
+  right: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-round);
+  background: rgb(var(--attention));
+}
+
+/* ── Search page: the field floats at the top, the results scroll under it ── */
+.searchPage {
+  --nav-h: calc(var(--phone-top) + 48px + 4px);
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  position: relative;
+}
+.searchBar {
+  position: absolute;
+  top: calc(var(--phone-top) + 8px);
+  left: var(--gutter);
+  right: var(--gutter);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 2px 0 14px;
+  border: 1px solid var(--separator);
+  border-radius: var(--r-shell);
+  background: var(--material-bg);
+  -webkit-backdrop-filter: var(--material-filter);
+  backdrop-filter: var(--material-filter);
+  box-shadow: var(--float-shadow);
+}
+/* The input draws no ring of its own, so the pill shows the global focus ring. */
+.searchBar:focus-within {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: -2px;
+}
+.searchIcon {
+  flex-shrink: 0;
+  color: var(--text-3);
+}
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 10px;
+  border: none;
+  outline: none;
+  background: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--fs-px-title);
+}
+.searchInput::placeholder {
+  color: var(--text-3);
+}
+.searchClear {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  padding: 0;
+  border: none;
+  border-radius: var(--r-round);
+  background: none;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.searchClear:active {
+  background: var(--row-hover);
+  color: var(--text);
+}
+
+/* The Queue page's frame: QueueSidebar (variant="page") fills it. */
+.queuePage {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+
+/* Read out, not shown. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .routes {
+    animation: none;
+  }
+  .tabIcon,
+  .miniFill {
+    transition: none;
+  }
+}

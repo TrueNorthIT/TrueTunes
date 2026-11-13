@@ -6,7 +6,7 @@
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: calc(var(--nav-h) + 16px) 28px calc(var(--player-h) + 24px);
+  padding: calc(var(--nav-h) + 16px) var(--gutter) calc(var(--player-h) + 24px);
 }
 
 .page {
@@ -481,4 +481,13 @@
   .standingName {
     transition: none;
   }
+}
+
+/* ── Phone shell and touch (the web app) ── */
+:global(:root[data-shell='phone']) .segment {
+  min-height: var(--tap);
+}
+:global(:root[data-shell='phone']) .face,
+:global(:root[data-shell='phone']) .standingWho {
+  min-height: var(--tap);
 }

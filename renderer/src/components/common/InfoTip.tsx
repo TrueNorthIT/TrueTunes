@@ -64,6 +64,8 @@ export function InfoTip({ label, children, className, icon }: Props) {
         type="button"
         className={[styles.btn, className].filter(Boolean).join(' ')}
         aria-label={label}
+        // The phone shell gives this small button its 44px tap target with an ::after (InfoTip.module.css).
+        data-tap-ok=""
         aria-describedby={open ? id : undefined}
         onClick={(e) => e.stopPropagation()}
         onMouseEnter={() => setHover(true)}

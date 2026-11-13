@@ -16,7 +16,7 @@
 
 /* Every band after the hero: the 28px gutter; the one 1.4em rhythm comes from .panel's gap. */
 .band {
-  margin: 0 28px;
+  margin: 0 var(--gutter);
 }
 
 /* ── Hero: one shape for every artist ──
@@ -78,7 +78,7 @@
 .print {
   position: absolute;
   top: calc(var(--nav-h) + 0.6em);
-  right: 28px;
+  right: var(--gutter);
   width: var(--print);
   height: var(--print);
   border-radius: var(--r-tile);
@@ -115,7 +115,7 @@
 /* Bottom-left in every state, clear of where a print would hang, so the name never reflows when the state settles. */
 .heroText {
   position: absolute;
-  left: 28px;
+  left: var(--gutter);
   right: calc(var(--print) + 56px);
   bottom: 1.6em;
   display: flex;
@@ -604,4 +604,27 @@
   .heroImg {
     transition: none;
   }
+}
+
+/* ── Phone shell and touch (the web app) ── */
+@media (hover: none) {
+  :global(:root[data-platform='web']) .albumAdd {
+    opacity: 1;
+  }
+}
+/* The name takes the full width under a smaller print, so "The Velvet Anchors" is never "The Ve…". */
+:global(:root[data-shell='phone']) .hero {
+  --hero-h: 380px;
+  --print: 8em;
+}
+:global(:root[data-shell='phone']) .heroText {
+  right: var(--gutter);
+}
+:global(:root[data-shell='phone']) .albumOpen {
+  min-height: var(--tap);
+  margin-block: -0.7em;
+}
+:global(:root[data-shell='phone']) .albumAdd {
+  right: 0.1em;
+  bottom: 0.1em;
 }

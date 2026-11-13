@@ -1,14 +1,30 @@
-/* A quiet chip in the corner, above everything, that never takes a tap meant for the app. */
+/*
+ * A quiet chip, above everything, that never takes a tap meant for the app and never sits on a control.
+ * Desktop layout: the bottom-left corner, in the 24px margin under the player bar. Phone shell: centred in a
+ * strip of its own under the status bar, which the shell clears through --demo-inset (see --phone-top in
+ * global.css), so every page, the search field and the back button start below it.
+ */
 .badge {
   position: fixed;
-  top: calc(env(safe-area-inset-top) + 8px);
-  left: calc(env(safe-area-inset-left) + 8px);
+  left: calc(var(--safe-left) + 8px);
+  bottom: calc(var(--safe-bottom) + 2px);
   z-index: 3000;
-  padding: 0.2em 0.8em;
+  padding: 0.1em 0.7em;
   border-radius: var(--r-pill);
   background: rgba(var(--attention), 0.16);
   color: rgb(var(--attention));
   font-size: var(--fs-px);
   font-weight: 600;
+  line-height: 1.3;
   pointer-events: none;
+}
+
+:global(:root[data-demo][data-shell='phone']) {
+  --demo-inset: 26px;
+}
+:global(:root[data-shell='phone']) .badge {
+  top: calc(var(--safe-top) + 3px);
+  bottom: auto;
+  left: 50%;
+  transform: translateX(-50%);
 }

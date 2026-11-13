@@ -178,3 +178,42 @@
     transform: none;
   }
 }
+
+/* Touch on the web: nothing can hover the faces, so the reason line and the + are simply shown. */
+@media (hover: none) {
+  :global(:root[data-platform='web']) .reasonOnHover .top,
+  :global(:root[data-platform='web']) .add {
+    opacity: 1;
+  }
+}
+/* Phone shell: every card is the same wide print, and the reason may take two lines beside the faces. */
+:global(:root[data-shell='phone']) .large,
+:global(:root[data-shell='phone']) .medium {
+  aspect-ratio: 16 / 9;
+  min-height: 0;
+  max-height: none;
+}
+:global(:root[data-shell='phone']) .top {
+  top: 0.9em;
+  left: 1em;
+  align-items: flex-start;
+}
+:global(:root[data-shell='phone']) .reasonOnHover .top {
+  max-width: 54%;
+}
+:global(:root[data-shell='phone']) .label {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: normal;
+  line-height: 1.3;
+}
+:global(:root[data-shell='phone']) .caption {
+  left: 1em;
+  right: 3.6em;
+  bottom: 0.8em;
+}
+:global(:root[data-shell='phone']) .add {
+  right: 0.3em;
+  bottom: 0.3em;
+}

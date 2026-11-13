@@ -6,7 +6,7 @@
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: calc(var(--nav-h) + 16px) 28px calc(var(--player-h) + 24px);
+  padding: calc(var(--nav-h) + 16px) var(--gutter) calc(var(--player-h) + 24px);
 }
 
 .page {
@@ -266,4 +266,31 @@
   .link {
     transition: none;
   }
+}
+
+/* ── Phone shell and touch (the web app) ── */
+/* Who the room is: one row that swipes, each face a full tap target. */
+:global(:root[data-shell='phone']) .faces {
+  flex-wrap: nowrap;
+  gap: 0.2em;
+  margin-right: calc(-1 * var(--gutter));
+  padding-right: var(--gutter);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+:global(:root[data-shell='phone']) .faces::-webkit-scrollbar {
+  display: none;
+}
+:global(:root[data-shell='phone']) .faces > li {
+  flex-shrink: 0;
+}
+:global(:root[data-shell='phone']) .face,
+:global(:root[data-shell='phone']) .more {
+  min-height: var(--tap);
+  height: auto;
+}
+:global(:root[data-shell='phone']) .more {
+  min-width: var(--tap);
+  border-block: 7px solid transparent;
+  background-clip: padding-box;
 }

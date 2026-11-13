@@ -6,7 +6,7 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: calc(var(--nav-h) + 16px) 28px calc(var(--player-h) + 24px);
+  padding: calc(var(--nav-h) + 16px) var(--gutter) calc(var(--player-h) + 24px);
 }
 .page {
   max-width: 2400px;
@@ -220,4 +220,17 @@
   .face {
     transition: none;
   }
+}
+
+/* ── Phone shell and touch (the web app) ── */
+/* Touch: nothing hovers the cover, so "Change image" shows as a strip along its foot. */
+@media (hover: none) {
+  :global(:root[data-platform='web']) .coverEdit {
+    inset: auto 0 0;
+    height: var(--tap);
+    opacity: 1;
+  }
+}
+:global(:root[data-shell='phone']) .face {
+  min-height: var(--tap);
 }

@@ -179,3 +179,26 @@ textarea.input {
     transition: none;
   }
 }
+
+/* The web app: the dynamic viewport, so a phone browser's bars never cover the action row. */
+:global(:root[data-platform='web']) .dialog {
+  max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 32px);
+}
+/* Phone shell: full tap targets, and the padding in step with the page's 16px gutter. */
+:global(:root[data-shell='phone']) .close {
+  width: var(--tap);
+  height: var(--tap);
+  margin-right: -0.4em;
+}
+:global(:root[data-shell='phone']) .head {
+  padding: 0.9em 1.1em 0 1.2em;
+}
+:global(:root[data-shell='phone']) .body {
+  padding: 0.9em 1.2em 1.2em;
+}
+:global(:root[data-shell='phone']) .actions {
+  padding: 0 1.2em 1.2em;
+}
+:global(:root[data-shell='phone']) .input {
+  min-height: var(--tap);
+}

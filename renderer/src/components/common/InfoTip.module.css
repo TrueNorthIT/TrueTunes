@@ -44,3 +44,17 @@
 .tip p + p {
   margin-top: 0.3em;
 }
+
+/* Phone shell: the ⓘ keeps its size and takes a full tap target around it. */
+:global(:root[data-shell='phone']) .btn {
+  position: relative;
+}
+:global(:root[data-shell='phone']) .btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--tap);
+  height: var(--tap);
+  transform: translate(-50%, -50%);
+}

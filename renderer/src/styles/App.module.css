@@ -7,6 +7,10 @@
   background: var(--bg);
 }
 
+:global(:root[data-platform='web']) .shell {
+  height: 100dvh;
+}
+
 /* the routed page */
 .main {
   flex: 1;

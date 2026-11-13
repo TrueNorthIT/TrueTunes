@@ -40,3 +40,12 @@
   object-fit: cover;
   display: block;
 }
+
+/* Phone shell: a full tap target high; the pill is drawn in the padding box, so it keeps its size. */
+:global(:root[data-shell='phone']) .chip {
+  min-height: var(--tap);
+  border-block: 7px solid transparent;
+  background-clip: padding-box;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}

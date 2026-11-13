@@ -6,7 +6,7 @@
   min-width: 0;
   height: 100%;
   overflow: hidden;
-  padding: calc(var(--nav-h) + 16px) 28px calc(var(--player-h) + 24px);
+  padding: calc(var(--nav-h) + 16px) var(--gutter) calc(var(--player-h) + 24px);
   container-type: inline-size;
 }
 
@@ -379,4 +379,15 @@
   .about {
     display: none;
   }
+}
+
+/* ── Phone shell and touch (the web app) ── */
+/* The title, the artist and the album are links: a full tap target each. */
+:global(:root[data-shell='phone']) .link {
+  min-width: var(--tap);
+  min-height: var(--tap);
+}
+:global(:root[data-shell='phone']) .meta {
+  align-items: center;
+  margin-block: -0.5em;
 }

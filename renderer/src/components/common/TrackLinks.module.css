@@ -17,3 +17,19 @@
 .artists {
   min-width: 0;
 }
+
+/* Phone shell: a text link keeps its size on the line and takes a full tap target around it (the ::after), so
+   the layout does not move. In track and chart rows the title's link covers the row instead (rows.module.css). */
+:global(:root[data-shell='phone']) .link {
+  position: relative;
+}
+:global(:root[data-shell='phone']) .link::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  min-width: var(--tap);
+  height: var(--tap);
+  transform: translateY(-50%);
+}

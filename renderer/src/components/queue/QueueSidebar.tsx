@@ -10,7 +10,18 @@ import {
 } from 'react';
 import { defaultRangeExtractor, useVirtualizer, type Range, type Virtualizer } from '@tanstack/react-virtual';
 import { useQueries } from '@tanstack/react-query';
-import { Loader2, Disc3, RotateCw, LocateFixed, ListX } from 'lucide-react';
+import {
+  Loader2,
+  Disc3,
+  RotateCw,
+  LocateFixed,
+  ListX,
+  Play,
+  ListStart,
+  ArrowUp,
+  ArrowDown,
+  Trash2,
+} from 'lucide-react';
 import { applyReorderLocally, expandToAlbumBlock, projectPlayTimes } from '../../lib/queueHelpers';
 import { usePlaybackPosition } from '../../hooks/playbackPosition';
 import { reportTrackMeta } from '../../lib/trackMetaReporter';
@@ -27,6 +38,8 @@ import type { SonosItem } from '../../types/sonos';
 import styles from '../../styles/QueueSidebar.module.css';
 import { useQueueActions } from '../../hooks/useQueueActions';
 import { useEditQueue } from '../../hooks/useQueue';
+import { isWeb } from '../../lib/platform';
+import type { MenuAction } from '../common/ContextMenu';
 
 interface Props {
   items: NormalizedQueueItem[];
@@ -46,8 +59,11 @@ interface Props {
   dockedWidth?: number;
   onResizeWidth?: (width: number) => void;
   onResizeWidthLive?: (width: number) => void;
-  /** 'docked' = resizable sidebar pinned to the right; 'skinny' = full-width panel, no resize. */
-  variant?: 'docked' | 'skinny';
+  /**
+   * 'docked' = resizable sidebar pinned to the right; 'skinny' = full-width panel, no resize; 'page' = the phone
+   * shell's Queue page: the header on top, rows a full tap target high, a tap selects and the row's menu moves it.
+   */
+  variant?: 'docked' | 'skinny' | 'page';
   /** The signed-in display name, so DJ picks can say "You". */
   viewer?: string | null;
   /** DJ autoplay: what's coming once the queue runs dry. */
@@ -177,6 +193,7 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   const playingIdx = currentQueueItemId !== null ? Number(currentQueueItemId) - 1 : -1;
   const grouped = playingIdx >= 0 && playingIdx < items.length;
   const isSkinny = variant === 'skinny';
+  const isPage = variant === 'page';
   // Skinny docks its own Now playing card under the list, so the row here would show the track twice.
   const nowPlayingRow = !isSkinny;
   const showItems = !isLoading && !error;
@@ -304,7 +321,8 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
         for (let i = lo; i <= hi; i++) next.add(i);
         return next;
       });
-    } else if (e.ctrlKey || e.metaKey) {
+    } else if (e.ctrlKey || e.metaKey || isPage) {
+      // A finger has no Ctrl: on the Queue page every tap adds the row to the selection or takes it out.
       setSelected((prev) => {
         const next = new Set(prev);
         if (next.has(index)) next.delete(index);
@@ -402,6 +420,62 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
       });
   }
 
+  /** Move one row so it lands before `target` (an index in the list as it is now), as a drop there would. */
+  function moveRow(from: number, target: number) {
+    const undo = editQueue(applyReorderLocally(items, [from], target));
+    getActiveProvider()
+      .reorderQueue([from], target, items.length)
+      .catch(() => {
+        undo();
+        onRefresh();
+        onError('Failed to reorder queue');
+      });
+  }
+
+  /**
+   * What a row's menu can do to the queue without a drag, a double-click or the Delete key: the touch equivalents
+   * of the desktop's gestures. Web only; the desktop app's menu is unchanged.
+   */
+  function rowActions(index: number): MenuAction[] {
+    const isCurrent = grouped && index === playingIdx;
+    return [
+      {
+        label: 'Play now',
+        icon: Play,
+        disabled: isCurrent,
+        onSelect: () => void getActiveProvider().skipToTrack(index + 1),
+      },
+      {
+        label: 'Play next',
+        icon: ListStart,
+        disabled: !grouped || isCurrent || index === playingIdx + 1,
+        onSelect: () => moveRow(index, playingIdx + 1),
+      },
+      { label: 'Move up', icon: ArrowUp, disabled: index === 0, onSelect: () => moveRow(index, index - 1) },
+      {
+        label: 'Move down',
+        icon: ArrowDown,
+        disabled: index >= items.length - 1,
+        onSelect: () => moveRow(index, index + 2),
+      },
+      {
+        label: 'Remove from queue',
+        icon: Trash2,
+        danger: true,
+        onSelect: () => {
+          const undo = editQueue((prev) => prev.filter((_, i) => i !== index));
+          getActiveProvider()
+            .removeFromQueue([index])
+            .catch(() => {
+              undo();
+              onRefresh();
+              onError('Failed to remove track');
+            });
+        },
+      },
+    ];
+  }
+
   const handleDragEnd = useCallback(() => {
     setDragOverIndex(null);
     draggingSet.current = new Set();
@@ -409,10 +483,12 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
 
   // The handlers close over selection, items and the drop target, so they change every render. The rows are
   // memoised, so they get these stable wrappers, which call the latest handlers.
-  const latest = useRef({ handleRowClick, handleDragStart, handleDragOver, handleDrop });
+  const latest = useRef({ handleRowClick, handleDragStart, handleDragOver, handleDrop, rowActions });
   useLayoutEffect(() => {
-    latest.current = { handleRowClick, handleDragStart, handleDragOver, handleDrop };
+    latest.current = { handleRowClick, handleDragStart, handleDragOver, handleDrop, rowActions };
   });
+  const getRowActions = useCallback((i: number) => latest.current.rowActions(i), []);
+  const web = isWeb();
   const onRowClick = useCallback((i: number, e: React.MouseEvent) => latest.current.handleRowClick(i, e), []);
   const onRowDragStart = useCallback((i: number, e: React.DragEvent) => latest.current.handleDragStart(i, e), []);
   const onRowDragOver = useCallback((i: number, e: React.DragEvent) => latest.current.handleDragOver(i, e), []);
@@ -424,12 +500,16 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
   }
 
   const selCount = selected.size;
-  const sidebarClass = isSkinny ? `${styles.sidebar} ${styles.skinny}` : styles.sidebar;
-  const sidebarStyle = isSkinny ? undefined : { width: liveWidth };
+  const sidebarClass = isPage
+    ? `${styles.sidebar} ${styles.page}`
+    : isSkinny
+      ? `${styles.sidebar} ${styles.skinny}`
+      : styles.sidebar;
+  const sidebarStyle = isSkinny || isPage ? undefined : { width: liveWidth };
 
   return (
     <div className={sidebarClass} style={sidebarStyle}>
-      {!isSkinny && (
+      {!isSkinny && !isPage && (
         <div
           className={styles.resizeHandle}
           onPointerDown={handleResizePointerDown}
@@ -439,14 +519,17 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
           aria-label="Resize queue"
         />
       )}
-      <div className={styles.dockedTopBar}>
-        <div className={styles.winPill}>
-          <WindowControls />
+      {/* The phone shell keeps the poll and the update on its More page, and has no window to control. */}
+      {!isPage && (
+        <div className={styles.dockedTopBar}>
+          <div className={styles.winPill}>
+            <WindowControls />
+          </div>
         </div>
-      </div>
+      )}
       <div className={styles.header}>
         <div className={styles.titleBlock}>
-          <span className={styles.title}>
+          <span className={styles.title} role={isPage ? 'heading' : undefined} aria-level={isPage ? 1 : undefined}>
             Queue
             {items.length > 0 && (
               <span className={styles.count} aria-label={`${items.length} tracks`}>
@@ -582,6 +665,8 @@ export const QueueSidebar = forwardRef<QueueSidebarHandle, Props>(function Queue
                     onDragOver={onRowDragOver}
                     onDrop={onRowDrop}
                     onDragEnd={handleDragEnd}
+                    getActions={web && !readOnly ? getRowActions : undefined}
+                    touch={isPage}
                   />
                 </>
               );

@@ -71,3 +71,11 @@
     transition: none;
   }
 }
+
+/* ── Phone shell and touch (the web app) ── */
+/* Phone shell: a full tap target high; the pill is drawn in the padding box, so it keeps its size. */
+:global(:root[data-shell='phone']) .chip {
+  min-height: var(--tap);
+  border-block: 8px solid transparent;
+  background-clip: padding-box;
+}
