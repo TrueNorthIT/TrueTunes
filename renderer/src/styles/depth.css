@@ -13,7 +13,7 @@
  */
 :root {
   --material-bg: rgba(22, 23, 38, 0.62);
-  --material-bg-dense: rgba(22, 23, 38, 0.88);
+  --material-bg-dense: rgba(22, 23, 38, 0.98);
   --material-filter: blur(30px) saturate(1.8);
   --material-edge: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   /* Floating shadow: nav, player, dropdowns, context menu, toasts, Dialog. */
