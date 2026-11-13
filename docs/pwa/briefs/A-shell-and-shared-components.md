@@ -8,8 +8,8 @@ Read `COMMON.md` in this folder first.
 
 ## You own
 
-- `renderer/src/components/common/**` except `Dialog.tsx` and `Dialog.module.css` (brief F) and `FanBubbles.*`
-  (brief D)
+- `renderer/src/components/common/**` except `Dialog.tsx` and `Dialog.module.css` (brief F), `FanBubbles.*`
+  (brief D) and `HeroBand.*` (brief E)
 - `renderer/src/components/phone/PhoneShell.tsx`, `PhoneMiniPlayer.tsx`, `NowPlayingPage.tsx`, `TabBar.tsx`,
   `PhoneDock.stories.tsx`
 - `renderer/src/styles/PhoneShell.module.css`, `PhoneNowPlaying.module.css`, `ContextMenu.module.css`,

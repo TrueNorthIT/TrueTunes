@@ -24,6 +24,11 @@ All six can run in parallel. If only some are started, the order of value is **A
 defects the owner has already seen, B is the only one that says anything about Safari, F covers the screens nobody
 has looked at at all.
 
+## The owner's feedback
+
+[FEEDBACK.md](FEEDBACK.md) holds what the owner saw on his own iPhone 14, with his screenshots. Each item names the
+brief that owns it; agents read it before their brief.
+
 ## How to start one
 
 Launch a general-purpose agent on Sonnet, in its own worktree, with this prompt (change the letter):
@@ -45,7 +50,7 @@ No file is in two briefs. A file not listed belongs to nobody: an agent that nee
 | `scripts/web/journey.mjs`, `components/queue/**`, `QueueSidebar.module.css` | B |
 | `components/phone/MorePage.*`, `PhoneMore.module.css`, `scripts/web/pwa.mjs` | C |
 | Home, Discover, Leaderboard, `musicStats/**`, `stats/**`, Queuedle stats, `common/FanBubbles.*` | D |
-| Album, Artist, Container, Playlist, Profile, Lyrics, Search | E |
+| Album, Artist, Container, Playlist, Profile, Lyrics, Search, `common/HeroBand.*` | E |
 | `queuedle/**` (except the stats files), `common/Dialog.*`, Feedback, `polls/**` | F |
 
 ## After they report (the coordinator's part)
