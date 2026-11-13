@@ -1,0 +1,26 @@
+/* Web-only diagnostics: plain rows, selectable so they can be copied or screenshotted. */
+.page {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: calc(var(--nav-h) + 16px) var(--gutter) calc(var(--player-h) + 24px);
+  user-select: text;
+  -webkit-user-select: text;
+}
+.title {
+  font-size: var(--fs-headline);
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--text);
+  margin-bottom: 0.8em;
+}
+.list {
+  list-style: none;
+}
+.row {
+  font-size: var(--fs-body);
+  line-height: 1.4;
+  color: var(--text-2);
+  padding: 0.4em 0;
+  overflow-wrap: anywhere;
+}

@@ -697,3 +697,76 @@ describe('usePlayback — progress tick', () => {
     expect(result.current.playback).toBe(before);
   });
 });
+
+describe('usePlayback — partial messages keep what is known', () => {
+  const track = (name: string, durationMillis?: number) => ({
+    currentItem: { track: { name, artist: 'A', durationMillis, id: { objectId: name } } },
+  });
+  const full = (name = 'T', positionMillis = 40000) =>
+    makePayload({
+      playback: {
+        playbackState: 'PLAYBACK_STATE_PLAYING',
+        positionMillis,
+        queueId: 'q1',
+        queueVersion: 'v1',
+        playModes: {},
+      },
+      metadata: track(name, 180000),
+    });
+
+  it('keeps track, duration and progress when a playback-only payload follows, and follows its position', () => {
+    const { result } = renderHook(() => usePlayback('g1'));
+    firePlayback(full());
+    firePlayback({ playback: { playbackState: 'PLAYBACK_STATE_PLAYING', positionMillis: 90000, playModes: {} } });
+    expect(result.current.playback.trackName).toBe('T');
+    expect(result.current.playback.durationMs).toBe(180000);
+    expect(getPlaybackPosition().positionMs).toBe(90000);
+    expect(getPlaybackPosition().timeLabel).toBe('1:30 / 3:00');
+  });
+
+  it('keeps the duration when the same track arrives without one', () => {
+    renderHook(() => usePlayback('g1'));
+    firePlayback(full());
+    firePlayback(makePayload({ metadata: track('T', undefined) }));
+    expect(getPlaybackPosition().durationMs).toBe(180000);
+  });
+
+  it('ignores an empty object', () => {
+    const { result } = renderHook(() => usePlayback('g1'));
+    firePlayback(full());
+    firePlayback({});
+    expect(result.current.playback.isPlaying).toBe(true);
+    expect(result.current.playback.durationMs).toBe(180000);
+    expect(getPlaybackPosition().positionMs).toBe(40000);
+  });
+
+  it('keeps state and position through a metadata-only payload', () => {
+    const { result } = renderHook(() => usePlayback('g1'));
+    firePlayback(full());
+    firePlayback({ metadata: track('T', 180000) });
+    expect(result.current.playback.isPlaying).toBe(true);
+    expect(getPlaybackPosition().positionMs).toBe(40000);
+  });
+
+  it('moves everything to a new track, with no stale duration', () => {
+    const { result } = renderHook(() => usePlayback('g1'));
+    firePlayback(full('A'));
+    firePlayback(makePayload({ metadata: track('B', undefined) }));
+    expect(result.current.playback.trackName).toBe('B');
+    expect(getPlaybackPosition().durationMs).toBe(0);
+    firePlayback(full('C', 5000));
+    expect(getPlaybackPosition().durationMs).toBe(180000);
+    expect(getPlaybackPosition().positionMs).toBe(5000);
+  });
+
+  it('keeps a group cache entry whole when a later partial arrives', () => {
+    const { result } = renderHook(() => usePlayback('g1'));
+    firePlayback(full(), 'g2');
+    firePlayback({}, 'g2');
+    act(() => {
+      result.current.applyGroupCache('g2');
+    });
+    expect(result.current.playback.trackName).toBe('T');
+    expect(getPlaybackPosition().durationMs).toBe(180000);
+  });
+});

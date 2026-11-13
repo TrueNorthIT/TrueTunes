@@ -6,8 +6,10 @@ import type { WebAuth } from './types';
 import type { SonosConfig } from './sonosHttp';
 import type { Store } from './storage';
 import { channel } from './events';
+import { noteFrame, playbackFields, record, setRelayOpen } from './diagnostics';
 
 const PROTOCOL = 'v1.api.smartspeaker.audio';
+const PROBE_MS = 5_000; // the gateway pings every 30 s; a live socket answers a subscribe far sooner
 const OPEN = 1; // WebSocket.OPEN: the injected class need not carry the constant
 export const PREFERRED_KEY = 'tt.preferredCoordinatorId';
 
@@ -66,6 +68,8 @@ export interface SonosSocket {
   setGroup(groupId: string): { ok?: boolean; error?: string };
   refreshPlayback(): void;
   resync(): void;
+  /** The page came back to the foreground (phone unlocked, tab shown): reconnect or refresh, whichever is needed. */
+  wake(): void;
   onReady(cb: () => void): Unsubscribe;
   onGroups(cb: (groups: unknown[]) => void): Unsubscribe;
   onMessage(cb: (header: unknown, payload: unknown) => void): Unsubscribe;
@@ -97,6 +101,8 @@ export function createSonosSocket(o: {
   const messageSubs = new Set<(header: unknown, payload: unknown) => void>();
   /** The last playbackExtended and groupVolume message of the active group, replayed to a late subscriber. */
   const lastMessages = new Map<string, [unknown, unknown]>();
+  /** Groups whose status push has been forwarded on this connection: a later subscribe response must not overwrite it. */
+  const pushedGroups = new Set<string>();
 
   // Keyed by corrId: resolves when the matching response arrives
   const pending = new Map<string, (payload: unknown) => void>();
@@ -124,9 +130,21 @@ export function createSonosSocket(o: {
     });
   }
 
-  function emitMessage(header: Record<string, unknown>, payload: unknown): void {
+  function emitMessage(
+    header: Record<string, unknown>,
+    payload: unknown,
+    source: 'push' | 'response' | 'bootstrap' = 'push'
+  ): void {
     const ns = header['namespace'];
-    if (ns === 'playbackExtended' || ns === 'groupVolume') lastMessages.set(ns, [header, payload]);
+    if (ns === 'playbackExtended') {
+      // The replay keeps the last full status with later partial messages merged into it, not just the last message.
+      const prev = lastMessages.get(ns)?.[1];
+      const merged = prev && payload && typeof payload === 'object' ? { ...prev, ...payload } : payload;
+      lastMessages.set(ns, [header, merged]);
+      record({ at: Date.now(), kind: 'playback', source, has: playbackFields(payload) });
+    } else if (ns === 'groupVolume') {
+      lastMessages.set(ns, [header, payload]);
+    }
     for (const cb of [...messageSubs]) cb(header, payload);
   }
 
@@ -141,6 +159,7 @@ export function createSonosSocket(o: {
     const header: Record<string, unknown> = Object.fromEntries(Object.entries(parsed[0]));
     const payload: unknown = parsed[1];
 
+    noteFrame(Date.now());
     // Resolve a pending command response
     const corrId = header['corrId'];
     if (typeof corrId === 'string') {
@@ -174,7 +193,16 @@ export function createSonosSocket(o: {
     ) {
       return;
     }
-    emitMessage(header, payload);
+    const isResponse = typeof corrId === 'string';
+    if (ns === 'playbackExtended' && typeof msgGroupId === 'string') {
+      if (!isResponse) pushedGroups.add(msgGroupId);
+      else if (pushedGroups.has(msgGroupId) && !playbackFields(payload).state) {
+        // A subscribe response with no status, after a push: older and emptier, so the renderer never sees it.
+        record({ at: Date.now(), kind: 'playback', source: 'skipped', has: playbackFields(payload) });
+        return;
+      }
+    }
+    emitMessage(header, payload, isResponse ? 'response' : 'push');
   }
 
   // ─── Bootstrap ─────────────────────────────────────────────────────────────────
@@ -242,7 +270,14 @@ export function createSonosSocket(o: {
     // The active group's initial playback and volume again: the subscribe responses may have gone by before the
     // app subscribed to messages.
     const activePb = pbSubs.find((r) => r?.groupId === config.groupId);
-    if (activePb?.resp) emitMessage({ namespace: 'playbackExtended', groupId: activePb.groupId }, activePb.resp);
+    // ...but only if no status push for it has arrived since: the response is older, and may be emptier.
+    if (activePb?.resp) {
+      if (pushedGroups.has(activePb.groupId) || !playbackFields(activePb.resp).state) {
+        record({ at: Date.now(), kind: 'playback', source: 'skipped', has: playbackFields(activePb.resp) });
+      } else {
+        emitMessage({ namespace: 'playbackExtended', groupId: activePb.groupId }, activePb.resp, 'bootstrap');
+      }
+    }
     const activeVol = volSubs.find((r) => r?.groupId === config.groupId);
     if (activeVol?.resp) emitMessage({ namespace: 'groupVolume', groupId: activeVol.groupId }, activeVol.resp);
   }
@@ -278,19 +313,30 @@ export function createSonosSocket(o: {
     ws = sock;
     let opened = false;
 
+    record({ at: Date.now(), kind: 'connect' });
     sock.addEventListener('open', () => {
       opened = true;
+      pushedGroups.clear();
+      setRelayOpen(true);
+      noteFrame(Date.now());
+      record({ at: Date.now(), kind: 'open' });
       refreshNext = false;
       reconnectDelay = 1000; // reset backoff on a successful connect
       if (reconnectTimer) {
         clearTimeout(reconnectTimer);
         reconnectTimer = null;
       }
-      runBootstrap().catch(() => sock.close());
+      runBootstrap()
+        .then(() => record({ at: Date.now(), kind: 'bootstrap' }))
+        .catch(() => sock.close());
     });
     sock.addEventListener('message', (e) => handleMessage(e.data));
-    sock.addEventListener('close', () => {
-      if (ws === sock) ws = null;
+    sock.addEventListener('close', (e) => {
+      if (ws === sock) {
+        ws = null;
+        setRelayOpen(false);
+      }
+      record({ at: Date.now(), kind: 'close', code: (e as CloseEvent).code ?? 0 });
       if (!opened) refreshNext = true;
       scheduleReconnect();
     });
@@ -311,7 +357,45 @@ export function createSonosSocket(o: {
     return { ok: true };
   }
 
+  /** Phones drop or silently half-kill the socket in the background: reconnect at once, or prove the open one lives. */
+  function wake(): void {
+    if (stopped) return;
+    record({ at: Date.now(), kind: 'wake' });
+    if (!isOpen()) {
+      reconnectDelay = 1000;
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+      void connect();
+      return;
+    }
+    if (!config.groupId) return; // bootstrap has not finished
+    // The subscribe response doubles as a liveness probe (a browser never sees WebSocket pings): no answer means
+    // the socket is half-open, so drop it and reconnect now. A live one answers with a fresh full status.
+    const sock = ws;
+    let timer: ReturnType<typeof setTimeout>;
+    const dead = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('no answer')), PROBE_MS);
+    });
+    Promise.race([
+      send({ namespace: 'playbackExtended', groupId: config.groupId, command: 'subscribe' }, {}),
+      dead,
+    ])
+      .catch(() => {
+        if (ws !== sock) return;
+        record({ at: Date.now(), kind: 'probe-failed' });
+        ws = null;
+        setRelayOpen(false);
+        sock?.close();
+        reconnectDelay = 1000;
+        void connect();
+      })
+      .finally(() => clearTimeout(timer));
+  }
+
   return {
+    wake,
     start() {
       stopped = false;
       reconnectDelay = 1000;
@@ -355,7 +439,11 @@ export function createSonosSocket(o: {
       messageSubs.add(cb);
       for (const [header, payload] of lastMessages.values()) {
         queueMicrotask(() => {
-          if (messageSubs.has(cb)) cb(header, payload);
+          if (!messageSubs.has(cb)) return;
+          if ((header as Record<string, unknown>)['namespace'] === 'playbackExtended') {
+            record({ at: Date.now(), kind: 'playback', source: 'replay', has: playbackFields(payload) });
+          }
+          cb(header, payload);
         });
       }
       return () => {
