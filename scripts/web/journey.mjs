@@ -128,15 +128,12 @@ const phoneJourney = (name, run) =>
 const transport = (label) => page.locator(`button[aria-label="${label}"]`);
 const expectVisible = (locator, timeout = 8000) => locator.first().waitFor({ state: 'visible', timeout });
 const expectGone = (locator, timeout = 8000) => locator.first().waitFor({ state: 'detached', timeout });
-/** A finger on a phone, the mouse on a desktop. */
-// In WebKit the tap skips Playwright's "stable" wait, which hangs on the queue page there: the wait runs on
-// animation frames and headless WebKit on Windows stops delivering them (measured: a rAF loop ran 1 frame in 2s
-// on the queue page, 7 in 1s elsewhere). Visibility is still asserted by the steps themselves.
-const noStableWait = browser.browserType().name() === 'webkit' ? { force: true } : {};
-const press = (locator, options) => {
-  const o = { ...noStableWait, ...options };
-  return touch ? locator.first().tap(o) : locator.first().click(o);
-};
+/**
+ * A finger on a phone, the mouse on a desktop. { force: true } skips Playwright's "stable" wait: in WebKit that
+ * wait hangs on the queue page, because it runs on animation frames and headless WebKit on Windows stops
+ * delivering them there (measured: a rAF loop ran 1 frame in 2s). The step asserts what it needs itself.
+ */
+const press = (locator, options) => (touch ? locator.first().tap(options) : locator.first().click(options));
 const hash = () => page.evaluate(() => location.hash);
 async function goTo(route) {
   await page.evaluate((r) => {
@@ -428,7 +425,7 @@ await phoneJourney('move a queue row from its menu and see the order change', as
   await press(page.locator(`button[aria-label="More for ${first}"]`), { force: true });
   await expectVisible(page.getByRole('menu'));
   await audit('The row menu (bottom sheet)');
-  await press(menuItem('Move down'));
+  await press(menuItem('Move down'), { force: true });
   await expectGone(page.getByRole('menu'));
   await page.waitForFunction(
     ([a, b]) => {
@@ -439,7 +436,7 @@ await phoneJourney('move a queue row from its menu and see the order change', as
   );
   // And back to the front of the line with Play next.
   await press(page.locator(`button[aria-label="More for ${first}"]`), { force: true });
-  await press(menuItem('Play next'));
+  await press(menuItem('Play next'), { force: true });
   await expectGone(page.getByRole('menu'));
   await page.waitForFunction(
     ([a, b]) => {
