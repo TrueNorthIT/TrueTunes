@@ -321,7 +321,7 @@
 /* Names hold at least 7em; the middle column gives way first. */
 .boardRow {
   display: grid;
-  grid-template-columns: 2em minmax(7em, 1fr) minmax(0, max-content) 5.5em;
+  grid-template-columns: 2em minmax(7em, 1fr) minmax(0, max-content) 4.6em;
   align-items: center;
   column-gap: 0.9em;
   padding: 0.45em 0.6em;
