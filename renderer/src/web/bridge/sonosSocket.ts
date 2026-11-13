@@ -214,8 +214,10 @@ export function createSonosSocket(o: {
     const householdId = households[0]?.id ?? config.householdId;
     config.householdId = householdId;
 
-    // 1b. Discover serviceId/accountId if not known yet
-    await o.discoverServiceCredentials();
+    // 1b. Discover serviceId/accountId if not known yet. It is two slow catalogue calls (about 2.5 s) that the
+    // subscriptions below do not need, so it runs beside them: playback arrives without waiting for it.
+    const discovery = o.discoverServiceCredentials();
+    discovery.catch(() => {}); // awaited before `ready`; this only keeps an early failure from being unhandled
 
     // 2. Subscribe to devices; the immediate push carries the full topology
     const devicesPayload = await new Promise<unknown>((resolve, reject) => {
@@ -264,6 +266,7 @@ export function createSonosSocket(o: {
       ]),
     ]);
 
+    await discovery;
     ready.emit();
     groupsChannel.emit(found);
 
