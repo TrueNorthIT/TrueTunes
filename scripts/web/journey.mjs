@@ -218,7 +218,10 @@ async function scrollQueue(to) {
     },
     to,
     { polling: 150, timeout: 10000 }
-  );
+  ).catch(async (err) => {
+    const sig = await page.evaluate(() => window.__queueSig);
+    throw new Error(`the queue did not settle at its ${to}: ${String(sig).slice(0, 200)}\n${err.message}`);
+  });
 }
 /** The queue rows on screen, top to bottom, by title (each row's ⋯ is named for its track). */
 const queueOrder = () =>
