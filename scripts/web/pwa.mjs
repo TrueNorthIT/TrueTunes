@@ -253,20 +253,25 @@ writeFileSync(
 );
 await startGateway();
 
-await check('on a phone, a waiting version shows as a dot on the More tab (the demo also has a poll waiting) and an Update row on More', async () => {
-  await phone.evaluate(async () => (await navigator.serviceWorker.getRegistration()).update());
-  const more = phone.getByRole('link', { name: /^More, / });
-  await more.waitFor({ timeout: 15000 }).catch(async () => {
-    const tabs = await phone.locator('nav a').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? e.textContent));
-    throw new Error(`no More tab with a waiting update; tabs: ${tabs.join(' | ') || 'none (not the phone shell?)'}`);
-  });
-  assert((await more.locator('[class*="tabDot"]').count()) === 1, 'the More tab has no dot');
-  await more.tap();
-  const update = phone.getByRole('button', { name: /^Update/ });
-  await update.waitFor({ timeout: 5000 });
-  const box = await update.boundingBox();
-  assert(box && box.height >= 44, 'the Update row is under 44px high');
-});
+await check(
+  'on a phone, a waiting version shows as a dot on the More tab (the demo also has a poll waiting) and an Update row on More',
+  async () => {
+    await phone.evaluate(async () => (await navigator.serviceWorker.getRegistration()).update());
+    const more = phone.getByRole('link', { name: /^More, / });
+    await more.waitFor({ timeout: 15000 }).catch(async () => {
+      const tabs = await phone
+        .locator('nav a')
+        .evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? e.textContent));
+      throw new Error(`no More tab with a waiting update; tabs: ${tabs.join(' | ') || 'none (not the phone shell?)'}`);
+    });
+    assert((await more.locator('[class*="tabDot"]').count()) === 1, 'the More tab has no dot');
+    await more.tap();
+    const update = phone.getByRole('button', { name: /^Update/ });
+    await update.waitFor({ timeout: 5000 });
+    const box = await update.boundingBox();
+    assert(box && box.height >= 44, 'the Update row is under 44px high');
+  }
+);
 
 await check('on a phone, tapping the Update row activates the new version and the page comes back on it', async () => {
   await phone.getByRole('button', { name: /^Update/ }).tap();
