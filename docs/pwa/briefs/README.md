@@ -69,6 +69,11 @@ No file is in two briefs. A file not listed belongs to nobody: an agent that nee
 5. One pull request, merge when green, watch the deploy, run the checks and the phone journey against production.
 6. Update `docs/pwa/features.json` and `PROGRESS.md`, then the final report.
 
+## Decisions the owner has made
+
+- **The playback-progress fix (brief G) goes to the desktop app as well as the web** ("Desktop and web for the
+  fix", 13 November). It is the one place these briefs change what Electron does.
+
 ## Decisions waiting for the owner
 
 The previous agent made two trade-offs on the phone that the briefs leave as they are until you say:

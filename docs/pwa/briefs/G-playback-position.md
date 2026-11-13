@@ -114,6 +114,8 @@ reliably fire `focus`; it fires `visibilitychange` and `pageshow`.
 
 ## The desktop
 
+**The owner has approved this for both the desktop and the web** (13 November: "Desktop and web for the fix").
+
 The fix in `usePlayback.ts` and the normaliser changes what the Electron app does in one way: it stops losing the
 time and progress in the same situation, which the owner reports as an occasional bug there too. That is the
 intent. It must change **nothing else** on the desktop: no new subscriptions, no different calls to

@@ -251,6 +251,9 @@ as the whole truth and fills what a message lacks with zeros, so one partial mes
 duration while the track stays on screen; a phone reconnects (and so replays the suspect message) every time the
 app comes back from the background, and does not get the window "focus" refresh that heals the desktop.
 
+**The owner's decision.** Asked whether the Electron app should get the fix as well, since it is in code both
+shells share: "Desktop and web for the fix".
+
 **Ownership.** Brief G.
 
 ---
