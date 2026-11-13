@@ -102,7 +102,7 @@ export function useSwipeDismiss(
   ref: RefObject<HTMLElement | null>,
   onDismiss: () => void,
   enabled = true,
-  controls?: string,
+  controls?: string
 ) {
   // The latest callback, so a re-render in the middle of a drag does not drop the gesture.
   const latest = useRef(onDismiss);

@@ -288,10 +288,22 @@ export function NowPlayingPage({ isAuthed, playback, np, onShuffle }: Props) {
             <Heart size={20} fill={isFavourited ? 'currentColor' : 'none'} aria-hidden="true" />
           </button>
         )}
-        <button type="button" className={styles.tool} onClick={() => void navigate('/lyrics')} aria-label="Lyrics" title="Lyrics">
+        <button
+          type="button"
+          className={styles.tool}
+          onClick={() => void navigate('/lyrics')}
+          aria-label="Lyrics"
+          title="Lyrics"
+        >
           <MicVocal size={20} aria-hidden="true" />
         </button>
-        <button type="button" className={styles.tool} onClick={() => void navigate('/queue')} aria-label="Queue" title="Queue">
+        <button
+          type="button"
+          className={styles.tool}
+          onClick={() => void navigate('/queue')}
+          aria-label="Queue"
+          title="Queue"
+        >
           <ListMusic size={20} aria-hidden="true" />
         </button>
       </div>
