@@ -191,13 +191,32 @@ the same thing on story shelf" (his other PWA on the same design system). iOS dr
 status bar over a home-screen web app's content, and it reaches a little below the top safe area. We cannot remove
 it or restyle it; we can only keep our content clear of it at rest.
 
-**Coordinator's reading.** The fix is the small one he asked for: start the page's content a little lower, on
-every page of the phone shell, so that at rest nothing sits in the soft band. "A tickle" is of the order of 8 to
-12px, not a new header. Do it in one place (the phone shell's top offset in `global.css`, as its own named token so
+**The number, from Storyshelf.** The owner pasted what Storyshelf settled on, measured on this same phone:
+
+> It's the status bar height plus 24px, which is 71px on your iPhone (47px status bar).
+>
+> Your phone's /debug/edge page showed iOS softening content down to about 60px, and it was fully sharp by 80px.
+> The extra 24px only applies in the installed app on iOS; everywhere else the offset is just the status bar
+> height. It's defined once as --safe-top in apps/web/src/app.css.
+>
+> The 24px is a fixed amount measured on your phone only, so the total will differ on iPhones with a taller status
+> bar (59px on Dynamic Island models gives 83px).
+
+So: **the top safe area plus 24px, in the installed app on iOS only; the safe area alone everywhere else.** Use
+that, not a guess. In our terms: `--safe-top` stays the raw inset (other rules rely on it meaning that), and the
+phone shell's top offset (`--phone-top` in `global.css`) gains a named extra, 24px, that is non-zero only when
+the app is running installed on iOS: `@media (display-mode: standalone)` together with an iOS-only test (for
+example `@supports (-webkit-touch-callout: none)`). In Safari with its own bars, in other browsers and in `/demo`
+on a desktop it stays 0. Name the token in DESIGN.md with where the 24px came from.
+
+**Coordinator's reading.** Start the page's content that much lower, on every page of the phone shell, so that at
+rest nothing sits in the soft band. Do it in one place (the phone shell's top offset in `global.css`, as its own named token so
 it can be tuned), not per page, and then check every way a page starts: a plain title (Discover, Queue, More),
 Home's greeting, the search field, pages with a Back button, pages whose hero runs up under the strip (Artist,
 Profile, and the Album hero once item 1 makes it full bleed: those are meant to go under it, so the offset applies
 to their text and buttons, not their art), the Now playing page's close button, and the Demo strip in `/demo`.
+To check it without a phone, simulate it: a story or journey flag that sets the inset to 47px and switches the
+extra on, and a screenshot showing the first line of each page at or below 71px.
 
 Two things follow from it being the system's:
 
