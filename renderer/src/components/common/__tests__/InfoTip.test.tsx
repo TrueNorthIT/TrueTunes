@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { InfoTip } from '../InfoTip';
 
@@ -123,5 +123,17 @@ describe('InfoTip', () => {
       container.querySelector('.my-tip'),
       'Expected className to be applied to an element in the InfoTip'
     ).not.toBeNull();
+  });
+
+  it('a touch tap opens it, a tap elsewhere closes it, and a mouse click does not pin it', () => {
+    const { button } = setup();
+    fireEvent.pointerDown(button, { pointerType: 'touch' });
+    fireEvent.click(button, { detail: 1 });
+    expect(screen.queryByRole('tooltip'), 'Expected a tap to open the tip').not.toBeNull();
+    fireEvent.pointerDown(document.body, { pointerType: 'touch' });
+    expect(screen.queryByRole('tooltip'), 'Expected a tap elsewhere to close it').toBeNull();
+    fireEvent.pointerDown(button, { pointerType: 'mouse' });
+    fireEvent.click(button, { detail: 1 });
+    expect(screen.queryByRole('tooltip'), 'Expected a mouse click alone not to pin the tip').toBeNull();
   });
 });

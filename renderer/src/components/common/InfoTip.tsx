@@ -18,7 +18,8 @@ const GAP = 8;
 const MARGIN = 8;
 
 /**
- * A small info button with a tooltip: shown on hover and focus, hidden on leave, blur and Escape.
+ * A small info button with a tooltip: shown on hover and focus, hidden on leave, blur and Escape. A touch tap opens
+ * it and stays open until the next tap, on the button or anywhere else (a finger has no hover).
  * The tooltip is portalled to the body with fixed placement, so a card's `overflow: hidden` can't clip it
  * and it is kept on screen. Clicks stop here, so it never opens the card it sits on.
  */
@@ -28,13 +29,28 @@ export function InfoTip({ label, children, className, icon }: Props) {
   const tip = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  /** Set when a finger goes down: whether the tip was already open (the emulated hover a tap sends would hide that). */
+  const touch = useRef<{ wasOpen: boolean } | null>(null);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
-  const open = hover || focus;
+  const open = hover || focus || pinned;
 
   const hide = useCallback(() => {
     setHover(false);
     setFocus(false);
+    setPinned(false);
   }, []);
+
+  // Pinned by a tap: a tap anywhere else closes it.
+  useEffect(() => {
+    if (!pinned) return;
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (!btn.current?.contains(t) && !tip.current?.contains(t)) hide();
+    };
+    document.addEventListener('pointerdown', onDown, true);
+    return () => document.removeEventListener('pointerdown', onDown, true);
+  }, [pinned, hide]);
 
   // Escape works wherever focus is, including after a hover-open.
   useEffect(() => {
@@ -67,7 +83,18 @@ export function InfoTip({ label, children, className, icon }: Props) {
         // The phone shell gives this small button its 44px tap target with an ::after (InfoTip.module.css).
         data-tap-ok=""
         aria-describedby={open ? id : undefined}
-        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => {
+          touch.current = e.pointerType === 'mouse' ? null : { wasOpen: open };
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          // detail is 0 for a keyboard click; a touch tap toggles. A mouse click does what hover already did.
+          if (touch.current && e.detail > 0) {
+            if (touch.current.wasOpen) hide();
+            else setPinned(true);
+          }
+          touch.current = null;
+        }}
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
         onFocus={() => setFocus(true)}

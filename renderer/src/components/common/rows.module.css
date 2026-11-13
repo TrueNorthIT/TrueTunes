@@ -358,8 +358,9 @@
 }
 
 /* ── Touch (the web app) ── */
-/* ⋯ : the row's menu as a button. Only where there is no hover to right-click from. */
-.more {
+/* ⋯ : the row's menu as a button. Only where there is no hover to right-click from. The extra :root keeps this
+   above MoreButton.module.css's own `.more { display: grid }` whichever sheet the bundler writes first. */
+:global(:root) .more {
   display: none;
 }
 @media (hover: none) {
@@ -423,9 +424,10 @@
   position: relative;
   z-index: 1;
 }
-/* The + and the ⋯ share the row's end: two full targets side by side, their glyphs 44px apart. */
+/* The + and the ⋯ share the row's end as a pair: each target stays 44px, but they overlap by 10px, so the glyphs
+   sit 34px apart instead of 44 (the ⋯ is on top where they meet). */
 :global(:root[data-shell='phone']) .add + .more {
-  margin-left: -0.75em;
+  margin-left: -10px;
 }
 /* A row with art needs no number, and who added it and the × move into the row's menu ("View X's profile",
    "Remove from playlist"): the title keeps the room. */
@@ -440,7 +442,7 @@
 /* Chart rows: rank, art, title over artist, the count, then the two buttons. The title cell's box dissolves so
    the art and the title sit on the row's own grid, and the artist can go under the title. */
 :global(:root[data-shell='phone']) .chart {
-  grid-template-columns: 1.5em 3.2em minmax(0, 1fr) auto var(--tap) var(--tap);
+  grid-template-columns: 1.5em 3.2em minmax(0, 1fr) auto auto auto;
   grid-template-rows: 1fr 1fr;
   column-gap: 0;
   min-height: calc(var(--tap) + 0.9em);
@@ -478,11 +480,13 @@
   padding-right: 0.3em;
   font-size: var(--fs-label);
 }
-:global(:root[data-shell='phone']) .chart .add,
-:global(:root[data-shell='phone']) .chart .addSpacer {
+:global(:root[data-shell='phone']) .chart .add {
   grid-column: 5;
+}
+/* A button that is not there takes no column: the spacer has no job on a phone, and the last two columns are auto. */
+:global(:root[data-shell='phone']) .chart .addSpacer {
+  display: none;
 }
 :global(:root[data-shell='phone']) .chart .more {
   grid-column: 6;
-  margin-left: 0;
 }
