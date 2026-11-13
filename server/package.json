@@ -15,11 +15,11 @@
     "start:gateway": "node dist/gateway/main.js"
   },
   "dependencies": {
-    "@azure/cosmos": "^4.10.1",
+    "@azure/cosmos": "^4.10.2",
     "@azure/functions": "^4.17.0",
     "@azure/storage-blob": "^12.34.0",
     "@azure/web-pubsub": "^1.1.3",
-    "jose": "^6.2.15",
+    "jose": "^6.2.17",
     "ws": "^8.22.2"
   },
   "devDependencies": {
