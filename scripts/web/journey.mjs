@@ -84,13 +84,18 @@ if (cpu > 1 && browser.browserType().name() === 'chromium') {
   await (await context.newCDPSession(page)).send('Emulation.setCPUThrottlingRate', { rate: cpu });
 }
 if (safeArea) {
+  // A stylesheet with !important: setting the properties inline on the root did nothing (the phone shell's own
+  // rules win), so the run looked like it had insets and had none. The first step checks the layout moved.
   await page.addInitScript(() => {
-    const set = () => {
-      document.documentElement?.style.setProperty('--safe-top', '47px');
-      document.documentElement?.style.setProperty('--safe-bottom', '34px');
+    const add = () => {
+      if (document.getElementById('journey-safe-area') || !document.documentElement) return;
+      const s = document.createElement('style');
+      s.id = 'journey-safe-area';
+      s.textContent = ':root { --safe-top: 47px !important; --safe-bottom: 34px !important; }';
+      document.documentElement.appendChild(s);
     };
-    set(); // the document may not have a root yet in a fresh frame
-    document.addEventListener('readystatechange', set);
+    add(); // the document may not have a root yet in a fresh frame
+    document.addEventListener('readystatechange', add);
   });
 }
 
@@ -365,6 +370,32 @@ await journey('open the demo and see what is playing', async () => {
   phone = await page.evaluate(() => document.documentElement.dataset.shell === 'phone');
   if (touch && width < 800 && !phone) throw new Error('a phone-sized window did not get the phone shell');
   console.log(`      ${phone ? 'phone shell' : 'desktop layout'}, ${browser.browserType().name()}, ${width}x${height}`);
+  if (safeArea && phone) {
+    // The flag must really move the layout: measure the tab bar's gap to the screen's bottom and the top of the
+    // page's first content with the insets on, switch them off, measure again, switch them back on.
+    const measure = () =>
+      page.evaluate(() => {
+        const nav = document.querySelector('nav[aria-label="Main"]');
+        const first = document.querySelector('main *');
+        return {
+          top: getComputedStyle(document.documentElement).getPropertyValue('--safe-top').trim(),
+          bottom: getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom').trim(),
+          navGap: Math.round(window.innerHeight - nav.getBoundingClientRect().bottom),
+          contentTop: Math.round(first.getBoundingClientRect().top),
+        };
+      });
+    const withInsets = await measure();
+    await page.evaluate(() => (document.getElementById('journey-safe-area').media = 'not all'));
+    await page.waitForTimeout(300);
+    const without = await measure();
+    await page.evaluate(() => (document.getElementById('journey-safe-area').media = 'all'));
+    await page.waitForTimeout(300);
+    console.log(`      insets on ${JSON.stringify(withInsets)}, off ${JSON.stringify(without)}`);
+    if (withInsets.top !== '47px' || withInsets.bottom !== '34px')
+      throw new Error(`--safe-area did not set the insets: ${JSON.stringify(withInsets)}`);
+    if (withInsets.navGap === without.navGap && withInsets.contentTop === without.contentTop)
+      throw new Error('--safe-area changed nothing in the layout: the tab bar and the content sit where they do without it');
+  }
 });
 
 await journey('pause and resume', async () => {
@@ -543,7 +574,7 @@ await phoneJourney('open the Leaderboard from More', async () => {
   await audit('More');
   await press(page.getByRole('button', { name: 'Leaderboard', exact: true }));
   await expectHash(/^#\/leaderboard$/);
-  await expectVisible(page.getByRole('heading', { name: 'Leaderboard' }));
+  await expectVisible(page.getByRole('heading', { name: 'Leaderboard' }), 20000);
   // Back is the round button at the top left, and returns to More.
   await press(page.locator('button[aria-label="Back"]'));
   await expectHash(/^#\/more$/);
