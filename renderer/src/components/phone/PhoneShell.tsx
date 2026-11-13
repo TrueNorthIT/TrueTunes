@@ -129,13 +129,26 @@ export function PhoneShell({
   const playerOpen = pathname === '/now-playing';
   const canGoBack = ((window.history.state as { idx?: number } | null)?.idx ?? 0) > 0;
   const showBack = !isTabRoot(pathname) && !playerOpen;
+  // The page the back strip was last asked for on: it is there only once that page has scrolled under it.
+  const [scrolledOn, setScrolledOn] = useState<string | null>(null);
+  const scrolled = scrolledOn === pathname;
   const moreWaiting = polls.current ? 'a poll is waiting' : updateVersion ? 'an update is ready' : null;
 
   return (
     <div className={styles.shell}>
       <AmbientBackdrop nowPlayingArt={playback.artUrl} />
       <div className={styles.statusBar} aria-hidden="true" />
-      <div className={styles.page} data-back={showBack ? '' : undefined}>
+      <div
+        className={styles.page}
+        data-back={showBack ? '' : undefined}
+        onScrollCapture={(e) => {
+          const el = e.target as HTMLElement;
+          if (el.scrollHeight <= el.clientHeight) return; // a sideways shelf, not the page
+          const on = el.scrollTop > 8;
+          if (on !== (scrolledOn === pathname)) setScrolledOn(on ? pathname : null);
+        }}
+      >
+        {showBack && <div className={styles.backStrip} data-on={scrolled ? '' : undefined} aria-hidden="true" />}
         {showBack && (
           <button
             type="button"

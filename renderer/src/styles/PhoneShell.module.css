@@ -48,6 +48,27 @@
   pointer-events: none;
 }
 
+/* Behind Back: a strip of the dense material that fades in once the page has scrolled, so content never shows
+   around the button or covers a hero's pill. At rest there is none, so a hero can still run up under the top. */
+.backStrip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 139;
+  height: calc(var(--phone-top) + var(--tap) + 8px);
+  border-bottom: 1px solid var(--separator);
+  background: var(--material-bg-dense);
+  -webkit-backdrop-filter: var(--material-filter);
+  backdrop-filter: var(--material-filter);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease-fast);
+}
+.backStrip[data-on] {
+  opacity: 1;
+}
+
 /* Back: the desktop's history pill as one round button, top left, on pages inside a tab. */
 .back {
   position: fixed;
@@ -362,6 +383,7 @@
     animation: none;
   }
   .tabIcon,
+  .backStrip,
   .miniFill {
     transition: none;
   }

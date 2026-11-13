@@ -424,10 +424,13 @@
   position: relative;
   z-index: 1;
 }
-/* The + and the ⋯ share the row's end as a pair: each target stays 44px, but they overlap by 10px, so the glyphs
-   sit 34px apart instead of 44 (the ⋯ is on top where they meet). */
+/* The + and the ⋯ share the row's end as a pair: each target stays 44px, but they overlap by 10px (past the row's
+   own gap), so the glyphs sit 34px apart instead of 44 (the ⋯ is on top where they meet). */
 :global(:root[data-shell='phone']) .add + .more {
-  margin-left: -10px;
+  margin-left: calc(-0.75em - 10px);
+}
+:global(:root[data-shell='phone']) .chart .add + .more {
+  margin-left: -10px; /* a chart row's grid has no gap */
 }
 /* A row with art needs no number, and who added it and the × move into the row's menu ("View X's profile",
    "Remove from playlist"): the title keeps the room. */
