@@ -196,6 +196,7 @@ async function queueCount() {
 }
 /** The queue's list is virtual: bring its end (or its start) into the window. */
 async function scrollQueue(to) {
+  await page.locator('[data-index]').first().waitFor({ state: 'attached', timeout: 10000 }); // the page may still be opening
   // The scroller is found from any mounted row (the playing row itself is unmounted while the list is scrolled away
   // from it), and the step then waits for the virtual list to catch up: it re-renders its window a moment after
   // the scroll (about 400ms with the CPU slowed 6x), and a script that reads rows before that finds none.
@@ -276,11 +277,14 @@ async function touchDrag(from, dy, ms) {
   await page.evaluate(
     async ({ x, y, dy, ms, steps }) => {
       const target = document.elementFromPoint(x, y);
-      const touch = (yy) => new Touch({ identifier: 1, target, clientX: x, clientY: yy, pageX: x, pageY: yy });
-      const send = (type, yy, list = true) =>
-        target.dispatchEvent(
-          new TouchEvent(type, { bubbles: true, cancelable: true, touches: list ? [touch(yy)] : [], changedTouches: [touch(yy)] })
-        );
+      // WebKit on desktop has no Touch constructor: a plain event carrying the fields the gesture reads.
+      const touch = (yy) => ({ identifier: 1, target, clientX: x, clientY: yy, pageX: x, pageY: yy });
+      const send = (type, yy, list = true) => {
+        const e = new Event(type, { bubbles: true, cancelable: true });
+        Object.defineProperty(e, 'touches', { value: list ? [touch(yy)] : [] });
+        Object.defineProperty(e, 'changedTouches', { value: [touch(yy)] });
+        target.dispatchEvent(e);
+      };
       send('touchstart', y);
       for (let i = 1; i <= steps; i++) {
         await new Promise((r) => setTimeout(r, ms / steps));
