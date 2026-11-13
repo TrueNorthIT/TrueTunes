@@ -52,3 +52,9 @@
   text-overflow: ellipsis;
   font-variant-numeric: tabular-nums;
 }
+
+/* ── Phone shell and touch (the web app) ── */
+:global(:root[data-shell='phone']) .row {
+  grid-template-columns: var(--rank-col) minmax(4em, 8em) minmax(2em, 1fr) auto minmax(0, max-content);
+  column-gap: 0.5em;
+}

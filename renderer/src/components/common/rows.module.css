@@ -427,17 +427,12 @@
 :global(:root[data-shell='phone']) .add + .more {
   margin-left: -0.75em;
 }
-:global(:root[data-shell='phone']) .who {
-  display: grid;
-  place-items: center;
-  width: var(--tap);
-  height: var(--tap);
-  margin: 0 -0.5em;
-}
+/* A row with art needs no number, and who added it and the × move into the row's menu ("View X's profile",
+   "Remove from playlist"): the title keeps the room. */
+:global(:root[data-shell='phone']) .lead:has(+ .artBtn),
+:global(:root[data-shell='phone']) .who,
 :global(:root[data-shell='phone']) .remove {
-  width: var(--tap);
-  height: var(--tap);
-  margin-left: -0.75em;
+  display: none;
 }
 :global(:root[data-shell='phone']) .track.withHandle {
   padding-left: 0.45em;

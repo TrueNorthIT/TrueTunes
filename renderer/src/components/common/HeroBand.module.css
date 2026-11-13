@@ -83,3 +83,13 @@
     align-items: flex-start;
   }
 }
+
+/* ── Phone shell and touch (the web app) ── */
+/* Phone shell: the corner chip joins the column under the art instead of lying over it. */
+:global(:root[data-shell='phone']) .corner {
+  position: static;
+  order: 2;
+}
+:global(:root[data-shell='phone']) .meta {
+  order: 3;
+}

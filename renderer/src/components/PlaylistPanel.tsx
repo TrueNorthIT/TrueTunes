@@ -18,6 +18,9 @@ import { UserAvatar } from './common/UserAvatar';
 import { getPlaylistColor } from '../lib/playlistColor';
 import type { SonosItem } from '../types/sonos';
 import styles from '../styles/PlaylistPanel.module.css';
+import { ArrowDown, ArrowUp, Trash2 } from 'lucide-react';
+import { isWeb } from '../lib/platform';
+import type { MenuAction } from './common/ContextMenu';
 import { useDisplayName } from '../hooks/useDisplayName';
 import { useQueueActions } from '../hooks/useQueueActions';
 
@@ -150,14 +153,10 @@ export function PlaylistPanel() {
     if (index !== dragSrcIndex.current) setDragOverIndex(index);
   }, []);
 
-  const handleDrop = useCallback(
-    async (index: number, e: React.DragEvent) => {
-      e.preventDefault();
-      const raw = e.dataTransfer.getData('application/playlist-track-index');
-      setDragOverIndex(null);
-      if (!raw || !playlist || !id) return;
-      const from = parseInt(raw, 10);
-      if (from === index) return;
+  /** Move the track at `from` to position `index`: a drop, or the row menu's Move up and Move down. */
+  const moveTrack = useCallback(
+    async (from: number, index: number) => {
+      if (!playlist || !id || from === index) return;
       const snapshot = playlist;
       const newTracks = [...playlist.tracks];
       const [moved] = newTracks.splice(from, 1);
@@ -172,8 +171,50 @@ export function PlaylistPanel() {
         showToast('Failed to reorder tracks');
       }
     },
-    [playlist, id, queryClient, displayName]
+    [playlist, id, queryClient, displayName, showToast]
   );
+
+  const handleDrop = useCallback(
+    async (index: number, e: React.DragEvent) => {
+      e.preventDefault();
+      const raw = e.dataTransfer.getData('application/playlist-track-index');
+      setDragOverIndex(null);
+      if (!raw) return;
+      await moveTrack(parseInt(raw, 10), index);
+    },
+    [moveTrack]
+  );
+
+  /**
+   * What the row's menu can do without a drag or a hover: the touch equivalents of dragging a row and of the
+   * hover-revealed ×. Web only; the desktop app's menu is unchanged.
+   */
+  const rowActions = (index: number, uri: string): MenuAction[] | undefined => {
+    if (!isWeb() || !playlist) return undefined;
+    return [
+      ...(canReorder
+        ? [
+            { label: 'Move up', icon: ArrowUp, disabled: index === 0, onSelect: () => void moveTrack(index, index - 1) },
+            {
+              label: 'Move down',
+              icon: ArrowDown,
+              disabled: index >= playlist.tracks.length - 1,
+              onSelect: () => void moveTrack(index, index + 1),
+            },
+          ]
+        : []),
+      ...(isOwner
+        ? [
+            {
+              label: 'Remove from playlist',
+              icon: Trash2,
+              danger: true,
+              onSelect: () => void handleRemoveTrack(uri, index),
+            },
+          ]
+        : []),
+    ];
+  };
 
   const handleDragEnd = useCallback(() => {
     setDragOverIndex(null);
@@ -482,7 +523,9 @@ export function PlaylistPanel() {
                     imageByUser={imageByUser}
                     onAdd={() => void onAddToQueue(trackToSonosItem(t), -1)}
                     onRemove={() => void handleRemoveTrack(t.uri, i)}
-                    onContextMenu={(e) => showTrackMenu({ track: t, sonosItem: trackToSonosItem(t) }, e)}
+                    onContextMenu={(e) =>
+                      showTrackMenu({ track: t, sonosItem: trackToSonosItem(t), actions: rowActions(i, t.uri) }, e)
+                    }
                     onDragStart={(e) => handleDragStart(i, e)}
                     onDragOver={(e) => handleDragOver(i, e)}
                     onDrop={(e) => void handleDrop(i, e)}

@@ -1506,3 +1506,8 @@ button.side:disabled {
     animation: none;
   }
 }
+
+/* ── Phone shell and touch (the web app) ── */
+:global(:root[data-shell='phone']) .segment {
+  min-height: var(--tap);
+}

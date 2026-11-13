@@ -380,3 +380,14 @@
     display: none;
   }
 }
+
+/* ── Phone shell and touch (the web app) ── */
+/* The title, the artist and the album are links: a full tap target each. */
+:global(:root[data-shell='phone']) .link {
+  min-width: var(--tap);
+  min-height: var(--tap);
+}
+:global(:root[data-shell='phone']) .meta {
+  align-items: center;
+  margin-block: -0.5em;
+}

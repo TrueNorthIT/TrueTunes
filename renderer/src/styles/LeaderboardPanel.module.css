@@ -482,3 +482,12 @@
     transition: none;
   }
 }
+
+/* ── Phone shell and touch (the web app) ── */
+:global(:root[data-shell='phone']) .segment {
+  min-height: var(--tap);
+}
+:global(:root[data-shell='phone']) .face,
+:global(:root[data-shell='phone']) .standingWho {
+  min-height: var(--tap);
+}

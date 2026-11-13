@@ -605,3 +605,26 @@
     transition: none;
   }
 }
+
+/* ── Phone shell and touch (the web app) ── */
+@media (hover: none) {
+  :global(:root[data-platform='web']) .albumAdd {
+    opacity: 1;
+  }
+}
+/* The name takes the full width under a smaller print, so "The Velvet Anchors" is never "The Ve…". */
+:global(:root[data-shell='phone']) .hero {
+  --hero-h: 380px;
+  --print: 8em;
+}
+:global(:root[data-shell='phone']) .heroText {
+  right: var(--gutter);
+}
+:global(:root[data-shell='phone']) .albumOpen {
+  min-height: var(--tap);
+  margin-block: -0.7em;
+}
+:global(:root[data-shell='phone']) .albumAdd {
+  right: 0.1em;
+  bottom: 0.1em;
+}

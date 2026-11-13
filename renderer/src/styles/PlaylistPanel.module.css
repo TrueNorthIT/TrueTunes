@@ -221,3 +221,16 @@
     transition: none;
   }
 }
+
+/* ── Phone shell and touch (the web app) ── */
+/* Touch: nothing hovers the cover, so "Change image" shows as a strip along its foot. */
+@media (hover: none) {
+  :global(:root[data-platform='web']) .coverEdit {
+    inset: auto 0 0;
+    height: var(--tap);
+    opacity: 1;
+  }
+}
+:global(:root[data-shell='phone']) .face {
+  min-height: var(--tap);
+}

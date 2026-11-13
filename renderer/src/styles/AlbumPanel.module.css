@@ -174,3 +174,10 @@
   grid-template-columns: repeat(auto-fill, minmax(8.5em, 1fr));
   gap: 1.2em 1em;
 }
+
+/* ── Phone shell and touch (the web app) ── */
+:global(:root[data-shell='phone']) .link {
+  min-width: var(--tap);
+  min-height: var(--tap);
+  margin-block: -0.75em;
+}

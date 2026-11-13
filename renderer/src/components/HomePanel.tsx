@@ -424,6 +424,8 @@ function NowPlayingBand({
             type="button"
             className={styles.lyricsLink}
             onClick={openLyrics}
+            // Its ::after covers the whole lyrics box, which is the tap target (the journey's check measures the label).
+            data-tap-ok=""
             aria-label="Lyrics, open full lyrics"
           >
             <span className={styles.nowLabel}>Lyrics</span>

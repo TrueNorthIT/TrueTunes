@@ -145,7 +145,7 @@
 :global(:root[data-shell='phone']) .searchBox {
   flex: 1;
   width: auto;
-  height: var(--tap);
+  height: calc(var(--tap) + 2px);
   padding: 0 4px 0 16px;
 }
 :global(:root[data-shell='phone']) .searchInput {
