@@ -189,6 +189,8 @@
 /* Phone shell: every card is the same wide print, and the reason may take two lines beside the faces. */
 :global(:root[data-shell='phone']) .large,
 :global(:root[data-shell='phone']) .medium {
+  /* a width of its own: WebKit sizes a stretched grid item with an aspect ratio from its (empty) height */
+  width: 100%;
   aspect-ratio: 16 / 9;
   min-height: 0;
   max-height: none;

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
-import { ChartTooltip } from './ChartTooltip';
+import { ChartTooltip, clearUnlessTouch, useDismissOnOutsideTap } from './ChartTooltip';
 import type { Tip } from './ChartTooltip';
 import { RAMP } from './ramp';
 import styles from './Heatmap.module.css';
@@ -53,6 +53,8 @@ export function Heatmap({
     if (el && startAtEnd) el.scrollLeft = el.scrollWidth;
   }, [startAtEnd, columns.length]);
 
+  useDismissOnOutsideTap(wrapRef, tip !== null, () => setTip(null));
+
   function show(e: React.PointerEvent, r: number, c: number) {
     const wrap = wrapRef.current?.getBoundingClientRect();
     const cell = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -68,7 +70,7 @@ export function Heatmap({
     <div
       ref={wrapRef}
       className={[styles.frame, className].filter(Boolean).join(' ')}
-      onPointerLeave={() => setTip(null)}
+      onPointerLeave={clearUnlessTouch(() => setTip(null))}
     >
       <div
         className={styles.body}

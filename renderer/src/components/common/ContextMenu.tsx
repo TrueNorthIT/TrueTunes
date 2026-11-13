@@ -12,6 +12,7 @@ import { PillButton } from './PillButton';
 import type { SonosItem } from '../../types/sonos';
 import { isPhoneShell, isWeb } from '../../lib/platform';
 import { installLongPress } from '../../lib/longPress';
+import { useSwipeDismiss } from '../../lib/swipeDismiss';
 import dialog from './Dialog.module.css';
 import styles from '../../styles/ContextMenu.module.css';
 
@@ -222,6 +223,8 @@ export function ContextMenuProvider({ children }: ProviderProps) {
 
   // A finger held still is a right-click (iOS Safari sends no contextmenu of its own). Web only.
   useEffect(() => (isWeb() ? installLongPress() : undefined), []);
+  // The sheet goes with a downward swipe (a field in it, if one ever appears, is left alone).
+  useSwipeDismiss(menuRef, close, menuState.open && menuState.sheet, 'input, [data-no-swipe]');
 
   useEffect(() => {
     if (!menuState.open) return;

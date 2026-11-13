@@ -1,4 +1,6 @@
-import type { ReactNode } from 'react';
+import { useEffect } from 'react';
+import type { PointerEvent, ReactNode, RefObject } from 'react';
+import { isWeb } from '../../lib/platform';
 import styles from './ChartTooltip.module.css';
 
 export interface Tip {
@@ -28,4 +30,23 @@ export function TipRow({ name, value, swatch }: { name: ReactNode; value?: React
       {value !== undefined && <span className={styles.value}>{value}</span>}
     </div>
   );
+}
+
+/**
+ * A touch has no hover: its pointer "leaves" the moment the finger lifts, which would close the readout just as it
+ * opened. So a touch leaves it open (use as the `onPointerLeave`), and a tap anywhere outside the chart closes it.
+ */
+export const clearUnlessTouch = (clear: () => void) => (e: PointerEvent) => {
+  if (e.pointerType !== 'touch' || !isWeb()) clear();
+};
+
+export function useDismissOnOutsideTap(ref: RefObject<Element | null>, open: boolean, clear: () => void) {
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: globalThis.PointerEvent) => {
+      if (isWeb() && e.pointerType === 'touch' && !ref.current?.contains(e.target as Node)) clear();
+    };
+    document.addEventListener('pointerdown', away);
+    return () => document.removeEventListener('pointerdown', away);
+  }, [ref, open, clear]);
 }

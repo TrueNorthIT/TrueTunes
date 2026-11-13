@@ -22,8 +22,11 @@ export interface NormalizedQueueItem {
 export interface NormalizedPlaybackState {
   status: 'playing' | 'paused' | 'idle';
   isPlaying: boolean; // convenience alias: status === 'playing'
-  positionMs: number;
-  durationMs: number;
+  /** null: the payload did not say (a partial message), as opposed to a real 0. */
+  positionMs: number | null;
+  durationMs: number | null;
+  /** The payload carried a `playback` block (state, position, modes). False for a metadata-only or empty message. */
+  playbackKnown: boolean;
   currentTrack: NormalizedTrack | null;
   shuffle: boolean;
   repeatMode: 'none' | 'one' | 'all';

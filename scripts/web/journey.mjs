@@ -7,7 +7,9 @@
 //   options: --width 390 --height 844 --shots <dir>
 //            --device "iPhone 14"   Playwright's descriptor for it: WebKit, 390x844 at 3x, touch, Safari's user agent
 //                                   (npx playwright install webkit first; CI installs only Chromium, the default)
-//            --safe-area            give the page an iPhone 14's insets (47px top, 34px bottom) through the
+//            --cpu 6                Chromium only: slow the page's CPU 6x, to shake out steps that only pass on a fast machine
+//            --no-ambient-filter    switch off the backdrop's 120px blur: it makes Playwright's software-rendered WebKit on Windows draw about 1 frame a second on the queue page
+//            --safe-area           give the page an iPhone 14's insets (47px top, 34px bottom) through the
 //                                   --safe-top / --safe-bottom tokens, which no desktop browser has of its own
 //
 // At phone size the app shows the phone shell and every step is a tap; at 1280 wide it shows the desktop layout
@@ -32,6 +34,8 @@ const width = Number(opt('--width', device?.viewport.width ?? 390));
 const height = Number(opt('--height', device?.viewport.height ?? 844));
 const shots = opt('--shots', null);
 const safeArea = args.includes('--safe-area');
+const cpu = Number(opt('--cpu', 1));
+const noAmbient = args.includes('--no-ambient-filter');let forcedTaps = 0;
 const local = args.includes('--local');
 let base = args.find((a) => /^https?:\/\//.test(a))?.replace(/\/+$/, '');
 if (!local && !base) {
@@ -77,10 +81,36 @@ const context = await browser.newContext(
     : { viewport: { width, height }, deviceScaleFactor: 2, hasTouch: touch, isMobile: touch }
 );
 const page = await context.newPage();
-if (safeArea) {
+if (noAmbient) {
   await page.addInitScript(() => {
-    document.documentElement.style.setProperty('--safe-top', '47px');
-    document.documentElement.style.setProperty('--safe-bottom', '34px');
+    const add = () => {
+      if (document.getElementById('journey-no-ambient') || !document.documentElement) return;
+      const s = document.createElement('style');
+      s.id = 'journey-no-ambient';
+      s.textContent = 'img[class*="_img_"] { filter: none !important; }';
+      document.documentElement.appendChild(s);
+    };
+    add();
+    document.addEventListener('readystatechange', add);
+  });
+}
+if (cpu > 1 && browser.browserType().name() === 'chromium') {
+  // A slow phone, or a laptop with other work running: timing a step must not depend on a fast machine.
+  await (await context.newCDPSession(page)).send('Emulation.setCPUThrottlingRate', { rate: cpu });
+}
+if (safeArea) {
+  // A stylesheet with !important: setting the properties inline on the root did nothing (the phone shell's own
+  // rules win), so the run looked like it had insets and had none. The first step checks the layout moved.
+  await page.addInitScript(() => {
+    const add = () => {
+      if (document.getElementById('journey-safe-area') || !document.documentElement) return;
+      const s = document.createElement('style');
+      s.id = 'journey-safe-area';
+      s.textContent = ':root { --safe-top: 47px !important; --safe-bottom: 34px !important; }';
+      document.documentElement.appendChild(s);
+    };
+    add(); // the document may not have a root yet in a fresh frame
+    document.addEventListener('readystatechange', add);
   });
 }
 
@@ -124,8 +154,26 @@ const phoneJourney = (name, run) =>
 const transport = (label) => page.locator(`button[aria-label="${label}"]`);
 const expectVisible = (locator, timeout = 8000) => locator.first().waitFor({ state: 'visible', timeout });
 const expectGone = (locator, timeout = 8000) => locator.first().waitFor({ state: 'detached', timeout });
-/** A finger on a phone, the mouse on a desktop. */
-const press = (locator, options) => (touch ? locator.first().tap(options) : locator.first().click(options));
+/**
+ * A finger on a phone, the mouse on a desktop. In WebKit the target must be visible first, then the tap skips
+ * Playwright's "stable" wait: that wait runs on animation frames, and headless WebKit on Windows stops delivering
+ * them while the page is busy (measured: a rAF loop ran 1 frame in 2s on the queue page), so it never finishes.
+ */
+const press = async (locator, options) => {
+  const target = locator.first();
+  const act = (o) => (touch ? target.tap(o) : target.click(o));
+  if (browser.browserType().name() !== 'webkit') return act(options);
+  // Normally: Playwright's own checks, so a control that is covered or still moving fails the step.
+  // Only if the stable wait itself never completes: wait for it to be visible, then tap without it.
+  try {
+    return await act({ ...options, timeout: 6000 });
+  } catch (err) {
+    if (!/stable/.test(String(err.message))) throw err;
+    await expectVisible(target);
+    forcedTaps++;
+    return act({ ...options, force: true });
+  }
+};
 const hash = () => page.evaluate(() => location.hash);
 async function goTo(route) {
   await page.evaluate((r) => {
@@ -147,15 +195,56 @@ async function queueCount() {
   return Number.parseInt(label ?? '', 10);
 }
 /** The queue's list is virtual: bring its end (or its start) into the window. */
-const scrollQueue = (to) =>
-  page.evaluate((where) => {
-    for (let el = document.querySelector('[data-playing="true"]'); el; el = el.parentElement) {
+async function scrollQueue(to) {
+  await page.locator('[data-index]').first().waitFor({ state: 'attached', timeout: 10000 }); // the page may still be opening
+  // The scroller is found from any mounted row (the playing row itself is unmounted while the list is scrolled away
+  // from it), and the step then waits for the virtual list to catch up: it re-renders its window a moment after
+  // the scroll (about 400ms with the CPU slowed 6x), and a script that reads rows before that finds none.
+  await page.evaluate((where) => {
+    for (let el = document.querySelector('[data-index]'); el; el = el.parentElement) {
       if (/auto|scroll/.test(getComputedStyle(el).overflowY) && el.scrollHeight > el.clientHeight) {
         el.scrollTo(0, where === 'end' ? el.scrollHeight : 0);
+        // Playwright's WebKit does not always dispatch the scroll event for a script's scrollTo (the list really
+        // moves; only the event is missing, so the virtual list is never told and keeps its old window).
+        // A finger's scroll in Safari always does, so this stands in for it.
+        el.dispatchEvent(new Event('scroll'));
         return;
       }
     }
+    throw new Error('no scrolling queue list found');
   }, to);
+  await page.waitForFunction(
+    (where) => {
+      const rows = [...document.querySelectorAll('[data-index]')];
+      if (!rows.length) return false;
+      let el = rows[0];
+      while (el && !(/auto|scroll/.test(getComputedStyle(el).overflowY) && el.scrollHeight > el.clientHeight)) el = el.parentElement;
+      if (!el) return false;
+      const byIndex = rows.sort((a, b) => Number(a.dataset.index) - Number(b.dataset.index));
+      const atTarget =
+        where === 'end'
+          ? el.scrollTop + el.clientHeight >= el.scrollHeight - 2 &&
+            byIndex[byIndex.length - 1].getBoundingClientRect().bottom >= rows[0].parentElement.getBoundingClientRect().bottom - 2
+          : el.scrollTop === 0 && Number(byIndex[0].dataset.index) === 0;
+      // The list can grow after the first scroll (the queue re-fetches when its version changes, and the DJ's
+      // rows arrive), so the end moves further away: scroll again rather than wait for a position that is gone.
+      if (!atTarget) {
+        el.scrollTo(0, where === 'end' ? el.scrollHeight : 0);
+        el.dispatchEvent(new Event('scroll'));
+      }
+      // ...and nothing is still moving: the same rows in the same places on two looks in a row.
+      const sig = `${atTarget}|${byIndex.map((r) => r.dataset.index + ':' + Math.round(r.getBoundingClientRect().top)).join()}`;
+      const steady = window.__queueSig === sig;
+      window.__queueSig = sig;
+      return atTarget && steady;
+    },
+    to,
+    { polling: 150, timeout: 10000 }
+  ).catch(async (err) => {
+    const sig = await page.evaluate(() => window.__queueSig);
+    throw new Error(`the queue did not settle at its ${to}: ${String(sig).slice(0, 200)}\n${err.message}`);
+  });
+}
 /** The queue rows on screen, top to bottom, by title (each row's ⋯ is named for its track). */
 const queueOrder = () =>
   page.evaluate(() =>
@@ -165,6 +254,62 @@ const queueOrder = () =>
       .map((r) => r.title)
   );
 const queueRow = (title) => page.locator('div[draggable]', { hasText: title });
+
+/**
+ * A finger dragged straight down by dy px from a point, over ms: touch events, which is what the swipe-down gesture
+ * (lib/swipeDismiss.ts) listens to. Chromium takes them through its own input driver, as a real finger would; WebKit has
+ * no such driver here, so the same events are dispatched at the element under the finger.
+ */
+async function touchDrag(from, dy, ms) {
+  const steps = Math.max(4, Math.round(dy / 20));
+  if (browser.browserType().name() === 'chromium') {
+    const cdp = await context.newCDPSession(page);
+    const at = (i) => [{ x: from.x, y: Math.round(from.y + (dy * i) / steps) }];
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: at(0) });
+    for (let i = 1; i <= steps; i++) {
+      await page.waitForTimeout(ms / steps);
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: at(i) });
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await cdp.detach();
+    return;
+  }
+  await page.evaluate(
+    async ({ x, y, dy, ms, steps }) => {
+      const target = document.elementFromPoint(x, y);
+      // WebKit on desktop has no Touch constructor: a plain event carrying the fields the gesture reads.
+      const touch = (yy) => ({ identifier: 1, target, clientX: x, clientY: yy, pageX: x, pageY: yy });
+      const send = (type, yy, list = true) => {
+        const e = new Event(type, { bubbles: true, cancelable: true });
+        Object.defineProperty(e, 'touches', { value: list ? [touch(yy)] : [] });
+        Object.defineProperty(e, 'changedTouches', { value: [touch(yy)] });
+        target.dispatchEvent(e);
+      };
+      send('touchstart', y);
+      for (let i = 1; i <= steps; i++) {
+        await new Promise((r) => setTimeout(r, ms / steps));
+        send('touchmove', y + (dy * i) / steps);
+      }
+      send('touchend', y + dy, false);
+    },
+    { x: from.x, y: from.y, dy, ms, steps }
+  );
+}
+/** A point inside `within` (or the page) that is not on a control, so a drag from it is a swipe and not a tap or a slider. */
+const freePoint = (within, fromY, toY) =>
+  page.evaluate(
+    ({ within, fromY, toY }) => {
+      const root = within ? document.querySelector(within) : document.body;
+      const controls = 'button, a, input, select, textarea, [role="slider"], [data-no-swipe]';
+      const x = Math.round(window.innerWidth / 2);
+      for (let y = fromY; y < toY; y += 6) {
+        const el = document.elementFromPoint(x, y);
+        if (el && root?.contains(el) && !el.closest(controls) && !el.closest('nav, section[aria-label="Mini player"]')) return { x, y };
+      }
+      return null;
+    },
+    { within, fromY, toY }
+  );
 
 /**
  * What must hold on every page. Sideways: the document is no wider than the window, and nothing in it is either,
@@ -244,6 +389,13 @@ function auditInPage(phoneShell) {
       problems.push(`tap target: ${describe(e)} is ${Math.round(r.width)}x${Math.round(r.height)}`);
   }
 
+  // Safari zooms the page when a text field under 16px is focused.
+  for (const e of document.querySelectorAll('input, textarea, select')) {
+    if (!shown(e) || /^(checkbox|radio|range|button|submit|reset|file|hidden|color|image)$/.test(e.type)) continue;
+    const size = parseFloat(getComputedStyle(e).fontSize);
+    if (size < 15.99) problems.push(`text field under 16px: ${describe(e)} is ${size}px`);
+  }
+
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   const seen = new Set();
   for (let n = walker.nextNode(); n; n = walker.nextNode()) {
@@ -256,7 +408,19 @@ function auditInPage(phoneShell) {
   return problems;
 }
 async function audit(where) {
-  const problems = await page.evaluate(auditInPage, phone);
+  // A page fades in as it opens (and a sheet rises): measure it once it has arrived, not part-way.
+  if (phone)
+    await page.waitForFunction(() => {
+      const main = document.querySelector('main');
+      return !main || getComputedStyle(main).opacity === '1';
+    });
+  await settle();
+  // Rows can still be fading in (slower in WebKit than in Chromium): look again for up to 3 seconds.
+  let problems = await page.evaluate(auditInPage, phone);
+  for (let i = 0; i < 6 && problems.some((p) => p.startsWith('hidden control')); i++) {
+    await page.waitForTimeout(500);
+    problems = await page.evaluate(auditInPage, phone);
+  }
   if (problems.length)
     throw new Error(
       `${where}: ${problems.length} problem(s)\n${[...new Set(problems)].slice(0, 8).join('\n')}${problems.length > 8 ? '\n…' : ''}`
@@ -279,6 +443,32 @@ await journey('open the demo and see what is playing', async () => {
   phone = await page.evaluate(() => document.documentElement.dataset.shell === 'phone');
   if (touch && width < 800 && !phone) throw new Error('a phone-sized window did not get the phone shell');
   console.log(`      ${phone ? 'phone shell' : 'desktop layout'}, ${browser.browserType().name()}, ${width}x${height}`);
+  if (safeArea && phone) {
+    // The flag must really move the layout: measure the tab bar's gap to the screen's bottom and the top of the
+    // page's first content with the insets on, switch them off, measure again, switch them back on.
+    const measure = () =>
+      page.evaluate(() => {
+        const nav = document.querySelector('nav[aria-label="Main"]');
+        const first = document.querySelector('main *');
+        return {
+          top: getComputedStyle(document.documentElement).getPropertyValue('--safe-top').trim(),
+          bottom: getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom').trim(),
+          navGap: Math.round(window.innerHeight - nav.getBoundingClientRect().bottom),
+          contentTop: Math.round(first.getBoundingClientRect().top),
+        };
+      });
+    const withInsets = await measure();
+    await page.evaluate(() => (document.getElementById('journey-safe-area').media = 'not all'));
+    await page.waitForTimeout(300);
+    const without = await measure();
+    await page.evaluate(() => (document.getElementById('journey-safe-area').media = 'all'));
+    await page.waitForTimeout(300);
+    console.log(`      insets on ${JSON.stringify(withInsets)}, off ${JSON.stringify(without)}`);
+    if (withInsets.top !== '47px' || withInsets.bottom !== '34px')
+      throw new Error(`--safe-area did not set the insets: ${JSON.stringify(withInsets)}`);
+    if (withInsets.navGap === without.navGap && withInsets.contentTop === without.contentTop)
+      throw new Error('--safe-area changed nothing in the layout: the tab bar and the content sit where they do without it');
+  }
 });
 
 await journey('pause and resume', async () => {
@@ -451,13 +641,53 @@ await phoneJourney('remove a row from the queue and see it gone', async () => {
   await expectVisible(page.locator(`[aria-label="${count - 1} tracks"]`));
 });
 
+await phoneJourney('drag Now playing down: a short drag springs back, a long one closes it', async () => {
+  await backToTheTabs();
+  await press(page.locator('section[aria-label="Mini player"] button'));
+  await expectHash(/^#\/now-playing$/);
+  await page.waitForTimeout(900);
+  // Not on the seek bar or a button: a free spot in the upper half of the page.
+  const from = await freePoint(null, 110, 360);
+  if (!from) throw new Error('found no spot on Now playing that is not a control');
+  await touchDrag(from, 60, 700);
+  await page.waitForTimeout(600);
+  if ((await hash()) !== '#/now-playing') throw new Error(`a short drag closed Now playing (${await hash()})`);
+  await touchDrag(from, 420, 450);
+  await expectHash(/^#\/(?!now-playing)/);
+  await expectVisible(page.locator('section[aria-label="Mini player"]'));
+});
+
+await phoneJourney("drag a row's bottom sheet down: a short drag keeps it, a long one closes it", async () => {
+  await backToTheTabs();
+  await press(tab('/queue'));
+  await expectHash(/^#\/queue$/);
+  await scrollQueue('start');
+  const [title] = await queueOrder();
+  await press(page.locator(`button[aria-label="More for ${title}"]`));
+  await expectVisible(page.getByRole('menu'));
+  await page.waitForTimeout(700); // it rises into place
+  const box = await page.getByRole('menu').first().boundingBox();
+  // The sheet's grab handle, or its top edge: anywhere that is not a field.
+  const from = (await freePoint('[role="menu"]', Math.round(box.y) + 2, Math.round(box.y + box.height))) ?? {
+    x: Math.round(box.x + box.width / 2),
+    y: Math.round(box.y) + 8,
+  };
+  await touchDrag(from, 40, 800);
+  await page.waitForTimeout(600);
+  await expectVisible(page.getByRole('menu'), 2000).catch(() => {
+    throw new Error('a short drag closed the sheet');
+  });
+  await touchDrag(from, 320, 400);
+  await expectGone(page.getByRole('menu'));
+});
+
 await phoneJourney('open the Leaderboard from More', async () => {
   await press(tab('/more'));
   await expectHash(/^#\/more$/);
   await audit('More');
   await press(page.getByRole('button', { name: 'Leaderboard', exact: true }));
   await expectHash(/^#\/leaderboard$/);
-  await expectVisible(page.getByRole('heading', { name: 'Leaderboard' }));
+  await expectVisible(page.getByRole('heading', { name: 'Leaderboard' }), 20000);
   // Back is the round button at the top left, and returns to More.
   await press(page.locator('button[aria-label="Back"]'));
   await expectHash(/^#\/more$/);
@@ -528,6 +758,7 @@ await journey('no uncaught errors in the page', async () => {
   if (pageErrors.length) throw new Error(pageErrors[0]);
 });
 
+if (forcedTaps) console.log(`NOTE  ${forcedTaps} tap(s) needed the forced fallback (the stable wait hung)`);
 await browser.close();
 gateway?.stop();
 const what = `${width}x${height}${deviceName ? ` (${deviceName}, ${browser.browserType().name()})` : ''}${safeArea ? ' with safe areas' : ''}`;

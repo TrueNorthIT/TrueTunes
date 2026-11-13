@@ -290,8 +290,8 @@
       "area": "phone",
       "description": "A phone shell replaces skinny mode on the web: thumb-reach navigation, now playing one tap away, the queue as a full view, search and browse as first-class pages. Safe-area insets, dynamic viewport units, reduced motion honoured.",
       "how_verified": "story at 390x844 and 1280x800 (page story and app-shell story), screenshots reviewed; story tests (axe) pass",
-      "passes": false,
-      "evidence": "Shipped as work in progress at the owner's request (13 Nov). Built: tab bar (Home, Search, Queue, Discover, More), mini player, /now-playing, /queue, /more, bottom-sheet menu, long-press, touch rules. `node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026; story tests with axe pass (`npm run test:run`: 2,252). NOT passing yet: the tab bar and the foot of the bottom sheet are too transparent (page content shows through the tab labels), and nothing has been checked in WebKit or with iPhone 14 safe areas simulated."
+      "passes": true,
+      "evidence": "Follow-ups from the owner's iPhone 14 feedback are in: shorter dock, calmer Now playing with a seek thumb, 24px extra top offset in the installed iOS app, swipe down to dismiss Now playing and the bottom sheet, row more-button hidden at desktop width, InfoTip by tap, Back strip. Merged tree (13 Nov 2026): journey at 390x844 with touch passes 15 of 15 steps three runs in a row in Chromium, once with iPhone 14 safe areas (the run asserts the dock moved by 34px), and 15 of 15 in WebKit with the iPhone 14 descriptor at 844 and 664 high (with --no-ambient-filter); 1280x800 passes; npm run test:run 194 files, 2,291 tests pass. Not verified on a real iPhone: swipe feel, the top offset, blur."
     },
     {
       "id": "phone-now-playing",
@@ -338,8 +338,8 @@
       "area": "pages",
       "description": "Discover (/discover) usable at 390px.",
       "how_verified": "page story screenshot at 390x844; overflow assertion",
-      "passes": false,
-      "evidence": "Shipped as work in progress. `node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026, including the overflow, 44px target and 13px text check on this page. Not yet reviewed by eye, so not marked as passing."
+      "passes": true,
+      "evidence": "Looked at by eye at 390x844 (brief D): nothing to fix. Merged tree (13 Nov 2026): journey at 390x844 with touch passes 15 of 15 steps three runs in a row in Chromium, once with iPhone 14 safe areas (the run asserts the dock moved by 34px), and 15 of 15 in WebKit with the iPhone 14 descriptor at 844 and 664 high (with --no-ambient-filter); 1280x800 passes; npm run test:run 194 files, 2,291 tests pass."
     },
     {
       "id": "page-album",
@@ -354,32 +354,32 @@
       "area": "pages",
       "description": "Artist (/artist/:id) usable at 390px.",
       "how_verified": "page story screenshot at 390x844; overflow assertion",
-      "passes": false,
-      "evidence": "Shipped as work in progress. `node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026, including the overflow, 44px target and 13px text check on this page. Not yet reviewed by eye, so not marked as passing."
+      "passes": true,
+      "evidence": "Looked at by eye in Chromium and WebKit (brief E): Top songs titles no longer truncated (duration column dropped on the phone). Merged tree (13 Nov 2026): journey at 390x844 with touch passes 15 of 15 steps three runs in a row in Chromium, once with iPhone 14 safe areas (the run asserts the dock moved by 34px), and 15 of 15 in WebKit with the iPhone 14 descriptor at 844 and 664 high (with --no-ambient-filter); 1280x800 passes; npm run test:run 194 files, 2,291 tests pass."
     },
     {
       "id": "page-container",
       "area": "pages",
       "description": "Container (/container/:id) usable at 390px.",
       "how_verified": "page story screenshot at 390x844; overflow assertion",
-      "passes": false,
-      "evidence": "Shipped as work in progress. `node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026, including the overflow, 44px target and 13px text check on this page. Not yet reviewed by eye, so not marked as passing."
+      "passes": true,
+      "evidence": "Looked at by eye in Chromium and WebKit (brief E): nothing to fix. Merged tree (13 Nov 2026): journey at 390x844 with touch passes 15 of 15 steps three runs in a row in Chromium, once with iPhone 14 safe areas (the run asserts the dock moved by 34px), and 15 of 15 in WebKit with the iPhone 14 descriptor at 844 and 664 high (with --no-ambient-filter); 1280x800 passes; npm run test:run 194 files, 2,291 tests pass."
     },
     {
       "id": "page-leaderboard",
       "area": "pages",
       "description": "Leaderboard (/leaderboard) and music stats (/leaderboard/stats) usable at 390px.",
       "how_verified": "demo journey opens the leaderboard; screenshots of both",
-      "passes": false,
-      "evidence": "Shipped as work in progress. `node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026, including the overflow, 44px target and 13px text check on this page. Not yet reviewed by eye, so not marked as passing."
+      "passes": true,
+      "evidence": "Looked at by eye at 390x844 (brief D): nothing to fix. Merged tree (13 Nov 2026): journey at 390x844 with touch passes 15 of 15 steps three runs in a row in Chromium, once with iPhone 14 safe areas (the run asserts the dock moved by 34px), and 15 of 15 in WebKit with the iPhone 14 descriptor at 844 and 664 high (with --no-ambient-filter); 1280x800 passes; npm run test:run 194 files, 2,291 tests pass."
     },
     {
       "id": "page-queuedle",
       "area": "pages",
       "description": "Queuedle (/queuedle) and its stats (/queuedle/stats) usable at 390px.",
       "how_verified": "page story screenshots at 390x844; a round played in the demo (mock only)",
-      "passes": false,
-      "evidence": "Shipped as work in progress. `node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026, including the overflow, 44px target and 13px text check on this page. Not yet reviewed by eye, so not marked as passing."
+      "passes": true,
+      "evidence": "Every Queuedle screen looked at by eye at 390x844 and 390x664 and in WebKit (brief F); five defects fixed (unreachable last bonus row, 26px bonus choices, sticky Submit and Next, leaderboard over the answers, hidden count at 664). Stats pages fit the gutter (brief D). Merged tree (13 Nov 2026): journey at 390x844 with touch passes 15 of 15 steps three runs in a row in Chromium, once with iPhone 14 safe areas (the run asserts the dock moved by 34px), and 15 of 15 in WebKit with the iPhone 14 descriptor at 844 and 664 high (with --no-ambient-filter); 1280x800 passes; npm run test:run 194 files, 2,291 tests pass."
     },
     {
       "id": "page-lyrics",
@@ -387,31 +387,31 @@
       "description": "Lyrics (/lyrics) usable at 390px.",
       "how_verified": "page story screenshot at 390x844; overflow assertion",
       "passes": false,
-      "evidence": "Shipped as work in progress. `node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026, including the overflow, 44px target and 13px text check on this page. Not yet reviewed by eye, so not marked as passing."
+      "evidence": "Synced lyrics looked at by eye in Chromium and WebKit (brief E); the plain and none-found cases could not be produced in the demo and have not been seen, and no highlighted current line was observed on the page. Merged tree (13 Nov 2026): journey at 390x844 with touch passes 15 of 15 steps three runs in a row in Chromium, once with iPhone 14 safe areas (the run asserts the dock moved by 34px), and 15 of 15 in WebKit with the iPhone 14 descriptor at 844 and 664 high (with --no-ambient-filter); 1280x800 passes; npm run test:run 194 files, 2,291 tests pass."
     },
     {
       "id": "page-profile",
       "area": "pages",
       "description": "Profile (/profile/:userName) usable at 390px.",
       "how_verified": "page story screenshot at 390x844; overflow assertion",
-      "passes": false,
-      "evidence": "Shipped as work in progress. `node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026, including the overflow, 44px target and 13px text check on this page. Not yet reviewed by eye, so not marked as passing."
+      "passes": true,
+      "evidence": "Looked at by eye in Chromium and WebKit with the Back strip (briefs A and E). Merged tree (13 Nov 2026): journey at 390x844 with touch passes 15 of 15 steps three runs in a row in Chromium, once with iPhone 14 safe areas (the run asserts the dock moved by 34px), and 15 of 15 in WebKit with the iPhone 14 descriptor at 844 and 664 high (with --no-ambient-filter); 1280x800 passes; npm run test:run 194 files, 2,291 tests pass."
     },
     {
       "id": "page-playlist",
       "area": "pages",
       "description": "Playlist (/playlist/:id) usable at 390px.",
       "how_verified": "page story screenshot at 390x844; overflow assertion",
-      "passes": false,
-      "evidence": "Shipped as work in progress. `node scripts/web/journey.mjs --local` at 390x844 with touch (Chromium), 13 of 13 steps PASS on 13 Nov 2026, including the overflow, 44px target and 13px text check on this page. Not yet reviewed by eye, so not marked as passing."
+      "passes": true,
+      "evidence": "Full-bleed hero and the stranded \"with\" fixed (brief E); looked at by eye in Chromium and WebKit with safe areas. Collaborators still take one line each. Merged tree (13 Nov 2026): journey at 390x844 with touch passes 15 of 15 steps three runs in a row in Chromium, once with iPhone 14 safe areas (the run asserts the dock moved by 34px), and 15 of 15 in WebKit with the iPhone 14 descriptor at 844 and 664 high (with --no-ambient-filter); 1280x800 passes; npm run test:run 194 files, 2,291 tests pass."
     },
     {
       "id": "dialogs-phone",
       "area": "pages",
       "description": "Feedback, polls, the changelog and the add-to-playlist dialogs are usable at 390px.",
       "how_verified": "story screenshots at 390x844",
-      "passes": false,
-      "evidence": "Shipped as work in progress. Stylesheets for the feedback, poll and shared dialogs were adapted; not yet reviewed by eye at phone width."
+      "passes": true,
+      "evidence": "Feedback, poll answer, poll admin and New playlist looked at by eye at 390x844, 664 and 420 high and in WebKit (brief F): all fit, fields are 16px and 44px, no text field is focused on open on the phone (unit test). Public checkbox row is a 44px target. Not verified: the real keyboard on an iPhone. Merged tree (13 Nov 2026): journey at 390x844 with touch passes 15 of 15 steps three runs in a row in Chromium, once with iPhone 14 safe areas (the run asserts the dock moved by 34px), and 15 of 15 in WebKit with the iPhone 14 descriptor at 844 and 664 high (with --no-ambient-filter); 1280x800 passes; npm run test:run 194 files, 2,291 tests pass."
     },
     {
       "id": "desktop-browser-layout",

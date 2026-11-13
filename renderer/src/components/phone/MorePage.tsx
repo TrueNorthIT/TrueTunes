@@ -31,6 +31,8 @@ interface Props {
   /** A new version is ready to load, or null. */
   updateVersion: string | null;
   polls: ReturnType<typeof usePolls>;
+  /** After signing out. Reloading shows the sign-in screen; a story swaps it. */
+  onSignedOut?: () => void;
 }
 
 function Row({
@@ -82,6 +84,7 @@ export function MorePage({
   onFeedback,
   updateVersion,
   polls,
+  onSignedOut = () => window.location.reload(),
 }: Props) {
   const navigate = useNavigate();
   const displayName = useDisplayName();
@@ -100,7 +103,7 @@ export function MorePage({
     void window.sonos
       .entraSignOut()
       .catch(() => {})
-      .then(() => window.location.reload());
+      .then(onSignedOut);
 
   const waiting = polls.current || updateVersion;
 
@@ -197,6 +200,9 @@ export function MorePage({
           </ul>
         </section>
 
+        <button type="button" className={styles.quiet} onClick={() => void navigate('/diagnostics')}>
+          Diagnostics
+        </button>
         {version && <p className={styles.version}>True Tunes v{version}</p>}
       </div>
 

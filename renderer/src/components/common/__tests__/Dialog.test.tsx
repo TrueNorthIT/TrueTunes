@@ -45,6 +45,19 @@ describe('Dialog', () => {
     expect(screen.getByRole('button', { name: 'Open it' })).toHaveFocus();
   });
 
+  it('on the phone shell, focus lands on the dialog and no text field is focused (no keyboard on open)', async () => {
+    document.documentElement.dataset.shell = 'phone';
+    try {
+      const user = userEvent.setup();
+      render(<Opener />);
+      await user.click(screen.getByRole('button', { name: 'Open it' }));
+      expect(screen.getByRole('dialog', { name: 'Rename' })).toHaveFocus();
+      expect(screen.getByRole('textbox', { name: 'Name' })).not.toHaveFocus();
+    } finally {
+      delete document.documentElement.dataset.shell;
+    }
+  });
+
   it('keeps Esc from reaching page-level handlers', async () => {
     const pageEsc = vi.fn();
     document.addEventListener('keydown', pageEsc);

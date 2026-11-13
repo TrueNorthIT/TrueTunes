@@ -42,6 +42,7 @@ import { RouteBoundary } from './components/RouteBoundary';
 import { Splash } from './components/Splash';
 import { effectiveDockedWidth } from './lib/queueWidth';
 import { isWeb } from './lib/platform';
+import { DiagnosticsPage } from './components/phone/DiagnosticsPage';
 
 import styles from './styles/App.module.css';
 
@@ -295,6 +296,7 @@ const MainApp = memo(function MainApp() {
       <Route path="/lyrics" element={<LyricsPanel playback={playback} />} />
       <Route path="/profile/:userName" element={<ProfilePanel />} />
       <Route path="/playlist/:id" element={<PlaylistPanel />} />
+      {isWeb() && <Route path="/diagnostics" element={<DiagnosticsPage />} />}
     </>
   );
 

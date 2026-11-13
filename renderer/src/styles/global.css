@@ -212,10 +212,26 @@ body {
    on the desktop. --phone-top is the safe area plus the demo's strip (web/DemoBadge.module.css). */
 :root[data-shell='phone'] {
   --gutter: 16px;
-  --dock-h: 124px; /* 8px gap + 56px mini player + 4px + 56px tab bar */
-  --phone-top: calc(var(--safe-top) + var(--demo-inset, 0px));
+  --dock-h: 110px; /* 6px gap + 52px mini player + 2px + 50px tab bar */
+  /* What sits under the tab labels: the home indicator is a thin bar about 8px up, so only the inset less 13px
+     needs clearing (21px on an iPhone 14); never under 10px where there is no inset. Tabs reach into it. */
+  --dock-pad: max(10px, calc(var(--safe-bottom) - 13px));
+  /* The system's soft edge under the status bar, in the installed iOS app only (see the @supports below). */
+  --safe-top-extra: 0px;
+  --status-h: calc(var(--safe-top) + var(--demo-inset, 0px)); /* the frosted strip, and nothing more */
+  --phone-top: calc(var(--status-h) + var(--safe-top-extra));
   --nav-h: var(--phone-top);
-  --player-h: calc(var(--dock-h) + var(--safe-bottom));
+  --player-h: calc(var(--dock-h) + var(--dock-pad));
+}
+/* Installed to the home screen on iOS, the system softens content down to about 60px under a 47px status bar
+   and is sharp by 80px: Storyshelf (same design system) settled on the inset plus 24px, measured on an iPhone 14.
+   A fixed amount from one phone; Dynamic Island models will differ. Safari's own bars and other browsers: 0. */
+@media (display-mode: standalone) {
+  @supports (-webkit-touch-callout: none) {
+    :root[data-shell='phone'] {
+      --safe-top-extra: 24px;
+    }
+  }
 }
 /* Safari zooms the page when a field under 16px takes focus, so on the phone every field is at least that. */
 :root[data-shell='phone'] :is(input, textarea, select) {

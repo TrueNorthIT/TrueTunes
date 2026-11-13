@@ -24,6 +24,7 @@
   max-width: 22em;
   padding: 0.7em 0.9em;
   background: var(--material-bg);
+  -webkit-backdrop-filter: var(--material-filter);
   backdrop-filter: var(--material-filter);
   border: 1px solid var(--separator);
   border-radius: var(--r-tile);

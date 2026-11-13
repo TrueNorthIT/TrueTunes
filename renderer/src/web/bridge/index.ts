@@ -145,6 +145,8 @@ export function createWebBridge(env: WebBridgeEnv): WebBridge {
     return run;
   }
 
+  let wakeBound = false;
+
   function stop(): void {
     socket.stop();
     liveAttribution.stop();
@@ -154,6 +156,18 @@ export function createWebBridge(env: WebBridgeEnv): WebBridge {
   return {
     start() {
       void begin();
+      if (!wakeBound && typeof document !== 'undefined') {
+        wakeBound = true;
+        // visibilitychange and pageshow fire together when a phone comes back: one wake, a moment later
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const wake = () => {
+          if (document.visibilityState !== 'visible') return;
+          clearTimeout(timer);
+          timer = setTimeout(() => socket.wake(), 300);
+        };
+        document.addEventListener('visibilitychange', wake);
+        window.addEventListener('pageshow', wake);
+      }
     },
     stop,
 

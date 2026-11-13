@@ -1,7 +1,9 @@
 /*
- * The phone shell's Now playing page: the Now playing card and the player bar as one full screen. The artwork's
- * colour washes in from the top (Quiet Wall: 0.3 at most, gone by 65%); the art flexes to whatever height the
- * controls leave, so nothing scrolls off on a short screen (Safari with its bars showing).
+ * The phone shell's Now playing page, kept calm: the art, one centred title block, one progress bar, three
+ * transport buttons, a quiet volume slider and a single tool bar of icons. Nothing has a chip or a row of its own
+ * unless it is a primary control. The artwork's colour washes in from the top (Quiet Wall: 0.3 at most, gone by
+ * 65%); the art flexes to whatever height the controls leave, so nothing scrolls off on a short screen (Safari
+ * with its bars showing). A swipe down closes the page (lib/swipeDismiss.ts).
  */
 .page {
   flex: 1;
@@ -9,30 +11,46 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 1em;
-  padding: calc(var(--phone-top) + 8px) 24px calc(var(--safe-bottom) + 20px);
+  gap: 12px;
+  padding: calc(var(--phone-top) + 4px) 24px calc(var(--safe-bottom) + 16px);
   overflow-y: auto;
+  /* A pull at the top of the page is ours (the swipe), not Safari's pull to refresh. */
+  overscroll-behavior: contain;
   background: radial-gradient(130% 70% at 50% 0%, rgba(var(--wash, var(--tint)), 0.3) 0%, transparent 65%);
   animation: rise var(--dur) var(--ease);
 }
 @keyframes rise {
   from {
-    opacity: 0;
     transform: translateY(24px);
   }
 }
 
+/* The close chevron on the left, the grab handle that says "pull me" at the centre. */
 .top {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  height: var(--tap);
   margin: 0 -12px;
   flex-shrink: 0;
 }
+.grab {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  width: 36px;
+  height: 5px;
+  margin-left: -18px;
+  border-radius: var(--r-pill);
+  background: var(--glass);
+}
+/* The page's name, small and quiet under the grab handle, centred in the header. */
 .heading {
-  font-size: var(--fs-label);
-  font-weight: 600;
-  color: var(--text-2);
+  margin-top: 14px;
+  font-size: var(--fs-small);
+  font-weight: 500;
+  color: var(--text-3);
 }
 .topSpacer {
   width: var(--tap);
@@ -46,9 +64,15 @@
   place-items: center;
   container-type: size;
 }
-.art {
+.artFrame {
+  position: relative;
   width: min(100cqw, 100cqh);
   height: min(100cqw, 100cqh);
+}
+.art {
+  display: block;
+  width: 100%;
+  height: 100%;
   border-radius: var(--r-art-card);
   object-fit: cover;
   background: var(--bg-1);
@@ -60,73 +84,105 @@
   color: var(--text-3);
 }
 
-.meta {
+/* Who queued it: a face on the art's corner, in a full tap target. */
+.queuer {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.face {
   display: flex;
   align-items: center;
-  gap: 0.6em;
-  flex-shrink: 0;
-  margin-right: -10px;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-round);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  box-shadow:
+    0 0 0 2px var(--bg),
+    var(--art-shadow);
 }
+.face img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--r-round);
+  object-fit: cover;
+}
+
+/* Title, then one quiet line with the artist and the album. Both are links; the hit area is padding that the
+   negative margin takes back, so the lines stay close. */
 .titles {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  flex-shrink: 0;
+  text-align: center;
 }
 .title {
-  max-width: 100%;
   display: flex;
   align-items: center;
+  justify-content: center;
+  gap: 6px;
   font-size: var(--fs-title-feature);
   font-weight: 600;
   line-height: 1.15;
   letter-spacing: -0.02em;
   color: var(--text);
 }
-/* Title and artist are links: no chrome, a full tap target each (the pair stacks to 88px). */
+.sub {
+  display: flex;
+  justify-content: center;
+  margin-top: 2px;
+  font-size: var(--fs-body);
+  color: var(--text-2);
+}
+.dot {
+  flex-shrink: 0;
+  white-space: pre;
+  color: var(--text-3);
+}
+.plain {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .link {
-  max-width: 100%;
-  min-height: var(--tap);
-  min-width: var(--tap);
-  padding: 0;
+  min-width: 0;
+  padding: 12px 2px;
+  margin: -12px -2px;
   border: none;
   background: none;
   font: inherit;
   letter-spacing: inherit;
   color: inherit;
-  text-align: left;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
 }
-.artist {
-  margin-top: -0.5em;
-  font-size: var(--fs-body);
-  font-weight: 400;
-  color: var(--text-2);
-}
-p.artist {
-  margin-top: 0;
-}
-
-.queuer {
-  align-self: flex-start;
-  flex-shrink: 0;
-  min-height: var(--tap);
-  margin: -0.4em 0;
+.album {
+  color: var(--text-3);
 }
 
 .progress {
   flex-shrink: 0;
 }
-/* A full tap target around a 4px track. */
+/* A full tap target around a 4px track, with a thumb that says it can be dragged. */
 .seek {
+  position: relative;
   display: flex;
   align-items: center;
   height: var(--tap);
   cursor: pointer;
+  touch-action: none;
 }
 .seekTrack {
   width: 100%;
@@ -143,10 +199,21 @@ p.artist {
   transform-origin: left center;
   transition: transform 1s linear;
 }
+.seekThumb {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: var(--r-round);
+  background: var(--on-art);
+  box-shadow: var(--art-shadow);
+  pointer-events: none;
+}
 .times {
   display: flex;
   justify-content: space-between;
-  margin-top: -0.6em;
+  margin-top: -8px;
   font-size: var(--fs-small);
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
@@ -155,11 +222,11 @@ p.artist {
 .transport {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 28px;
   flex-shrink: 0;
-  margin: 0 -10px;
 }
-/* Quiet round controls: shuffle, repeat, mute, the heart, close. */
+/* Quiet round controls: mute and close. */
 .ctrl,
 .skip {
   display: grid;
@@ -186,14 +253,6 @@ p.artist {
   opacity: 0.3;
   cursor: default;
 }
-/* On: lit, not coloured. A tint chip behind a full-strength icon, as on the player bar. */
-.on {
-  color: var(--on-art);
-  background: rgba(var(--tint), 0.16);
-}
-.favourited {
-  color: rgb(var(--danger));
-}
 .skip {
   width: 56px;
   height: 56px;
@@ -211,6 +270,7 @@ p.artist {
   opacity: 0.78;
 }
 
+/* Volume weighs less than the progress bar: a thinner, dimmer track and a smaller thumb, no number. */
 .volume {
   display: flex;
   align-items: center;
@@ -218,63 +278,93 @@ p.artist {
   flex-shrink: 0;
   margin: 0 -10px;
 }
-.volumePct {
-  width: var(--tap);
-  text-align: center;
-  font-size: var(--fs-small);
-  color: var(--text-3);
-  font-variant-numeric: tabular-nums;
-}
-/* A full tap target high; the track is drawn by the runnable-track, filled up to --fill. */
 .slider {
   -webkit-appearance: none;
   appearance: none;
   flex: 1;
   min-width: 0;
   height: var(--tap);
-  margin: 0;
+  margin: 0 10px 0 0;
   background: none;
   cursor: pointer;
 }
 .slider::-webkit-slider-runnable-track {
-  height: 4px;
+  height: 3px;
   border-radius: var(--r-pill);
-  background: linear-gradient(to right, var(--on-art) var(--fill, 0%), var(--track) var(--fill, 0%));
+  background: linear-gradient(to right, var(--text-3) var(--fill, 0%), var(--track) var(--fill, 0%));
 }
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 20px;
-  height: 20px;
-  margin-top: -8px;
+  width: 16px;
+  height: 16px;
+  margin-top: -6.5px;
   border-radius: var(--r-round);
-  background: var(--on-art);
-  box-shadow: var(--art-shadow);
+  background: var(--text-2);
 }
 .slider::-moz-range-track {
-  height: 4px;
+  height: 3px;
   border-radius: var(--r-pill);
-  background: linear-gradient(to right, var(--on-art) var(--fill, 0%), var(--track) var(--fill, 0%));
+  background: linear-gradient(to right, var(--text-3) var(--fill, 0%), var(--track) var(--fill, 0%));
 }
 .slider::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   border: none;
   border-radius: var(--r-round);
-  background: var(--on-art);
+  background: var(--text-2);
 }
 .slider:disabled {
   opacity: 0.3;
 }
 
-.actions {
+/* One tonal bar for everything secondary: shuffle, repeat, the heart, lyrics, queue. Icons only; each has a
+   name for a screen reader and a title. On is a lit icon on a chip with a dot under it, so colour is not all. */
+.tools {
   display: flex;
-  gap: 12px;
+  justify-content: space-around;
   flex-shrink: 0;
+  padding: 4px;
+  border-radius: var(--r-lg);
+  background: var(--surface-hi);
 }
-.action {
+.tool {
+  position: relative;
+  display: grid;
+  place-items: center;
   flex: 1;
-  justify-content: center;
-  min-height: var(--tap);
+  max-width: 64px;
+  height: var(--tap);
+  padding: 0;
+  border: none;
+  border-radius: var(--r-md);
+  background: none;
+  color: var(--text-2);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-fast),
+    color var(--dur-fast) var(--ease-fast);
+}
+.tool:active {
+  background: var(--row-hover);
+}
+.tool:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.on {
+  color: var(--on-art);
+  background: rgba(var(--tint), 0.16);
+}
+.on::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: var(--r-round);
+  background: currentColor;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -283,6 +373,7 @@ p.artist {
   }
   .ctrl,
   .skip,
+  .tool,
   .seekFill {
     transition: none;
   }
