@@ -9,6 +9,8 @@ Electron desktop Sonos client. Four distinct environments that compile and run s
 - **Server** (`server/`) — Azure Functions, separate `package.json` and `tsconfig.json`
 - **MCP server** (`mcp/`) — Next.js on Vercel (project `truetunes-mcp`, https://truetunes-mcp.vercel.app/mcp): people sign in with Entra and drive the office Sonos from Claude or another chat app, credited on the leaderboard. Its own `package.json`; check it with `npm --prefix mcp run typecheck` and `npm --prefix mcp test` (the root ESLint skips it). Vercel deploys it from `main` only, and only when `mcp/` changed; Vercel blocks a deployment whose commit author isn't a member of its Vercel team.
 
+The renderer also builds as a **web app (PWA)**, served by the gateway at https://truetunes.tnapps.co.uk: see "Web app (PWA)" below.
+
 The renderer never imports from `src/` and vice versa. Communication is strictly through IPC (`ipcMain.handle` / `ipcRenderer.invoke`) with the bridge defined in `src/preload.ts` and the renderer-side types in `renderer/src/types/globals.d.ts`.
 
 ---
@@ -85,6 +87,27 @@ The queue list is virtual (`@tanstack/react-virtual`, in `QueueSidebar`): rows e
 `src/telemetry.ts` wraps the Application Insights Node.js SDK. It is a complete no-op when `APPINSIGHTS_CONNECTION_STRING` is not set — never guard call sites for this. The renderer fires events via `window.sonos.trackEvent()` → IPC → `telemetry.event()`.
 
 ---
+
+## Web app (PWA)
+
+One renderer, two shells. The web entry is `renderer/web/index.html` → `renderer/src/web/main.tsx`; it installs `window.sonos` itself before React renders, then renders the same `<App />`:
+
+- **The browser bridge** (`renderer/src/web/bridge/`, `createWebBridge`): the whole `SonosPreload` contract through the gateway on the page's own origin (`/sonos/api`, the `/sonos/ws` relay with a `bearer.<token>` subprotocol, `/fn`, `/img`), with the user's Entra ID token from `@azure/msal-browser` (redirect flow, `auth.ts`). It re-implements what the main process does (the operation table, the relay bootstrap, the reorder batches); a test compares its operation table with `src/sonos-api.ts`. A change to a handler in `src/ipc/` usually needs the same change here.
+- **The demo** (`/demo`, `renderer/src/web/demo/`): the Storybook mock backend plus an in-memory simulation of playback, volume and the queue. No sign-in and no network; it is how the deployed app is checked without touching the office.
+- `isWeb()` (`renderer/src/lib/platform.ts`) is true in the web app; CSS can use `:root[data-platform='web']`. Electron-only UI (window buttons, mini player, media-key integration, the changelog) is hidden behind it. Genius is not available on the web.
+- **Installable**: `renderer/web/public/manifest.webmanifest` and the service worker `renderer/web/sw.js` (the build fills in its file list). It keeps the shell and build files only, never anything under `/sonos`, `/fn`, `/img`, `/pubsub`, `/auth` or carrying `Authorization`. A new version found as the app launches (first seconds, nothing tapped yet, no other window open) takes over at once; found later it waits for the app's Update button (`renderer/src/web/updates.ts`).
+
+```bash
+npm run build:web                       # → renderer/dist-web (VITE_ENTRA_TENANT_ID / VITE_ENTRA_CLIENT_ID for sign-in)
+npm run dev:web                         # Vite on :5173; /demo works; TRUETUNES_DEV_GATEWAY=<url> proxies the API paths
+node scripts/web/journey.mjs --local    # the demo journeys in Chromium against the local gateway code (build first)
+node scripts/web/pwa.mjs                # installability, cache, offline, update flow (local)
+node scripts/web/checks.mjs https://truetunes.tnapps.co.uk --pwa   # read-only checks of the live host
+```
+
+A shell with `NODE_ENV=development` set (Claude Code's is) makes `vite build` produce a development build, which has no service worker: prefix local web builds with `NODE_ENV=production`. CI has no `NODE_ENV`. The local gateway (`PORT=… WEB_ROOT=renderer/dist-web node server/dist/gateway/main.js`) keeps files in memory: restart it after a rebuild.
+
+The pipeline builds the web app in `validate`, runs those browser checks, and `deploy` puts that same build in the gateway zip (`server/web`). **Never point a local or test build's controls at production**: use `/demo`.
 
 ## Tests
 
@@ -213,7 +236,7 @@ The resources and the Function App's settings are Terraform, in `infra/` (see `i
 
 `npm run deploy` in `server/` (`func publish` from a laptop) is for an emergency only, and **replaces every function** with the checkout. It never touches settings or resources.
 
-- **The gateway also serves the web app (PWA)** and what a browser needs to stay on one origin (`server/src/shared/gatewayWeb.ts`): the built web app's files from `server/web/` (`WEB_ROOT`), `/fn/...` (a signed-in pass-through to the Function App's `/api/...`; `/fn/sonos-session` is refused), and `/img?url=` (artwork from the hosts in `IMAGE_HOSTS` only). A browser authenticates the `/sonos/ws` relay with a `bearer.<ID token>` WebSocket subprotocol, since it cannot set headers. Progress and decisions: `docs/pwa/PROGRESS.md`.
+- **The gateway also serves the web app (PWA)** and what a browser needs to stay on one origin (`server/src/shared/gatewayWeb.ts`): the built web app's files from `server/web/` (`WEB_ROOT`), `/fn/...` (a signed-in pass-through to the Function App's `/api/...`; `/fn/sonos-session` is refused), and `/img?url=` (artwork from the hosts in `IMAGE_HOSTS` only), plus `/pubsub/ws?username=` (a relay to the caller's Azure Web PubSub connection for live "who queued this" events; the gateway calls `/api/connect` for them). A browser authenticates the `/sonos/ws` and `/pubsub/ws` relays with a `bearer.<ID token>` WebSocket subprotocol, since it cannot set headers. Progress and decisions: `docs/pwa/PROGRESS.md`.
 - **The Sonos gateway** (`infra/gateway.tf`, code in `server/src/gateway/`) is an always-on Node HTTP + WebSocket service on App Service Linux, because Functions cannot hold a WebSocket open. B1 is billed monthly whether used or not. `deploy` zip-deploys the built `server/` (`dist`, production `node_modules`, `package.json`) with `az webapp deploy`; the start command is `node dist/gateway/main.js` and nothing builds on the server. It reads `SONOS_USERNAME`/`SONOS_PASSWORD` from Key Vault. Public address `https://truetunes.tnapps.co.uk`; the DNS records (CNAME and `asuid` TXT in `tnapps.co.uk`, resource group `truenorth-general`) are made by hand before the repository variable `GATEWAY_CUSTOM_DOMAIN_ENABLED` is set to `true`: see `infra/README.md`, "Sonos gateway". The first apply that adds it is by a person (it adds a `ci.tf` role assignment CI cannot create).
 - **Function auth.** Functions that write or act as a user check the caller's Entra ID token (`server/src/shared/auth.ts`, `lib/caller.ts`); the main process sends it via `fnFetch`. Without a token a request is let through (and logged) until `AUTH_ENFORCE=true`, which is transitional. Read-only functions stay anonymous. No browser calls the functions, so they send no CORS headers.
 - **Deploy from a tree that contains `origin/main`.** Deploying a feature branch that's behind main deletes main's newer functions from production (this removed `music-stats` and `track-meta` once). CI only ever publishes the pushed `main` commit, which is how this holds. For an emergency laptop deploy, merge main first, or deploy the merge from a throwaway worktree (`npm run deploy` refuses otherwise).

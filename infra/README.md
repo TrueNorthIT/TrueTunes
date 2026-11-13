@@ -65,12 +65,20 @@ through Key Vault references (its own system-assigned identity holds "Key Vault 
 `ENTRA_CLIENT_ID` and the Application Insights connection string. It is reachable at `https://truetunes-gw.azurewebsites.net`
 (see `terraform output gateway_default_hostname`) and, once DNS exists, at `https://truetunes.tnapps.co.uk`.
 
-**Deploy.** In the `deploy` job, after the functions are published and in the same `azure/login` session, the job zips
-`server/dist`, the production `node_modules` that `npm prune --omit=dev` left, and `package.json`, and runs
+**Deploy.** In the `deploy` job, after the functions are published and in the same `azure/login` session, the job
+downloads the web app that `validate` built in the same run into `server/web`, zips `server/dist`, the production
+`node_modules` that `npm prune --omit=dev` left, `package.json` and `web`, and runs
 `az webapp deploy --type zip --clean true --restart true` against `truetunes-gw`. Nothing is built on the server
 (`SCM_DO_BUILD_DURING_DEPLOYMENT=false`); the start command is `node dist/gateway/main.js`. The restart also makes
 the app resolve its Key Vault references again. The smoke check then calls `/healthz` on the `azurewebsites.net`
-host (it exists before DNS does) with retries and fails the job on a non-2xx.
+host (it exists before DNS does) with retries and fails the job on a non-2xx. A second check
+(`scripts/web/checks.mjs --app`) then asks the same host for the web app's shell and its hashed files, and confirms
+that `/sonos`, `/fn`, `/img` and the relay still refuse a caller with no sign-in.
+
+**The web app.** The gateway also serves the True Tunes web app (PWA) from `server/web` (`WEB_ROOT`): its files, the
+Function App under `/fn/...` and artwork under `/img`, so a browser stays on one origin. No extra Azure resource and
+no extra setting: the Entra ids are built into the web bundle from the repository variables `ENTRA_TENANT_ID` and
+`ENTRA_CLIENT_ID`.
 
 **Custom domain.** The `tnapps.co.uk` zone (resource group `truenorth-general`) is outside this pipeline, so a person
 creates two records first, then turns the binding on. In this order:

@@ -113,8 +113,8 @@ describe('app info', () => {
     await h.bridge.setQueueDockedWidth(512);
     expect(await h.bridge.getQueueDockedWidth()).toBe(512);
     expect(h.storage.getItem('tt.queueDockedWidth')).toBe('512');
-    h.storage.setItem('tt.queueDockedWidth', 'junk');
-    expect(await h.bridge.getQueueDockedWidth()).toBe(380);
+    const junk = makeBridge({ storage: { 'tt.queueDockedWidth': 'junk' } });
+    expect(await junk.bridge.getQueueDockedWidth()).toBe(380);
   });
 
   it('keeps working when storage throws', async () => {

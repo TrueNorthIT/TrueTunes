@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { BASE, fakeAuth, json, text, makeBridge, last, type Harness } from './helpers';
 
-const bridgeFor = (storage: Record<string, string> = { 'tt.displayName': 'Joe' }) => {
+const bridgeFor = (storage: Record<string, string> = { 'tt.displayName.oid-1': 'Joe' }) => {
   const h = makeBridge({ storage });
   h.fake.on('GET', /^\/fn\//, () => json({ ok: 'get' }));
   h.fake.on('POST', /^\/fn\//, () => json({ ok: 'post' }));
@@ -226,7 +226,7 @@ describe('results', () => {
   });
 
   it('with no token a call fails the way a network failure does', async () => {
-    const h = makeBridge({ auth: fakeAuth({ token: null }), storage: { 'tt.displayName': 'Joe' } });
+    const h = makeBridge({ auth: fakeAuth({ token: null }), storage: { 'tt.displayName.oid-1': 'Joe' } });
     expect(await h.bridge.fetchStats('day')).toEqual({ error: 'Error: No Entra token — please sign in first' });
     expect(h.fake.calls).toHaveLength(0);
   });
@@ -323,7 +323,7 @@ describe('results', () => {
       const h = bridgeFor();
       expect(await h.bridge.renameUser('Joe', 'Joseph')).toEqual({ ok: true });
       expect(await h.bridge.getDisplayName()).toBe('Joseph');
-      expect(h.storage.getItem('tt.displayName')).toBe('Joseph');
+      expect(h.storage.getItem('tt.displayName.oid-1')).toBe('Joseph');
       await h.bridge.createPlaylist('N', true);
       expect(last(h.fake.calls)?.json()).toMatchObject({ owner: 'Joseph' });
     });

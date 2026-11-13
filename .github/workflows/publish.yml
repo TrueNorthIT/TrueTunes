@@ -93,6 +93,15 @@ jobs:
           npm test
           npm run build
 
+      # The built web app, served by the gateway's own code on this runner, driven in Chromium: the demo journeys at
+      # phone and desktop size, then installability, the service worker's cache, the offline screen and the update
+      # flow. /demo is a pretend office in memory, and the run fails if the page calls /sonos, /fn, /img or the relay.
+      - name: Web app in a real browser
+        run: |
+          node scripts/web/journey.mjs --local
+          node scripts/web/journey.mjs --local --width 1280 --height 800
+          node scripts/web/pwa.mjs
+
   # Applies the Terraform in infra/ and publishes the functions in server/, for the commit that was pushed.
   # `version` (and so `publish`, the desktop release) needs this job: a new app build may call a new function or
   # setting, so the release must not go out unless both succeeded. Runs for every push to main, Dependabot merges
@@ -206,8 +215,14 @@ jobs:
       # server. The sign-in is the azure/login session above; the deploy restarts the app, which also re-resolves its
       # Key Vault references.
       - name: Deploy the gateway
+        env:
+          ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
         run: |
+          # The web app must be there, be installable, and have been built with the Entra ids (an unset
+          # repository variable would otherwise ship an app nobody can sign in to).
           test -f server/web/index.html
+          test -s server/web/sw.js
+          grep --recursive --quiet --fixed-strings "$ENTRA_CLIENT_ID" server/web/assets
           (cd server && zip --quiet --recurse-paths ../gateway.zip dist node_modules package.json web)
           az webapp deploy --resource-group truetunes-rg --name "$(terraform -chdir=infra output -raw gateway_app_name)" \
             --src-path gateway.zip --type zip --clean true --restart true --timeout 600000
@@ -224,7 +239,7 @@ jobs:
       - name: Web app smoke check
         run: |
           cp scripts/web/checks.mjs server/web-checks.mjs
-          (cd server && node web-checks.mjs "https://$(terraform -chdir=../infra output -raw gateway_default_hostname)" --app)
+          (cd server && node web-checks.mjs "https://$(terraform -chdir=../infra output -raw gateway_default_hostname)" --pwa)
 
   version:
     # deploy: the release waits for the infra apply and the function publish of the same commit (a skipped or failed

@@ -13,6 +13,7 @@ import { createQueueEdits } from './reorder';
 import { createFnFetch, createFunctions } from './functions';
 import { createIdentity } from './identity';
 import { createAttribution } from './attribution';
+import { createAttributionSocket } from './attributionSocket';
 import { createPresence } from './presence';
 import { createImages } from './images';
 
@@ -29,15 +30,17 @@ function isWebUrl(url: string): boolean {
   }
 }
 
-/** The relay: the given `wss://host`, else the gateway base, else this page's own host. */
-function relayUrl(socketUrl: string | undefined, base: string): string {
+/** A relay at `path`: the given `wss://host`, else the gateway base, else this page's own host. */
+function relayUrl(socketUrl: string | undefined, base: string, path = '/sonos/ws'): string {
   const root = (
     socketUrl ??
     (/^https?:/.test(base)
       ? base.replace(/^http/, 'ws')
       : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`)
-  ).replace(/\/+$/, '');
-  return root.endsWith('/sonos/ws') ? root : `${root}/sonos/ws`;
+  )
+    .replace(/\/+$/, '')
+    .replace(/\/(sonos|pubsub)\/ws$/, '');
+  return `${root}${path}`;
 }
 
 const noop = () => {};
@@ -69,7 +72,7 @@ export function createWebBridge(env: WebBridgeEnv): WebBridge {
   };
 
   // ─── The pieces ──────────────────────────────────────────────────────────────────────────────
-  const gateway = createGateway({ auth, fetch: doFetch, base, onRefused: signalFailure });
+  const gateway = createGateway({ auth, fetch: doFetch, base, onRefused: signalFailure, onExpired: signalExpired });
   const sonos = createSonosHttp({ gateway, config });
   const socket = createSonosSocket({
     auth,
@@ -81,8 +84,15 @@ export function createWebBridge(env: WebBridgeEnv): WebBridge {
     onExpired: signalExpired,
   });
   const fn = createFnFetch(gateway);
-  const identity = createIdentity(fn, store);
-  const attribution = createAttribution(fn, identity.name);
+  const identity = createIdentity(fn, store, () => auth.user()?.oid);
+  const attribution = createAttribution(fn, identity.name, (event) => liveAttribution.send(event));
+  const liveAttribution = createAttributionSocket({
+    auth,
+    WebSocket: env.WebSocket ?? WebSocket,
+    url: relayUrl(env.socketUrl, base, '/pubsub/ws'),
+    name: () => identity.name() || undefined,
+    onEvent: attribution.ingest,
+  });
   const functions = createFunctions(fn, identity, () => auth.user()?.oid);
   const commands = createCommands(socket, config);
   const queueEdits = createQueueEdits(sonos.fetch);
@@ -126,6 +136,7 @@ export function createWebBridge(env: WebBridgeEnv): WebBridge {
         authFailed.clear();
         authReady.emit();
         void attribution.refresh();
+        liveAttribution.start();
         await socket.start();
       } finally {
         run = null;
@@ -136,6 +147,7 @@ export function createWebBridge(env: WebBridgeEnv): WebBridge {
 
   function stop(): void {
     socket.stop();
+    liveAttribution.stop();
     authed = false;
   }
 
@@ -175,8 +187,8 @@ export function createWebBridge(env: WebBridgeEnv): WebBridge {
     getEntraUser: () => Promise.resolve(auth.user()),
     onEntraReady: (cb) => entraReady.on(cb),
     async entraSignOut() {
+      identity.clear(); // before signing out: the name is stored under the signed-in account
       await auth.signOut();
-      identity.clear();
       entraReady.clear();
       stop();
     },
@@ -193,6 +205,7 @@ export function createWebBridge(env: WebBridgeEnv): WebBridge {
       // An empty name (the sign-out path) skips the claim.
       if (name && oid && (await identity.claim(oid, name))) return { error: 'taken' };
       identity.setName(name);
+      liveAttribution.rename();
       return null;
     },
 
@@ -204,6 +217,11 @@ export function createWebBridge(env: WebBridgeEnv): WebBridge {
 
     // Functions
     ...functions,
+    async renameUser(oldName, newName) {
+      const result = await functions.renameUser(oldName, newName);
+      if (result.ok) liveAttribution.rename(); // the desktop re-inits pubsub under the new name
+      return result;
+    },
     fetchOfficePresence: createPresence({ auth, fetch: doFetch, fn }),
 
     // Artwork
