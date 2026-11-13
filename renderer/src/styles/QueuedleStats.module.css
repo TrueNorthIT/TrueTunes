@@ -98,3 +98,16 @@
 .navBtn {
   padding: 0.5em;
 }
+
+/* ── Phone shell ── */
+/* The 44px pills already space the rows; the gap between them only adds to it. */
+:global(:root[data-shell='phone']) .picker {
+  gap: 0 0.5em;
+}
+/* auto-fit with a 26em floor is wider than the card: one column, and a chart that scrubs sideways but scrolls the page. */
+:global(:root[data-shell='phone']) .twoUp {
+  grid-template-columns: minmax(0, 1fr);
+}
+:global(:root[data-shell='phone']) .chart svg {
+  touch-action: pan-y;
+}

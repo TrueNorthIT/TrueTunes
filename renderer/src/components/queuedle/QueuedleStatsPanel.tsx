@@ -16,7 +16,7 @@ import { PersonChip } from '../common/PersonChip';
 import { PillButton } from '../common/PillButton';
 import { SectionCard } from '../common/SectionCard';
 import { BarList } from '../stats/BarList';
-import { ChartTooltip, TipRow, TipTitle } from '../stats/ChartTooltip';
+import { ChartTooltip, TipRow, TipTitle, clearUnlessTouch, useDismissOnOutsideTap } from '../stats/ChartTooltip';
 import type { Tip } from '../stats/ChartTooltip';
 import { Heatmap } from '../stats/Heatmap';
 import { RAMP } from '../stats/ramp';
@@ -82,12 +82,18 @@ function Swatch({ colour }: { colour: string }) {
 
 // ── Rating over time ─────────────────────────────────────────────────────────
 
+const isPhoneShell = () => document.documentElement.dataset.shell === 'phone';
+
 function RatingChart({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: string) => string | null }) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
+  useDismissOnOutsideTap(ref, hover !== null, () => setHover(null));
   const { dates, series } = useMemo(() => buildRatingSeries(days), [days]);
   const height = 260;
-  const m = { top: 12, right: 150, bottom: 32, left: 50 };
+  // On the phone 150px of names would leave the plot a third of the card: end labels shrink to the value, in the
+  // line's colour (the picker's dots name the colours).
+  const phone = isPhoneShell();
+  const m = { top: 12, right: phone ? 48 : 150, bottom: 32, left: phone ? 44 : 50 };
   const w = Math.max(0, width - m.left - m.right);
   const h = height - m.top - m.bottom;
   const x = (i: number) => m.left + (dates.length <= 1 ? w / 2 : (i / (dates.length - 1)) * w);
@@ -138,8 +144,9 @@ function RatingChart({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: st
         <svg
           width={width}
           height={height}
+          onPointerDown={onMove}
           onPointerMove={onMove}
-          onPointerLeave={() => setHover(null)}
+          onPointerLeave={clearUnlessTouch(() => setHover(null))}
           role="img"
           aria-label="Running average score over time for each player"
         >
@@ -173,8 +180,16 @@ function RatingChart({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: st
             />
           ))}
           {endLabels.map(({ s, y: ly, last }) => (
-            <text key={s.userName} x={m.left + w + 8} y={ly} className={styles.directLabel} dominantBaseline="middle">
-              {s.userName} {Math.round(last)}%
+            <text
+              key={s.userName}
+              x={m.left + w + 8}
+              y={ly}
+              className={styles.directLabel}
+              dominantBaseline="middle"
+              style={phone ? { fill: colourOf(s.userName)! } : undefined}
+            >
+              {phone ? '' : `${s.userName} `}
+              {Math.round(last)}%
             </text>
           ))}
           {hover !== null && (
@@ -280,6 +295,7 @@ function DailyScores({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: st
 function RoundsScatter({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: string) => string | null }) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const [tip, setTip] = useState<Tip | null>(null);
+  useDismissOnOutsideTap(ref, tip !== null, () => setTip(null));
   const points = useMemo(() => buildRoundAverages(days), [days]);
   const size = Math.min(width, 520);
   const m = { top: 14, right: 16, bottom: 48, left: 58 };
@@ -298,7 +314,7 @@ function RoundsScatter({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: 
   const ordered = [...points].sort((a, b) => Number(!!colourOf(a.userName)) - Number(!!colourOf(b.userName)));
 
   return (
-    <div ref={ref} className={styles.chart} onPointerLeave={() => setTip(null)}>
+    <div ref={ref} className={styles.chart} onPointerLeave={clearUnlessTouch(() => setTip(null))}>
       {width > 0 && (
         <svg
           width={size}

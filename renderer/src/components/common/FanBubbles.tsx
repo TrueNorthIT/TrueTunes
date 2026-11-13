@@ -39,7 +39,7 @@ export function FanBubbles({ people, size, imageFor, viewer, animate = true, cla
         {
           width: em(width),
           height: em(height),
-          fontSize: `${BUBBLE_SCALE}em`,
+          fontSize: `calc(${BUBBLE_SCALE}em * var(--cloud-scale, 1))`,
           '--cloud-h': em(height),
         } as CSSProperties
       }
