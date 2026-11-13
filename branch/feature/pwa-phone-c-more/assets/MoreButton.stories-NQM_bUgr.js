@@ -1,0 +1,1 @@
+import{n as e}from"./rolldown-runtime-sJBDdmOt.js";import{n as t,t as n}from"./MoreButton-CkH69AcY.js";var r,i,a,o;function s(){return(s=e((()=>{t(),{fn:r}=__STORYBOOK_MODULE_TEST__,i={title:`Common/MoreButton`,component:n,args:{label:`More for Golden Hour`,onClick:r()}},a={},o=[`Default`]})))()}s();export{a as Default,o as __namedExportsOrder,i as default};

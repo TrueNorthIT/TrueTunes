@@ -1,0 +1,1 @@
+import{n as e}from"./rolldown-runtime-sJBDdmOt.js";var t,n,r,i,a,o,s,c;function l(){return(l=e((()=>{t=`_card_1q0rr_1`,n=`_head_1q0rr_11`,r=`_action_1q0rr_30`,i=`_avatar_1q0rr_36`,a=`_who_1q0rr_53`,o=`_name_1q0rr_58`,s=`_caption_1q0rr_65`,c={card:t,head:n,action:r,avatar:i,who:a,name:o,caption:s}})))()}export{l as n,c as t};

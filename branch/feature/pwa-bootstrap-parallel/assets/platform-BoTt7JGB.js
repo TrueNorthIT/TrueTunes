@@ -1,0 +1,1 @@
+import{n as e}from"./rolldown-runtime-sJBDdmOt.js";var t,n;function r(){return(r=e((()=>{t=()=>document.documentElement.dataset.platform===`web`,n=()=>document.documentElement.dataset.shell===`phone`})))()}export{n,t as r,r as t};

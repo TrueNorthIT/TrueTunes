@@ -1,0 +1,1 @@
+import{n as e}from"./rolldown-runtime-sJBDdmOt.js";function t(e,t=2e3){return e.replace(/=w\d+-h\d+/,`=w${t}-h${t}`)}function n(){return(n=e((()=>{})))()}export{t as n,n as t};
