@@ -202,3 +202,6 @@ textarea.input {
 :global(:root[data-shell='phone']) .input {
   min-height: var(--tap);
 }
+:global(:root[data-shell='phone']) .body {
+  overscroll-behavior: contain; /* a scroll at the end of a long form must not pull the page behind it */
+}
