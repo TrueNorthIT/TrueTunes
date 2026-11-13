@@ -150,6 +150,7 @@ export function NowPlayingPage({ isAuthed, playback, np, onShuffle }: Props) {
         </button>
         <span className={styles.grab} aria-hidden="true" />
         <h1 className={styles.heading}>Now playing</h1>
+        <span className={styles.topSpacer} />
       </header>
 
       <div className={styles.artBox}>

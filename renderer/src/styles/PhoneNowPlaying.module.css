@@ -21,7 +21,6 @@
 }
 @keyframes rise {
   from {
-    opacity: 0;
     transform: translateY(24px);
   }
 }
@@ -31,6 +30,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   height: var(--tap);
   margin: 0 -12px;
   flex-shrink: 0;
@@ -45,14 +45,15 @@
   border-radius: var(--r-pill);
   background: var(--glass);
 }
-/* The page's name for a screen reader; sighted people have the art and the title. */
+/* The page's name, small and quiet under the grab handle, centred in the header. */
 .heading {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+  margin-top: 14px;
+  font-size: var(--fs-small);
+  font-weight: 500;
+  color: var(--text-3);
+}
+.topSpacer {
+  width: var(--tap);
 }
 
 /* The art is a square as large as the space left allows, never wider than the column. */

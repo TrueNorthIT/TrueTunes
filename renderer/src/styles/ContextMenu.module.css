@@ -246,3 +246,15 @@
     transition: none;
   }
 }
+
+/* Phone shell: the whole row is a 44px target, and so is the box (a transparent border round the drawn square). */
+:global(:root[data-shell='phone']) .check {
+  align-items: center;
+  min-height: var(--tap);
+}
+:global(:root[data-shell='phone']) .check > input {
+  box-sizing: content-box;
+  border: 13px solid transparent;
+  background-clip: padding-box;
+  margin: -13px -6px -13px -13px;
+}
