@@ -1606,3 +1606,7 @@ button.side:disabled {
   background: var(--bg-1);
   box-shadow: var(--float-shadow);
 }
+/* One column here, so the leaderboard must not stay pinned: it would ride over the answers list below it. */
+:global(:root[data-shell='phone']) .boardCard {
+  position: static;
+}
