@@ -774,8 +774,7 @@ button.tileMain {
   overflow-x: auto;
   scroll-snap-type: x proximity;
   scrollbar-width: none;
-  margin: 0 -1.15em;
-  padding: 0 1.15em 0.2em;
+  padding-bottom: 0.2em;
 }
 :global(:root[data-shell='phone']) .jumpGrid::-webkit-scrollbar {
   display: none;

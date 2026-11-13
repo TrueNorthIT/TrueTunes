@@ -180,8 +180,16 @@ function RatingChart({ days, colourOf }: { days: QueuedleDay[]; colourOf: (u: st
             />
           ))}
           {endLabels.map(({ s, y: ly, last }) => (
-            <text key={s.userName} x={m.left + w + 8} y={ly} className={styles.directLabel} dominantBaseline="middle" style={phone ? { fill: colourOf(s.userName)! } : undefined}>
-              {phone ? '' : `${s.userName} `}{Math.round(last)}%
+            <text
+              key={s.userName}
+              x={m.left + w + 8}
+              y={ly}
+              className={styles.directLabel}
+              dominantBaseline="middle"
+              style={phone ? { fill: colourOf(s.userName)! } : undefined}
+            >
+              {phone ? '' : `${s.userName} `}
+              {Math.round(last)}%
             </text>
           ))}
           {hover !== null && (

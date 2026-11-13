@@ -18,7 +18,11 @@ export interface BarListRow {
 export function BarList({ rows, max, ranked }: { rows: BarListRow[]; max?: number; ranked?: boolean }) {
   const top = max ?? Math.max(1e-9, ...rows.map((r) => r.value));
   return (
-    <div className={styles.bars} data-ranked={ranked ? '' : undefined} style={{ '--rank-col': ranked ? '1.6em' : '0px' } as CSSProperties}>
+    <div
+      className={styles.bars}
+      data-ranked={ranked ? '' : undefined}
+      style={{ '--rank-col': ranked ? '1.6em' : '0px' } as CSSProperties}
+    >
       {rows.map((r, i) => (
         <div key={r.key} className={styles.row} title={r.title}>
           <span className={styles.rank}>{ranked ? i + 1 : ''}</span>
