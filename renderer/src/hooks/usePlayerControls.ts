@@ -12,11 +12,16 @@ export function useVolumeControl(volume: number, { sendOnUnmount = false }: { se
   const preMuteRef = useRef<number>(volume > 0 ? volume : 50);
   /** A change waiting out its 150ms, or null. */
   const pendingRef = useRef<number | null>(null);
+  /** True while a set-volume request is in flight. */
+  const inflightRef = useRef(false);
 
-  // Sync incoming WS volume only when the user isn't actively dragging
+  // Sync incoming WS volume only while the user isn't dragging and no change of ours is in
+  // flight: a push for an older click can still arrive after a newer one was sent, and
+  // letting it land would snap the widget back to a value we've already moved past.
   const dragging = useRef(false);
   useEffect(() => {
-    if (!dragging.current) setLocalVol(volume);
+    if (dragging.current || inflightRef.current) return;
+    setLocalVol(volume);
   }, [volume]);
 
   const commitVolume = (val: number) => {
@@ -24,7 +29,15 @@ export function useVolumeControl(volume: number, { sendOnUnmount = false }: { se
     pendingRef.current = val;
     debounceRef.current = setTimeout(() => {
       pendingRef.current = null;
-      void getActiveProvider().setVolume(val);
+      // The debounce coalesces clicks, so at most one request is ever in flight: from the send
+      // until its response, every push we receive is stale relative to this value.
+      inflightRef.current = true;
+      void getActiveProvider()
+        .setVolume(val)
+        .then(() => {
+          inflightRef.current = false;
+          if (!dragging.current) setLocalVol(val);
+        });
       dragging.current = false;
     }, 150);
   };
