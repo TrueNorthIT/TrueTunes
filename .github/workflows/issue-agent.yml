@@ -1,0 +1,125 @@
+name: Issue agent
+
+# Label an issue `agent` (as an allow-listed user) and a local model on bigmac works on it,
+# then opens a PR or posts its findings. The agent itself lives in the private
+# TrueNorthIT/tn-local-agents kit, pinned below; this file only triggers and gates it.
+on:
+  issues:
+    types: [labeled]
+
+concurrency:
+  group: issue-agent-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  # The kit branch this repo runs. Kit releases are fixed tags (v1.2.0, never moved); to
+  # move this repo to one, point the branch at that tag in the kit. No change needed here.
+  KIT_REF: release/TrueTunes
+  KIT_PROFILE: TrueTunes
+  AGENT_TEAM: local-agent-access   # admins manage who can trigger the agent via this team
+
+jobs:
+  agent:
+    # Who may trigger it is checked in "Authorise": the issue author and whoever added
+    # the label must both be active members of the org team below.
+    if: github.event.label.name == 'agent'
+    runs-on: [self-hosted, bigmac]
+    timeout-minutes: 180
+    env:
+      GH_REPO: ${{ github.repository }}
+      N: ${{ github.event.issue.number }}
+      ISSUE_TITLE: ${{ github.event.issue.title }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          clean: true
+
+      # Read-only access to the private kit, cloned outside the workspace.
+      - id: kit-token
+        uses: actions/create-github-app-token@v3.3.0
+        with:
+          app-id: ${{ vars.BIGMAC_APP_ID }}
+          private-key: ${{ secrets.BIGMAC_APP_PRIVATE_KEY }}
+          repositories: tn-local-agents
+          # Least privilege: clone the kit and check team membership, nothing else.
+          permission-contents: read
+          permission-members: read
+
+      # Both people must be active team members (app token: Organization > Members: read,
+      # so private memberships count). Fails closed; nothing private is fetched otherwise.
+      - name: Authorise
+        id: auth
+        env:
+          GH_TOKEN: ${{ steps.kit-token.outputs.token }}
+          ORG: ${{ github.repository_owner }}
+          SENDER: ${{ github.event.sender.login }}
+          AUTHOR: ${{ github.event.issue.user.login }}
+        run: |
+          ok=true
+          for who in "$SENDER" "$AUTHOR"; do
+            state=$(gh api "orgs/$ORG/teams/$AGENT_TEAM/memberships/$who" --jq .state 2>/dev/null || true)
+            [ "$state" = "active" ] || { echo "::notice::$who is not an active member of $ORG/$AGENT_TEAM; skipping."; ok=false; }
+          done
+          echo "ok=$ok" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch kit
+        if: steps.auth.outputs.ok == 'true'
+        env:
+          TOKEN: ${{ steps.kit-token.outputs.token }}
+        run: |
+          rm -rf "$RUNNER_TEMP/kit"
+          git -c credential.helper= \
+            -c "http.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64)" \
+            clone -q --depth 1 --branch "$KIT_REF" https://github.com/TrueNorthIT/tn-local-agents.git "$RUNNER_TEMP/kit"
+          echo "KIT_DIR=$RUNNER_TEMP/kit" >> "$GITHUB_ENV"
+          echo "::notice::Kit $KIT_REF at $(git -C "$RUNNER_TEMP/kit" rev-parse --short HEAD)"
+
+      - name: Claim
+        if: steps.auth.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: '"$KIT_DIR/adapters/github/run-agent.sh" claim'
+
+      - name: Run agent
+        if: steps.auth.outputs.ok == 'true'
+        run: '"$KIT_DIR/adapters/github/run-agent.sh" run'
+
+      # Write access to this repo, minted only after the agent has finished.
+      - id: app
+        if: steps.auth.outputs.ok == 'true'
+        uses: actions/create-github-app-token@v3.3.0
+        with:
+          app-id: ${{ vars.BIGMAC_APP_ID }}
+          private-key: ${{ secrets.BIGMAC_APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
+
+      - name: Publish
+        if: steps.auth.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          APP_SLUG: ${{ steps.app.outputs.app-slug }}
+        run: '"$KIT_DIR/adapters/github/run-agent.sh" publish'
+
+      - name: Report failure
+        if: (failure() || cancelled()) && steps.auth.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit "$N" --remove-label agent-in-progress || true
+          gh issue comment "$N" --body "Agent run failed: $RUN_URL"
+
+      - name: Clean up
+        if: always()
+        run: |
+          [ -x "${KIT_DIR:-/nonexistent}/adapters/github/run-agent.sh" ] && "$KIT_DIR/adapters/github/run-agent.sh" cleanup || true
+          rm -rf "$RUNNER_TEMP/kit"
