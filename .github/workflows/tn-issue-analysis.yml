@@ -1,0 +1,22 @@
+name: Issue analysis
+
+# A quick analysis comment on new issues and on any issue labelled `analyse`, written by a
+# local model on bigmac. Only members of the TrueNorthIT `local-agent-access` team can trigger it;
+# admins manage who's in that team.
+#
+# Before it can run in this repo:
+#  - the truenorth-big-mac GitHub App is installed on it, and
+#  - it can use the bigmac runner and the org's BIGMAC_APP_ID / BIGMAC_APP_PRIVATE_KEY.
+on:
+  issues:
+    types: [opened, labeled]
+
+# A called workflow can't have more token rights than its caller, so grant them here.
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  analyse:
+    uses: TrueNorthIT/.github/.github/workflows/tn-issue-analysis.yml@v1
+    secrets: inherit
