@@ -21,6 +21,9 @@ env:
   KIT_REF: release/TrueTunes
   KIT_PROFILE: TrueTunes
   AGENT_TEAM: local-agent-access   # admins manage who can trigger the agent via this team
+  # Issues opened by this app (the in-app feedback form) may be worked on too. A bot can't be
+  # in a team, so it is named here; whoever adds the label must still be a team member.
+  TRUSTED_AUTHOR_BOT: "true-tunes-feedback[bot]"
 
 jobs:
   agent:
@@ -52,7 +55,7 @@ jobs:
           permission-contents: read
           permission-members: read
 
-      # Both people must be active team members (app token: Organization > Members: read,
+      # Both people (or just the labeller, for the trusted bot's issues) must be active team members (app token: Organization > Members: read,
       # so private memberships count). Fails closed; nothing private is fetched otherwise.
       - name: Authorise
         id: auth
@@ -63,7 +66,9 @@ jobs:
           AUTHOR: ${{ github.event.issue.user.login }}
         run: |
           ok=true
-          for who in "$SENDER" "$AUTHOR"; do
+          people=("$SENDER")
+          [ "$AUTHOR" = "$TRUSTED_AUTHOR_BOT" ] || people+=("$AUTHOR")
+          for who in "${people[@]}"; do
             state=$(gh api "orgs/$ORG/teams/$AGENT_TEAM/memberships/$who" --jq .state 2>/dev/null || true)
             [ "$state" = "active" ] || { echo "::notice::$who is not an active member of $ORG/$AGENT_TEAM; skipping."; ok=false; }
           done
