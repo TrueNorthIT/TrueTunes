@@ -2,10 +2,9 @@
 # signs in with its own managed identity; no key is stored, read or output anywhere.
 
 locals {
-  # The text to speech REST endpoint on the account's own host. Entra sign-in only works on the custom
-  # subdomain, where the regional path (/cognitiveservices/v1 on uksouth.tts.speech.microsoft.com) gains a
-  # /tts prefix. That path is our reading of the docs ("Use Speech service through a private endpoint");
-  # change it here, and nowhere else, if a real call says otherwise.
+  # The text to speech REST endpoint on the account's own host: the regional path (/cognitiveservices/v1 on
+  # uksouth.tts.speech.microsoft.com) with a /tts prefix. Proved with a real call on 2026-11-24: with Entra
+  # sign-in this path answers 200 and the same path without /tts answers 404. Change it here, and nowhere else.
   speech_tts_url = "https://${azurerm_cognitive_account.speech.custom_subdomain_name}.cognitiveservices.azure.com/tts/cognitiveservices/v1"
 }
 

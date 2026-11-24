@@ -1,0 +1,2 @@
+# Terraform heredocs reach Azure byte for byte: a CRLF checkout makes a hand apply differ from CI (Linux).
+*.tf text eol=lf
