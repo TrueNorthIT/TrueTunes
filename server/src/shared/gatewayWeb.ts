@@ -52,7 +52,8 @@ export interface WebRouteKit {
   responseHeaders: (headers: Headers) => Record<string, string>;
 }
 
-async function callerOf(req: GatewayRequest, kit: WebRouteKit): Promise<{ oid: string } | null> {
+/** The signed-in caller, or null (a token check that throws counts as no caller). */
+export async function callerOf(req: GatewayRequest, kit: WebRouteKit): Promise<{ oid: string } | null> {
   const authorization = req.headers['authorization'];
   try {
     return await kit.verify(typeof authorization === 'string' ? authorization : undefined);
@@ -175,7 +176,7 @@ export async function imageRoute(req: GatewayRequest, query: string, kit: WebRou
 }
 
 /** First path segments that belong to the API: a miss under them is a 404, never the app shell. */
-const RESERVED = new Set(['sonos', 'fn', 'img', 'pubsub', 'healthz']);
+const RESERVED = new Set(['sonos', 'fn', 'img', 'tts', 'pubsub', 'healthz']);
 /** Files a browser must revalidate every time, so a new deploy is seen at once. */
 const NO_CACHE = new Set(['/index.html', '/sw.js', '/manifest.webmanifest']);
 const SHELL = '/index.html';

@@ -15,10 +15,13 @@ locals {
   state_container_id = "${local.rg_id}/providers/Microsoft.Storage/storageAccounts/truetunestfstate/blobServices/default/containers/tfstate"
 
   # Built-in role definition ids that the deploy identity may assign: Key Vault Secrets User and
-  # Key Vault Secrets Officer, the two roles keyvault.tf hands out.
+  # Key Vault Secrets Officer, the two roles keyvault.tf and gateway.tf hand out, and Cognitive Services
+  # Speech User, which speech.tf hands out. Changing this list changes the condition on
+  # ci_deploy_rbac_admin below, so a person applies it.
   deployer_assignable_roles = join(", ", [
     "4633458b-17de-408a-b874-0445c86b69e6", # Key Vault Secrets User
     "b86a8fe4-44ce-4948-aee5-eccb2c155cd7", # Key Vault Secrets Officer
+    "f2dc8367-1007-4938-bd23-fe263f013447", # Cognitive Services Speech User
   ])
 }
 
@@ -51,9 +54,10 @@ resource "azurerm_role_assignment" "ci_deploy_contributor" {
 
 # Contributor cannot write role assignments, and keyvault.tf assigns "Key Vault Secrets User" to the
 # Function App. This role is broad (it can grant access), so it carries a condition: the identity may
-# only add or remove assignments of the two Key Vault secret roles. It therefore cannot make itself
-# Owner, and it cannot change the assignments in this file; a change to ci.tf's role assignments is
-# applied by a person.
+# only add or remove assignments of the roles in deployer_assignable_roles (the two Key Vault secret
+# roles and Cognitive Services Speech User). It therefore cannot make itself Owner, and it cannot change
+# the assignments in this file, this one included; a change to ci.tf's role assignments is applied by a
+# person.
 resource "azurerm_role_assignment" "ci_deploy_rbac_admin" {
   scope                = data.azurerm_resource_group.main.id
   role_definition_name = "Role Based Access Control Administrator"

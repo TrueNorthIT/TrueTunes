@@ -35,6 +35,8 @@ export interface AttributionEvent {
 export interface AudioClipRequest {
   url?: string;
   text?: string;
+  /** The Azure voice for `text`: `en-GB-…Neural`. Left out, the gateway uses its default (`en-GB-SoniaNeural`). */
+  voice?: string;
   volume?: number;
   playerIds?: string[];
 }

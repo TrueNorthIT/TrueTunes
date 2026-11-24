@@ -4,7 +4,7 @@
     {
       "id": "gw-static",
       "area": "gateway",
-      "description": "The gateway serves the built web app's files: `/` and unknown extension-less paths give index.html (SPA fallback), files under the web root are served with their type, nothing outside the root can be read, and reserved prefixes (/sonos, /fn, /img, /healthz) never fall through to it.",
+      "description": "The gateway serves the built web app's files: `/` and unknown extension-less paths give index.html (SPA fallback), files under the web root are served with their type, nothing outside the root can be read, and reserved prefixes (/sonos, /fn, /img, /tts, /healthz) never fall through to it.",
       "how_verified": "server unit tests (gatewayStatic.test.ts, gatewayHttp.test.ts); then curl against production",
       "passes": true,
       "evidence": "`node scripts/web/checks.mjs https://truetunes.tnapps.co.uk --pwa`: 48 of 48 PASS on 12 Nov 2026, after the deploy of e51798b (#265, Publish run 43301237597): / , /demo and /auth/redirect serve the shell; missing files, dot-files and traversal are 404; /sonos/nope is 404. Unit: server gatewayWeb.test.ts, gatewayNode.test.ts."
@@ -432,7 +432,7 @@
     {
       "id": "pwa-service-worker",
       "area": "installability",
-      "description": "A service worker that caches the app shell and hashed assets and never caches /sonos, /fn, /img, the relay, sign-in responses or any request carrying Authorization.",
+      "description": "A service worker that caches the app shell and hashed assets and never caches /sonos, /fn, /img, /tts, the relay, sign-in responses or any request carrying Authorization.",
       "how_verified": "unit tests of the worker's routing decision; Playwright checks registration and the cache contents after a session",
       "passes": true,
       "evidence": "`npx vitest run --config renderer/vitest.config.ts --project unit renderer/src/web`: 308 pass (13 files) (sw.test.ts: 13 kinds of request left to the network with nothing stored). `node scripts/web/pwa.mjs` in `validate` on #265 (typecheck, lint, format, both builds, 2,142 renderer tests, the journeys and pwa.mjs in Chromium). Production after a visit: the worker controls the page and the cache holds nothing outside the shell, manifest, icons and /assets."

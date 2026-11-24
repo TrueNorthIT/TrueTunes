@@ -9,7 +9,7 @@ import { createHash } from 'crypto';
 
 const pkg = JSON.parse(readFileSync(path.resolve(__dirname, '../package.json'), 'utf8')) as { version: string };
 
-/** A gateway to send /sonos, /fn and /img to while developing (the relay too). Unset: those calls fail locally. */
+/** A gateway to send /sonos, /fn, /img and /tts to while developing (the relay too). Unset: those calls fail locally. */
 const devGateway = process.env['TRUETUNES_DEV_GATEWAY'];
 
 /** As in vite.config.ts: the dev server needs inline scripts and its HMR socket, which the built policy refuses. */
@@ -80,7 +80,7 @@ export default defineConfig({
     ...(devGateway
       ? {
           proxy: Object.fromEntries(
-            ['/sonos', '/fn', '/img'].map((p) => [p, { target: devGateway, changeOrigin: true, ws: true }])
+            ['/sonos', '/fn', '/img', '/tts'].map((p) => [p, { target: devGateway, changeOrigin: true, ws: true }])
           ),
         }
       : {}),

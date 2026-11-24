@@ -19,6 +19,7 @@ with OIDC workload identity federation, so GitHub holds no Azure secret. A perso
 | `functions.tf` | Consumption plan, Function App and its app settings |
 | `keyvault.tf` | Key Vault, the Function App's access to it |
 | `gateway.tf` | The Sonos gateway: Linux plan, web app, its Key Vault access, optional custom domain and certificate |
+| `speech.tf` | Azure Speech (text to speech) for the gateway's announcements, and who may call it |
 | `ci.tf` | The two GitHub Actions identities, their federated credentials and roles |
 | `scripts/load-secrets.mjs` | Copies the secrets from `.env` into the vault, by hand |
 | `imports.tf` | `import` blocks that adopted the live resources into state |
@@ -109,6 +110,32 @@ creates two records first, then turns the binding on. In this order:
 Setting the variable before the records exist makes every `deploy` fail at the binding, which blocks the desktop
 release. The deploy smoke check uses the default host, so it does not prove the custom domain.
 
+## Azure Speech
+
+`speech.tf` describes `truetunes-speech`, an Azure Speech account (`kind` `SpeechServices`) the gateway calls to turn
+announcement text into MP3. It is on the free tier, **F0**: 0.5 million characters of neural voices a month, and past
+that Speech throttles requests (HTTP 429) until the next month; it does not start billing.
+
+Sign-in is by managed identity only. Key sign-in is switched off on the account (`local_auth_enabled = false`), so
+there is no key in state, in Key Vault or in an app setting. The gateway's identity holds "Cognitive Services Speech
+User" on the account and gets two plain settings, `SPEECH_TTS_URL` and `SPEECH_RESOURCE_ID`. The people in
+`KEY_VAULT_SECRETS_OFFICERS` hold the same role: with keys off it is the only way to make a test call from a laptop.
+Entra sign-in needs a custom subdomain, `truetunes-speech.cognitiveservices.azure.com`, and **the subdomain is
+permanent**: it cannot be changed or removed, only replaced along with the account.
+
+**The first apply that adds it is by hand, by a person, before the change merges to `main`** ("Running it locally"),
+exactly as the gateway's was. It adds "Cognitive Services Speech User" to the roles the deploy identity may assign,
+which changes the condition on its own role assignment in `ci.tf` (`ci_deploy_rbac_admin`); the condition does not
+allow that, so a CI apply of this change fails with an authorisation error and blocks the desktop release. Before
+that apply, check the resource provider is registered, because Terraform registers nothing (`versions.tf`):
+
+```bash
+az provider show --namespace Microsoft.CognitiveServices --query registrationState -o tsv   # want "Registered"
+az provider register --namespace Microsoft.CognitiveServices --wait                         # only if it is not
+```
+
+The new settings restart the gateway. After the apply CI manages the account, the settings and both role assignments.
+
 ## CI identities
 
 Both are user-assigned managed identities in `ci.tf`, each with one federated credential for
@@ -125,11 +152,12 @@ the one named can use the identity.
 | Role | Scope | Why |
 | --- | --- | --- |
 | Contributor | resource group | create, change and delete the resources in this directory; publish function code |
-| Role Based Access Control Administrator | resource group | `keyvault.tf` assigns Key Vault roles, which Contributor cannot do |
+| Role Based Access Control Administrator | resource group | `keyvault.tf`, `gateway.tf` and `speech.tf` assign roles, which Contributor cannot do |
 | Storage Blob Data Contributor | `tfstate` container | read and write state and take its lock (Entra auth) |
 
 The Key Vault assignment for the gateway (`gateway_secrets_user`) is within that condition, so CI can create it. The RBAC Administrator role is broad (it can grant access), so its assignment has a condition: it may only add or
-remove assignments of "Key Vault Secrets User" and "Key Vault Secrets Officer". It cannot make itself Owner, and it
+remove assignments of "Key Vault Secrets User", "Key Vault Secrets Officer" and "Cognitive Services Speech User" (the
+list is `deployer_assignable_roles` in `ci.tf`). It cannot make itself Owner, and it
 cannot change the role assignments in `ci.tf`: a change to those is applied by a person, and a CI apply that includes
 one fails with an authorisation error. Contributor also lets it change the state storage account's settings (not its
 blobs).
@@ -146,7 +174,8 @@ The custom role has these actions and nothing else (no write, no delete): `Micro
 `Microsoft.Storage/storageAccounts/listKeys/action`, `Microsoft.DocumentDB/databaseAccounts/listKeys/action`,
 `.../readonlykeys/action`, `.../listConnectionStrings/action`, `Microsoft.SignalRService/webPubSub/listKeys/action`
 and `Microsoft.OperationalInsights/workspaces/sharedKeys/action`. It is assigned per resource, not on the group, so
-the identity cannot list the state account's keys (which would let it write state).
+the identity cannot list the state account's keys (which would let it write state). The Speech account needs no
+entry: the provider lists its keys only while key sign-in is on, and it is off.
 
 **This identity cannot create, modify or delete any Azure resource and cannot write state. It can read the Function
 App's app settings, the storage, Cosmos, Web PubSub and Log Analytics keys, and the state blob, which holds the same

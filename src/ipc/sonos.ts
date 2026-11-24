@@ -4,8 +4,10 @@ import { ipcMain, IpcMainInvokeEvent } from 'electron';
 import WebSocket from 'ws';
 import type { AudioClipRequest, FetchRequest, FetchResponse } from '../types';
 import * as smtc from '../smtc';
-import { config, log, saveConfig } from '../state';
+import { config, log, saveConfig, SONOS_GATEWAY_URL } from '../state';
 import { sonosFetch } from '../sonos-api';
+import { speechStreamUrl } from '../sonos-transport';
+import { fnFetch } from './entra';
 import { ws, wsSend, discoveredGroups, resyncRendererState } from '../sonos-ws';
 
 // ─── Queue reorder algorithm ──────────────────────────────────────────────────
@@ -108,22 +110,24 @@ export function register(): void {
 
   // Plays a sound over the music without touching the queue (Sonos ducks the music, then carries on).
   // Clips play on one player each, so it goes to every player in the active group unless playerIds says otherwise.
-  ipcMain.handle('audioClip:play', (_event: IpcMainInvokeEvent, clip: AudioClipRequest) => {
+  // `text` is spoken in `voice` (a British Azure neural voice; the gateway has a default).
+  ipcMain.handle('audioClip:play', async (_event: IpcMainInvokeEvent, clip: AudioClipRequest) => {
     if (!ws || ws.readyState !== WebSocket.OPEN) return { error: 'WS not connected' };
-    // shortcut: unofficial Google Translate TTS (no key, ~200 chars, could vanish); Azure Speech if this sticks.
-    const streamUrl = clip?.text
-      ? `https://translate.google.com/translate_tts?ie=UTF-8&tl=en-GB&client=tw-ob&q=${encodeURIComponent(clip.text)}`
-      : clip?.url;
-    if (!streamUrl?.startsWith('https://')) return { error: 'Need text or an https url' };
+    if (!clip?.text && !clip?.url?.startsWith('https://')) return { error: 'Need text or an https url' };
     const volume = clip.volume ?? 30;
     if (typeof volume !== 'number' || volume < 0 || volume > 100) return { error: 'Invalid volume' };
     const playerIds = clip.playerIds ?? discoveredGroups.find((g) => g.id === config.groupId)?.playerIds ?? [];
     if (!playerIds.length) return { error: 'No active group' };
+    // Last, once nothing else can refuse the clip: the speech is made once, and every player gets the same link.
+    const speech = clip.text
+      ? await speechStreamUrl({ text: clip.text, voice: clip.voice, gatewayBase: SONOS_GATEWAY_URL, fetch: fnFetch })
+      : { streamUrl: clip.url };
+    if ('error' in speech) return speech;
     const payload = {
       name: 'TrueTunes',
       appId: 'com.truetunes',
       clipType: 'CUSTOM',
-      streamUrl,
+      streamUrl: speech.streamUrl,
       priority: 'LOW',
       volume,
     };

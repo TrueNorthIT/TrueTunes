@@ -94,7 +94,7 @@ export function createWebBridge(env: WebBridgeEnv): WebBridge {
     onEvent: attribution.ingest,
   });
   const functions = createFunctions(fn, identity, () => auth.user()?.oid);
-  const commands = createCommands(socket, config);
+  const commands = createCommands(socket, config, gateway);
   const queueEdits = createQueueEdits(sonos.fetch);
 
   // Decided once per page load, as the desktop does at launch.

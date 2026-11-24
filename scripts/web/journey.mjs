@@ -121,7 +121,7 @@ const pageErrors = [];
 page.on('request', (req) => {
   const url = new URL(req.url());
   if (url.protocol === 'data:' || url.protocol === 'blob:') return;
-  const apiPath = /^\/(sonos|fn|img)(\/|$)/.test(url.pathname);
+  const apiPath = /^\/(sonos|fn|img|tts)(\/|$)/.test(url.pathname);
   if (url.origin !== origin || apiPath) strayRequests.push(`${req.method()} ${url.origin}${url.pathname}`);
 });
 page.on('websocket', (ws) => strayRequests.push(`WebSocket ${ws.url()}`));
