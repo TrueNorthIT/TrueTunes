@@ -7,7 +7,9 @@
 //                      loophole here); forwarded to play.sonos.com, answered unchanged
 //   ANY /fn/*          the Function App, for a signed-in caller (gatewayWeb.ts)
 //   GET /img?url=      artwork from a named list of hosts, for a signed-in caller (gatewayWeb.ts)
-//   GET anything else  the web app's static files, when the entry point serves them (gatewayWeb.ts); else 404
+//   POST /tts          text to an MP3 of it spoken, for a signed-in caller; answers a link (gatewayTts.ts)
+//   GET /tts/<id>.mp3  that MP3, for the speakers: no sign-in, the unguessable id is the key, gone in 5 minutes
+//   GET anything else the web app's static files, when the entry point serves them (gatewayWeb.ts); else 404
 //
 // This is a plain function over plain objects. The Node `http` wiring, the Entra check (`verify`) and the
 // Sonos session are injected, so nothing here imports Azure or touches the network by itself.
@@ -16,6 +18,7 @@
 // appear in no log line, and a failure is reported by name only ('sonos-login-failed', 'sonos-unreachable').
 import { SonosLoginError } from './sonosSession';
 import { functionsRoute, imageRoute, staticRoute, type StaticLookup, type WebRouteKit } from './gatewayWeb';
+import { createTtsRoute, type Speak } from './gatewayTts';
 
 export const SONOS_ORIGIN = 'https://play.sonos.com';
 export const SESSION_COOKIE = '__Secure-next-auth.session-token';
@@ -53,6 +56,10 @@ export interface GatewayDeps {
   log?: (msg: string) => void;
   /** The built web app's files by URL path. Without it the gateway serves no static files (404). */
   staticFile?: StaticLookup;
+  /** Makes the MP3 for POST /tts. Absent means Speech is not configured (the route answers 503 speech-unavailable). */
+  speech?: Speak;
+  /** Milliseconds since the epoch; defaults to Date.now. Decides when a /tts link has expired (5 minutes). */
+  now?: () => number;
 }
 
 /** Request headers the gateway never forwards: the client's identity and connection details. */
@@ -126,6 +133,8 @@ export function createGatewayHandler(deps: GatewayDeps): (req: GatewayRequest) =
   }
 
   const web: WebRouteKit = { fetch: deps.fetch, verify: deps.verify, log, json, forwardedHeaders, responseHeaders };
+  // Speech is reached only through `deps.speech`, never through `deps.fetch`.
+  const ttsRoute = createTtsRoute(web, deps.speech, deps.now ?? Date.now);
 
   return async function handle(req: GatewayRequest): Promise<GatewayResponse> {
     const queryAt = req.url.indexOf('?');
@@ -136,6 +145,7 @@ export function createGatewayHandler(deps: GatewayDeps): (req: GatewayRequest) =
 
     if (path === '/fn' || path.startsWith('/fn/')) return functionsRoute(req, path.slice('/fn/'.length), query, web);
     if (path === '/img') return imageRoute(req, query, web);
+    if (path === '/tts' || path.startsWith('/tts/')) return ttsRoute(req, path);
 
     // Under /sonos only /sonos/api/... is forwarded. Anything else, in any spelling, goes nowhere: it is the
     // web app's file if there is one, and otherwise 404.

@@ -494,10 +494,14 @@ interface SonosPreload {
   setGroupVolume: (volume: number) => Promise<unknown>;
   setQueueId: (queueId: string) => Promise<void>;
   loadContent: (payload: Record<string, unknown>) => Promise<unknown>;
-  /** Speak `text` or play an https `url` over the music on every player in the active group (or `playerIds`). */
+  /**
+   * Speak `text` or play an https `url` over the music on every player in the active group (or `playerIds`).
+   * `voice` picks the Azure voice for `text` (`en-GB-…Neural`; default `en-GB-SoniaNeural`).
+   */
   playAudioClip: (clip: {
     url?: string;
     text?: string;
+    voice?: string;
     volume?: number;
     playerIds?: string[];
   }) => Promise<{ playerId: string; result: unknown }[] | { error: string }>;

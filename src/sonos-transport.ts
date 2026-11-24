@@ -81,6 +81,36 @@ export function sonosImageRequest(
   };
 }
 
+/** The fallback voice: unofficial Google Translate TTS (no key, ~200 chars, could vanish). */
+export const googleTtsUrl = (text: string): string =>
+  `https://translate.google.com/translate_tts?ie=UTF-8&tl=en-GB&client=tw-ob&q=${encodeURIComponent(text)}`;
+
+/**
+ * The audio URL that speaks `text`: the gateway's Azure Speech link (POST /tts), or the Google one when the
+ * gateway cannot give a link. A 400 is the gateway refusing the text or the voice: an error, and nothing plays.
+ * Whatever `sonosVia` says, the speech is the gateway's: `fetch` is one that adds the Entra ID token (fnFetch).
+ */
+export async function speechStreamUrl(o: {
+  text: string;
+  voice?: string;
+  gatewayBase: string;
+  fetch: (url: string, init: RequestInit) => Promise<Response>;
+}): Promise<{ streamUrl: string } | { error: string }> {
+  try {
+    const res = await o.fetch(`${o.gatewayBase.replace(/\/+$/, '')}/tts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: o.text, voice: o.voice }),
+    });
+    const body = (await res.json().catch(() => null)) as { url?: unknown; error?: unknown } | null;
+    if (res.status === 400) return { error: typeof body?.error === 'string' ? body.error : 'Invalid announcement' };
+    if (res.ok && typeof body?.url === 'string' && body.url.startsWith('https://')) return { streamUrl: body.url };
+  } catch {
+    /* the gateway could not be reached: the Google voice */
+  }
+  return { streamUrl: googleTtsUrl(o.text) };
+}
+
 /** `https://host` → `wss://host/sonos/ws` (http → ws, for a local dev gateway). */
 export function gatewaySocketUrl(gatewayBase: string): string {
   return `${gatewayBase.replace(/\/+$/, '').replace(/^http/, 'ws')}/sonos/ws`;

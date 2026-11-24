@@ -7,6 +7,7 @@ import { errorText, log, since } from './log';
 import { callerFrom, displayName, entraIdToken, type Caller } from './identity';
 import { recallHit, rememberHits, type RememberedHit } from './refs';
 import { searchMusic, withOffice, type RoomState } from './sonos/office';
+import { speechUrl } from './speech';
 import { djFillerIndex, formatDuration, positionAfterCurrent, type QueueEntry, type SearchHit } from './sonos/parse';
 import { recentActivity, recordActivity } from './store';
 import { attribution, publishQueued, stats, type QueuedItem } from './truetunes';
@@ -427,9 +428,15 @@ export function registerTools(server: McpServer): void {
       run('announce', ctx, { message, volume, room: wanted }, async (caller) =>
         withOffice(async (office) => {
           const rs = office.pick(wanted);
-          // Same unofficial Google Translate TTS the desktop app uses (src/ipc/sonos.ts).
-          const streamUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=en-GB&client=tw-ob&q=${encodeURIComponent(message)}`;
-          await office.announce(rs, streamUrl, Math.min(volume, env.maxVolume()));
+          // The same voice as the desktop app (src/ipc/sonos.ts): Azure Speech through the gateway, as the person
+          // asking, or Google if that fails.
+          const idToken = await entraIdToken(caller).catch((err) => {
+            console.warn('[tool] no Entra ID token for the announcement:', err);
+            return undefined;
+          });
+          const speech = await speechUrl({ text: message, idToken, gatewayUrl: env.gatewayUrl() });
+          if ('error' in speech) throw new Error(`The announcement was refused: ${speech.error}`);
+          await office.announce(rs, speech.streamUrl, Math.min(volume, env.maxVolume()));
           await recordActivity(await displayName(caller), `announced "${message}" in ${rs.room.name}`);
           return `Announced in ${rs.room.name}: "${message}"`;
         })

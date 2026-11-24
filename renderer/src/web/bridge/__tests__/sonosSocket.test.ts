@@ -1,5 +1,17 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { DEVICES, FakeWebSocket, fakeAuth, makeBridge, playSonos, startReady, tick, last, type Frame } from './helpers';
+import {
+  DEVICES,
+  FakeWebSocket,
+  fakeAuth,
+  json,
+  makeBridge,
+  playSonos,
+  startReady,
+  text,
+  tick,
+  last,
+  type Frame,
+} from './helpers';
 
 afterEach(() => vi.useRealTimers());
 
@@ -355,16 +367,165 @@ describe('commands', () => {
       ]);
     });
 
-    it('speaks text through Google TTS, with a volume and chosen players', async () => {
+    // The announcement path under test is playAudioClip -> gateway POST /tts -> `audioClip` frames. The gateway's
+    // contract is in server/src/shared/gatewayTts.test.ts; the web bridge's code is renderer/src/web/bridge/commands.ts.
+    const MINTED = 'https://gw.test/tts/AbCdEfGhIjKlMnOpQrStUv.mp3';
+    const GOOGLE = (q: string) => `https://translate.google.com/translate_tts?ie=UTF-8&tl=en-GB&client=tw-ob&q=${q}`;
+    const mints = (h: ReturnType<typeof makeBridge>) => h.fake.on('POST', '/tts', () => json({ url: MINTED }));
+
+    // REQ-1: "A spoken announcement plays in a natural British Azure voice." Given { text }, playAudioClip POSTs
+    // it to the gateway's /tts with the caller's Entra token and plays the minted link, with the volume and players asked for.
+    it('REQ-1: speaks text through the gateway’s Azure Speech link, with a volume and chosen players', async () => {
       const h = makeBridge();
+      mints(h);
       const ws = await startReady(h);
       await h.bridge.playAudioClip({ text: 'hello there', volume: 55, playerIds: ['RINCON_C'] });
+
+      const posts = h.fake.to('/tts', 'POST');
+      expect(posts, 'Expected exactly one POST /tts for one announcement').toHaveLength(1);
+      expect(posts[0].headers['authorization'], 'Expected the caller’s Entra ID token as a Bearer token').toBe(
+        'Bearer tok-1'
+      );
+      expect(posts[0].headers['content-type'], 'Expected a JSON body').toMatch(/application\/json/);
+      expect(posts[0].json(), 'Expected the body to be { text } (the gateway picks the default voice)').toEqual({
+        text: 'hello there',
+      });
       const [[hd, payload]] = ws.commands('audioClip');
       expect(hd['playerId']).toBe('RINCON_C');
-      expect(payload).toMatchObject({
+      expect(payload, 'Expected the speakers to be given the minted gateway link, not a Google URL').toMatchObject({
         volume: 55,
-        streamUrl: 'https://translate.google.com/translate_tts?ie=UTF-8&tl=en-GB&client=tw-ob&q=hello%20there',
+        streamUrl: MINTED,
       });
+    });
+
+    // REQ-2: "The caller can choose the voice for one announcement." { text, voice } is passed to /tts unchanged.
+    it('REQ-2: passes a chosen voice to the gateway', async () => {
+      const h = makeBridge();
+      mints(h);
+      await startReady(h);
+      await h.bridge.playAudioClip({ text: 'Hi', voice: 'en-GB-RyanNeural' });
+      expect(h.fake.to('/tts', 'POST')[0]?.json(), 'Expected { text, voice } in the POST /tts body').toEqual({
+        text: 'Hi',
+        voice: 'en-GB-RyanNeural',
+      });
+    });
+
+    // REQ-8: "One announcement uses the quota once, however many speakers are in the group." The active group has
+    // two players: one POST /tts, and both speakers are given the same link.
+    it('REQ-8: one announcement to a two-speaker group makes one /tts request and gives both speakers the same link', async () => {
+      const h = makeBridge();
+      mints(h);
+      const ws = await startReady(h);
+      await h.bridge.playAudioClip({ text: 'Pizza is here' });
+      expect(h.fake.to('/tts', 'POST'), 'Expected one speech request for the whole group').toHaveLength(1);
+      const clips = ws.commands('audioClip', 'loadAudioClip');
+      expect(clips.map(([hd]) => hd['playerId'])).toEqual(['RINCON_A', 'RINCON_B']);
+      expect(clips.map(([, payload]) => (payload as { streamUrl: string }).streamUrl)).toEqual([MINTED, MINTED]);
+    });
+
+    // REQ-3 / REQ-10: "A voice that is not a British neural voice is refused." / "Text over 500 characters is
+    // refused." The gateway answers 400 { error }: playAudioClip returns that error and sends nothing to the speakers.
+    it.each([
+      ['REQ-3', 'Invalid voice', { text: 'Hi', voice: 'fr-FR-DeniseNeural' }],
+      ['REQ-10', 'Invalid text', { text: 'a'.repeat(501) }],
+    ])(
+      '%s: a gateway 400 %j is returned as { error } and nothing is sent to the speakers',
+      async (_req, error, clip) => {
+        const h = makeBridge();
+        h.fake.on('POST', '/tts', () => json({ error }, 400));
+        const ws = await startReady(h);
+        const res = await h.bridge.playAudioClip(clip);
+        expect(res, `Expected { error: "${error}" } from the gateway to come back`).toEqual({ error });
+        expect(ws.commands('audioClip'), 'Expected no audioClip frame after a refused announcement').toHaveLength(0);
+      }
+    );
+
+    // REQ-4: "If Azure Speech cannot produce the audio, the announcement still plays in the Google voice." Any
+    // failure other than a 400 (503 speech-unavailable, 429, 5xx, 401, no JSON, no network) falls back to today's URL.
+    it.each([
+      ['a 503 speech-unavailable', () => json({ error: 'speech-unavailable' }, 503)],
+      ['a 429', () => json({ error: 'quota' }, 429)],
+      ['a 500', () => text('boom', 500)],
+      ['a 401', () => json({ error: 'sign-in required' }, 401)],
+      ['a 200 that is not JSON', () => text('<html>oops</html>', 200)],
+      [
+        'a network error',
+        (): Response => {
+          throw new TypeError('Failed to fetch');
+        },
+      ],
+    ])('REQ-4: %s from /tts falls back to the Google voice and still plays', async (_what, respond) => {
+      const h = makeBridge();
+      h.fake.on('POST', '/tts', respond);
+      const ws = await startReady(h);
+      const res = await h.bridge.playAudioClip({ text: 'hello there', volume: 55, playerIds: ['RINCON_C'] });
+      expect(h.fake.to('/tts', 'POST'), 'Expected the gateway to have been tried first').not.toHaveLength(0);
+      const [[hd, payload]] = ws.commands('audioClip');
+      expect(hd['playerId']).toBe('RINCON_C');
+      expect(payload, 'Expected the exact Google Translate URL as before').toMatchObject({
+        volume: 55,
+        streamUrl: GOOGLE('hello%20there'),
+      });
+      expect(res, 'Expected the announcement to be reported as played, not as an error').toEqual([
+        { playerId: 'RINCON_C', result: {} },
+      ]);
+    });
+
+    // REQ-4: the Google fallback applies to a chosen voice too (Google has one voice).
+    it('REQ-4: a failed /tts with a chosen voice still plays the Google URL', async () => {
+      const h = makeBridge();
+      h.fake.on('POST', '/tts', () => json({ error: 'speech-unavailable' }, 503));
+      const ws = await startReady(h);
+      await h.bridge.playAudioClip({ text: 'Hi', voice: 'en-GB-RyanNeural', playerIds: ['RINCON_C'] });
+      expect(h.fake.to('/tts', 'POST'), 'Expected the gateway to have been tried first').toHaveLength(1);
+      expect(ws.commands('audioClip')[0]?.[1]).toMatchObject({ streamUrl: GOOGLE('Hi') });
+    });
+
+    // REQ-11: "Playing a sound file by URL works as it does today." A { url } clip is played as given and never
+    // goes near the speech service.
+    it('REQ-11: a { url } clip plays that URL and makes no /tts request', async () => {
+      const h = makeBridge();
+      mints(h);
+      const ws = await startReady(h);
+      await h.bridge.playAudioClip({ url: 'https://example.com/ding.mp3' });
+      expect(
+        ws.commands('audioClip', 'loadAudioClip')[0]?.[1],
+        'Expected the given URL to reach the speakers'
+      ).toMatchObject({ streamUrl: 'https://example.com/ding.mp3' });
+      expect(h.fake.to('/tts'), 'Expected a plain sound file not to use speech quota').toHaveLength(0);
+    });
+
+    // A 200 that carries no usable link is a failure like any other.
+    it.each([
+      ['no url', {}],
+      ['a url that is not https', { url: 'http://gw.test/tts/x.mp3' }],
+    ])('REQ-4: a 200 from /tts with %s falls back to the Google voice', async (_what, body) => {
+      const h = makeBridge();
+      h.fake.on('POST', '/tts', () => json(body));
+      const ws = await startReady(h);
+      await h.bridge.playAudioClip({ text: 'Hi', playerIds: ['RINCON_C'] });
+      expect(ws.commands('audioClip')[0]?.[1]).toMatchObject({ streamUrl: GOOGLE('Hi') });
+    });
+
+    // With no token the gateway door answers null without a request; the announcement still plays.
+    it('REQ-4: with no token to send, the Google voice plays and /tts is not asked', async () => {
+      const h = makeBridge();
+      mints(h);
+      const ws = await startReady(h);
+      h.auth.token = null;
+      await h.bridge.playAudioClip({ text: 'Hi', playerIds: ['RINCON_C'] });
+      expect(h.fake.to('/tts')).toHaveLength(0);
+      expect(ws.commands('audioClip')[0]?.[1]).toMatchObject({ streamUrl: GOOGLE('Hi') });
+    });
+
+    // Speech is made last: a clip that would be refused anyway spends no quota.
+    it('makes no /tts request for text that fails its other checks', async () => {
+      const h = makeBridge();
+      mints(h);
+      await startReady(h);
+      expect(await h.bridge.playAudioClip({ text: 'Hi', volume: 101 })).toEqual({ error: 'Invalid volume' });
+      expect(await h.bridge.playAudioClip({ text: 'Hi', playerIds: [] })).toEqual({ error: 'No active group' });
+      expect(h.fake.to('/tts')).toHaveLength(0);
     });
 
     it('validates', async () => {

@@ -41,6 +41,10 @@ resource "azurerm_linux_web_app" "gateway" {
       ENTRA_CLIENT_ID                = var.entra_client_id
       # azurerm_linux_web_app has no typed argument for this (the Function App has); this is the setting it writes.
       APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.main.connection_string
+      # Azure Speech for announcements (speech.tf). Neither is a secret: the gateway signs in with its
+      # identity, and Speech wants the account's resource id alongside the Entra token.
+      SPEECH_TTS_URL     = local.speech_tts_url
+      SPEECH_RESOURCE_ID = azurerm_cognitive_account.speech.id
     },
     local.gateway_secret_settings,
   )

@@ -3,11 +3,11 @@
 // Callers authenticate with an Entra ID token; the gateway holds the Sonos session.
 //
 // Runs on Azure App Service (Linux, Node 22): `node dist/gateway/main.js`, listening on PORT.
-// All the logic is in shared/gatewayHttp.ts and gatewayWeb.ts (HTTP) and shared/gatewayRelay.ts (WebSocket);
-// this file only wires them to node:http and `ws`.
+// All the logic is in shared/gatewayHttp.ts, gatewayWeb.ts and gatewayTts.ts (HTTP) and shared/gatewayRelay.ts
+// (WebSocket); this file only wires them to node:http and `ws`.
 //
 // Logs one line per request and per socket open/close. Never headers, query strings, bodies,
-// tokens, tickets or the session.
+// tokens, tickets, the session or the id of an announcement link.
 import http from 'node:http';
 import path from 'node:path';
 import type { Duplex } from 'node:stream';
@@ -23,6 +23,7 @@ import {
   handleProtocols,
 } from '../shared/gatewayRelay';
 import { FUNCTIONS_ORIGIN } from '../shared/gatewayWeb';
+import { createSpeech, ttsLogPath } from '../shared/gatewayTts';
 import {
   BodyTooLargeError,
   WS_SERVER_OPTIONS,
@@ -62,6 +63,8 @@ const handler = createGatewayHandler({
   verify,
   log,
   staticFile: createStaticFiles(WEB_ROOT),
+  // Azure Speech with the managed identity; undefined (POST /tts answers 503) where its settings are missing.
+  speech: createSpeech({ fetch: (...args) => fetch(...args), env: process.env }),
 });
 
 const relay = createRelay({
@@ -81,7 +84,8 @@ const pubsubRelay = createPubSubRelay({
   log,
 });
 
-const pathOf = (url: string | undefined) => (url ?? '/').split('?')[0] ?? '/';
+/** The path as it may be logged: no query string, and no announcement link id. */
+const pathOf = (url: string | undefined) => ttsLogPath((url ?? '/').split('?')[0] ?? '/');
 
 async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
   const started = Date.now();

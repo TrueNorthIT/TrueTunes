@@ -38,6 +38,6 @@ variable "gateway_custom_domain_enabled" {
 
 variable "key_vault_secrets_officers" {
   type        = set(string)
-  description = "Object ids of the people allowed to write secrets to the vault, for load-secrets.mjs. The secret values themselves are never Terraform inputs: the Function App reads them from Key Vault."
+  description = "Object ids of the people allowed to write secrets to the vault, for load-secrets.mjs. The same people get \"Cognitive Services Speech User\" on truetunes-speech, for a test call (speech.tf). The secret values themselves are never Terraform inputs: the Function App reads them from Key Vault."
   default     = []
 }

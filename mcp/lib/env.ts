@@ -16,6 +16,8 @@ export const env = {
   /** Signs our access tokens and encrypts what we keep in Redis. 32+ random bytes. */
   tokenSecret: () => required('TOKEN_SECRET'),
   functionsUrl: () => (process.env['TRUETUNES_FN_URL'] ?? 'https://truetunes-fn.azurewebsites.net').replace(/\/$/, ''),
+  /** The Sonos gateway, which makes the speech for announcements. */
+  gatewayUrl: () => (process.env['TRUETUNES_GATEWAY_URL'] ?? 'https://truetunes.tnapps.co.uk').replace(/\/$/, ''),
   /** Room (group or speaker name) to use when a request doesn't name one. */
   defaultRoom: () => process.env['DEFAULT_ROOM'] || undefined,
   /** Volume ceiling for chat requests, 0-100. */

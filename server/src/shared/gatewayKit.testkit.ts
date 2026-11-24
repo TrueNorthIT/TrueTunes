@@ -523,3 +523,96 @@ export function createFakeFunctions() {
 }
 
 export type FakeFunctions = ReturnType<typeof createFakeFunctions>;
+
+// ── Azure Speech, for POST /tts (gatewayTts.ts) ──────────────────────────────
+
+export const SPEECH_TTS_URL = 'https://speech.example/cognitiveservices/v1';
+export const SPEECH_RESOURCE_ID =
+  '/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.CognitiveServices/accounts/speech-test';
+export const IDENTITY_ENDPOINT = 'http://identity.test/msi/token';
+export const IDENTITY_HEADER = 'identity-header-SECRET';
+/** The managed-identity token the fake identity endpoint hands out first (later ones are `-2`, `-3`...). */
+export const SPEECH_TOKEN = 'speech-access-token-SECRET';
+/** Everything the Speech client needs to count as configured. */
+export const SPEECH_ENV: Record<string, string> = {
+  SPEECH_TTS_URL,
+  SPEECH_RESOURCE_ID,
+  IDENTITY_ENDPOINT,
+  IDENTITY_HEADER,
+};
+/** Not valid UTF-8 on purpose: the gateway must carry MP3 bytes untouched. */
+export const MP3_BYTES = Uint8Array.from([0xff, 0xfb, 0x90, 0x00, 0x80, 0x81, 0xfe, 0x00, 0xc3, 0x28, 0xa0, 0xa1]);
+
+export interface SpeechCall {
+  method: string;
+  url: URL;
+  headers: Headers;
+  body: string;
+}
+
+/**
+ * A fake managed-identity endpoint and a fake Azure Speech endpoint behind one `fetch`. Every call is recorded.
+ * The identity endpoint issues SPEECH_TOKEN (then `-2`, `-3`...) expiring `tokenLifetimeSeconds` after `now()`.
+ */
+export function createFakeAzureSpeech(now: () => number = Date.now) {
+  const identityCalls: SpeechCall[] = [];
+  const speechCalls: SpeechCall[] = [];
+  const az = {
+    identityCalls,
+    speechCalls,
+    tokenLifetimeSeconds: 3600,
+    /** What the Speech endpoint answers; replace per test. Default: 200 with MP3_BYTES. */
+    speechReply: (() => reply(200, MP3_BYTES, { 'content-type': 'audio/mpeg' })) as () => Response,
+    /** Set to make the identity endpoint fail: a Response, or a function that throws. */
+    identityReply: null as null | (() => Response),
+    fetch: (async (input: Parameters<typeof fetch>[0], init: RequestInit = {}) => {
+      if (typeof input !== 'string' && !(input instanceof URL)) throw new Error('The fake needs fetch(url, init)');
+      const call: SpeechCall = {
+        method: (init.method ?? 'GET').toUpperCase(),
+        url: new URL(String(input)),
+        headers: new Headers(init.headers),
+        body: init.body == null ? '' : String(init.body),
+      };
+      await new Promise<void>((done) => setImmediate(done));
+      if (call.url.origin + call.url.pathname === IDENTITY_ENDPOINT) {
+        identityCalls.push(call);
+        if (az.identityReply) return az.identityReply();
+        const n = identityCalls.length;
+        return reply(
+          200,
+          JSON.stringify({
+            access_token: n === 1 ? SPEECH_TOKEN : `${SPEECH_TOKEN}-${n}`,
+            expires_on: String(Math.floor(now() / 1000) + az.tokenLifetimeSeconds),
+            resource: 'https://cognitiveservices.azure.com',
+            token_type: 'Bearer',
+          }),
+          { 'content-type': 'application/json' }
+        );
+      }
+      if (call.url.href === SPEECH_TTS_URL) {
+        speechCalls.push(call);
+        return az.speechReply();
+      }
+      throw new Error(`The fake Azure Speech has no route for ${call.method} ${call.url.href}`);
+    }) as typeof fetch,
+  };
+  return az;
+}
+
+export type FakeAzureSpeech = ReturnType<typeof createFakeAzureSpeech>;
+
+/** A `speech` dependency for the handler: records every request and answers MP3_BYTES (or fails). */
+export function createSpeechStub(bytes: Uint8Array = MP3_BYTES) {
+  const calls: Array<{ text: string; voice: string }> = [];
+  const stub = {
+    calls,
+    /** Make every call reject with this. */
+    failWith: null as unknown,
+    speech: async (input: { text: string; voice: string }): Promise<Uint8Array> => {
+      calls.push({ text: input.text, voice: input.voice });
+      if (stub.failWith) throw stub.failWith;
+      return bytes;
+    },
+  };
+  return stub;
+}

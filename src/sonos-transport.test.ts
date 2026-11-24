@@ -6,6 +6,7 @@ import {
   resolveSonosVia,
   sonosAuthHeaders,
   sonosImageRequest,
+  speechStreamUrl,
   toGatewayUrl,
 } from './sonos-transport.ts';
 
@@ -93,4 +94,81 @@ test('images: direct is as it was, cookie only on the Sonos host', () => {
 test('socket URL', () => {
   assert.equal(gatewaySocketUrl(BASE), 'wss://truetunes.tnapps.co.uk/sonos/ws');
   assert.equal(gatewaySocketUrl('http://localhost:7071/'), 'ws://localhost:7071/sonos/ws');
+});
+
+// ── speech: the gateway's Azure Speech link, else the Google voice ───────────
+// The gateway's contract is in server/src/shared/gatewayTts.test.ts; the web bridge's copy of this is tested in
+// renderer/src/web/bridge/__tests__/sonosSocket.test.ts ('playAudioClip').
+
+const MINTED = 'https://gw.test/tts/AbCdEfGhIjKlMnOpQrStUv.mp3';
+const GOOGLE = (q: string) => `https://translate.google.com/translate_tts?ie=UTF-8&tl=en-GB&client=tw-ob&q=${q}`;
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+
+/** A fetch (standing in for fnFetch) that records its calls and answers with `respond`. */
+function fakeFetch(respond: () => Response) {
+  const calls: Array<{ url: string; init: RequestInit }> = [];
+  return {
+    calls,
+    fetch: async (url: string, init: RequestInit) => {
+      calls.push({ url, init });
+      return respond();
+    },
+  };
+}
+
+test('speech: asks the gateway once, with { text } and a JSON body, and plays the link it mints', async () => {
+  const f = fakeFetch(() => json({ url: MINTED }));
+  const res = await speechStreamUrl({ text: 'Pizza is here', gatewayBase: 'https://gw.test/', fetch: f.fetch });
+  assert.deepEqual(res, { streamUrl: MINTED });
+  assert.equal(f.calls.length, 1);
+  assert.equal(f.calls[0].url, 'https://gw.test/tts');
+  assert.equal(f.calls[0].init.method, 'POST');
+  assert.deepEqual(f.calls[0].init.headers, { 'Content-Type': 'application/json' });
+  assert.deepEqual(JSON.parse(String(f.calls[0].init.body)), { text: 'Pizza is here' });
+});
+
+test('speech: a chosen voice goes to the gateway unchanged', async () => {
+  const f = fakeFetch(() => json({ url: MINTED }));
+  await speechStreamUrl({ text: 'Hi', voice: 'en-GB-RyanNeural', gatewayBase: 'https://gw.test', fetch: f.fetch });
+  assert.deepEqual(JSON.parse(String(f.calls[0].init.body)), { text: 'Hi', voice: 'en-GB-RyanNeural' });
+});
+
+test('speech: a gateway 400 comes back as its { error }, never a URL', async () => {
+  for (const error of ['Invalid voice', 'Invalid text']) {
+    const f = fakeFetch(() => json({ error }, 400));
+    assert.deepEqual(await speechStreamUrl({ text: 'Hi', gatewayBase: 'https://gw.test', fetch: f.fetch }), { error });
+  }
+  const bare = fakeFetch(() => new Response('bad', { status: 400 }));
+  assert.deepEqual(await speechStreamUrl({ text: 'Hi', gatewayBase: 'https://gw.test', fetch: bare.fetch }), {
+    error: 'Invalid announcement',
+  });
+});
+
+test('speech: any other failure is the exact Google Translate URL, after one try of the gateway', async () => {
+  for (const [what, respond] of [
+    ['a 503 speech-unavailable', () => json({ error: 'speech-unavailable' }, 503)],
+    ['a 429', () => json({ error: 'quota' }, 429)],
+    ['a 500', () => new Response('boom', { status: 500 })],
+    ['a 401', () => json({ error: 'sign-in required' }, 401)],
+    ['a 200 that is not JSON', () => new Response('<html>oops</html>')],
+    ['a 200 with no url', () => json({})],
+    ['a 200 whose url is not https', () => json({ url: 'http://gw.test/tts/x.mp3' })],
+    [
+      'a network error',
+      (): Response => {
+        throw new TypeError('fetch failed');
+      },
+    ],
+  ] as Array<[string, () => Response]>) {
+    const f = fakeFetch(respond);
+    const res = await speechStreamUrl({
+      text: 'Pizza & chips',
+      voice: 'en-GB-RyanNeural',
+      gatewayBase: 'https://gw.test',
+      fetch: f.fetch,
+    });
+    assert.deepEqual(res, { streamUrl: GOOGLE('Pizza%20%26%20chips') }, what);
+    assert.equal(f.calls.length, 1, what);
+  }
 });
