@@ -1,0 +1,1 @@
+import{n as e}from"./rolldown-runtime-sJBDdmOt.js";var t,n,r;function i(){return(i=e((()=>{t=`_chip_19sv6_2`,n=`_avatar_19sv6_25`,r={chip:t,avatar:n}})))()}export{i as n,r as t};
