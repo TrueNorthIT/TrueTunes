@@ -46,7 +46,7 @@ jobs:
 
       # Read-only access to the private kit, cloned outside the workspace.
       - id: kit-token
-        uses: actions/create-github-app-token@v3.3.0
+        uses: actions/create-github-app-token@v3.4.0
         with:
           app-id: ${{ vars.BIGMAC_APP_ID }}
           private-key: ${{ secrets.BIGMAC_APP_PRIVATE_KEY }}
@@ -99,7 +99,7 @@ jobs:
       # Write access to this repo, minted only after the agent has finished.
       - id: app
         if: steps.auth.outputs.ok == 'true'
-        uses: actions/create-github-app-token@v3.3.0
+        uses: actions/create-github-app-token@v3.4.0
         with:
           app-id: ${{ vars.BIGMAC_APP_ID }}
           private-key: ${{ secrets.BIGMAC_APP_PRIVATE_KEY }}
